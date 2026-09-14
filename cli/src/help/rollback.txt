@@ -1,0 +1,12 @@
+shio rollback — put a captured revision back into the draft
+
+  --address <addr>     The post (or the first argument)
+  --to <n>             The revision number, from `shio versions`
+  --apply              Write it; without this it only plans
+  --json               Raw JSON instead of lines
+
+Examples:
+  shio rollback post:Blog/blog/hello-world --to 3
+  shio rollback post:Blog/blog/hello-world --to 3 --apply
+
+It lands in the draft: `shio publish` is the separate act.

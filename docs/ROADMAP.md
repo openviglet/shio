@@ -41,8 +41,7 @@
 
 ## Block AZ — What the content said before
 
-- 📋 **SH987** (deps: SH986 ✅) **no surface can read a past revision of an address, and no verb restores one** — The state parameter reaches draft and published only, no revisions list exists on REST or MCP, and shio diff compares a replica with its capture rather than two revisions. → §LXV.3
-- 📋 **SH988** (deps: SH987, DS VDS140) **the version dialog compares two whole values and shows nothing at all for a created page** — The review diff is gated on a published twin existing, so a create, the commonest agent output, has no review affordance, and a changed body renders as two walls of text. → §LXV.4
+- 📋 **SH988** (deps: SH987 ✅, DS VDS140) **the version dialog compares two whole values and shows nothing at all for a created page** — The review diff is gated on a published twin existing, so a create, the commonest agent output, has no review affordance, and a changed body renders as two walls of text. → §LXV.4
 - 📋 **SH989** (deps: SH986 ✅) **audit rows say something changed and never which fields, so an approved run cannot be described afterwards** — The history row is a bounded sentence, and after an approve the draft-against-published diff is empty, so the run just accepted can no longer be shown. → §LXV.5
 
 ## Block BA — Releases, scheduling and the publish gate
@@ -51,7 +50,7 @@
 - 📋 **SH991** (deps: —) **nothing lists what is scheduled, so an agent cannot confirm a schedule it set and a curator has no agenda** — The only queries over the schedule columns are the sweep's due-only finders, and neither find nor read exposes a schedule, so the only view is a single post's dialog. → §LXVI.2
 - 📋 **SH992** (deps: SH952 ✅) **shio_publish cannot schedule, and post.unpublish accepts a when it never reads** — The publish tool builds an op with no when, and only postPublish calls scheduleInstant, so an embargoed takedown dated for December takes the page down now and reports success. → §LXVI.3
 - 📋 **SH993** (deps: SH990, SH986 ✅) **no release groups a launch, so forty related pages go live as forty separate events in sweep order** — One batch call is atomic and nothing persists a set across calls, so a coordinated launch has no unit to stage, preview, approve, schedule or undo. → §LXVI.4
-- 📋 **SH994** (deps: SH993, SH987) **a release that went live and should not have has no verb to undo it as one unit** — The release stores a rollback anchor per item and a rolled-back state, and none of its six operations reaches either, which leaves atomicity with no reverse. → §LXVI.5
+- 📋 **SH994** (deps: SH993, SH987 ✅) **a release that went live and should not have has no verb to undo it as one unit** — The release stores a rollback anchor per item and a rolled-back state, and none of its six operations reaches either, which leaves atomicity with no reverse. → §LXVI.5
 - 📋 **SH995** (deps: —) **there is no publish permission for a person, so any user who may write may also put content live** — mayPublish exists only on an API token and falls back to true for every console session, so an agent can be denied publishing and a curator cannot. → §LXVI.6
 - 📋 **SH996** (deps: SH995) **the console's publish has no dry run, no impact preview and no confirm, while the agent's has all three** — Nothing tells a curator which URLs go live, change or stop resolving before the button writes, and include=impact answers template blast radius, not routes. → §LXVI.7
 - 📋 **SH997** (deps: SH993, SH996) **nothing checks a page before it goes live, because verify, audit and the render digest are all opt-in** — Shio's pre-publish instruments run only when somebody remembers, and its webhook events all fire after the commit, so no check stands between content and visitors. → §LXVI.8

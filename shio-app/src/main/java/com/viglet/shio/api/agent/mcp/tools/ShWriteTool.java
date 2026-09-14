@@ -84,9 +84,9 @@ public class ShWriteTool implements ShMcpTool {
                                         Map.entry("op", Map.of("type", "string",
                                                 "enum", ShAgentBatchService.OPS)),
                                         Map.entry("address", ShMcpTool.string(
-                                                "post:<site>/<friendly-url> or folder:<site>/<path>.")),
+                                                "post:<site>/<url> or folder:<site>/<path>.")),
                                         Map.entry("type", ShMcpTool.string(
-                                                "Post-type name; required to create a post.")),
+                                                "Post-type name; required to create.")),
                                         // SH175: an argument whose requirement depends on
                                         // another's value has to say so on itself. `type` did
                                         // and `folder` did not, so the most common write on the
@@ -94,11 +94,10 @@ public class ShWriteTool implements ShMcpTool {
                                         // learn it, and the schema is the one document a model
                                         // reads before calling.
                                         Map.entry("folder", ShMcpTool.string(
-                                                "Folder path: required to create a post; "
-                                                        + "post.move's destination.")),
-                                        Map.entry("to", ShMcpTool.string(
-                                                "A move's new address (a folder's whole name "
-                                                        + "chain).")),
+"Required to create; post.move's destination.")),
+                                        // SH987 trimmed the parenthetical: a move's destination is
+                                        // an address, and the grammar is two lines above.
+                                        Map.entry("to", ShMcpTool.string("A move's new address.")),
                                         Map.entry("data", ShMcpTool.object("Field values by name.")),
                                         // SH342 — the agent-native form of scheduled publishing,
                                         // which the manifest advertised while only an id-keyed
@@ -106,8 +105,7 @@ public class ShWriteTool implements ShMcpTool {
                                         // shio_apply's description rather than by raising the
                                         // ceiling, which is the order agents.md sets.
                                         Map.entry("when", ShMcpTool.string(
-                                                "post.publish: ISO-8601 instant to schedule; omit "
-                                                        + "for now.")),
+                                                "post.publish: ISO-8601 instant; omit for now.")),
                                         /*
                                          * SH1073 — read since SH952 and declared nowhere, so no MCP
                                          * client could learn they exist. Each says "on create"
@@ -117,13 +115,18 @@ public class ShWriteTool implements ShMcpTool {
                                          */
                                         Map.entry("locale", ShMcpTool.string("On create: its locale.")),
                                         Map.entry("translationOf", ShMcpTool.string(
-                                                "On create: the post this translates.")),
+                                                "On create: what it translates.")),
                                         Map.entry("url", ShMcpTool.string(
-                                                "On create: URL as the source spells it.")),
+                                                "On create: the URL as spelled.")),
                                         // Useless without its source, which is why shio_read gained
                                         // `digest` in the same change rather than a later one.
                                         Map.entry("expect", ShMcpTool.string(
-                                                "shio_read's digest; refused if the post changed."))))),
+                                                "shio_read's digest; refused if it changed.")),
+                                        // SH987 — which version post.rollback puts back. Beside
+                                        // `expect` because it is the same category: both name a
+                                        // version rather than declaring content.
+                                        Map.entry("revision", ShMcpTool.integer(
+                                                "post.rollback: which revision to put back."))))),
                 "dryRun", ShMcpTool.bool("Report what would change; write nothing."),
                 "confirm", ShMcpTool.string("dryRun's token; required to delete."),
                 // SH157: the closing turn of the write-then-check loop, as an argument.
@@ -156,7 +159,8 @@ public class ShWriteTool implements ShMcpTool {
                 ShMcpArgs.string(op, "locale"),
                 ShMcpArgs.string(op, "translationOf"),
                 ShMcpArgs.string(op, "url"),
-                ShMcpArgs.string(op, "expect"))));
+                ShMcpArgs.string(op, "expect"),
+                ShMcpArgs.integer(op, "revision"))));
 
         return ShAgentReadTerse.changes(shAgentProofService.attach(
                 shAgentBatchService.run(

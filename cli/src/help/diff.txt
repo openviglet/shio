@@ -19,8 +19,11 @@ claim about, and defaults to reading it off the conversion plan.
                        published - the draft against what is live: which fields would
                                   change if you published now. Needs no capture and no
                                   plan
-  --address <address>  Narrow --against published to these posts (repeatable); without
-                       it the answer is the site's
+                       revision - the draft against a captured revision. Needs --address
+                                  and --from
+  --from <n>           The revision (--against revision); `shio versions` lists them
+  --address <address>  Narrow --against published to these posts (repeatable), or name the
+                       post for --against revision; without it the answer is the site's
   --plan <file>        Read the accepted decisions from somewhere else (--against proposal)
   --proposal <file>    Read the candidates from somewhere else (--against proposal)
   --mode <how>         auto (default), fidelity, mixed or authorable

@@ -76,15 +76,20 @@ public class ShReadTool implements ShMcpTool {
                         "For a layout or region, report what renders through it."),
                 // SH619 — the only way to see what is LIVE. Two reads of one address, with and
                 // without this, is "what will change when I publish", which nothing could answer.
+                // SH987 — `rev:<n>` is the third reading of one parameter, and deliberately so: a
+                // caller asking which version it is reading asks it in one place.
                 "state", ShMcpTool.string(
-                        "`published` reads the live row, not the draft."),
+                        "`published` reads the live row; `rev:<n>` a captured revision."),
                 // SH1073 — SH721's digest, which REST has taken as `include=digest` since it
                 // shipped and MCP could not ask for. Declaring shio_write's `expect` without this
                 // would advertise a guard whose only input no MCP client can obtain.
                 "digest", ShMcpTool.bool("Return the value shio_write's expect takes."),
                 // SH981 — where a person edits it and where they look at it, for the turn that
                 // hands the work over. Off by default: measured at 26 est. tokens a row.
-                "links", ShMcpTool.bool("Return the console and preview URLs for each post.")),
+                "links", ShMcpTool.bool("Return the console and preview URLs for each post."),
+                // SH987 — the page's history, without bodies: numbers, dates, actors and which
+                // fields each revision changed, which is what a caller reads to choose one.
+                "revisions", ShMcpTool.bool("List captured revisions: number, when, who, changed.")),
                 List.of("address"));
     }
 
@@ -97,6 +102,7 @@ public class ShReadTool implements ShMcpTool {
                 ShMcpArgs.bool(arguments, "impact"),
                 ShMcpArgs.string(arguments, "state"),
                 ShMcpArgs.bool(arguments, "digest"),
-                ShMcpArgs.bool(arguments, "links")));
+                ShMcpArgs.bool(arguments, "links"),
+                ShMcpArgs.bool(arguments, "revisions")));
     }
 }

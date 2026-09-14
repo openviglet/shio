@@ -238,6 +238,13 @@ class ShAgentResponseBudgetTest {
                 .param("site", siteName).param("format", "terse"));
         measure("read.terse", get("/api/v2/agent/read")
                 .param("address", "post:" + siteName + "/page-1").param("format", "terse"));
+        // SH987 — the read that asks for the page's history, budgeted separately from the one that
+        // does not. Its own row rather than a raised `read.terse`: the whole claim of an opt-in is
+        // that the caller who does not ask pays nothing, and a shared ceiling would let the default
+        // grow into the room the option was given.
+        measure("read.terse.revisions", get("/api/v2/agent/read")
+                .param("address", "post:" + siteName + "/page-1").param("format", "terse")
+                .param("include", "revisions"));
         measure("verify.terse", get("/api/v2/agent/verify")
                 .param("site", siteName).param("format", "terse"));
         measure("blueprints.terse", get("/api/v2/agent/blueprints").param("format", "terse"));

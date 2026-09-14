@@ -126,6 +126,24 @@ public final class ShAgentReadTerse {
                         .count("published", doc.impact().published())
                         .build());
             }
+            if (doc.revisions() != null) {
+                // SH987 — one line per revision, for the same reason `impact` gets its own: the
+                // header describes the post as it is, and these describe what it used to be. Never
+                // a body: a caller reads these to choose a number, then reads that one.
+                for (var revision : doc.revisions()) {
+                    out.append(ShTerse.line("revision")
+                            .word(String.valueOf(revision.version()))
+                            .attr("state", revision.state())
+                            .attr("reason", revision.reason())
+                            .attr("by", revision.actor())
+                            .attr("at", revision.capturedAt() == null
+                                    ? null : revision.capturedAt().toString())
+                            .attr("digest", revision.digest())
+                            .attr("changed", revision.changed() == null || revision.changed().isEmpty()
+                                    ? null : String.join(",", revision.changed()))
+                            .build());
+                }
+            }
             out.append("data ").append(doc.data() == null ? "{}" : doc.data().toString()).append('\n');
         }
         return out.toString();

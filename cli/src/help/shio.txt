@@ -5,17 +5,15 @@ Usage:
   shio <command> --help      That command's own flags, with what each one means
 
 Commands:
-  init [name]    Scaffold a Next.js site wired to the Shio CDA (--blueprint for a
-                 starter from the instance)
+  init [name]    Scaffold a Next.js site wired to the Shio CDA (--blueprint <name>)
   context        Print the agent context pack: model + sitemap + conventions (one call)
   surfaces       What the console offers, and how to do each of those things from here
   mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   impact <addr>  What a change to this template would affect: layouts, types, page counts
-  apply [file]   Plan/apply a desired-state content document, or a ready-made package
+  apply [file]   Plan/apply a desired-state content document, or a package
                  (--blueprint <name> --site <site>)
-  import <file>  Clone an SH68 exchange package (.zip) into this instance — the way to
-                 accept a site somebody hands you
+  import <file>  Clone an SH68 exchange package (.zip) into this instance
   blueprints     List the appliable starting points (blueprints <name> for its parameters)
   marketplace    Browse and install blueprint packages from a catalogue
   publish [addr] Make drafts live, or take live pages down (--unpublish)
@@ -29,21 +27,23 @@ Commands:
   annotations <page>
                  The props a page emits vs the fields its types declare
                  (exits 1 when a rendered field is not editable)
-  judge          Run verify/diff (and audit/snapshot on request), answer once, and
-                 name where the instruments disagreed
+  judge          Run verify/diff (audit/snapshot on request) and answer once, naming
+                 where the instruments disagreed
   site           List the sites, marking the disposable ones; site rm --scratch
-                 sweeps every disposable one in a single confirmation
+                 sweeps them in one confirmation
   clone <url>    Capture a site that already exists: an inventory, and no content
   propose        Which captured blocks could become sections, and what each would lose
   convert        Apply the accepted conversion plan: sections, theme and scripts, as DRAFT
-  diff           Compare what a replica serves with the capture that declared it
-                 (counts, not pixels)
+  diff           Compare what a replica serves with the capture that declared it,
+                 with what is live, or with a revision (counts, not pixels)
+  versions <addr> What this page has been: one line per captured revision
+  rollback <addr> Put a revision back into the draft (--to <n>, --apply)
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
   types          Generate a TypeScript .d.ts from the live post-types (CDA token)
-  dev            Generate types, start the site dev server, watch the model
-                 (--content syncs shio/content/** both ways instead)
+  dev            Generate types, start the dev server, watch the model
+                 (--content syncs shio/content/** both ways)
   deploy         push (apply) then types
   doctor         Can I work here? Instance, build stamp, model drift, sites, content tree
 

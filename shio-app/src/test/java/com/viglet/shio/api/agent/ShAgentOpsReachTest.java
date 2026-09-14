@@ -244,10 +244,44 @@ class ShAgentOpsReachTest {
         // moving in the direction that settled it, so the answer stands. The number to watch is not
         // this ceiling but that percentage: it is asserted at 30 below, and at 28 the vocabulary has
         // room for roughly one more op of this size before the surface choice genuinely re-opens.
+        //
+        // SH987 raises this from 770 to 800, measured at 795, and it spends the room the paragraph
+        // above said was there for "roughly one more op of this size". The next one does not have
+        // that sentence to lean on.
+        //
+        // WHAT BOUGHT THE 55 TOKENS. `post.rollback` — putting a captured revision back, which
+        // nothing in the vocabulary could do because until SH986 there was nothing to put back: a
+        // post had a draft row and a live row and publishing destroyed the second. The trim came
+        // first, as this file has required since SH222: the first draft measured 819 and ended
+        // "Restores into DRAFT; publishing is separate, and it writes a new revision rather than
+        // deleting any", which is the part `shio_write`'s own description ("writes land in DRAFT
+        // until published") and the op's refusal already teach. What stayed is the pair a caller
+        // cannot infer: it lands in the draft, and `revision` comes from a read.
+        //
+        // WHY AN OP, WHEN SH733's ANSWER WAS A KEY AND SH244's WAS AN OP. SH413's rule is that a
+        // MODIFIER of an existing op rides it, and the candidate here was `post.upsert` carrying
+        // the old body — a caller reads revision 3 and upserts what it said. That is not a
+        // modifier, it is a different subject: an upsert declares a DOCUMENT and a rollback names a
+        // VERSION, and the difference is visible in what the two leave behind. The upsert route
+        // re-sends the whole body over the wire to write bytes the server already holds (P3), and
+        // the revision it captures reads as an ordinary edit — so the one question a rollback
+        // exists to answer afterwards, "when did we go back and to what", is the one the history
+        // could no longer answer.
+        //
+        // AND THE DECOMPOSITION SAYS SO. Per-op prose went 36.3 -> 36.8 (588 over 16 ops), so this
+        // op is average-sized and the whole 55 is one more op rather than the shape getting fatter.
+        // Had it arrived as prose at the same total, the average would read 39 and the answer would
+        // have been another trim.
+        //
+        // AND THE SURFACE CHOICE, RE-RUN. 795 against a manifest of 2820 is 28% — the same
+        // percentage SH244 measured, because the manifest grew alongside it — against SH647's 24%
+        // and the 19% that made SH346 reject folding the vocabulary into the manifest. The
+        // comparison has not moved back, so the answer stands. The percentage is still the number
+        // to watch rather than this ceiling.
         assertThat(tokens)
                 .as("measured %s; a vocabulary that grows past this is a reason to re-open the "
                         + "surface choice, not to raise the number quietly", ESTIMATED_OPS_TOKENS_NOTE)
-                .isLessThan(770);
+                .isLessThan(800);
     }
 
     @Test

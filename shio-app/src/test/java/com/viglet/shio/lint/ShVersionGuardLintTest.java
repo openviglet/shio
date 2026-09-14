@@ -92,6 +92,9 @@ class ShVersionGuardLintTest {
             Map.entry("ShPostUnifiedAPI#patch", ""),
             Map.entry("ShPostUnifiedAPI#publish", ""),
             Map.entry("ShPostUnifiedAPI#delete", ""),
+            // SH987 — a rollback is a write, and one onto a draft somebody has moved on from is
+            // the same surprise as any other stale save.
+            Map.entry("ShPostUnifiedAPI#restoreRevision", ""),
 
             Map.entry("ShPostUnifiedAPI#create", CREATES),
             Map.entry("ShPostUnifiedAPI#translate", CREATES),

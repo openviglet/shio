@@ -65,7 +65,7 @@ export const HELP = helpText("diff");
  * <p>The document is settled rather than pending: `shio apply --check <file>` already plans a
  * desired-state document against the instance and exits non-zero if anything would change.</p>
  */
-const AGAINST = ["capture", "proposal", "published"];
+const AGAINST = ["capture", "proposal", "published", "revision"];
 
 export async function run(flags, positionals, ctx) {
   const site = typeof flags.site === "string" && flags.site.trim()
@@ -98,6 +98,14 @@ export async function run(flags, positionals, ctx) {
   // *finding* a mode rather than one of them.
   const asked = typeof flags.mode === "string" && flags.mode.trim() ? flags.mode.trim() : "auto";
   if (asked !== "auto") assertMode(asked);
+
+  // SH987 — the third of SH522's four, and the one the revision store made answerable: the same
+  // address at an earlier moment. It reuses `comparePublished` with a stored revision as the second
+  // row source rather than growing a comparison of its own, which is what keeps "what changed"
+  // reading the same way whether the other side is the live row or a revision.
+  if (against === "revision") {
+    return againstRevision(flags, ctx);
+  }
 
   if (against === "published") {
     return againstPublished(site, flags, ctx);
@@ -359,6 +367,48 @@ async function storedMarkup(inventory, ctx) {
 
 function basic(user, password) {
   return `Basic ${Buffer.from(`${user ?? ""}:${password ?? ""}`, "utf8").toString("base64")}`;
+}
+
+/**
+ * `--against revision` - the draft against what the page said at a captured moment (SH987).
+ *
+ * <h2>Why it insists on an address</h2>
+ *
+ * <p>A revision number is per post: `--from 3` means the third revision of <em>this</em> page, and
+ * across a site it names as many different moments as there are posts. `--against published` can
+ * answer for a whole site because "live" is one state everywhere; this cannot, and answering
+ * approximately would be the worse of the two failures.</p>
+ */
+async function againstRevision(flags, ctx) {
+  const { ShioAgentClient } = await import("../agent-client.mjs");
+  const from = Number.parseInt(String(flags.from ?? ""), 10);
+  const asked = [flags.address].flat()
+    .filter((value) => typeof value === "string" && value.trim())
+    .map((value) => value.trim());
+
+  if (!asked.length || !Number.isInteger(from)) {
+    ctx.stderr.write(
+      "shio diff: --against revision needs --address and --from <n>.\n"
+        + "  A revision number belongs to one post, so there is no site-wide answer.\n"
+        + "  `shio versions post:<site>/<url>` lists the numbers.\n",
+    );
+    return 2;
+  }
+
+  const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
+  const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
+  const rows = [];
+  for (const address of asked) {
+    const [draft] = await client.read([address]);
+    const [older] = await client.read([address], { state: `rev:${from}` });
+    rows.push({ address, draft: draft ?? null, live: older ?? null });
+  }
+
+  const comparison = comparePublished(rows);
+  ctx.stdout.write(flags.json
+    ? `${JSON.stringify(comparison, null, 2)}\n`
+    : describePublishedDiff(comparison, flags));
+  return comparison.changed === 0 && comparison.fresh === 0 ? 0 : 1;
 }
 
 /**

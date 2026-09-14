@@ -23,6 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
+import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.post.revision.ShRevisionRow;
+import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.agent.dto.ShAgentResolved;
 import com.viglet.shio.api.error.ShProblem;
@@ -88,6 +91,8 @@ public class ShAgentReadService {
     private final ShAgentProperties properties;
     private final ShTemplateGraph shTemplateGraph;
     private final ShConsoleSurfaces shConsoleSurfaces;
+    /** SH987 — the page's history, for `include=revisions` and `state=rev:<n>`. */
+    private final ShPostRevisionService shPostRevisionService;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -97,7 +102,8 @@ public class ShAgentReadService {
                               ObjectMapper objectMapper,
                               ShAgentProperties properties,
                               ShTemplateGraph shTemplateGraph,
-                              ShConsoleSurfaces shConsoleSurfaces) {
+                              ShConsoleSurfaces shConsoleSurfaces,
+                              ShPostRevisionService shPostRevisionService) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -107,6 +113,7 @@ public class ShAgentReadService {
         this.properties = properties;
         this.shTemplateGraph = shTemplateGraph;
         this.shConsoleSurfaces = shConsoleSurfaces;
+        this.shPostRevisionService = shPostRevisionService;
     }
 
     /**
@@ -298,7 +305,43 @@ public class ShAgentReadService {
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact, String state, boolean digest,
                                  boolean links) {
-        return readDocs(addresses, fields, ids, impact, wanted(state), digest, links);
+        return read(addresses, fields, ids, impact, state, digest, links, false);
+    }
+
+    /**
+     * The same read, optionally carrying the page's history (SH987).
+     *
+     * <p>Two riders on parameters that already exist, which is why revisions needed no endpoint and
+     * no second tool: {@code include=revisions} attaches the list, and {@code state=rev:<n>} reads
+     * one revision in place of a row. The subject of both is an address, which is what a read
+     * already takes.</p>
+     *
+     * @param revisions attach the list — terse by construction, never bodies
+     */
+    public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
+                                 boolean impact, String state, boolean digest,
+                                 boolean links, boolean revisions) {
+        return readDocs(addresses, fields, ids, impact, wanted(state), digest, links, revisions,
+                revisionOf(state));
+    }
+
+    /**
+     * {@code state=rev:<n>}, or {@code null} when the caller asked for a row (SH987).
+     *
+     * <p>Spelled inside {@code state} rather than as a parameter of its own because it <em>is</em>
+     * the same question: which version of this address am I reading. A caller that has
+     * {@code state=published} in a script changes one value to read what was published before it.</p>
+     */
+    private static Integer revisionOf(String state) {
+        if (state == null || !state.trim().toLowerCase(java.util.Locale.ROOT).startsWith("rev:")) {
+            return null;
+        }
+        String number = state.trim().substring("rev:".length());
+        try {
+            return Integer.valueOf(number.trim());
+        } catch (NumberFormatException e) {
+            throw new UnknownStateException(state);
+        }
     }
 
     /**
@@ -313,6 +356,11 @@ public class ShAgentReadService {
             return null;
         }
         String text = state.trim().toLowerCase(java.util.Locale.ROOT);
+        // SH987 — `rev:<n>` is a state in the sense the caller means it, and the row it resolves
+        // against is the draft-preferred one, so a revision of a published-only post still reads.
+        if (text.startsWith("rev:")) {
+            return null;
+        }
         return switch (text) {
             case "published" -> ShPostState.PUBLISHED;
             case "draft" -> ShPostState.DRAFT;
@@ -323,6 +371,12 @@ public class ShAgentReadService {
     private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
                                       boolean impact, ShPostState state, boolean digest,
                                       boolean links) {
+        return readDocs(addresses, fields, ids, impact, state, digest, links, false, null);
+    }
+
+    private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
+                                      boolean impact, ShPostState state, boolean digest,
+                                      boolean links, boolean revisions, Integer revision) {
         if (addresses == null || addresses.isEmpty()) {
             throw new NoAddressException();
         }
@@ -337,11 +391,11 @@ public class ShAgentReadService {
             // back to reading them one at a time to find out which one was wrong. A single
             // address still throws, because a one-address read that 404s is correct.
             if (addresses.size() == 1) {
-                docs.add(doc(address, wanted, ids, impact, state, digest, links));
+                docs.add(doc(address, wanted, ids, impact, state, digest, links, revisions, revision));
                 continue;
             }
             try {
-                docs.add(doc(address, wanted, ids, impact, state, digest, links));
+                docs.add(doc(address, wanted, ids, impact, state, digest, links, revisions, revision));
             } catch (ShTeachingException failure) {
                 docs.add(failed(address, failure));
             }
@@ -368,10 +422,19 @@ public class ShAgentReadService {
     }
 
     private ShAgentDoc doc(String rawAddress, List<String> fields, boolean ids, boolean impact,
-                           ShPostState state, boolean digest, boolean links) {
+                           ShPostState state, boolean digest, boolean links, boolean revisions,
+                           Integer revision) {
         var resolved = shAddressResolver.resolve(rawAddress);
         ShPostUnified post = rowFor(rawAddress, resolved, state);
-        JsonNode data = readTree(post.getData());
+        // SH987 — `state=rev:<n>` answers with what the page said then, at the address it is at
+        // now. The row is still read, because everything around the document — the type, the
+        // folder, the links — is a fact about the post rather than about the revision.
+        ShRevisionRow asked = revision == null ? null : shPostRevisionService
+                .row(post.getId(), revision)
+                .orElseThrow(() -> ShPostStateNotFoundException.noSuchRevision(post.getId(),
+                        revision, shPostRevisionService.rows(post.getId()).stream()
+                                .map(ShRevisionRow::version).toList()));
+        JsonNode data = asked != null ? asked.data() : readTree(post.getData());
         JsonNode projected = fields.isEmpty() ? data : project(data, fields, post);
         return new ShAgentDoc(
                 shAddressResolver.addressOf(post).toString(),
@@ -398,7 +461,10 @@ public class ShAgentReadService {
                 // the declared route rather than concatenated here: the console's prefix has moved
                 // once already, and a string built in Java would have rotted without a sound.
                 .withLinks(links ? shConsoleSurfaces.curatorUrl("post", post.getId()) : null,
-                        links ? previewUrl(post) : null);
+                        links ? previewUrl(post) : null)
+                // SH987 — the page's history, terse and only when asked. Last in the chain for
+                // SH721's reason: a read that did not ask is byte-identical to the one before this.
+                .withRevisions(revisions ? shPostRevisionService.rows(post.getId()) : null);
     }
 
     /**

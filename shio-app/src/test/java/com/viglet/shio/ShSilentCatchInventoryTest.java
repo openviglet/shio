@@ -148,7 +148,15 @@ class ShSilentCatchInventoryTest {
             // reason particular to this surface: the incident log is what the stream carries (SH144),
             // so a pass failing because the database is down would be delivered to every other open
             // stream as news, once per pass, by the mechanism that is failing.
-            "api", 65,
+            //
+            // 66 since SH987, in `ShPostRevisionService.parse`: a stored revision whose JSON will
+            // not parse is handed to the caller as a row with no body rather than taking the read
+            // down with a 500. A revision is a record of what a page said, and a record that cannot
+            // be read is still a record — the number, the date and the actor are the part a caller
+            // is reading the list for. Not an incident, for SH103's reason: the only way to reach
+            // this is a row written by an older or broken writer, and there is nothing an operator
+            // could act on that the row itself does not already say.
+            "api", 66,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

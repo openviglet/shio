@@ -9,18 +9,28 @@
 package com.viglet.shio.api.post.revision;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.agent.ShAgentPostDigest;
 import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision.Reason;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.revision.ShPostRevisionRepository;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Every state a page was in, captured where it goes live (SH986).
@@ -53,13 +63,19 @@ import com.viglet.shio.persistence.repository.post.revision.ShPostRevisionReposi
 public class ShPostRevisionService {
 
     private final ShPostRevisionRepository shPostRevisionRepository;
+    private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ObjectMapper objectMapper;
     private final int keep;
     private final boolean captureOnSave;
 
     public ShPostRevisionService(ShPostRevisionRepository shPostRevisionRepository,
+                                 ShPostUnifiedRepository shPostUnifiedRepository,
+                                 ObjectMapper objectMapper,
                                  @Value("${shio.versions.keep:50}") int keep,
                                  @Value("${shio.versions.capture-on-save:false}") boolean captureOnSave) {
         this.shPostRevisionRepository = shPostRevisionRepository;
+        this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.objectMapper = objectMapper;
         this.keep = keep;
         this.captureOnSave = captureOnSave;
     }
@@ -109,6 +125,109 @@ public class ShPostRevisionService {
     @Transactional(readOnly = true)
     public List<ShPostRevision> revisions(String postId) {
         return shPostRevisionRepository.findByPostIdOrderByVersionNoDesc(postId);
+    }
+
+    /**
+     * The post's revisions as a caller reads them, newest first and carrying no bodies (SH987).
+     *
+     * <p>{@code changed} is computed pairwise here rather than stored: it is a fact about two
+     * revisions, and storing it on one of them would be a derived value that goes wrong the moment
+     * a prune removes its neighbour. The oldest held revision reports every field it has, which is
+     * true — against nothing, everything is new.</p>
+     */
+    @Transactional(readOnly = true)
+    public List<ShRevisionRow> rows(String postId) {
+        List<ShPostRevision> held = shPostRevisionRepository.findByPostIdOrderByVersionNoDesc(postId);
+        List<ShRevisionRow> rows = new ArrayList<>();
+        for (int at = 0; at < held.size(); at++) {
+            ShPostRevision previous = at + 1 < held.size() ? held.get(at + 1) : null;
+            rows.add(row(held.get(at), previous).terse());
+        }
+        return List.copyOf(rows);
+    }
+
+    /** One revision, with its document, or empty when the number names nothing. */
+    @Transactional(readOnly = true)
+    public Optional<ShRevisionRow> row(String postId, int versionNo) {
+        return shPostRevisionRepository.findByPostIdAndVersionNo(postId, versionNo)
+                .map(revision -> row(revision, shPostRevisionRepository
+                        .findByPostIdOrderByVersionNoDesc(postId).stream()
+                        .filter(other -> other.getVersionNo() < versionNo)
+                        .findFirst().orElse(null)));
+    }
+
+    private ShRevisionRow row(ShPostRevision revision, ShPostRevision previous) {
+        return new ShRevisionRow(revision.getVersionNo(), revision.getState(), revision.getReason(),
+                revision.getActor(), revision.getAgentSessionId(), revision.getCapturedAt(),
+                revision.getTitle(), digestOf(revision), changedFields(previous, revision),
+                parse(revision.getData()));
+    }
+
+    /**
+     * What this revision's content would digest as <em>in the post's present place</em>.
+     *
+     * <p>{@link ShAgentPostDigest} is the one digest in the product (SH985 refused a second one), and
+     * it hashes the folder and the translation group alongside the content — neither of which a
+     * revision stores, because a revision is a record of what the post <b>said</b> and not of where
+     * it lived. So the value is computed against the row that is there now, which makes it the
+     * answer to the question a caller actually has: <i>if I rolled back to this, what would the post
+     * digest as?</i> A post that has been moved between revisions therefore reports a digest that
+     * differs from the one it had at the time, and that is the correct answer to that question.</p>
+     */
+    @Transactional(readOnly = true)
+    public String digestOf(ShPostRevision revision) {
+        ShPostUnified present = shPostUnifiedRepository
+                .findByIdAndState(revision.getPostId(), ShPostState.DRAFT)
+                .or(() -> shPostUnifiedRepository
+                        .findByIdAndState(revision.getPostId(), ShPostState.PUBLISHED))
+                .orElse(null);
+        ShPostUnified as = new ShPostUnified();
+        as.setId(revision.getPostId());
+        as.setFurl(revision.getFurl());
+        as.setLocale(revision.getLocale());
+        as.setData(revision.getData());
+        if (present != null) {
+            as.setShFolder(present.getShFolder());
+            as.setShPostType(present.getShPostType());
+            as.setTranslationGroupId(present.getTranslationGroupId());
+        }
+        return ShAgentPostDigest.of(as);
+    }
+
+    /** Field names this revision altered against the one before it, never their values. */
+    private List<String> changedFields(ShPostRevision previous, ShPostRevision revision) {
+        JsonNode after = parse(revision.getData());
+        JsonNode before = previous == null ? null : parse(previous.getData());
+        if (after == null || !after.isObject()) {
+            return List.of();
+        }
+        List<String> changed = new ArrayList<>();
+        Set<String> names = new TreeSet<>();
+        after.propertyNames().forEach(names::add);
+        if (before != null && before.isObject()) {
+            before.propertyNames().forEach(names::add);
+        }
+        for (String name : names) {
+            JsonNode left = before == null ? null : before.get(name);
+            JsonNode right = after.get(name);
+            if (!Objects.equals(left, right)) {
+                changed.add(name);
+            }
+        }
+        return List.copyOf(changed);
+    }
+
+    private JsonNode parse(String data) {
+        if (data == null || data.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(data);
+        } catch (RuntimeException e) {
+            // A revision is a record, and a record that cannot be parsed is still a record: the
+            // caller gets the row with no body rather than a 500 over one bad document.
+            return null;
+        }
     }
 
     /** One revision of one post, by the number a reader was shown. */

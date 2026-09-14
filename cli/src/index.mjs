@@ -83,6 +83,9 @@ const BOOLEANS = [
   "scratch",
   // SH589: the two instruments `judge` will not run unless asked, each for its own reason.
   "browser", "verbose",
+  // SH987: `rollback` plans by default and writes only when told, which is `apply`'s shape for the
+  // one write whose subject the caller cannot see — a number naming bytes that are not on screen.
+  "apply",
 ];
 
 // Flags that may be repeated. A blueprint's parameters are a set, so last-one-wins would
@@ -119,6 +122,8 @@ const COMMANDS = {
   propose: () => import("./commands/propose.mjs"),
   convert: () => import("./commands/convert.mjs"),
   diff: () => import("./commands/diff.mjs"),
+  versions: () => import("./commands/versions.mjs"),
+  rollback: () => import("./commands/rollback.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),
   build: () => import("./commands/build.mjs"),

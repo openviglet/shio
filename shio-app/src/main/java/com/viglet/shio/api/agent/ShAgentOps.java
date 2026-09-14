@@ -103,6 +103,8 @@ public final class ShAgentOps {
     private static final String WHEN = "when";
     /** SH721 — the digest a read handed back, making the write conditional on it. */
     private static final String EXPECT = "expect";
+    /** SH987 — which captured version post.rollback puts back. */
+    private static final String REVISION = "revision";
 
     /**
      * SH197 — a {@code LinkedHashMap}, not the stability helper wrapped around a {@code Map.of}.
@@ -171,6 +173,12 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.POST_RESTORE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Undo a trash. `id:` address from find?trash=true. No confirm."),
+            // SH987 — the other undo: not "it was trashed" but "it used to say something else".
+            // `revision` comes from a read — include=revisions, or state=rev:<n> to see one first.
+            new OpSpec(ShAgentBatchService.POST_ROLLBACK,
+                    List.of(ADDRESS, REVISION), List.of(), List.of(), List.of(EXPECT),
+                    "Put a captured revision back into the draft. `revision` from a read's "
+                            + "include=revisions."),
             new OpSpec(ShAgentBatchService.FOLDER_RESTORE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Undo a folder trash, with its posts. `id:` address."),

@@ -28,6 +28,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.acl.ShContentAclService;
+import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.type.ShUnknownPostTypeException;
 import com.viglet.shio.api.post.unified.dto.ShConsolePost;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -63,6 +65,7 @@ public class ShPostUnifiedAPI {
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostDraftMergeService shPostDraftMergeService;
     private final ShConsolePostVersion shConsolePostVersion;
+    private final ShPostRevisionService shPostRevisionService;
 
     public ShPostUnifiedAPI(ShPostUnifiedWriteService shPostUnifiedWriteService,
                             ShConsolePostReadService shConsolePostReadService,
@@ -70,7 +73,8 @@ public class ShPostUnifiedAPI {
                             ShContentAclService shContentAclService,
                             ShPostTypeRepository shPostTypeRepository,
                             ShPostDraftMergeService shPostDraftMergeService,
-                            ShConsolePostVersion shConsolePostVersion) {
+                            ShConsolePostVersion shConsolePostVersion,
+                            ShPostRevisionService shPostRevisionService) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shConsolePostReadService = shConsolePostReadService;
         this.shTenantQuotaService = shTenantQuotaService;
@@ -78,6 +82,7 @@ public class ShPostUnifiedAPI {
         this.shPostTypeRepository = shPostTypeRepository;
         this.shPostDraftMergeService = shPostDraftMergeService;
         this.shConsolePostVersion = shConsolePostVersion;
+        this.shPostRevisionService = shPostRevisionService;
     }
 
     @PostMapping
@@ -282,9 +287,60 @@ public class ShPostUnifiedAPI {
                 });
     }
 
+    /**
+     * The two rows this post has — draft and live (SH14).
+     *
+     * <p>Left exactly as it was by SH987, which is the point: this answers "what are the two states
+     * of this post right now", and the revision history is a different question with a different
+     * shape. A caller reading this today is reading what it always meant.</p>
+     */
     @GetMapping("/{id}/versions")
     public List<ShConsolePost> versions(@PathVariable String id) {
         return shConsolePostReadService.versions(id);
+    }
+
+    /**
+     * Every captured revision of this post, newest first and carrying no bodies (SH987).
+     *
+     * <p>A listing is how a caller chooses which revision to fetch or roll back to, so it answers
+     * with numbers, dates, actors and the field names each revision changed — fifty bodies is the
+     * page fifty times for a question the metadata answers (P3).</p>
+     */
+    @GetMapping("/{id}/revisions")
+    public List<ShRevisionRow> revisions(@PathVariable String id) {
+        shContentAclService.requireRead(id);
+        return shPostRevisionService.rows(id);
+    }
+
+    /** One revision, with its document. */
+    @GetMapping("/{id}/revisions/{version}")
+    public ShRevisionRow revision(@PathVariable String id, @PathVariable int version) {
+        shContentAclService.requireRead(id);
+        return shPostRevisionService.row(id, version)
+                .orElseThrow(() -> ShPostStateNotFoundException.noSuchRevision(id, version,
+                        shPostRevisionService.rows(id).stream().map(ShRevisionRow::version).toList()));
+    }
+
+    /**
+     * Put a revision back over the draft (SH987).
+     *
+     * <p>Over the draft and never over the live row, and it writes a new revision rather than
+     * deleting any: a rollback is a write like every other, so the state it replaced is still
+     * there to come forward to. Publishing it is the separate deliberate act (P7).</p>
+     */
+    @PostMapping("/{id}/revisions/{version}/restore")
+    public ResponseEntity<ShConsolePost> restoreRevision(
+            @PathVariable String id,
+            @PathVariable int version,
+            @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+            Principal principal) {
+        shContentAclService.requireWrite(id);
+        // SH985 — a rollback is a write, and a write onto a draft somebody else has moved on from
+        // is the same surprise as any other stale save.
+        shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT);
+        ShConsolePost written = shConsolePostReadService.written(shPostUnifiedWriteService
+                .restoreRevision(id, version, principal != null ? principal.getName() : null));
+        return ResponseEntity.ok().eTag(shConsolePostVersion.etagAfterWriting(id)).body(written);
     }
 
     /** SH55 — posts currently in the trash for the active tenant. */

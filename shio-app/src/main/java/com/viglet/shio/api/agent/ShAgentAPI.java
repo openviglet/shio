@@ -360,9 +360,12 @@ public class ShAgentAPI {
         // for this post and the preview a person opens, asked for by the caller about to hand the
         // work over. Measured before it was made opt-in: on every row it cost 26 est. tokens a row
         // and took the build-a-site benchmark 800 over its ceiling.
+        // SH987 — `include=revisions` is the fifth rider, and `state=rev:<n>` the second reading of
+        // `state`: the page's history and one past version of it, on the read that already takes an
+        // address. Neither needed an endpoint, which is what keeps the tool count where it is.
         List<ShAgentDoc> docs = shAgentReadService.read(address, split(fields), ids,
                 includes(include, "impact"), state, includes(include, "digest"),
-                includes(include, "links"));
+                includes(include, "links"), includes(include, "revisions"));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
                 : shAgentBodyEtag.json("read", docs, ifNoneMatch);

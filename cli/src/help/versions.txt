@@ -1,0 +1,10 @@
+shio versions — what a page has been: one line per captured revision
+
+  --address <addr>     The post (or the first argument)
+  --json               Raw JSON instead of lines
+
+Examples:
+  shio versions post:Blog/blog/hello-world
+
+A revision is captured when content goes live. The numbers are what
+`shio diff --against revision --from` and `shio rollback --to` take.

@@ -203,8 +203,13 @@ const UNEXERCISED = {
     // it was COVERED once an instance existed to answer. Three of its strings were measured before
     // they were asserted, and the pair of refusals turned out to carry different slugs and
     // different fixes, which is what made the third call worth making.
+    // `post.rollback` arrives with SH987 and joins the list as the other restores did: nothing
+    // live drives it yet. It is proved in ShAgentRevisionSurfaceTest, which is a proof about the
+    // service and the plan rather than about the wire — and the thing a live scenario would add is
+    // the one this op is most likely to get wrong, since a rollback is only meaningful against a
+    // revision an earlier call in the same run produced.
     "folder.delete", "folder.restore",
-    "post.move", "post.restore", "post.unpublish", "site.delete", "site.restore",
+    "post.move", "post.restore", "post.rollback", "post.unpublish", "site.delete", "site.restore",
   ],
   /**
    * The MCP resources no live suite has ever read (SH760).
@@ -240,8 +245,12 @@ const UNEXERCISED = {
     // `surfaces` arrived with SH979. It reads the manifest with one include and prints it, which
     // is the shape a MockMvc proof settles; a live scenario would be asserting the same document
     // twice.
+    // `versions` and `rollback` arrive with SH987. Both are unwritten rather than out of scope:
+    // they need a live instance with a published post behind them, which is exactly the fixture a
+    // live scenario has and a MockMvc proof invents.
     "annotations", "apply", "audit", "build", "deploy", "dev", "impact", "import", "judge",
-    "mcp", "publish", "remember", "report", "snapshot", "surfaces", "types",
+    "mcp", "publish", "remember", "report", "rollback", "snapshot", "surfaces", "types",
+    "versions",
   ],
 };
 

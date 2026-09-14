@@ -2964,3 +2964,52 @@ Two of them are worth reading before writing a new response shape: `/api/v2/obje
 post's URL and says so only by returning the objects it touched, and `/api/v2/cda/form` withholds
 everything on purpose, because a honeypot refusal has to answer exactly like an accepted submission
 (SH633). The counts land in `p1-inventory.json` with the rest.
+
+## Revisions, on the surfaces an agent already has (SH987)
+
+SH986 captured what a page was. Nothing could read one: `state` reached the draft and the live row
+and stopped, no listing existed on REST or MCP, and the only rollback available was *read the old
+body and upsert it* — which re-sends bytes the server already holds and leaves a history in which
+the rollback reads as an ordinary edit.
+
+The whole chain rides parameters that already exist, which is why it cost no endpoint and no tool:
+
+- **`include=revisions`** attaches the list to a read. Numbers, dates, actors, and the field names
+  each revision changed — never bodies. Fifty revisions of a page with a long body is the page fifty
+  times for a question the metadata answers.
+- **`state=rev:<n>`** reads one revision in place of a row. It is the same question `state` already
+  asks — *which version am I reading* — so a caller with `state=published` in a script changes one
+  value. The row is still read underneath: the type, the folder and the links are facts about the
+  post rather than about the revision.
+- **`post.rollback`** joins the op vocabulary with `address`, `revision` and `expect`. An op rather
+  than a tool because the tool budget is paid every turn and a rollback happens once in a hundred —
+  and being an op is what gives it the plan, the dry run and the confirm token without reinventing
+  them slightly differently.
+- **REST** carries `GET /{id}/revisions`, `GET /{id}/revisions/{n}` and
+  `POST /{id}/revisions/{n}/restore`; `GET /{id}/versions` is untouched and still means the two rows
+  a post has now.
+- **The CLI** is `shio versions`, `shio rollback --to <n>` (which plans unless given `--apply`) and
+  `shio diff --against revision --from <n>`, which reuses the comparison `--against published`
+  already has with a stored revision as the second row source.
+
+Three decisions worth knowing:
+
+**A rollback restores into the draft and publishes nothing.** P7 as mechanics rather than
+convention: the caller asked to go back to a version, and putting that version in front of visitors
+is the separate explicit act. It also writes a new revision and deletes none, so what it replaced is
+still there to come forward to — which is why it is not a destructive op and needs no confirm token
+of its own.
+
+**The plan reads the revision** (SH690's rule): a dry run that says yes about a revision the write
+cannot find is the plan an agent acts on. A missing `revision` is refused before the address is even
+resolved, through the shared `missing-op-field` shape (SH332), because a caller that got both wrong
+is otherwise told about the address — the error it can do least about, since the numbers it needs
+come from reading that address.
+
+**The vocabulary's ceiling moved, with the ritual it demands.** `ShAgentOpsReachTest` went from 770
+to 800, measured at 795. The trim came first — the first draft measured 819 and ended with a clause
+`shio_write`'s own description already teaches — and the decomposition says the growth is one more
+op rather than fatter prose (per-op prose 36.3 → 36.8). `shio_write`'s schema was trimmed to stay
+under the 460-token per-tool ceiling, and `include=revisions` got its own row in the response budget
+rather than room added to `read.terse`: the claim an opt-in makes is precisely that the default did
+not move.

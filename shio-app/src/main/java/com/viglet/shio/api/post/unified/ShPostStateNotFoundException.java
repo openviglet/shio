@@ -85,6 +85,32 @@ public class ShPostStateNotFoundException extends ShTeachingException {
                         .withExample("/api/v2/agent/resolve?address=post:<site>/<friendly-url>"));
     }
 
+    /**
+     * The post exists and has no revision by that number (SH987).
+     *
+     * <p>It lists the numbers it does have rather than saying "not found": a caller that asked for
+     * revision 4 has a list from somewhere, and the two ways to be wrong — the prune removed it, or
+     * that number belongs to another post — are told apart by seeing what is there.</p>
+     */
+    public static ShPostStateNotFoundException noSuchRevision(String id, int asked,
+                                                              List<Integer> held) {
+        return new ShPostStateNotFoundException(
+                ShProblem.of("no-such-revision", HttpStatus.NOT_FOUND, "No revision with that number")
+                        .withDetail(held.isEmpty()
+                                ? "Post " + id + " has no captured revisions. A revision is written "
+                                        + "when content goes live, so a post that has never been "
+                                        + "published has none."
+                                : "Post " + id + " has no revision " + asked + ". It holds "
+                                        + held.size() + ", numbered " + held.getLast() + " to "
+                                        + held.getFirst() + " — retention is shio.versions.keep, so "
+                                        + "an older number may have been pruned.")
+                        .withAllowed(held.stream().map(String::valueOf).toList())
+                        .withDidYouMean(held.isEmpty() ? null : String.valueOf(held.getFirst()))
+                        .withFix("List what is there: GET /api/v2/post-unified/" + id
+                                + "/revisions, then ask for one of its numbers.")
+                        .withExample("/api/v2/post-unified/" + id + "/revisions"));
+    }
+
     /** Lower-case, because that is how the query parameter is written in every example. */
     private static String name(ShPostState state) {
         return state.name().toLowerCase(Locale.ROOT);

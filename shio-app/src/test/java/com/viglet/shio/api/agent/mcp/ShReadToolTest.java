@@ -61,12 +61,14 @@ class ShReadToolTest {
     @Test
     void sh1073AReadThatAsksForTheDigestGetsTheValueExpectTakes() {
         ShAgentReadService service = mock(ShAgentReadService.class);
-        when(service.read(any(), any(), anyBoolean(), anyBoolean(), any(), eq(true), anyBoolean()))
+        when(service.read(any(), any(), anyBoolean(), anyBoolean(), any(), eq(true), anyBoolean(),
+                anyBoolean()))
                 .thenReturn(List.of(doc("a1b2c3d4e5f60718")));
 
         String terse = call(service, true);
 
-        verify(service).read(any(), any(), eq(false), eq(false), any(), eq(true), eq(false));
+        verify(service).read(any(), any(), eq(false), eq(false), any(), eq(true), eq(false),
+                eq(false));
         assertThat(terse)
                 .as("SH1073: the terse line is what a model reads. A digest only the JSON carries "
                         + "is a value the MCP client asked for and was not given")
@@ -78,12 +80,14 @@ class ShReadToolTest {
         // The control, and the reason the flag is opt-in: sixteen hex characters on every row of
         // every read is a cost every caller pays and the one about to write actually uses.
         ShAgentReadService service = mock(ShAgentReadService.class);
-        when(service.read(any(), any(), anyBoolean(), anyBoolean(), any(), eq(false), anyBoolean()))
+        when(service.read(any(), any(), anyBoolean(), anyBoolean(), any(), eq(false), anyBoolean(),
+                anyBoolean()))
                 .thenReturn(List.of(doc(null)));
 
         String terse = call(service, false);
 
-        verify(service).read(any(), any(), eq(false), eq(false), any(), eq(false), eq(false));
+        verify(service).read(any(), any(), eq(false), eq(false), any(), eq(false), eq(false),
+                eq(false));
         assertThat(terse).doesNotContain("digest");
     }
 }

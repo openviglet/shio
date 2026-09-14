@@ -29,6 +29,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.acl.ShContentAclService;
+import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.post.revision.ShRevisionRow;
+import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
 import com.viglet.shio.api.site.ShSiteWriteService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -186,6 +189,23 @@ public class ShAgentBatchService {
     public static final String FOLDER_RESTORE = "folder.restore";
 
     /**
+     * SH987 — put a captured revision back, as a verb on the vocabulary rather than a tool.
+     *
+     * <p><b>An op, not a tool</b>, for the reason {@code post.restore} is one: the tool budget is
+     * paid on every turn of every session (SH132) and a rollback happens once in a hundred. Being
+     * an op is also what gives it the plan, the dry run and the confirm token for free, which a new
+     * tool would have had to reinvent — and reinvent slightly differently.</p>
+     *
+     * <p><b>It restores into {@code DRAFT} and never publishes.</b> P7 as mechanics rather than
+     * convention: the caller asked to go back to a version, and putting that version in front of
+     * visitors is the separate explicit call the whole draft-default split exists to keep separate.
+     * It is also <b>not destructive</b> — it writes a new revision and deletes none, so what it
+     * replaced is still there to come forward to, which is why it is not in
+     * {@link #DESTRUCTIVE_OPS}.</p>
+     */
+    public static final String POST_ROLLBACK = "post.rollback";
+
+    /**
      * Creates a site (SH170) — the step the whole product is for, and the only op that took an
      * agent off this surface entirely.
      */
@@ -246,7 +266,7 @@ public class ShAgentBatchService {
     public static final List<String> OPS = List.of(
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_COPY, FOLDER_DELETE,
             POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
-            FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION);
+            POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -299,6 +319,8 @@ public class ShAgentBatchService {
     /** SH956 — what a write would strip, so a plan says it before the write happens. */
     private final ShHtmlSanitizer shHtmlSanitizer;
     private final ShConsoleSurfaces shConsoleSurfaces;
+    /** SH987 — the page's history, for post.rollback's plan and its refusals. */
+    private final ShPostRevisionService shPostRevisionService;
 
     public ShAgentBatchService(ShHtmlSanitizer shHtmlSanitizer,
                                ShAgentSiteAccess siteAccess,
@@ -322,9 +344,11 @@ public class ShAgentBatchService {
                                ShPostLinks shPostLinks,
                                ShTuringIndexService shTuringIndexService,
                                ShTuringTextExtractor shTuringTextExtractor,
-                               ShConsoleSurfaces shConsoleSurfaces) {
+                               ShConsoleSurfaces shConsoleSurfaces,
+                               ShPostRevisionService shPostRevisionService) {
         this.shHtmlSanitizer = shHtmlSanitizer;
         this.shConsoleSurfaces = shConsoleSurfaces;
+        this.shPostRevisionService = shPostRevisionService;
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -753,6 +777,7 @@ public class ShAgentBatchService {
             case POST_UNPUBLISH -> postUnpublish(op, session);
             case POST_DELETE -> postDelete(op, session);
             case POST_RESTORE -> postRestore(op, session);
+            case POST_ROLLBACK -> postRollback(op, session);
             case FOLDER_RESTORE -> folderRestore(op, session);
             case RENDER_PROVISION -> renderProvision(op, session);
             default -> throw new UnknownOpException(op.op());
@@ -2404,6 +2429,64 @@ public class ShAgentBatchService {
         return findFolder(site, path).orElseThrow(() ->
                 new ShAddressResolver.UnresolvedAddressException(
                         ShAddress.folder(site.getName(), path), List.of()));
+    }
+
+    /**
+     * SH987 — put a captured revision back over the draft.
+     *
+     * <p>The plan reads the revision rather than answering "would roll back", which is SH690's
+     * rule: a plan that says yes about a revision the write will not find is the plan an agent
+     * acts on. So a missing number is refused <em>in the dry run</em>, with the numbers that do
+     * exist, and the caller finds out before it has confirmed anything.</p>
+     *
+     * <p>{@code expect} is honoured against the draft, which is the row this overwrites — a
+     * rollback is a write like every other, and one onto a draft somebody else has moved on from
+     * is the same surprise as any other stale write.</p>
+     */
+    private Change postRollback(ShAgentBatch.Op op, Session session) {
+        ShAddress address = stateAddress(op);
+        // Before resolving anything: a missing key is a fact about the op, and checking it after
+        // the address means a caller that got both wrong is told about the address — which is the
+        // error it can do least about, since the numbers it needs come from reading that address.
+        if (op.revision() == null) {
+            // The shared missing-key refusal rather than one of its own (SH332): a caller learns
+            // "you left out a key" once, in one shape, across the whole vocabulary.
+            throw new MissingOpFieldException("revision", POST_ROLLBACK, address,
+                    "{\"op\":\"" + POST_ROLLBACK + "\",\"address\":\"" + address
+                            + "\",\"revision\":3}",
+                    "A rollback names which captured version to put back. Read them first: "
+                            + "GET /api/v2/agent/read?address=" + address + "&include=revisions "
+                            + "lists each number with when it was captured, who by and what it "
+                            + "changed.");
+        }
+        ShPostUnified row;
+        if (address.kind() == ShAddress.Kind.ID) {
+            row = shPostUnifiedRepository.findById(address.path()).stream().findFirst()
+                    .orElseThrow(() -> new ShAddressResolver.UnresolvedAddressException(
+                            address, List.of()));
+        } else {
+            ShSite site = requireSite(address.site(), session);
+            row = state(site, address, ShPostState.DRAFT)
+                    .or(() -> state(site, address, ShPostState.PUBLISHED))
+                    .orElseThrow(() -> new ShAddressResolver.UnresolvedAddressException(
+                            address, List.of()));
+        }
+        // The plan reads it, so applying holds no surprises (SH690).
+        shPostRevisionService.row(row.getId(), op.revision())
+                .orElseThrow(() -> ShPostStateNotFoundException.noSuchRevision(row.getId(),
+                        op.revision(), shPostRevisionService.rows(row.getId()).stream()
+                                .map(ShRevisionRow::version).toList()));
+        ShPostUnified draft = shPostUnifiedRepository
+                .findByIdAndState(row.getId(), ShPostState.DRAFT).orElse(null);
+        requireExpectedState(op, address, draft);
+        if (session.dryRun) {
+            return session.change(op, address, Change.UPDATE,
+                    "restore revision " + op.revision() + " into the draft", row.getId());
+        }
+        shContentAclService.requireWrite(row.getId());
+        shPostUnifiedWriteService.restoreRevision(row.getId(), op.revision(), session.actor);
+        return session.change(op, address, Change.UPDATE,
+                "restored revision " + op.revision() + " into the draft", row.getId());
     }
 
     /**

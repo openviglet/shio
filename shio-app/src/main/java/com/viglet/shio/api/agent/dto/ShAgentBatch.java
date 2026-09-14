@@ -123,7 +123,21 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm, boolean
      */
     public record Op(String op, String address, String type, String folder, String to,
                      JsonNode data, String when, String locale, String translationOf, String url,
-                     String expect) {
+                     String expect, Integer revision) {
+
+        /**
+         * The eleven-field form, before SH987 gave the vocabulary a rollback.
+         *
+         * <p>{@code revision} is a field on the op rather than a key inside {@code data} for
+         * SH413's rule: {@code data} is the document a write declares, and this names <em>which
+         * version</em> the op is about — the same category as {@code expect}, which sits beside
+         * it for the same reason.</p>
+         */
+        public Op(String op, String address, String type, String folder, String to, JsonNode data,
+                  String when, String locale, String translationOf, String url, String expect) {
+            this(op, address, type, folder, to, data, when, locale, translationOf, url, expect,
+                    null);
+        }
 
         /**
          * The ten-field form, before SH721 made a write conditional on the state it was planned

@@ -7,12 +7,11 @@ warnings are printed and counted.
   --site <idOrName>    Scope to one site
   --checks <groups>    projection,replication,content,routes,page,diagnostics,delivery
                        (default: all that can run). projection and replication read the
-                       file tree only — no instance, no credentials — so they are the
-                       cheapest gate there is and belong first in CI. page renders each
-                       published page and resolves every reference on it against the URL
-                       that page is served at, which the graph-based groups cannot
+                       file tree only — no instance, no credentials. page renders each
+                       published page and resolves its references against the URL it is
+                       served at, which the graph-based groups cannot
   --delivery           Also prove each published route by fetching it from the site's own
-                       origin; turns "the front end does not serve this" into an error
+                       origin
   --strict             Fail on warnings too (off by default)
   --limit <n>          Findings to print (the counts always cover the whole run)
   --folder <address>   Scope to a folder subtree (folder:<site>/<chain>)

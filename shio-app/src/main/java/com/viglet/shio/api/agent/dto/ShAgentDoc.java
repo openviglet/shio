@@ -11,6 +11,8 @@ package com.viglet.shio.api.agent.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import com.viglet.shio.api.post.revision.ShRevisionRow;
+
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -64,7 +66,33 @@ public record ShAgentDoc(String address, String type, String state, String folde
                          java.util.List<String> fields, JsonNode data, String id,
                          Problem error, Impact impact, String locale, String translationOf,
                          Boolean published, String url, String digest, String curatorUrl,
-                         String previewUrl) {
+                         String previewUrl,
+                         java.util.List<ShRevisionRow> revisions) {
+
+    /** The sixteen-field form, before SH987 let a read carry the page's history. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published, String url, String digest, String curatorUrl,
+                      String previewUrl) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, url, digest, curatorUrl, previewUrl, null);
+    }
+
+    /**
+     * The same row with SH987's revision list attached, or unchanged when nobody asked.
+     *
+     * <p>Opt-in on {@code include=revisions}, and terse by construction: the rows carry numbers,
+     * dates, actors and the field names each revision changed, never a body. A caller reads the
+     * list to decide which revision to fetch, and fifty bodies is the page fifty times for a
+     * question the metadata answers (P3).</p>
+     */
+    public ShAgentDoc withRevisions(java.util.List<ShRevisionRow> history) {
+        return history == null || history.isEmpty() ? this
+                : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                        locale, translationOf, published, url, digest, curatorUrl, previewUrl,
+                        history);
+    }
 
     /** The fourteen-field form, before SH981 attached the console's own links. */
     public ShAgentDoc(String address, String type, String state, String folder,
@@ -104,7 +132,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
     public ShAgentDoc withDigest(String stateDigest) {
         return stateDigest == null ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                        locale, translationOf, published, url, stateDigest, curatorUrl, previewUrl);
+                        locale, translationOf, published, url, stateDigest, curatorUrl, previewUrl, revisions);
     }
 
     /**
@@ -121,7 +149,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return declared.equals(path)
                 ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                        locale, translationOf, published, declared, digest, curatorUrl, previewUrl);
+                        locale, translationOf, published, declared, digest, curatorUrl, previewUrl, revisions);
     }
 
     /**
@@ -144,7 +172,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
     /** The same row with SH348's locale attached. */
     public ShAgentDoc withLocale(String postLocale) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                postLocale, translationOf, published, url, digest, curatorUrl, previewUrl);
+                postLocale, translationOf, published, url, digest, curatorUrl, previewUrl, revisions);
     }
 
     /**
@@ -161,7 +189,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withTranslationOf(String anchorAddress) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
-                anchorAddress, published, url, digest, curatorUrl, previewUrl);
+                anchorAddress, published, url, digest, curatorUrl, previewUrl, revisions);
     }
 
     /** The seven-field form: a row that resolved, which is every row before SH171. */
@@ -187,7 +215,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withPublished(Boolean live) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                locale, translationOf, live, url, digest, curatorUrl, previewUrl);
+                locale, translationOf, live, url, digest, curatorUrl, previewUrl, revisions);
     }
 
     /**
@@ -204,13 +232,13 @@ public record ShAgentDoc(String address, String type, String state, String folde
     public ShAgentDoc withLinks(String console, String preview) {
         return console == null && preview == null ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                        locale, translationOf, published, url, digest, console, preview);
+                        locale, translationOf, published, url, digest, console, preview, revisions);
     }
 
     /** The same row with SH262's blast radius attached. */
     public ShAgentDoc withImpact(Impact blastRadius) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius,
-                locale, translationOf, published, url, digest, curatorUrl, previewUrl);
+                locale, translationOf, published, url, digest, curatorUrl, previewUrl, revisions);
     }
 
     /**

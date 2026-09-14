@@ -1447,26 +1447,6 @@ transaction, the reads and a rollback verb over it, a diff that works for a crea
 page, and audit rows that name the fields they changed. Releases, review and translation
 all read what this block stores.
 
-### LXV.3 Revisions on every surface, and a rollback that is itself a revision (SH987)
-
-With AZ2's store in place, the reads are the whole P1 chain and cost little. MCP:
-shio_read accepts state=rev:<n> and include=revisions, returning index, actor, instant,
-digest and changed field names but never bodies, within the reservation AY5 allocates.
-post.rollback with address, revision and expect joins the batch op vocabulary rather
-than becoming a tool, so it inherits plan, dry run and the confirm token, and it
-restores into DRAFT and requires an explicit publish, which is P7 as mechanics rather
-than convention.
-
-Files and CLI: shio versions, shio diff with a from revision, and shio rollback with a
-dry run, reusing the comparison function shio diff already has with stored revisions as
-a second row source. REST: revisions and one revision under the post, and a restore
-action, with today's two-row answer moved behind a states parameter so nothing that
-reads it breaks.
-
-The budget comes first: include=revisions gets a row in the response-budget test
-asserting an ordinary read stays byte-identical when nobody asks. A rollback writes a
-new revision and never deletes one, and that rule is stated in the endpoint's javadoc.
-
 ### LXV.4 A diff that reads a created page and a changed sentence (SH988)
 
 The dialog picks the draft row and the published row and renders per-field cells capped
