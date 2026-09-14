@@ -121,7 +121,7 @@
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
-                <version>5.7.0.6970</version>
+                <version>5.8.0.7211</version>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -240,7 +240,7 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>2.0.18</version>
+                <version>2.0.19</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
