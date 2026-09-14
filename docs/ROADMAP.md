@@ -34,7 +34,6 @@
 
 ## Block AY — What the conformance instruments cannot see
 
-- 📋 **SH980** (deps: SH978 ✅) **the round's console-only surfaces have no exception kind a gate can read, only paragraphs arguing why** — The surface gate fails on an unclassified page, and chrome, accessibility, caching and preference tasks argue their P1 position in prose the test cannot parse. → §LXIV.8
 - 📋 **SH981** (deps: SH978 ✅) **no agent response carries a console URL for the address it just wrote** — An agent's closing move is a sentence rather than a link, and console routes live only in TypeScript the backend cannot read without the surface declaration. → §LXIV.9
 - 📋 **SH982** (deps: SH973 ✅) **P7 is the round's most-cited law and no census asks which mutating paths offer its guards** — Dry-run, a confirm token, attribution and a review entry are asserted task by task, so the class is never swept and the next unguarded write is invisible. → §LXIV.10
 - 📋 **SH983** (deps: SH982) **no census asks which writes return proof, so cheap textual evidence stays a per-author choice** — Digest, verify and impact are opt-in per endpoint, so a new write can ship returning a bare 200 and nothing notices the perception loop was left open. → §LXIV.11

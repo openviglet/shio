@@ -1,58 +1,116 @@
 {
   "_comment": [
-    "SH978 — every surface this console offers, and how an agent reaches the same capability.",
-    "The backend owns this file because the readers are on both sides: ShConsoleSurfaceP1Test joins",
-    "it to the manifest, the MCP tool list and the batch ops, and the console reads it for what it",
-    "renders. Icons, titles and i18n keys stay in bento-nav.ts, where they must live — this is the",
-    "half a JVM has to be able to read.",
+    "SH978/SH980 — every surface this console offers, how an agent reaches the same capability, and",
+    "the words used when it cannot.",
     "",
-    "Each surface names an `agent` equivalent — a tool, an op or a declared endpoint, all three of",
-    "which the test resolves against the running server — or an `exception` with a reason and a",
-    "`closedBy` that says what would make the exception stale. The exception vocabulary here is the",
-    "smallest one today's surfaces need; SH980 is where it is defined properly."
+    "The backend owns this file because the readers are on both sides: ShConsoleSurfaceP1Test joins",
+    "it to the manifest, the MCP tool list and the batch ops; the console builds its rail from it;",
+    "`shio://surfaces` and `shio surfaces` publish it. Icons, titles and i18n keys stay in",
+    "bento-nav.ts, where they must live — this is the half a JVM has to be able to read.",
+    "",
+    "A surface names an `agent` equivalent — a tool, an op or a declared endpoint, each resolved",
+    "against the running server — or an `exception` whose `reason` is one of the words in `reasons`",
+    "below. `consoleOnly` is the same vocabulary applied to what is console-only by nature: a later",
+    "task adds one classified entry there instead of arguing its P1 position in prose nothing reads."
   ],
+  "reasons": {
+    "operator-only": {
+      "means": "a person's own credential is the point: an agent doing this would be an escalation rather than a convenience",
+      "falsifier": "an agent op or endpoint appearing for it, which would mean the boundary moved and nobody said so"
+    },
+    "navigation": {
+      "means": "a way of getting somewhere rather than a capability — a hub, a landing page",
+      "falsifier": "the surface gaining a capability of its own, at which point it needs an answer like any other"
+    },
+    "rest-only": {
+      "means": "a delivery surface a front end queries, which the manifest points at rather than carrying",
+      "falsifier": "the capability arriving on the agent surface, which makes the pointer the wrong answer"
+    },
+    "gap": {
+      "means": "no agent form, nothing declares it, and the task that closes it is named",
+      "falsifier": "the task in closedBy shipping"
+    },
+    "chrome": {
+      "means": "how the console renders itself — a shell, a provider, a layout. An agent reads content, not chrome",
+      "falsifier": "an agent surface growing a rendering concern, which would mean this is not chrome after all"
+    },
+    "accessibility": {
+      "means": "how a person operates the console with a keyboard or a screen reader",
+      "falsifier": "the same affordance being asked for by a client that is not a browser"
+    },
+    "cache": {
+      "means": "how the console holds what it already fetched. An agent fetches what it needs when it needs it",
+      "falsifier": "a caching contract appearing on the agent surface, which would make this shared rather than the console's"
+    },
+    "preference": {
+      "means": "what a person chooses about their own view, stored for them",
+      "falsifier": "the preference changing what the instance does rather than what one person sees"
+    },
+    "contract-leg": {
+      "means": "the console's half of a contract whose other halves exist — it is the human end, so there is nothing for an agent to call",
+      "falsifier": "the other legs disappearing, which would leave this console-only in fact rather than by design"
+    }
+  },
   "surfaces": [
     {
       "id": "sites",
       "section": "content",
       "route": "/bento/content",
       "capability": "browse a site's folders and posts",
-      "agent": { "kind": "tool", "target": "shio_find" }
+      "agent": {
+        "kind": "tool",
+        "target": "shio_find"
+      }
     },
     {
       "id": "search",
       "section": "content",
       "route": "/bento/content/search",
       "capability": "find content across a site",
-      "agent": { "kind": "tool", "target": "shio_find" }
+      "agent": {
+        "kind": "tool",
+        "target": "shio_find"
+      }
     },
     {
       "id": "post-types",
       "section": "content",
       "route": "/bento/content/post-type",
       "capability": "read and change the content model",
-      "agent": { "kind": "endpoint", "target": "/post-type/{name}" }
+      "agent": {
+        "kind": "endpoint",
+        "target": "/post-type/{name}"
+      }
     },
     {
       "id": "files",
       "section": "content",
       "route": "/bento/content/files",
       "capability": "the media library",
-      "agent": { "kind": "tool", "target": "shio_assets" }
+      "agent": {
+        "kind": "tool",
+        "target": "shio_assets"
+      }
     },
     {
       "id": "trash",
       "section": "content",
       "route": "/bento/content/trash",
       "capability": "list what was deleted, and put it back",
-      "agent": { "kind": "op", "target": "post.restore" }
+      "agent": {
+        "kind": "op",
+        "target": "post.restore"
+      }
     },
     {
       "id": "universal-editor",
       "section": "content",
       "route": "/bento/universal-editor",
       "capability": "edit a page where it is rendered",
-      "agent": { "kind": "endpoint", "target": "/agent/editable" }
+      "agent": {
+        "kind": "endpoint",
+        "target": "/agent/editable"
+      }
     },
     {
       "id": "admin",
@@ -60,7 +118,7 @@
       "route": "/bento/admin",
       "capability": "the administration hub",
       "exception": {
-        "reason": "NAVIGATION",
+        "reason": "navigation",
         "why": "a landing page listing the surfaces below it, which is a way of getting somewhere rather than a capability. The manifest is what an agent reads to find its way, and it has no counterpart to a hub",
         "closedBy": ""
       }
@@ -71,7 +129,7 @@
       "route": "/bento/admin/tokens",
       "capability": "mint and revoke API tokens",
       "exception": {
-        "reason": "OPERATOR_ONLY",
+        "reason": "operator-only",
         "why": "an agent minting or widening its own credential is the escalation Block L exists to prevent — the one boundary here that must never move",
         "closedBy": ""
       }
@@ -82,7 +140,7 @@
       "route": "/bento/admin/tenants",
       "capability": "the SH22 tenant catalogue",
       "exception": {
-        "reason": "OPERATOR_ONLY",
+        "reason": "operator-only",
         "why": "a tenant is the isolation boundary the agent's own scoping is derived from, so writing one is the operator's act",
         "closedBy": ""
       }
@@ -93,7 +151,7 @@
       "route": "/bento/admin/auth-providers",
       "capability": "how humans log in",
       "exception": {
-        "reason": "OPERATOR_ONLY",
+        "reason": "operator-only",
         "why": "an operator decision about identity, and an agent that could rewrite it could let itself in as somebody else",
         "closedBy": ""
       }
@@ -104,7 +162,7 @@
       "route": "/bento/admin/exchange-providers",
       "capability": "where an exchange package may come from",
       "exception": {
-        "reason": "OPERATOR_ONLY",
+        "reason": "operator-only",
         "why": "instance wiring rather than content: it says which stranger's package this installation will accept",
         "closedBy": ""
       }
@@ -115,7 +173,7 @@
       "route": "/bento/admin/email-config",
       "capability": "SMTP credentials",
       "exception": {
-        "reason": "OPERATOR_ONLY",
+        "reason": "operator-only",
         "why": "an agent writing these could redirect the instance's mail",
         "closedBy": ""
       }
@@ -125,14 +183,20 @@
       "section": "administration",
       "route": "/bento/admin/webhooks",
       "capability": "tell a front end that content changed",
-      "agent": { "kind": "endpoint", "target": "/site-webhook" }
+      "agent": {
+        "kind": "endpoint",
+        "target": "/site-webhook"
+      }
     },
     {
       "id": "marketplace",
       "section": "administration",
       "route": "/bento/admin/marketplace",
       "capability": "browse and install blueprint packages",
-      "agent": { "kind": "tool", "target": "shio_marketplace" }
+      "agent": {
+        "kind": "tool",
+        "target": "shio_marketplace"
+      }
     },
     {
       "id": "activity",
@@ -140,7 +204,7 @@
       "route": "/bento/admin/activity",
       "capability": "what happened to this page, and to this site",
       "exception": {
-        "reason": "GAP",
+        "reason": "gap",
         "why": "/agent/changes walks the same audit rows by cursor and cannot answer 'what happened to this page', which is the question a correction starts from (SH973 found the same hole from the controller side)",
         "closedBy": "SH1005"
       }
@@ -151,7 +215,7 @@
       "route": "/bento/admin/review",
       "capability": "approve or revert an agent's run",
       "exception": {
-        "reason": "OPERATOR_ONLY",
+        "reason": "operator-only",
         "why": "the human's veto over the agent's work (SH109). Reachable with an operator's own credential over HTTP, which is what SH975's OPERATOR_HTTP records, and refused to an AGENT token",
         "closedBy": ""
       }
@@ -162,10 +226,52 @@
       "route": "/bento/graphql",
       "capability": "query delivery content as a front end does",
       "exception": {
-        "reason": "REST_ONLY",
+        "reason": "rest-only",
         "why": "the delivery surface a front end queries (Block A), which the manifest points at with POST /graphql. An agent reads content through /agent/read instead",
         "closedBy": ""
       }
+    }
+  ],
+  "consoleOnly": [
+    {
+      "id": "root-chrome",
+      "kind": "chrome",
+      "why": "one section provider above the router, so every page renders in the same shell (SH958). Nothing an agent reads passes through it"
+    },
+    {
+      "id": "reading-column",
+      "kind": "chrome",
+      "why": "the audit log keeps a readable column rather than becoming a mosaic (SH906). The same rows reach an agent through the change feed, unlaid-out"
+    },
+    {
+      "id": "editor-bridge",
+      "kind": "contract-leg",
+      "why": "the Universal Editor's in-browser bridge (SH907). Its other leg is /agent/editable, which answers the same question without a DOM — this half is the human end of that contract"
+    },
+    {
+      "id": "query-cache",
+      "kind": "cache",
+      "why": "how the console holds what it fetched between navigations. An agent's read is a call it decided to make, and a cache between them would be a staleness it did not ask for"
+    },
+    {
+      "id": "error-boundaries",
+      "kind": "chrome",
+      "why": "a failed render becomes a message inside the shell rather than a blank page. An agent's failures are teaching 4xx and incidents, which is the same job answered where its caller is"
+    },
+    {
+      "id": "widget-labelling",
+      "kind": "accessibility",
+      "why": "every field in the post editor is reachable and announced by its label. An agent writes fields by name and never meets a label"
+    },
+    {
+      "id": "skip-link",
+      "kind": "accessibility",
+      "why": "a keyboard reaches the page's content without walking the rail first"
+    },
+    {
+      "id": "dock-preferences",
+      "kind": "preference",
+      "why": "what a curator lets the dock report, and how loudly (SH971). The agent's own outcomes are on the change feed whatever a person chose to be shown"
     }
   ]
 }

@@ -1635,3 +1635,32 @@ console their own way, which is the state the file was written to end. So four r
 
 `ShConsoleSurfaceP1Test` holds the manifest's default unchanged, the resource's order equal to the
 console's, and the resource's HTTP twin pointing at the include.
+
+## Words a gate can read for a surface with no agent leg (SH980)
+
+SH978's gate refuses an unclassified surface, and several things the console does are console-only by
+nature: the shell, the audit log's readable column, the query cache, the error boundaries, the widget
+labelling, the skip link, a curator's dock preferences. Each of those tasks argued its P1 position in
+a paragraph — which is exactly what the gate cannot read, so either it landed red for a whole round
+or every task invented its own wording, which is the drift between two authorities `agents.md`
+already names.
+
+`console/surfaces.json` now declares the vocabulary in the document all four readers hold. Nine
+words, each with what classifying something that way **means** and what would **falsify** it:
+`operator-only`, `navigation`, `rest-only`, `gap`, `chrome`, `accessibility`, `cache`, `preference`
+and `contract-leg`. A word with no falsifier is a place to put things rather than a classification,
+so the gate refuses one.
+
+Two lists use those words. A **surface** with no agent equivalent names one in its `exception`, and
+only `gap` may carry a `closedBy` — every other reason is falsified by its own kind, stated once in
+the vocabulary rather than per entry. **`consoleOnly`** is the same vocabulary applied to what is not
+a surface at all: the root chrome provider, the reading column, the editor bridge, the query cache,
+the error boundaries, the widget labelling, the skip link and the dock preferences, seeded so the
+gate is green on the day it lands. A later console-only task adds one line there instead of an
+argument.
+
+`ShConsoleSurfaceP1Test` refuses a reason the file does not define, refuses a word nobody uses — a
+vocabulary entry with no user is one nobody agreed on — and plants a surface whose reason is a
+sentence to prove the refusal happens. The rule is written over a supplied list rather than over the
+file, because a check that can only be exercised by breaking the document it guards is a check
+nobody runs.

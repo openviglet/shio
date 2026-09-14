@@ -206,6 +206,112 @@ class ShConsoleSurfaceP1Test {
                 .isEmpty();
     }
 
+    /**
+     * The words an exception may use, and what refuses one that uses another (SH980).
+     *
+     * <p>Written as a method over a supplied list rather than over the file, so the planted case
+     * below can be run through the same rule: a check that can only be exercised by editing the
+     * document it guards is a check nobody exercises.</p>
+     */
+    private List<String> classificationProblems(List<ShConsoleSurface> supplied) {
+        Map<String, ShConsoleSurface.Reason> reasons = shConsoleSurfaces.reasons();
+        List<String> problems = new ArrayList<>();
+        supplied.forEach(surface -> {
+            ShConsoleSurface.Exception exception = surface.exception();
+            if (exception == null) {
+                return;
+            }
+            String reason = exception.reason() == null ? "" : exception.reason();
+            if (!reasons.containsKey(reason)) {
+                problems.add("%s: `%s` is not one of the declared reasons %s — a word this file "
+                        .formatted(surface.id(), reason, new TreeSet<>(reasons.keySet()))
+                        + "does not define is an argument in prose, which is what nothing can read");
+            }
+            if (exception.why() == null || exception.why().isBlank()) {
+                problems.add(surface.id() + ": a classification with no argument is a label");
+            }
+            boolean gap = "gap".equals(reason);
+            boolean closed = exception.closedBy() != null && !exception.closedBy().isBlank();
+            if (gap != closed) {
+                problems.add(surface.id() + (gap
+                        ? ": a gap with nothing named that would close it"
+                        : ": names a task in closedBy and is not a gap — every other reason is"
+                                + " falsified by its own kind, which the reasons map states once"));
+            }
+        });
+        return problems;
+    }
+
+    @Test
+    @DisplayName("SH980: every exception uses a word the declaration defines, and every word is used")
+    void theExceptionVocabularyIsClosedAndLive() {
+        assertThat(classificationProblems(shConsoleSurfaces.surfaces()))
+                .as("""
+                        SH980: a console-only surface used to argue its P1 position in a paragraph,                         which this gate cannot read — so either it landed red for a whole round or                         each task invented its own wording. The words are declared once, in the                         document all four readers hold.""")
+                .isEmpty();
+
+        Map<String, ShConsoleSurface.Reason> reasons = shConsoleSurfaces.reasons();
+        assertThat(reasons.values())
+                .as("SH980: a word with no `means` claims nothing, and one with no `falsifier` is a "
+                        + "place to put things rather than a classification")
+                .allSatisfy(reason -> {
+                    assertThat(reason.means()).isNotBlank();
+                    assertThat(reason.falsifier()).isNotBlank();
+                });
+
+        Set<String> used = new TreeSet<>();
+        shConsoleSurfaces.surfaces().stream().map(ShConsoleSurface::exception)
+                .filter(java.util.Objects::nonNull)
+                .forEach(exception -> used.add(exception.reason()));
+        shConsoleSurfaces.consoleOnly().forEach(entry -> used.add(entry.kind()));
+
+        assertThat(used)
+                .as("SH980: a word nobody uses is a word nobody agreed on, and it is how a "
+                        + "vocabulary becomes a list of places to file things")
+                .containsExactlyInAnyOrderElementsOf(new TreeSet<>(reasons.keySet()));
+    }
+
+    @Test
+    @DisplayName("SH980: a surface with a paragraph and no kind is refused")
+    void anUnclassifiedSurfaceIsRefused() {
+        // The planted case, run through the rule the file is checked with. Without this the rule
+        // could only be exercised by breaking the document, which is a test nobody runs.
+        ShConsoleSurface planted = new ShConsoleSurface("planted", "content", "/bento/planted",
+                "something a curator does", null,
+                new ShConsoleSurface.Exception("it is really more of a console thing",
+                        "a paragraph arguing the position, which is what this replaces", ""));
+
+        assertThat(classificationProblems(List.of(planted)))
+                .as("SH980: the gate has to refuse a reason it does not define, or the vocabulary is "
+                        + "a suggestion and the next console-only task writes its own")
+                .isNotEmpty()
+                .anySatisfy(problem -> assertThat(problem).contains("not one of the declared reasons"));
+    }
+
+    @Test
+    @DisplayName("SH980: what the console does with no agent leg is classified, not argued")
+    void everyConsoleOnlyEntryIsClassified() {
+        Map<String, ShConsoleSurface.Reason> reasons = shConsoleSurfaces.reasons();
+        List<String> problems = new ArrayList<>();
+        shConsoleSurfaces.consoleOnly().forEach(entry -> {
+            if (!reasons.containsKey(entry.kind())) {
+                problems.add(entry.id() + ": `" + entry.kind() + "` is not a declared reason");
+            }
+            if (entry.why() == null || entry.why().isBlank()) {
+                problems.add(entry.id() + ": classified with no argument");
+            }
+        });
+
+        assertThat(problems)
+                .as("""
+                        SH980: the shell, the cache, the keyboard affordances and a curator's own                         preferences have no agent leg by nature. Each is one classified entry here,                         so a later task adds a line instead of re-deriving the argument — which is                         the drift between two authorities agents.md already names.""")
+                .isEmpty();
+        assertThat(shConsoleSurfaces.consoleOnly())
+                .as("SH980: seeded with what exists today, so the gate is green on the day it lands "
+                        + "and a new entry is a reviewable diff")
+                .isNotEmpty();
+    }
+
     @Test
     @DisplayName("SH979: the manifest serves the surfaces only when asked, and is otherwise unchanged")
     void theManifestServesThemBehindAnInclude() {
@@ -277,7 +383,7 @@ class ShConsoleSurfaceP1Test {
                 System.out.printf("  %-22s %2d  %s%n", answer, ids.size(), new TreeSet<>(ids)));
         System.out.println();
 
-        List<String> gaps = byAnswer.getOrDefault("exception:GAP", List.of());
+        List<String> gaps = byAnswer.getOrDefault("exception:gap", List.of());
         assertThat(gaps)
                 .as("""
                         the gaps are the deliverable: each is a capability a curator has and the \

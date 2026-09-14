@@ -12,10 +12,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
 import com.viglet.shio.api.agent.dto.ShConsoleSurface;
+import com.viglet.shio.utils.ShStableMap;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -44,6 +46,8 @@ public class ShConsoleSurfaces {
     public static final String FILE = "/console/surfaces.json";
 
     private final List<ShConsoleSurface> surfaces;
+    private final Map<String, ShConsoleSurface.Reason> reasons;
+    private final List<ShConsoleSurface.ConsoleOnly> consoleOnly;
 
     public ShConsoleSurfaces(ObjectMapper objectMapper) {
         try (InputStream in = ShConsoleSurfaces.class.getResourceAsStream(FILE)) {
@@ -51,7 +55,12 @@ public class ShConsoleSurfaces {
                 throw new IllegalStateException(FILE + " is not on the classpath — the console's "
                         + "surfaces are declared there and four readers need them");
             }
-            this.surfaces = List.copyOf(objectMapper.readValue(in, Declaration.class).surfaces());
+            Declaration declaration = objectMapper.readValue(in, Declaration.class);
+            this.surfaces = List.copyOf(declaration.surfaces());
+            // The order the file declares, kept: the reasons are printed as a set in a failure
+            // message and read by a person comparing two runs (SH: byte stability).
+            this.reasons = ShStableMap.copyOf(declaration.reasons());
+            this.consoleOnly = List.copyOf(declaration.consoleOnly());
         } catch (IOException e) {
             throw new UncheckedIOException("cannot read " + FILE, e);
         }
@@ -62,7 +71,25 @@ public class ShConsoleSurfaces {
         return surfaces;
     }
 
+    /**
+     * The words an exception may use, and what each claims (SH980).
+     *
+     * <p>A closed set, declared in the document every reader holds rather than in one test: a
+     * console-only task then adds a classified entry instead of arguing its P1 position in a
+     * paragraph, which is what the gate cannot read.</p>
+     */
+    public Map<String, ShConsoleSurface.Reason> reasons() {
+        return reasons;
+    }
+
+    /** What the console does that has no agent leg by nature, classified in the same words. */
+    public List<ShConsoleSurface.ConsoleOnly> consoleOnly() {
+        return consoleOnly;
+    }
+
     /** The file's top level. The comment block it carries is for whoever opens it, not for this. */
-    private record Declaration(List<ShConsoleSurface> surfaces) {
+    private record Declaration(List<ShConsoleSurface> surfaces,
+                               Map<String, ShConsoleSurface.Reason> reasons,
+                               List<ShConsoleSurface.ConsoleOnly> consoleOnly) {
     }
 }

@@ -1716,6 +1716,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH977** — The tool list's room is divided per tool in the budget properties before anybody spends it, the run prints the allocation, and a tool over its reservation fails naming the ladder's cheaper shape (design §LXIV.5 recorded in `docs/agents/mcp.md`).
 - **SH978** — console/surfaces.json declares every console surface with the tool, op or endpoint that reaches the same capability, and ShConsoleSurfaceP1Test joins it to bento-nav.ts and resolves each equivalent (design §LXIV.6 recorded in `docs/agents/console-ui.md`).
 - **SH979** — The console builds its rail from the declaration, MCP publishes it as shio://surfaces, the manifest serves it behind an opt-in include, and shio surfaces prints it with each answer beside it (design §LXIV.7 recorded in `docs/agents/console-ui.md`).
+- **SH980** — The declaration defines nine exception words, each with what it means and what falsifies it, and the gate refuses an undefined reason, an unused word, and a surface whose reason is a paragraph (design §LXIV.8 recorded in `docs/agents/console-ui.md`).
 
 ## Block AZ — What the content said before
 

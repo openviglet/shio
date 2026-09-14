@@ -1329,26 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.8 Words a gate can read for a surface with no agent leg (SH980)
-
-Several tasks in this round are console-only by nature and say so in their rationale:
-the reading column in AU7, the root chrome provider in AW2, the dock preferences in AX8,
-the query cache, the error boundaries, the widget labelling and the skip link in Block
-BG. A paragraph saying this is the console leg of a contract with no other legs is
-exactly what ShConsoleSurfaceP1Test cannot read. So either that gate lands red for the
-whole round, or each task invents its own exception wording, which is the drift between
-two authorities agents.md already names.
-
-Define the exception kinds the declaration accepts for a surface with no agent
-equivalent: chrome, accessibility, cache, preference and contract-leg, each carrying a
-reason, a target and a falsifier in the shape the existing gates use, so a stale
-exception fails rather than rots. Seed the declaration with the console-only surfaces
-that exist today, so the gate is green on the day it lands.
-
-Every later console-only task then adds one classified entry instead of an argument. The
-assertion plants a surface with a paragraph and no kind, and requires the gate to refuse
-it.
-
 ### LXIV.9 The handoff as a link (SH981)
 
 Grepping the agent package for a console deep link finds prose: a batch detail ending

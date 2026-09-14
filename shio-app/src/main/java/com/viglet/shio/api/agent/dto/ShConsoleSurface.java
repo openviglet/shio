@@ -44,6 +44,34 @@ public record ShConsoleSurface(String id, String section, String route, String c
     }
 
     /**
+     * A word the declaration's {@code reasons} map defines (SH980).
+     *
+     * @param means     what classifying something this way claims
+     * @param falsifier what would make an entry of this kind wrong, which is what keeps the word
+     *                  from becoming a place to put things
+     */
+    @JsonInclude(Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Reason(String means, String falsifier) {
+    }
+
+    /**
+     * Something the console does that has no agent leg by nature (SH980).
+     *
+     * <p>Not a surface: a shell, a cache, a keyboard affordance, a person's own preference. Declared
+     * so a later task adds a classified entry rather than arguing its P1 position in prose that no
+     * gate can read.</p>
+     *
+     * @param id   what it is called here
+     * @param kind one of the declaration's reasons
+     * @param why  the argument, which is what a reader checks
+     */
+    @JsonInclude(Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ConsoleOnly(String id, String kind, String why) {
+    }
+
+    /**
      * Why there is none.
      *
      * @param reason   the classification, in the vocabulary the declaration uses
