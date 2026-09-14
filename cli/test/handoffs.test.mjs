@@ -101,6 +101,13 @@ const CLAIMS = {
       + "runs. Verified: cli/src/index.mjs handles `shio help <command>` itself (SH435), so the "
       + "exempted case is genuinely unreachable by the lint's subject",
   },
+  "shio-app/src/test/java/com/viglet/shio/api/post/unified/ShHtmlSanitizerWriteBoundaryTest.java -> ShHtmlSanitizerTest": {
+    kind: Kind.REVERSE,
+    why: "the two halves of SH956, and neither excludes anything on the other's account. "
+      + "ShHtmlSanitizerTest asserts the RULE — what an allow-list permits; this asserts WHERE it "
+      + "runs, by writing a payload through create and update and reading the stored value back. "
+      + "A sanitizer that is correct and wired into one writer is the defect, not the fix",
+  },
   "cli/test/page-reference.test.mjs -> page-reference-drift.test.mjs": {
     kind: Kind.HANDS_OFF,
     why: "SH941's reader asserts the vendored page reference is present and internally coherent and "

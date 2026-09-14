@@ -27,7 +27,11 @@ import com.viglet.shio.api.post.unified.ShRestoreUrlConflictException;
 import com.viglet.shio.object.ShObjectPublishStatus;
 import com.viglet.shio.object.ShObjectType;
 import com.viglet.shio.object.ShFolderSite;
+import lombok.extern.slf4j.Slf4j;
+
+import com.viglet.shio.api.post.unified.ShHtmlSanitizer;
 import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.widget.ShSystemWidget;
 import com.viglet.shio.render.ShTemplateTitles;
 import com.viglet.shio.url.ShFurlNaming;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -55,6 +59,7 @@ import tools.jackson.databind.node.ObjectNode;
  * create / update / publish / unpublish / delete writes directly against
  * {@code sh_post_unified} and its composite key.
  */
+@Slf4j
 @Service
 public class ShPostUnifiedWriteService {
 
@@ -106,6 +111,8 @@ public class ShPostUnifiedWriteService {
     private final ShTemplateTitles shTemplateTitles;
     /** SH651 — the one writer of "which URL is free in this site", shared with the copy path. */
     private final ShFurlNaming shFurlNaming;
+    /** SH956 — what a rich-text field is allowed to contain, at the boundary every writer crosses. */
+    private final ShHtmlSanitizer shHtmlSanitizer;
 
     public ShPostUnifiedWriteService(ShFolderRepository shFolderRepository,
                                      ShSiteRepository shSiteRepository,
@@ -116,7 +123,9 @@ public class ShPostUnifiedWriteService {
                                      ShContentAuditService shContentAuditService,
                                      ObjectProvider<ShPostUnifiedWriteService> self,
                                      ShTemplateTitles shTemplateTitles,
-                                     ShFurlNaming shFurlNaming) {
+                                     ShFurlNaming shFurlNaming,
+                                     ShHtmlSanitizer shHtmlSanitizer) {
+        this.shHtmlSanitizer = shHtmlSanitizer;
         this.shFolderRepository = shFolderRepository;
         this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -177,10 +186,13 @@ public class ShPostUnifiedWriteService {
                 ? ShObjectPublishStatus.PUBLISH : ShObjectPublishStatus.DRAFT);
         if (state == ShPostState.PUBLISHED) row.setPublicationDate(Instant.now());
 
-        String dataJson = writeJson(req.data() != null ? req.data() : objectMapper.createObjectNode());
+        // SH956 — cleaned before it is stored, not on the way out. A sanitizer at the render would
+        // leave the payload in the database for the next reader that does not have one.
+        JsonNode clean = sanitizedMarkup(req.data(), postType);
+        String dataJson = writeJson(clean != null ? clean : objectMapper.createObjectNode());
         row.setData(dataJson);
 
-        applyTitleAndSummary(row, req.data(), postType);
+        applyTitleAndSummary(row, clean, postType);
 
         // SH651 — and only after the title, because the URL is derived from it. Every other
         // write assigns a furl (folder, site, copy, import); this one did not, so five posts
@@ -220,8 +232,11 @@ public class ShPostUnifiedWriteService {
                         "Post not found: " + postId + " state=" + state));
 
         if (req.data() != null) {
-            row.setData(writeJson(req.data()));
-            applyTitleAndSummary(row, req.data(), row.getShPostType());
+            // SH956 — every write, not only the create: an edit is how a payload arrives at a post
+            // that was clean when it was made.
+            JsonNode clean = sanitizedMarkup(req.data(), row.getShPostType());
+            row.setData(writeJson(clean));
+            applyTitleAndSummary(row, clean, row.getShPostType());
             shTemplateTitles.checkFree(row);
         }
         row.setModifiedDate(Instant.now());
@@ -871,6 +886,51 @@ public class ShPostUnifiedWriteService {
             return null;
         }
         return furl.startsWith("/") ? furl : "/" + furl;
+    }
+
+    /**
+     * Clean every rich-text field this data carries (SH956).
+     *
+     * <p>Runs here because this service is the one place the console, REST, the agent batch and the
+     * Universal Editor's draft merge all pass through — a sanitizer in the rich-text widget would
+     * defend the single writer that is easiest to go around.</p>
+     *
+     * <p><b>{@code HTML Editor} only.</b> {@code Ace Editor - HTML} is what {@code PageLayout} and
+     * {@code Region} declare for their {@code HTML} field, and those are Handlebars templates
+     * carrying {@code <script>} and a whole document on purpose: an allow-list over them would
+     * strip every site's own layout on its next save. A code editor is where writing markup IS the
+     * point; a rich-text box is where it is an accident.</p>
+     *
+     * @return the data to store — the argument itself when nothing was refused, so a clean value
+     *         survives byte for byte and no digest moves
+     */
+    private JsonNode sanitizedMarkup(JsonNode data, ShPostType postType) {
+        if (data == null || !data.isObject() || postType == null
+                || postType.getShPostTypeAttrs() == null) {
+            return data;
+        }
+        ObjectNode cleaned = null;
+        for (ShPostTypeAttr attr : postType.getShPostTypeAttrs()) {
+            if (attr.getShWidget() == null
+                    || !ShSystemWidget.HTML_EDITOR.equals(attr.getShWidget().getName())) {
+                continue;
+            }
+            JsonNode value = data.get(attr.getName());
+            if (value == null || !value.isString()) {
+                continue;
+            }
+            ShHtmlSanitizer.Result result = shHtmlSanitizer.sanitize(value.asString());
+            if (!result.changed()) {
+                continue;
+            }
+            if (cleaned == null) {
+                cleaned = (ObjectNode) data.deepCopy();
+            }
+            cleaned.put(attr.getName(), result.html());
+            log.info("SH956: sanitized field '{}' on write - removed {}",
+                    attr.getName(), result.removed());
+        }
+        return cleaned != null ? cleaned : data;
     }
 
     private void applyTitleAndSummary(ShPostUnified row, JsonNode data, ShPostType postType) {

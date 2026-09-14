@@ -1687,6 +1687,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH953** — A bulk delete now counts what actually went, names each refused row with the server's own reason, leaves the refusals selected and refreshes the page the curator was on (design §LXI.4 recorded in `docs/agents/console-ui.md`).
 - **SH954** — The Clear Cache button, its endpoint, its keys and the test that held the no-op in place are gone, and a lint now fails on any mapping whose body is a bare success (design §LXI.5 recorded in `docs/agents/content-api.md`).
 - **SH955** — A refused save now marks the field the server named, four write refusals carry that pointer, and a lint holds that every problem chains a fix (design §LXI.6 recorded in `docs/agents/console-ui.md`).
+- **SH956 (the sanitizer at the write boundary)** — Script, event handlers and unsafe URL schemes no longer survive a write to a rich-text field, on every writer at once, while a PageLayout's template is deliberately untouched.
 
 ## Block AW — One chrome: bento, and nothing left that names another
 

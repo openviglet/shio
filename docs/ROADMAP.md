@@ -19,7 +19,7 @@
 
 ## Block AV — The live defects, fixed before anything is built on them
 
-- 📋 **SH956** (deps: —) **the rich-text field stores whatever a paste or an agent write contains, and the renderer emits it unescaped** — The widget is execCommand over contentEditable with no paste handler or sanitizer, and field HTML renders raw by design, so any markup reaches the published page. → §LXI.7
+- ⏳ **SH956** (deps: —) **the rich-text field stores whatever a paste or an agent write contains, and the renderer emits it unescaped** — a dryRun that reports what would be stripped, and shio verify's html-unsafe over content stored before the sanitizer shipped. → §LXI.7
 - 📋 **SH1071** (deps: —) **an upload's file name is interpolated into Content-Disposition without escaping** — sanitizeFileName guards the filesystem and leaves quotes and control characters alone, so a name like a".svg produces a header a client parses as something else. → §LXI.8
 - 📋 **SH1073** (deps: —) **shio_write reads four op fields its schema does not declare, so MCP cannot discover them** — locale, translationOf, url and expect now reach the batch, and declaring them costs 15-25 tokens each against about 6 of headroom on mcp.tools.list.total. → §LXI.9
 
@@ -104,7 +104,7 @@
 - 📋 **SH1012** (deps: —) **Relator, the only repeatable field, is read-only, while the documentation says it adds and removes items** — The widget takes onChange in its props and never calls it and prints that editing is disabled, while the whole data chain for nested items round-trips. → §LXVIII.4
 - 📋 **SH1013** (deps: SH955 ✅) **the editor never calls the content intelligence the backend already computes for the page being edited** — The console makes no request to the agent surface, so dozens of verify rules and a structural page digest stay invisible to the person who could fix what they find. → §LXVIII.5
 - 📋 **SH1014** (deps: SH1011) **previewing unsaved edits is impossible, because the preview renders the last saved draft** — The preview token addresses a post id rather than a payload, and no endpoint renders a page from proposed field values, for a curator or an agent. → §LXVIII.6
-- 📋 **SH1015** (deps: SH956) **a page body is one opaque HTML string, so an agent cannot address a paragraph** — The rich-text value is innerHTML with no schema, so Edit lands inside one blob, canonical serialisation is impossible and the digest must parse markup to find structure. → §LXVIII.7
+- 📋 **SH1015** (deps: SH956 ⏳) **a page body is one opaque HTML string, so an agent cannot address a paragraph** — The rich-text value is innerHTML with no schema, so Edit lands inside one blob, canonical serialisation is impossible and the digest must parse markup to find structure. → §LXVIII.7
 - 📋 **SH1016** (deps: SH1015) **a front end cannot receive structured blocks, only the rendered HTML of a body** — The CDA, GraphQL and both SDKs return a body as a string, so a headless site cannot render a quote or an image block with its own components. → §LXVIII.8
 - 📋 **SH1017** (deps: SH1015) **a curator has no editor for block bodies, only the execCommand toolbar over a contentEditable** — Blocks stored and delivered are unusable by a person without a slash menu, drag handles and keyboard moves, so curators would keep choosing the HTML widget. → §LXVIII.9
 - 📋 **SH1018** (deps: SH1010) **changing a post type leaves existing content violating it, with no report and no migration** — Constraints are checked on write only, and a renamed or removed field leaves every existing post holding data under a key the model no longer declares. → §LXVIII.10
@@ -135,7 +135,7 @@
 ## Block BF — The visual editor becomes a composer
 
 - 📋 **SH1036** (deps: —) **edit mode does not survive a click inside the preview, while the badge still reads connected** — Both link rewriters drop the renderer's editor and state parameters, so the frame lands on a page with no bridge while the console keys its handshake on an unchanged src. → §LXXI.1
-- 📋 **SH1037** (deps: SH1036, SH956) **the bridge has no protocol version, no capability negotiation and no idea of a field's kind** — Ready carries a post id and a URL, so the console cannot tell what a front end supports, and every field becomes contenteditable HTML whatever widget declared it. → §LXXI.2
+- 📋 **SH1037** (deps: SH1036, SH956 ⏳) **the bridge has no protocol version, no capability negotiation and no idea of a field's kind** — Ready carries a post id and a URL, so the console cannot tell what a front end supports, and every field becomes contenteditable HTML whatever widget declared it. → §LXXI.2
 - 📋 **SH1038** (deps: SH1037) **a section is not a selectable object, so the editor can change a hero's headline and never the hero** — The bridge binds only the two prop attributes and reports text or attr, so a section cannot be selected, moved, duplicated or removed, though the agent can do all four. → §LXXI.3
 - 📋 **SH1039** (deps: SH1038) **nothing tells the editor what may be inserted into a page, or where** — The editable response returns fields and regions and no insertable set, so the section types reach the console only as post-type names in a picker, never as something to place. → §LXXI.4
 - 📋 **SH1040** (deps: SH1039) **a well-built block on one page cannot be captured and reused as a pattern** — Blueprints have a fixed target, no insert mode and no capture, so the section a curator perfected must be rebuilt by hand or by an agent every time it is wanted. → §LXXI.5
@@ -186,6 +186,14 @@
   edit is committed in vigletdocs. Until then it exists only in that working tree, so
   the green JS gate here rests on an uncommitted file and any other checkout still reads
   the old matrix.
+
+## Done when — SH956
+
+- **Content stored before the sanitizer is findable, and a dry run says what it cuts**
+  shio verify reports html-unsafe over the projected tree, and a dryRun write returns
+  what would be removed as a finding. Writes are clean now; the corpus that predates
+  this is unexamined, and an agent still learns its markup changed only by reading the
+  result back.
 
 ## Non-goals (do NOT add as tasks)
 

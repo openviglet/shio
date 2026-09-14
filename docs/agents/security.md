@@ -725,3 +725,53 @@ refusing it, so a finding would fire on every logo in every replicated site, and
 appears on every run is the next thing nobody reads. The extension table mirrors
 `ShUploadPolicyProperties` and says so: the CLI has no instance to ask, which is also why the fix
 names the property rather than claiming to know the verdict.
+
+## What a rich-text field is allowed to contain (SH956)
+
+`html-editor.widget.tsx` is `document.execCommand` over a `contentEditable`, reads `innerHTML` as
+its value, and has no paste handler. **Nothing anywhere sanitised content** — the only `sanitize`
+calls in the tree were for tenant and file names — and the renderer emits field HTML unescaped by
+design. So a paste carrying `<img onerror=…>`, or an agent's `post.upsert` writing the same field,
+put script on the published page.
+
+`ShHtmlSanitizer` runs in `ShPostUnifiedWriteService`, the one place the console, REST, the agent
+batch and the Universal Editor's draft merge all pass through. A sanitizer in the widget would
+defend the writer easiest to go around, and the analysis found the editor's draft merge about to
+grow a second one of its own — two sanitizers disagreeing about one field is worse than one that is
+sometimes late. Cleaned **before it is stored**, not at the render: a sanitizer on the way out
+leaves the payload in the database for the next reader that does not have one.
+
+**`HTML Editor` only, and that exclusion is load-bearing.** `PageLayout` and `Region` declare
+`Ace Editor - HTML` for their `HTML` field, and those values are Handlebars templates carrying
+`<script>`, `{{#region}}` and a whole document *on purpose*. An allow-list over them strips every
+site's own layout on its next save — a larger outage than the defect being closed. A code editor is
+where writing markup **is** the point; a rich-text box is where it is an accident.
+`ShHtmlSanitizerWriteBoundaryTest` asserts both directions rather than trusting this paragraph.
+
+jsoup, because it is already declared here (SH183), already used by the render service, is a real
+parser, and `Safelist` is a maintained allow-list instead of a list of attacks somebody remembered.
+
+**Two things the suite found that a reading would not have:**
+
+- **jsoup cannot pass a relative URL.** With `preserveRelativeLinks(false)` it resolves against a
+  base and there is none, so `/pricing` becomes empty and is refused; with it `true` it tests the
+  raw value against a scheme list, which a path also fails. It stripped `href="/pricing"` and
+  `src="/file_source/…"` out of ordinary rich text. So the protocol restriction is removed from
+  those attributes and replaced by `hasDangerousScheme`: no scheme is relative and fine, a declared
+  scheme must be one of `http`/`https`/`mailto`/`tel`/`ftp`. Control characters are stripped before
+  the scheme is read, because the browser strips them too — that is how `java\tscript:` gets past a
+  naive check. `data:` is refused outright: a `data:` document is a same-origin navigation in some
+  browsers, and an inline image belongs in the media library where it can be found again.
+- **jsoup's `relaxed` predates HTML5 sectioning.** `ShAgentRenderTest.landmarksAreCounted` went red
+  because the render digest counts `header`/`main`/`section`/`footer` as landmarks *because content
+  has them* — the allow-list was flattening every page's structure and taking the accessibility
+  landmarks with it. They carry no behaviour and are now allowed.
+
+A clean value is returned **byte for byte** — the original string, not jsoup's re-serialisation —
+or every digest moves and `shio diff` reports a change nobody made. What was refused is *named*
+rather than counted, because "3 things removed" is not a fact anybody can act on.
+
+**Not covered (the remainder of SH956):** a `dryRun` does not yet report what *would* be stripped,
+so an agent learns its markup changed shape only by reading the result back. And `shio verify` has
+no `html-unsafe` rule, so this says nothing about rows stored before it shipped — a sanitizer on
+writes is silent about the corpus it inherited.
