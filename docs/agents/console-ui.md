@@ -2604,3 +2604,33 @@ problem about a field" is a judgement no regex makes.
 
 **Not covered:** `didYouMean` and `allowed` render as text in the toast rather than as a clickable
 correction and a collapsible list. Block AX routes these reports into the assistant dock.
+
+## The two-chrome vocabulary, counted before it is removed (SH957)
+
+Block AW removes the last of the vocabulary that says the console has two chromes. SH886's lesson
+is that a sweep scoped by a hand-grepped number has no end, and **this block's own line repeated
+it**: 108 source lines and 180 test-and-script lines, where the first run of the census measured
+**89 and 81**. The hand figure counted every "chrome", including uses a one-chrome console keeps
+writing ("the panel carries the chrome"). Swept against that number, the block could never reach
+zero and would not have said why.
+
+`shio-react/test/chrome-vocabulary-census.test.mjs` holds `STILL_TWO_CHROMES`, every file with its
+count of lines naming the vocabulary, asserted equal to what the walk finds — a list, not a
+ceiling, for the reason every ledger here is one. **Each of SH958–SH962 lowers its lines in its own
+diff**, so each commit states how much it took. `test/support/chrome-vocabulary.mjs` owns the walk
+and the five probes, so the measurement and the assertion cannot read two different rules:
+
+- `SectionCardChromeProvider` and `useSectionChrome`, anywhere;
+- a comparison against `"bento"`/`"console"` and a `chrome=` prop, in code only;
+- a comment naming a chrome **beside an era word** (console, bento, era, both, two, either,
+  neither, adapter, provider) — a heuristic, stated as one, which is what separates vocabulary from
+  the ordinary sense of the word.
+
+It walks `e2e` as well as the `src`, `test` and `scripts` §LXII.1 named: the console check names a
+chrome seven times, and a census that stops one directory short is how the last reference survives.
+It excludes its own two files, which describe the probes and match them by construction.
+
+Non-vacuity is a **copy of a real clean file** (`ui/button.tsx`) in a temp root, read clean and then
+named once a provider is planted in it — a planted string alone would test the classifier and not
+the walk. **The list reaching zero is Block AW's criterion**, and it cannot happen before SH963:
+the root provider has to name a chrome while the design system still exports two.

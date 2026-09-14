@@ -1119,25 +1119,6 @@ and may only shrink, then one root provider, then the branches, the era instrume
 names and the prose. The last task removes the provider itself, once the package drops
 the switch in VDS146.
 
-### LXII.1 A census of the chrome vocabulary that may only shrink (SH957)
-
-SH886 opened Block AQ with three figures grepped by hand and two of them were wrong,
-which is why its census walks the tree instead. This sweep needs the same instrument
-before its first deletion, or the last reference to a console chrome survives because
-nobody could see it.
-
-A test walks shio-react's src, test and scripts for SectionCardChromeProvider,
-useSectionChrome, a comparison against a chrome value, a chrome prop, and the word
-chrome in a comment that explains two eras. It holds the matches as a per-file debt list
-asserted to equal what it finds, so a new reference fails the build naming the file and
-a removal fails it until the list is shortened in the same commit. It prints both counts
-on every run.
-
-The non-vacuity case plants a SectionCardChromeProvider in a temporary copy of a clean
-file and asserts the census names it. The list reaching zero is this block's acceptance
-criterion, which turns one chrome from a claim in a changelog into a number a later
-reader can re-run.
-
 ### LXII.2 One provider at the root instead of one per route (SH958)
 
 bento-section-chrome.tsx creates its context with console as the default. Shio pays for
