@@ -59,7 +59,35 @@ public enum ShAgentManifestSection {
     ELSEWHERE,
     LIMITS,
     ENDPOINTS,
-    START_HERE;
+    START_HERE,
+
+    /**
+     * SH979 — the console's surfaces, and how an agent reaches each. <b>Opt-in.</b>
+     *
+     * <p>The only section that is not in the default set, and the reason is what the section is
+     * about: every other one describes the surface the caller is already talking to, and this one
+     * describes the <em>console</em>. A client reasoning about what a curator can do wants it; a
+     * client reading the manifest to find an endpoint is paying seventeen rows for a question it
+     * did not ask — and an ordinary manifest read has to stay the bytes it was, which is what makes
+     * SH116's ETag worth having.</p>
+     *
+     * <p>Not reported in {@code omitted} either, for the same reason: a section every default read
+     * drops would appear in every default read's report, which is the cost this avoids, said
+     * backwards. The endpoint index is where a caller learns it exists.</p>
+     */
+    SURFACES;
+
+    /** Whether a caller has to name this section for it to be served (SH979). */
+    public boolean optIn() {
+        return this == SURFACES;
+    }
+
+    /** What a caller gets when they ask for nothing, or for everything by name. */
+    public static Set<ShAgentManifestSection> byDefault() {
+        EnumSet<ShAgentManifestSection> sections = EnumSet.allOf(ShAgentManifestSection.class);
+        sections.removeIf(ShAgentManifestSection::optIn);
+        return sections;
+    }
 
     /** Lower-case, hyphenated names in declaration order — the {@code allowed} set of the 400. */
     public static List<String> names() {
@@ -81,7 +109,9 @@ public enum ShAgentManifestSection {
      */
     public static Set<ShAgentManifestSection> parse(String raw) {
         if (raw == null || raw.isBlank() || "all".equalsIgnoreCase(raw.trim())) {
-            return EnumSet.allOf(ShAgentManifestSection.class);
+            // `all` is every section a caller would have got anyway: an opt-in section is opted
+            // into by name, or the word `all` would be a way of asking for something unasked for.
+            return byDefault();
         }
         EnumSet<ShAgentManifestSection> sections = EnumSet.noneOf(ShAgentManifestSection.class);
         for (String token : raw.split(",")) {
@@ -90,7 +120,7 @@ public enum ShAgentManifestSection {
                 sections.add(resolve(name));
             }
         }
-        return sections.isEmpty() ? EnumSet.allOf(ShAgentManifestSection.class) : sections;
+        return sections.isEmpty() ? byDefault() : sections;
     }
 
     /**
@@ -107,7 +137,7 @@ public enum ShAgentManifestSection {
      * absent from the wire rather than {@code null}.</p>
      */
     public static ShAgentManifest project(ShAgentManifest manifest, Set<ShAgentManifestSection> sections) {
-        if (sections.size() == values().length) {
+        if (sections.equals(byDefault()) && manifest.surfaces() == null) {
             return manifest;
         }
         return new ShAgentManifest(
@@ -122,7 +152,8 @@ public enum ShAgentManifestSection {
                 sections.contains(LIMITS) ? manifest.limits() : null,
                 sections.contains(ENDPOINTS) ? manifest.endpoints() : null,
                 sections.contains(START_HERE) ? manifest.startHere() : null,
-                omitted(manifest, sections));
+                omitted(manifest, sections),
+                sections.contains(SURFACES) ? manifest.surfaces() : null);
     }
 
     /**

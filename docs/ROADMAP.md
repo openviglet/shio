@@ -34,7 +34,6 @@
 
 ## Block AY — What the conformance instruments cannot see
 
-- 📋 **SH979** (deps: SH978 ✅) **the surface declaration has no reader beyond its gate, so the rail, the palette and an agent still keep separate lists** — A declaration only one test reads is a second source of truth, and bento-nav.ts, the manifest and MCP would each go on describing surfaces their own way. → §LXIV.7
 - 📋 **SH980** (deps: SH978 ✅) **the round's console-only surfaces have no exception kind a gate can read, only paragraphs arguing why** — The surface gate fails on an unclassified page, and chrome, accessibility, caching and preference tasks argue their P1 position in prose the test cannot parse. → §LXIV.8
 - 📋 **SH981** (deps: SH978 ✅) **no agent response carries a console URL for the address it just wrote** — An agent's closing move is a sentence rather than a link, and console routes live only in TypeScript the backend cannot read without the surface declaration. → §LXIV.9
 - 📋 **SH982** (deps: SH973 ✅) **P7 is the round's most-cited law and no census asks which mutating paths offer its guards** — Dry-run, a confirm token, attribution and a review entry are asserted task by task, so the class is never swept and the next unguarded write is invisible. → §LXIV.10
@@ -102,7 +101,7 @@
 - 📋 **SH1025** (deps: SH1022) **the browser loads every child folder on every page and never virtualises, and nothing measures what that costs** — The navigation service fetches all child folders by design and the browser sorts them client-side, so a large folder's cost is argued about rather than known. → §LXIX.6
 - 📋 **SH1026** (deps: SH1025, DS VDS138) **three view-mode buttons highlight when pressed and render the identical list** — viewMode is read only to colour the button that set it, so the grid and table views a curator is offered do not exist, and the list below is one unconditional map. → §LXIX.7
 - 📋 **SH1027** (deps: SH1022) **console search reads the published-only delivery API, so a reviewer cannot find an agent's drafts** — The search page calls the CDA, whose state is PUBLISHED and whose preview branch reads a token the console never sends, while the agent's own search reads both states. → §LXIX.8
-- 📋 **SH1028** (deps: SH1027, SH979) **the command palette lists seventeen routes and can neither find a post nor run an action** — Shio supplies only its nav array, so reaching a page takes two searches, while the verbs a curator wants exist as named operations the palette never shows. → §LXIX.9
+- 📋 **SH1028** (deps: SH1027, SH979 ✅) **the command palette lists seventeen routes and can neither find a post nor run an action** — Shio supplies only its nav array, so reaching a page takes two searches, while the verbs a curator wants exist as named operations the palette never shows. → §LXIX.9
 
 ## Block BE — Media: what the bytes mean
 

@@ -1,0 +1,7 @@
+shio surfaces — what the console offers, and how to do each of those things from here
+
+  --json               Raw JSON instead of lines
+
+Examples:
+  shio surfaces
+  shio surfaces --json

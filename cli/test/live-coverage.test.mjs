@@ -222,8 +222,11 @@ const UNEXERCISED = {
     // `shio://usage` came off with SH761, and it is the right first one: the suite that reads it
     // is the suite proving the meter counts, so the resource is fetched because something needed
     // its answer rather than to lower a number. Seven left.
+    // `shio://surfaces` arrived with SH979 and joins the list for the ordinary reason: nothing
+    // live reads it yet. Its HTTP twin is asserted against the console's own declaration in
+    // ShConsoleSurfaceP1Test, which is a proof about the document and not about the wire.
     "shio://blueprint/", "shio://blueprints", "shio://context", "shio://diagnostics",
-    "shio://manifest", "shio://ops", "shio://schema/",
+    "shio://manifest", "shio://ops", "shio://schema/", "shio://surfaces",
   ],
   verbs: [
     // SH711 spawned ten of these as a process. What is left splits three ways, and the split is
@@ -234,8 +237,11 @@ const UNEXERCISED = {
     // - `types` needs a CDA API token, which `/api/v2/cda/**` requires and a console credential
     //   does not carry (SH2). Covering it means minting one, which is its own decision.
     // - the rest are simply unwritten: a verb somebody has to drive and assert.
+    // `surfaces` arrived with SH979. It reads the manifest with one include and prints it, which
+    // is the shape a MockMvc proof settles; a live scenario would be asserting the same document
+    // twice.
     "annotations", "apply", "audit", "build", "deploy", "dev", "impact", "import", "judge",
-    "mcp", "publish", "remember", "report", "snapshot", "types",
+    "mcp", "publish", "remember", "report", "snapshot", "surfaces", "types",
   ],
 };
 

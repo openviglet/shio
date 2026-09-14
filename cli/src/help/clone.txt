@@ -12,24 +12,19 @@ rests on: read the inventory before anything else happens.
   --site <name>            With --assets: whose asset tree the bytes go under
   --max-assets <n>         With --assets: ceiling on downloads (default 500)
   --max-asset-bytes <n>    With --assets: skip anything larger (default 26214400)
-  --scripts                With --assets: take this site's own <script src> too. Off by
-                           default, because --render already bakes the post-hydration DOM.
-                           What is dropped is named in the report, flag or no flag
-  --refresh                Re-check the capture in --out instead of crawling. Each page is
-                           asked for conditionally with the ETag and Last-Modified it
-                           recorded; a 304 is rebuilt from the markup on disk and never
-                           re-rendered. Needs a capture taken with --markup. Does NOT walk
-                           for new pages — anything linked from a changed page is named in
-                           the notes, never followed
+  --scripts                With --assets: take this site's own <script src> too. What is
+                           dropped is named in the report, flag or no flag
+  --refresh                Re-check the capture in --out instead of crawling, conditionally
+                           on each page's recorded ETag. Needs --markup. Does NOT walk for
+                           new pages — a new link is named in the notes, never followed
   --render                 Drive a browser, for a page that renders itself (needs
                            playwright). Without it the crawl reads what the server sent
   --ignore-robots          Crawl anyway; recorded in the inventory
   --delay <seconds>        Wait between requests (default: the site's own Crawl-delay)
   --timeout <ms>           Per-page timeout with --render (default 30000)
   --no-progress            Write only what was asked for. By default the crawl also writes
-                           shio/.shio/clone-status.json (where it is now; fixed size, with
-                           startedAt/updatedAt) and clone-progress.jsonl (one line per page
-                           or asset, with what it cost)
+                           shio/.shio/clone-status.json (where it is now; fixed size) and
+                           clone-progress.jsonl (one line per page or asset)
   --out <file>             Inventory path (default shio/.shio/source-inventory.json)
   --json                   The inventory on stdout instead of the report
   --url <url>              The site to capture, when no positional is given. The ONE command

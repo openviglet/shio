@@ -124,6 +124,10 @@ class ShAgentCapabilityJoinTest {
         byEntry.put("resource:shio://blueprints", MIRROR);
         byEntry.put("resource:shio://blueprint/{name}", MIRROR);
         byEntry.put("resource:shio://schema/{postType}", MIRROR);
+        // SH979 — the console's surface map, which the manifest also serves behind
+        // `include=surfaces`. Not a flag: it says what a *curator* can do, and a `features` boolean
+        // answers "does this instance do X" about this surface.
+        byEntry.put("resource:shio://surfaces", MIRROR);
 
         byEntry.put("prompt:new-site", PROMPT);
         byEntry.put("prompt:add-section", PROMPT);

@@ -29,6 +29,12 @@ import type { BentoNavGroup, BentoNavItem } from "@viglet/viglet-design-system/b
 import { useMemo } from "react"
 import { ROUTES } from "@/app/routes.const"
 import { useDiscovery } from "@/hooks/use-discovery"
+// SH979 — the backend owns the list of surfaces, and this is one of its four readers. The rail and
+// the palette derive from the same file the manifest serves behind `include=surfaces`, the MCP
+// resource `shio://surfaces` publishes and `shio surfaces` prints, so an agent and a curator are
+// looking at one list. What stays here is what TypeScript owns: the icon, the two i18n keys, the
+// tile's tone, the route constant the router is built from, and the visibility gate.
+import SURFACES from "../../../../shio-app/src/main/resources/console/surfaces.json"
 
 /**
  * SH888/SH889 — the map of this product, declared once, for both readers.
@@ -116,28 +122,55 @@ const at = (route: string) => ({ bentoRoute: route, fallbackRoute: route })
  * for identity, slate for the plumbing — rather than assigned per item, so a new entry has an
  * obvious answer instead of a free choice.
  */
-const ITEMS: ShioNavItem[] = [
-  // Content
-  { id: "sites", titleKey: "content.sites", descriptionKey: "nav.desc.sites", icon: IconFileText, section: "content", tone: "blue", ...at(ROUTES.BENTO_CONTENT) },
-  { id: "search", titleKey: "content.searchTitle", descriptionKey: "nav.desc.search", icon: IconSearch, section: "content", tone: "blue", ...at(ROUTES.SEARCH) },
-  { id: "post-types", titleKey: "content.postTypes", descriptionKey: "nav.desc.postTypes", icon: IconForms, section: "content", tone: "indigo", ...at(ROUTES.POST_TYPE_ROOT) },
-  { id: "files", titleKey: "staticFile.title", descriptionKey: "nav.desc.files", icon: IconPhoto, section: "content", tone: "blue", ...at(ROUTES.FILES) },
-  { id: "trash", titleKey: "content.trash", descriptionKey: "nav.desc.trash", icon: IconTrash, section: "content", tone: "slate", ...at(ROUTES.TRASH) },
-  { id: "universal-editor", titleKey: "sidebar.universalEditor", descriptionKey: "nav.desc.universalEditor", icon: IconLayersIntersect, section: "content", tone: "violet", ...at(ROUTES.UNIVERSAL_EDITOR) },
+/**
+ * What TypeScript owns, per surface: the icon, the titles a person reads, the tile's tone, the
+ * route constant the router is built from, and the gate.
+ *
+ * Keyed by the declaration's id, and every declared surface must appear here — a surface added to
+ * `console/surfaces.json` and not decorated fails at module load rather than rendering an
+ * unlabelled tile. `tone` is grouped by kind — blue for content, indigo for the model, violet for
+ * delivery, amber for identity, slate for the plumbing — so a new entry has an obvious answer
+ * rather than a free choice.
+ */
+const DECORATION: Record<string, Omit<ShioNavItem, "id" | "section" | "bentoRoute" | "fallbackRoute">
+  & { route: string }> = {
+  "sites": { titleKey: "content.sites", descriptionKey: "nav.desc.sites", icon: IconFileText, tone: "blue", route: ROUTES.BENTO_CONTENT },
+  "search": { titleKey: "content.searchTitle", descriptionKey: "nav.desc.search", icon: IconSearch, tone: "blue", route: ROUTES.SEARCH },
+  "post-types": { titleKey: "content.postTypes", descriptionKey: "nav.desc.postTypes", icon: IconForms, tone: "indigo", route: ROUTES.POST_TYPE_ROOT },
+  "files": { titleKey: "staticFile.title", descriptionKey: "nav.desc.files", icon: IconPhoto, tone: "blue", route: ROUTES.FILES },
+  "trash": { titleKey: "content.trash", descriptionKey: "nav.desc.trash", icon: IconTrash, tone: "slate", route: ROUTES.TRASH },
+  "universal-editor": { titleKey: "sidebar.universalEditor", descriptionKey: "nav.desc.universalEditor", icon: IconLayersIntersect, tone: "violet", route: ROUTES.UNIVERSAL_EDITOR },
+  "admin": { titleKey: "admin.title", descriptionKey: "nav.desc.admin", icon: IconShieldCog, tone: "amber", route: ROUTES.ADMIN_ROOT },
+  "api-tokens": { titleKey: "apiToken.title", descriptionKey: "nav.desc.apiTokens", icon: IconKey, tone: "amber", route: ROUTES.ADMIN_TOKENS },
+  "tenants": { titleKey: "tenantAdmin.title", descriptionKey: "nav.desc.tenants", icon: IconBuildingSkyscraper, tone: "amber", route: ROUTES.ADMIN_TENANTS, requires: "multiTenant" },
+  "auth-providers": { titleKey: "authProvider.title", descriptionKey: "nav.desc.authProviders", icon: IconFingerprint, tone: "amber", route: ROUTES.ADMIN_AUTH_PROVIDERS },
+  "exchange-providers": { titleKey: "exchangeProvider.title", descriptionKey: "nav.desc.exchangeProviders", icon: IconArrowsExchange, tone: "slate", route: ROUTES.ADMIN_EXCHANGE_PROVIDERS },
+  "email-config": { titleKey: "emailConfig.title", descriptionKey: "nav.desc.emailConfig", icon: IconMail, tone: "slate", route: ROUTES.ADMIN_EMAIL_CONFIG },
+  "webhooks": { titleKey: "siteWebhook.title", descriptionKey: "nav.desc.webhooks", icon: IconWebhook, tone: "slate", route: ROUTES.ADMIN_WEBHOOKS },
+  "marketplace": { titleKey: "marketplace.title", descriptionKey: "nav.desc.marketplace", icon: IconPackages, tone: "violet", route: ROUTES.ADMIN_MARKETPLACE },
+  "activity": { titleKey: "activity.title", descriptionKey: "nav.desc.activity", icon: IconHistory, tone: "slate", route: ROUTES.ADMIN_ACTIVITY },
+  "review": { titleKey: "review.title", descriptionKey: "nav.desc.review", icon: IconRobot, tone: "rose", route: ROUTES.ADMIN_REVIEW },
+  "graphql": { titleKey: "graphql.title", descriptionKey: "nav.desc.graphql", icon: IconBrandGraphql, tone: "violet", route: ROUTES.GRAPHQL_ROOT },
+}
 
-  // Administration
-  { id: "admin", titleKey: "admin.title", descriptionKey: "nav.desc.admin", icon: IconShieldCog, section: "administration", tone: "amber", ...at(ROUTES.ADMIN_ROOT) },
-  { id: "api-tokens", titleKey: "apiToken.title", descriptionKey: "nav.desc.apiTokens", icon: IconKey, section: "administration", tone: "amber", ...at(ROUTES.ADMIN_TOKENS) },
-  { id: "tenants", titleKey: "tenantAdmin.title", descriptionKey: "nav.desc.tenants", icon: IconBuildingSkyscraper, section: "administration", tone: "amber", ...at(ROUTES.ADMIN_TENANTS), requires: "multiTenant" },
-  { id: "auth-providers", titleKey: "authProvider.title", descriptionKey: "nav.desc.authProviders", icon: IconFingerprint, section: "administration", tone: "amber", ...at(ROUTES.ADMIN_AUTH_PROVIDERS) },
-  { id: "exchange-providers", titleKey: "exchangeProvider.title", descriptionKey: "nav.desc.exchangeProviders", icon: IconArrowsExchange, section: "administration", tone: "slate", ...at(ROUTES.ADMIN_EXCHANGE_PROVIDERS) },
-  { id: "email-config", titleKey: "emailConfig.title", descriptionKey: "nav.desc.emailConfig", icon: IconMail, section: "administration", tone: "slate", ...at(ROUTES.ADMIN_EMAIL_CONFIG) },
-  { id: "webhooks", titleKey: "siteWebhook.title", descriptionKey: "nav.desc.webhooks", icon: IconWebhook, section: "administration", tone: "slate", ...at(ROUTES.ADMIN_WEBHOOKS) },
-  { id: "marketplace", titleKey: "marketplace.title", descriptionKey: "nav.desc.marketplace", icon: IconPackages, section: "administration", tone: "violet", ...at(ROUTES.ADMIN_MARKETPLACE) },
-  { id: "activity", titleKey: "activity.title", descriptionKey: "nav.desc.activity", icon: IconHistory, section: "administration", tone: "slate", ...at(ROUTES.ADMIN_ACTIVITY) },
-  { id: "review", titleKey: "review.title", descriptionKey: "nav.desc.review", icon: IconRobot, section: "administration", tone: "rose", ...at(ROUTES.ADMIN_REVIEW) },
-  { id: "graphql", titleKey: "graphql.title", descriptionKey: "nav.desc.graphql", icon: IconBrandGraphql, section: "administration", tone: "violet", ...at(ROUTES.GRAPHQL_ROOT) },
-]
+/**
+ * Every surface in this console, once — the backend's list, decorated here.
+ *
+ * Ordered as the declaration orders them, which is the order the sidebar had: a curator who has
+ * used the console should find the palette in the order they already know.
+ */
+const ITEMS: ShioNavItem[] = SURFACES.surfaces.map((surface) => {
+  const decoration = DECORATION[surface.id]
+  if (!decoration) {
+    throw new Error(
+      `bento-nav: surface "${surface.id}" is declared in console/surfaces.json and has no icon or `
+        + "titles here. Add it to DECORATION — the declaration is the list, this is what the "
+        + "console adds to it.",
+    )
+  }
+  const { route, ...rest } = decoration
+  return { ...rest, id: surface.id, section: surface.section, ...at(route) }
+})
 
 /** Every id declared above, for a reader that wants to check coverage without importing data. */
 export const BENTO_NAV_IDS: readonly string[] = ITEMS.map((item) => item.id)

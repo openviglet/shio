@@ -32,6 +32,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.viglet.shio.api.agent.dto.ShAgentEndpoint;
+import com.viglet.shio.api.agent.dto.ShAgentManifest;
+import com.viglet.shio.api.agent.dto.ShConsoleSurface;
+import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
 
 import tools.jackson.databind.JsonNode;
@@ -74,14 +77,25 @@ class ShConsoleSurfaceP1Test {
     private static final Path NAV = Path.of("..", "shio-react", "src", "app", "system",
             "bento-nav.ts");
 
-    /** A nav item, which is the line that carries a `titleKey` — a section carries none. */
+    /**
+     * A decorated surface: the row that carries a {@code titleKey} — a section carries none.
+     *
+     * <p>SH979 turned the console's array into a table keyed by the declaration's id, which is the
+     * join working: the console now says what it <em>adds</em> to each surface rather than which
+     * surfaces exist. This still reads the console's side, so a surface the console decorates and
+     * nobody declared — or the other way round — is still the failure it was.</p>
+     */
     private static final Pattern NAV_ITEM = Pattern.compile(
-            "\\{\\s*id:\\s*\"([^\"]+)\"[^\\n]*titleKey:");
+            "\"([\\w-]+)\":\\s*\\{[^\\n]*titleKey:");
 
     @Autowired
     private ShAgentManifestService shAgentManifestService;
     @Autowired
     private List<ShMcpTool> mcpTools;
+    @Autowired
+    private List<ShMcpResource> mcpResources;
+    @Autowired
+    private ShConsoleSurfaces shConsoleSurfaces;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -190,6 +204,59 @@ class ShConsoleSurfaceP1Test {
                         tool, op or declared endpoint that does the same thing — or classify it, \
                         with what would make the classification stale.""")
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH979: the manifest serves the surfaces only when asked, and is otherwise unchanged")
+    void theManifestServesThemBehindAnInclude() {
+        ShAgentManifest ordinary = shAgentManifestService.manifest(
+                ShAgentManifestSection.parse(null));
+        assertThat(ordinary.surfaces())
+                .as("""
+                        SH979: an ordinary manifest read is the first read of every session and \
+                        the one an ETag makes free. Seventeen rows about the *console* on every one \
+                        of them is the cost `include=` exists to remove, so this section is opted \
+                        into by name — `all` included.""")
+                .isNull();
+
+        ShAgentManifest asked = shAgentManifestService.manifest(
+                ShAgentManifestSection.parse("surfaces"));
+        assertThat(asked.surfaces())
+                .as("SH979: and a caller that names it gets the same list the console renders")
+                .hasSameSizeAs(surfacesList())
+                .extracting(ShConsoleSurface::id)
+                .containsExactlyElementsOf(surfacesList().stream().map(ShConsoleSurface::id).toList());
+    }
+
+    @Test
+    @DisplayName("SH979: the MCP resource and the console read one declaration, in one order")
+    void theResourceAndTheConsoleAgree() throws java.io.IOException {
+        ShMcpResource resource = mcpResources.stream()
+                .filter(each -> "shio://surfaces".equals(each.uri()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "SH979: shio://surfaces is gone, so MCP has stopped being a reader"));
+
+        List<String> published = new ArrayList<>();
+        for (JsonNode surface : objectMapper.readTree(resource.read("shio://surfaces"))) {
+            published.add(surface.get("id").asString());
+        }
+
+        assertThat(published)
+                .as("""
+                        SH979: four readers of one declaration, and the order is part of it — the \
+                        rail's order is what a curator already knows, so a resource that sorted \
+                        its own way would make two lists out of one.""")
+                .containsExactlyElementsOf(surfacesList().stream().map(ShConsoleSurface::id).toList());
+        assertThat(resource.httpTwin())
+                .as("SH979: a resource with no HTTP twin is a P1 break (SH346), and this one's twin "
+                        + "is the manifest include")
+                .isEqualTo("/api/v2/agent/manifest?include=surfaces");
+    }
+
+    /** The declaration as the backend reads it — the same bean every other reader asks. */
+    private List<ShConsoleSurface> surfacesList() {
+        return shConsoleSurfaces.surfaces();
     }
 
     @Test

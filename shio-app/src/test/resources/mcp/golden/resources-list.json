@@ -29,6 +29,11 @@
       "uri" : "shio://ops"
     }, {
       "description" : "#string",
+      "mimeType" : "application/json",
+      "name" : "Shio console surfaces",
+      "uri" : "shio://surfaces"
+    }, {
+      "description" : "#string",
       "mimeType" : "text/plain",
       "name" : "Shio usage meter",
       "uri" : "shio://usage"

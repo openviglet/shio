@@ -1329,24 +1329,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.7 Four readers of one declaration (SH979)
-
-AY6 makes the surface declaration exist and be checked. It stops being a second list
-only when the places that currently describe surfaces read it instead.
-
-Four readers. bento-nav.ts imports the declaration and adds only what TypeScript owns,
-the icon and the i18n keys, so the rail and the palette derive from it. MCP publishes it
-as shio://surfaces, a resource rather than a tool, since a list re-sent every turn is
-paid every turn. The CLI prints it as shio surfaces. And the manifest serves it behind
-an include, absent by default so an ordinary manifest stays byte-identical.
-
-Once the console imports it, each console action can carry the op id the declaration
-names, which is what VDS142's required action id makes checkable from the DOM, and what
-lets the palette in Block BD offer actions compiled from the same vocabulary the agent
-reads. The assertions: the rail renders exactly the declared surfaces, the resource and
-the CLI print the same ids in the same order, and the manifest with no include is
-unchanged.
-
 ### LXIV.8 Words a gate can read for a surface with no agent leg (SH980)
 
 Several tasks in this round are console-only by nature and say so in their rationale:

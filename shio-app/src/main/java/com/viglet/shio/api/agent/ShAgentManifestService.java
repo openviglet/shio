@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
@@ -65,6 +66,7 @@ public class ShAgentManifestService {
     private final ShTuringIndexService shTuringIndexService;
     private final ShAgentBuildIdentity shAgentBuildIdentity;
     private final ShMarketplaceProperties shMarketplaceProperties;
+    private final ShConsoleSurfaces shConsoleSurfaces;
 
     public ShAgentManifestService(ShAppProperties shAppProperties,
                                  ShCdaProperties shCdaProperties,
@@ -74,7 +76,8 @@ public class ShAgentManifestService {
                                  ShAgentProperties shAgentProperties,
                                  ShTuringIndexService shTuringIndexService,
                                  ShAgentBuildIdentity shAgentBuildIdentity,
-                                 ShMarketplaceProperties shMarketplaceProperties) {
+                                 ShMarketplaceProperties shMarketplaceProperties,
+                                 ShConsoleSurfaces shConsoleSurfaces) {
         this.shAgentBuildIdentity = shAgentBuildIdentity;
         this.shAppProperties = shAppProperties;
         this.shCdaProperties = shCdaProperties;
@@ -84,6 +87,25 @@ public class ShAgentManifestService {
         this.shAgentProperties = shAgentProperties;
         this.shTuringIndexService = shTuringIndexService;
         this.shMarketplaceProperties = shMarketplaceProperties;
+        this.shConsoleSurfaces = shConsoleSurfaces;
+    }
+
+    /**
+     * The manifest a caller asked for, which is the ordinary one plus whatever it opted into.
+     *
+     * <p>SH979 — {@code surfaces} is attached here rather than always built, so every other read is
+     * byte-identical to what it was: the console's map is a document about the console, and a
+     * caller looking up an endpoint should not pay seventeen rows for it.</p>
+     */
+    public ShAgentManifest manifest(Set<ShAgentManifestSection> sections) {
+        ShAgentManifest manifest = manifest();
+        if (!sections.contains(ShAgentManifestSection.SURFACES)) {
+            return manifest;
+        }
+        return new ShAgentManifest(manifest.product(), manifest.version(), manifest.protocol(),
+                manifest.apiBase(), manifest.commit(), manifest.builtAt(), manifest.features(),
+                manifest.elsewhere(), manifest.limits(), manifest.endpoints(), manifest.startHere(),
+                manifest.omitted(), shConsoleSurfaces.surfaces());
     }
 
     public ShAgentManifest manifest() {

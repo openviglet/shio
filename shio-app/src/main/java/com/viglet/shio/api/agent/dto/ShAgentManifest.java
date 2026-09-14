@@ -59,6 +59,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  *                  surface, which would cost tokens on every session (P3)
  * @param startHere the first calls to make, in order — the manifest's answer to
  *                  "where do I begin?"
+ * @param surfaces  SH979 — the console's surfaces, and how an agent reaches each. <b>Absent
+ *                  unless a caller asks for it by name</b> ({@code ?include=surfaces}): it is a
+ *                  document about the <em>console</em>, useful to a client that is reasoning about
+ *                  what a curator can do, and an ordinary manifest read must stay the bytes it was
  * @param omitted   section name → how many entries {@code include=} removed (SH600), absent
  *                  when nothing was removed. <b>A narrowed discovery response is the one place
  *                  a 200 misleads worse than a 404</b>: a caller narrowing a discovery surface
@@ -89,7 +93,8 @@ public record ShAgentManifest(
         ShAgentLimits limits,
         List<ShAgentEndpoint> endpoints,
         List<String> startHere,
-        Map<String, Integer> omitted) {
+        Map<String, Integer> omitted,
+        List<ShConsoleSurface> surfaces) {
 
     /** A whole manifest — nothing was narrowed, so there is nothing to report as gone. */
     public ShAgentManifest(String product, String version, int protocol, String apiBase,
@@ -97,7 +102,7 @@ public record ShAgentManifest(
                            Map<String, String> elsewhere, ShAgentLimits limits,
                            List<ShAgentEndpoint> endpoints, List<String> startHere) {
         this(product, version, protocol, apiBase, commit, builtAt, features, elsewhere, limits,
-                endpoints, startHere, null);
+                endpoints, startHere, null, null);
     }
 
     /** Every caller from before SH393, for whom no capability lived anywhere else. */
@@ -105,6 +110,6 @@ public record ShAgentManifest(
                            Map<String, Boolean> features, ShAgentLimits limits,
                            List<ShAgentEndpoint> endpoints, List<String> startHere) {
         this(product, version, protocol, apiBase, null, null, features, null, limits, endpoints,
-                startHere, null);
+                startHere, null, null);
     }
 }

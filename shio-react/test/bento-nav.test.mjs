@@ -40,15 +40,41 @@ const SRC = join(HERE, "..", "src")
 const navSource = stripComments(readFileSync(join(SRC, "app", "system", "bento-nav.ts"), "utf8"))
 const shellSource = stripComments(readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8"))
 
-/** Every `{ id: "...", ... }` entry in the ITEMS array, as a flat object of its string fields. */
-function items() {
-  const block = /const ITEMS: ShioNavItem\[\] = \[([\s\S]*?)\n\]/.exec(navSource)
-  assert.ok(block, "SH889: could not find the ITEMS array in bento-nav.ts")
-  return [...block[1].matchAll(/\{([^}]*)\}/g)].map(([, body]) => {
-    const entry = {}
+/**
+ * Every surface, as the console assembles one: the backend's declaration joined to this file's
+ * decoration (SH979).
+ *
+ * The list itself is `console/surfaces.json`, which the manifest, MCP and the CLI also read; what
+ * `bento-nav.ts` adds is the icon, the two i18n keys, the tone, the route constant and the gate.
+ * Read as text for the reason this file's header gives — importing the module would need Vite's
+ * aliases and a DOM — and joined here so an entry missing from either side is visible.
+ */
+const declaration = JSON.parse(readFileSync(
+  join(HERE, "..", "..", "shio-app", "src", "main", "resources", "console", "surfaces.json"), "utf8"))
+
+/** The `"id": { ... }` rows of DECORATION, as a flat object of their string fields. */
+function decorations() {
+  const block = /const DECORATION: Record<[\s\S]*?= \{([\s\S]*?)\n\}/.exec(navSource)
+  assert.ok(block, "SH979: could not find the DECORATION table in bento-nav.ts")
+  const rows = new Map()
+  for (const [, id, body] of block[1].matchAll(/"([\w-]+)":\s*\{([^}]*)\}/g)) {
+    const entry = { id, raw: body }
     for (const [, key, value] of body.matchAll(/(\w+):\s*"([^"]*)"/g)) entry[key] = value
-    entry.raw = body
-    return entry
+    const route = /route:\s*ROUTES\.(\w+)/.exec(body)
+    if (route) entry.routeConstant = route[1]
+    rows.set(id, entry)
+  }
+  return rows
+}
+
+function items() {
+  const rows = decorations()
+  return declaration.surfaces.map((surface) => {
+    const decoration = rows.get(surface.id)
+    assert.ok(decoration,
+      `SH979: surface "${surface.id}" is declared in console/surfaces.json and has no decoration in`
+        + " bento-nav.ts, so the console would throw at module load")
+    return { ...decoration, section: surface.section, route: surface.route }
   })
 }
 
@@ -89,11 +115,12 @@ test("SH889: every declared surface carries the fields both readers render", () 
           + "  Every field here is rendered by something: titleKey and descriptionKey by both the"
           + " palette row and the hub tile, tone by the tile, section by the rail's grouping.")
     }
-    // SH935 — the route is declared through `at()`, which writes both fields the package reads.
-    assert.match(item.raw, /\.\.\.at\(/,
-      `SH889: ${item.id} declares no route. Every entry reaches the rail, the palette and a hub`
-        + " through bentoNavTarget(), which reads the two fields at() writes — an entry without"
-        + " one is a palette row that navigates nowhere.")
+    // SH935/SH979 — the route is a ROUTES constant here and `at()` writes both fields the package
+    // reads, once, where the declaration is turned into items.
+    assert.ok(item.routeConstant,
+      `SH889: ${item.id} declares no route constant. Every entry reaches the rail, the palette and`
+        + " a hub through bentoNavTarget(), which reads the two fields at() writes — an entry"
+        + " without one is a palette row that navigates nowhere.")
   }
 
   const ids = declared.map((item) => item.id)
@@ -117,10 +144,13 @@ test("SH889: every declared surface carries the fields both readers render", () 
  */
 test("SH935: one route per entry, written into both fields the package reads", () => {
   const declared = items()
-  const routed = declared.filter((item) => /\.\.\.at\(/.test(item.raw))
+  const routed = declared.filter((item) => item.routeConstant)
 
+  assert.match(navSource, /\.\.\.at\(route\)/,
+    "SH979: the derivation no longer applies at() to the declared route, so nothing writes the two"
+      + " fields the package reads")
   assert.equal(routed.length, declared.length,
-    `SH935: ${routed.length} of ${declared.length} entries declare their route through at().`
+    `SH935: ${routed.length} of ${declared.length} entries name a route constant.`
       + " An entry spelling the fields itself is the state this closed: leaving bentoRoute off"
       + " makes the command palette render 'Opens in console' for a surface that has no console"
       + " to open, which is a wrong accessible name rather than a cosmetic slip.")
@@ -189,11 +219,58 @@ test("SH889: every key the nav names exists in both locales", () => {
 
 test("SH889: the reader is not vacuous — it parses real entries with real fields", () => {
   const declared = items()
-  assert.ok(declared.length > 0, "SH889: the ITEMS parse yielded nothing, so every loop above is empty")
+  assert.ok(declared.length > 0, "SH889: the join yielded nothing, so every loop above is empty")
 
   const sites = declared.find((item) => item.id === "sites")
   assert.ok(sites, "SH889: the `sites` entry is gone, or the parse no longer reads ids")
   assert.equal(sites.titleKey, "content.sites",
     "SH889: `sites` no longer reuses the sidebar's own key. Minting a parallel namespace for a"
       + " surface that already has one is what the authoring contract tells consumers not to do.")
+})
+
+/**
+ * SH979 — the console derives its list from the backend's declaration.
+ *
+ * Until this, the surfaces were declared here and checked there: `console/surfaces.json` had one
+ * reader, a test, which is a second source of truth wearing a gate. Now the rail and the palette
+ * are built from the same file the manifest serves behind `include=surfaces`, `shio://surfaces`
+ * publishes and `shio surfaces` prints — so what an agent is told about the console and what a
+ * curator sees cannot drift.
+ *
+ * The route is the one field declared on both sides, deliberately: the router is built from
+ * `ROUTES`, and the declaration has to carry a route because its other readers have no access to
+ * TypeScript constants. So the two are asserted equal here rather than one derived from the other.
+ */
+test("SH979: the nav is built from the declaration, and the routes agree", () => {
+  assert.match(navSource, /import SURFACES from "\.\.\/\.\.\/\.\.\/\.\.\/shio-app\/src\/main\/resources\/console\/surfaces\.json"/,
+    "SH979: bento-nav.ts no longer imports the declaration, so the console has gone back to"
+      + " keeping its own list")
+  assert.match(navSource, /const ITEMS: ShioNavItem\[\] = SURFACES\.surfaces\.map/,
+    "SH979: the items are no longer derived from the declaration")
+
+  const routes = readFileSync(join(SRC, "app", "routes.const.ts"), "utf8")
+  const base = /const CONSOLE_BASE = "([^"]+)"/.exec(routes)
+  assert.ok(base, "SH979: CONSOLE_BASE is gone, so a declared route cannot be checked against it")
+  // The two shapes routes.const.ts uses: a literal, or a template on CONSOLE_BASE.
+  const declaredRoutes = new Map()
+  for (const [, name, literal] of routes.matchAll(/(\w+): "([^"]*)"/g)) {
+    declaredRoutes.set(name, literal)
+  }
+  for (const [, name, tail] of routes.matchAll(/(\w+): `\$\{CONSOLE_BASE\}([^`]*)`/g)) {
+    declaredRoutes.set(name, base[1] + tail)
+  }
+  for (const [, name] of routes.matchAll(/(\w+): CONSOLE_BASE,/g)) {
+    declaredRoutes.set(name, base[1])
+  }
+  const value = (name) => {
+    assert.ok(declaredRoutes.has(name), `SH979: ROUTES.${name} is gone, and a surface names it`)
+    return declaredRoutes.get(name)
+  }
+
+  for (const item of items()) {
+    assert.equal(item.route, value(item.routeConstant),
+      `SH979: ${item.id} is declared at ${item.route} and the console routes it to`
+        + ` ROUTES.${item.routeConstant}. The declaration is what an agent is told, so a`
+        + " disagreement here sends one of them to a page that is not there.")
+  }
 })

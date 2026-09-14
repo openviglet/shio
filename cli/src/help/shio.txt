@@ -8,6 +8,7 @@ Commands:
   init [name]    Scaffold a Next.js site wired to the Shio CDA (--blueprint for a
                  starter from the instance)
   context        Print the agent context pack: model + sitemap + conventions (one call)
+  surfaces       What the console offers, and how to do each of those things from here
   mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   impact <addr>  What a change to this template would affect: layouts, types, page counts

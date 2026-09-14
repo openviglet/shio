@@ -95,6 +95,7 @@ const COMMANDS = {
   init: () => import("./commands/init.mjs"),
   types: () => import("./commands/types.mjs"),
   context: () => import("./commands/context.mjs"),
+  surfaces: () => import("./commands/surfaces.mjs"),
   mcp: () => import("./commands/mcp.mjs"),
   resolve: () => import("./commands/resolve.mjs"),
   impact: () => import("./commands/impact.mjs"),

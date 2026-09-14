@@ -173,8 +173,10 @@ public class ShAgentAPI {
             return ShAgentEtag.notModified(etag);
         }
 
-        ShAgentManifest manifest =
-                ShAgentManifestSection.project(shAgentManifestService.manifest(), sections);
+        // SH979 — the surfaces are attached only when the caller named the section, so the
+        // ordinary read is the document it was and the ETag above still identifies it.
+        ShAgentManifest manifest = ShAgentManifestSection.project(
+                shAgentManifestService.manifest(sections), sections);
         return representation == Representation.TERSE
                 ? ShAgentEtag.ok(etag).contentType(MediaType.TEXT_PLAIN)
                         .body(ShAgentManifestTerse.render(manifest))

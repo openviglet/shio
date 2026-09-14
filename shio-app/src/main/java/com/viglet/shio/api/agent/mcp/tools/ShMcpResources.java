@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import com.viglet.shio.api.agent.ShAgentContextService;
 import com.viglet.shio.api.agent.ShAgentContextTerse;
 import com.viglet.shio.api.agent.ShAgentManifestService;
+import com.viglet.shio.api.agent.ShConsoleSurfaces;
 import com.viglet.shio.api.agent.ShAgentOps;
 import com.viglet.shio.api.agent.ShAgentUsageService;
 import com.viglet.shio.api.agent.diagnostics.ShAgentDiagnosticsService;
@@ -61,6 +62,28 @@ public class ShMcpResources {
                         + "index. Read it before assuming a capability exists.",
                 JSON, "/api/v2/agent/manifest",
                 uri -> objectMapper.writeValueAsString(manifestService.manifest()));
+    }
+
+    /**
+     * The console's surfaces (SH979).
+     *
+     * <p>A resource, and for the reason that keeps deciding this: it is a document about what
+     * <em>a curator</em> can do, read once by a client reasoning about the division of labour, and
+     * {@code tools/list} is re-sent every turn (P3). The same document the console's own rail is
+     * built from, so an agent and a curator are looking at one list rather than two that drift.</p>
+     *
+     * <p>JSON rather than terse, because each row carries a classification a reader has to be able
+     * to tell apart — an equivalent's kind and target, or an exception's reason — and a terse
+     * encoding of a two-shape row is a parser somebody has to write.</p>
+     */
+    @Bean
+    ShMcpResource shMcpSurfacesResource(ShConsoleSurfaces surfaces, ObjectMapper objectMapper) {
+        return resource("shio://surfaces", "Shio console surfaces",
+                "Every surface the console offers and how an agent reaches the same capability — "
+                        + "the tool, op or endpoint that does it, or why there is none. Read it "
+                        + "before assuming a curator's screen has no equivalent here.",
+                JSON, "/api/v2/agent/manifest?include=surfaces",
+                uri -> objectMapper.writeValueAsString(surfaces.surfaces()));
     }
 
     /**

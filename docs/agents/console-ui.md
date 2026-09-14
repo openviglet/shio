@@ -1609,3 +1609,29 @@ side and SH1005 is the line that closes.
 
 The exception vocabulary is the smallest today's surfaces need. SH980 is where it is defined properly,
 and this test is what will hold it.
+
+## Four readers of one declaration (SH979)
+
+SH978 made the surface declaration exist and be checked. A declaration with one reader is still a
+second list: the rail, the palette, the manifest and MCP would each have gone on describing the
+console their own way, which is the state the file was written to end. So four readers take it:
+
+- **The console.** `bento-nav.ts` imports `console/surfaces.json` and keeps only what TypeScript
+  owns — the icon, the two i18n keys, the tile's tone, the `ROUTES` constant and the visibility
+  gate — in a `DECORATION` table keyed by the declared id. A surface declared and not decorated
+  throws at module load; a route that disagrees with the one declared fails `bento-nav.test.mjs`.
+  The route is the one field on both sides on purpose: the router is built from `ROUTES`, and the
+  other three readers have no access to TypeScript constants, so the two are asserted equal rather
+  than one derived from the other.
+- **MCP**, as `shio://surfaces` — a resource rather than a tool, because it is a document about what
+  a *curator* can do, read once, and `tools/list` is re-sent every turn (P3).
+- **The manifest**, behind `?include=surfaces`. Opt-in, and the only section that is: `all` does not
+  include it either. An ordinary manifest read is the first read of every session and the one an
+  ETag makes free, so seventeen rows about the console on every one of them is exactly the cost
+  `include=` exists to remove.
+- **The CLI**, as `shio surfaces` — the list with the answer beside each row, which is how "is there
+  an agent way to do what that screen does" becomes a command rather than a question for whoever
+  wrote the screen. `--json` for a pipeline.
+
+`ShConsoleSurfaceP1Test` holds the manifest's default unchanged, the resource's order equal to the
+console's, and the resource's HTTP twin pointing at the include.
