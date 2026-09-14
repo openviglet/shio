@@ -280,7 +280,7 @@ class ShScheduleOutcomeFeedTest {
             SecurityContextHolder.clearContext();
             incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + secret,
                     ShPostScheduler.PUBLISH_FAILED + "planted by SH969", null, null, siteId);
-            hub.pump();
+            pumpUntilDelivered(bob, secret);
 
             assertThat(alice.incidents())
                     .as("SH969: a failure about a post alice's ACL excludes does not reach her stream —"
@@ -294,6 +294,31 @@ class ShScheduleOutcomeFeedTest {
         } finally {
             new TransactionTemplate(transactionManager).executeWithoutResult(status ->
                     aclService.replaceAcl(folderId, List.of()));
+        }
+    }
+
+    /**
+     * Passes until the planted failure reaches this stream, or gives up after a second.
+     *
+     * <p><b>Not a retry around a flaky assertion.</b> The feed holds a row back while any write that
+     * stamped earlier is still running (SH147), so a pass taken in that window carries nothing and
+     * leaves the cursor where it was — which is the guarantee, and the reason the next pass carries
+     * it. A single pass was enough on a quiet instance and not in the full suite, where another test's
+     * commit is in flight often enough to matter. Alice's assertion runs after this returns, so she has
+     * had exactly the passes bob needed: "withheld" is measured against a stream that did receive it.</p>
+     */
+    private void pumpUntilDelivered(RecordingSink sink, String postId) {
+        for (int pass = 0; pass < 20; pass++) {
+            hub.pump();
+            if (sink.incidents().stream().anyMatch(i -> ("id:" + postId).equals(i.subject()))) {
+                return;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
     }
 

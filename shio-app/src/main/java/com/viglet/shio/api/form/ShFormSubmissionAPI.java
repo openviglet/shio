@@ -198,7 +198,7 @@ public class ShFormSubmissionAPI {
                 // Never a parameter. The moderation step is SH7's review queue, and a submission a
                 // stranger could publish is not a submission.
                 ShPostState.DRAFT,
-                owner(token), null, null));
+                ShFormSubmitter.owner(token), null, null));
 
         log.info("Form submission accepted for site '{}' as {} '{}' by {}",
                 siteName, body.type(), created.getId(), created.getOwner());
@@ -206,17 +206,6 @@ public class ShFormSubmissionAPI {
                 "received", true,
                 "id", created.getId(),
                 "state", ShPostState.DRAFT.name()));
-    }
-
-    /**
-     * Who a submission belongs to.
-     *
-     * <p>The <b>token</b>, not a person: an anonymous submission has no user to attribute, and
-     * naming the token is both true and the thing an operator needs when one form starts producing
-     * rubbish — it identifies which credential to revoke without identifying a visitor.</p>
-     */
-    private static String owner(Optional<ShApiTokenContext> token) {
-        return token.map(context -> "form-token:" + context.tokenId()).orElse("form");
     }
 
     /** The submitted fields, minus the honeypot — a spam artefact is not content. */

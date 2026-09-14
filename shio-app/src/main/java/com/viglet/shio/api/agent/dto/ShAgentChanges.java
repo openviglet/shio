@@ -219,10 +219,29 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      *                what keeps an ordinary feed byte-identical: a field that is always there is
      *                a field every row pays for, and this one answers a question only two
      *                post-types can raise
+     * @param submission SH970 — present only on the {@code CREATE} a site's form wrote, so an
+     *                arrival is told apart from a post someone made. Absent on every other row, for
+     *                the reason {@code affects} is
      */
     @JsonInclude(Include.NON_NULL)
     public record Change(String action, String subject, String address, String at, String by,
-                         String what, String site, String id, Affects affects) {
+                         String what, String site, String id, Affects affects,
+                         Submission submission) {
+    }
+
+    /**
+     * A form submission's arrival, as a report's caption needs it (SH970).
+     *
+     * <p>A submission is a post (SH633), so its arrival was already on the feed as a {@code CREATE}
+     * by {@code form-token:…}, and nothing said so except an actor string a reader would have had to
+     * know how to parse. This is that fact, stated, with the two fields a caption is built from: the
+     * ones the post-type marks as its title and its summary, read from the post as it is now.</p>
+     *
+     * @param title   the post's title field
+     * @param summary the post's summary field — absent when the type marks none or it is empty
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Submission(String title, String summary) {
     }
 
     /**

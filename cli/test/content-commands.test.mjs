@@ -2043,6 +2043,28 @@ test("SH969: --follow prints a failed schedule's retry as the command that perfo
     "SH969: a curator following the feed is told what to type, not only that it broke");
 });
 
+test("SH970: a form submission's arrival is said as one, with its summary", async () => {
+  const controller = new AbortController();
+  const ctx = ctxWith(async () => eventStream([sseEvent("c11", {
+    changes: [
+      {
+        action: "CREATE", address: "post:Acme/enquiries/jane-doe", by: "form-token:t1", at: "t4",
+        what: 'Created "Jane Doe"', submission: { title: "Jane Doe", summary: "Acme, pricing" },
+      },
+      { action: "CREATE", address: "post:Acme/about", by: "curator", at: "t5", what: 'Created "About"' },
+    ],
+  })]));
+  ctx.signal = controller.signal;
+  ctx.sleep = async () => controller.abort();
+
+  await changes.run({ follow: true }, [], ctx);
+
+  assert.match(ctx.stdout.text, /CREATE post:Acme\/enquiries\/jane-doe — Created "Jane Doe"[^\n]*\n {6}form submission: Acme, pricing\n/,
+    "SH970: the arrival is marked on the line under it, not left to the actor string");
+  assert.equal(ctx.stdout.text.match(/form submission/g).length, 1,
+    "SH970: and a post a curator made is not marked");
+});
+
 // --- SH401: two addresses, one file path ---
 
 /**

@@ -2730,9 +2730,9 @@ accepted on this path, and the agent's read does not need it to be), reconnects 
 id with a backoff to 30s, ends on a 4xx rather than retrying an answer that will not change, and with
 `--json` writes one line per event.
 
-**Not covered:** the console does not subscribe yet — Block AX's dock is the consumer — and form
-arrivals join the feed under SH970 rather than as a channel of their own. A scheduled transition's
-outcome is on it already (SH969, below).
+**Not covered:** the console does not subscribe yet — Block AX's dock is the consumer. A scheduled
+transition's outcome (SH969) and a form submission's arrival (SH970) are on the feed as it is, not on
+channels of their own.
 
 ## A schedule's outcome, on the feed the curator's screen reads (SH969)
 
@@ -2767,3 +2767,24 @@ that another page still serves live, so SH719's unique index refuses the publish
 **Not covered:** the dock — a failure as a report with *open* and *retry* actions, a success naming the
 page, and an unread report at next login for a curator who had no screen open — waits for SH964's
 mounted assistant.
+
+## A form submission's arrival, said as one (SH970)
+
+A submission is a post (SH633), so its arrival was already on the feed: a `CREATE` in the form's
+folder, `by: form-token:<id>`. Nothing else said it was a submission, and a report needs to tell a
+lead arriving from a post a curator made. Parsing the actor string would have been guesswork.
+
+**`submission: {title, summary}`** is present on exactly that row: a `CREATE` of a post whose actor
+`ShFormSubmitter.isSubmitter` recognises. `ShFormSubmitter` also spells the actor for
+`ShFormSubmissionAPI`, so the test and the spelling cannot drift apart. The two fields are the ones the
+post-type marks `isTitle` and `isSummary`, read from the post as it is now, and they are what a report's
+caption is built from. `summary` is absent when the type marks none or the field is empty. Every other
+row omits the field, the rule `affects` follows. Only a submission's `CREATE` pays for the post read.
+
+A tripped honeypot writes nothing, so it reaches no feed, no stream and no report: the pretence that it
+succeeded stops at the response. `shio changes` prints a `form submission: <summary>` line under the
+entry, and the stream carries the field through its ACL like any change row.
+
+**Not covered:** the dock's report (tone attention, a caption, *open* and *archive* actions, grouping
+when many arrive together) waits for SH964. *Archive* also needs a meaning first, and the inbox line in
+Block BI is where it gets one.

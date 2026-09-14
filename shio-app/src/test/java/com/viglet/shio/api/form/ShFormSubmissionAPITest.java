@@ -26,8 +26,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.agent.ShAgentChangeCursor;
+import com.viglet.shio.api.agent.ShAgentChangesService;
+import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.api.form.ShFormSubmissionAPI.ShFormSubmission;
 import com.viglet.shio.api.form.dto.ShSiteFormRequest;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -77,6 +82,10 @@ class ShFormSubmissionAPITest {
     private ShSiteFormAPI configApi;
     @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
+    @Autowired
+    private ShPostUnifiedWriteService writeService;
+    @Autowired
+    private ShAgentChangesService changesService;
     @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
@@ -353,6 +362,56 @@ class ShFormSubmissionAPITest {
     }
 
     @Test
+    @DisplayName("SH970: a submission arrives on the change feed as one, with its caption")
+    void sh970ASubmissionArrivesOnTheFeedWithItsCaption() {
+        configure("/enquiries", contactType, true);
+        String since = new ShAgentChangeCursor(Instant.now(), "").toString();
+
+        ResponseEntity<Object> response = api.submit(siteName, null, submission(contactType,
+                Map.of("TITLE", "Jane Doe", "MESSAGE", "Acme Ltd, asking about pricing"), null));
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        ShPostType type = entityManager
+                .createQuery("select t from ShPostType t where t.name = :name", ShPostType.class)
+                .setParameter("name", contactType).getSingleResult();
+        ObjectNode made = objectMapper.createObjectNode().put("TITLE", "Opening hours");
+        writeService.create(new CreateRequest(enquiriesFolderId, type.getId(), made,
+                ShPostState.DRAFT, "curator", null, null));
+
+        List<ShAgentChanges.Change> changes =
+                changesService.changes(siteName, since, 100, true, 0).changes();
+
+        assertThat(changes)
+                .as("SH970: the arrival is on the feed an open screen reads, marked as a submission"
+                        + " with the title and summary a caption is built from")
+                .anySatisfy(change -> {
+                    assertThat(change.action()).isEqualTo("CREATE");
+                    assertThat(change.address()).isNotBlank();
+                    assertThat(change.submission()).isEqualTo(new ShAgentChanges.Submission(
+                            "Jane Doe", "Acme Ltd, asking about pricing"));
+                });
+        assertThat(changes)
+                .as("SH970: a post a curator made in the same folder is not an arrival")
+                .anySatisfy(change -> {
+                    assertThat(change.what()).contains("Opening hours");
+                    assertThat(change.submission()).isNull();
+                });
+    }
+
+    @Test
+    @DisplayName("SH970: a tripped honeypot puts nothing on the feed")
+    void sh970ATrippedHoneypotReportsNothing() {
+        configure("/enquiries", contactType, true);
+        String since = new ShAgentChangeCursor(Instant.now(), "").toString();
+
+        api.submit(siteName, null, submission(contactType, Map.of("TITLE", "Buy pills"), "i-am-a-bot"));
+
+        assertThat(changesService.changes(siteName, since, 100, true, 0).changes())
+                .as("SH970: a refused bot must not become a report — the honeypot answers like a"
+                        + " success, and the feed is where that pretence has to stop")
+                .noneMatch(change -> change.submission() != null);
+    }
+
+    @Test
     @DisplayName("SH633: an unknown site is refused before anything else is read")
     void anUnknownSiteRefuses() {
         ResponseEntity<Object> response = api.submit("sh633-no-such-site", null,
@@ -400,5 +459,16 @@ class ShFormSubmissionAPITest {
         attr.setShWidget(widget);
         attr.setShPostType(type);
         entityManager.persist(attr);
+
+        // SH970 — the field a report's caption takes its second line from.
+        ShPostTypeAttr summary = new ShPostTypeAttr();
+        summary.setName("MESSAGE");
+        summary.setLabel("MESSAGE");
+        summary.setOrdinal(2);
+        summary.setIsSummary((byte) 1);
+        summary.setRequired((byte) 0);
+        summary.setShWidget(widget);
+        summary.setShPostType(type);
+        entityManager.persist(summary);
     }
 }

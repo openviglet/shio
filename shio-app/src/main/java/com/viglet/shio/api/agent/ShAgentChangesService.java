@@ -24,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentStore;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
+import com.viglet.shio.api.form.ShFormSubmitter;
 import com.viglet.shio.api.history.ShAuditFeedWatermark;
+import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.persistence.model.agent.ShAgentIncident;
 import com.viglet.shio.persistence.model.history.ShHistory;
@@ -554,6 +556,13 @@ public class ShAgentChangesService {
                     || subject == ShContentSubject.FOLDER
                     ? Optional.empty()
                     : impacts.computeIfAbsent(objectId, this::affectsOf);
+            // SH970 — only the CREATE a form wrote, so every other row reads no post for it.
+            Optional<ShAgentChanges.Submission> submission = objectId != null
+                    && subject == ShContentSubject.POST
+                    && ShContentAction.CREATE.name().equals(entry.getAction())
+                    && ShFormSubmitter.isSubmitter(entry.getOwner())
+                    ? submissionOf(objectId)
+                    : Optional.empty();
             changes.add(new ShAgentChanges.Change(
                     entry.getAction(),
                     subject == ShContentSubject.POST ? null : subject.wire(),
@@ -563,9 +572,30 @@ public class ShAgentChangesService {
                     entry.getDescription(),
                     entry.getShSite() == null ? null : scope.names().get(entry.getShSite()),
                     ids ? objectId : null,
-                    affects.orElse(null)));
+                    affects.orElse(null),
+                    submission.orElse(null)));
         }
         return List.copyOf(changes);
+    }
+
+    /**
+     * A submission's caption, read from the post as it now stands (SH970).
+     *
+     * <p>Not memoized, unlike the address: a post has one {@code CREATE}, so a feed holds a
+     * submission's arrival once. A submission already moved to the trash yields nothing. Its arrival
+     * is still a {@code CREATE} by the form, and the {@code DELETE} after it says what became of
+     * it.</p>
+     */
+    private Optional<ShAgentChanges.Submission> submissionOf(String postId) {
+        List<ShPostUnified> rows = shPostUnifiedRepository.findById(postId);
+        return rows.stream()
+                .filter(row -> row.getState() == ShPostState.DRAFT)
+                .findFirst()
+                .or(() -> rows.stream().findFirst())
+                .map(row -> new ShAgentChanges.Submission(row.getTitle(),
+                        row.getSummary() == null || row.getSummary().isBlank()
+                                ? null
+                                : row.getSummary()));
     }
 
     /**

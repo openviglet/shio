@@ -122,6 +122,11 @@ function render(changes) {
   for (const change of changes.changes ?? []) {
     const address = change.address ?? "(gone)";
     lines.push(`  ${change.action} ${address} — ${change.what ?? ""} [${change.by} at ${change.at}]`);
+    // SH970 — an arrival from the site's form, said as one rather than left to the actor string.
+    if (change.submission) {
+      const summary = change.submission.summary ? `: ${change.submission.summary}` : "";
+      lines.push(`      form submission${summary}`);
+    }
   }
   // SH144 — asynchronous failures in the same range, under the same cursor. Marked `!` rather
   // than folded into the list above: a webhook that never arrived is not a content change, and
