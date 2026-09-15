@@ -65,8 +65,9 @@ public class ShCdaAPI {
     @Operation(summary = "List a folder's children (subfolders + published posts)")
     public ResponseEntity<ShCdaListing> list(@PathVariable String folderId,
                                              @RequestParam(name = "page", defaultValue = "0") int page,
-                                             @RequestParam(name = "size", defaultValue = "50") int size) {
-        return ResponseEntity.of(shCdaService.listChildren(folderId, page, size));
+                                             @RequestParam(name = "size", defaultValue = "50") int size,
+                                             @RequestParam(name = "state", required = false) String state) {
+        return ResponseEntity.of(shCdaService.listChildren(folderId, page, size, state));
     }
 
     @GetMapping("/object/{id}/path")
@@ -77,16 +78,18 @@ public class ShCdaAPI {
 
     @GetMapping("/post/{id}")
     @Operation(summary = "Get one published post with expanded attributes")
-    public ResponseEntity<ShCdaPost> post(@PathVariable String id) {
-        return ResponseEntity.of(shCdaService.getPost(id));
+    public ResponseEntity<ShCdaPost> post(@PathVariable String id,
+                                          @RequestParam(name = "state", required = false) String state) {
+        return ResponseEntity.of(shCdaService.getPost(id, state));
     }
 
     @GetMapping("/post/by-url")
     @Operation(summary = "Resolve a published post by site + friendly URL (optionally per locale)")
     public ResponseEntity<ShCdaPost> postByUrl(@RequestParam String siteId,
                                                @RequestParam String url,
-                                               @RequestParam(name = "locale", required = false) String locale) {
-        return ResponseEntity.of(shCdaService.getPostByUrl(siteId, url, locale));
+                                               @RequestParam(name = "locale", required = false) String locale,
+                                               @RequestParam(name = "state", required = false) String state) {
+        return ResponseEntity.of(shCdaService.getPostByUrl(siteId, url, locale, state));
     }
 
     @GetMapping("/post-type")
@@ -107,8 +110,9 @@ public class ShCdaAPI {
                               @RequestParam(name = "folderId", required = false) String folderId,
                               @RequestParam(name = "postType", required = false) String postType,
                               @RequestParam(name = "page", defaultValue = "0") int page,
-                              @RequestParam(name = "size", defaultValue = "50") int size) {
-        return shCdaService.query(siteId, folderId, postType, page, size);
+                              @RequestParam(name = "size", defaultValue = "50") int size,
+                              @RequestParam(name = "state", required = false) String state) {
+        return shCdaService.query(siteId, folderId, postType, page, size, state);
     }
 
     @GetMapping("/search")
@@ -116,7 +120,8 @@ public class ShCdaAPI {
     public ShCdaListing search(@RequestParam(name = "q") String q,
                                @RequestParam(name = "siteId", required = false) String siteId,
                                @RequestParam(name = "page", defaultValue = "0") int page,
-                               @RequestParam(name = "size", defaultValue = "50") int size) {
-        return shCdaService.search(q, siteId, page, size);
+                               @RequestParam(name = "size", defaultValue = "50") int size,
+                               @RequestParam(name = "state", required = false) String state) {
+        return shCdaService.search(q, siteId, page, size, state);
     }
 }

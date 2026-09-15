@@ -1505,28 +1505,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.1 One perspective grammar on every content read (SH990)
-
-/agent/read takes state, and its comment says why: what will change when I publish this
-is a read, not a diff endpoint. /preview takes it too and threads it through layout,
-region and theme. /agent/render, /agent/editable, /agent/verify and /agent/find take
-none, and the CDA takes site, url, locale, post type, page, size and q. There is no
-shared parser, so the two paths that accept a state validate it separately, and a third
-caller would make a third.
-
-One grammar and one value type. ShContentPerspective parses draft, published and
-rev:<n>, the last reading AZ2's store; release:<name> is added by BA4, which creates the
-entity it names, and never before it. An unknown value answers a teaching 400 with
-allowed and didYouMean. Resolution is plumbed through the agent read, render and verify
-services, the CDA mapper and the page render service, and on the CDA the allow-list
-check runs before the state is honoured, so a scoped token cannot read a draft it has no
-rights to.
-
-ShContentPerspective and ShPerspectiveCoverageLintTest have landed, with every agent
-read and /preview (revisions included) on the grammar; the lint's REMAINDER family is
-the worklist, and GraphQL, built in code, sits outside its scan. MCP and the CLI carry
-it for those reads; the CDA is what is left.
-
 ### LXVI.2 Scheduled content, visible on every surface (SH991)
 
 Scheduling works end to end through the REST batch, and the only repository queries over
@@ -1685,6 +1663,24 @@ orchestrator: Shio reports, and something else decides whether to page a human, 
 pipeline or open a ticket. The assertions: an override without a reason is refused, one
 with a reason publishes and records both rows, and a failing gate emits GATE_FAILED with
 the check in its payload.
+
+### LXVI.10 The client asks for the version the CDA can serve (SH1081)
+
+SH990 gave every CDA read a state parameter: published for any token, draft and rev:<n>
+for a preview token, refused with state-needs-preview-token otherwise. The REST routes
+and the GraphQL fields take it. The TypeScript client in shio-client/src/client.ts does
+not: getPost, getPostByUrl, listChildren and query build their query strings from a
+fixed set, and getPostByUrl omits locale too, although the route has taken it since
+SH53. A front end written against the SDK, which is how a Next.js site reads Shio,
+cannot build a draft preview of one page or show a revision, and cannot pin a
+translation by URL.
+
+Add an optional state to those four reads and locale to getPostByUrl, passed through
+buildQuery, which already drops undefined values. Type state as a string rather than a
+union, so rev:<n> needs no template-literal type and the server stays the one place that
+says what is allowed. The 403 comes back through the client's existing error path; its
+test should assert that the problem's slug survives. The React SDK, which wraps this
+client, needs nothing beyond the new parameters.
 
 ## LXVII The curator's return channel, and the conversation with the agent (Block BB)
 

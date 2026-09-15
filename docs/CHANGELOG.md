@@ -1731,7 +1731,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- **SH990 (every agent surface)** — ShContentPerspective parses state for every agent read over REST, MCP and the CLI, and for /preview, which renders rev:<n>; a census lint lists the CDA reads left.
+- **SH990** — Every content read takes state through ShContentPerspective: the agent reads over REST, MCP and the CLI, /preview with revisions, and the CDA and GraphQL, where a draft or revision needs a preview token (design §LXVI.1 recorded in `docs/agents/agent-surface.md`).
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

@@ -46,15 +46,15 @@
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- ⏳ **SH990** (deps: SH986 ✅) **state= is honoured on two read paths and absent from every other** — The CDA, GraphQL included, still takes no state, so a front end cannot show a draft or a revision through the delivery API. → §LXVI.1
 - 📋 **SH991** (deps: —) **nothing lists what is scheduled, so an agent cannot confirm a schedule it set and a curator has no agenda** — The only queries over the schedule columns are the sweep's due-only finders, and neither find nor read exposes a schedule, so the only view is a single post's dialog. → §LXVI.2
 - 📋 **SH992** (deps: SH952 ✅) **shio_publish cannot schedule, and post.unpublish accepts a when it never reads** — The publish tool builds an op with no when, and only postPublish calls scheduleInstant, so an embargoed takedown dated for December takes the page down now and reports success. → §LXVI.3
-- 📋 **SH993** (deps: SH990 ⏳, SH986 ✅) **no release groups a launch, so forty related pages go live as forty separate events in sweep order** — One batch call is atomic and nothing persists a set across calls, so a coordinated launch has no unit to stage, preview, approve, schedule or undo. → §LXVI.4
+- 📋 **SH993** (deps: SH990 ✅, SH986 ✅) **no release groups a launch, so forty related pages go live as forty separate events in sweep order** — One batch call is atomic and nothing persists a set across calls, so a coordinated launch has no unit to stage, preview, approve, schedule or undo. → §LXVI.4
 - 📋 **SH994** (deps: SH993, SH987 ✅) **a release that went live and should not have has no verb to undo it as one unit** — The release stores a rollback anchor per item and a rolled-back state, and none of its six operations reaches either, which leaves atomicity with no reverse. → §LXVI.5
 - 📋 **SH995** (deps: —) **there is no publish permission for a person, so any user who may write may also put content live** — mayPublish exists only on an API token and falls back to true for every console session, so an agent can be denied publishing and a curator cannot. → §LXVI.6
 - 📋 **SH996** (deps: SH995) **the console's publish has no dry run, no impact preview and no confirm, while the agent's has all three** — Nothing tells a curator which URLs go live, change or stop resolving before the button writes, and include=impact answers template blast radius, not routes. → §LXVI.7
 - 📋 **SH997** (deps: SH993, SH996) **nothing checks a page before it goes live, because verify, audit and the render digest are all opt-in** — Shio's pre-publish instruments run only when somebody remembers, and its webhook events all fire after the commit, so no check stands between content and visitors. → §LXVI.8
 - 📋 **SH998** (deps: SH997, SH995) **a failed gate cannot be waived with a recorded reason, and nothing outside Shio hears it failed** — A check nobody may waive becomes one people disable, and webhooks fire only after commit, so no external approver is told to step in. → §LXVI.9
+- 📋 **SH1081** (deps: SH990 ✅) **the TypeScript client passes neither state nor locale on its CDA reads, so a front end cannot preview a draft** — SH990 gave every CDA read a state and the route has taken locale since SH53, but getPost, getPostByUrl, listChildren and query build a fixed query string. → §LXVI.10
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
@@ -184,14 +184,6 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
-
-## Done when — SH990
-
-- **Every content read takes state through ShContentPerspective**
-  ShPerspectiveCoverageLintTest's REMAINDER family is empty, /preview renders rev:<n>
-  instead of refusing it, the CDA GraphQL schema accepts state, shio_read-adjacent MCP
-  tools and the CLI pass it, and a scoped token still cannot read a draft its allow-list
-  excludes.
 
 ## Non-goals (do NOT add as tasks)
 

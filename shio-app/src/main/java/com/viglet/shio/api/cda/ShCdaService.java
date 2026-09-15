@@ -27,6 +27,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.http.HttpStatus;
+
 import com.viglet.shio.api.cda.dto.ShCdaFolder;
 import com.viglet.shio.api.cda.dto.ShCdaListing;
 import com.viglet.shio.api.cda.dto.ShCdaPath;
@@ -34,6 +36,12 @@ import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.api.cda.dto.ShCdaPostSummary;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.post.ShContentPerspective;
+import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.post.revision.ShRevisionRow;
+import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -59,7 +67,10 @@ import com.viglet.shio.url.ShFurlSpellings;
  * @since 2026.2
  */
 @Service
-@Transactional(readOnly = true)
+// SH990 — `noRollbackFor` since the service throws teaching refusals now (a draft asked of a
+// production token, a revision asked of a listing), and a GraphQL fetcher that catches one must not
+// find its transaction marked rollback-only at commit.
+@Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
 public class ShCdaService {
 
     private static final ShPostState STATE = ShPostState.PUBLISHED;
@@ -72,12 +83,16 @@ public class ShCdaService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShCdaMapper mapper;
+    /** SH990 — what a page said at a revision, for a preview token's {@code state=rev:<n>}. */
+    private final ShPostRevisionService shPostRevisionService;
 
     public ShCdaService(ShSiteRepository shSiteRepository,
                         ShFolderRepository shFolderRepository,
                         ShPostUnifiedRepository shPostUnifiedRepository,
                         ShPostTypeRepository shPostTypeRepository,
-                        ShCdaMapper mapper) {
+                        ShCdaMapper mapper,
+                        ShPostRevisionService shPostRevisionService) {
+        this.shPostRevisionService = shPostRevisionService;
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -120,16 +135,19 @@ public class ShCdaService {
     }
 
     public Optional<ShCdaListing> listChildren(String folderId, int page, int size) {
+        return listChildren(folderId, page, size, null);
+    }
+
+    /** As above, over the rows {@code state} names (SH990); a revision is refused for a listing. */
+    public Optional<ShCdaListing> listChildren(String folderId, int page, int size, String state) {
+        List<ShPostState> states = listingStates(state);
         return shFolderRepository.findById(folderId)
                 .filter(folder -> siteAllowed(siteIdOf(folder)))
                 .map(folder -> {
             List<ShCdaFolder> folders = shFolderRepository.findByParentFolderOrderByPositionAsc(folder).stream()
                     .map(mapper::toFolder)
                     .toList();
-            Page<ShPostUnified> posts = preview()
-                    ? draftPreferred(shPostUnifiedRepository.findByShFolderAndStateIn(folder, PREVIEW_STATES),
-                            pageable(page, size))
-                    : shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable(page, size));
+            Page<ShPostUnified> posts = pageByFolder(folder, states, pageable(page, size));
             return new ShCdaListing(folderId, folders, summaries(posts),
                     page, size, posts.getTotalElements());
         });
@@ -142,14 +160,33 @@ public class ShCdaService {
                     .filter(folder -> siteAllowed(siteIdOf(folder)))
                     .map(this::buildPath);
         }
-        return resolvePost(objectId)
+        return resolvePost(objectId, readStates())
                 .filter(post -> siteAllowed(siteIdOf(post)))
                 .map(ShPostUnified::getShFolder)
                 .map(this::buildPath);
     }
 
     public Optional<ShCdaPost> getPost(String id) {
-        return resolvePost(id)
+        return getPost(id, null);
+    }
+
+    /**
+     * One post from the perspective {@code state} names (SH990).
+     *
+     * <p>The site allow-list is applied to the post found, whichever row that is, so a scoped token
+     * asking for a draft of a site outside its list gets the same empty answer it gets for the
+     * published row. A revision is found draft-preferred, as a preview token reads, and answered as
+     * what the page said at that number at the address it is at now.</p>
+     */
+    public Optional<ShCdaPost> getPost(String id, String state) {
+        ShContentPerspective perspective = perspective(state);
+        if (perspective.isRevision()) {
+            return resolvePost(id, PREVIEW_STATES)
+                    .filter(post -> siteAllowed(siteIdOf(post)))
+                    .map(post -> mapper.toPost(asRevision(post, perspective.revision()),
+                            availableLocales(post)));
+        }
+        return resolvePost(id, statesFor(perspective))
                 .filter(post -> siteAllowed(siteIdOf(post)))
                 .map(post -> mapper.toPost(post, availableLocales(post)));
     }
@@ -165,16 +202,24 @@ public class ShCdaService {
      * URL resolves (back-compat). The returned post carries its sibling locales.
      */
     public Optional<ShCdaPost> getPostByUrl(String siteId, String url, String locale) {
+        return getPostByUrl(siteId, url, locale, null);
+    }
+
+    /** As above, from the perspective {@code state} names (SH990) — see {@link #getPost(String, String)}. */
+    public Optional<ShCdaPost> getPostByUrl(String siteId, String url, String locale, String state) {
+        ShContentPerspective perspective = perspective(state);
         if (!siteAllowed(siteId)) {
             return Optional.empty();
         }
+        List<ShPostState> states = perspective.isRevision() ? PREVIEW_STATES : statesFor(perspective);
         for (String candidate : ShFurlSpellings.candidates(url)) {
-            for (ShPostState state : readStates()) {
+            for (ShPostState rowState : states) {
                 Optional<ShPostUnified> found = (locale != null && !locale.isBlank())
-                        ? shPostUnifiedRepository.findByShSite_IdAndFurlAndStateAndLocale(siteId, candidate, state, locale)
-                        : shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, candidate, state);
+                        ? shPostUnifiedRepository.findByShSite_IdAndFurlAndStateAndLocale(siteId, candidate, rowState, locale)
+                        : shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, candidate, rowState);
                 if (found.isPresent()) {
-                    return found.map(post -> mapper.toPost(post, availableLocales(post)));
+                    return found.map(post -> mapper.toPost(perspective.isRevision()
+                            ? asRevision(post, perspective.revision()) : post, availableLocales(post)));
                 }
             }
         }
@@ -193,7 +238,14 @@ public class ShCdaService {
     }
 
     public ShCdaListing query(String siteId, String folderId, String postType, int page, int size) {
-        Page<ShPostUnified> posts = queryPage(siteId, folderId, postType, pageable(page, size));
+        return query(siteId, folderId, postType, page, size, null);
+    }
+
+    /** As above, over the rows {@code state} names (SH990). */
+    public ShCdaListing query(String siteId, String folderId, String postType, int page, int size,
+                              String state) {
+        Page<ShPostUnified> posts = queryPage(siteId, folderId, postType, listingStates(state),
+                pageable(page, size));
         return new ShCdaListing(folderId, List.of(), summaries(posts),
                 page, size, posts.getTotalElements());
     }
@@ -205,7 +257,13 @@ public class ShCdaService {
      * Honours the same per-site allow-list (SH2) and {@code PUBLISHED}-only rule.
      */
     public List<ShCdaPost> queryPosts(String siteId, String folderId, String postType, int page, int size) {
-        return queryPage(siteId, folderId, postType, pageable(page, size))
+        return queryPosts(siteId, folderId, postType, page, size, null);
+    }
+
+    /** As above, over the rows {@code state} names (SH990) — GraphQL's {@code posts(state:)}. */
+    public List<ShCdaPost> queryPosts(String siteId, String folderId, String postType, int page, int size,
+                                      String state) {
+        return queryPage(siteId, folderId, postType, listingStates(state), pageable(page, size))
                 .getContent().stream()
                 .map(mapper::toPost)
                 .toList();
@@ -221,44 +279,52 @@ public class ShCdaService {
      * sites, or every site when the token has no allow-list.
      */
     public ShCdaListing search(String q, String siteId, int page, int size) {
+        return search(q, siteId, page, size, null);
+    }
+
+    /** As above, over the rows {@code state} names (SH990). */
+    public ShCdaListing search(String q, String siteId, int page, int size, String state) {
+        List<ShPostState> states = listingStates(state);
         Pageable pageable = pageable(page, size);
         if (q == null || q.isBlank()) {
             return new ShCdaListing(null, List.of(), List.of(), page, size, 0);
         }
         // The repository normalizes the term (SH131) — lower-casing and %-wrapping it
         // here as well would search for `%%term%%`, which matches nothing.
-        Page<ShPostUnified> posts = searchPage(siteId, q, pageable);
+        Page<ShPostUnified> posts = searchPage(siteId, q, states, pageable);
         return new ShCdaListing(null, List.of(), summaries(posts), page, size, posts.getTotalElements());
     }
 
-    private Page<ShPostUnified> searchPage(String siteId, String term, Pageable pageable) {
+    private Page<ShPostUnified> searchPage(String siteId, String term, List<ShPostState> states,
+                                           Pageable pageable) {
         if (siteId != null && !siteId.isBlank()) {
             if (!siteAllowed(siteId)) {
                 return Page.empty(pageable);
             }
             List<String> types = searchablePostTypeIds(siteId);
             if (!types.isEmpty()) {
-                return preview()
+                return states.size() > 1
                         ? draftPreferred(shPostUnifiedRepository
-                                .searchBySiteAndTypesAndStateIn(siteId, types, PREVIEW_STATES, term), pageable)
-                        : shPostUnifiedRepository.searchBySiteAndTypesAndState(siteId, types, STATE, term, pageable);
+                                .searchBySiteAndTypesAndStateIn(siteId, types, states, term), pageable)
+                        : shPostUnifiedRepository.searchBySiteAndTypesAndState(siteId, types, states.get(0), term, pageable);
             }
-            return searchBySites(List.of(siteId), term, pageable);
+            return searchBySites(List.of(siteId), term, states, pageable);
         }
         // No explicit site: restrict to the token's allow-list when present, else all sites.
         Set<String> allowed = allowedSiteIds();
         if (allowed != null) {
-            return allowed.isEmpty() ? Page.empty(pageable) : searchBySites(allowed, term, pageable);
+            return allowed.isEmpty() ? Page.empty(pageable) : searchBySites(allowed, term, states, pageable);
         }
-        return preview()
-                ? draftPreferred(shPostUnifiedRepository.searchByStateIn(PREVIEW_STATES, term), pageable)
-                : shPostUnifiedRepository.searchByState(STATE, term, pageable);
+        return states.size() > 1
+                ? draftPreferred(shPostUnifiedRepository.searchByStateIn(states, term), pageable)
+                : shPostUnifiedRepository.searchByState(states.get(0), term, pageable);
     }
 
-    private Page<ShPostUnified> searchBySites(Collection<String> siteIds, String term, Pageable pageable) {
-        return preview()
-                ? draftPreferred(shPostUnifiedRepository.searchBySitesAndStateIn(siteIds, PREVIEW_STATES, term), pageable)
-                : shPostUnifiedRepository.searchBySitesAndState(siteIds, STATE, term, pageable);
+    private Page<ShPostUnified> searchBySites(Collection<String> siteIds, String term,
+                                              List<ShPostState> states, Pageable pageable) {
+        return states.size() > 1
+                ? draftPreferred(shPostUnifiedRepository.searchBySitesAndStateIn(siteIds, states, term), pageable)
+                : shPostUnifiedRepository.searchBySitesAndState(siteIds, states.get(0), term, pageable);
     }
 
     /**
@@ -316,27 +382,33 @@ public class ShCdaService {
                 .toList();
     }
 
-    private Page<ShPostUnified> queryPage(String siteId, String folderId, String postType, Pageable pageable) {
+    private Page<ShPostUnified> queryPage(String siteId, String folderId, String postType,
+                                          List<ShPostState> states, Pageable pageable) {
         if (folderId != null && !folderId.isBlank()) {
             return shFolderRepository.findById(folderId)
                     .filter(folder -> siteAllowed(siteIdOf(folder)))
-                    .map(folder -> pageByFolder(folder, pageable))
+                    .map(folder -> pageByFolder(folder, states, pageable))
                     .orElse(Page.empty(pageable));
         }
         if (siteId == null || siteId.isBlank() || !siteAllowed(siteId)) {
             return Page.empty(pageable);
         }
         if (postType != null && !postType.isBlank()) {
-            return pageBySiteAndType(siteId, postType, pageable);
+            return pageBySiteAndType(siteId, postType, states, pageable);
         }
-        return pageBySite(siteId, pageable);
+        return pageBySite(siteId, states, pageable);
     }
 
-    private Page<ShPostUnified> pageByFolder(ShFolder folder, Pageable pageable) {
-        return preview()
+    /**
+     * One page of a folder's posts over {@code states}: two states is the draft-preferred read (SH5's
+     * preview), one is that state alone. Every listing below takes its states the same way, which is
+     * what let SH990 add a perspective without a second copy of each query.
+     */
+    private Page<ShPostUnified> pageByFolder(ShFolder folder, List<ShPostState> states, Pageable pageable) {
+        return states.size() > 1
                 ? draftPreferred(shPostUnifiedRepository
-                        .findByShFolderAndStateIn(folder, PREVIEW_STATES), pageable)
-                : shPostUnifiedRepository.findByShFolderAndState(folder, STATE, pageable);
+                        .findByShFolderAndStateIn(folder, states), pageable)
+                : shPostUnifiedRepository.findByShFolderAndState(folder, states.get(0), pageable);
     }
 
     /**
@@ -347,23 +419,24 @@ public class ShCdaService {
      * post-type and therefore to an empty page, which is the same answer the caller
      * would get for a real type with no content — never an error.
      */
-    private Page<ShPostUnified> pageBySiteAndType(String siteId, String postType, Pageable pageable) {
+    private Page<ShPostUnified> pageBySiteAndType(String siteId, String postType, List<ShPostState> states,
+                                                  Pageable pageable) {
         ShPostType type = shPostTypeRepository.findByName(postType);
         if (type == null) {
             return Page.empty(pageable);
         }
-        return preview()
+        return states.size() > 1
                 ? draftPreferred(shPostUnifiedRepository
-                        .findByShSite_IdAndShPostType_IdAndStateIn(siteId, type.getId(), PREVIEW_STATES), pageable)
+                        .findByShSite_IdAndShPostType_IdAndStateIn(siteId, type.getId(), states), pageable)
                 : shPostUnifiedRepository
-                        .findByShSite_IdAndShPostType_IdAndState(siteId, type.getId(), STATE, pageable);
+                        .findByShSite_IdAndShPostType_IdAndState(siteId, type.getId(), states.get(0), pageable);
     }
 
-    private Page<ShPostUnified> pageBySite(String siteId, Pageable pageable) {
-        return preview()
+    private Page<ShPostUnified> pageBySite(String siteId, List<ShPostState> states, Pageable pageable) {
+        return states.size() > 1
                 ? draftPreferred(shPostUnifiedRepository
-                        .findByShSite_IdAndStateIn(siteId, PREVIEW_STATES), pageable)
-                : shPostUnifiedRepository.findByShSite_IdAndState(siteId, STATE, pageable);
+                        .findByShSite_IdAndStateIn(siteId, states), pageable)
+                : shPostUnifiedRepository.findByShSite_IdAndState(siteId, states.get(0), pageable);
     }
 
     // --- helpers ---
@@ -382,9 +455,46 @@ public class ShCdaService {
         return preview() ? PREVIEW_STATES : List.of(STATE);
     }
 
-    /** First existing row for {@code id} across {@link #readStates()} (draft-preferred under preview). */
-    private Optional<ShPostUnified> resolvePost(String id) {
-        for (ShPostState state : readStates()) {
+    /**
+     * The {@code state=} grammar, as this token may use it (SH990).
+     *
+     * <p>{@code published} is what every token already reads. A draft or a revision is what SH5 gave a
+     * <b>preview</b> token and nothing else, so a production token asking for one is refused rather
+     * than quietly answered with the published row — which would look like a draft that happens to
+     * match what is live, the one wrong answer a front end building a preview cannot detect. The
+     * refusal depends on the token alone and says nothing about a site or a post.</p>
+     */
+    private ShContentPerspective perspective(String state) {
+        ShContentPerspective perspective = ShContentPerspective.parse(state);
+        if ((perspective.row() == ShPostState.DRAFT || perspective.isRevision()) && !preview()) {
+            throw new PreviewTokenRequiredException(state);
+        }
+        return perspective;
+    }
+
+    /** The row states a perspective reads: its row, or the token's default when it named none. */
+    private List<ShPostState> statesFor(ShContentPerspective perspective) {
+        return perspective.row() != null ? List.of(perspective.row()) : readStates();
+    }
+
+    /** A listing's states; a revision is a version of one page and has no set to list. */
+    private List<ShPostState> listingStates(String state) {
+        return statesFor(perspective(state).requireRow("the CDA's listings",
+                "GET /api/v2/cda/post/{id}?state=rev:<n>"));
+    }
+
+    /** The post as it read at a revision, at the address it is at now (SH986's store, SH990's read). */
+    private ShPostUnified asRevision(ShPostUnified present, int number) {
+        return shPostRevisionService.revision(present.getId(), number)
+                .map(revision -> shPostRevisionService.asOf(revision, present))
+                .orElseThrow(() -> ShPostStateNotFoundException.noSuchRevision(present.getId(), number,
+                        shPostRevisionService.rows(present.getId()).stream()
+                                .map(ShRevisionRow::version).toList()));
+    }
+
+    /** First existing row for {@code id} across {@code states}, in their order. */
+    private Optional<ShPostUnified> resolvePost(String id, List<ShPostState> states) {
+        for (ShPostState state : states) {
             Optional<ShPostUnified> found = shPostUnifiedRepository.findByIdAndState(id, state);
             if (found.isPresent()) {
                 return found;
@@ -432,6 +542,22 @@ public class ShCdaService {
      */
     private static String siteIdOf(ShFolder folder) {
         return ShFolderSite.idOf(folder);
+    }
+
+    /** A 403: a draft or a revision asked of a token that reads only what is published (SH990). */
+    public static class PreviewTokenRequiredException extends ShTeachingException {
+
+        public PreviewTokenRequiredException(String sent) {
+            super(ShProblem.of("state-needs-preview-token", HttpStatus.FORBIDDEN,
+                            "`state=" + sent + "` needs a preview token")
+                    .withDetail("This token reads the production environment, which is what is "
+                            + "published. A draft or a revision is readable by a PREVIEW token, the "
+                            + "one a front end's preview mode is configured with.")
+                    .withAllowed(List.of("published"))
+                    .withFix("Send `state=published`, or omit `state`, with this token; read drafts "
+                            + "and revisions with a token whose environment is PREVIEW.")
+                    .withExample("state=published"));
+        }
     }
 
     private static String siteIdOf(ShPostUnified post) {

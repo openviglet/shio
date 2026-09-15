@@ -30,15 +30,16 @@ import org.junit.jupiter.api.Test;
  * whether it was editable, and a front end on the CDA could not show anyone a draft or a revision at
  * all. The two paths that did accept a value each parsed it themselves.</p>
  *
- * <p>The instrument lands before the plumbing (SH322): it reads the three controllers a content read
+ * <p>The instrument landed before the plumbing (SH322): it reads the three controllers a content read
  * goes through as source and classifies every {@code GET} as accepting {@code state} or not, with the
- * reason. A read in the remainder is a named row, so the gap is a list somebody can work down rather
- * than a sentence in a design; a path that gains the parameter fails until its row moves.</p>
+ * reason. The reads that should have taken it and did not were one named family, worked down over
+ * five slices until it was empty; the family is gone with them, so a new page read has to take a
+ * version or say why not, and a path that gains or loses the parameter fails until its row moves.</p>
  *
  * <h2>What it does not scan</h2>
  *
  * <p>The CDA's GraphQL schema is built in code ({@code ShGraphQLSchema}), not by annotation, so it is
- * outside this reader and named in SH990's remainder instead. The console's
+ * outside this reader; {@code ShCdaStateTest} holds its {@code state} argument instead. The console's
  * {@code GET /api/v2/post-unified/{id}} binds a closed {@code ShPostState} the console itself sends,
  * and the public {@code /sites/**} route serves what is published by contract — a version parameter
  * there is a way to publish a draft by URL.</p>
@@ -60,9 +61,6 @@ class ShPerspectiveCoverageLintTest {
 
     // --- why a path takes no version. Families, so the list is short enough to be read ------------
 
-    private static final String REMAINDER =
-            "SH990's remainder: it reads a page and cannot yet be asked for its draft, its published "
-            + "row or a revision";
     private static final String NOT_A_PAGE =
             "it answers about the instance, its model or its packages, and none of those has a draft "
             + "or a revision of its own";
@@ -81,11 +79,12 @@ class ShPerspectiveCoverageLintTest {
             Map.entry("ShAgentAPI#find", ""),
             Map.entry("ShAgentAPI#verify", ""),
 
-            Map.entry("ShCdaAPI#list", REMAINDER),
-            Map.entry("ShCdaAPI#post", REMAINDER),
-            Map.entry("ShCdaAPI#postByUrl", REMAINDER),
-            Map.entry("ShCdaAPI#query", REMAINDER),
-            Map.entry("ShCdaAPI#search", REMAINDER),
+            // The CDA, with a draft or a revision for a preview token only (the last slice).
+            Map.entry("ShCdaAPI#list", ""),
+            Map.entry("ShCdaAPI#post", ""),
+            Map.entry("ShCdaAPI#postByUrl", ""),
+            Map.entry("ShCdaAPI#query", ""),
+            Map.entry("ShCdaAPI#search", ""),
 
             Map.entry("ShAgentAPI#manifest", NOT_A_PAGE),
             Map.entry("ShAgentAPI#context", "the pack is the model and a map of addresses, and an "
@@ -184,13 +183,12 @@ class ShPerspectiveCoverageLintTest {
     }
 
     @Test
-    @DisplayName("SH990: the counts print, so the remainder is read rather than recomputed")
+    @DisplayName("SH990: the counts print, so the census is read rather than recomputed")
     void theCensusIsTheDeliverable() {
         List<Read> reads = reads();
         long accepting = reads.stream().filter(Read::accepts).count();
-        long remainder = DECLARED.values().stream().filter(REMAINDER::equals).count();
-        System.out.printf("%n[SH990] content reads: %d of %d take a version; %d in the remainder%n",
-                accepting, reads.size(), remainder);
+        System.out.printf("%n[SH990] content reads: %d of %d take a version%n",
+                accepting, reads.size());
         reads.stream().map(read -> (read.accepts() ? "  state     " : "  no state  ") + read.name())
                 .sorted().forEach(System.out::println);
         System.out.println();

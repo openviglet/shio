@@ -3094,3 +3094,17 @@ three arguments, and was brought back by trimming rather than raised: `shio_dige
 shape said why a digest is useful to a caller that has already chosen to call it, and the three new
 descriptions are their values alone. The list is now at its wall, and `token-budgets.properties` says
 so beside the ceiling.
+
+**The last put the CDA on it, and it is the one where the grammar meets a privilege.** SH5 already split
+delivery by token: production reads what is published, preview reads the draft-preferred row. `state`
+names a version *inside* that split and never widens it. `published` is open to every token; `draft` and
+`rev:<n>` need a preview token, and a production token asking for either is `state-needs-preview-token`
+(403) rather than an answer with the published row, which a front end building a preview would read as
+a draft that happens to match what is live. The refusal depends on the token alone and says nothing
+about a site or a post. The allow-list applies to whichever row a state finds, so a scoped preview token
+reaches no other site's draft. `/post/{id}`, `/post/by-url`, `/object/{folderId}/list`, `/query` and
+`/search` take it over REST, and `post`, `postByUrl` and `posts` take it as a GraphQL argument; a listing
+refuses a revision. Every listing in `ShCdaService` now takes its states as one list (two is the
+draft-preferred read, one is that state), which is what let the perspective in without a second copy of
+each query. The census's remainder family is empty and gone: a new page read takes `state` or declares
+why not.

@@ -127,7 +127,7 @@ class ShGraphQLSchemaTest {
     void executesQueryResolvingAttrFieldOnGeneratedType() {
         when(shPostTypeRepository.findAll())
                 .thenReturn(List.of(postType("News", (byte) 0, "headline")));
-        when(shCdaService.getPost("p1"))
+        when(shCdaService.getPost("p1", null))
                 .thenReturn(Optional.of(post("p1", "Hello", "News", Map.of("headline", "Big news"))));
 
         GraphQL graphQL = GraphQL.newGraphQL(schema().buildSchema()).build();
@@ -146,7 +146,7 @@ class ShGraphQLSchemaTest {
         when(shPostTypeRepository.findAll())
                 .thenReturn(List.of(postType("News", (byte) 0, "headline")));
         // A post whose type has no generated object type (e.g. a system type post).
-        when(shCdaService.getPost("p2"))
+        when(shCdaService.getPost("p2", null))
                 .thenReturn(Optional.of(post("p2", "Generic", "Folder", Map.of())));
 
         GraphQL graphQL = GraphQL.newGraphQL(schema().buildSchema()).build();
@@ -164,7 +164,7 @@ class ShGraphQLSchemaTest {
     void missingAttrResolvesToNullNotError() {
         when(shPostTypeRepository.findAll())
                 .thenReturn(List.of(postType("News", (byte) 0, "headline")));
-        when(shCdaService.getPost("p3"))
+        when(shCdaService.getPost("p3", null))
                 .thenReturn(Optional.of(post("p3", "No attrs", "News", Map.of())));
 
         GraphQL graphQL = GraphQL.newGraphQL(schema().buildSchema()).build();
@@ -182,7 +182,7 @@ class ShGraphQLSchemaTest {
     void postsQueryDelegatesToServiceWithDefaults() {
         when(shPostTypeRepository.findAll())
                 .thenReturn(List.of(postType("News", (byte) 0, "headline")));
-        lenient().when(shCdaService.queryPosts("siteA", null, null, 0, 50))
+        lenient().when(shCdaService.queryPosts("siteA", null, null, 0, 50, null))
                 .thenReturn(List.of(post("p1", "A", "News", Map.of("headline", "h"))));
 
         GraphQL graphQL = GraphQL.newGraphQL(schema().buildSchema()).build();
@@ -195,5 +195,32 @@ class ShGraphQLSchemaTest {
         List<Map<String, Object>> posts = (List<Map<String, Object>>) data.get("posts");
         assertThat(posts).hasSize(1);
         assertThat(posts.get(0)).containsEntry("headline", "h");
+    }
+
+    @Test
+    void sh990StateReachesTheServiceFromEveryQueryField() {
+        // SH990 — the REST grammar, as an argument: a GraphQL front end previews what a REST one does,
+        // and the service is where a production token's draft is refused, so passing it through is the
+        // schema's whole job here.
+        when(shPostTypeRepository.findAll())
+                .thenReturn(List.of(postType("News", (byte) 0, "headline")));
+        when(shCdaService.getPost("p9", "rev:2"))
+                .thenReturn(Optional.of(post("p9", "As it was", "News", Map.of("headline", "then"))));
+        when(shCdaService.getPostByUrl("siteA", "/news/hello", null, "published"))
+                .thenReturn(Optional.of(post("p9", "Live", "News", Map.of("headline", "now"))));
+        when(shCdaService.queryPosts("siteA", null, null, 0, 50, "draft"))
+                .thenReturn(List.of(post("p9", "Drafted", "News", Map.of("headline", "soon"))));
+
+        GraphQL graphQL = GraphQL.newGraphQL(schema().buildSchema()).build();
+        ExecutionResult result = graphQL.execute("{ "
+                + "a: post(id: \"p9\", state: \"rev:2\") { title } "
+                + "b: postByUrl(siteId: \"siteA\", url: \"/news/hello\", state: \"published\") { title } "
+                + "c: posts(siteId: \"siteA\", state: \"draft\") { title } }");
+
+        assertThat(result.getErrors()).isEmpty();
+        Map<String, Object> data = result.getData();
+        assertThat(data.get("a")).isEqualTo(Map.of("title", "As it was"));
+        assertThat(data.get("b")).isEqualTo(Map.of("title", "Live"));
+        assertThat(data.get("c")).isEqualTo(List.of(Map.of("title", "Drafted")));
     }
 }

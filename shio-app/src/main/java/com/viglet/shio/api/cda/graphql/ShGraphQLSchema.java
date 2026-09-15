@@ -72,6 +72,8 @@ public class ShGraphQLSchema {
 
     private static final String FIELD_POST_TYPE = "postType";
     private static final String FIELD_SITE_ID = "siteId";
+    /** SH990 — the {@code state=} grammar, as a query argument. */
+    private static final String FIELD_STATE = "state";
     private static final String FIELD_FOLDER_ID = "folderId";
 
     /** Common post fields shared by every content type, with their resolvers. */
@@ -178,11 +180,14 @@ public class ShGraphQLSchema {
         GraphQLFieldDefinition post = GraphQLFieldDefinition.newFieldDefinition()
                 .name("post").type(contentRef)
                 .argument(arg("id", new GraphQLNonNull(Scalars.GraphQLID)))
+                // SH990 — the REST grammar, so a GraphQL front end previews what a REST one does.
+                .argument(arg(FIELD_STATE, Scalars.GraphQLString))
                 .build();
         GraphQLFieldDefinition postByUrl = GraphQLFieldDefinition.newFieldDefinition()
                 .name("postByUrl").type(contentRef)
                 .argument(arg(FIELD_SITE_ID, new GraphQLNonNull(Scalars.GraphQLString)))
                 .argument(arg("url", new GraphQLNonNull(Scalars.GraphQLString)))
+                .argument(arg(FIELD_STATE, Scalars.GraphQLString))
                 .build();
         // Note: scalars / non-null-of-scalar are both GraphQLInputType and
         // GraphQLOutputType, so they are valid argument types.
@@ -193,17 +198,21 @@ public class ShGraphQLSchema {
                 .argument(arg(FIELD_POST_TYPE, Scalars.GraphQLString))
                 .argument(argDefault("page", Scalars.GraphQLInt, 0))
                 .argument(argDefault("size", Scalars.GraphQLInt, 50))
+                .argument(arg(FIELD_STATE, Scalars.GraphQLString))
                 .build();
 
         codeRegistry.dataFetcher(FieldCoordinates.coordinates(QUERY_TYPE, "post"),
-                (DataFetcher<Object>) env -> shCdaService.getPost(env.getArgument("id")).orElse(null));
+                (DataFetcher<Object>) env -> shCdaService.getPost(env.getArgument("id"),
+                        env.getArgument(FIELD_STATE)).orElse(null));
         codeRegistry.dataFetcher(FieldCoordinates.coordinates(QUERY_TYPE, "postByUrl"),
                 (DataFetcher<Object>) env -> shCdaService
-                        .getPostByUrl(env.getArgument(FIELD_SITE_ID), env.getArgument("url")).orElse(null));
+                        .getPostByUrl(env.getArgument(FIELD_SITE_ID), env.getArgument("url"), null,
+                                env.getArgument(FIELD_STATE)).orElse(null));
         codeRegistry.dataFetcher(FieldCoordinates.coordinates(QUERY_TYPE, "posts"),
                 (DataFetcher<Object>) env -> shCdaService.queryPosts(
                         env.getArgument(FIELD_SITE_ID), env.getArgument(FIELD_FOLDER_ID), env.getArgument(FIELD_POST_TYPE),
-                        intArg(env.getArgument("page"), 0), intArg(env.getArgument("size"), 50)));
+                        intArg(env.getArgument("page"), 0), intArg(env.getArgument("size"), 50),
+                        env.getArgument(FIELD_STATE)));
 
         return GraphQLObjectType.newObject().name(QUERY_TYPE)
                 .field(post).field(postByUrl).field(posts).build();
