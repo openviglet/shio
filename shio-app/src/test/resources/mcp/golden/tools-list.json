@@ -200,6 +200,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "release" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "scheduled" : {
             "description" : "#string",
             "type" : "string"
@@ -401,7 +405,7 @@
                   "type" : "string"
                 },
                 "op" : {
-                  "enum" : [ "site.upsert", "site.delete", "folder.upsert", "folder.move", "folder.copy", "folder.delete", "post.upsert", "post.move", "post.publish", "post.unpublish", "post.delete", "post.restore", "post.rollback", "folder.restore", "site.restore", "render.provision" ],
+                  "enum" : [ "site.upsert", "site.delete", "folder.upsert", "folder.move", "folder.copy", "folder.delete", "post.upsert", "post.move", "post.publish", "post.unpublish", "post.delete", "post.restore", "post.rollback", "folder.restore", "site.restore", "render.provision", "release.upsert", "release.add", "release.remove" ],
                   "type" : "string"
                 },
                 "revision" : {

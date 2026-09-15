@@ -201,7 +201,18 @@ public final class ShAgentOps {
                             + "installs "
                             + "SH95 vocabulary types by name (Page, SectionHero) - a bare "
                             + "instance ships none. `data.fields` {Type:[name]} appends missing "
-                            + "Text fields to a type that exists. Takes no address."));
+                            + "Text fields to a type that exists. Takes no address."),
+            // SH993 — a release: a named set of posts in one site that goes live as one unit. Read one
+            // back with find?site=<site>&release=<name>.
+            new OpSpec(ShAgentBatchService.RELEASE_UPSERT,
+                    List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
+                    "Plan release:<site>/<name>, or confirm it; `data.description`."),
+            new OpSpec(ShAgentBatchService.RELEASE_ADD,
+                    List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
+                    "Put `data.posts` in a release that has not run."),
+            new OpSpec(ShAgentBatchService.RELEASE_REMOVE,
+                    List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
+                    "Take `data.posts` out again."));
 
     private ShAgentOps() {
         // utility

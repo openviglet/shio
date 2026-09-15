@@ -26,6 +26,8 @@ import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.post.ShScheduleWindow;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.release.ShReleaseService;
+import com.viglet.shio.persistence.model.release.ShRelease;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
@@ -95,6 +97,8 @@ public class ShAgentReadService {
     private final ShConsoleSurfaces shConsoleSurfaces;
     /** SH987 — the page's history, for `include=revisions` and `state=rev:<n>`. */
     private final ShPostRevisionService shPostRevisionService;
+    /** SH993 — the posts a release holds, for `find?release=`. */
+    private final ShReleaseService shReleaseService;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -105,7 +109,8 @@ public class ShAgentReadService {
                               ShAgentProperties properties,
                               ShTemplateGraph shTemplateGraph,
                               ShConsoleSurfaces shConsoleSurfaces,
-                              ShPostRevisionService shPostRevisionService) {
+                              ShPostRevisionService shPostRevisionService,
+                              ShReleaseService shReleaseService) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -116,6 +121,7 @@ public class ShAgentReadService {
         this.shTemplateGraph = shTemplateGraph;
         this.shConsoleSurfaces = shConsoleSurfaces;
         this.shPostRevisionService = shPostRevisionService;
+        this.shReleaseService = shReleaseService;
     }
 
     /**
@@ -191,11 +197,27 @@ public class ShAgentReadService {
     public ShAgentFound find(String site, String type, String folder, String q,
                              Integer limit, boolean ids, String after, boolean trash, String state,
                              String scheduled) {
+        return find(site, type, folder, q, limit, ids, after, trash, state, scheduled, null);
+    }
+
+    /**
+     * @param release SH993 — a release's name: only the posts it holds, with the release itself on the
+     *                envelope. A release belongs to one site, so this needs {@code site} to name exactly
+     *                one. It is the read half of {@code release.add}, and a filter on the listing rather
+     *                than an endpoint of its own for SH222's reason: what a release holds is a list of
+     *                posts, and this is the call that lists posts (P10).
+     */
+    public ShAgentFound find(String site, String type, String folder, String q,
+                             Integer limit, boolean ids, String after, boolean trash, String state,
+                             String scheduled, String release) {
         ShScheduleWindow window = ShScheduleWindow.parse(scheduled);
         ShPostState wanted = ShContentPerspective.parse(state)
                 .requireRow("/agent/find", "GET /api/v2/agent/read?address=<address>&state=rev:<n>")
                 .row();
         List<ShSite> sites = siteAccess.readable(site);
+        ShRelease held = release == null || release.isBlank() ? null : releaseOf(site, sites, release);
+        Set<String> members = held == null ? null
+                : new LinkedHashSet<>(shReleaseService.postIds(held.getId()));
         int cap = limit == null || limit <= 0
                 ? properties.getRead().getDefaultLimit()
                 : Math.min(limit, properties.getRead().getMaxLimit());
@@ -227,6 +249,7 @@ public class ShAgentReadService {
                 .filter(post -> folderIds.isEmpty() || inScope(post, folderIds))
                 .filter(post -> type == null || type.isBlank() || matchesType(post, type))
                 .filter(post -> window == null || scheduledIn(drafts.get(post.getId()), window))
+                .filter(post -> members == null || members.contains(post.getId()))
                 .map(post -> window == null
                         ? row(post, ids, live.contains(post.getId()), trash)
                         : withSchedule(row(post, ids, live.contains(post.getId()), trash),
@@ -244,7 +267,37 @@ public class ShAgentReadService {
                 ? capped.get(capped.size() - 1).address()
                 : null;
         return new ShAgentFound(capped.size(), truncated, List.copyOf(capped),
-                notesFor(capped), cursor);
+                notesFor(capped), cursor, held == null ? null : new ShAgentFound.Release(
+                        ShAddress.release(sites.get(0).getName(), held.getName()).toString(),
+                        held.getState(), held.getDescription(),
+                        held.getScheduledAt() == null ? null : held.getScheduledAt().toString(),
+                        members.size()));
+    }
+
+    /**
+     * The release a {@code release=} listing reads (SH993), or a teaching refusal.
+     *
+     * <p>A release is named within one site, so a listing across several has no single release to
+     * mean; that is refused rather than answered from whichever site sorts first.</p>
+     */
+    private ShRelease releaseOf(String site, List<ShSite> sites, String name) {
+        if (site == null || site.isBlank() || sites.size() != 1) {
+            throw new ReleaseNeedsSiteException(name);
+        }
+        ShReleaseService.requireName(name);
+        return shReleaseService.require(sites.get(0).getId(), sites.get(0).getName(), name);
+    }
+
+    /** SH993 — a 400 for {@code release=} without the one site it belongs to. */
+    public static class ReleaseNeedsSiteException extends ShTeachingException {
+
+        public ReleaseNeedsSiteException(String name) {
+            super(ShProblem.badRequest("release-needs-site", "release=" + name + " needs one site")
+                    .withDetail("A release is named within its site, so the listing needs `site` to "
+                            + "say which.")
+                    .withFix("Add `site=<name>`.")
+                    .withExample("GET /api/v2/agent/find?site=Blog&release=" + name));
+        }
     }
 
     /**

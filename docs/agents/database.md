@@ -493,3 +493,18 @@ else set afterwards. The sweep still publishes and unpublishes as `scheduler`, w
 audit row it writes carries `(scheduled by <person>)` as its detail, read off the draft before the
 transition. No backfill: a schedule set before `v2026.3.31` has no recorded requester, and inventing
 one would be the one wrong answer. `include=schedule` on a read names it as `requestedBy`.
+
+## `sh_release` and `sh_release_item` (SH993)
+
+A release is a named set of posts in one site that goes live as one unit. `sh_release` holds the name
+(unique per site, because it is the address and the projected file name), a description, `site_id`, a
+state of PLANNED, SCHEDULED, PUBLISHED or ROLLED_BACK, `scheduled_at`, the last actor and the two
+timestamps; `sh_release_item` holds `release_id`, `post_id`, `added_at` and `version_before` — the SH986
+revision number the post was at when the release ran, which is where a rollback returns to, and null
+until it runs.
+
+`site_id` and `post_id` are plain VARCHARs and not foreign keys, for SH986's reason and the JPQL
+invariant: a post's key is `(id, state)` so a foreign key would have to name the row publishing deletes,
+and an `ShSite` is an `ShObject` subclass that JPQL must not navigate past `.id`. Both unique
+constraints are declared on the entities as well as in `v2026.3.32.yaml`, since the unit suite builds
+its schema from the metadata (SH729).

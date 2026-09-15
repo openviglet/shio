@@ -48,6 +48,16 @@ public final class ShAgentReadTerse {
                 .flag("truncated", found.truncated())
                 .attr("cursor", found.cursor())
                 .build());
+        // SH993 — the release a `release=` listing is the posts of, before its rows.
+        if (found.release() != null) {
+            out.append(ShTerse.line("release")
+                    .word(found.release().address())
+                    .attr("state", found.release().state())
+                    .attr("posts", String.valueOf(found.release().posts()))
+                    .attr("scheduled-at", found.release().scheduledAt())
+                    .attr("description", found.release().description())
+                    .build());
+        }
         for (ShAgentFound.Row row : found.results()) {
             out.append(ShTerse.line("row")
                     .word(row.address())

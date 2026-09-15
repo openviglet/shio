@@ -71,6 +71,10 @@ class ShAgentOpAclLintTest {
         EXEMPT.put("render.provision",
                 "SH186's addressless op: it installs post-types on the instance, so it acts on no "
                         + "content object and there is no id an ACL could hang on");
+        EXEMPT.put("release.upsert",
+                "SH993 — it writes a release row and touches no post, so there is no content id to "
+                        + "ask about; the site it names is checked by requireSite, and release.add "
+                        + "asks the ACL for every post it puts in");
     }
 
     /**
@@ -162,9 +166,26 @@ class ShAgentOpAclLintTest {
         return declared.find() ? java.util.Optional.of(declared.group(1)) : java.util.Optional.empty();
     }
 
-    /** One method's body, by brace counting from its signature. */
+    /**
+     * A handler whose whole body hands the op to another method of this class (SH993).
+     *
+     * <p>{@code release.add} and {@code release.remove} are one implementation with a boolean, the
+     * way {@code post.publish} and {@code post.unpublish} share {@code publishById} — except that
+     * those two do their own ACL call as well, so the reader never had to follow one. Read without
+     * following, a delegate looks exactly like an op with no guard, which would have put two
+     * guarded ops on the exemption list: a guard recorded as an absence, the mistake the GUARDS
+     * comment above says this file exists to prevent, pointed the other way.</p>
+     */
+    private static final Pattern DELEGATE =
+            Pattern.compile("^\\{\\s*return (\\w+)\\(op, session[^;]*\\);\\s*}$");
+
+    /** One method's body, by brace counting from its signature, through a delegate. */
     private static String bodyOf(String source, String method) {
-        if (method == null) {
+        return bodyOf(source, method, 2);
+    }
+
+    private static String bodyOf(String source, String method, int depth) {
+        if (method == null || depth <= 0) {
             return "";
         }
         Matcher signature = Pattern
@@ -174,14 +195,16 @@ class ShAgentOpAclLintTest {
             return "";
         }
         int open = source.indexOf('{', signature.end());
-        int depth = 0;
+        int braces = 0;
         for (int at = open; at < source.length(); at += 1) {
             if (source.charAt(at) == '{') {
-                depth += 1;
+                braces += 1;
             } else if (source.charAt(at) == '}') {
-                depth -= 1;
-                if (depth == 0) {
-                    return source.substring(open, at + 1);
+                braces -= 1;
+                if (braces == 0) {
+                    String body = source.substring(open, at + 1);
+                    Matcher delegate = DELEGATE.matcher(body.replaceAll("\\s+", " ").trim());
+                    return delegate.matches() ? bodyOf(source, delegate.group(1), depth - 1) : body;
                 }
             }
         }

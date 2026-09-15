@@ -80,9 +80,14 @@ import com.viglet.shio.url.ShFurlSpellings;
  */
 public record ShAddress(Kind kind, String site, String path) {
 
-    /** What an address names. {@link #SITE} is the lenient "anything here" form. */
+    /**
+     * What an address names. {@link #SITE} is the lenient "anything here" form.
+     *
+     * <p>{@link #RELEASE} (SH993) names a release rather than content: {@code release:<site>/<name>}.
+     * Last, so the order a teaching error lists schemes in stays the order callers learned.</p>
+     */
     public enum Kind {
-        SITE, FOLDER, POST, ID;
+        SITE, FOLDER, POST, ID, RELEASE;
 
         String scheme() {
             return name().toLowerCase(Locale.ROOT);
@@ -136,7 +141,7 @@ public record ShAddress(Kind kind, String site, String path) {
         }
         int slash = target.indexOf('/');
         if (slash < 0) {
-            if (kind == Kind.POST || kind == Kind.FOLDER) {
+            if (kind == Kind.POST || kind == Kind.FOLDER || kind == Kind.RELEASE) {
                 throw new MalformedAddressException(text,
                         "A " + scheme + " address needs a path: `" + scheme + ":<site>/<path>`."
                                 // SH433 — the one path an agent cannot derive. A replication starts at
@@ -155,7 +160,23 @@ public record ShAddress(Kind kind, String site, String path) {
         if (site.isEmpty()) {
             throw new MalformedAddressException(text, "The site part is empty.");
         }
-        return new ShAddress(kind, site, normalizePath(target.substring(slash)));
+        String path = normalizePath(target.substring(slash));
+        // SH993 — a release's name is one segment: it is also the file a release projects to.
+        if (kind == Kind.RELEASE && ("/".equals(path) || path.indexOf('/', 1) >= 0)) {
+            throw new MalformedAddressException(text,
+                    "A release address is `release:<site>/<name>`, and the name is one segment.");
+        }
+        return new ShAddress(kind, site, path);
+    }
+
+    /** Builds a release address from a site name and a release name (SH993). */
+    public static ShAddress release(String site, String name) {
+        return new ShAddress(Kind.RELEASE, site, normalizePath(name));
+    }
+
+    /** The release's name, for a {@link Kind#RELEASE} address. */
+    public String releaseName() {
+        return kind == Kind.RELEASE && path != null ? path.substring(1) : null;
     }
 
     /** Builds a post address from a site name and a friendly URL. */

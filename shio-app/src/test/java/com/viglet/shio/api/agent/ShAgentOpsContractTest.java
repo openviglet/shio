@@ -205,6 +205,7 @@ class ShAgentOpsContractTest {
         String address = switch (op.substring(0, op.indexOf('.'))) {
             case "site" -> "site:" + SITE;
             case "folder" -> "folder:" + SITE + "/x";
+            case "release" -> "release:" + SITE + "/x";
             default -> "post:" + SITE + "/x";
         };
         return refusesFor(new ShAgentBatch.Op(op,

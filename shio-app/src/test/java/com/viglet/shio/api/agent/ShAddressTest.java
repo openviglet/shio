@@ -134,7 +134,7 @@ class ShAddressTest {
         var problem = catchProblem("nope:Blog").toProblemDetail();
 
         assertThat(problem.getProperties())
-                .containsEntry("allowed", List.of("site", "folder", "post", "id"))
+                .containsEntry("allowed", List.of("site", "folder", "post", "id", "release"))
                 .containsEntry("example", "post:Blog/blog/hello-world");
     }
 

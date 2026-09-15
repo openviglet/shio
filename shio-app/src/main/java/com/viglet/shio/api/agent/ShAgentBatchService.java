@@ -31,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.release.ShReleaseService;
+import com.viglet.shio.persistence.model.release.ShRelease;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
 import com.viglet.shio.api.site.ShSiteWriteService;
@@ -248,6 +250,24 @@ public class ShAgentBatchService {
     public static final String RENDER_PROVISION = "render.provision";
 
     /**
+     * SH993 — plans a release, or confirms it: {@code release:<site>/<name>}, a named set of posts in
+     * one site that goes live as one unit.
+     *
+     * <p>{@code .upsert} rather than the {@code create} the design named, because every other
+     * declare-or-confirm op here is one and a projected release file is re-pushed unchanged: a create
+     * that refused an existing release would make that re-push fail. Ops and not a tool, for the
+     * ladder's reason — about three tokens each in {@code shio_write}'s enum, where a tool is paid in
+     * full on every turn — and because an op gets the plan and the dry run for nothing.</p>
+     */
+    public static final String RELEASE_UPSERT = "release.upsert";
+    /** SH993 — puts the posts {@code data.posts} names into a release that has not run. */
+    public static final String RELEASE_ADD = "release.add";
+    /** SH993 — takes them out again. */
+    public static final String RELEASE_REMOVE = "release.remove";
+    /** SH993 — the list of posts {@code release.add} and {@code release.remove} act on. */
+    public static final String RELEASE_POSTS_KEY = "posts";
+
+    /**
      * SH413 — reindexing rides {@code site.upsert} rather than being a twelfth op name.
      *
      * <p>It was written as {@code search.reindex} first, and {@code ShAgentOpsReachTest} refused
@@ -267,7 +287,8 @@ public class ShAgentBatchService {
     public static final List<String> OPS = List.of(
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_COPY, FOLDER_DELETE,
             POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
-            POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION);
+            POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION, RELEASE_UPSERT,
+            RELEASE_ADD, RELEASE_REMOVE);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -322,6 +343,8 @@ public class ShAgentBatchService {
     private final ShConsoleSurfaces shConsoleSurfaces;
     /** SH987 — the page's history, for post.rollback's plan and its refusals. */
     private final ShPostRevisionService shPostRevisionService;
+    /** SH993 — what a release is, answered in one place for the ops and the listing. */
+    private final ShReleaseService shReleaseService;
 
     public ShAgentBatchService(ShHtmlSanitizer shHtmlSanitizer,
                                ShAgentSiteAccess siteAccess,
@@ -346,8 +369,10 @@ public class ShAgentBatchService {
                                ShTuringIndexService shTuringIndexService,
                                ShTuringTextExtractor shTuringTextExtractor,
                                ShConsoleSurfaces shConsoleSurfaces,
-                               ShPostRevisionService shPostRevisionService) {
+                               ShPostRevisionService shPostRevisionService,
+                               ShReleaseService shReleaseService) {
         this.shHtmlSanitizer = shHtmlSanitizer;
+        this.shReleaseService = shReleaseService;
         this.shConsoleSurfaces = shConsoleSurfaces;
         this.shPostRevisionService = shPostRevisionService;
         this.siteAccess = siteAccess;
@@ -781,8 +806,161 @@ public class ShAgentBatchService {
             case POST_ROLLBACK -> postRollback(op, session);
             case FOLDER_RESTORE -> folderRestore(op, session);
             case RENDER_PROVISION -> renderProvision(op, session);
+            case RELEASE_UPSERT -> releaseUpsert(op, session);
+            case RELEASE_ADD -> releaseAdd(op, session);
+            case RELEASE_REMOVE -> releaseRemove(op, session);
             default -> throw new UnknownOpException(op.op());
         };
+    }
+
+    // --- releases (SH993) ---
+
+    /**
+     * SH993 — plans a release, or confirms the one there.
+     *
+     * <p>Idempotent the way {@code folder.upsert} is: a release that exists is a noop unless
+     * {@code data.description} says something different, so a document naming it can be re-run.</p>
+     */
+    private Change releaseUpsert(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.RELEASE);
+        String name = ShReleaseService.requireName(address.releaseName());
+        ShSite site = requireSite(address.site(), session);
+        String description = text(op.data(), "description");
+        Optional<ShRelease> existing = isPending(site) ? Optional.empty()
+                : shReleaseService.find(site.getId(), name);
+        if (existing.isEmpty()) {
+            if (session.releasePlanned(address)) {
+                return session.change(op, address, Change.NOOP, "the release this batch plans", null);
+            }
+            session.planRelease(address);
+            String id = session.dryRun ? null
+                    : shReleaseService.create(site.getId(), name, description, session.actor).getId();
+            return session.change(op, address, Change.CREATE, "planned, with no posts yet", id);
+        }
+        ShRelease release = existing.get();
+        if (description == null || description.equals(release.getDescription())) {
+            return session.change(op, address, Change.NOOP, null, release.getId());
+        }
+        if (!session.dryRun) {
+            shReleaseService.describe(release, description, session.actor);
+        }
+        return session.change(op, address, Change.UPDATE, "description", release.getId());
+    }
+
+    private Change releaseAdd(ShAgentBatch.Op op, Session session) {
+        return releaseMembers(op, session, true);
+    }
+
+    private Change releaseRemove(ShAgentBatch.Op op, Session session) {
+        return releaseMembers(op, session, false);
+    }
+
+    /**
+     * SH993 — {@code release.add} and {@code release.remove}: one row for the release, naming the posts
+     * that moved, rather than a row per post, because the subject of the op is the set.
+     *
+     * <p>The posts are resolved before anything is written, so a name that points at nothing fails
+     * the batch instead of leaving a release short by one page. A post an earlier op of this dry run
+     * creates counts as there, which is SH153's rule for a plan.</p>
+     */
+    private Change releaseMembers(ShAgentBatch.Op op, Session session, boolean adding) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.RELEASE);
+        String name = ShReleaseService.requireName(address.releaseName());
+        ShSite site = requireSite(address.site(), session);
+        List<ShAddress> posts = releasePosts(op, address, site, session);
+        Optional<ShRelease> release = isPending(site) ? Optional.empty()
+                : shReleaseService.find(site.getId(), name);
+        if (release.isEmpty() && !(session.dryRun && session.releasePlanned(address))) {
+            shReleaseService.require(site.getId(), site.getName(), name);
+        }
+        release.ifPresent(ShReleaseService::requireOpen);
+
+        Map<String, String> ids = new LinkedHashMap<>();
+        for (ShAddress post : posts) {
+            Optional<ShPostUnified> row = state(site, post, ShPostState.DRAFT)
+                    .or(() -> state(site, post, ShPostState.PUBLISHED));
+            if (row.isPresent()) {
+                ids.put(post.toString(), row.get().getId());
+            } else if (session.dryRun && session.alreadyPlanned(post)) {
+                ids.put(post.toString(), null);
+            } else {
+                throw new ShAddressResolver.UnresolvedAddressException(post, List.of());
+            }
+        }
+        Set<String> held = release
+                .map(r -> (Set<String>) new LinkedHashSet<>(shReleaseService.postIds(r.getId())))
+                .orElse(Set.of());
+        List<String> moved = ids.entrySet().stream()
+                .filter(entry -> adding
+                        ? entry.getValue() == null || !held.contains(entry.getValue())
+                        : entry.getValue() != null && held.contains(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
+        String releaseId = release.map(ShRelease::getId).orElse(null);
+        int unmoved = ids.size() - moved.size();
+        if (moved.isEmpty()) {
+            return session.change(op, address, Change.NOOP, adding
+                    ? "already holds " + (ids.size() == 1 ? "it" : "all " + ids.size())
+                    : "holds none of them", releaseId);
+        }
+        if (!session.dryRun) {
+            List<String> movedIds = moved.stream().map(ids::get).toList();
+            // SH696 — a release is a plan to publish these posts, so membership is asked of the same
+            // ACL the publish will be: a credential that may not write the post may not put it in a
+            // launch either, which would otherwise fail halfway through the run instead.
+            for (String moving : movedIds) {
+                shContentAclService.requireWrite(moving);
+            }
+            if (adding) {
+                shReleaseService.add(release.orElseThrow(), movedIds, session.actor);
+            } else {
+                shReleaseService.remove(release.orElseThrow(), movedIds, session.actor);
+            }
+        }
+        String named = String.join(", ", moved.subList(0, Math.min(moved.size(), INBOUND_LINK_CAP)))
+                + (moved.size() > INBOUND_LINK_CAP ? " and " + (moved.size() - INBOUND_LINK_CAP)
+                        + " more" : "");
+        return session.change(op, address, Change.UPDATE, (adding ? "added " : "removed ")
+                + moved.size() + ": " + named
+                + (unmoved == 0 ? "" : "; " + unmoved + (adding ? " already in it" : " not in it")),
+                releaseId);
+    }
+
+    /**
+     * The posts {@code data.posts} names, as addresses in the release's site (SH993).
+     *
+     * <p>A {@code post:} address, or a bare URL read in the release's own site the way
+     * {@code translationOf} reads one. A post in another site is refused: running the release must
+     * change one site and nothing else.</p>
+     */
+    private List<ShAddress> releasePosts(ShAgentBatch.Op op, ShAddress release, ShSite site,
+                                         Session session) {
+        JsonNode posts = op.data() == null || !op.data().isObject() ? null
+                : op.data().get(RELEASE_POSTS_KEY);
+        if (posts == null || !posts.isArray() || posts.isEmpty()) {
+            throw new MissingOpFieldException("data", op.op(), release,
+                    "{\"op\":\"" + op.op() + "\",\"address\":\"" + release
+                            + "\",\"data\":{\"posts\":[\"post:" + release.site() + "/about\"]}}",
+                    "`data.posts` lists the posts: `post:` addresses, or URLs in the release's site.");
+        }
+        Map<String, ShAddress> named = new LinkedHashMap<>();
+        for (JsonNode node : posts) {
+            String raw = node.isString() ? node.asString().trim() : "";
+            ShAddress post = raw.startsWith("post:") ? ShAddress.parse(raw)
+                    : ShAddress.post(release.site(), raw);
+            if (post.kind() != ShAddress.Kind.POST) {
+                throw new WrongAddressKindException(op.op(), post, ShAddress.Kind.POST);
+            }
+            ShSite postSite = requireSite(post.site(), session);
+            boolean sameSite = isPending(site) || isPending(postSite)
+                    ? site.getName().equalsIgnoreCase(postSite.getName())
+                    : site.getId().equals(postSite.getId());
+            if (!sameSite) {
+                throw new ReleaseSiteMismatchException(release, post);
+            }
+            named.putIfAbsent(post.toString(), post);
+        }
+        return List.copyOf(named.values());
     }
 
     /** A plain integer out of an op's `data`, or the default when it is absent or not a number. */
@@ -3287,6 +3465,8 @@ public class ShAgentBatchService {
         private final Declared declared;
         private final Set<String> plannedFolders = new HashSet<>();
         private final Set<String> plannedPosts = new HashSet<>();
+        /** SH993 — releases an earlier op in this dry run creates. */
+        private final Set<String> plannedReleases = new HashSet<>();
 
         private Session(boolean dryRun, boolean ids, boolean links, String actor,
                         Declared declared) {
@@ -3330,6 +3510,14 @@ public class ShAgentBatchService {
             return plannedPosts.contains(address.toString().toLowerCase(Locale.ROOT));
         }
 
+        private void planRelease(ShAddress address) {
+            plannedReleases.add(address.toString().toLowerCase(Locale.ROOT));
+        }
+
+        private boolean releasePlanned(ShAddress address) {
+            return plannedReleases.contains(address.toString().toLowerCase(Locale.ROOT));
+        }
+
         private Change change(ShAgentBatch.Op op, ShAddress address, String action,
                               String detail, String id) {
             return new Change(op.op(), address.toString(), action, detail, ids ? id : null)
@@ -3348,7 +3536,10 @@ public class ShAgentBatchService {
             // benchmark 800 est. tokens over its ceiling, on a task that writes sixty times and
             // hands over once. The caller that wants the handoff is the one about to make it, which
             // is why `shio publish` and `shio push --content` ask and a blueprint apply does not.
-            if (!links || id == null || op.op() == null || op.op().endsWith(".delete")) {
+            // SH993 — a release has no console page yet, and a post link built from its id would be
+            // a link to nothing.
+            if (!links || id == null || op.op() == null || op.op().endsWith(".delete")
+                    || op.op().startsWith("release.")) {
                 return null;
             }
             return shConsoleSurfaces.curatorUrl(op.op().startsWith("folder.") ? "folder"
@@ -3556,6 +3747,21 @@ public class ShAgentBatchService {
                     .withDidYouMeanFrom(sent)
                     .withFix("Use one of the listed ops.")
                     .withExample(POST_UPSERT));
+        }
+    }
+
+    /** SH993 — a post named for a release in another site. */
+    public static class ReleaseSiteMismatchException extends ShTeachingException {
+
+        public ReleaseSiteMismatchException(ShAddress release, ShAddress post) {
+            super(ShProblem.badRequest("release-site-mismatch",
+                            "'" + post + "' is not in " + release.site())
+                    .withDetail("A release holds posts from its own site, so that running it changes "
+                            + "one site and nothing else.")
+                    .withFix("Name posts in " + release.site() + ", or plan a release in "
+                            + post.site() + " for this one.")
+                    .withExample("{\"op\":\"release.add\",\"address\":\"" + release
+                            + "\",\"data\":{\"posts\":[\"post:" + release.site() + "/about\"]}}"));
         }
     }
 

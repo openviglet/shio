@@ -199,18 +199,17 @@ class ShMcpToolBudgetTest {
      * only by writing the argument and watching the build refuse it.</p>
      */
     private static final Map<String, String> AT_THE_WALL = Map.of(
-            "shio_apply",
-            "the blueprint-apply surface, and the one the P1 list already declines postTypeMerge "
-                    + "on. Its schema is a document branch and a blueprint branch sharing one tool "
-                    + "by design (SH186), so the size is the composition rather than slack: the "
-                    + "leaner shape would be a thirteenth tool, and tools/list is paid every turn",
+            // SH993 dropped `shio_apply` from this list, and not by trimming it: raising the per-tool
+            // ceiling to 490 for `shio_write`'s release ops left it 49 free, which is this check
+            // doing its job — an entry that excuses nothing hides the next tool to reach a wall.
             "shio_write",
-            "SH1073 — the whole write vocabulary in one all-or-nothing call: fifteen ops and eleven "
+            "SH1073 — the whole write vocabulary in one all-or-nothing call: nineteen ops and eleven "
                     + "op fields, the last four declared only after SH952 found them read and "
                     + "undiscoverable. Paid for by cutting its own wording three times over, down to "
                     + "the decisions; what is left is the contract, and the leaner shape is a "
-                    + "thirteenth tool, which ShMcpServerTest refuses. The next field here is a "
-                    + "conversation about the per-tool ceiling, not a trim");
+                    + "thirteenth tool, which ShMcpServerTest refuses. SH993 had the conversation its "
+                    + "last entry predicted — the ceiling moved for an op family, since an op name is "
+                    + "where this tool carries a capability — and it is at the new one too");
 
     @Test
     @DisplayName("SH795: a tool with no room for another argument is declared, not discovered")

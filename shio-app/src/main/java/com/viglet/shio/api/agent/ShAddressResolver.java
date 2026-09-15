@@ -104,6 +104,7 @@ public class ShAddressResolver {
             case SITE -> address.isSiteRoot() ? resolveSite(address) : resolveLenient(address);
             case FOLDER -> resolveFolder(address).orElseThrow(() -> notFound(address, folderPaths(address)));
             case POST -> resolvePost(address).orElseThrow(() -> notFound(address, postUrls(address)));
+            case RELEASE -> throw new ReleaseIsNotContentException(address);
         };
     }
 
@@ -420,6 +421,25 @@ public class ShAddressResolver {
 
     private static ShTeachingException notFound(ShAddress address, List<String> candidates) {
         return new UnresolvedAddressException(address, candidates);
+    }
+
+    /**
+     * SH993 — a {@code release:} address where content was expected.
+     *
+     * <p>A release is a set of posts, not a post, so a read or a verify of it has no single document
+     * to return. The refusal names the listing that does answer it.</p>
+     */
+    public static class ReleaseIsNotContentException extends ShTeachingException {
+
+        public ReleaseIsNotContentException(ShAddress address) {
+            super(ShProblem.badRequest("release-is-not-content",
+                            "'" + address + "' names a release, not a post")
+                    .withDetail("A release holds posts; this call reads one post or folder.")
+                    .withFix("List the release's posts with GET /api/v2/agent/find?site="
+                            + address.site() + "&release=" + address.releaseName()
+                            + ", and change it with the release.* ops.")
+                    .withExample("post:" + address.site() + "/"));
+        }
     }
 
     /** A 404 that lists what <em>is</em> addressable, with the nearest match (SH80). */

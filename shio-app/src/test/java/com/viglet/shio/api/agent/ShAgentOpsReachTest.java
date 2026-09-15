@@ -278,10 +278,19 @@ class ShAgentOpsReachTest {
         // and the 19% that made SH346 reject folding the vocabulary into the manifest. The
         // comparison has not moved back, so the answer stands. The percentage is still the number
         // to watch rather than this ceiling.
+        // SH993 raises this from 800 to 900, measured at 843 with three release ops, and it is the
+        // raise SH987 said would not have the "roughly one more op" sentence to lean on. So the trade
+        // was re-run instead of inherited, and the decomposition below is what settled it: per-op
+        // PROSE fell, 35.6 -> 32.3, while the op count went 16 -> 19. That is the one distinction
+        // SH647 built this pair to make — the vocabulary gained OPS, which is the surface doing its
+        // job, rather than fatter sentences, which is drift. And the alternative moved the wrong way
+        // for folding: at 30% of the manifest, making every session pay for a writer-only section is
+        // a worse trade than the 19% that made SH346 reject it, not a better one. 900 budgets
+        // release.run and release.archive, which the same family still owes.
         assertThat(tokens)
                 .as("measured %s; a vocabulary that grows past this is a reason to re-open the "
                         + "surface choice, not to raise the number quietly", ESTIMATED_OPS_TOKENS_NOTE)
-                .isLessThan(800);
+                .isLessThan(900);
     }
 
     @Test
@@ -343,7 +352,12 @@ class ShAgentOpsReachTest {
                 .as("""
                         SH647 — and the trade itself, re-run rather than inherited. SH346 chose                         the ops vocabulary over the manifest because folding it in makes every                         session pay for it; %d on a %d manifest is what that would cost today.                         Past this, "a section only a writer asks for" stops being a detail and                         the surface choice wants re-opening rather than the ceiling raising."""
                         .formatted(total, manifest))
-                .isLessThan(30.0);
+                // SH993 — 30 -> 34, and the re-opening happened rather than being deferred: see the
+                // paragraph above the total's ceiling. The percentage rising makes folding this into
+                // the manifest worse, never better, so what it actually measures from here is when a
+                // writer-only section has grown enough to want asking for BY FAMILY — which is the
+                // next surface question, and a different one from where it lives.
+                .isLessThan(34.0);
 
         // What this pair replaces: the obligation SH647 left on "the next op", which was that
         // somebody would remember to re-run a comparison by hand. They would not have. The trade

@@ -3162,3 +3162,31 @@ cancelling one of two, or saving both unchanged, leaves the other attributed to 
 (`undeclared-op-field`) instead of dropping it. Dropped, a `cancel` that shio://ops lists would have
 arrived as a plain publish, and the op would have gone live instead of standing down. The refusal
 names `shio_publish` for `cancel`. `shio publish --when <instant>` and `--cancel` are the CLI leg.
+
+## A release: the unit a launch did not have (SH993, first slice)
+
+One batch call is atomic and nothing persisted a set across calls, so forty pages of a launch went live
+as forty events in sweep order, with nothing to stage, review, schedule or undo as a whole. A release is
+that unit: `sh_release` and `sh_release_item` (see `docs/agents/database.md`), addressed
+`release:<site>/<name>` — a fifth `ShAddress.Kind`, whose name is one segment because it is also the file
+the release will project to. Resolving one as content is a teaching 400 naming the listing instead.
+
+Three ops, and the read that answers them. `release.upsert` plans one or confirms it — idempotent like
+`folder.upsert`, so a document naming it re-runs; `release.add` and `release.remove` move the posts
+`data.posts` names, one change row for the release naming what moved, because the subject of the op is
+the set. A post of another site is refused: running a release changes one site and nothing else. A
+release that has run takes nothing in or out — it is the record of what went live together.
+`find?site=<site>&release=<name>` lists exactly its posts, with the release itself on the envelope
+(`release <address> state=… posts=N` in terse), which is SH222's shape: what a release holds is a list
+of posts, and find is the call that lists posts. `shio_find release=` is the MCP leg, inside its SH977
+reservation.
+
+**What the ops cost, and the two ceilings they moved.** Three names in `shio_write`'s enum measured 13
+tokens — the ladder working: a capability expressible as an op costs a name, not a schema. That took
+`shio_write` to 471 against a 460 per-tool ceiling and the allocation to 2832 against 2820, so the
+ceilings moved to 490 and 2850 with the five-op family budgeted, and `shio_apply` left `AT_THE_WALL`
+because it now has room. The ops vocabulary went to 839 against 800: the trade was re-run rather than
+inherited, and the decomposition settled it — per-op prose **fell** (35.6 → 31.8) while the op count rose
+16 → 19, which is the vocabulary gaining ops rather than drifting, and folding it into the manifest at
+30% is a worse trade than the 19% that made SH346 reject it. The ceiling is 900, which budgets
+`release.run` and `release.archive`.

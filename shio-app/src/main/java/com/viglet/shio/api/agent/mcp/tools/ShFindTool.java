@@ -61,7 +61,9 @@ public class ShFindTool implements ShMcpTool {
                 // SH990 — REST's state=, within this tool's SH977 reservation.
                 "state", ShMcpTool.string("published or draft."),
                 // SH991 — within this tool's SH977 reservation, which named a schedule predicate.
-                "scheduled", ShMcpTool.string("any, or from..to in ISO instants.")),
+                "scheduled", ShMcpTool.string("any, or from..to in ISO instants."),
+                // SH993 — the read half of the release ops, inside the same reservation.
+                "release", ShMcpTool.string("A release name: its posts. Needs site.")),
                 List.of());
     }
 
@@ -77,6 +79,7 @@ public class ShFindTool implements ShMcpTool {
                 ShMcpArgs.string(arguments, "after"),
                 false,
                 ShMcpArgs.string(arguments, "state"),
-                ShMcpArgs.string(arguments, "scheduled")));
+                ShMcpArgs.string(arguments, "scheduled"),
+                ShMcpArgs.string(arguments, "release")));
     }
 }

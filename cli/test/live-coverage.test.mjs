@@ -208,8 +208,14 @@ const UNEXERCISED = {
     // service and the plan rather than about the wire — and the thing a live scenario would add is
     // the one this op is most likely to get wrong, since a rollback is only meaningful against a
     // revision an earlier call in the same run produced.
+    // The `release.*` family arrives with SH993 and joins the list together, which is the honest
+    // shape while the family is half-built: a live scenario for a release is the one that PLANS it,
+    // fills it and then RUNS it, and the run is the next slice. Written now it would assert the half
+    // that exists and be rewritten by the task that finishes the other half. They are proved in
+    // ShReleaseOpsTest against the service and the listing.
     "folder.delete", "folder.restore",
-    "post.move", "post.restore", "post.rollback", "post.unpublish", "site.delete", "site.restore",
+    "post.move", "post.restore", "post.rollback", "post.unpublish",
+    "release.add", "release.remove", "release.upsert", "site.delete", "site.restore",
   ],
   /**
    * The MCP resources no live suite has ever read (SH760).

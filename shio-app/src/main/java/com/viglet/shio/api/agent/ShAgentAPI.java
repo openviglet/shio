@@ -313,11 +313,13 @@ public class ShAgentAPI {
             @RequestParam(name = "state", required = false) String state,
             // SH991 — `any`, or `from..to` in ISO instants; rows then carry the scheduled instants.
             @RequestParam(name = "scheduled", required = false) String scheduled,
+            // SH993 — a release's name, with `site`: the listing is then the posts it holds.
+            @RequestParam(name = "release", required = false) String release,
             @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
         ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids, after, trash,
-                state, scheduled);
+                state, scheduled, release);
         return isTerse(format)
                 ? shAgentBodyEtag.terse("find", ShAgentReadTerse.found(found), ifNoneMatch)
                 : shAgentBodyEtag.json("find", found, ifNoneMatch);

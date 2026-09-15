@@ -42,7 +42,23 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  */
 @JsonInclude(Include.NON_NULL)
 public record ShAgentFound(int count, boolean truncated, List<Row> results, List<String> notes,
-                           String cursor) {
+                           String cursor, Release release) {
+
+    /** The five-field form, before SH993 let a listing be a release's posts. */
+    public ShAgentFound(int count, boolean truncated, List<Row> results, List<String> notes,
+                        String cursor) {
+        this(count, truncated, results, notes, cursor, null);
+    }
+
+    /**
+     * SH993 — the release a {@code release=} listing is the posts of: its address, state, note, the
+     * instant it is scheduled for, and how many posts it holds in all, which a page of rows does not
+     * say.
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Release(String address, String state, String description, String scheduledAt,
+                          int posts) {
+    }
 
     /** The three-field form: nothing to note, nothing to continue. */
     public ShAgentFound(int count, boolean truncated, List<Row> results) {

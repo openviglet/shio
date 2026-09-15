@@ -1,0 +1,152 @@
+databaseChangeLog:
+  # SH993 — a release: a named set of posts in one site that goes live as one unit.
+  #
+  # One batch call is atomic, and nothing persisted a set across calls, so forty pages of a launch went
+  # live as forty separate events in sweep order, with no unit to stage, review, schedule or undo. A
+  # release is that unit. Two tables: the release, and the posts it holds.
+  #
+  # `site_id` and `post_id` are plain VARCHARs, not foreign keys, for SH986's reasons. A post's key is
+  # composite `(id, state)`, so a foreign key would have to name a state, and publishing deletes the
+  # row it named. A site is an `ShObject` subclass, and `agents.md` says never to navigate past `.id`
+  # of one in JPQL. The service resolves both.
+  #
+  # `name` is unique per site: it is the address (`release:<site>/<name>`) and the file a release
+  # projects to, so two releases with one name would be one address naming two things.
+  #
+  # `state` is stored by name: PLANNED, SCHEDULED, PUBLISHED or ROLLED_BACK. `scheduled_at` is the
+  # instant a SCHEDULED release runs.
+  #
+  # `version_before` on an item is the revision number (SH986) the post was at when the release ran,
+  # the anchor a rollback returns to. Null until the release runs.
+  #
+  # `tenant_id`, lowercase, as every content table carries (SH22); no backfill, since the first row is
+  # written after multi-tenancy. Types DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve
+  # identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh993-create-sh-release
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_release
+      changes:
+        - createTable:
+            tableName: sh_release
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_release
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(1024)
+              - column:
+                  name: site_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: state
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scheduled_at
+                  type: TIMESTAMP
+              - column:
+                  name: actor
+                  type: VARCHAR(255)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: modified_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: sh993-unique-sh-release-site-name
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: UK_sh_release_site_name
+      changes:
+        - addUniqueConstraint:
+            tableName: sh_release
+            columnNames: site_id, name
+            constraintName: UK_sh_release_site_name
+
+  - changeSet:
+      id: sh993-create-sh-release-item
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_release_item
+      changes:
+        - createTable:
+            tableName: sh_release_item
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_release_item
+              - column:
+                  name: release_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: post_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: added_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version_before
+                  type: INT
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+
+  # A post is in a release once; adding it again is a noop, and this is what makes that true under two
+  # concurrent adds rather than only in the service.
+  - changeSet:
+      id: sh993-unique-sh-release-item-post
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: UK_sh_release_item_post
+      changes:
+        - addUniqueConstraint:
+            tableName: sh_release_item
+            columnNames: release_id, post_id
+            constraintName: UK_sh_release_item_post
