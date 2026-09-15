@@ -3436,3 +3436,33 @@ edited a shared region is a page whose look moved. A page the run created has no
 compared; it is already a `CREATE` in the counts, and calling a new page's appearance "changed"
 would put the one row the action column can already explain into the list meant for the ones it
 cannot.
+
+## Decisions per change, with a reason (SH1001, the decision)
+
+Review was approve-everything or revert-everything, so one bad page in a long run forced a curator
+to accept all of it or undo all of it — while every entry already carried a `revertable` flag that
+nothing let them use.
+
+**`POST /api/v2/review/sessions/{session}/decisions`** takes a list of `{postId, decision, note}`,
+where the decision is `APPROVE`, `REJECT` or `HOLD`. One call and one transaction, because a curator
+triaging eleven pages means them together: sent one at a time, a refusal halfway leaves the run in a
+state nobody chose. Per-change outcomes come back in the `skipped` shape this surface already
+answers with — a page that could not be acted on is named with its reason, beside the ones that
+worked.
+
+**`approve` and `revert` are that call**, over every change, keeping their own names in the outcome.
+They are not a second implementation: two code paths for one decision is how the whole-run gesture
+and the per-change one come to disagree about which permission approve asks for, what it records and
+what it skips. `APPROVE` asks for PUBLISH per post (SH995); `REJECT` runs the same undo `revert`
+always did.
+
+**A `REJECT` with no note is refused.** A rejection nobody can read teaches nothing: the agent that
+wrote the page cannot be told what was wrong with it, and the next person to open the run cannot see
+that anybody looked. `HOLD` is the decision for "not now", and it takes no reason.
+
+`sh_review_decision` makes them durable, and **`HOLD` is why the table exists**: `APPROVE` and
+`REJECT` already leave a trace, but "I have read this and I am not ready" has no side effect at all.
+The pending count subtracts held pages, so parking one stops the badge saying the same number for
+ever — the failure mode SH615's `unreleased` was written to avoid, one layer up. One standing
+decision per change per run: a curator who changes their mind replaces it, and the history of what
+*happened* is the audit trail's job.

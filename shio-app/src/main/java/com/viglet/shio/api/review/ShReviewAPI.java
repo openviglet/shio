@@ -14,6 +14,7 @@ import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -73,6 +74,27 @@ public class ShReviewAPI {
     @Operation(summary = "What one agent run changed")
     public ShReviewDetail detail(@PathVariable String session) {
         return shReviewService.detail(session);
+    }
+
+    /**
+     * Decide this run's changes one at a time (SH1001).
+     *
+     * <h2>Why a list and not a call per change</h2>
+     *
+     * <p>A curator triaging eleven pages makes eleven decisions and means them together: sent one at
+     * a time, a refusal halfway leaves the run in a state nobody chose, and the page has to work out
+     * which of its eleven requests landed. One call, one transaction, and the per-change outcomes
+     * come back in the {@code skipped} shape this surface already answers with.</p>
+     *
+     * <p>A {@code REJECT} with no note is refused — the record is the whole of it, and a rule the
+     * console enforced while the API did not would be a preference of one surface.</p>
+     */
+    @PostMapping("/sessions/{session}/decisions")
+    @Operation(summary = "Approve, reject or hold this run's changes, one at a time")
+    public ShReviewOutcome decide(@PathVariable String session,
+                                  @RequestBody List<ShReviewService.Decision> decisions,
+                                  Principal principal) {
+        return shReviewService.decide(session, decisions, name(principal));
     }
 
     /** Publish every draft this run wrote — the step SH107 keeps the agent from taking. */

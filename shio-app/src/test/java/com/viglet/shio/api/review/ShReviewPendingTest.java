@@ -9,8 +9,10 @@
 package com.viglet.shio.api.review;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -23,8 +25,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.review.dto.ShReviewOutcome;
 import com.viglet.shio.api.review.dto.ShReviewPending;
 import com.viglet.shio.api.review.dto.ShReviewSession;
+import com.viglet.shio.persistence.model.review.ShReviewDecision.Kind;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -86,6 +91,8 @@ class ShReviewPendingTest {
     @Autowired
     private ShReviewService shReviewService;
     @Autowired
+    private ShPostUnifiedRepository shPostUnifiedRepository;
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @PersistenceContext
@@ -105,6 +112,10 @@ class ShReviewPendingTest {
         tx.executeWithoutResult(status -> {
             entityManager.createQuery("delete from ShHistory h where h.agentSessionId is not null")
                     .executeUpdate();
+            // SH1001 — a decision outlives the content it is about, which is the point of the table
+            // and a trap for a fixture: without this the suite's answer depends on what the previous
+            // test decided, which is the shared-state flake this @BeforeEach exists to avoid.
+            entityManager.createQuery("delete from ShReviewDecision d").executeUpdate();
             entityManager.createQuery("delete from ShPostUnified p").executeUpdate();
             entityManager.flush();
             ShSite site = new ShSite();
@@ -235,6 +246,110 @@ class ShReviewPendingTest {
                         learn to ignore, and an indicator nobody reads is worse than no indicator \
                         — it occupies the place where a real one would have gone.""")
                 .isEqualTo(new ShReviewPending(0, 0));
+    }
+
+    @Test
+    @DisplayName("SH1001: one page of a run is approved on its own, and the rest is left alone")
+    void oneChangeIsDecidedWithoutTheRest() {
+        String second = secondDraft();
+
+        ShReviewOutcome outcome = shReviewService.decide(SESSION,
+                List.of(new ShReviewService.Decision(draftedPostId, Kind.APPROVE, null)), "ana");
+
+        assertThat(outcome.posts()).containsExactly(draftedPostId);
+        assertThat(shPostUnifiedRepository.findByIdAndState(draftedPostId, ShPostState.PUBLISHED))
+                .as("SH1001: one bad page in a long run used to force a curator to accept all of it "
+                        + "or undo all of it")
+                .isPresent();
+        assertThat(shPostUnifiedRepository.findByIdAndState(second, ShPostState.PUBLISHED))
+                .as("SH1001: and the rest of the run is exactly where it was")
+                .isEmpty();
+        assertThat(shReviewService.decisions(SESSION)).singleElement()
+                .satisfies(decision -> {
+                    assertThat(decision.getPostId()).isEqualTo(draftedPostId);
+                    assertThat(decision.getDecision()).isEqualTo("APPROVE");
+                    assertThat(decision.getActor()).isEqualTo("ana");
+                });
+    }
+
+    @Test
+    @DisplayName("SH1001: a rejection with nothing written down is refused, and writes nothing")
+    void aRejectionNeedsAReason() {
+        assertThatThrownBy(() -> shReviewService.decide(SESSION,
+                List.of(new ShReviewService.Decision(draftedPostId, Kind.REJECT, "  ")), "ana"))
+                .isInstanceOf(ShReviewService.RejectionNeedsReasonException.class)
+                .satisfies(failure -> assertThat(((ShReviewService.RejectionNeedsReasonException)
+                        failure).problem().toProblemDetail().getDetail())
+                        .as("SH1001: the agent that wrote the page cannot be told what was wrong "
+                                + "with it, and the next person to open the run cannot see that "
+                                + "anybody looked")
+                        .contains("teaches nothing"));
+        assertThat(shReviewService.decisions(SESSION)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH1001: a held page is parked — the badge stops counting it and the draft stays")
+    void aHeldChangeStopsCountingAndStays() {
+        assertThat(shReviewService.pending().sessions())
+                .as("red by construction: if this were already zero the assertion below is vacuous")
+                .isEqualTo(1);
+
+        shReviewService.decide(SESSION,
+                List.of(new ShReviewService.Decision(draftedPostId, Kind.HOLD, "waiting on legal")),
+                "ana");
+
+        assertThat(shReviewService.pending())
+                .as("SH1001: a HOLD is the one decision with no side effect, so nothing about the "
+                        + "content says it was looked at — without this the only way to park a page "
+                        + "would leave the badge saying the same number for ever")
+                .isEqualTo(new ShReviewPending(0, 0));
+        assertThat(shPostUnifiedRepository.findByIdAndState(draftedPostId, ShPostState.DRAFT))
+                .as("SH1001: parked, not published and not reverted — the draft is exactly where it was")
+                .isPresent();
+        assertThat(shReviewService.detail(SESSION).decisions()).singleElement()
+                .satisfies(decision -> assertThat(decision.note()).isEqualTo("waiting on legal"));
+    }
+
+    @Test
+    @DisplayName("SH1001: approving the whole run is the same call, and records a decision per page")
+    void theWholeRunVerbIsTheSameCall() {
+        String second = secondDraft();
+
+        ShReviewOutcome outcome = shReviewService.approve(SESSION, "ana");
+
+        assertThat(outcome.action())
+                .as("SH1001: the gesture keeps its name — two code paths for one decision is how "
+                        + "the whole-run verb and the per-change one come to disagree about what "
+                        + "approve means")
+                .isEqualTo("approve");
+        assertThat(outcome.posts()).containsExactlyInAnyOrder(draftedPostId, second);
+        assertThat(shReviewService.decisions(SESSION))
+                .as("SH1001: and it leaves the same record, so a run approved wholesale is not a "
+                        + "run nobody decided")
+                .hasSize(2)
+                .allSatisfy(decision -> assertThat(decision.getDecision()).isEqualTo("APPROVE"));
+    }
+
+    /** A second drafted page in the same run, so "one of them" is a thing this suite can say. */
+    private String secondDraft() {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            ShPostUnified first = entityManager.find(ShPostUnified.class,
+                    new com.viglet.shio.persistence.model.post.unified.ShPostUnifiedId(
+                            draftedPostId, ShPostState.DRAFT));
+            ShPostUnified draft = new ShPostUnified();
+            draft.setTitle("Agent draft two");
+            draft.setFurl("/agent-draft-two");
+            draft.setState(ShPostState.DRAFT);
+            draft.setShSite(first.getShSite());
+            draft.setShFolder(first.getShFolder());
+            draft.setShPostType(first.getShPostType());
+            draft.setDate(T);
+            draft.setOwner("agent");
+            draft.setData("{}");
+            entityManager.persist(draft);
+            audit(SESSION, draft.getId(), "UPDATE", T.plusSeconds(20));
+            return draft.getId();
+        });
     }
 
     private void audit(String session, String objectId, String action, Instant at) {

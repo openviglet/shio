@@ -172,12 +172,18 @@ class ShSilentCatchInventoryTest {
             // worse in the direction that matters: `initialize` is the first call of a session, so
             // propagating would turn "your agent has no label in the Activity page" into "your
             // agent cannot start".
+            // Back to 68 with SH1001: `approve` and `revert` each carried one of these, and both
+            // became the one in `decide` when the two whole-run verbs became that call over every
+            // change. The catch itself is unchanged in kind — a post that could not be acted on is
+            // a `skipped` row with its reason, beside the ones that worked — and it is now written
+            // once instead of twice, which is the same reason the verbs were folded.
+            //
             // 69 since SH1000, in `ShReviewService.appearance`: a page that will not render is not
             // a reason to fail the read a reviewer opened. It is the rule `ShAgentProofService`
             // already follows one surface over, and here the absence is reported rather than
             // swallowed — `checked` is the denominator, so a page that could not be compared makes
             // the number smaller instead of making an empty `moved` look like a clean run.
-            "api", 69,
+            "api", 68,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

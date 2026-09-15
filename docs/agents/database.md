@@ -555,3 +555,15 @@ ran long gets a shorter premise and not a failed handshake.
 Writes are **merge, never replace**: a `null` argument leaves what is on record. That is what makes
 `X-Shio-Intent` safe to send on every request and safe to send once — a later call that does not
 repeat the sentence must not erase it.
+
+## `sh_review_decision` — what a curator decided, and why (SH1001)
+
+`v2026.3.39`. Unique on `(session, post_id)`: the row is the **current answer**, not a log of
+answers, and a queue that had to fold a list per change to find out where it stands would be the
+same read done twice. `post_id` is a plain VARCHAR for the JPQL invariant `agents.md` states — a
+post's key is composite, so a foreign key would have to name a state, and the row it named is the
+one publishing deletes.
+
+A decision outlives the content it is about, which is the point of the table and a trap for a
+fixture: a test that rebuilds its posts per run has to delete these too, or its answer depends on
+what the previous test decided.

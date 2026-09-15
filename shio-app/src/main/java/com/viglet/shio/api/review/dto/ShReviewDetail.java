@@ -22,14 +22,29 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param entries its changes, <b>oldest first</b>: the order the run made them is the order
  *                that reads as a story, and a reviewer following a build wants the beginning
  * @param appearance SH1000 — which of those pages this run changed the <b>look</b> of
+ * @param decisions SH1001 — what a curator has already said about them, by post id. Absent keys
+ *                  are undecided, which is the state a queue is mostly in
  */
 @JsonInclude(Include.NON_NULL)
 public record ShReviewDetail(String session, String actor, List<Entry> entries,
-                             Appearance appearance) {
+                             Appearance appearance, List<Decided> decisions) {
 
     /** Before SH1000 said which pages changed their look. */
     public ShReviewDetail(String session, String actor, List<Entry> entries) {
-        this(session, actor, entries, null);
+        this(session, actor, entries, null, List.of());
+    }
+
+    /**
+     * One standing decision (SH1001).
+     *
+     * @param postId   the change it is about
+     * @param decision {@code APPROVE}, {@code REJECT} or {@code HOLD}
+     * @param note     why; always present on a rejection, and often absent otherwise
+     * @param actor    who decided
+     * @param at       when
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Decided(String postId, String decision, String note, String actor, Instant at) {
     }
 
     /**

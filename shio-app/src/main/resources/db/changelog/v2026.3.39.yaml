@@ -1,0 +1,87 @@
+databaseChangeLog:
+  # SH1001 — `sh_review_decision`: what a curator decided about one change, and why.
+  #
+  # Review was approve-everything or revert-everything, so one bad page in a long run forced a
+  # curator to accept all of it or undo all of it. The decision moves from the run to the change.
+  #
+  # Why a table rather than a side effect. APPROVE and REJECT already leave a trace — the post goes
+  # live, or it goes back — but HOLD leaves none at all, and "I looked at this and I am not ready"
+  # is exactly the state a queue needs to be able to hold. A decision whose only record is its
+  # effect also cannot carry a reason: today a rejection's why exists nowhere, which is the half of
+  # this task that a curator actually feels.
+  #
+  # `(session, post_id)` is unique: one standing decision per change per run. A curator who changes
+  # their mind replaces it — the row is the current answer, not a log of answers, and the audit trail
+  # is where the history of what happened lives (SH51).
+  #
+  # `session` is VARCHAR(255) to match `sh_history.agent_session_id` and `sh_agent_run.id`, and
+  # `post_id` is a plain VARCHAR for the JPQL invariant `agents.md` states: a post's key is
+  # composite, so a foreign key would have to name a state, and the row it named is the one
+  # publishing deletes.
+  #
+  # `tenant_id`, lowercase, as every content table carries (SH22); no backfill — a run reviewed
+  # before this table existed decided nothing here. Types DB-agnostic per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1001-create-sh-review-decision
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_review_decision
+      changes:
+        - createTable:
+            tableName: sh_review_decision
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_review_decision
+              - column:
+                  name: session
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: post_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: decision
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: VARCHAR(1000)
+              - column:
+                  name: actor
+                  type: VARCHAR(255)
+              - column:
+                  name: decided_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: sh1001-unique-sh-review-decision-session-post
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: UK_sh_review_decision_session_post
+      changes:
+        - addUniqueConstraint:
+            tableName: sh_review_decision
+            columnNames: session, post_id
+            constraintName: UK_sh_review_decision_session_post

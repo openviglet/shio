@@ -39,6 +39,11 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.api.agent.ShAgentRunService;
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.persistence.model.review.ShReviewDecision;
+import com.viglet.shio.persistence.model.review.ShReviewDecision.Kind;
+import com.viglet.shio.persistence.repository.review.ShReviewDecisionRepository;
 import com.viglet.shio.api.agent.verify.ShAgentRenderService;
 import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
@@ -98,6 +103,7 @@ public class ShReviewService {
     private final ShSiteRepository shSiteRepository;
     private final ShAgentRenderService shAgentRenderService;
     private final ShPostRevisionService shPostRevisionService;
+    private final ShReviewDecisionRepository shReviewDecisionRepository;
 
     public ShReviewService(ShHistoryRepository shHistoryRepository,
                           ShPostUnifiedRepository shPostUnifiedRepository,
@@ -109,7 +115,8 @@ public class ShReviewService {
                           ShAgentRunService shAgentRunService,
                           ShSiteRepository shSiteRepository,
                           ShAgentRenderService shAgentRenderService,
-                          ShPostRevisionService shPostRevisionService) {
+                          ShPostRevisionService shPostRevisionService,
+                          ShReviewDecisionRepository shReviewDecisionRepository) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
@@ -121,6 +128,167 @@ public class ShReviewService {
         this.shSiteRepository = shSiteRepository;
         this.shAgentRenderService = shAgentRenderService;
         this.shPostRevisionService = shPostRevisionService;
+        this.shReviewDecisionRepository = shReviewDecisionRepository;
+    }
+
+    /**
+     * One instruction about one change (SH1001).
+     *
+     * @param postId   the post, as the detail's entries name it
+     * @param decision what to do about it
+     * @param note     why — required on a {@link Kind#REJECT}, optional elsewhere
+     */
+    public record Decision(String postId, Kind decision, String note) {
+    }
+
+    /** A rejection with nothing written down, which is the rejection missing (SH1001). */
+    public static class RejectionNeedsReasonException extends ShTeachingException {
+
+        public RejectionNeedsReasonException(String postId) {
+            super(ShProblem.badRequest("rejection-needs-a-reason",
+                            "rejecting " + postId + " needs a reason")
+                    .withDetail("A rejection nobody can read teaches nothing: the agent that wrote "
+                            + "the page cannot be told what was wrong with it, and the next person "
+                            + "to open the run cannot see that anybody looked.")
+                    .withFix("Say what is wrong with this page, in a sentence whoever fixes it can "
+                            + "act on. HOLD is the decision for \"not now\", and it takes no reason.")
+                    .withExample("{\"postId\":\"" + postId + "\",\"decision\":\"REJECT\","
+                            + "\"note\":\"the price table is last quarter's\"}"));
+        }
+    }
+
+    /**
+     * Decide one run's changes, one at a time (SH1001).
+     *
+     * <h2>Why this replaces the two verbs rather than joining them</h2>
+     *
+     * <p>Approve-everything and revert-everything are this call over every entry, and they are
+     * implemented that way: two code paths for one decision is how the whole-run gesture and the
+     * per-change one come to disagree about what "approve" means — which permission it asks for,
+     * what it records, what it skips.</p>
+     *
+     * <h2>Atomic in the run, reported per change</h2>
+     *
+     * <p>One transaction, so a decision list either lands or does not. What it does <b>not</b> do is
+     * fail the call because one post could not be acted on: that is reported as a {@code skipped}
+     * row with its reason, the shape this surface already answered with, because a curator deciding
+     * eleven pages wants the nine that worked and the two that did not, named.</p>
+     *
+     * @param actor the curator; APPROVE asks them for PUBLISH on each post (SH995)
+     */
+    @Transactional
+    public ShReviewOutcome decide(String session, List<Decision> decisions, String actor) {
+        return decide(session, decisions, actor, "decide");
+    }
+
+    private ShReviewOutcome decide(String session, List<Decision> decisions, String actor,
+                                   String label) {
+        List<String> done = new ArrayList<>();
+        List<ShReviewOutcome.Skipped> skipped = new ArrayList<>();
+        Map<String, ShHistory> newest = newestPerPost(session);
+        Set<String> seen = new LinkedHashSet<>();
+        for (Decision decision : decisions) {
+            String postId = decision.postId();
+            if (postId == null || !seen.add(postId)) {
+                continue;
+            }
+            if (decision.decision() == Kind.REJECT
+                    && (decision.note() == null || decision.note().isBlank())) {
+                // Refused, not defaulted: the record IS the feature here, and the console asking for
+                // one while the API does not would make the rule a preference of one surface.
+                throw new RejectionNeedsReasonException(postId);
+            }
+            try {
+                apply(session, decision, newest.get(postId), actor)
+                        .ifPresentOrElse(reason -> skipped.add(
+                                        new ShReviewOutcome.Skipped(postId, reason)),
+                                () -> done.add(postId));
+            } catch (ShTeachingException teaching) {
+                // A teaching refusal is the caller's problem to fix and keeps its own status; the
+                // rest are this post's problem and belong beside the posts that worked.
+                throw teaching;
+            } catch (RuntimeException e) {
+                skipped.add(new ShReviewOutcome.Skipped(postId, reason(e)));
+            }
+        }
+        return new ShReviewOutcome(session, label, done.size(), List.copyOf(done),
+                List.copyOf(skipped));
+    }
+
+    /** Carry out one decision, and record it whatever it was. */
+    private Optional<String> apply(String session, Decision decision, ShHistory entry, String actor) {
+        Optional<String> refused = switch (decision.decision()) {
+            case APPROVE -> approveOne(decision.postId(), actor);
+            case REJECT -> entry == null
+                    ? Optional.of("this run changed nothing about that post")
+                    : revertOne(entry, decision.postId(), actor);
+            // Nothing to carry out: the row IS the act, which is the reason this table exists.
+            case HOLD -> Optional.empty();
+        };
+        if (refused.isEmpty()) {
+            record(session, decision, actor);
+        }
+        return refused;
+    }
+
+    /** Publish one draft this run wrote, or say why not. */
+    private Optional<String> approveOne(String postId, String actor) {
+        if (state(postId, ShPostState.DRAFT).isEmpty()) {
+            return Optional.of("no draft to publish");
+        }
+        // SH995 — approving publishes, and approval is exactly the act a team wants to hold apart
+        // from writing: the reviewer needs PUBLISH, not WRITE.
+        shContentAclService.requirePublish(postId);
+        shPostUnifiedWriteService.publish(postId, actor);
+        return Optional.empty();
+    }
+
+    /** The standing decision, replaced rather than appended: the row is the current answer. */
+    private void record(String session, Decision decision, String actor) {
+        ShReviewDecision row = shReviewDecisionRepository
+                .findBySessionAndPostId(session, decision.postId())
+                .orElseGet(ShReviewDecision::new);
+        row.setSession(session);
+        row.setPostId(decision.postId());
+        row.setDecision(decision.decision().name());
+        row.setNote(clip(decision.note()));
+        row.setActor(actor);
+        row.setDecidedAt(Instant.now());
+        shReviewDecisionRepository.save(row);
+    }
+
+    /** Bounded to the column, for SH544's reason: the record must never be what refuses the act. */
+    private static String clip(String note) {
+        if (note == null || note.isBlank()) {
+            return null;
+        }
+        String trimmed = note.trim();
+        return trimmed.length() > 1000 ? trimmed.substring(0, 1000) : trimmed;
+    }
+
+    /**
+     * The run's last word about each post, which is what a rejection undoes.
+     *
+     * <p>Newest first, the order {@link #revert} walks for the reason it states: a run's own last
+     * word about a post is the one to undo, so a create-then-publish pair ends as "not published,
+     * then trashed" rather than as a publish applied to a post that no longer exists.</p>
+     */
+    private Map<String, ShHistory> newestPerPost(String session) {
+        List<ShHistory> entries = new ArrayList<>(shHistoryRepository.findByAgentSession(session));
+        entries.sort((left, right) -> right.getDate().compareTo(left.getDate()));
+        Map<String, ShHistory> newest = new LinkedHashMap<>();
+        for (ShHistory entry : entries) {
+            if (entry.getShObject() != null) {
+                newest.putIfAbsent(entry.getShObject(), entry);
+            }
+        }
+        return newest;
+    }
+
+    /** What a curator has already said about this run's changes (SH1001). */
+    @Transactional(readOnly = true)
+    public List<ShReviewDecision> decisions(String session) {
+        return shReviewDecisionRepository.findBySessionOrderByDecidedAtAsc(session);
     }
 
     /**
@@ -148,7 +316,7 @@ public class ShReviewService {
         // two-query shape `pending()` uses and the reason it was not `sessions()` in the first
         // place. The old count asked `state(id, DRAFT).isPresent()` inside the per-entry loop:
         // one query per audit row, answering a question that was wrong anyway.
-        Set<String> unreleased = objects.isEmpty() ? Set.of() : unreleased(objects);
+        Set<String> unreleased = waiting(objects);
         // SH1000 — one query for the page's runs, never one per session and never per row: the
         // premise is one sentence about many changes, and this is the one place it is read.
         List<ShAgentRun> runs = shAgentRunService.runs(bySession.keySet());
@@ -190,7 +358,7 @@ public class ShReviewService {
         if (objects.isEmpty()) {
             return new ShReviewPending(0, 0);
         }
-        Set<String> unreleased = unreleased(objects);
+        Set<String> unreleased = waiting(objects);
         if (unreleased.isEmpty()) {
             return new ShReviewPending(0, 0);
         }
@@ -201,6 +369,28 @@ public class ShReviewService {
             }
         }
         return new ShReviewPending(sessions.size(), unreleased.size());
+    }
+
+    /**
+     * The unreleased posts a curator has not already parked (SH1001).
+     *
+     * <p>A {@code HOLD} is a decision with no side effect — "I have read this and I am not ready" —
+     * so nothing about the content says it has been looked at. If the count did not subtract it, the
+     * one gesture for parking a page would leave the badge saying the same number forever, which is
+     * the failure mode {@link #unreleased} itself was written to avoid one layer down.</p>
+     *
+     * <p>{@code APPROVE} and {@code REJECT} need no subtraction: publishing and reverting each make
+     * the post released on their own, which is what makes those two inferable and {@code HOLD} not.</p>
+     */
+    private Set<String> waiting(Set<String> objects) {
+        if (objects.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> unreleased = new LinkedHashSet<>(unreleased(objects));
+        shReviewDecisionRepository.findByPostIdIn(objects).stream()
+                .filter(decision -> Kind.HOLD.name().equals(decision.getDecision()))
+                .forEach(decision -> unreleased.remove(decision.getPostId()));
+        return unreleased;
     }
 
     /**
@@ -249,7 +439,11 @@ public class ShReviewService {
         List<ShHistory> entries = shHistoryRepository.findByAgentSession(session);
         List<ShReviewDetail.Entry> rows = entries.stream().map(this::entry).toList();
         String actor = entries.isEmpty() ? null : entries.get(0).getOwner();
-        return new ShReviewDetail(session, actor, rows, appearanceOf(rows, startedAt(entries)));
+        return new ShReviewDetail(session, actor, rows, appearanceOf(rows, startedAt(entries)),
+                shReviewDecisionRepository.findBySessionOrderByDecidedAtAsc(session).stream()
+                        .map(row -> new ShReviewDetail.Decided(row.getPostId(), row.getDecision(),
+                                row.getNote(), row.getActor(), row.getDecidedAt()))
+                        .toList());
     }
 
     /** The run's first change, which is the moment "before this run" means (SH1000). */
@@ -353,26 +547,12 @@ public class ShReviewService {
      */
     @Transactional
     public ShReviewOutcome approve(String session, String actor) {
-        List<String> done = new ArrayList<>();
-        List<ShReviewOutcome.Skipped> skipped = new ArrayList<>();
-        for (String postId : touchedPosts(session)) {
-            Optional<ShPostUnified> draft = state(postId, ShPostState.DRAFT);
-            if (draft.isEmpty()) {
-                skipped.add(new ShReviewOutcome.Skipped(postId, "no draft to publish"));
-                continue;
-            }
-            try {
-                // SH995 — approving an agent's run publishes it, and approval is exactly the act a
-                // team wants to hold apart from writing: the reviewer needs PUBLISH, not WRITE.
-                shContentAclService.requirePublish(postId);
-                shPostUnifiedWriteService.publish(postId, actor);
-                done.add(postId);
-            } catch (RuntimeException e) {
-                skipped.add(new ShReviewOutcome.Skipped(postId, reason(e)));
-            }
-        }
-        return new ShReviewOutcome(session, "approve", done.size(), List.copyOf(done),
-                List.copyOf(skipped));
+        // SH1001 — the same call, over every change. Two code paths for one decision is how the
+        // whole-run gesture and the per-change one come to disagree about what approve means:
+        // which permission it asks for, what it records, what it skips.
+        return decide(session, touchedPosts(session).stream()
+                .map(postId -> new Decision(postId, Kind.APPROVE, null))
+                .toList(), actor, "approve");
     }
 
     /**
@@ -384,28 +564,16 @@ public class ShReviewService {
      */
     @Transactional
     public ShReviewOutcome revert(String session, String actor) {
-        List<ShHistory> entries = new ArrayList<>(shHistoryRepository.findByAgentSession(session));
-        entries.sort((left, right) -> right.getDate().compareTo(left.getDate()));
-        List<String> done = new ArrayList<>();
-        List<ShReviewOutcome.Skipped> skipped = new ArrayList<>();
-        Set<String> handled = new LinkedHashSet<>();
-        for (ShHistory entry : entries) {
-            String postId = entry.getShObject();
-            if (postId == null || !handled.add(postId)) {
-                continue;
-            }
-            try {
-                revertOne(entry, postId, actor)
-                        .ifPresentOrElse(reason -> skipped.add(
-                                        new ShReviewOutcome.Skipped(postId, reason)),
-                                () -> done.add(postId));
-            } catch (RuntimeException e) {
-                skipped.add(new ShReviewOutcome.Skipped(postId, reason(e)));
-            }
-        }
-        return new ShReviewOutcome(session, "revert", done.size(), List.copyOf(done),
-                List.copyOf(skipped));
+        // SH1001 — a rejection of every change, and its reason is the gesture itself. The note is
+        // supplied rather than waived: a REJECT with nothing written down is refused on the
+        // per-change call, and a whole-run verb exempt from that rule would be the door.
+        return decide(session, newestPerPost(session).keySet().stream()
+                .map(postId -> new Decision(postId, Kind.REJECT, WHOLE_RUN_REVERT))
+                .toList(), actor, "revert");
     }
+
+    /** The reason a whole-run revert records, since the gesture is its own explanation (SH1001). */
+    private static final String WHOLE_RUN_REVERT = "the whole run was reverted";
 
     /**
      * Reverts one entry.
