@@ -803,3 +803,26 @@ that gains a guard fails until its row moves. Its first draft read the parameter
 `\(([^)]*)\)` and reported **one** write in `ShStaticFileAPI` where there are three — a parameter
 annotated `@RequestParam("file")` closes that group early — so the scan counts parentheses instead.
 Under-reporting is the one way a lint like this goes wrong: it is green, and it is not looking.
+
+## The console's publish, with the agent's safeguards (SH996)
+
+`POST /api/v2/post-unified/{id}/publish?dryRun=true` answers **`ShAgentChangeSet`** — the shape the
+batch surface returns for a dry run — and writes nothing. One contract, two callers: the console and
+the agent ask the same question about the same act, and a console-shaped preview would be a second
+description of publishing to keep in step, where the day they disagreed the surface with the human on
+it would be the one that was wrong. It reports the batch path's three outcomes for its reasons: no
+draft is a noop, a draft matching what is live is a noop (re-publishing unchanged content must not
+claim to have published), everything else is a publish, and a first publish says so. It carries no
+routes — those are `include=impact` on the read, and computing them twice is the P5 split.
+
+`requirePublish` is asked on the **dry run as well**: a plan a caller may not carry out is a plan that
+misleads.
+
+**A real console publish is recorded under `console:<curator>:<date>`**, which is what puts it in the
+review queue. Until now only an agent's work was reviewable and revertable; a curator who published the
+wrong draft had the same need and no screen for it, which made "the agent's work is reviewable and mine
+is not" a property of the product rather than a decision. The day is the unit — one session per press
+would make the queue a log, which the Activity page already is, and one per curator would never close
+— and it is derived rather than stored, so two publishes an hour apart join without anything recording
+that they belong together. The context is cleared in a `finally`: the thread is pooled, and a session
+left bound would stamp the next request's audit rows with this curator's day.

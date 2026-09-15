@@ -80,6 +80,35 @@ public final class ShAgentSessionContext {
         return principal == null || principal.isBlank() ? "agent" : principal;
     }
 
+    /**
+     * SH996 — the session a <b>console</b> publish belongs to: {@code console:<curator>:<date>}.
+     *
+     * <h2>Why a console publish is in the agent's queue at all</h2>
+     *
+     * <p>The review queue is where a change is looked at and, if it was wrong, reverted — and until
+     * now only an agent's work could be. A curator who published the wrong draft had the same need
+     * and no screen for it, which made "the agent's work is reviewable and mine is not" a property of
+     * the product rather than a decision anybody made.</p>
+     *
+     * <h2>Why the day, and not the click</h2>
+     *
+     * <p>One session per press would make the queue a log, which is what the Activity page already
+     * is. One session per curator forever would never close. The day is the unit a person actually
+     * asks about — "put back what I published this morning" — and it is the only grouping that needs
+     * no new state: the id is derived, so two publishes an hour apart join without anything storing
+     * that they belong together.</p>
+     */
+    public static String consoleSession(String principal, java.time.Instant when) {
+        String who = principal == null || principal.isBlank() ? "console" : principal;
+        return "console:" + who + ":" + java.time.format.DateTimeFormatter.ISO_LOCAL_DATE
+                .withZone(java.time.ZoneOffset.UTC).format(when);
+    }
+
+    /** Whether this session id is a curator's own publishing rather than an agent run (SH996). */
+    public static boolean isConsole(String session) {
+        return session != null && session.startsWith("console:");
+    }
+
     /** {@link #actor(String)} for the authenticated principal of the current request. */
     public static String actor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

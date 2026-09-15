@@ -113,8 +113,12 @@ class ShAgentP7ConformanceTest {
                 no("ShFolderAPI.java", "confirm", DELETE_IS_THE_CONSOLE_GESTURE),
                 yes("ShFolderWriteService.java", "shContentAuditService"),
                 yes("ShReviewService.java", "findAgentEntries")));
+        // SH996 — the one console write whose plan is NOT the call: publishing is the act that
+        // changes what visitors see, and what a curator wants before it is the list of URLs it
+        // moves, which the request does not carry. The row moved because the guard arrived, which
+        // is this census doing the job SH142 gave it.
         byPath.put("/api/v2/post-unified", new Guards(
-                no("ShPostUnifiedAPI.java", "dryRun", PLAN_IS_THE_CALL),
+                yes("ShPostUnifiedAPI.java", "dryRun"),
                 no("ShPostUnifiedAPI.java", "confirm", DELETE_IS_THE_CONSOLE_GESTURE),
                 yes("ShPostUnifiedWriteService.java", "shContentAuditService"),
                 yes("ShReviewService.java", "findAgentEntries")));

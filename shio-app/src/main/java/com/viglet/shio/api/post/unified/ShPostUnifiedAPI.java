@@ -10,6 +10,8 @@ package com.viglet.shio.api.post.unified;
 
 import java.security.Principal;
 import java.time.Instant;
+
+import com.viglet.shio.api.agent.ShAgentSessionContext;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +68,8 @@ public class ShPostUnifiedAPI {
     private final ShPostDraftMergeService shPostDraftMergeService;
     private final ShConsolePostVersion shConsolePostVersion;
     private final ShPostRevisionService shPostRevisionService;
+    /** SH996 — what Publish would do, answered in the agent's own change-set shape. */
+    private final ShConsolePublishPlan shConsolePublishPlan;
 
     public ShPostUnifiedAPI(ShPostUnifiedWriteService shPostUnifiedWriteService,
                             ShConsolePostReadService shConsolePostReadService,
@@ -74,7 +78,8 @@ public class ShPostUnifiedAPI {
                             ShPostTypeRepository shPostTypeRepository,
                             ShPostDraftMergeService shPostDraftMergeService,
                             ShConsolePostVersion shConsolePostVersion,
-                            ShPostRevisionService shPostRevisionService) {
+                            ShPostRevisionService shPostRevisionService,
+                            ShConsolePublishPlan shConsolePublishPlan) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shConsolePostReadService = shConsolePostReadService;
         this.shTenantQuotaService = shTenantQuotaService;
@@ -83,6 +88,7 @@ public class ShPostUnifiedAPI {
         this.shPostDraftMergeService = shPostDraftMergeService;
         this.shConsolePostVersion = shConsolePostVersion;
         this.shPostRevisionService = shPostRevisionService;
+        this.shConsolePublishPlan = shConsolePublishPlan;
     }
 
     @PostMapping
@@ -165,21 +171,48 @@ public class ShPostUnifiedAPI {
     public record PatchPayload(Map<String, JsonNode> attrs, Boolean publish) {
     }
 
+    /**
+     * Publish the draft (SH654), or — with {@code dryRun} — say what publishing it would do.
+     *
+     * <h2>SH996: the curator's publish gets the agent's safeguards</h2>
+     *
+     * <p>The agent's publish has a dry run, a confirm token and a review entry; the console's had a
+     * button. So the surface P7 was written <em>for</em> was the one with none of P7's instruments.
+     * {@code dryRun=true} answers the same {@code ShAgentChangeSet} the batch surface returns and
+     * writes nothing — one contract, two callers — and the routes that come with it are on the read
+     * (`include=impact`), so the console can say which URLs move before it arms the button.</p>
+     *
+     * <p>A real publish is recorded under a {@code console:<curator>:<date>} session, which is what
+     * puts it in the review queue: until now a curator who published the wrong draft had the same
+     * need an agent run has and no screen for it.</p>
+     */
     @PostMapping("/{id}/publish")
-    public ResponseEntity<ShConsolePost> publish(
+    public ResponseEntity<?> publish(
             @PathVariable String id,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+            @RequestParam(name = "dryRun", required = false, defaultValue = "false") boolean dryRun,
             Principal principal) {
         // SH995 — PUBLISH rather than WRITE: a curator who may edit this page is not automatically
         // the one who decides it goes live. The draft is saved either way, which is what the refusal
-        // says.
+        // says. Asked on the dry run too: a plan a caller may not carry out is a plan that misleads.
         shContentAclService.requirePublish(id);
+        if (dryRun) {
+            return ResponseEntity.ok(shConsolePublishPlan.of(id));
+        }
         // SH730's rule, and the agent's: the DRAFT is the subject. Publishing is not a content
         // change, so matching against the PUBLISHED row would refuse the case publishing exists for.
         shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT);
-        ShConsolePost written = shConsolePostReadService.written(shPostUnifiedWriteService
-                .publish(id, principal != null ? principal.getName() : null));
-        return ResponseEntity.ok().eTag(shConsolePostVersion.etagAfterWriting(id)).body(written);
+        String actor = principal != null ? principal.getName() : null;
+        ShAgentSessionContext.set(ShAgentSessionContext.consoleSession(actor, Instant.now()));
+        try {
+            ShConsolePost written = shConsolePostReadService
+                    .written(shPostUnifiedWriteService.publish(id, actor));
+            return ResponseEntity.ok().eTag(shConsolePostVersion.etagAfterWriting(id)).body(written);
+        } finally {
+            // The thread is pooled, so a session left bound would stamp the next request's audit
+            // rows with this curator's day — the leak SH639's sweep had to fix one layer down.
+            ShAgentSessionContext.clear();
+        }
     }
 
     @PostMapping("/{id}/unpublish")

@@ -158,7 +158,10 @@ class ShPublishPermissionLintTest {
     /** The start of the method a position sits in: the last signature line above it. */
     private static int enclosingMethod(String code, int at) {
         Matcher signature = Pattern.compile(
-                "(?m)^ {4}(?:@\\w+\\s+)*(?:public|private|protected)[\\w<>,\\[\\] .]+ \\w+\\(")
+                // `?` and `&` because a signature may return `ResponseEntity<?>`: without them the
+                // reader walks back past the method and reports whatever declaration came before it,
+                // which is how this named a `record` as the thing that publishes.
+                "(?m)^ {4}(?:@\\w+\\s+)*(?:public|private|protected)[\\w<>,?&\\[\\] .]+ \\w+\\(")
                 .matcher(code);
         int start = -1;
         while (signature.find() && signature.start() < at) {

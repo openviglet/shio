@@ -1,0 +1,87 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+package com.viglet.shio.api.post.unified;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.viglet.shio.api.agent.ShAddressResolver;
+import com.viglet.shio.api.agent.ShAgentBatchService;
+import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
+import com.viglet.shio.api.post.ShPostDrift;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+
+import tools.jackson.databind.ObjectMapper;
+
+/**
+ * What the console's Publish would do, without doing it (SH996).
+ *
+ * <h2>One contract, two callers</h2>
+ *
+ * <p>The answer is {@link ShAgentChangeSet} — the shape {@code POST /agent/batch} returns for a dry
+ * run — rather than a console-shaped preview. The console and the agent are asking the same question
+ * about the same act, and a second shape would be a second description of publishing to keep in step:
+ * the day they disagreed, the surface with the human on it would be the one that was wrong.</p>
+ *
+ * <p>It reports the same three outcomes the batch path does, and for the same reasons: a draft that
+ * matches what is live is a {@code noop} (re-publishing unchanged content must not claim to have
+ * published), a post with no draft is a {@code noop} naming why, and everything else is a
+ * {@code publish}. What it deliberately does not carry is the routes — those are on
+ * {@code /agent/read?include=impact}, which the console already has, and computing them twice would
+ * be the P5 split this class exists to avoid.</p>
+ *
+ * @author Alexandre Oliveira
+ * @since 2026.3
+ */
+@Service
+public class ShConsolePublishPlan {
+
+    private final ShPostUnifiedRepository shPostUnifiedRepository;
+    private final ShAddressResolver shAddressResolver;
+    private final ObjectMapper objectMapper;
+
+    public ShConsolePublishPlan(ShPostUnifiedRepository shPostUnifiedRepository,
+                                ShAddressResolver shAddressResolver,
+                                ObjectMapper objectMapper) {
+        this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shAddressResolver = shAddressResolver;
+        this.objectMapper = objectMapper;
+    }
+
+    /** The plan for publishing one post, by console id. */
+    @Transactional(readOnly = true)
+    public ShAgentChangeSet of(String postId) {
+        Optional<ShPostUnified> draft = shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.DRAFT);
+        Optional<ShPostUnified> live = shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.PUBLISHED);
+        ShPostUnified subject = draft.or(() -> live).orElse(null);
+        String address = subject == null ? "id:" + postId
+                : shAddressResolver.addressOf(subject).toString();
+
+        ShAgentChangeSet.Change change;
+        if (draft.isEmpty()) {
+            change = new ShAgentChangeSet.Change(ShAgentBatchService.POST_PUBLISH, address,
+                    ShAgentChangeSet.Change.NOOP, "no draft to publish", postId);
+        } else if (live.isPresent() && ShPostDrift.sameContent(objectMapper, draft.get(), live.get())) {
+            change = new ShAgentChangeSet.Change(ShAgentBatchService.POST_PUBLISH, address,
+                    ShAgentChangeSet.Change.NOOP, "already live with this content", postId);
+        } else {
+            change = new ShAgentChangeSet.Change(ShAgentBatchService.POST_PUBLISH, address,
+                    ShAgentChangeSet.Change.PUBLISH,
+                    live.isPresent() ? null : "this URL goes live for the first time", postId);
+        }
+        return new ShAgentChangeSet(true, 1, change.isChange() ? 1 : 0, List.of(change));
+    }
+}

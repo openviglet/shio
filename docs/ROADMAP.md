@@ -46,7 +46,7 @@
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- ⏳ **SH996** (deps: SH995 ✅) **the console's publish has no dry run, no impact preview and no confirm, while the agent's has all three** — the console's own dry run and the review entry a console publish leaves, which put that list in front of the curator before the button arms. → §LXVI.7
+- ⏳ **SH996** (deps: SH995 ✅) **the console's publish has no dry run, no impact preview and no confirm, while the agent's has all three** — The routes and the dry run landed; left is the console showing that list, and arming Publish behind it. → §LXVI.7
 - 📋 **SH997** (deps: SH993 ✅, SH996 ⏳) **nothing checks a page before it goes live, because verify, audit and the render digest are all opt-in** — Shio's pre-publish instruments run only when somebody remembers, and its webhooks all fire after the commit, so no check stands between content and visitors. → §LXVI.8
 - 📋 **SH998** (deps: SH997, SH995 ✅) **a failed gate cannot be waived with a recorded reason, and nothing outside Shio hears it failed** — A check nobody may waive becomes one people disable, and webhooks fire only after commit, so no external approver is told to step in. → §LXVI.9
 - 📋 **SH1081** (deps: SH990 ✅) **the TypeScript client passes neither state nor locale on its CDA reads, so a front end cannot preview a draft** — SH990 gave every CDA read a state and the route has taken locale since SH53, but getPost, getPostByUrl, listChildren and query build a fixed query string. → §LXVI.10
