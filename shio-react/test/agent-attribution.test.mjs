@@ -77,6 +77,30 @@ test("SH1000: the review queue leads with the premise, and names the flag when t
   }
 })
 
+test("SH1000: the summary is beside the premise, and the look report is behind the open", () => {
+  const page = read("src", "app", "admin", "review", "review.list.page.tsx")
+
+  assert.match(page, /Object\.keys\(session\.bySite \?\? \{\}\)\.length > 1/,
+    "SH1000: by site only when a run touched more than one — on a single-site run the badge "
+      + "repeats what the addresses already say, and a badge that is never news stops being read")
+  assert.match(page, /detail\.appearance && detail\.appearance\.checked > 0/,
+    "SH1000: shown only when something was comparable, because '0 of 0 pages' is a sentence about "
+      + "the instrument rather than about the run")
+  assert.doesNotMatch(page, /session\.appearance/,
+    "SH1000: each comparison is two real renders (SH249), so it belongs to the one run somebody "
+      + "opened and not to a listing the console asks for on every visit")
+
+  for (const locale of ["en", "pt"]) {
+    const review = JSON.parse(read("src", "i18n", "locales", locale, "review.json"))
+    for (const key of ["review.appearanceSteady", "review.appearanceMoved"]) {
+      assert.ok(review[key], `SH1000: ${locale} is missing ${key}`)
+      assert.match(review[key], /\{\{checked\}\}/,
+        `SH1000: ${locale} must carry the denominator — without it an empty list reads as "nothing `
+          + 'moved" when it may mean "nothing was comparable"')
+    }
+  }
+})
+
 test("SH999: the model carries what the response carries, and says what it omits", () => {
   const model = read("src", "models", "history", "history.model.ts")
 

@@ -3421,3 +3421,18 @@ anywhere to land: `ShAgentSessionFilter`'s javadoc said "the CLI sends one per i
 CLI sent none, so every write it made was recorded as an ordinary curator's and the review queue had
 exactly the hole SH106 said it was closing. One process is one run now — a module constant, not a
 per-client value, so a command that builds two clients is still one thing somebody ran.
+
+## The run summary the queue leads with (SH1000)
+
+`ShReviewSession` gains `bySite` — counts per site **name**, which is the half `sites` could not
+answer, since an id tells a reviewer nothing. `ShReviewDetail` gains `appearance`: the addresses
+whose look moved, how many pages were compared, and the cut when the ceiling bit.
+
+The comparison is deliberately **not** against a stored digest. `sh_post_revision` keeps what a page
+*said*, not what it looked like, and that is the right split: the same content renders differently
+after a template changes. So the before is the revision preceding the run, rendered through today's
+templates — which is also the question a reviewer has, because a page whose look moved when somebody
+edited a shared region is a page whose look moved. A page the run created has no before and is not
+compared; it is already a `CREATE` in the counts, and calling a new page's appearance "changed"
+would put the one row the action column can already explain into the list meant for the ones it
+cannot.

@@ -21,8 +21,39 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param actor   the principal whose credential the run used
  * @param entries its changes, <b>oldest first</b>: the order the run made them is the order
  *                that reads as a story, and a reviewer following a build wants the beginning
+ * @param appearance SH1000 — which of those pages this run changed the <b>look</b> of
  */
-public record ShReviewDetail(String session, String actor, List<Entry> entries) {
+@JsonInclude(Include.NON_NULL)
+public record ShReviewDetail(String session, String actor, List<Entry> entries,
+                             Appearance appearance) {
+
+    /** Before SH1000 said which pages changed their look. */
+    public ShReviewDetail(String session, String actor, List<Entry> entries) {
+        this(session, actor, entries, null);
+    }
+
+    /**
+     * What this run changed the look of (SH1000).
+     *
+     * <h2>Why this is on the detail and not on the listing</h2>
+     *
+     * <p>An appearance digest is a <b>real render</b> (SH249), and nothing stores the one a page had
+     * before: answering "did the look move" means rendering the revision that preceded the run and
+     * rendering the page as it stands, two renders per page. The queue's listing is asked for on
+     * every visit to the console and holds every open run, so computing it there would be that
+     * multiplied by the whole queue. A detail is one run somebody opened.</p>
+     *
+     * <p>Capped, with the cut reported, the way {@code ShAgentProofService.digestsOf} caps its
+     * digests and for its reason: an unreported cut reads as a complete answer (SH138).</p>
+     *
+     * @param moved   the addresses whose look changed, in address order (P5)
+     * @param checked how many pages were compared — the denominator, without which {@code moved}
+     *                being empty reads as "nothing moved" when it may mean "nothing was comparable"
+     * @param note    what was left out, when the ceiling bit; absent otherwise
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Appearance(List<String> moved, int checked, String note) {
+    }
 
     /**
      * One change.

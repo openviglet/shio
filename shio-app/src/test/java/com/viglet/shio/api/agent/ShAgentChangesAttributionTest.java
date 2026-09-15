@@ -269,6 +269,41 @@ class ShAgentChangesAttributionTest {
     }
 
     @Test
+    @DisplayName("SH1000: the summary counts by site name, which is what a reviewer can read")
+    void theSummaryCountsBySite() {
+        assertThat(shReviewService.sessions(500))
+                .filteredOn(row -> RUN.equals(row.session())).singleElement()
+                .satisfies(row -> {
+                    assertThat(row.sites()).containsExactly(siteId);
+                    assertThat(row.bySite())
+                            .as("SH1000: `sites` carried ids, and an id tells a reviewer nothing — "
+                                    + "eleven changes over four sites is a different decision from "
+                                    + "eleven in one, and that is unreadable as four uuids")
+                            .containsExactly(java.util.Map.entry(site, 1));
+                });
+    }
+
+    @Test
+    @DisplayName("SH1000: a run whose pages have no earlier revision compares none, and says so")
+    void appearanceReportsItsDenominator() {
+        var appearance = shReviewService.detail(RUN).appearance();
+
+        assertThat(appearance).isNotNull();
+        assertThat(appearance.checked())
+                .as("SH1000: `checked` is the denominator — without it an empty `moved` reads as "
+                        + "'nothing moved' when it may mean 'nothing was comparable', and these "
+                        + "fixtures have no revision before the run at all")
+                .isZero();
+        assertThat(appearance.moved())
+                .as("SH1000: a page the run created has no before, so it is not compared — it is "
+                        + "already a CREATE in the counts")
+                .isEmpty();
+        assertThat(appearance.note())
+                .as("SH1000: the cut is reported only when the ceiling bit; three pages did not")
+                .isNull();
+    }
+
+    @Test
     @DisplayName("SH1000: the premise is read once per run and never rides the change row")
     void itNeverJoinsTheChangePayload() {
         String rendered = objectMapper.writeValueAsString(feed(null));

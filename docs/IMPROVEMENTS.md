@@ -1639,26 +1639,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-### LXVII.2 A run that says what it was for (SH1000)
-
-ShReviewSession holds session, actor, changes, counts by action, first and last seen,
-sites and pending, and its detail entries add action, post, title, address, state and
-date. Neither carries an intent; the rendered string is a count of changes by an actor
-above a uuid. The MCP session is stateless and stores only its id. shio report composes
-three reads into a narrative client-side and never reaches the console, so the curator
-who does not open a terminal gets the version with no premise.
-
-An agent declares its intent once and it rides every surface. Accept intent in the MCP
-initialize clientInfo, the cheapest place because tools/list is resent every turn and
-initialize is not; X-Shio-Intent on the agent surface and shio apply --intent persist it
-onto BB1's run row; shio report reads the stored intent instead of reconstructing one.
-
-The review queue leads with the intent sentence and a server-computed summary, counts by
-action and site and the pages whose appearance digest moved. A run with no intent reads
-no intent declared with a hint naming the argument that would have supplied it. The
-intent is read once per run and never joins the per-row change payload, which is
-measured.
-
 ### LXVII.3 Decisions per change, with a reason (SH1001)
 
 The review API has two mutations, each taking a session: approve publishes every draft

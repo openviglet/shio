@@ -20,6 +20,11 @@ export interface ShReviewSession {
   agentName?: string | null
   changes: number
   byAction: Record<string, number>
+  /**
+   * SH1000 — counts per site name. The half `sites` could not answer: an id tells a reviewer
+   * nothing, and eleven changes over four sites is a different decision from eleven in one.
+   */
+  bySite?: Record<string, number>
   firstSeen?: string
   lastSeen?: string
   sites: string[]
@@ -54,9 +59,25 @@ export interface ShReviewEntry {
   revertable: boolean
 }
 
+/**
+ * SH1000 — which of a run's pages look different than they did before it.
+ *
+ * On the detail and not on the listing because each comparison is two real renders (SH249): the
+ * listing is asked for on every visit and holds every open run, and a detail is one run somebody
+ * opened. `checked` is the denominator — without it an empty `moved` reads as "nothing moved" when
+ * it may mean "nothing was comparable".
+ */
+export interface ShReviewAppearance {
+  moved: string[]
+  checked: number
+  /** What was left out, when the ceiling bit. */
+  note?: string | null
+}
+
 export interface ShReviewDetail {
   session: string
   actor?: string
+  appearance?: ShReviewAppearance | null
   entries: ShReviewEntry[]
 }
 

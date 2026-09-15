@@ -172,7 +172,12 @@ class ShSilentCatchInventoryTest {
             // worse in the direction that matters: `initialize` is the first call of a session, so
             // propagating would turn "your agent has no label in the Activity page" into "your
             // agent cannot start".
-            "api", 68,
+            // 69 since SH1000, in `ShReviewService.appearance`: a page that will not render is not
+            // a reason to fail the read a reviewer opened. It is the rule `ShAgentProofService`
+            // already follows one surface over, and here the absence is reported rather than
+            // swallowed — `checked` is the denominator, so a page that could not be compared makes
+            // the number smaller instead of making an empty `moved` look like a clean run.
+            "api", 69,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

@@ -28,6 +28,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param firstSeen  when the run's first change landed
  * @param lastSeen   when its last one did
  * @param sites      the site ids it touched
+ * @param bySite     SH1000 — counts per site <b>name</b>, which is the half {@code sites} could not
+ *                   answer: an id tells a reviewer nothing, and "eleven changes" spread over four
+ *                   sites is a different decision from eleven in one
  * @param intent     SH1000 — what this run said it was for, declared once by whoever started it.
  *                   Absent when nothing declared one, and the queue says so in those words: a
  *                   reviewer reading a count of changes over a uuid has to reconstruct the premise
@@ -49,6 +52,7 @@ public record ShReviewSession(
         Instant firstSeen,
         Instant lastSeen,
         List<String> sites,
+        Map<String, Integer> bySite,
         String intent,
         String agentName,
         int pending) {
@@ -56,6 +60,7 @@ public record ShReviewSession(
     /** Before SH1000 gave a run a premise and SH999 gave it a name. */
     public ShReviewSession(String session, String actor, int changes, Map<String, Integer> byAction,
                            Instant firstSeen, Instant lastSeen, List<String> sites, int pending) {
-        this(session, actor, changes, byAction, firstSeen, lastSeen, sites, null, null, pending);
+        this(session, actor, changes, byAction, firstSeen, lastSeen, sites, Map.of(), null, null,
+                pending);
     }
 }

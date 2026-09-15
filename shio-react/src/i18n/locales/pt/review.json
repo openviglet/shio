@@ -5,6 +5,8 @@
   "review.blankDescription": "Quando um agente escreve pelo MCP ou pela superfície de agente, cada execução aparece aqui com o que alterou.",
   "review.changesBy": "{{count}} alteração(ões) por {{actor}}",
   "review.noIntent": "Nenhuma intenção declarada — inicie a execução com --intent \"<frase>\"",
+  "review.appearanceSteady": "{{checked}} página(s) comparada(s): nenhuma mudou de aparência.",
+  "review.appearanceMoved": "De {{checked}} página(s) comparada(s), estas mudaram de aparência: {{pages}}",
   "review.unknownActor": "um agente",
   "review.pending": "{{count}} para revisar",
   "review.pendingSessions": "{{count}} execução(ões) de agente aguardando revisão",

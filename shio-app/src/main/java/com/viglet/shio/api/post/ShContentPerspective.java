@@ -103,6 +103,29 @@ public record ShContentPerspective(ShPostState row, Integer revision, String rel
         };
     }
 
+    /** The perspective naming one captured revision, for a caller that has the number (SH1000). */
+    public static ShContentPerspective revision(int versionNo) {
+        return new ShContentPerspective(null, versionNo, null);
+    }
+
+    /**
+     * This perspective as the {@code state=} value that produces it, or {@code null} for the default
+     * (SH1000).
+     *
+     * <p>The grammar has one parser and now one writer, for the same reason: a caller composing
+     * {@code "rev:" + n} is a second place that knows the spelling, and the day the prefix changes
+     * it is the place nobody greps. {@code ShPerspectiveCoverageLintTest} asserts both directions.</p>
+     */
+    public String state() {
+        if (revision != null) {
+            return REVISION_PREFIX + revision;
+        }
+        if (release != null) {
+            return RELEASE_PREFIX + release;
+        }
+        return row == null ? null : row.name().toLowerCase(Locale.ROOT);
+    }
+
     /** Whether the caller named nothing, so the path's default applies. */
     public boolean isDefault() {
         return row == null && revision == null && release == null;

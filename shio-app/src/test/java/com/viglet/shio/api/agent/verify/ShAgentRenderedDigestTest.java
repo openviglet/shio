@@ -164,6 +164,62 @@ class ShAgentRenderedDigestTest {
     }
 
     @Test
+    @DisplayName("SH1000: the review queue's before/after is two renders, and it discriminates")
+    void anAppearanceComparisonAcrossARevision() {
+        String address = "post:" + siteName + "/styled";
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        ShPostUnified page = tx.execute(status -> entityManager.createQuery(
+                        "select p from ShPostUnified p where p.furl = '/styled' and p.state = :state",
+                        ShPostUnified.class)
+                .setParameter("state", ShPostState.DRAFT)
+                .getSingleResult());
+
+        // The run's "before": what the page said when this revision was captured. Nothing stores
+        // the appearance a page HAD — a revision keeps what it said — so the only honest answer is
+        // to render that revision through today's templates, which is also the question a reviewer
+        // has: a page whose look moved because somebody edited a shared region did move.
+        ShPostRevision unchanged = tx.execute(status -> {
+            ShPostUnified before = new ShPostUnified();
+            before.setId(page.getId());
+            before.setState(ShPostState.DRAFT);
+            before.setShPostType(entityManager.merge(page).getShPostType());
+            before.setTitle(page.getTitle());
+            before.setData(page.getData());
+            return revisionService.capture(before, ShPostRevision.Reason.SAVE, "admin");
+        });
+        ShPostRevision restyled = tx.execute(status -> {
+            ShPostUnified before = new ShPostUnified();
+            before.setId(page.getId());
+            before.setState(ShPostState.DRAFT);
+            before.setShPostType(entityManager.merge(page).getShPostType());
+            before.setTitle(page.getTitle());
+            before.setData(json("TEXT", "<p class=\"lede\">It said something plainer.</p>"));
+            return revisionService.capture(before, ShPostRevision.Reason.SAVE, "admin");
+        });
+        try {
+            String now = renderService.digest(address, null, null).appearanceDigest();
+
+            assertThat(renderService.digest(address, null, "rev:" + unchanged.getVersionNo())
+                    .appearanceDigest())
+                    .as("SH1000: a run that changed nothing a visitor can see must not appear in "
+                            + "`moved` — otherwise the list is every page the run touched, which is "
+                            + "the list of changes the reviewer already has")
+                    .isEqualTo(now);
+            assertThat(renderService.digest(address, null, "rev:" + restyled.getVersionNo())
+                    .appearanceDigest())
+                    .as("SH1000: and one that did must, which is what the action column cannot say "
+                            + "— an UPDATE that moved a headline and one that moved the whole page "
+                            + "read identically there")
+                    .isNotEqualTo(now);
+        } finally {
+            tx.executeWithoutResult(status -> {
+                revisionRepository.delete(entityManager.merge(unchanged));
+                revisionRepository.delete(entityManager.merge(restyled));
+            });
+        }
+    }
+
+    @Test
     @DisplayName("SH990: state picks the version a digest and an editable read take, a revision rendered like the page")
     void stateSelectsTheVersionRead() {
         String address = "post:" + siteName + "/bound";

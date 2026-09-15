@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,11 @@ import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.api.agent.ShAgentRunService;
+import com.viglet.shio.api.agent.verify.ShAgentRenderService;
+import com.viglet.shio.api.post.ShContentPerspective;
+import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.persistence.model.agent.ShAgentRun;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.tenant.ShTenantContext;
@@ -89,6 +95,9 @@ public class ShReviewService {
     private final ShContentAclService shContentAclService;
     private final ShAddressResolver shAddressResolver;
     private final ShAgentRunService shAgentRunService;
+    private final ShSiteRepository shSiteRepository;
+    private final ShAgentRenderService shAgentRenderService;
+    private final ShPostRevisionService shPostRevisionService;
 
     public ShReviewService(ShHistoryRepository shHistoryRepository,
                           ShPostUnifiedRepository shPostUnifiedRepository,
@@ -97,7 +106,10 @@ public class ShReviewService {
                           ShFolderWriteService shFolderWriteService,
                           ShContentAclService shContentAclService,
                           ShAddressResolver shAddressResolver,
-                          ShAgentRunService shAgentRunService) {
+                          ShAgentRunService shAgentRunService,
+                          ShSiteRepository shSiteRepository,
+                          ShAgentRenderService shAgentRenderService,
+                          ShPostRevisionService shPostRevisionService) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
@@ -106,7 +118,19 @@ public class ShReviewService {
         this.shContentAclService = shContentAclService;
         this.shAddressResolver = shAddressResolver;
         this.shAgentRunService = shAgentRunService;
+        this.shSiteRepository = shSiteRepository;
+        this.shAgentRenderService = shAgentRenderService;
+        this.shPostRevisionService = shPostRevisionService;
     }
+
+    /**
+     * How many pages one opened run compares for an appearance change (SH1000).
+     *
+     * <p>Two renders each, so this is the ceiling on forty renders. Twenty is a run somebody reads
+     * in one sitting; past that the cut is reported and the reviewer still has the list of changes,
+     * which is the part that was always there.</p>
+     */
+    private static final int APPEARANCE_CEILING = 20;
 
     /** The runs, newest first. */
     @Transactional(readOnly = true)
@@ -130,9 +154,15 @@ public class ShReviewService {
         List<ShAgentRun> runs = shAgentRunService.runs(bySession.keySet());
         Map<String, ShAgentRun> byId = new LinkedHashMap<>();
         runs.forEach(run -> byId.put(run.getId(), run));
+        // SH1000 — one query for every site the page mentions, not one per run: a queue of twenty
+        // runs over three sites is three sites.
+        Map<String, String> siteNames = namesOf(objects.isEmpty() ? Set.of() : entries.stream()
+                .map(ShHistory::getShSite)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)));
         return bySession.entrySet().stream()
                 .map(group -> summarize(group.getKey(), group.getValue(), unreleased,
-                        byId.get(group.getKey())))
+                        byId.get(group.getKey()), siteNames))
                 .limit(Math.max(1, limit))
                 .toList();
     }
@@ -219,7 +249,100 @@ public class ShReviewService {
         List<ShHistory> entries = shHistoryRepository.findByAgentSession(session);
         List<ShReviewDetail.Entry> rows = entries.stream().map(this::entry).toList();
         String actor = entries.isEmpty() ? null : entries.get(0).getOwner();
-        return new ShReviewDetail(session, actor, rows);
+        return new ShReviewDetail(session, actor, rows, appearanceOf(rows, startedAt(entries)));
+    }
+
+    /** The run's first change, which is the moment "before this run" means (SH1000). */
+    private static Instant startedAt(List<ShHistory> entries) {
+        return entries.stream().map(ShHistory::getDate).filter(java.util.Objects::nonNull)
+                .min(Instant::compareTo).orElse(null);
+    }
+
+    /**
+     * Which of this run's pages look different than they did before it (SH1000).
+     *
+     * <h2>Why the comparison is against a revision and not against a stored digest</h2>
+     *
+     * <p>Nothing stores the appearance a page had: {@code sh_post_revision} keeps what a page
+     * <em>said</em>, not what it looked like, and that is the right split — a revision is a record
+     * of content, and the same content renders differently after a template changes. So the "before"
+     * is produced the only honest way: the revision that preceded the run, rendered <b>through
+     * today's templates</b>, which is also the question a reviewer has. A page whose look moved
+     * because somebody edited a shared region is a page whose look moved.</p>
+     *
+     * <p>A page the run created has no before and is not compared. It is already a {@code CREATE} in
+     * the counts, and calling a new page's appearance "changed" would put the one row a reviewer can
+     * read from the action column into a list that is meant to hold the ones they cannot.</p>
+     */
+    private ShReviewDetail.Appearance appearanceOf(List<ShReviewDetail.Entry> rows, Instant startedAt) {
+        if (startedAt == null) {
+            return null;
+        }
+        // Sorted and de-duplicated by address: two runs over the same change must answer with the
+        // same list in the same order (P5), and a page edited four times is one page.
+        Set<String> addresses = rows.stream()
+                .map(ShReviewDetail.Entry::address)
+                .filter(address -> address != null && address.startsWith("post:"))
+                .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
+        Map<String, String> postIds = new LinkedHashMap<>();
+        for (ShReviewDetail.Entry row : rows) {
+            if (row.address() != null && row.postId() != null) {
+                postIds.putIfAbsent(row.address(), row.postId());
+            }
+        }
+        List<String> moved = new ArrayList<>();
+        int checked = 0;
+        boolean cut = false;
+        for (String address : addresses) {
+            if (checked >= APPEARANCE_CEILING) {
+                cut = true;
+                break;
+            }
+            Integer before = revisionBefore(postIds.get(address), startedAt);
+            if (before == null) {
+                continue;
+            }
+            String was = appearance(address, ShContentPerspective.revision(before).state());
+            String is = appearance(address, null);
+            if (was == null || is == null) {
+                continue;
+            }
+            checked++;
+            if (!was.equals(is)) {
+                moved.add(address);
+            }
+        }
+        return new ShReviewDetail.Appearance(List.copyOf(moved), checked,
+                cut ? "compared the first " + APPEARANCE_CEILING + " of " + addresses.size()
+                        + " page(s); each comparison is two renders" : null);
+    }
+
+    /** The newest revision captured before the run began, or {@code null} for a page it created. */
+    private Integer revisionBefore(String postId, Instant startedAt) {
+        if (postId == null) {
+            return null;
+        }
+        return shPostRevisionService.revisions(postId).stream()
+                .filter(revision -> revision.getCapturedAt() != null
+                        && revision.getCapturedAt().isBefore(startedAt))
+                .map(ShPostRevision::getVersionNo)
+                .max(Integer::compareTo)
+                .orElse(null);
+    }
+
+    /**
+     * One page's appearance hash at one version, or {@code null} when it cannot be had.
+     *
+     * <p>Absent rather than an exception, the rule {@code ShAgentProofService.digestsOf} already
+     * follows: a page that will not render is not a reason to fail the read a reviewer opened, and
+     * the {@code checked} count says how many comparisons actually happened.</p>
+     */
+    private String appearance(String address, String state) {
+        try {
+            return shAgentRenderService.digest(address, null, state).appearanceDigest();
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /**
@@ -382,9 +505,21 @@ public class ShReviewService {
      * @param unreleased posts across the whole page that still hold work nobody has released,
      *                   resolved once by {@link #sessions} — per-session would be a query per run
      */
+    /** Site id to site name, for the one place a reviewer reads them (SH1000). */
+    private Map<String, String> namesOf(Set<String> siteIds) {
+        Map<String, String> named = new LinkedHashMap<>();
+        if (siteIds.isEmpty()) {
+            return named;
+        }
+        shSiteRepository.findAllById(siteIds).forEach(site -> named.put(site.getId(), site.getName()));
+        return named;
+    }
+
     private ShReviewSession summarize(String session, List<ShHistory> entries,
-                                      Set<String> unreleased, ShAgentRun run) {
+                                      Set<String> unreleased, ShAgentRun run,
+                                      Map<String, String> siteNames) {
         Map<String, Integer> byAction = new LinkedHashMap<>();
+        Map<String, Integer> bySite = new LinkedHashMap<>();
         Set<String> sites = new LinkedHashSet<>();
         Instant first = null;
         Instant last = null;
@@ -394,6 +529,11 @@ public class ShReviewService {
             byAction.merge(entry.getAction() == null ? "?" : entry.getAction(), 1, Integer::sum);
             if (entry.getShSite() != null) {
                 sites.add(entry.getShSite());
+                // By name, because an id tells a reviewer nothing — and falling back to the id
+                // rather than dropping the row, so a site this reader could not resolve is still
+                // counted somewhere rather than silently missing from the total.
+                bySite.merge(siteNames.getOrDefault(entry.getShSite(), entry.getShSite()), 1,
+                        Integer::sum);
             }
             Instant date = entry.getDate();
             if (date != null) {
@@ -409,6 +549,7 @@ public class ShReviewService {
                 // SH136: byAction is a LinkedHashMap on purpose; Map.copyOf discarded
                 // that insertion order on the way out.
                 ShStableMap.copyOf(byAction), first, last, List.copyOf(sites),
+                ShStableMap.copyOf(bySite),
                 run == null ? null : run.getIntent(),
                 run == null ? null : run.getClientName(), pending);
     }

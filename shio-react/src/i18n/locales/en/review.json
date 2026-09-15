@@ -5,6 +5,8 @@
   "review.blankDescription": "When an agent writes through the MCP or agent surface, each run appears here with what it changed.",
   "review.changesBy": "{{count}} change(s) by {{actor}}",
   "review.unknownActor": "an agent",
+  "review.appearanceSteady": "Compared {{checked}} page(s): none of them look different.",
+  "review.appearanceMoved": "Of {{checked}} page(s) compared, these look different: {{pages}}",
   "review.noIntent": "No intent declared — start the run with --intent \"<sentence>\"",
   "review.pending": "{{count}} to review",
   "review.pendingSessions": "{{count}} agent run(s) awaiting review",

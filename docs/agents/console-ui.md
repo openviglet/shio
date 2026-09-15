@@ -1769,3 +1769,19 @@ The session row's headline is the intent; the change count, the actor and the ru
 line below it. A reviewer who knows what a run was for reads eleven changes as one decision, and
 without it they read the diff to find out why. A run that declared none says so in those words and
 names `--intent`, in both locales — an absent premise is a fact about the run.
+
+## What a run changed the look of (SH1000)
+
+The session row gains **counts by site name** beside its counts by action, and only when a run
+touched more than one: on a single-site run the badge repeats what the addresses already say, and a
+badge that is always right and never news is one people stop reading.
+
+The expanded detail gains **which of those pages look different**. That is the question the action
+column cannot answer — an UPDATE that moved a headline and one that moved the whole page read
+identically there. It is on the detail and not on the listing because each comparison is **two real
+renders** (SH249): nothing stores the appearance a page had, so the "before" is the revision that
+preceded the run rendered through today's templates, and the listing is asked for on every visit to
+the console and holds every open run. Capped at twenty pages with the cut reported, and shown only
+when something was comparable — "0 of 0 pages" is a sentence about the instrument, not about the
+run. The count travels with the list because without the denominator an empty `moved` reads as
+"nothing moved" when it may mean "nothing was comparable".

@@ -222,6 +222,18 @@ export default function ReviewListPage() {
                             {action} {count}
                           </Badge>
                         ))}
+                        {/*
+                          SH1000 — by site, and only when a run touched more than one: on a
+                          single-site run the badge repeats what the addresses below already say,
+                          and a badge that is always right and never news is one people stop
+                          reading.
+                        */}
+                        {Object.keys(session.bySite ?? {}).length > 1 &&
+                          Object.entries(session.bySite ?? {}).map(([site, count]) => (
+                            <Badge key={site} variant="outline" className="text-[10px]">
+                              {site} {count}
+                            </Badge>
+                          ))}
                         {session.pending > 0 && (
                           <Badge variant="secondary" className="text-[10px]">
                             {t("review.pending", { count: session.pending })}
@@ -252,6 +264,24 @@ export default function ReviewListPage() {
                         {detail === null ? (
                           <p className="py-2 text-sm text-muted-foreground">{t("common.loading")}</p>
                         ) : (
+                          <>
+                          {/*
+                            SH1000 — what this run changed the LOOK of, which the action column
+                            cannot say: an UPDATE that moved a headline and one that moved the whole
+                            page read identically there. Shown only when something was comparable,
+                            because "0 of 0 pages" is a sentence about the instrument.
+                          */}
+                          {detail.appearance && detail.appearance.checked > 0 && (
+                            <p className="py-2 text-xs text-muted-foreground">
+                              {detail.appearance.moved.length === 0
+                                ? t("review.appearanceSteady", { checked: detail.appearance.checked })
+                                : t("review.appearanceMoved", {
+                                    checked: detail.appearance.checked,
+                                    pages: detail.appearance.moved.join(", "),
+                                  })}
+                              {detail.appearance.note ? ` — ${detail.appearance.note}` : ""}
+                            </p>
+                          )}
                           <ul className="divide-y">
                             {detail.entries.map((entry, index) => (
                               <li
@@ -299,6 +329,7 @@ export default function ReviewListPage() {
                               </li>
                             ))}
                           </ul>
+                          </>
                         )}
                       </div>
                     )}
