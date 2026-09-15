@@ -66,10 +66,18 @@ export async function run(flags, positionals, ctx) {
     ? undefined
     : await client.verify({ site: flags.site, limit: flags.limit });
 
+  // SH1000 — what the runs in this range said they were for, read once by the ids the feed
+  // already names. `shio report` used to compose a narrative out of three reads and supply its own
+  // premise; the premise is stored now, so it is quoted rather than reconstructed.
+  const runs = await client
+    .runs((changes?.changes ?? []).map((change) => change.agent))
+    .catch(() => []);
+
   const report = buildReport({
     changes,
     verify,
     context,
+    runs,
     title: typeof flags.title === "string" ? flags.title : undefined,
   });
 

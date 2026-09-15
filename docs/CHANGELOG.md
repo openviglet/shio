@@ -1744,6 +1744,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block BB — The curator's return channel, and the conversation with the agent
 
 - **SH999** — Both readers now carry the run and its client name, with a by/agent filter, and the javadoc's promise has an assertion instead of a paragraph.
+- **SH1000 (the declared intent)** — A run declares its premise once — MCP clientInfo, X-Shio-Intent, --intent — and the queue, the handoff and GET /agent/runs read it instead of the uuid.
 
 ## Block BC — The authoring surface, field by field
 

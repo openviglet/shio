@@ -65,7 +65,7 @@ const ACTION_LABELS = {
  * @param {string} [input.title]  heading for the document
  * @returns {{ markdown: string, cursor: string|null, changed: number, caveats: string[] }}
  */
-export function buildReport({ changes, verify, context, title } = {}) {
+export function buildReport({ changes, verify, context, runs, title } = {}) {
   const sites = siteUrls(context);
   const entries = (changes?.changes ?? []).map((change) => decorate(change, sites));
   const caveats = collectCaveats(changes, verify);
@@ -73,6 +73,7 @@ export function buildReport({ changes, verify, context, title } = {}) {
   const lines = [`# ${title ?? "Content handoff"}`, ""];
   lines.push(summary(entries, changes, verify));
   lines.push("");
+  lines.push(...whatFor(runs));
 
   if (entries.length === 0) {
     lines.push("No content changed in this range.");
@@ -156,6 +157,30 @@ function decorate(change, sites) {
     by: change?.by ?? null,
     at: change?.at ?? null,
   };
+}
+
+/**
+ * What each run in this range said it was for (SH1000).
+ *
+ * Above the changes, because a reviewer who reads one section reads the first one, and the premise
+ * is what decides whether the list below is the right list. A run that declared none is named with
+ * the flag that would have supplied it rather than left out — an absent premise is a fact about the
+ * run, and silently omitting it makes a handoff of ten runs look like a handoff of the three that
+ * happened to say something.
+ */
+function whatFor(runs) {
+  if (!Array.isArray(runs) || runs.length === 0) return [];
+  const lines = ["## What these runs were for", ""];
+  for (const run of runs) {
+    const who = run.clientName ?? run.session;
+    lines.push(
+      run.intent
+        ? `- **${who}** — ${run.intent}`
+        : `- **${who}** — no intent declared (pass \`--intent "<sentence>"\`)`,
+    );
+  }
+  lines.push("");
+  return lines;
 }
 
 function summary(entries, changes, verify) {

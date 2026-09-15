@@ -15,7 +15,41 @@
  * `/api/v2/post-type` prefix into its request path, and widening it to an
  * arbitrary namespace would make a post-type client pretend to be a general one.
  */
+import { randomUUID } from "node:crypto";
+
 import { ShioHttpError } from "@viglet/shio-client";
+
+/**
+ * This process's run id (SH1000).
+ *
+ * One per invocation, not per client: a session is a run — many requests that belong together —
+ * and a command that builds two clients is still one thing somebody ran. Minted here rather than
+ * asked of the server, because the server deliberately accepts a supplied id and mints none for
+ * REST (SH106): a filter that invented one per request would produce a session per call, which
+ * reads in the review queue as two hundred one-change runs.
+ */
+const RUN = randomUUID();
+
+/** What this run says it is for, from `--intent`; empty until somebody sets it. */
+let INTENT = "";
+
+/**
+ * Declare what this invocation is for (SH1000).
+ *
+ * Global rather than a flag on one command, which is where the design put it: the premise belongs
+ * to the run and every command in this CLI writes through one client, so threading it through
+ * `apply` alone would have left `push --content`, `convert` and `publish` — all of which write —
+ * with no way to say the same thing.
+ */
+export function declareIntent(intent) {
+  INTENT = typeof intent === "string" ? intent.trim() : "";
+  return INTENT;
+}
+
+/** The run this process's writes are attributed to, for a caller that has to report it. */
+export function runId() {
+  return RUN;
+}
 
 export class ShioAgentClient {
   /**
@@ -25,15 +59,34 @@ export class ShioAgentClient {
    * @param {string} config.password  Console password.
    * @param {typeof fetch} [config.fetch] Override (testing / non-global-fetch runtimes).
    */
-  constructor({ baseUrl, user, password, fetch: fetchImpl } = {}) {
+  constructor({ baseUrl, user, password, fetch: fetchImpl, session } = {}) {
     if (!baseUrl) throw new Error("ShioAgentClient: baseUrl is required");
     this.baseUrl = String(baseUrl).replace(/\/+$/, "");
     this.user = user;
     this.password = password;
+    this.session = session ?? RUN;
     this.fetch = fetchImpl ?? globalThis.fetch;
     if (typeof this.fetch !== "function") {
       throw new Error("ShioAgentClient: no fetch implementation available");
     }
+  }
+
+  /**
+   * The headers every agent request carries beyond its own (SH1000).
+   *
+   * `Mcp-Session-Id` is the run. `ShAgentSessionFilter`'s own javadoc said "the CLI sends one per
+   * invocation" and the CLI sent none, so every write the CLI made was recorded as an ordinary
+   * human's and the review queue had exactly the hole SH106 said it was closing — one process is
+   * one run now, which is why `RUN` is a module constant rather than per client: a command that
+   * builds two clients is still one run.
+   *
+   * `X-Shio-Intent` is what that run said it was for, set once by `--intent` and never repeated
+   * into a body.
+   */
+  #runHeaders() {
+    const headers = { "Mcp-Session-Id": this.session };
+    if (INTENT) headers["X-Shio-Intent"] = INTENT;
+    return headers;
   }
 
   #authHeader() {
@@ -72,7 +125,7 @@ export class ShioAgentClient {
     const url = `${this.baseUrl}/api/v2/agent/context${search ? `?${search}` : ""}`;
     const res = await this.fetch(url, {
       method: "GET",
-      headers: { Authorization: this.#authHeader(), Accept: accept },
+      headers: { Authorization: this.#authHeader(), Accept: accept, ...this.#runHeaders() },
     });
     if (!res.ok) {
       let detail = "";
@@ -97,7 +150,11 @@ export class ShioAgentClient {
     const url = `${this.baseUrl}/api/v2/agent/resolve?address=${encodeURIComponent(address)}`;
     const res = await this.fetch(url, {
       method: "GET",
-      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+      headers: {
+        Authorization: this.#authHeader(),
+        Accept: "application/json",
+        ...this.#runHeaders(),
+      },
     });
     if (!res.ok) {
       // The server's teaching problem (SH80) is the useful part of a failure here —
@@ -179,6 +236,7 @@ export class ShioAgentClient {
         Authorization: this.#authHeader(),
         "Content-Type": "application/json",
         Accept: "application/json",
+        ...this.#runHeaders(),
       },
       body: JSON.stringify(document),
     });
@@ -306,7 +364,11 @@ export class ShioAgentClient {
     const url = `${this.baseUrl}/api/v2/agent/read?${params.toString()}`;
     const res = await this.fetch(url, {
       method: "GET",
-      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+      headers: {
+        Authorization: this.#authHeader(),
+        Accept: "application/json",
+        ...this.#runHeaders(),
+      },
     });
     if (!res.ok) {
       let detail = "";
@@ -330,6 +392,20 @@ export class ShioAgentClient {
   }
 
   /**
+   * GET /api/v2/agent/runs (SH1000) — who these runs were, and what each said it was for.
+   *
+   * Asked by the ids the feed already names in `agent`, never listed: the premise is one sentence
+   * about many rows, so carrying it on the row would repeat it once per change.
+   *
+   * @param {string[]} sessions
+   */
+  async runs(sessions = []) {
+    const ids = [...new Set(sessions.filter(Boolean))];
+    if (ids.length === 0) return [];
+    return this.#get("runs", { session: ids.join(",") });
+  }
+
+  /**
    * GET /api/v2/events (SH967) — the same feed, pushed: one event per page, whose `id` is the
    * feed cursor after it.
    *
@@ -342,7 +418,11 @@ export class ShioAgentClient {
     if (site) params.set("site", String(site));
     const search = params.toString();
     const url = `${this.baseUrl}/api/v2/events${search ? `?${search}` : ""}`;
-    const headers = { Authorization: this.#authHeader(), Accept: "text/event-stream" };
+    const headers = {
+      Authorization: this.#authHeader(),
+      Accept: "text/event-stream",
+      ...this.#runHeaders(),
+    };
     if (since) headers["Last-Event-ID"] = String(since);
     const res = await this.fetch(url, { method: "GET", headers });
     if (!res.ok) {
@@ -370,7 +450,11 @@ export class ShioAgentClient {
     const url = `${this.baseUrl}/api/v2/agent/${path}${search ? `?${search}` : ""}`;
     const res = await this.fetch(url, {
       method: "GET",
-      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+      headers: {
+        Authorization: this.#authHeader(),
+        Accept: "application/json",
+        ...this.#runHeaders(),
+      },
     });
     if (!res.ok) {
       // Same reasoning as `resolve`: the SH80 teaching problem is the useful part of a
@@ -513,7 +597,11 @@ export class ShioAgentClient {
     const url = `${this.baseUrl}/api/v2/agent/manifest${query}`;
     const res = await this.fetch(url, {
       method: "GET",
-      headers: { Authorization: this.#authHeader(), Accept: "application/json" },
+      headers: {
+        Authorization: this.#authHeader(),
+        Accept: "application/json",
+        ...this.#runHeaders(),
+      },
     });
     if (!res.ok) {
       throw new ShioHttpError(res.status, url, "");

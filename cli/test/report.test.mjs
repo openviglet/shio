@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { buildReport } from "../src/report.mjs";
+import { ShioAgentClient, declareIntent, runId } from "../src/agent-client.mjs";
 import * as report from "../src/commands/report.mjs";
 
 const CONTEXT = {
@@ -54,6 +55,70 @@ function sink() {
   };
   return out;
 }
+
+test("SH1000: every agent request carries the run, and the premise when one was declared", async () => {
+  const seen = [];
+  const client = new ShioAgentClient({
+    baseUrl: "http://shio.test",
+    user: "admin",
+    password: "secret",
+    fetch: async (url, init = {}) => {
+      seen.push(init.headers ?? {});
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        async text() { return "{}"; },
+        async json() { return {}; },
+      };
+    },
+  });
+
+  declareIntent("replace the launch banner");
+  await client.changes({});
+  declareIntent("");
+  await client.changes({});
+
+  assert.equal(seen[0]["Mcp-Session-Id"], runId(),
+    "SH1000: ShAgentSessionFilter's javadoc said the CLI sends one per invocation and the CLI sent "
+      + "none, so every write it made was recorded as an ordinary human's");
+  assert.equal(seen[0]["X-Shio-Intent"], "replace the launch banner");
+  assert.equal(seen[1]["X-Shio-Intent"], undefined,
+    "SH1000: absent rather than empty — a blank header would erase a premise declared earlier in "
+      + "the same run");
+});
+
+test("SH1000: the handoff leads with what each run was for", () => {
+  const built = buildReport({
+    changes: CHANGES,
+    context: CONTEXT,
+    runs: [
+      { session: "r-1", clientName: "claude-code", intent: "replace the launch banner" },
+      { session: "r-2" },
+    ],
+  });
+
+  assert.match(built.markdown, /## What these runs were for/);
+  assert.match(built.markdown, /\*\*claude-code\*\* — replace the launch banner/,
+    "SH1000: the premise is quoted from the run, not reconstructed by composing three reads");
+  assert.match(built.markdown, /\*\*r-2\*\* — no intent declared \(pass `--intent/,
+    "SH1000: a run that declared none is named with the flag that would have supplied it — "
+      + "silently omitting it makes a handoff of ten runs look like a handoff of three");
+  assert.ok(
+    built.markdown.indexOf("What these runs were for") < built.markdown.indexOf("post:Blog"),
+    "SH1000: above the changes, because a reviewer who reads one section reads the first one and "
+      + "the premise is what decides whether the list below is the right list",
+  );
+});
+
+test("SH1000: a report with no runs reads exactly as it did before", () => {
+  assert.equal(
+    buildReport({ changes: CHANGES, context: CONTEXT, runs: [] }).markdown,
+    buildReport({ changes: CHANGES, context: CONTEXT }).markdown,
+    "SH1000: the section is absent rather than empty — a heading over nothing is a question the "
+      + "reader then has to answer",
+  );
+});
 
 test("a change becomes a labelled row with a preview link", () => {
   const built = buildReport({ changes: CHANGES, context: CONTEXT });

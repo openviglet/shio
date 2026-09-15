@@ -46,12 +46,31 @@ import jakarta.servlet.http.HttpServletResponse;
 @Order(Integer.MAX_VALUE - 100)
 public class ShAgentSessionFilter extends OncePerRequestFilter {
 
+    private final ShAgentRunService shAgentRunService;
+
+    public ShAgentSessionFilter(ShAgentRunService shAgentRunService) {
+        this.shAgentRunService = shAgentRunService;
+    }
+
     /**
      * The header a caller stamps its run with. Deliberately the same name MCP uses
      * ({@code Mcp-Session-Id}) rather than a second spelling: one concept, one header, and an
      * MCP client bridged over HTTP does not have to translate it.
      */
     public static final String SESSION_HEADER = "Mcp-Session-Id";
+
+    /**
+     * What this run is for, in one sentence (SH1000).
+     *
+     * <p>A header rather than a body field because it belongs to the <em>run</em> and not to any one
+     * call: {@code /agent/batch} and {@code /agent/apply} take different documents, and a premise
+     * that had to be spelled into each of them would be two places to keep a sentence.</p>
+     *
+     * <p>{@code X-}-prefixed, which convention has discouraged since RFC 6648, and deliberately: it
+     * is a Shio-specific hint with no registry entry and no ambition to have one, and the alternative
+     * — an unprefixed {@code Intent} — is a name a proxy or a future standard could take.</p>
+     */
+    public static final String INTENT_HEADER = "X-Shio-Intent";
 
     /** Longest session id accepted — it is an opaque label, not a payload. */
     private static final int MAX_LENGTH = 64;
@@ -70,6 +89,14 @@ public class ShAgentSessionFilter extends OncePerRequestFilter {
         }
         ShAgentSessionContext.set(session);
         try {
+            // SH1000 — recorded before the request runs, so a run whose first call fails still says
+            // what it was attempting. Only when the header is there: a caller that declares once
+            // pays for it once, and one that repeats it on every call has chosen to.
+            String intent = request.getHeader(INTENT_HEADER);
+            if (intent != null && !intent.isBlank()) {
+                shAgentRunService.declare(session, intent.trim(),
+                        ShAgentSessionContext.actor());
+            }
             filterChain.doFilter(request, response);
         } finally {
             ShAgentSessionContext.clear();

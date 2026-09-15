@@ -178,18 +178,18 @@ public class ShAgentChangesService {
      * predicate rides with the keyset, so a filtered feed pages exactly the way the whole one
      * does.</p>
      *
-     * @param by {@code agent} for every run's writes, {@code human} for every person's — <b>which
-     *           includes a curator's console session</b>, because that is a person (SH996) — or a
-     *           session id for one run. {@code null} is everything, and is what every caller before
-     *           this one passes, so the unfiltered feed is the result set it always was
+     * @param by {@code agent} for every run's writes, {@code curator} for every person's —
+     *           <b>including a console session</b>, which is a curator publishing their own work
+     *           (SH996) — or a session id for one run. {@code null} is everything, and is what every
+     *           caller before this one passes, so the unfiltered feed is the result set it always was
      */
     public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
                                   Integer budget, boolean fields, String by) {
         String wanted = by == null || by.isBlank() ? null : by.trim();
-        // A word or an id, told apart here rather than in the query: `agent` and `human` are the
+        // A word or an id, told apart here rather than in the query: `agent` and `curator` are the
         // vocabulary, and anything else is a session, which is the one case that needs no list of
         // valid values — a session nobody wrote under is an empty feed, not a refusal.
-        String kind = "agent".equalsIgnoreCase(wanted) || "human".equalsIgnoreCase(wanted)
+        String kind = "agent".equalsIgnoreCase(wanted) || "curator".equalsIgnoreCase(wanted)
                 ? wanted.toLowerCase(java.util.Locale.ROOT) : null;
         String session = wanted == null || kind != null ? null : wanted;
         ShAgentProperties.Changes config = properties.getChanges();

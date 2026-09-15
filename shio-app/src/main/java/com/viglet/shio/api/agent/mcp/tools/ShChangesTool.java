@@ -73,9 +73,9 @@ public class ShChangesTool implements ShMcpTool {
                 // document, so these names are the only description of the run that was accepted.
                 "fields", ShMcpTool.bool("Name the fields each update or publish changed."),
                 // SH999 — the question this tool's own description promised and could not answer.
-                // `by=human` is "what changed that was not me", which is what a resuming session is
-                // actually asking; every row looked the same before.
-                "by", ShMcpTool.string("Whose writes: agent, human, or a session id.")),
+                // `by=curator` is "what changed that was not me", which is what a resuming session
+                // is actually asking; every row looked the same before.
+                "by", ShMcpTool.string("Whose writes: agent, curator, or a session id.")),
                 List.of());
     }
 

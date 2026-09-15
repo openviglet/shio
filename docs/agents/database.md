@@ -543,3 +543,15 @@ itself. Both readers report the id in that case rather than inventing a name. No
 that happened before this table existed has no name to give it.
 
 Console sessions (`console:<curator>:<date>`, SH996) are never written here. They are people.
+
+## `sh_agent_run.intent` — what a run was for (SH1000)
+
+`v2026.3.38`, one nullable `VARCHAR(1000)`. A sentence, not a document: a run whose premise needs
+more than a thousand characters is a run that should have been two, and a column that will hold a
+plan invites one. It is clipped rather than refused, for SH544's reason and harder here than
+anywhere — the record describes the run and must never be what stops it, so a client whose premise
+ran long gets a shorter premise and not a failed handshake.
+
+Writes are **merge, never replace**: a `null` argument leaves what is on record. That is what makes
+`X-Shio-Intent` safe to send on every request and safe to send once — a later call that does not
+repeat the sentence must not erase it.

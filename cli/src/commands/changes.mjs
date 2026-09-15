@@ -58,8 +58,8 @@ export async function run(flags, positionals, ctx) {
     limit: flags.limit,
     // SH989 — the fields each write changed, the one account of an approved run the approve leaves.
     include: flags.fields ? "fields" : undefined,
-    // SH999 — `agent`, `human` or a session. A pipeline that pulls when something moved wants the
-    // half it did not write itself, and until now every row looked the same.
+    // SH999 — `agent`, `curator` or a session. A pipeline that pulls when something moved wants
+    // the half it did not write itself, and until now every row looked the same.
     by: flags.by,
   });
 

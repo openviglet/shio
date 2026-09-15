@@ -1758,7 +1758,14 @@ carries `agentName` where the run gave one and the first eight characters of the
 did not, and links to `/admin/review?session=<id>`, which the queue opens on arrival for a session it
 still lists. Reading that run and undoing it is the next thing a curator who noticed the chip wants.
 
-Three buttons — Everyone / Agents / People — rather than a select, because the whole vocabulary is
-three words. The split is the **server's** (`?agent=agent|human`), never computed here: a console
+Three buttons — Everyone / Agents / Curators — rather than a select, because the whole vocabulary is
+three words. The split is the **server's** (`?agent=agent|curator`), never computed here: a console
 deciding for itself which rows were an agent's would be a second answer to a question
 `/agent/changes` already answers, and it would get the SH996 console session wrong the first time.
+
+## The review queue leads with the premise (SH1000)
+
+The session row's headline is the intent; the change count, the actor and the run's name move to the
+line below it. A reviewer who knows what a run was for reads eleven changes as one decision, and
+without it they read the diff to find out why. A run that declared none says so in those words and
+names `--intent`, in both locales — an absent premise is a fact about the run.

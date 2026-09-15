@@ -11,6 +11,7 @@ package com.viglet.shio.api.agent;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,6 +51,9 @@ public class ShAgentRunService {
     public static final String MCP = "mcp";
     public static final String REST = "rest";
 
+    /** The intent column's width — a sentence, not a plan. See {@code v2026.3.38}. */
+    public static final int INTENT_MAX = 1000;
+
     private final ShAgentRunRepository shAgentRunRepository;
 
     public ShAgentRunService(ShAgentRunRepository shAgentRunRepository) {
@@ -70,6 +74,21 @@ public class ShAgentRunService {
     @Transactional
     public void introduce(String session, String clientName, String clientVersion,
                           String transport, String actor) {
+        introduce(session, clientName, clientVersion, transport, actor, null);
+    }
+
+    /**
+     * The same, with what the run says it is for (SH1000).
+     *
+     * <p>{@code null} leaves whatever is on record, which is what makes the header safe to send on
+     * every request and the intent safe to declare once: a later call that does not repeat the
+     * sentence must not erase it. Only a non-blank value replaces one.</p>
+     *
+     * @param intent one sentence, clipped to the column rather than refused — see {@link #INTENT_MAX}
+     */
+    @Transactional
+    public void introduce(String session, String clientName, String clientVersion,
+                          String transport, String actor, String intent) {
         if (session == null || session.isBlank() || ShAgentSessionContext.isConsole(session)) {
             return;
         }
@@ -79,14 +98,64 @@ public class ShAgentRunService {
                 run.setId(session);
                 run.setStartedAt(Instant.now());
             }
-            run.setClientName(blankToNull(clientName));
-            run.setClientVersion(blankToNull(clientVersion));
-            run.setTransport(transport);
-            run.setActor(blankToNull(actor));
+            if (clientName != null) {
+                run.setClientName(blankToNull(clientName));
+            }
+            if (clientVersion != null) {
+                run.setClientVersion(blankToNull(clientVersion));
+            }
+            if (transport != null) {
+                run.setTransport(transport);
+            }
+            if (actor != null) {
+                run.setActor(blankToNull(actor));
+            }
+            String declared = blankToNull(intent);
+            if (declared != null) {
+                // Clipped, not refused: SH544's rule, and it binds harder here than anywhere. The
+                // record describes the run and must never be what stops it — a client whose premise
+                // ran long gets a shorter premise, not a failed handshake.
+                run.setIntent(declared.length() > INTENT_MAX
+                        ? declared.substring(0, INTENT_MAX) : declared);
+            }
             shAgentRunRepository.save(run);
         } catch (RuntimeException ignored) {
             // See the javadoc: the name is worth having and never worth a refused initialize.
         }
+    }
+
+    /**
+     * Declare only what a run is for, leaving everything else on the row alone (SH1000).
+     *
+     * <p>The REST surface's shape: a caller sends {@code X-Shio-Intent} and this is all it said.
+     * Writing on every request carrying the header is the caller's choice and costs a read and a
+     * write; a client that declares once pays it once, which is what the CLI does.</p>
+     */
+    @Transactional
+    public void declare(String session, String intent, String actor) {
+        introduce(session, null, null, REST, actor, intent);
+    }
+
+    /** What these runs said they were for, in one query, insertion-ordered for {@link #names}'s reason. */
+    @Transactional(readOnly = true)
+    public Map<String, String> intents(Collection<String> sessions) {
+        Map<String, String> declared = new LinkedHashMap<>();
+        if (sessions == null || sessions.isEmpty()) {
+            return declared;
+        }
+        for (ShAgentRun run : shAgentRunRepository.findByIdIn(sessions)) {
+            if (run.getIntent() != null) {
+                declared.put(run.getId(), run.getIntent());
+            }
+        }
+        return declared;
+    }
+
+    /** The runs themselves, for the surface that reports them (SH1000). */
+    @Transactional(readOnly = true)
+    public List<ShAgentRun> runs(Collection<String> sessions) {
+        return sessions == null || sessions.isEmpty() ? List.of()
+                : shAgentRunRepository.findByIdIn(sessions);
     }
 
     /** What this run calls itself, or empty when it never said. */

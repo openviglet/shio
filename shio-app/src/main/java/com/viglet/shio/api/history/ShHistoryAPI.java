@@ -59,8 +59,8 @@ public class ShHistoryAPI {
     /**
      * Recent activity across all content in the current tenant, newest first.
      *
-     * @param agent SH999 — {@code agent} for what a run wrote, {@code human} for what a person did
-     *              (a curator's console session is a person), or a session id for one run
+     * @param agent SH999 — {@code agent} for what a run wrote, {@code curator} for what a person
+     *              did (a console session is one of theirs), or a session id for one run
      * @param actor SH999 — one principal's rows, which is the other question the Activity page is
      *              asked: an agent and a person share a credential, so filtering by name and
      *              filtering by machine are not the same filter and the page needs both
@@ -125,7 +125,7 @@ public class ShHistoryAPI {
         if ("agent".equalsIgnoreCase(agent)) {
             return machine;
         }
-        if ("human".equalsIgnoreCase(agent)) {
+        if ("curator".equalsIgnoreCase(agent)) {
             return !machine;
         }
         return agent.equals(session);

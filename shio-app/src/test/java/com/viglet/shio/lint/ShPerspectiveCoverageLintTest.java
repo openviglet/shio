@@ -94,6 +94,10 @@ class ShPerspectiveCoverageLintTest {
             Map.entry("ShAgentAPI#blueprints", NOT_A_PAGE),
             Map.entry("ShAgentAPI#blueprint", NOT_A_PAGE),
             Map.entry("ShAgentAPI#changes", HISTORY),
+            // SH1000 — a run is a thing that happened, like the feed above it: it has a start and
+            // what it said it was for, and no draft of itself. A `state` here would be asking for
+            // the unpublished version of an event.
+            Map.entry("ShAgentAPI#runs", HISTORY),
             Map.entry("ShAgentAPI#memory", NOT_A_PAGE),
             // SH997 — a gate is a rule about publishing, not a version of a page: there is no
             // draft of a checklist, and a `state` here would name nothing. The check reads the

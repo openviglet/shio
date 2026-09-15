@@ -39,19 +39,23 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	 * The feed's SH999 attribution filter, as one clause the four feed queries share.
 	 *
 	 * <p>Two nullable parameters rather than four query variants: {@code session} narrows to one
-	 * run, {@code kind} to {@code agent} or {@code human}, and both {@code null} is every row —
+	 * run, {@code kind} to {@code agent} or {@code curator}, and both {@code null} is every row —
 	 * which is what every caller from SH88 to SH998 passes, so the unfiltered feed is the same
 	 * result set it always was.</p>
 	 *
-	 * <p>A <b>console</b> session is a person (SH996), so it belongs on the human side of this
-	 * predicate. That is the reason the test asserts the split rather than the column: a filter
-	 * that read "has a session id" would file a curator's own publish under the machines.</p>
+	 * <p>{@code curator} rather than the species word, which is SH705's rule and not a nicety: the
+	 * counterpart of a run is the person who answers for the site, and this product already calls
+	 * them the curator everywhere else.</p>
+	 *
+	 * <p>A <b>console</b> session is one of theirs (SH996), so it belongs on that side of the
+	 * predicate. That is the reason the test asserts the split rather than the column: a filter that
+	 * read "has a session id" would file a curator's own publish under the machines.</p>
 	 */
 	String WROTE_IT = "and (:session is null or h.agentSessionId = :session) "
 			+ "and (:kind is null "
 			+ "  or (:kind = 'agent' and h.agentSessionId is not null "
 			+ "      and h.agentSessionId not like 'console:%') "
-			+ "  or (:kind = 'human' and (h.agentSessionId is null "
+			+ "  or (:kind = 'curator' and (h.agentSessionId is null "
 			+ "      or h.agentSessionId like 'console:%'))) ";
 
 	List<ShHistory> findAll();

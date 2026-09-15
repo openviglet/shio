@@ -22,12 +22,18 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockFilterChain;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
+import com.viglet.shio.api.agent.mcp.ShMcpServer;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShHistoryAPI;
+import com.viglet.shio.api.review.ShReviewService;
+import com.viglet.shio.api.review.dto.ShReviewSession;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -73,6 +79,14 @@ class ShAgentChangesAttributionTest {
     private ShHistoryAPI shHistoryAPI;
     @Autowired
     private ShHistoryRepository shHistoryRepository;
+    @Autowired
+    private ShAgentSessionFilter shAgentSessionFilter;
+    @Autowired
+    private ShMcpServer shMcpServer;
+    @Autowired
+    private ShReviewService shReviewService;
+    @Autowired
+    private tools.jackson.databind.ObjectMapper objectMapper;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -169,11 +183,11 @@ class ShAgentChangesAttributionTest {
     }
 
     @Test
-    @DisplayName("SH999: by=agent, by=human and by=<session> each answer with the rows they name")
+    @DisplayName("SH999: by=agent, by=curator and by=<session> each answer with the rows they name")
     void theFilterSplitsTheFeed() {
         assertThat(feed("agent")).singleElement()
                 .satisfies(row -> assertThat(row.agent()).isEqualTo(RUN));
-        assertThat(feed("human"))
+        assertThat(feed("curator"))
                 .as("SH999: what changed that was not me — the question a resuming session asks, "
                         + "and the one the feed could not answer")
                 .hasSize(2)
@@ -196,12 +210,74 @@ class ShAgentChangesAttributionTest {
                 .satisfies(row -> assertThat(row.agentName()).isEqualTo("claude-code"));
         assertThat(shHistoryAPI.byObject(postId, 50, "agent", null)).singleElement()
                 .satisfies(row -> assertThat(row.agent()).isEqualTo(RUN));
-        assertThat(shHistoryAPI.byObject(postId, 50, "human", null)).hasSize(2);
+        assertThat(shHistoryAPI.byObject(postId, 50, "curator", null)).hasSize(2);
         assertThat(shHistoryAPI.byObject(postId, 50, null, "ana"))
                 .as("SH999: an agent and a person share a credential, so filtering by name and "
                         + "filtering by machine are not the same filter and the page needs both")
                 .hasSize(3);
         assertThat(shHistoryAPI.byObject(postId, 50, null, "someone-else")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH1000: the REST header declares a run's premise, and the queue leads with it")
+    void theHeaderDeclaresIt() throws Exception {
+        String run = "sh1000-rest-" + UUID.randomUUID().toString().substring(0, 8);
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v2/agent/batch");
+        request.addHeader(ShAgentSessionFilter.SESSION_HEADER, run);
+        request.addHeader(ShAgentSessionFilter.INTENT_HEADER,
+                "replace the launch banner on every product page");
+        shAgentSessionFilter.doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
+
+        assertThat(shAgentRunService.intents(List.of(run)).get(run))
+                .as("SH1000: a premise belongs to the run, not to any one call — /agent/batch and "
+                        + "/agent/apply take different documents, and a sentence spelled into each "
+                        + "would be two places to keep one fact")
+                .isEqualTo("replace the launch banner on every product page");
+    }
+
+    @Test
+    @DisplayName("SH1000: MCP declares it in clientInfo, which is paid once per run and not per turn")
+    void initializeDeclaresIt() {
+        String run = "sh1000-mcp-" + UUID.randomUUID().toString().substring(0, 8);
+        ShAgentSessionContext.set(run);
+        try {
+            shMcpServer.handle(objectMapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,"
+                    + "\"method\":\"initialize\",\"params\":{\"clientInfo\":"
+                    + "{\"name\":\"claude-code\",\"version\":\"2.1.0\","
+                    + "\"intent\":\"convert the captured blocks into sections\"}}}"));
+        } finally {
+            ShAgentSessionContext.clear();
+        }
+
+        assertThat(shAgentRunService.intents(List.of(run)).get(run))
+                .as("SH1000: tools/list is re-sent every turn and initialize is not, so this is the "
+                        + "cheapest place on the protocol to say it once")
+                .isEqualTo("convert the captured blocks into sections");
+        assertThat(shAgentRunService.name(run)).contains("claude-code");
+    }
+
+    @Test
+    @DisplayName("SH1000: the premise reaches the review queue, and a run without one says so")
+    void theQueueLeadsWithIt() {
+        List<ShReviewSession> queue = shReviewService.sessions(500);
+
+        assertThat(queue).filteredOn(row -> RUN.equals(row.session())).singleElement()
+                .satisfies(row -> assertThat(row.intent())
+                        .as("SH1000: a run that declared nothing reports no premise rather than an "
+                                + "empty sentence — the console names the flag that would supply one")
+                        .isNull());
+    }
+
+    @Test
+    @DisplayName("SH1000: the premise is read once per run and never rides the change row")
+    void itNeverJoinsTheChangePayload() {
+        String rendered = objectMapper.writeValueAsString(feed(null));
+
+        assertThat(rendered)
+                .as("SH1000: one sentence about forty rows, carried on the row, is that sentence "
+                        + "forty times — and the feed is the surface a session polls, so the "
+                        + "repetition would be paid on every poll")
+                .doesNotContain("intent");
     }
 
     @Test
@@ -216,7 +292,7 @@ class ShAgentChangesAttributionTest {
                         + "surface does not have")
                 .contains("agent=claude-code");
         assertThat(ShAgentChangesTerse.render(
-                shAgentChangesService.changes(site, null, 50, false, 0, false, "human")))
+                shAgentChangesService.changes(site, null, 50, false, 0, false, "curator")))
                 .as("SH999: and it costs a human-only feed nothing at all")
                 .doesNotContain("agent=");
     }

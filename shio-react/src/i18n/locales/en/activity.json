@@ -19,5 +19,5 @@
   "activity.byAgent": "Agent run — open it in the review queue",
   "activity.filterAll": "Everyone",
   "activity.filterAgent": "Agents",
-  "activity.filterHuman": "People"
+  "activity.filterCurator": "Curators"
 }

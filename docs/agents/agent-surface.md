@@ -3365,8 +3365,8 @@ is delivered only where a subscription names it.
 
 `ShHistory.agent_session_id` has recorded which run wrote a row since SH106, and **neither reader
 carried it**. `ShAgentChanges.Change#by` reported the bare principal while its own javadoc went on
-promising that the agent session was stamped into that string "so a caller can tell its own writes
-from a human's" — true until SH106 moved the fact to its own column, and printed for six blocks
+promising that the agent session was stamped into that string, "so a caller can tell its own writes
+from a curator's" — true until SH106 moved the fact to its own column, and printed for six blocks
 after, because nothing asserted it.
 
 The change row now carries **`agent`** (the session) and **`agentName`** (what that run called
@@ -3375,19 +3375,49 @@ form carries one attribute, `agent=`, holding the name where there is one and th
 terse feed is what an MCP session actually reads, and a distinction only the JSON had would be a
 distinction the agent surface does not have.
 
-**`by=agent` · `by=human` · `by=<session>`** narrows the feed, on `GET /agent/changes`, `shio changes
+**`by=agent` · `by=curator` · `by=<session>`** narrows the feed, on `GET /agent/changes`, `shio changes
 --by` and `shio_changes`. It is filtered **in the query**, with the keyset predicate, because this
 feed is resumable: a post-filter would hand back a short page while the matching rows sat behind the
-cursor, and the caller would read that as nothing having happened. `by=human` is the question a
+cursor, and the caller would read that as nothing having happened. `by=curator` is the question a
 resuming session actually has — *what changed that was not me* — and until now every row looked the
 same.
 
-**A curator's console session counts as human.** SH996 gives a curator's own publishing a session id
-so it reaches the review queue, so a predicate written from the column rather than from the question
-files a person's own press under the machines. That is the case the assertion pins.
+**A console session counts as a curator's.** SH996 gives their own publishing a session id so it
+reaches the review queue, so a predicate written from the column rather than from the question files
+that press under the machines. That is the case the assertion pins — and the role word is SH705's
+rule rather than a nicety: the counterpart of a run is the person who answers for the site.
 
 `agentName` comes from **`sh_agent_run`**, written on MCP's `initialize` from the `clientInfo` this
 server used to discard — the one call in the protocol whose purpose is a client saying what it is.
 A run that never introduced itself (every session the REST surface was handed rather than minted,
 and every run older than the table) reports **no name rather than "unknown"**: a row naming an agent
 called unknown is a row nobody can tell from one written by an agent that is called that.
+
+## A run that says what it was for (SH1000)
+
+The review queue rendered a count of changes by an actor over a uuid, and nothing anywhere stored
+what the run was *trying* to do — so a reviewer read the diff to reconstruct the premise, which is
+the one thing the agent knew and never said.
+
+An intent is declared **once** and rides every surface. MCP takes it in `initialize`'s `clientInfo`,
+which is the cheapest place on that protocol: `tools/list` is re-sent every turn and `initialize` is
+not. The REST agent surface takes **`X-Shio-Intent`**, a header rather than a body field because the
+premise belongs to the *run* — `/agent/batch` and `/agent/apply` take different documents, and a
+sentence spelled into each would be two places to keep one fact. The CLI's `--intent` is global for
+the same reason: `apply`, `push --content`, `convert` and `publish` all write.
+
+It is stored on `sh_agent_run` and **never on the change row**. One sentence about forty rows,
+carried on the row, is that sentence forty times — and the feed is the surface a session polls, so
+the repetition would be paid on every poll. `GET /agent/runs?session=a,b,c` is the read, asked by
+the ids the feed already names in `agent`, in the order they were asked for. There is no listing:
+"every run this instance has ever seen" is not a question anybody has.
+
+A run that declared none reports **no intent** rather than an empty sentence, and both readers name
+the argument that would have supplied one. An absent premise is a fact about the run, and a blank
+line is not the same statement.
+
+**The CLI was not sending a run id at all**, which this task had to fix before an intent had
+anywhere to land: `ShAgentSessionFilter`'s javadoc said "the CLI sends one per invocation" and the
+CLI sent none, so every write it made was recorded as an ordinary curator's and the review queue had
+exactly the hole SH106 said it was closing. One process is one run now — a module constant, not a
+per-client value, so a command that builds two clients is still one thing somebody ran.

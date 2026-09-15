@@ -28,6 +28,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param firstSeen  when the run's first change landed
  * @param lastSeen   when its last one did
  * @param sites      the site ids it touched
+ * @param intent     SH1000 — what this run said it was for, declared once by whoever started it.
+ *                   Absent when nothing declared one, and the queue says so in those words: a
+ *                   reviewer reading a count of changes over a uuid has to reconstruct the premise
+ *                   from the diff, which is the one thing the agent knew and never said
+ * @param agentName  SH999 — what the run called itself on {@code initialize}. Absent when it never
+ *                   said, which is every session the REST surface was handed rather than minted
  * @param pending    SH615 — <b>posts</b> in this run that still hold work nobody has released:
  *                   a draft with no published twin, or one modified after its twin was published.
  *                   Not "entries with a draft row", which was the same number forever, because
@@ -43,5 +49,13 @@ public record ShReviewSession(
         Instant firstSeen,
         Instant lastSeen,
         List<String> sites,
+        String intent,
+        String agentName,
         int pending) {
+
+    /** Before SH1000 gave a run a premise and SH999 gave it a name. */
+    public ShReviewSession(String session, String actor, int changes, Map<String, Integer> byAction,
+                           Instant firstSeen, Instant lastSeen, List<String> sites, int pending) {
+        this(session, actor, changes, byAction, firstSeen, lastSeen, sites, null, null, pending);
+    }
 }

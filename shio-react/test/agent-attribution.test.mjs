@@ -53,9 +53,27 @@ test("SH999: both locales name the chip and the three filters", () => {
   for (const locale of ["en", "pt"]) {
     const activity = JSON.parse(read("src", "i18n", "locales", locale, "activity.json"))
     for (const key of ["activity.byAgent", "activity.filterAll", "activity.filterAgent",
-      "activity.filterHuman"]) {
+      "activity.filterCurator"]) {
       assert.ok(activity[key], `SH999: ${locale} is missing ${key}`)
     }
+  }
+})
+
+test("SH1000: the review queue leads with the premise, and names the flag when there is none", () => {
+  const page = read("src", "app", "admin", "review", "review.list.page.tsx")
+
+  assert.match(page, /\{session\.intent \?\? t\("review\.noIntent"\)\}/,
+    "SH1000: the premise leads, because it is what decides whether the list underneath is the "
+      + "right list — a reviewer without it reads the diff to find out why")
+  assert.match(page, /session\.agentName \?\? session\.session/,
+    "SH1000: the name the run gave, falling back to the uuid this task exists to stop leading with")
+
+  for (const locale of ["en", "pt"]) {
+    const review = JSON.parse(read("src", "i18n", "locales", locale, "review.json"))
+    assert.ok(review["review.noIntent"], `SH1000: ${locale} is missing review.noIntent`)
+    assert.match(review["review.noIntent"], /--intent/,
+      `SH1000: ${locale} must name the argument that would have supplied one — an absent premise `
+        + "is a fact about the run, and a blank line is not the same statement")
   }
 })
 

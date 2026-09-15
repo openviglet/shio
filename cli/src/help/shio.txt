@@ -18,7 +18,7 @@ Commands:
   marketplace    Browse and install blueprint packages from a catalogue
   publish [addr] Make drafts live, or take live pages down (--unpublish)
   gate           The checks a site runs before content goes live (run, list)
-  verify         Lint the content and its routes; exits non-zero on an error (CI gate)
+  verify         Lint the content and its routes; exits non-zero on an error
   changes        What changed, with a cursor to resume from
   report         What changed, preview links, open questions
   remember       Write down a decision for the next session
@@ -55,9 +55,10 @@ Connection:
   --token <token>      CDA token              (env SHIO_CDA_TOKEN)   [types/dev]
 
 Common options:
+  --intent <sentence>  What this run is for
   --dir <dir>          Post-types directory   (default shio/post-types) [pull/push/build]
   --out <file>         Output path            (.d.ts for types; dir for pull/build)
   --dry-run            push/apply: print the plan, change nothing
-  --check              push/apply: drift guard — exit non-zero if the plan is non-empty (CI)
+  --check              push/apply: exit non-zero if the plan is non-empty
   --prune              push: delete remote types absent locally (never system types)
   -h, --help           Show help

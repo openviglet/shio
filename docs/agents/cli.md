@@ -4089,6 +4089,23 @@ half, as the audit row's parenthetical.
 
 ## `shio changes --by` (SH999)
 
-`agent`, `human`, or a session id. A pipeline that pulls when something moved wants the half it did
+`agent`, `curator`, or a session id. A pipeline that pulls when something moved wants the half it did
 not write itself, and every row used to look the same. The printed line now reads
 `[ana via claude-code at <instant>]` when a run wrote it and `[ana at <instant>]` when a person did.
+
+## `--intent`, and the run id the CLI never sent (SH1000)
+
+`--intent "<sentence>"` is global, not per command: the premise belongs to the run, and `apply`,
+`push --content`, `convert` and `publish` all write. It travels as `X-Shio-Intent` on every request
+this process makes.
+
+It needed a run to attach to, and there was none. `ShAgentSessionFilter`'s javadoc said the CLI sent
+`Mcp-Session-Id` once per invocation; the CLI sent it from the stdio MCP bridge and nowhere else, so
+every write `shio` made was attributed to an ordinary curator and never appeared in the review queue.
+One process is now one run.
+
+`shio report` gains **What these runs were for**, above the changes — a reviewer who reads one
+section reads the first one, and the premise decides whether the list below is the right list. It is
+quoted from the stored intent rather than reconstructed, and a run that declared none is named with
+the flag that would have supplied one: silently omitting it makes a handoff of ten runs look like a
+handoff of the three that happened to say something.

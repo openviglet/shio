@@ -20,6 +20,7 @@
  */
 import { argv } from "node:process";
 
+import { declareIntent } from "./agent-client.mjs";
 import { parseArgs } from "./args.mjs";
 import { finish } from "./exit.mjs";
 import { formatError } from "./format-error.mjs";
@@ -185,6 +186,14 @@ async function main() {
   if (flags.help) {
     await printCommandHelp(command);
     return;
+  }
+
+  // SH1000 — what this run is for, declared once and carried by every request it makes. Global
+  // rather than per command because the premise belongs to the run: `apply`, `push --content`,
+  // `convert` and `publish` all write, and a sentence spelled into one of them is a sentence the
+  // other three cannot say.
+  if (typeof flags.intent === "string" && flags.intent.trim()) {
+    declareIntent(flags.intent);
   }
 
   const mod = await loader();

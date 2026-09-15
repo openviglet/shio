@@ -30,7 +30,7 @@ export default function ActivityListPage() {
   const [items, setItems] = useState<ShHistory[]>([])
   const [loading, setLoading] = useState(true)
   /** SH999 — everyone, the machines, or the people. The server decides which rows those are. */
-  const [who, setWho] = useState<"" | "agent" | "human">("")
+  const [who, setWho] = useState<"" | "agent" | "curator">("")
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
   const fetchRecent = useCallback(
@@ -75,7 +75,7 @@ export default function ActivityListPage() {
               curator asking "was that us or the agent" should not have to open a menu to ask it.
             */}
             {([["", "activity.filterAll"], ["agent", "activity.filterAgent"],
-              ["human", "activity.filterHuman"]] as const).map(([value, key]) => (
+              ["curator", "activity.filterCurator"]] as const).map(([value, key]) => (
               <Button
                 key={key}
                 size="sm"

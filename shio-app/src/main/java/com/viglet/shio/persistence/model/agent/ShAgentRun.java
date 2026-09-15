@@ -77,6 +77,16 @@ public class ShAgentRun implements Serializable {
     @Column(name = "actor", length = 255)
     private String actor;
 
+    /**
+     * What this run said it was for, in the words of whoever started it (SH1000).
+     *
+     * <p>A sentence, not a document — see {@code v2026.3.38} for why the column is short. It is
+     * stored here and nowhere else: putting it on the change row would repeat one sentence on every
+     * row of a forty-page run, which is the same sentence forty times.</p>
+     */
+    @Column(name = "intent", length = 1000)
+    private String intent;
+
     @Column(name = "started_at", nullable = false)
     private Instant startedAt;
 

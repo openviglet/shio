@@ -191,14 +191,22 @@ export default function ReviewListPage() {
                           ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                           : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
                         <div className="min-w-0">
+                          {/*
+                            SH1000 — the premise leads, because it is what decides whether the list
+                            underneath is the right list. The count and the actor move below it: a
+                            reviewer who knows what the run was for reads eleven changes as one
+                            decision, and without it they read the diff to find out why.
+                          */}
                           <div className="font-medium truncate">
+                            {session.intent ?? t("review.noIntent")}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
                             {t("review.changesBy", {
                               count: session.changes,
                               actor: session.actor ?? t("review.unknownActor"),
                             })}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            <code>{session.session}</code>
+                            {` · `}
+                            <code>{session.agentName ?? session.session}</code>
                             {session.lastSeen &&
                               ` · ${formatDistanceToNow(new Date(session.lastSeen), { addSuffix: true })}`}
                           </div>

@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
+import com.viglet.shio.api.agent.dto.ShAgentRunRow;
 import com.viglet.shio.api.agent.dto.ShAgentContext;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
@@ -101,6 +102,7 @@ public class ShAgentAPI {
     private final ShAgentMemoryService shAgentMemoryService;
     /** SH997 — the site's publish gates, read and declared. */
     private final com.viglet.shio.api.gate.ShAgentGateApiService shAgentGateApiService;
+    private final ShAgentRunService shAgentRunService;
     private final ShBlueprintRegistry shBlueprintRegistry;
     private final ShBlueprintService shBlueprintService;
     private final ShAgentBodyEtag shAgentBodyEtag;
@@ -121,8 +123,10 @@ public class ShAgentAPI {
                       ShBlueprintService shBlueprintService,
                       ShAgentBodyEtag shAgentBodyEtag,
                       ShAgentProofService shAgentProofService,
-                      com.viglet.shio.api.gate.ShAgentGateApiService shAgentGateApiService) {
+                      com.viglet.shio.api.gate.ShAgentGateApiService shAgentGateApiService,
+                      ShAgentRunService shAgentRunService) {
         this.shAgentGateApiService = shAgentGateApiService;
+        this.shAgentRunService = shAgentRunService;
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
         this.shAddressResolver = shAddressResolver;
@@ -708,10 +712,10 @@ public class ShAgentAPI {
      * @param include {@code fields} (SH989) names the fields each update, publish and restore
      *                changed — the one description of an approved run that survives the approve,
      *                since publishing makes the draft and the live row the same document
-     * @param by      SH999 — narrow to who wrote it: {@code agent}, {@code human} (a curator's own
-     *                console session counts as one) or a session id. This is the question the feed
-     *                was built to answer and could not: an agent polling for what changed wants
-     *                what changed <em>outside its own run</em>, and every row looked the same
+     * @param by      SH999 — narrow to who wrote it: {@code agent}, {@code curator} (a console
+     *                session counts as one) or a session id. This is the question the feed was built
+     *                to answer and could not: an agent polling for what changed wants what changed
+     *                <em>outside its own run</em>, and every row looked the same
      */
     @GetMapping("/changes")
     @Operation(summary = "Content changes since a cursor: what a human (or another session) did")
@@ -744,6 +748,31 @@ public class ShAgentAPI {
      * @param site  one site's notes plus the instance-wide ones; omit for all
      * @param limit rows to return; {@code found} always describes the full set
      */
+    /**
+     * What these runs were, and what each said it was for (SH1000).
+     *
+     * <p>The other half of SH999's {@code agent} field: the feed names a run and this says who it
+     * was. Asked by the ids a caller already has, rather than listed, because "every run this
+     * instance has ever seen" is not a question anybody has — and a listing would be a second,
+     * unbounded surface over a table the review queue already scopes.</p>
+     *
+     * @param sessions comma-separated session ids, as the feed spells them in {@code agent}
+     */
+    @GetMapping("/runs")
+    @Operation(summary = "Who a run was, and what it said it was for")
+    public List<ShAgentRunRow> runs(@RequestParam(name = "session") String sessions) {
+        List<String> ids = java.util.Arrays.stream(sessions.split(","))
+                .map(String::trim).filter(id -> !id.isEmpty()).distinct().toList();
+        return shAgentRunService.runs(ids).stream()
+                .map(run -> new ShAgentRunRow(run.getId(), run.getClientName(),
+                        run.getClientVersion(), run.getTransport(), run.getActor(),
+                        run.getIntent(), run.getStartedAt()))
+                // By the order asked for, not the order the database returned: a caller that sent
+                // three ids and rendered three sections would otherwise render them at random (P5).
+                .sorted(java.util.Comparator.comparingInt(row -> ids.indexOf(row.session())))
+                .toList();
+    }
+
     /**
      * The publish gates a site declares (SH997) — what stands between its content and visitors.
      *

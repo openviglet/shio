@@ -8,6 +8,16 @@
 export interface ShReviewSession {
   session: string
   actor?: string
+  /**
+   * SH1000 — what the run said it was for, declared once by whoever started it.
+   *
+   * Absent when nothing declared one, and the page says so in those words rather than leaving a
+   * blank: a reviewer reading a count of changes over a uuid has to reconstruct the premise from
+   * the diff, which is the one thing the agent knew and never said.
+   */
+  intent?: string | null
+  /** SH999 — what the run called itself on `initialize`; absent when it never said. */
+  agentName?: string | null
   changes: number
   byAction: Record<string, number>
   firstSeen?: string

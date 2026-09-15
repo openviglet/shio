@@ -37,6 +37,8 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
+import com.viglet.shio.api.agent.ShAgentRunService;
+import com.viglet.shio.persistence.model.agent.ShAgentRun;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.tenant.ShTenantContext;
 import com.viglet.shio.utils.ShStableMap;
@@ -86,6 +88,7 @@ public class ShReviewService {
     private final ShFolderWriteService shFolderWriteService;
     private final ShContentAclService shContentAclService;
     private final ShAddressResolver shAddressResolver;
+    private final ShAgentRunService shAgentRunService;
 
     public ShReviewService(ShHistoryRepository shHistoryRepository,
                           ShPostUnifiedRepository shPostUnifiedRepository,
@@ -93,7 +96,8 @@ public class ShReviewService {
                           ShFolderRepository shFolderRepository,
                           ShFolderWriteService shFolderWriteService,
                           ShContentAclService shContentAclService,
-                          ShAddressResolver shAddressResolver) {
+                          ShAddressResolver shAddressResolver,
+                          ShAgentRunService shAgentRunService) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
@@ -101,6 +105,7 @@ public class ShReviewService {
         this.shFolderWriteService = shFolderWriteService;
         this.shContentAclService = shContentAclService;
         this.shAddressResolver = shAddressResolver;
+        this.shAgentRunService = shAgentRunService;
     }
 
     /** The runs, newest first. */
@@ -120,8 +125,14 @@ public class ShReviewService {
         // place. The old count asked `state(id, DRAFT).isPresent()` inside the per-entry loop:
         // one query per audit row, answering a question that was wrong anyway.
         Set<String> unreleased = objects.isEmpty() ? Set.of() : unreleased(objects);
+        // SH1000 — one query for the page's runs, never one per session and never per row: the
+        // premise is one sentence about many changes, and this is the one place it is read.
+        List<ShAgentRun> runs = shAgentRunService.runs(bySession.keySet());
+        Map<String, ShAgentRun> byId = new LinkedHashMap<>();
+        runs.forEach(run -> byId.put(run.getId(), run));
         return bySession.entrySet().stream()
-                .map(group -> summarize(group.getKey(), group.getValue(), unreleased))
+                .map(group -> summarize(group.getKey(), group.getValue(), unreleased,
+                        byId.get(group.getKey())))
                 .limit(Math.max(1, limit))
                 .toList();
     }
@@ -372,7 +383,7 @@ public class ShReviewService {
      *                   resolved once by {@link #sessions} — per-session would be a query per run
      */
     private ShReviewSession summarize(String session, List<ShHistory> entries,
-                                      Set<String> unreleased) {
+                                      Set<String> unreleased, ShAgentRun run) {
         Map<String, Integer> byAction = new LinkedHashMap<>();
         Set<String> sites = new LinkedHashSet<>();
         Instant first = null;
@@ -397,7 +408,9 @@ public class ShReviewService {
         return new ShReviewSession(session, entries.get(0).getOwner(), entries.size(),
                 // SH136: byAction is a LinkedHashMap on purpose; Map.copyOf discarded
                 // that insertion order on the way out.
-                ShStableMap.copyOf(byAction), first, last, List.copyOf(sites), pending);
+                ShStableMap.copyOf(byAction), first, last, List.copyOf(sites),
+                run == null ? null : run.getIntent(),
+                run == null ? null : run.getClientName(), pending);
     }
 
     /**

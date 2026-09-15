@@ -184,10 +184,13 @@ public class ShMcpServer {
         // server discarded the half that said it. Kept against the session id this same call mints,
         // so the uuid on every audit row resolves to a name a reviewer recognises.
         JsonNode clientInfo = params == null ? null : params.get("clientInfo");
+        // SH1000 — and what the run is for, from the same object. The cheapest place on this
+        // protocol: `tools/list` is re-sent every turn and `initialize` is not, so a sentence
+        // declared here is paid once per run rather than once per turn.
         ShAgentSessionContext.current().ifPresent(session ->
                 shAgentRunService.introduce(session, text(clientInfo, "name"),
                         text(clientInfo, "version"), ShAgentRunService.MCP,
-                        ShAgentSessionContext.actor()));
+                        ShAgentSessionContext.actor(), text(clientInfo, "intent")));
         ObjectNode result = objectMapper.createObjectNode();
         result.put("protocolVersion", PROTOCOL_VERSION);
         ObjectNode capabilities = result.putObject("capabilities");

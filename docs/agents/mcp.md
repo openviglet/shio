@@ -474,7 +474,14 @@ Activity page. Writing it never refuses the handshake: `initialize` is the first
 so a failure there would turn "your agent has no label" into "your agent cannot start", and a run
 with no name is a state both readers already handle.
 
-`shio_changes` gains **`by`** (`agent`, `human`, or a session id) — REST's own filter, which P1 puts
+`shio_changes` gains **`by`** (`agent`, `curator`, or a session id) — REST's own filter, which P1 puts
 here first. It was paid for out of `shio_publish`'s reservation rather than out of the ceiling:
 SH977 held 216 there for SH992's `when` and `cancel`, those shipped at 197, and a reservation whose
 capability has landed is room the allocation counts and nobody can spend.
+
+## `clientInfo.intent` (SH1000)
+
+Alongside the name SH999 keeps. The handshake is the one call whose purpose is a client saying what
+it is, and "what I am here to do" is the same kind of fact — declared once per run rather than once
+per turn, which is what `tools/list` would have cost. `shio_changes`'s `by` argument uses the same
+vocabulary as the REST filter (`agent`, `curator`, or a session id).

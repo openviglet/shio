@@ -1,0 +1,35 @@
+databaseChangeLog:
+  # SH1000 — `sh_agent_run.intent`: what a run said it was for, in the words of whoever started it.
+  #
+  # The review queue renders a count of changes by an actor over a uuid, and nothing anywhere stores
+  # what the run was trying to do. A reviewer therefore reads the diff to reconstruct the premise,
+  # which is the one thing the agent knew and never said.
+  #
+  # Declared once and read once per run: it lands here from MCP's `initialize` (in `clientInfo`,
+  # which is the cheapest place on that protocol — `tools/list` is re-sent every turn and
+  # `initialize` is not) or from the `X-Shio-Intent` header on the REST agent surface. It is
+  # deliberately NOT on the per-row change payload: a sentence repeated on every row of a
+  # forty-page run is the same sentence forty times, which is P3's definition of waste.
+  #
+  # VARCHAR(1000): a sentence, not a document. A run whose premise needs more than a thousand
+  # characters is a run that should have been two, and a column that will hold a plan invites one.
+  # Nullable with no backfill — a run that never declared an intent has none, and both readers say
+  # so rather than inventing one. Types DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26:
+  # preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1000-add-sh-agent-run-intent
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_agent_run
+                columnName: intent
+      changes:
+        - addColumn:
+            tableName: sh_agent_run
+            columns:
+              - column:
+                  name: intent
+                  type: VARCHAR(1000)
