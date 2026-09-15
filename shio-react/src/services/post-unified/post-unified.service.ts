@@ -1,5 +1,10 @@
 import axios from "axios"
-import type { ShPostState, ShPostUnified } from "@/models/post-unified/post-unified"
+import type {
+  ShPostState,
+  ShPostUnified,
+  ShPublishPlan,
+  ShPublishRoutes,
+} from "@/models/post-unified/post-unified"
 
 /**
  * The create body. The post-type is named either way: `postType` is its API name
@@ -173,6 +178,30 @@ export class ShPostUnifiedService {
     // The draft row survives a publish, so the tag the write answers with is the draft's.
     this.remember(id, "DRAFT", response.headers)
     return response.data
+  }
+
+  /**
+   * SH996 — what publishing this draft would do, written by nothing.
+   *
+   * The server answers the agent's change-set shape, so the console shows the plan the batch surface
+   * would have produced rather than a second description of publishing.
+   */
+  async publishPlan(id: string): Promise<ShPublishPlan> {
+    const response = await axios.post<ShPublishPlan>(`/v2/post-unified/${id}/publish?dryRun=true`)
+    return response.data
+  }
+
+  /**
+   * SH996 — which URLs that publish would move, from the read that computes them.
+   *
+   * Asked by `id:` address, the escape hatch SH172 kept for exactly this: the console holds an id and
+   * the agent surface is addressed. Absent for a publish that moves no URL, which is most of them.
+   */
+  async publishRoutes(id: string): Promise<ShPublishRoutes | null> {
+    const response = await axios.get<{ impact?: { routes?: ShPublishRoutes } }[]>("/v2/agent/read", {
+      params: { address: `id:${id}`, include: "impact" },
+    })
+    return response.data?.[0]?.impact?.routes ?? null
   }
 
   /** Delete the live snapshot, leaving the draft to go on being edited (SH654). */

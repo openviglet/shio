@@ -29,6 +29,28 @@ export interface ShPostTypeFieldRef {
   fields?: ShPostTypeFieldRef[]
 }
 
+/**
+ * SH996 — what publishing would do, as the server says it.
+ *
+ * The plan is the agent's own `ShAgentChangeSet` shape, because the console and the agent ask the
+ * same question about the same act; the routes come from `include=impact` on the agent read, which is
+ * where they are computed once.
+ */
+export interface ShPublishPlan {
+  dryRun: boolean
+  ops: number
+  changed: number
+  results: { op: string; address: string; action: string; detail?: string | null }[]
+}
+
+/** Which URLs a publish makes resolve, moves, or stops — absent when it moves none. */
+export interface ShPublishRoutes {
+  goesLive?: string | null
+  moves?: string | null
+  stops?: string | null
+  inbound?: number | null
+}
+
 export interface ShPostUnified {
   id: string
   state: ShPostState

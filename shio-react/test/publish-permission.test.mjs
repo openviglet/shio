@@ -58,3 +58,24 @@ test("SH995: the ACL editor offers all three levels, in both locales", () => {
       `SH995: ${locale} must interpolate the server's reason rather than restate it`)
   }
 })
+
+test("SH996: Publish opens the server's plan before it writes", () => {
+  const page = read("src", "app", "content", "post.edit.page.tsx")
+  const dialog = read("src", "components", "publish-preview.dialog.tsx")
+  const service = read("src", "services", "post-unified", "post-unified.service.ts")
+
+  assert.match(page, /onClick=\{\(\) => setPublishPreviewOpen\(true\)\}/,
+    "SH996: the button arms the preview, and the preview publishes")
+  assert.match(dialog, /service\.publishPlan\(postId\), service\.publishRoutes\(postId\)/,
+    "SH996: both halves come from the server — nothing here decides what publishing would do")
+  assert.match(service, /publish\?dryRun=true/)
+  assert.match(service, /include: "impact"/,
+    "SH996: the routes are read where they are computed, not recomputed in the console")
+
+  for (const locale of ["en", "pt"]) {
+    const content = JSON.parse(read("src", "i18n", "locales", locale, "content.json"))
+    for (const key of ["content.publishGoesLive", "content.publishMoves", "content.publishInbound"]) {
+      assert.ok(content[key], `SH996: ${locale} is missing ${key}`)
+    }
+  }
+})

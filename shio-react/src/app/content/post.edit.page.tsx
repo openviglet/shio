@@ -21,6 +21,7 @@ import { ShPreviewTokenService } from "@/services/preview-token/preview-token.se
 import { ShAclService } from "@/services/acl/acl.service"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
+import { PublishPreviewDialog } from "@/components/publish-preview.dialog"
 import { PostTranslationsMenu } from "@/components/post-translations.menu"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { postFormSchema } from "@/models/post-unified/post-unified"
@@ -72,6 +73,8 @@ export default function PostUnifiedEditPage() {
    */
   const [publishHint, setPublishHint] = useState<string | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  /** SH996 — Publish arms behind the server's own plan, rather than being a button with no preview. */
+  const [publishPreviewOpen, setPublishPreviewOpen] = useState(false)
   /**
    * SH985 — the refusal that needs a view rather than a message.
    *
@@ -222,6 +225,7 @@ export default function PostUnifiedEditPage() {
    * what is on screen.
    */
   async function handlePublish() {
+    setPublishPreviewOpen(false)
     setIsPublishing(true)
     try {
       const saved = await unifiedService.update(postId, { data, state })
@@ -358,7 +362,7 @@ export default function PostUnifiedEditPage() {
                   loading={isPublishing}
                   disabled={isLoading || publishHint !== null}
                   title={publishHint ?? undefined}
-                  onClick={handlePublish}
+                  onClick={() => setPublishPreviewOpen(true)}
                 >
                   <Upload className="size-4" />
                   {t("content.publish")}
@@ -458,6 +462,13 @@ export default function PostUnifiedEditPage() {
         }}
       />
 
+      <PublishPreviewDialog
+        postId={postId}
+        open={publishPreviewOpen}
+        setOpen={setPublishPreviewOpen}
+        onConfirm={handlePublish}
+        publishing={isPublishing}
+      />
       <PostScheduleDialog
         postId={postId}
         publishAt={post.publishScheduledDate}

@@ -1505,27 +1505,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.7 The curator's publish gets the agent's safeguards (SH996)
-
-The visual editor's Publish patches with publish true and, when nothing was edited,
-publishes the selected post outright; the post editor has the same shape, and its
-payload has no dryRun and no confirm. The agent path carries a dry run, a confirm token,
-a publish capability check and a review entry with a revertable flag. So the surface P7
-was written for is the one with none of P7's instruments, and include=impact answers a
-different question: template blast radius from layout bindings, not which URLs change.
-
-Two halves in one commit. The merge verb accepts dryRun and answers with the change-set
-shape the agent path returns, one contract and two callers. And impact gains a routes
-block computed from the content graph without rendering: which URLs go live, which
-change, which stop resolving, and how many published pages link to a URL this publish
-creates or removes, reusing the inbound-link scanner so the lint and the preview cannot
-disagree. It is absent when a publish affects nothing, so ordinary responses stay
-byte-identical.
-
-The console shows that list before the button arms, and a console publish writes a
-review entry attributed to the curator. The assertions: a dry run writes nothing, and a
-console publish appears in the queue.
-
 ### LXVI.8 Publish gates as appliable checklists in the content tree (SH997)
 
 The address-scoped verify grades unresolved links, missing themes, head conventions and

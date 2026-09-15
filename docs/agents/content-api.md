@@ -809,8 +809,8 @@ Under-reporting is the one way a lint like this goes wrong: it is green, and it 
 `POST /api/v2/post-unified/{id}/publish?dryRun=true` answers **`ShAgentChangeSet`** — the shape the
 batch surface returns for a dry run — and writes nothing. One contract, two callers: the console and
 the agent ask the same question about the same act, and a console-shaped preview would be a second
-description of publishing to keep in step, where the day they disagreed the surface with the human on
-it would be the one that was wrong. It reports the batch path's three outcomes for its reasons: no
+description of publishing to keep in step, and the day they disagreed the curator's surface would be
+the one that was wrong. It reports the batch path's three outcomes for its reasons: no
 draft is a noop, a draft matching what is live is a noop (re-publishing unchanged content must not
 claim to have published), everything else is a publish, and a first publish says so. It carries no
 routes — those are `include=impact` on the read, and computing them twice is the P5 split.

@@ -259,5 +259,10 @@
   "content.conflictEmpty": "(empty)",
   "content.conflictApply": "Save what I chose",
   "content.conflictNoFields": "Nothing differs any more — saving again will apply your version.",
-  "content.publishNotAllowed": "Publishing is not yours to do here — {{reason}}."
+  "content.publishNotAllowed": "Publishing is not yours to do here — {{reason}}.",
+  "content.publishPreviewTitle": "Publish this page?",
+  "content.publishPreviewHint": "What the server says this would do. Nothing is written yet.",
+  "content.publishGoesLive": "{{url}} starts resolving for the first time.",
+  "content.publishMoves": "The live page moves to {{to}}, and {{from}} stops resolving.",
+  "content.publishInbound": "{{count}} published page(s) link to {{url}}."
 }
