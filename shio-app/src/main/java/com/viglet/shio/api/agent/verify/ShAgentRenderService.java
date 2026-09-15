@@ -15,6 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -28,6 +29,11 @@ import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
 import com.viglet.shio.render.ShRegionComposer;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.agent.ShAgentReadService;
+import com.viglet.shio.api.post.ShContentPerspective;
+import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.post.revision.ShRevisionRow;
+import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -95,12 +101,16 @@ public class ShAgentRenderService {
     private final ObjectMapper objectMapper;
     private final ShAgentDeliveryProbe deliveryProbe;
     private final ShPageRenderService pageRenderService;
+    /** SH990 — what a page said at a revision, for {@code state=rev:<n>}. */
+    private final ShPostRevisionService shPostRevisionService;
 
     public ShAgentRenderService(ShAddressResolver shAddressResolver,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ObjectMapper objectMapper,
                                 ShAgentDeliveryProbe deliveryProbe,
-                                ShPageRenderService pageRenderService) {
+                                ShPageRenderService pageRenderService,
+                                ShPostRevisionService shPostRevisionService) {
+        this.shPostRevisionService = shPostRevisionService;
         this.shAddressResolver = shAddressResolver;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.objectMapper = objectMapper;
@@ -115,12 +125,26 @@ public class ShAgentRenderService {
      * @param url     absolute delivery URL; requires {@code shio.agent.render.allow-fetch}
      */
     public ShAgentDigest digest(String address, String url) {
+        return digest(address, url, null);
+    }
+
+    /**
+     * Digests a post from the perspective {@code state} names (SH990).
+     *
+     * @param state the {@code state=} grammar; it names a version of the post an address points at,
+     *              so it is refused beside {@code url}, which digests whatever a visitor is served
+     */
+    public ShAgentDigest digest(String address, String url, String state) {
         boolean hasAddress = address != null && !address.isBlank();
         boolean hasUrl = url != null && !url.isBlank();
         if (hasAddress == hasUrl) {
             throw new NoDigestTargetException(hasAddress);
         }
-        return hasAddress ? fromContent(address.trim()) : fromUrl(url.trim());
+        ShContentPerspective perspective = ShContentPerspective.parse(state);
+        if (hasUrl && !perspective.isDefault()) {
+            throw new StateWithUrlException(state);
+        }
+        return hasAddress ? fromContent(address.trim(), perspective) : fromUrl(url.trim());
     }
 
     /**
@@ -140,12 +164,16 @@ public class ShAgentRenderService {
      * @return the fields and regions, or a page that renders to nothing reported as empty
      */
     public ShAgentEditable editable(String rawAddress) {
-        var resolved = shAddressResolver.resolve(rawAddress);
-        ShPostUnified post = draftPreferred(resolved.id())
-                .orElseThrow(() -> new NotAPageException(rawAddress, resolved.kind()));
+        return editable(rawAddress, null);
+    }
+
+    /** As {@link #editable(String)}, for the version of the page {@code state} names (SH990). */
+    public ShAgentEditable editable(String rawAddress, String state) {
+        ShContentPerspective perspective = ShContentPerspective.parse(state);
+        ShPostUnified post = postFor(rawAddress, perspective);
         String address = shAddressResolver.addressOf(post).toString();
 
-        Optional<String> html = renderedHtml(post);
+        Optional<String> html = renderedHtml(post, perspective);
         if (html.isEmpty()) {
             // The same honest fallback the digest takes for a post with no layout binding or no
             // friendly URL, which is the normal state of a site mid-build. An empty list here would
@@ -159,10 +187,8 @@ public class ShAgentRenderService {
 
     // --- content ------------------------------------------------------------
 
-    private ShAgentDigest fromContent(String rawAddress) {
-        var resolved = shAddressResolver.resolve(rawAddress);
-        ShPostUnified post = draftPreferred(resolved.id())
-                .orElseThrow(() -> new NotAPageException(rawAddress, resolved.kind()));
+    private ShAgentDigest fromContent(String rawAddress, ShContentPerspective perspective) {
+        ShPostUnified post = postFor(rawAddress, perspective);
         String address = shAddressResolver.addressOf(post).toString();
 
         // SH249 — the rendered page first, because it is what a visitor gets and the only artefact
@@ -170,7 +196,7 @@ public class ShAgentRenderService {
         // sections and `/preview` composed regions, and neither knew the other existed: an agent
         // proving structure and a human looking at the page could be reading two different
         // compositions of the same post, which is law P9 failing where it is supposed to work.
-        Optional<String> html = renderedHtml(post);
+        Optional<String> html = renderedHtml(post, perspective);
         if (html.isPresent()) {
             // SH187 — appearance only here, because it describes the *document* a visitor gets. A
             // post's own markup field is not a page and carries no stylesheet, so an appearance
@@ -211,13 +237,18 @@ public class ShAgentRenderService {
      * since the render route is addressed by URL. That is the second fallback path and not a
      * defect.</p>
      */
-    private Optional<String> renderedHtml(ShPostUnified post) {
+    private Optional<String> renderedHtml(ShPostUnified post, ShContentPerspective perspective) {
         if (post.getShSite() == null || post.getFurl() == null || post.getFurl().isBlank()) {
             return Optional.empty();
         }
         try {
-            return Optional.of(pageRenderService
-                    .render(post.getShSite().getId(), post.getFurl(), post.getState())
+            // SH990 — a revision renders through the renderer's own revision path, so the digest and
+            // /preview?state=rev:<n> compose the same document; a row renders at the row's state.
+            return Optional.of((perspective.isRevision()
+                    ? pageRenderService.render(post.getShSite().getId(), post.getFurl(), perspective,
+                            Map.of())
+                    : pageRenderService.render(post.getShSite().getId(), post.getFurl(),
+                            post.getState()))
                     .html());
         } catch (ShTeachingException e) {
             // Unbound type, missing layout, unknown page: all "this is not a renderable page",
@@ -595,6 +626,33 @@ public class ShAgentRenderService {
         }
     }
 
+    /**
+     * The post a perspective names, or the refusal that says which part of it does not exist.
+     *
+     * <p>A revision comes back as {@link ShPostRevisionService#asOf}'s transient copy, so the content
+     * fallback reads what the page said then and not what the draft says now. A row the post does not
+     * have is SH619's 404, which tells "never published" from "an uploaded file with no draft".</p>
+     */
+    private ShPostUnified postFor(String rawAddress, ShContentPerspective perspective) {
+        var resolved = shAddressResolver.resolve(rawAddress);
+        ShPostUnified present = draftPreferred(resolved.id())
+                .orElseThrow(() -> new NotAPageException(rawAddress, resolved.kind()));
+        if (perspective.row() != null) {
+            return shPostUnifiedRepository.findByIdAndState(present.getId(), perspective.row())
+                    .orElseThrow(() -> new ShAgentReadService.NoSuchStateException(rawAddress,
+                            perspective.row()));
+        }
+        if (perspective.isRevision()) {
+            int number = perspective.revision();
+            return shPostRevisionService.revision(present.getId(), number)
+                    .map(revision -> shPostRevisionService.asOf(revision, present))
+                    .orElseThrow(() -> ShPostStateNotFoundException.noSuchRevision(present.getId(),
+                            number, shPostRevisionService.rows(present.getId()).stream()
+                                    .map(ShRevisionRow::version).toList()));
+        }
+        return present;
+    }
+
     private java.util.Optional<ShPostUnified> draftPreferred(String postId) {
         var draft = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT);
         return draft.isPresent()
@@ -616,6 +674,20 @@ public class ShAgentRenderService {
     }
 
     // --- teaching errors (SH80) ---------------------------------------------
+
+    /** A 400: a version was asked of a delivery URL, which is served as it is (SH990). */
+    public static class StateWithUrlException extends ShTeachingException {
+
+        public StateWithUrlException(String sent) {
+            super(ShProblem.badRequest("state-with-url", "`state` does not apply to `url`")
+                    .withDetail("`url` digests the page a visitor is served, which has one version. "
+                            + "`state=" + sent + "` names a version of a post, which is reached by "
+                            + "its address.")
+                    .withFix("Send ?address=post:<site>/<url>&state=" + sent + " to digest that "
+                            + "version, or drop `state` to digest the delivered page.")
+                    .withExample("?address=post:Blog/blog/hello-world&state=published"));
+        }
+    }
 
     /** A 400: neither target, or both. */
     public static class NoDigestTargetException extends ShTeachingException {

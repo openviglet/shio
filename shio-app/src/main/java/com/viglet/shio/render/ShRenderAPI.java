@@ -134,8 +134,9 @@ public class ShRenderAPI {
      * {@code GET /preview/{site}/{path…}} — one rendered page.
      *
      * @param siteKey the site's name, friendly URL or id (SH181's order — a human types this)
-     * @param state   {@code draft} (the default: previewing means seeing unpublished edits)
-     *                or {@code published} to see what a visitor would get. SH990 — parsed by
+     * @param state   {@code draft} (the default: previewing means seeing unpublished edits),
+     *                {@code published} to see what a visitor would get, or {@code rev:<n>} to see
+     *                what the page said at a captured revision. SH990 — parsed by
      *                {@link ShContentPerspective}, so a value outside the grammar is a teaching 400;
      *                before, anything but {@code PUBLISHED} previewed the draft without saying so
      */
@@ -144,12 +145,12 @@ public class ShRenderAPI {
                                   @RequestParam(required = false) String state,
                                   @RequestParam(defaultValue = "false") boolean editor,
                                   HttpServletRequest request) {
-        ShPostState wanted = ShContentPerspective.parse(state)
-                .requireRow("/preview", "GET /api/v2/agent/read?address=<address>&state=rev:<n>")
-                .rowOr(ShPostState.DRAFT);
+        ShContentPerspective perspective = ShContentPerspective.parse(state);
+        // An asset has no revisions, so a revision preview that lands on one serves the draft's bytes.
+        ShPostState wanted = perspective.rowOr(ShPostState.DRAFT);
         ShRenderedPage rendered;
         try {
-            rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request), wanted,
+            rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request), perspective,
                     readerParams(request));
         } catch (ShPageRenderService.UnknownPageException noPage) {
             // SH437 — the same path, as an asset. See `assetOr`: one mapping with a fallback,
@@ -177,7 +178,7 @@ public class ShRenderAPI {
                 pathWithin(siteKey, request));
         ShRenderedPage page = new ShRenderedPage(walkable, rendered.site(), rendered.url(),
                 rendered.layout(), rendered.regions(), rendered.state(), rendered.postId(),
-                rendered.siteId(), rendered.composition());
+                rendered.siteId(), rendered.composition(), rendered.revision());
         String body = editor
                 ? editorBridge.inject(banner.wrap(page), originOf(request),
                         previewLinks.pathsForBridge(rendered))

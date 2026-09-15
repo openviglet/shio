@@ -73,20 +73,11 @@ class ShPreviewStateTest {
     }
 
     @Test
-    @DisplayName("SH990: a revision asked of /preview is refused with the read that serves one")
-    void aRevisionIsRefusedWithTheCallThatServesIt() throws Exception {
-        MvcResult result = preview("rev:2");
-
-        assertThat(result.getResponse().getStatus()).isEqualTo(400);
-        assertThat(result.getResponse().getContentAsString())
-                .contains("state-revision-not-served")
-                .contains("/api/v2/agent/read");
-    }
-
-    @Test
-    @DisplayName("SH990: draft, PUBLISHED and no state at all get past the grammar to the page lookup")
+    @DisplayName("SH990: draft, PUBLISHED, rev:<n> and no state at all get past the grammar to the page lookup")
     void theGrammarsWordsReachTheRenderer() throws Exception {
-        for (String state : new String[] { null, "draft", "PUBLISHED" }) {
+        // A rendered revision is ShPageRenderTest's; this holds that the route hands every word of
+        // the grammar to the renderer rather than refusing one of them on the way.
+        for (String state : new String[] { null, "draft", "PUBLISHED", "rev:2" }) {
             assertThat(preview(state).getResponse().getStatus())
                     .as("state=%s reaches the renderer, which answers for the missing site", state)
                     .isNotEqualTo(400);

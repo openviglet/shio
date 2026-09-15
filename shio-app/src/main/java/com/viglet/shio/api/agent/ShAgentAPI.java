@@ -617,15 +617,20 @@ public class ShAgentAPI {
      * fetches a delivery URL and digests what a visitor actually gets, and is off unless
      * {@code shio.agent.render.allow-fetch} is set (an endpoint that fetches on the
      * server's behalf needs an operator's consent, not a caller's).</p>
+     *
+     * @param state SH990 — {@code draft}, {@code published} or {@code rev:<n>}, beside an
+     *              {@code address}: the digest of what a publish would change, or of what the page
+     *              said before, is the same proof an agent already takes of the draft
      */
     @GetMapping("/render")
     @Operation(summary = "Structural digest of a page: outline, landmarks, links, images — not pixels")
     public ResponseEntity<Object> render(
             @RequestParam(name = "address", required = false) String address,
             @RequestParam(name = "url", required = false) String url,
+            @RequestParam(name = "state", required = false) String state,
             @RequestParam(name = "format", required = false) String format) {
 
-        ShAgentDigest digest = shAgentRenderService.digest(address, url);
+        ShAgentDigest digest = shAgentRenderService.digest(address, url, state);
         return isTerse(format)
                 ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
                         .body(ShAgentVerifyTerse.digest(digest))
@@ -643,11 +648,14 @@ public class ShAgentAPI {
      *
      * <p>It reads the page rather than the model, which is deliberate: the answer is what somebody
      * can actually click, and the annotations are already there for the browser to use.</p>
+     *
+     * @param state SH990 — which version of the page to read the annotations off
      */
     @GetMapping("/editable")
     @Operation(summary = "Which fields on a page a curator could edit, and the regions it declares")
-    public ResponseEntity<Object> editable(@RequestParam(name = "address") String address) {
-        return ResponseEntity.ok(shAgentRenderService.editable(address));
+    public ResponseEntity<Object> editable(@RequestParam(name = "address") String address,
+                                           @RequestParam(name = "state", required = false) String state) {
+        return ResponseEntity.ok(shAgentRenderService.editable(address, state));
     }
 
     /**

@@ -3063,3 +3063,15 @@ outside the scan, which is why it is named in the remainder rather than in the c
 
 The reader that takes a mapping's parameter list by counting parentheses moved from
 `ShVersionGuardLintTest` into `ShControllerScan.mappings`, which both lints now call.
+
+**The second slice put the renderer on the grammar.** `ShPageRenderService.render(site, url,
+perspective, params)` renders a revision by finding the page draft-preferred, as a preview does, and
+putting `ShPostRevisionService.asOf`'s transient copy in its place: the revision's document and title,
+at the page's present address, through its present templates, read at the state the revision was
+captured from. That is the question a curator asks of a revision (what did this page say) and not
+what the whole site looked like then, which the store does not hold. `/preview` serves `rev:<n>` now
+and the banner says `Revision <n> preview`, since "Draft preview" over an old revision would misdescribe
+the one thing the banner is for. `/agent/render` and `/agent/editable` take `state` beside an
+`address`: a row the post does not have is SH619's `no-such-state`, a revision goes through the
+renderer's revision path so the digest and the preview compose the same document, and `state` beside
+`url` is `state-with-url`, because a delivered page has one version.

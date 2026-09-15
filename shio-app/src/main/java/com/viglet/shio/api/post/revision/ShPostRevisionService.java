@@ -216,6 +216,37 @@ public class ShPostRevisionService {
         }
     }
 
+    /**
+     * The post as it stands, saying what this revision said (SH990).
+     *
+     * <p>A <b>transient</b> copy, never saved: everything that is a fact about where the post lives —
+     * its site, folder, type, address, locale and translation group — comes from {@code present}, and
+     * the document and its title come from the revision. That split is SH987's for a read and it is
+     * the same one for a render or a digest: a revision is a record of what the page said, so it is
+     * shown at the address the page is at now, through the templates that render it now.</p>
+     *
+     * <p>The summary is left unset rather than carried from {@code present}: a revision does not store
+     * one, and the present row's would describe a different document.</p>
+     */
+    public ShPostUnified asOf(ShPostRevision revision, ShPostUnified present) {
+        ShPostUnified as = new ShPostUnified();
+        as.setId(present.getId());
+        as.setState(revision.getState() == null
+                ? present.getState() : ShPostState.valueOf(revision.getState()));
+        as.setShSite(present.getShSite());
+        as.setShFolder(present.getShFolder());
+        as.setShPostType(present.getShPostType());
+        as.setFurl(present.getFurl());
+        as.setLocale(present.getLocale());
+        as.setTranslationGroupId(present.getTranslationGroupId());
+        as.setOwner(present.getOwner());
+        as.setDate(present.getDate());
+        as.setModifiedDate(revision.getCapturedAt());
+        as.setTitle(revision.getTitle());
+        as.setData(revision.getData());
+        return as;
+    }
+
     /** One revision of one post, by the number a reader was shown. */
     @Transactional(readOnly = true)
     public Optional<ShPostRevision> revision(String postId, int versionNo) {

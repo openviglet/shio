@@ -36,7 +36,9 @@ import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -112,6 +114,12 @@ class ShPageRenderTest {
     private tools.jackson.databind.ObjectMapper objectMapper;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private com.viglet.shio.api.post.revision.ShPostRevisionService shPostRevisionService;
+    @Autowired
+    private com.viglet.shio.persistence.repository.post.revision.ShPostRevisionRepository shPostRevisionRepository;
+    @Autowired
+    private ShPreviewBanner previewBanner;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -1519,6 +1527,60 @@ class ShPageRenderTest {
         post.setDate(when);
         post.setOwner("admin");
         entityManager.persist(post);
+    }
+
+    // ── SH990: a revision, rendered ─────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("SH990: a revision renders what the page said then, and the banner says it is one")
+    void aRevisionRendersWhatThePageSaidThen() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        String siteId = tx.execute(status -> entityManager
+                .createQuery("select s.id from ShSite s where s.name = :name", String.class)
+                .setParameter("name", siteName)
+                .getSingleResult());
+        ShPostRevision captured = tx.execute(status -> {
+            ShPostUnified home = entityManager.createQuery("select p from ShPostUnified p "
+                            + "where p.shSite.id = :site and p.furl = '/' and p.state = :state",
+                            ShPostUnified.class)
+                    .setParameter("site", siteId)
+                    .setParameter("state", ShPostState.DRAFT)
+                    .getSingleResult();
+            // What the page said before its present text: a copy of the row with an older body,
+            // captured the way a publish captures one, and never saved as a row itself.
+            ShPostUnified then = new ShPostUnified();
+            then.setId(home.getId());
+            then.setState(ShPostState.DRAFT);
+            then.setShPostType(home.getShPostType());
+            then.setTitle("Welcome, as it was");
+            then.setFurl(home.getFurl());
+            then.setData(json("TEXT", "<p>Said before</p>"));
+            return shPostRevisionService.capture(then, ShPostRevision.Reason.SAVE, "admin");
+        });
+        try {
+            ShRenderedPage rendered = shPageRenderService.render(siteName, "/",
+                    ShContentPerspective.parse("rev:" + captured.getVersionNo()), Map.of());
+
+            assertThat(rendered.html())
+                    .as("SH990: the revision's document, through the page's present layout")
+                    .contains("Said before")
+                    .contains("Welcome, as it was")
+                    .doesNotContain("Hello world");
+            assertThat(rendered.revision()).isEqualTo(captured.getVersionNo());
+            assertThat(previewBanner.wrap(rendered))
+                    .as("SH990: P7 — a banner saying 'Draft preview' over an old revision would "
+                            + "misdescribe the one thing it exists to describe")
+                    .contains("Revision " + captured.getVersionNo() + " preview");
+            assertThat(shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html())
+                    .as("SH990: and the draft is untouched — the revision was never written back")
+                    .contains("Hello world");
+            assertThatThrownBy(() -> shPageRenderService.render(siteName, "/",
+                    ShContentPerspective.parse("rev:999999"), Map.of()))
+                    .isInstanceOf(com.viglet.shio.api.post.unified.ShPostStateNotFoundException.class);
+        } finally {
+            tx.executeWithoutResult(status -> shPostRevisionRepository.delete(
+                    entityManager.merge(captured)));
+        }
     }
 
     /**

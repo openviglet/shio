@@ -46,7 +46,7 @@
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- ⏳ **SH990** (deps: SH986 ✅) **state= is honoured on two read paths and absent from every other** — Render, editable, verify, find and the CDA with GraphQL still take no state, /preview refuses rev:<n>, and neither MCP nor the CLI can pass one. → §LXVI.1
+- ⏳ **SH990** (deps: SH986 ✅) **state= is honoured on two read paths and absent from every other** — Verify, find and the CDA with GraphQL still take no state, and neither MCP nor the CLI can pass one to the reads that do. → §LXVI.1
 - 📋 **SH991** (deps: —) **nothing lists what is scheduled, so an agent cannot confirm a schedule it set and a curator has no agenda** — The only queries over the schedule columns are the sweep's due-only finders, and neither find nor read exposes a schedule, so the only view is a single post's dialog. → §LXVI.2
 - 📋 **SH992** (deps: SH952 ✅) **shio_publish cannot schedule, and post.unpublish accepts a when it never reads** — The publish tool builds an op with no when, and only postPublish calls scheduleInstant, so an embargoed takedown dated for December takes the page down now and reports success. → §LXVI.3
 - 📋 **SH993** (deps: SH990 ⏳, SH986 ✅) **no release groups a launch, so forty related pages go live as forty separate events in sweep order** — One batch call is atomic and nothing persists a set across calls, so a coordinated launch has no unit to stage, preview, approve, schedule or undo. → §LXVI.4

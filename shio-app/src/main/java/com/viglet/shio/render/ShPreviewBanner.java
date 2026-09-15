@@ -95,9 +95,14 @@ public class ShPreviewBanner {
      * sites that already exist is a migration rather than a label fix.</p>
      */
     private String label(ShRenderedPage page) {
-        String what = page.state() == ShPostState.DRAFT
-                ? "Draft preview — not what visitors see"
-                : "Published preview — rendered by Shio, not by this site's front end";
+        // SH990 — a revision first, because it is neither of the other two: a banner reading
+        // "Published preview" over what the page said three publishes ago is P7 failing on the one
+        // line whose job is to say what is on screen.
+        String what = page.revision() != null
+                ? "Revision " + page.revision() + " preview — what this page said then, not what visitors see"
+                : page.state() == ShPostState.DRAFT
+                        ? "Draft preview — not what visitors see"
+                        : "Published preview — rendered by Shio, not by this site's front end";
         String composition = page.composition() == null
                 // Every post type renders through this route and most are not conversions. A page
                 // holding neither field gets no claim at all, because "authorable" on an Article

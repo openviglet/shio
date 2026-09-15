@@ -73,11 +73,12 @@ class ShPerspectiveCoverageLintTest {
     private static final Map<String, String> DECLARED = new TreeMap<>(Map.ofEntries(
             Map.entry("ShAgentAPI#read", ""),
             Map.entry("ShRenderAPI#page", ""),
+            // The two reads that go through the renderer, on its revision path (SH990's second slice).
+            Map.entry("ShAgentAPI#render", ""),
+            Map.entry("ShAgentAPI#editable", ""),
 
             Map.entry("ShAgentAPI#find", REMAINDER),
             Map.entry("ShAgentAPI#verify", REMAINDER),
-            Map.entry("ShAgentAPI#render", REMAINDER),
-            Map.entry("ShAgentAPI#editable", REMAINDER),
             Map.entry("ShCdaAPI#list", REMAINDER),
             Map.entry("ShCdaAPI#post", REMAINDER),
             Map.entry("ShCdaAPI#postByUrl", REMAINDER),

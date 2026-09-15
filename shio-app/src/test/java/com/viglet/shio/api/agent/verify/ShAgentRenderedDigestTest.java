@@ -9,6 +9,7 @@
 package com.viglet.shio.api.agent.verify;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -25,6 +26,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
 import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -66,6 +68,10 @@ class ShAgentRenderedDigestTest {
     private ShAgentRenderService renderService;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private com.viglet.shio.api.post.revision.ShPostRevisionService revisionService;
+    @Autowired
+    private com.viglet.shio.persistence.repository.post.revision.ShPostRevisionRepository revisionRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -155,6 +161,79 @@ class ShAgentRenderedDigestTest {
                 .as("the region's <nav> is a landmark the content composition could never see")
                 .containsEntry("nav", 1);
         assertThat(digest.links()).extracting(ShAgentDigest.Link::href).contains("/docs");
+    }
+
+    @Test
+    @DisplayName("SH990: state picks the version a digest and an editable read take, a revision rendered like the page")
+    void stateSelectsTheVersionRead() {
+        String address = "post:" + siteName + "/bound";
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        ShPostUnified draft = tx.execute(status -> entityManager.createQuery(
+                        "select p from ShPostUnified p where p.furl = '/bound' and p.state = :state "
+                                + "and p.title = 'Bound page'", ShPostUnified.class)
+                .setParameter("state", ShPostState.DRAFT)
+                .getSingleResult());
+        // What is live says something else than the draft, and a revision says a third thing.
+        tx.executeWithoutResult(status -> {
+            ShPostUnified live = new ShPostUnified();
+            live.setId(draft.getId());
+            live.setState(ShPostState.PUBLISHED);
+            live.setShSite(entityManager.merge(draft).getShSite());
+            live.setShFolder(entityManager.merge(draft).getShFolder());
+            live.setShPostType(entityManager.merge(draft).getShPostType());
+            live.setTitle("Bound page");
+            live.setFurl("/bound");
+            live.setData(json("TEXT", "<h2>What is live</h2>"));
+            live.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            live.setOwner("admin");
+            entityManager.persist(live);
+        });
+        ShPostRevision then = tx.execute(status -> {
+            ShPostUnified before = new ShPostUnified();
+            before.setId(draft.getId());
+            before.setState(ShPostState.DRAFT);
+            before.setShPostType(entityManager.merge(draft).getShPostType());
+            before.setTitle("Bound page");
+            before.setData(json("TEXT", "<h2>What it said then</h2>"));
+            return revisionService.capture(before, ShPostRevision.Reason.SAVE, "admin");
+        });
+        try {
+            assertThat(renderService.digest(address, null, "published").headings())
+                    .extracting(ShAgentDigest.Heading::text)
+                    .as("SH990: the published row, which is the digest of what a publish replaced")
+                    .contains("What is live")
+                    .doesNotContain("From the page");
+
+            ShAgentDigest revision = renderService.digest(address, null, "rev:" + then.getVersionNo());
+            assertThat(revision.source())
+                    .as("SH990: a revision goes through the renderer's revision path, so this digest "
+                            + "and /preview?state=rev:<n> are the same composition")
+                    .isEqualTo("rendered");
+            assertThat(revision.headings()).extracting(ShAgentDigest.Heading::text)
+                    .containsExactly("Bound page", "What it said then");
+            assertThat(renderService.editable(address, "rev:" + then.getVersionNo()).address())
+                    .isEqualTo(address);
+
+            assertThat(renderService.digest(address, null, null).headings())
+                    .extracting(ShAgentDigest.Heading::text)
+                    .as("SH990: no state is the draft-preferred digest it always was")
+                    .contains("From the page");
+        } finally {
+            tx.executeWithoutResult(status -> {
+                revisionRepository.delete(entityManager.merge(then));
+                entityManager.createQuery("delete from ShPostUnified p where p.id = :id and p.state = :state")
+                        .setParameter("id", draft.getId())
+                        .setParameter("state", ShPostState.PUBLISHED)
+                        .executeUpdate();
+            });
+        }
+
+        assertThatThrownBy(() -> renderService.digest("post:" + siteName + "/loose", null, "published"))
+                .as("SH990: a row the post does not have is SH619's 404, not the draft under a 200")
+                .isInstanceOf(com.viglet.shio.api.agent.ShAgentReadService.NoSuchStateException.class);
+        assertThatThrownBy(() -> renderService.digest(null, "https://example.test/", "published"))
+                .as("SH990: `url` digests what a visitor is served, which has one version")
+                .isInstanceOf(ShAgentRenderService.StateWithUrlException.class);
     }
 
     @Test

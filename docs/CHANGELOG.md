@@ -1731,7 +1731,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- **SH990 (the grammar and its census)** — ShContentPerspective parses state for /agent/read and /preview, so preview refuses a value it used to read as the draft, and a census lint names every read still taking no state.
+- **SH990 (grammar, census and renderer reads)** — ShContentPerspective parses state for /agent/read, /preview, /agent/render and /agent/editable, /preview renders rev:<n> under a banner naming it, and a census lint lists the reads left.
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

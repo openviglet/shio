@@ -25,6 +25,11 @@ import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.post.ShContentPerspective;
+import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.post.revision.ShRevisionRow;
+import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
+import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -115,6 +120,8 @@ public class ShPageRenderService {
     private final ShRenderModel renderModel;
     private final ObjectMapper objectMapper;
     private final ShAgentIncidentLog incidentLog;
+    /** SH990 — what a page said at a revision, for {@code state=rev:<n>}. */
+    private final ShPostRevisionService shPostRevisionService;
 
     public ShPageRenderService(ShSiteRepository shSiteRepository,
                                ShPostUnifiedRepository shPostUnifiedRepository,
@@ -123,7 +130,9 @@ public class ShPageRenderService {
                                ShRegionComposer composer,
                                ShRenderModel renderModel,
                                ObjectMapper objectMapper,
-                               ShAgentIncidentLog incidentLog) {
+                               ShAgentIncidentLog incidentLog,
+                               ShPostRevisionService shPostRevisionService) {
+        this.shPostRevisionService = shPostRevisionService;
         this.shSiteRepository = shSiteRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -187,7 +196,42 @@ public class ShPageRenderService {
     public ShRenderedPage render(String siteKey, String url, ShPostState state,
                                  Map<String, String> params) {
         ShSite site = siteByKey(siteKey);
-        ShPostUnified page = pageAt(site, url, state);
+        return renderPage(site, pageAt(site, url, state), state, params, null);
+    }
+
+    /**
+     * A page from whichever perspective {@code state=} named: a row, or a captured revision (SH990).
+     *
+     * <h2>A revision renders at the page's present address, through its present templates</h2>
+     *
+     * <p>The page is found draft-preferred, exactly as a preview finds it, and the revision's document
+     * is put in its place with {@link ShPostRevisionService#asOf}. Layout, regions and theme are read at
+     * the state the revision was captured from, so a revision of what went live renders through the
+     * published layout. That is the question a curator asks of a revision — what did this page say —
+     * and not "what did the whole site look like then", which the revision store does not hold.</p>
+     *
+     * @param perspective the parsed {@code state=}; the default reads the draft, as a preview does
+     */
+    @Transactional(readOnly = true,
+        noRollbackFor = { ShTeachingException.class, ShPageRedirectException.class })
+    public ShRenderedPage render(String siteKey, String url, ShContentPerspective perspective,
+                                 Map<String, String> params) {
+        if (!perspective.isRevision()) {
+            return render(siteKey, url, perspective.rowOr(ShPostState.DRAFT), params);
+        }
+        ShSite site = siteByKey(siteKey);
+        ShPostUnified present = pageAt(site, url, ShPostState.DRAFT);
+        int number = perspective.revision();
+        ShPostRevision revision = shPostRevisionService.revision(present.getId(), number)
+                .orElseThrow(() -> ShPostStateNotFoundException.noSuchRevision(present.getId(), number,
+                        shPostRevisionService.rows(present.getId()).stream()
+                                .map(ShRevisionRow::version).toList()));
+        ShPostUnified asOf = shPostRevisionService.asOf(revision, present);
+        return renderPage(site, asOf, asOf.getState(), params, number);
+    }
+
+    private ShRenderedPage renderPage(ShSite site, ShPostUnified page, ShPostState state,
+                                      Map<String, String> params, Integer revision) {
         // SH385 — a replication that renames a path breaks every link into it: search results, other
         // people's pages, a decade of email. A `Redirect` answers the old path, and it is found by the
         // read that just ran rather than by a lookup of its own, because its friendly URL *is* the
@@ -266,7 +310,8 @@ public class ShPageRenderService {
                 // SH559 — from the page's own fields, which is the only place the answer is. The
                 // layout's title used to be the banner's only statement about how a page was made,
                 // and since SH464 one layout serves all three modes, so it named the wrong one.
-                compositionOf(stable, composed));
+                compositionOf(stable, composed),
+                revision);
     }
 
     /**
@@ -821,7 +866,14 @@ public class ShPageRenderService {
      */
     public record ShRenderedPage(String html, String site, String url, String layout,
                                  List<String> regions, ShPostState state, String postId,
-                                 String siteId, String composition) {
+                                 String siteId, String composition, Integer revision) {
+
+        /** A render of a row, which is every render before SH990 could read a revision. */
+        public ShRenderedPage(String html, String site, String url, String layout,
+                              List<String> regions, ShPostState state, String postId,
+                              String siteId, String composition) {
+            this(html, site, url, layout, regions, state, postId, siteId, composition, null);
+        }
     }
 
     /**
