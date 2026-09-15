@@ -165,6 +165,22 @@ public class ShAgentReadService {
      */
     public ShAgentFound find(String site, String type, String folder, String q,
                              Integer limit, boolean ids, String after, boolean trash) {
+        return find(site, type, folder, q, limit, ids, after, trash, null);
+    }
+
+    /**
+     * @param state SH990 — list the rows of one state instead of one row per post, draft-preferred.
+     *
+     *              <p>{@code published} lists what is live and {@code draft} what is being edited,
+     *              each with its own title, so "which pages would a publish change" is a listing and
+     *              not a read per address. A revision is a version of one page, not a set to list,
+     *              so {@code rev:<n>} is refused with the read that serves it.</p>
+     */
+    public ShAgentFound find(String site, String type, String folder, String q,
+                             Integer limit, boolean ids, String after, boolean trash, String state) {
+        ShPostState wanted = ShContentPerspective.parse(state)
+                .requireRow("/agent/find", "GET /api/v2/agent/read?address=<address>&state=rev:<n>")
+                .row();
         List<ShSite> sites = siteAccess.readable(site);
         int cap = limit == null || limit <= 0
                 ? properties.getRead().getDefaultLimit()
@@ -185,6 +201,11 @@ public class ShAgentReadService {
         // SH545 — taken before `dedupe`, which is the only place both rows of a post are in hand.
         // Asking per row afterwards would be one query per match on the cheapest read there is.
         Set<String> live = publishedIds(matches);
+        if (wanted != null) {
+            // After `publishedIds`, which needs both rows; before `dedupe`, which would otherwise
+            // keep the draft of a post whose published row is the one asked for.
+            matches = matches.stream().filter(row -> row.getState() == wanted).toList();
+        }
         List<ShAgentFound.Row> rows = dedupe(matches).stream()
                 .filter(post -> folderIds.isEmpty() || inScope(post, folderIds))
                 .filter(post -> type == null || type.isBlank() || matchesType(post, type))

@@ -3075,3 +3075,13 @@ the one thing the banner is for. `/agent/render` and `/agent/editable` take `sta
 `address`: a row the post does not have is SH619's `no-such-state`, a revision goes through the
 renderer's revision path so the digest and the preview compose the same document, and `state` beside
 `url` is `state-with-url`, because a delivered page has one version.
+
+**The third put the listing and the lint on it.** `/agent/find?state=published` lists the rows of that
+state with their own titles, so "which pages would a publish change" is one listing rather than a read
+per address; the filter runs after the published index is taken and before the draft-preferred
+dedupe, which would otherwise keep the draft of a post whose published row was asked for.
+`/agent/verify?state=` narrows the *subjects* the rules report on and leaves the indexes they check
+against over both states, since "published depends on unpublished" and "two posts claim one URL" are
+questions about both rows whichever is the subject; the report says so in a note. Both refuse
+`rev:<n>` with `state-revision-not-served`: a revision is a version of one page, not a set to list or a
+site to lint, and the refusal names the read and the digest that do serve one.

@@ -76,9 +76,11 @@ class ShPerspectiveCoverageLintTest {
             // The two reads that go through the renderer, on its revision path (SH990's second slice).
             Map.entry("ShAgentAPI#render", ""),
             Map.entry("ShAgentAPI#editable", ""),
+            // A listing and a lint take the two rows; a revision is refused with the read that
+            // serves one, since it is a version of one page rather than a set (the third slice).
+            Map.entry("ShAgentAPI#find", ""),
+            Map.entry("ShAgentAPI#verify", ""),
 
-            Map.entry("ShAgentAPI#find", REMAINDER),
-            Map.entry("ShAgentAPI#verify", REMAINDER),
             Map.entry("ShCdaAPI#list", REMAINDER),
             Map.entry("ShCdaAPI#post", REMAINDER),
             Map.entry("ShCdaAPI#postByUrl", REMAINDER),

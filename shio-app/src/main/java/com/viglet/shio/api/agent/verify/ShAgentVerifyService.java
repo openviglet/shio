@@ -46,6 +46,7 @@ import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.post.type.ShVocabularyPostTypes;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -284,6 +285,26 @@ public class ShAgentVerifyService {
      */
     public ShAgentReport verify(String site, String checks, Integer limit, String folder,
                                 String address, String since) {
+        return verify(site, checks, limit, folder, address, since, null);
+    }
+
+    /**
+     * As above, over the rows of one state (SH990).
+     *
+     * <p>{@code state} narrows the <b>subjects</b> — the posts the content, route and page rules
+     * report on — to that state's rows, so {@code published} lints what is live and {@code draft}
+     * what a publish would put there. The indexes the cross-cutting rules read stay over both states,
+     * because "published depends on unpublished" and "two posts claim one URL" are questions about
+     * both rows whichever one is the subject. A revision is a version of one page and has no site to
+     * lint around it, so {@code rev:<n>} is refused with the digest that proves one.</p>
+     *
+     * @param state the {@code state=} grammar, or {@code null} for the draft-preferred subjects
+     */
+    public ShAgentReport verify(String site, String checks, Integer limit, String folder,
+                                String address, String since, String state) {
+        ShPostState subjects = ShContentPerspective.parse(state)
+                .requireRow("/agent/verify", "GET /api/v2/agent/render?address=<address>&state=rev:<n>")
+                .row();
         Set<ShAgentCheck> requested = ShAgentCheck.parse(checks, deliveryProbe.enabled());
         int cap = limit == null || limit <= 0
                 ? properties.getVerify().getDefaultLimit()
@@ -291,7 +312,7 @@ public class ShAgentVerifyService {
 
         // SH206 — three phases, and the transaction spans only the first.
         Plan plan = readPass.execute(status ->
-                read(site, checks, folder, address, since, requested));
+                read(site, checks, folder, address, since, requested, subjects));
 
         // The read transaction has committed. Everything below works on plain data — Strings in
         // `Target`, Strings in `Finding` — so the connection is in the pool while the network is
@@ -340,12 +361,19 @@ public class ShAgentVerifyService {
      * {@code LazyInitializationException}.</p>
      */
     private Plan read(String site, String checks, String folder, String address, String since,
-                      Set<ShAgentCheck> requested) {
+                      Set<ShAgentCheck> requested, ShPostState subjects) {
         List<ShSite> sites = siteAccess.readable(site);
         ShAgentVerifyScope scope = scope(sites, site, folder, address, since);
-        Scan scan = scan(sites, scope);
+        Scan scan = scan(sites, scope, subjects);
         List<Finding> findings = new ArrayList<>();
         List<String> notes = new ArrayList<>(scope.notes());
+        if (subjects != null) {
+            // SH990 — said, because a clean report over the published rows is not a clean report
+            // over the draft a publish is about to put live, and the two read alike otherwise.
+            notes.add("state=" + subjects.name().toLowerCase(java.util.Locale.ROOT)
+                    + ": the rules reported on " + subjects.name() + " rows only; the indexes they "
+                    + "check against still read both states");
+        }
         boolean proving = requested.contains(ShAgentCheck.DELIVERY);
 
         if (requested.contains(ShAgentCheck.CONTENT)) {
@@ -608,7 +636,7 @@ public class ShAgentVerifyService {
      * projections — id, url, state — so they stay cheap at the size where scoping starts to
      * matter.</p>
      */
-    private Scan scan(List<ShSite> sites, ShAgentVerifyScope scope) {
+    private Scan scan(List<ShSite> sites, ShAgentVerifyScope scope, ShPostState subjects) {
         Map<String, ShSite> siteById = new LinkedHashMap<>();
         Set<String> allIds = new HashSet<>();
         Set<String> publishedIds = new HashSet<>();
@@ -668,7 +696,10 @@ public class ShAgentVerifyService {
                 .filter(row -> row.getState() == ShPostState.PUBLISHED)
                 .sorted(Comparator.comparing(ShPostUnified::getId))
                 .toList();
-        List<ShPostUnified> posts = draftPreferred.values().stream()
+        // SH990 — a state names the subjects outright; without one they are draft-preferred.
+        List<ShPostUnified> posts = (subjects == null
+                ? draftPreferred.values().stream()
+                : scope.rows().stream().filter(row -> row.getState() == subjects))
                 .sorted(Comparator.comparing(ShPostUnified::getId))
                 .toList();
         return new Scan(siteById, posts, published, allIds, publishedIds, publishedByUrl,

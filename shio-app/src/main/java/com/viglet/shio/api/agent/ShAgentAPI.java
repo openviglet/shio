@@ -309,10 +309,13 @@ public class ShAgentAPI {
             @RequestParam(name = "limit", required = false) Integer limit,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
             @RequestParam(name = "after", required = false) String after,
+            // SH990 — `published` lists what is live, `draft` what is being edited.
+            @RequestParam(name = "state", required = false) String state,
             @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
-        ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids, after, trash);
+        ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids, after, trash,
+                state);
         return isTerse(format)
                 ? shAgentBodyEtag.terse("find", ShAgentReadTerse.found(found), ifNoneMatch)
                 : shAgentBodyEtag.json("find", found, ifNoneMatch);
@@ -588,6 +591,8 @@ public class ShAgentAPI {
      * @param folder  a {@code folder:} address: this folder and its descendants
      * @param address comma-separated {@code post:} addresses
      * @param since   an SH88 cursor: only what changed after it
+     * @param state   SH990 — {@code published} lints what is live, {@code draft} what a publish
+     *                would put there; omit for the draft-preferred subjects
      */
     @GetMapping("/verify")
     @Operation(summary = "Lint the content and its routes: a machine-readable report with a fix per finding")
@@ -598,10 +603,11 @@ public class ShAgentAPI {
             @RequestParam(name = "folder", required = false) String folder,
             @RequestParam(name = "address", required = false) String address,
             @RequestParam(name = "since", required = false) String since,
+            @RequestParam(name = "state", required = false) String state,
             @RequestParam(name = "format", required = false) String format) {
 
         ShAgentReport report = shAgentVerifyService.verify(site, checks, limit, folder, address,
-                since);
+                since, state);
         return isTerse(format)
                 ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
                         .body(ShAgentVerifyTerse.report(report))

@@ -462,6 +462,35 @@ class ShAgentReadTest {
     }
 
     @Test
+    @DisplayName("SH990: find lists the rows of one state, each with its own title")
+    void findListsOneState() {
+        String marker = "sh990find" + suffix();
+        String address = "post:" + siteName + "/" + marker;
+        run(new Op(ShAgentBatchService.POST_UPSERT, address, postTypeName, "/",
+                data("Live " + marker, "Released")));
+        run(new Op(ShAgentBatchService.POST_PUBLISH, address, null, null, null));
+        run(new Op(ShAgentBatchService.POST_UPSERT, address, postTypeName, "/",
+                data("Edited " + marker, "Not yet")));
+
+        assertThat(shAgentReadService.find(siteName, null, null, marker, null, false, null, false,
+                "published").results())
+                .extracting(ShAgentFound.Row::title, ShAgentFound.Row::state)
+                .as("SH990: the live row's title — which pages a publish would change is a listing")
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("Live " + marker, "PUBLISHED"));
+        assertThat(shAgentReadService.find(siteName, null, null, marker, null, false, null, false,
+                "draft").results())
+                .extracting(ShAgentFound.Row::title)
+                .containsExactly("Edited " + marker);
+        assertThat(shAgentReadService.find(siteName, null, null, marker, null, false, null, false,
+                null).results())
+                .as("SH990: no state is one row per post, draft-preferred, as it always was")
+                .hasSize(1);
+        assertThatThrownBy(() -> shAgentReadService.find(siteName, null, null, marker, null, false,
+                null, false, "rev:1"))
+                .isInstanceOf(com.viglet.shio.api.post.ShContentPerspective.RevisionNotServedException.class);
+    }
+
+    @Test
     @DisplayName("SH619: state=draft is the editable copy even when a published row exists")
     void draftIsAddressableInItsOwnRight() {
         String address = "post:" + siteName + "/sh619-explicit-" + suffix();

@@ -465,4 +465,41 @@ class ShAgentVerifyScopeTest {
                         an empty report that does not say why it is empty reads as a clean bill                         of health for content it never looked at — so the note names the reason                         rather than leaving the caller to infer it (SH228).""")
                 .isNotEmpty();
     }
+
+    @Test
+    @Order(43)
+    @DisplayName("SH990: state=published lints what is live, and draft what a publish would put there")
+    void stateNamesTheSubjects() {
+        // Its own folder, so nothing another ordered test does to the fixture moves these counts.
+        String folder = "/sh990-" + UUID.randomUUID().toString().substring(0, 8);
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> shAgentBatchService.run(new ShAgentBatch(false, List.of(
+                folder(folder),
+                page(folder + "/live", "Live", "<p>Fine.</p>"))), false, "tester"));
+        tx.executeWithoutResult(status -> shAgentBatchService.run(new ShAgentBatch(false, List.of(
+                new Op(ShAgentBatchService.POST_PUBLISH, "post:" + siteName + base + folder + "/live",
+                        null, null, null),
+                // The draft a publish would put live, and it is broken.
+                brokenPage(folder + "/live", "Live"))), false, "tester"));
+        String scope = "folder:" + siteName + base + folder;
+        String subject = "post:" + siteName + base + folder + "/live";
+
+        ShAgentReport live = shAgentVerifyService.verify(siteName, "content", 500, scope, null, null,
+                "published");
+        ShAgentReport draft = shAgentVerifyService.verify(siteName, "content", 500, scope, null, null,
+                "draft");
+
+        assertThat(addresses(live, "required-field-empty"))
+                .as("SH990: the published row has its required field — what is live is clean")
+                .doesNotContain(subject);
+        assertThat(live.notes()).anySatisfy(note -> assertThat(note).startsWith("state=published"));
+        assertThat(addresses(draft, "required-field-empty"))
+                .as("SH990: and the draft would publish the empty field, which is the report to read "
+                        + "before a publish")
+                .contains(subject);
+        assertThatThrownBy(() -> shAgentVerifyService.verify(siteName, "content", 500, scope, null,
+                null, "rev:1"))
+                .as("SH990: a revision is a version of one page, not a site to lint")
+                .isInstanceOf(com.viglet.shio.api.post.ShContentPerspective.RevisionNotServedException.class);
+    }
 }
