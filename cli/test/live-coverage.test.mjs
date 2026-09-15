@@ -261,6 +261,9 @@ const UNEXERCISED = {
     // leaves drafts, a decision against one of them, and the queue reporting what is still
     // waiting — declared while nothing runs it, covered once an instance answers.
     "review",
+    // SH1003 — `notes` joins with the ops it reads: a live scenario leaves a request on a page and
+    // watches the work list carry it, which is the same fixture `note.add` needs.
+    "notes",
     // SH711 spawned ten of these as a process. What is left splits three ways, and the split is
     // more useful than the count:
     //

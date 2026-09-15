@@ -1,0 +1,31 @@
+import axios from "@/lib/axios"
+import type { ShNote, ShNoteInput } from "@/models/note/note.model"
+
+/**
+ * Notes on content (SH1003).
+ *
+ * The console's half of a channel the agent reaches through `note.add` and `note.resolve` on
+ * `/agent/batch` — one vocabulary, two callers (P10), not a second contract for the same rows.
+ */
+export class ShNoteService {
+  /** One object's thread, oldest first. */
+  async of(objectId: string): Promise<ShNote[]> {
+    const response = await axios.get<ShNote[]>("/v2/note", { params: { object: objectId } })
+    return response.data
+  }
+
+  async add(note: ShNoteInput): Promise<ShNote> {
+    const response = await axios.post<ShNote>("/v2/note", note)
+    return response.data
+  }
+
+  /** Close one, or re-open it. */
+  async resolve(id: string, resolved = true): Promise<ShNote> {
+    const response = await axios.post<ShNote>(
+      `/v2/note/${encodeURIComponent(id)}/resolve`,
+      undefined,
+      { params: { resolved } },
+    )
+    return response.data
+  }
+}

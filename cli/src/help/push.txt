@@ -1,23 +1,21 @@
 shio push — apply the local post-types back to the instance
 
   --dry-run            Print the plan, change nothing
-  --check              Drift guard — exit non-zero if the plan is not empty (CI)
+  --check              Exit non-zero if the plan is not empty
   --prune              Delete remote types absent locally (never system types)
   --content            Push the content tree (shio/content/**) instead of the model
   --dir <dir>          Post-types directory (default shio/post-types)
 
-With --content (the SH90 projection):
-  Pushes shio/content/** back: what the server lacks is uploaded once per path, and an
-  asset's bytes merge three ways like a field does. A remote change you have not seen
-  stops the push.
+With --content:
+  Pushes shio/content/** back; an asset's bytes merge three ways like a field does. A
+  remote change you have not seen stops the push.
   --site <name>        Scope to one site
   --force              Push over a remote change the base says you have not seen
   --prune              Delete remote posts the tree does not declare
   --max-ops <n>        Ceiling on operations in one batch
   --max-folder-reads <n>  Ceiling on folder reads while resolving the tree
   --limit <n>          Rows to print
-  --adopt-memory       Adopt shio/.memory.yaml, the exporting instance's house rules
-                       (off by default; a push otherwise reports and skips them) (SH231)
+  --adopt-memory       Adopt shio/.memory.yaml; otherwise a push reports and skips it
   --baseline <file>    Accepted findings to subtract from the pre-push lint
   --accept             Write the pre-push findings into the baseline
   --reason <why>       With --accept: why

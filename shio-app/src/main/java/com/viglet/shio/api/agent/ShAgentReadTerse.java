@@ -172,6 +172,21 @@ public final class ShAgentReadTerse {
                             .build());
                 }
             }
+            if (doc.notes() != null) {
+                // SH1003 — one line per open note, and the body last because it is the only
+                // field whose length is unbounded. A session reading terse gets the correction
+                // here or not at all: a note only the JSON carried would be a note this surface
+                // does not have.
+                for (var note : doc.notes()) {
+                    out.append(ShTerse.line("note")
+                            .word(note.kind())
+                            .attr("id", note.id())
+                            .attr("field", note.field())
+                            .attr("by", note.by())
+                            .attr("says", note.body())
+                            .build());
+                }
+            }
             out.append("data ").append(doc.data() == null ? "{}" : doc.data().toString()).append('\n');
         }
         return out.toString();

@@ -5,19 +5,15 @@ to shio/.shio/conversion-proposal.json; --accept writes the reviewed decision to
 shio/conversion-plan.json and applies nothing.
 
   --accept <id…>       Accept the candidates these ids name, or all. The ids are
-                       positionals, so --accept itself is a boolean — one flag whose arity
-                       differs per command is how --accept --reason x b1a2 silently accepts
-                       a candidate called --reason
+                       positionals, so --accept itself is a boolean
   --reason <why>       With --accept: why, recorded beside the entry
-  --min-refs <n>       How often a literal must recur to be a palette value (default 3; 2 is
-                       the floor — at 1 every colour becomes a token and the list stops
-                       meaning anything)
+  --min-refs <n>       How often a literal must recur to be a palette value (default 3,
+                       floor 2)
   --inventory <file>   Read a capture from somewhere else
   --out <file>         Proposal path (default shio/.shio/conversion-proposal.json)
-  --from <address…>    Model from content that already exists instead of from a capture:
-                       "what post-type are these instances of". Repeatable or comma-
-                       separated. Reports which instances lack each field. Needs
-                       --url/--user/--password (SH525)
+  --from <address…>    Model from content that already exists instead of from a capture.
+                       Repeatable or comma-separated; reports which instances lack each
+                       field. Needs --url/--user/--password
   --name <type>        With --from: the type to propose (default: the instances' own)
   --json               The proposal on stdout instead of the report
 

@@ -103,6 +103,8 @@ public class ShAgentReadService {
     private final ShReleaseService shReleaseService;
     /** SH996 — who links to a URL this publish would create or break (SH140's scanner). */
     private final ShPostLinks shPostLinks;
+    /** SH1003 — what a curator is still asking of a page, for `include=notes`. */
+    private final com.viglet.shio.api.note.ShNoteService shNoteService;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -115,7 +117,8 @@ public class ShAgentReadService {
                               ShConsoleSurfaces shConsoleSurfaces,
                               ShPostRevisionService shPostRevisionService,
                               ShReleaseService shReleaseService,
-                              ShPostLinks shPostLinks) {
+                              ShPostLinks shPostLinks,
+                              com.viglet.shio.api.note.ShNoteService shNoteService) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -128,6 +131,7 @@ public class ShAgentReadService {
         this.shPostRevisionService = shPostRevisionService;
         this.shReleaseService = shReleaseService;
         this.shPostLinks = shPostLinks;
+        this.shNoteService = shNoteService;
     }
 
     /** How many inbound links a routes block counts before it stops counting (SH140's cap). */
@@ -440,9 +444,53 @@ public class ShAgentReadService {
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact, String state, boolean digest,
                                  boolean links, boolean revisions, boolean schedule) {
+        return read(addresses, fields, ids, impact, state, digest, links, revisions, schedule, false);
+    }
+
+    /**
+     * @param notes SH1003 — attach the OPEN notes on each page. Opt-in like every other rider here,
+     *              and open-only for the reason the field exists: a read an agent makes before
+     *              rewriting a page wants what is still being asked of it, not the history of
+     *              everything anybody has ever said about it
+     */
+    public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
+                                 boolean impact, String state, boolean digest,
+                                 boolean links, boolean revisions, boolean schedule,
+                                 boolean notes) {
         List<ShAgentDoc> docs = readWithoutSchedule(addresses, fields, ids, impact, state, digest,
                 links, revisions);
-        return schedule ? docs.stream().map(this::withSchedule).toList() : docs;
+        if (schedule) {
+            docs = docs.stream().map(this::withSchedule).toList();
+        }
+        return notes ? withNotes(docs) : docs;
+    }
+
+    /**
+     * Attach each page's open notes, in one query for the whole read (SH1003).
+     *
+     * <p>Resolved once per doc and looked up once for the page, rather than a query per row: the
+     * same shape the change feed uses for its runs, and the reason is the same — twenty addresses
+     * is one question about twenty ids.</p>
+     */
+    private List<ShAgentDoc> withNotes(List<ShAgentDoc> docs) {
+        Map<String, String> objectByAddress = new LinkedHashMap<>();
+        for (ShAgentDoc doc : docs) {
+            if (doc.address() != null && doc.error() == null) {
+                objectByAddress.put(doc.address(), shAddressResolver.resolve(doc.address()).id());
+            }
+        }
+        Map<String, List<com.viglet.shio.persistence.model.note.ShNote>> open =
+                shNoteService.openOn(new LinkedHashSet<>(objectByAddress.values()));
+        return docs.stream().map(doc -> {
+            List<com.viglet.shio.persistence.model.note.ShNote> attached =
+                    open.get(objectByAddress.get(doc.address()));
+            // Absent rather than an empty list: a page nobody has asked anything of should read as
+            // it always did, which is what keeps `include=notes` free on a clean site (P3).
+            return attached == null || attached.isEmpty() ? doc : doc.withNotes(attached.stream()
+                    .map(note -> new ShAgentDoc.Note(note.getId(), note.getFieldPath(),
+                            note.getKind(), note.getBody(), note.getAuthor()))
+                    .toList());
+        }).toList();
     }
 
     private List<ShAgentDoc> readWithoutSchedule(List<String> addresses, List<String> fields,

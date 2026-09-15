@@ -29,7 +29,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAgentBatchService;
+import com.viglet.shio.api.agent.ShAgentReadService;
+import com.viglet.shio.api.agent.ShAgentReadTerse;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
+import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.note.ShNote;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -65,6 +68,8 @@ class ShNoteTest {
     private ShNoteRepository shNoteRepository;
     @Autowired
     private ShAgentBatchService shAgentBatchService;
+    @Autowired
+    private ShAgentReadService shAgentReadService;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -210,6 +215,39 @@ class ShNoteTest {
                 .as("SH1003: a plan that silently posted comments would be the one surprise this "
                         + "surface must not have (P7)")
                 .hasSize(before);
+    }
+
+    @Test
+    @DisplayName("SH1003: include=notes attaches what is still being asked, and nothing else")
+    void theReadCarriesTheOpenOnes() {
+        ShNote open = shNoteService.add(postId, "data.subtitle", null, null, "request",
+                "the price table is last quarter's", "ana");
+        ShNote done = shNoteService.add(postId, null, null, null, "comment", "looks fine now", "ana");
+        shNoteService.resolve(done.getId(), true, "ana");
+
+        List<ShAgentDoc> without = shAgentReadService.read(List.of("post:" + SITE + "/about"),
+                List.of(), false, false, null, false, false, false, false);
+        assertThat(without.get(0).notes())
+                .as("SH1003: opt-in like every other rider on this read — a page nobody has asked "
+                        + "anything of reads exactly as it always did (P3)")
+                .isNull();
+
+        List<ShAgentDoc> with = shAgentReadService.read(List.of("post:" + SITE + "/about"),
+                List.of(), false, false, null, false, false, false, false, true);
+        assertThat(with.get(0).notes()).extracting(ShAgentDoc.Note::body)
+                .as("SH1003: a read an agent makes before rewriting a page wants what is still "
+                        + "being asked of it, not the history of everything anybody ever said")
+                .contains("the price table is last quarter's")
+                .doesNotContain("looks fine now");
+        assertThat(with.get(0).notes()).extracting(ShAgentDoc.Note::id)
+                .as("SH1003: with the id, so the run that fixes the page can close the request")
+                .contains(open.getId());
+
+        assertThat(ShAgentReadTerse.docs(with))
+                .as("SH1003: a note only the JSON carried would be a note this surface does not "
+                        + "have — a session reading terse gets the correction here or not at all")
+                .contains("note REQUEST")
+                .contains("the price table is last quarter's");
     }
 
     @Test

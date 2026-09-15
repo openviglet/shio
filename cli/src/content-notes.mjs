@@ -36,6 +36,54 @@ export function notesPathFor(site) {
   return `${siteDir(site)}/${NOTES_FILE}`;
 }
 
+/**
+ * Where a site's OPEN notes project to (SH1003).
+ *
+ * Beside `.memory.yaml` and for its reasons: one file per site, at the site's own root, with a
+ * leading dot so it stays out of the `**\/*.md` glob that finds posts.
+ *
+ * It exists so that **Grep is the work list**. P4 says files beat APIs for authoring, and the
+ * cheapest tool an agent has is a search over the tree it already pulled — a correction that can
+ * only be reached by an HTTP call is one a session has to know to ask for.
+ */
+export const OPEN_NOTES_FILE = ".notes.yaml";
+
+/** The path a site's open notes project to, relative to the content root. */
+export function openNotesPathFor(site) {
+  return `${siteDir(site)}/${OPEN_NOTES_FILE}`;
+}
+
+/**
+ * Serializes a site's open notes.
+ *
+ * <p>Projection only: this file is never read back and never pushed, which the header says out
+ * loud. A note is the instance's record of what somebody asked for, and a tree that could edit it
+ * would be a second writer of the same row — the same decision SH231 made about the exporting
+ * instance's house rules, one surface over.</p>
+ *
+ * <p>Sorted by address then id, so a re-pull of an unchanged site is an empty diff (P5).</p>
+ */
+export function serializeOpenNotes({ site, notes }) {
+  const lines = [
+    "# SH1003 open notes on this site — what a curator is still asking for.",
+    "# Written by `shio pull --content`. Never pushed: close one with `shio` note.resolve",
+    "# or from the console, which is where the record lives.",
+    `site: ${scalar(site)}`,
+    "notes:",
+  ];
+  const sorted = [...notes].sort((a, b) =>
+    `${a.address ?? ""}${a.id}`.localeCompare(`${b.address ?? ""}${b.id}`));
+  for (const note of sorted) {
+    lines.push(`  - id: ${scalar(note.id)}`);
+    lines.push(`    address: ${scalar(note.address ?? "")}`);
+    if (note.field) lines.push(`    field: ${scalar(note.field)}`);
+    lines.push(`    kind: ${scalar(note.kind)}`);
+    if (note.author) lines.push(`    by: ${scalar(note.author)}`);
+    lines.push(`    says: ${scalar(note.body)}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
 /** `Blog/.memory.yaml` → `Blog`. The inverse; null for anything else. */
 export function notesSiteOf(relPath) {
   const parts = String(relPath).replace(/\\/g, "/").split("/").filter(Boolean);

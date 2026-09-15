@@ -4136,3 +4136,14 @@ unpaged on purpose — a cursor over a list that is usually under ten rows would
 keep resumable. `shio report` gains **What the curator decided**, below the changes, because a
 handoff that lists what an agent wrote and not what was turned down is the half of the conversation
 the agent already knew.
+
+## `shio notes` (SH1003)
+
+What a curator is still asking for, across every site, each row naming its page by address and its
+body on its own line. `--kind request` narrows it to the things somebody is waiting on, `--site`
+scopes it, and `--strict` exits 1 while anything is open — the CI shape the rest of this CLI uses,
+because a pipeline that will not ship with requests outstanding needs one exit code rather than a
+grep over prose.
+
+`shio pull --content` projects the same rows into `shio/content/<site>/.notes.yaml`, which is the
+form a session actually reads: Grep over the tree it already has.

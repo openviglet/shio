@@ -23,7 +23,9 @@ import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.persistence.model.note.ShNote;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.note.ShNote.Kind;
 import com.viglet.shio.persistence.repository.note.ShNoteRepository;
 
@@ -58,11 +60,24 @@ public class ShNoteService {
 
     private final ShNoteRepository shNoteRepository;
     private final ShContentAclService shContentAclService;
+    private final com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository
+            shPostUnifiedRepository;
+    private final com.viglet.shio.persistence.repository.folder.ShFolderRepository
+            shFolderRepository;
+    private final com.viglet.shio.api.agent.ShAddressResolver shAddressResolver;
 
     public ShNoteService(ShNoteRepository shNoteRepository,
-                         ShContentAclService shContentAclService) {
+                         ShContentAclService shContentAclService,
+                         com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository
+                                 shPostUnifiedRepository,
+                         com.viglet.shio.persistence.repository.folder.ShFolderRepository
+                                 shFolderRepository,
+                         com.viglet.shio.api.agent.ShAddressResolver shAddressResolver) {
         this.shNoteRepository = shNoteRepository;
         this.shContentAclService = shContentAclService;
+        this.shPostUnifiedRepository = shPostUnifiedRepository;
+        this.shFolderRepository = shFolderRepository;
+        this.shAddressResolver = shAddressResolver;
     }
 
     /** A note nobody wrote anything in, which is the note missing. */
@@ -181,6 +196,58 @@ public class ShNoteService {
         return shNoteRepository.findOpen(wanted, PageRequest.of(0, capped)).stream()
                 .filter(note -> shContentAclService.canRead(note.getObjectId()))
                 .toList();
+    }
+
+    /**
+     * The same list, each row carrying the address of the page it is about (SH1003).
+     *
+     * <p>The address is the actionable half — a note names a page somebody has to go and fix, and a
+     * uuid names nothing anybody can act on. Resolved here rather than by the caller because the
+     * alternative is a request per row, which is what a work list of forty would cost.</p>
+     *
+     * @param site scope to one site by name; {@code null} for every site this caller can read
+     */
+    @Transactional(readOnly = true)
+    public List<OpenNote> openWork(String site, String kind, Integer limit) {
+        List<OpenNote> work = new java.util.ArrayList<>();
+        for (ShNote note : open(kind, limit)) {
+            ShAddress address = addressOf(note.getObjectId());
+            if (site != null && !site.isBlank()
+                    && (address == null || !site.equalsIgnoreCase(address.site()))) {
+                continue;
+            }
+            work.add(new OpenNote(note.getId(), note.getObjectId(),
+                    address == null ? null : address.toString(),
+                    address == null ? null : address.site(),
+                    note.getFieldPath(), note.getRevisionNo(), note.getKind(), note.getBody(),
+                    note.getAuthor(), note.getCreatedAt()));
+        }
+        return List.copyOf(work);
+    }
+
+    /**
+     * One open note with its page named.
+     *
+     * @param address the page, or {@code null} when it is gone — which is itself the answer to what
+     *                to do about the note
+     */
+    public record OpenNote(String id, String objectId, String address, String site, String field,
+                           Integer revision, String kind, String body, String author,
+                           Instant createdAt) {
+    }
+
+    /**
+     * The address of the object a note hangs on, or {@code null} when it no longer resolves.
+     *
+     * <p>ShFolderSite-exempt: the resolver walks the folder chain itself.</p>
+     */
+    private ShAddress addressOf(String objectId) {
+        return shPostUnifiedRepository.findByIdAndState(objectId, ShPostState.DRAFT)
+                .or(() -> shPostUnifiedRepository.findByIdAndState(objectId, ShPostState.PUBLISHED))
+                .map(shAddressResolver::addressOf)
+                .orElseGet(() -> shFolderRepository.findAnyById(objectId)
+                        .map(shAddressResolver::addressOf)
+                        .orElse(null));
     }
 
     private static Kind kindOf(String sent) {

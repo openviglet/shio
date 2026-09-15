@@ -1,0 +1,13 @@
+{
+  "note.section": "Notas",
+  "note.title": "Notas ({{count}} em aberto)",
+  "note.add": "Deixar uma nota",
+  "note.resolve": "Resolver",
+  "note.reopen": "Reabrir",
+  "note.showResolved": "Mostrar {{count}} resolvida(s)",
+  "note.hideResolved": "Ocultar resolvidas",
+  "note.kindComment": "Comentário",
+  "note.kindRequest": "Pedido",
+  "note.placeholder": "O que deveria mudar nesta página?",
+  "note.placeholderField": "O que deveria mudar em {{field}}?"
+}

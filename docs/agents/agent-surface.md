@@ -3527,3 +3527,19 @@ slips in. They were paid for by releasing `shio_read`'s and `shio_find`'s reserv
 additions (SH990, SH991) had all shipped.
 
 The console reaches the same rows through `/api/v2/note` — one vocabulary, two callers (P10).
+
+## Where a note surfaces (SH1003, the surfaces)
+
+**`include=notes`** on `/agent/read` attaches the **open** notes on each page, with each note's id
+so the run that fixes the page can close it. Open only, and that is the whole shape: a read an agent
+makes before rewriting a page wants what is still being asked of it, not the history of everything
+anybody ever said. Absent on a page nobody has asked anything of, so a clean site reads exactly as it
+did (P3), and resolved one query for the whole read rather than one per address.
+
+The **terse** form carries a `note` line per open note. A note only the JSON carried would be a note
+this surface does not have: an MCP session reads terse, and the correction has to reach it there.
+
+**`GET /api/v2/note/open`** is the work list, and every row names its page by **address** — a note
+names something somebody has to go and fix, and a uuid names nothing anybody can act on. It is
+scoped by site so a pull can project one site's, and filtered by kind so `request` is askable on its
+own.

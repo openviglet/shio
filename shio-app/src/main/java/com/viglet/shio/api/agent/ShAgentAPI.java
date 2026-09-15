@@ -386,7 +386,10 @@ public class ShAgentAPI {
                 includes(include, "impact"), state, includes(include, "digest"),
                 includes(include, "links"), includes(include, "revisions"),
                 // SH991 — when the post goes live or comes down, read off its draft row.
-                includes(include, "schedule"));
+                includes(include, "schedule"),
+                // SH1003 — what a curator is still asking of this page, so a session that is about
+                // to rewrite it reads the correction rather than being told again.
+                includes(include, "notes"));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
                 : shAgentBodyEtag.json("read", docs, ifNoneMatch);

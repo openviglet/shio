@@ -68,7 +68,44 @@ public record ShAgentDoc(String address, String type, String state, String folde
                          Boolean published, String url, String digest, String curatorUrl,
                          String previewUrl,
                          java.util.List<ShRevisionRow> revisions,
-                         Schedule schedule) {
+                         Schedule schedule,
+                         java.util.List<Note> notes) {
+
+    /** The eighteen-field form, before SH1003 attached the open notes. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published, String url, String digest, String curatorUrl,
+                      String previewUrl, java.util.List<ShRevisionRow> revisions,
+                      Schedule schedule) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, url, digest, curatorUrl, previewUrl, revisions, schedule, null);
+    }
+
+    /**
+     * One open note on this page (SH1003) — only with {@code include=notes}.
+     *
+     * <p>Open ones only, and that is the whole shape of it: a resolved note is history, and a read
+     * an agent makes before rewriting a page wants the list of things still being asked of it. The
+     * thread in full is {@code GET /api/v2/note?object=<id>}.</p>
+     *
+     * @param id    so a run can close it with {@code note.resolve}
+     * @param field the field it is about, when it is about one
+     * @param kind  {@code COMMENT}, {@code REQUEST} or {@code REPLY}
+     * @param body  what was said, which is the reason the read exists
+     * @param by    who said it
+     */
+    @com.fasterxml.jackson.annotation.JsonInclude(
+            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    public record Note(String id, String field, String kind, String body, String by) {
+    }
+
+    /** The same doc, carrying what is still being asked of this page (SH1003). */
+    public ShAgentDoc withNotes(java.util.List<Note> attached) {
+        return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
+                translationOf, published, url, digest, curatorUrl, previewUrl, revisions, schedule,
+                attached);
+    }
 
     /** The seventeen-field form, before SH991 let a read carry the post's schedule. */
     public ShAgentDoc(String address, String type, String state, String folder,
@@ -77,7 +114,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
                       Boolean published, String url, String digest, String curatorUrl,
                       String previewUrl, java.util.List<ShRevisionRow> revisions) {
         this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
-                published, url, digest, curatorUrl, previewUrl, revisions, null);
+                published, url, digest, curatorUrl, previewUrl, revisions, null, null);
     }
 
     /**

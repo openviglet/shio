@@ -56,12 +56,19 @@ public class ShNoteAPI {
         return shNoteService.of(objectId).stream().map(ShNoteResponse::of).toList();
     }
 
-    /** Everything still asking for something, newest first — the work list. */
+    /**
+     * Everything still asking for something, newest first — the work list.
+     *
+     * <p>Each row names the page by <b>address</b> rather than only by id: a note names something
+     * somebody has to go and fix, and a uuid names nothing anybody can act on.</p>
+     */
     @GetMapping("/open")
-    @Operation(summary = "Open notes, newest first")
-    public List<ShNoteResponse> open(@RequestParam(name = "kind", required = false) String kind,
-                                     @RequestParam(name = "limit", required = false) Integer limit) {
-        return shNoteService.open(kind, limit).stream().map(ShNoteResponse::of).toList();
+    @Operation(summary = "Open notes, newest first, each naming its page")
+    public List<ShNoteService.OpenNote> open(
+            @RequestParam(name = "site", required = false) String site,
+            @RequestParam(name = "kind", required = false) String kind,
+            @RequestParam(name = "limit", required = false) Integer limit) {
+        return shNoteService.openWork(site, kind, limit);
     }
 
     @PostMapping

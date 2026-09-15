@@ -717,3 +717,19 @@ and **exits 1 when a blocking check failed** — so CI stops before the publish 
 from `GET /agent/gates/check`, not from judging the content here: a pipeline with a second opinion
 about its own site is how a gate passes in CI and refuses in production. `shio gate list` prints what
 a site declares.
+
+## `shio/content/<site>/.notes.yaml` — Grep is the work list (SH1003)
+
+Open notes project beside `.memory.yaml`, one file per site at the site's own root, with a leading
+dot so they stay out of the `**/*.md` glob that finds posts. P4 says files beat APIs for authoring,
+and the cheapest tool an agent has is a search over the tree it already pulled: a correction that
+can only be reached by an HTTP call is one a session has to know to ask for.
+
+**Projection only** — never read back, never pushed, never part of the base, the same decision SH231
+made about the exporting instance's house rules. The note is the instance's record of what somebody
+asked for, and a tree that could edit it would be a second writer of the same row. Close one with
+`note.resolve` or from the console.
+
+A site with nothing open **loses its file** rather than keeping an empty one: the absence is the
+honest empty state, and a stale file listing a request somebody closed reads exactly like a clean
+site. Rows are sorted by address, so a re-pull of an unchanged site is an empty diff (P5).

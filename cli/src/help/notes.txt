@@ -1,0 +1,11 @@
+shio notes — what a curator is still asking for, across every site
+
+  --site <name>        Scope to one site
+  --kind <kind>        request, comment or reply
+  --limit <n>          How many rows
+  --strict             Exit 1 while anything is open (CI)
+  --json               Raw JSON instead of lines
+
+Examples:
+  shio notes --kind request
+  shio notes --site Acme --strict

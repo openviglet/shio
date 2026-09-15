@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
-import { IconFileText } from "@tabler/icons-react"
+import { IconFileText, IconMessage } from "@tabler/icons-react"
 import { Clock, Eye, EyeOff, History, Loader2, Save, Sparkles, Upload } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -19,6 +19,7 @@ import axios from "axios"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
 import { ShAclService } from "@/services/acl/acl.service"
+import { NoteRail } from "@/components/note-rail"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import { PublishPreviewDialog } from "@/components/publish-preview.dialog"
@@ -459,6 +460,19 @@ export default function PostUnifiedEditPage() {
                 problem={refusal}
               />
             )}
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
+
+        {/*
+          SH1003 — the corrections on this page, under the fields rather than in a dialog: a note is
+          written WHILE reading the page it is about, and a dialog would hide the thing being
+          corrected behind the box for correcting it.
+        */}
+        <AdaptiveSectionCard>
+          {/* SH902 — a section card with no header renders a console card in both eras. */}
+          <AdaptiveSectionCard.StaticHeader icon={IconMessage} title={t("note.section")} />
+          <AdaptiveSectionCard.Content>
+            <NoteRail objectId={postId} />
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
       </div>

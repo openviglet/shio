@@ -53,6 +53,9 @@ export const NOTES_COMMANDS = new Set([
   // SH1001 — it speaks the review surface with console credentials, which is the same instance and
   // the same working session the notes are about.
   "review",
+  // SH1003 — the work list reads the same instance, and what it prints is the other half of what
+  // the notice announces.
+  "notes",
 ]);
 
 /**

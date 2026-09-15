@@ -22,6 +22,7 @@ import enAcl from "./locales/en/acl.json";
 import enSiteWebhook from "./locales/en/siteWebhook.json";
 import enHome from "./locales/en/home.json";
 import enStaticFile from "./locales/en/staticFile.json";
+import enNote from "./locales/en/note.json";
 import enReview from "./locales/en/review.json";
 import enMarketplace from "./locales/en/marketplace.json";
 
@@ -44,6 +45,7 @@ import ptAcl from "./locales/pt/acl.json";
 import ptSiteWebhook from "./locales/pt/siteWebhook.json";
 import ptHome from "./locales/pt/home.json";
 import ptStaticFile from "./locales/pt/staticFile.json";
+import ptNote from "./locales/pt/note.json";
 import ptReview from "./locales/pt/review.json";
 import ptMarketplace from "./locales/pt/marketplace.json";
 
@@ -51,14 +53,14 @@ const en = {
   ...enCommon, ...enLogin, ...enSidebar, ...enNav, ...enDialog,
   ...enContent, ...enAdmin, ...enGraphql, ...enUniversalEditor, ...enApiToken,
   ...enTenantAdmin, ...enAuthProvider, ...enExchangeProvider, ...enEmailConfig,
-  ...enActivity, ...enAcl, ...enSiteWebhook, ...enHome, ...enStaticFile, ...enReview, ...enMarketplace,
+  ...enActivity, ...enAcl, ...enSiteWebhook, ...enHome, ...enStaticFile, ...enReview, ...enNote, ...enMarketplace,
 };
 
 const pt = {
   ...ptCommon, ...ptLogin, ...ptSidebar, ...ptNav, ...ptDialog,
   ...ptContent, ...ptAdmin, ...ptGraphql, ...ptUniversalEditor, ...ptApiToken,
   ...ptTenantAdmin, ...ptAuthProvider, ...ptExchangeProvider, ...ptEmailConfig,
-  ...ptActivity, ...ptAcl, ...ptSiteWebhook, ...ptHome, ...ptStaticFile, ...ptReview, ...ptMarketplace,
+  ...ptActivity, ...ptAcl, ...ptSiteWebhook, ...ptHome, ...ptStaticFile, ...ptReview, ...ptNote, ...ptMarketplace,
 };
 
 i18n

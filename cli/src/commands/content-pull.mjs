@@ -64,6 +64,7 @@ import {
   writeFolderMarker,
   writeLocalInstanceNotes,
   writeLocalNotes,
+  writeOpenNotes,
   writeRemoteSidecar,
 } from "../content-store.mjs";
 import {
@@ -452,6 +453,21 @@ export async function run(flags, _positionals, ctx) {
   if (instanceNotes.length) {
     if (!dryRun) await writeLocalInstanceNotes(ctx, { notes: instanceNotes });
     report.instanceNotes = instanceNotes.length;
+  }
+
+  // SH1003 — the open notes, so Grep is the work list. Projection only, like the instance notes
+  // above and for the same reason: the note is the instance's record of what somebody asked for,
+  // and a tree that could edit it would be a second writer of the same row. A site with nothing
+  // open loses its file rather than keeping an empty one — the absence is the honest empty state,
+  // and a stale file listing a closed request reads exactly like a clean site.
+  //
+  // Never fails the pull: a correction is worth having and never worth losing a content sync over,
+  // and an instance older than this feature answers 404.
+  for (const noteSite of noteSites) {
+    const open = await agent.openNotes({ site: noteSite }).catch(() => null);
+    if (open === null) break;
+    if (!dryRun) await writeOpenNotes(ctx, { site: noteSite, notes: open }, { dir });
+    if (open.length) report.openNotes = (report.openNotes ?? 0) + open.length;
   }
 
   // The cursor is taken *after* the read, so anything that landed during it is reported

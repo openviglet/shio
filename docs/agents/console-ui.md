@@ -1808,3 +1808,18 @@ it (SH207): a page showing the old answer after an action is the one number a cu
 distrust. `review.service.ts` also stopped importing bare `axios` — it worked only because
 `@/lib/axios` mutates the global defaults and something else had been imported first, so CSRF and
 the base URL were arriving by import order.
+
+## The note rail on the post editor (SH1003)
+
+Under the fields, not in a dialog. A note is written **while** reading the page it is about — the
+curator has just seen the wrong price — and a dialog would hide the thing being corrected behind the
+box for correcting it, which is the one arrangement this feature cannot afford.
+
+Open notes lead and resolved ones are behind a click: the list a curator opens this for is "what is
+still being asked", and a rail showing every finished conversation grows into a page nobody scrolls,
+which is how a comment thread stops being read. The `field` anchor is **carried by whoever mounts
+the rail**, never inferred from focus — inferring it would give a different answer depending on what
+the curator last clicked.
+
+Two kinds in the composer, not three: a reply is a note under another one, and the rail threads by
+page, so offering it would be a control that means nothing until a thread exists to reply into.

@@ -1747,7 +1747,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1000** — The queue now counts by site name beside the premise, and an opened run says which of its pages look different than before it ran (design §LXVII.2 superseded: it put the appearance report on the listing, and each comparison is two real renders — it belongs to the one run somebody opened, not to a page the console asks for on every visit).
 - **SH1001** — The queue has surfaces for it now: shio review list, show and decide with a dry run, and per-entry triage with range select, a required reason and a keyboard.
 - **SH1002** — An agent reads what a curator decided about its own runs — GET /agent/review, shio://review/mine, review on the change row — and can still decide nothing (design §LXVII.4 superseded: it put `shio review --since last` on a feed, and the verdicts read is a small unpaged list — a cursor over ten rows would be a second feed to keep resumable).
-- **SH1003 (the note)** — A correction anchors to a page, a field or a revision, as visible as the object it hangs on, and note.add and note.resolve write it from the op vocabulary.
+- **SH1003** — A note surfaces everywhere it is needed: include=notes on the read, shio notes, a .notes.yaml Grep finds, and a rail under the fields it is about (design §LXVII.5 superseded: it put the notes in the content sidecars, and a sidecar is a field's own file — an open note is the instance's record, so it projects beside .memory.yaml and is never pushed).
 
 ## Block BC — The authoring surface, field by field
 

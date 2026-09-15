@@ -1639,25 +1639,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-### LXVII.5 Notes: a thread anchored to an address is the next prompt (SH1003)
-
-Searching the backend for a comment, mention or annotation class returns nothing. The
-review queue reviews runs, not documents, so a curator who wants this paragraph fixed
-has no channel and an agent has nothing to read. Site memory is the nearest thing,
-scoped to an instance or a site rather than a field, and it has no console surface, so
-the conventions that govern an agent are readable and writable by the agent alone.
-
-A note anchors to an object, optionally a field path and optionally a revision: sh_note
-holds body, author, agent session, a kind, resolved state, a parent for threading and
-lowercase tenant_id, and its visibility reuses the content ACL, so a thread is exactly
-as visible as the object it hangs on. shio_read include=notes attaches open notes;
-note.add and note.resolve join the batch vocabulary; shio notes --open prints a work
-list; open notes project into the content sidecars so Grep finds them. The console gets
-a comment rail on the post editor anchored to fields, and a page for site memory.
-
-Kinds make assignment and requests one mechanism rather than several: a comment, a
-request to the agent, and a reply. BB8 builds the dock's conversation on them.
-
 ### LXVII.6 Every new projected field, with a rule for who wins (SH1004)
 
 This round adds content to the file projection in several places. BA4 projects releases

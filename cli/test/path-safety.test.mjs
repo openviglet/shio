@@ -41,7 +41,7 @@ import {
 } from "../src/content-files.mjs";
 import { assetPathFor } from "../src/content-assets.mjs";
 import { capturedAssetPathFor } from "../src/clone-assets.mjs";
-import { notesPathFor } from "../src/content-notes.mjs";
+import { notesPathFor, openNotesPathFor } from "../src/content-notes.mjs";
 import { fileNameFor } from "../src/post-types-io.mjs";
 import {
   assetPathCollisions,
@@ -133,6 +133,18 @@ const DECLARED = {
     // A notes file is `<siteDir>/.memory.yaml`, so its pair is a *site* pair and `siteDir`
     // above owns it. Named here rather than exempted, because the reader should not have to
     // rediscover that the two roots share one cause.
+    collides: {
+      values: ["Blog", "blog"],
+      detector: siteDirCollisions,
+      writtenBy: "commands/content-pull.mjs",
+    },
+  },
+  // SH1003 — the open-notes projection, `<siteDir>/.notes.yaml`. Same shape and same guard as
+  // `notesPathFor` above: the only value in the path is the site name, and `siteDir` is what stops
+  // a server-reported `..` leaving the content root.
+  openNotesPathFor: {
+    guarded: "SH403 — through `siteDir`, so a server site name cannot leave `shio/content`",
+    probe: () => openNotesPathFor(".."),
     collides: {
       values: ["Blog", "blog"],
       detector: siteDirCollisions,

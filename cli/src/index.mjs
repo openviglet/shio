@@ -114,6 +114,7 @@ const COMMANDS = {
   verify: () => import("./commands/verify.mjs"),
   changes: () => import("./commands/changes.mjs"),
   review: () => import("./commands/review.mjs"),
+  notes: () => import("./commands/notes.mjs"),
   report: () => import("./commands/report.mjs"),
   remember: () => import("./commands/remember.mjs"),
   digest: () => import("./commands/digest.mjs"),

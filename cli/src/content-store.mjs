@@ -34,9 +34,11 @@ import {
   INSTANCE_NOTES_PATH,
   NOTES_FILE,
   notesPathFor,
+  openNotesPathFor,
   parseNotes,
   serializeInstanceNotes,
   serializeNotes,
+  serializeOpenNotes,
 } from "./content-notes.mjs";
 import { addressOf, baseEntryFor } from "./content-sync.mjs";
 
@@ -398,6 +400,29 @@ export async function readLocalNotes(ctx, site, { dir = CONTENT_DIR } = {}) {
     if (error?.code === "ENOENT") return null;
     throw error;
   }
+}
+
+/**
+ * Writes one site's open-notes projection (SH1003), or removes it when nothing is open.
+ *
+ * Removed rather than left empty: a file listing no notes reads as "this site has been checked and
+ * is clear", which is true — and a stale one listing a note somebody closed reads the same way and
+ * is not. The absence is the honest empty state.
+ */
+export async function writeOpenNotes(ctx, { site, notes }, { dir = CONTENT_DIR } = {}) {
+  const relPath = openNotesPathFor(site);
+  const target = join(ctx.cwd, dir, relPath);
+  if (!notes.length) {
+    try {
+      await ctx.fs.rm(target);
+      return relPath;
+    } catch {
+      return null;
+    }
+  }
+  await ctx.fs.mkdir(dirOf(target), { recursive: true });
+  await ctx.fs.writeFile(target, serializeOpenNotes({ site, notes }), "utf8");
+  return relPath;
 }
 
 /** Writes one site's notes file. */

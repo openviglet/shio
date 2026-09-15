@@ -403,6 +403,21 @@ export class ShioAgentClient {
   }
 
   /**
+   * GET /api/v2/note/open (SH1003) — what a curator is still asking for.
+   *
+   * Each row names its page by address, resolved server-side: a note names something somebody has
+   * to go and fix, and a work list of forty uuids would be forty more requests to make it useful.
+   */
+  async openNotes({ site, kind, limit } = {}) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries({ site, kind, limit })) {
+      if (value !== undefined && value !== null && value !== "") params.set(key, String(value));
+    }
+    const search = params.toString();
+    return this.#json(`${this.baseUrl}/api/v2/note/open${search ? `?${search}` : ""}`);
+  }
+
+  /**
    * GET /api/v2/review/sessions (SH1001) — the runs, newest first.
    *
    * Not under `/agent/**` on purpose, and the client follows the server's reason: this is the
