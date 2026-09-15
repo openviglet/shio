@@ -1,0 +1,88 @@
+databaseChangeLog:
+  # SH997 — `sh_publish_gate`: the checks a site runs before content reaches visitors.
+  #
+  # Shio's instruments — the address-scoped verify, the render digest, `shio audit` — are all opt-in,
+  # so nothing stood between content and a visitor: the only gate that existed asked WHO may publish
+  # (SH995), never whether this content should. A gate is the second question, declared per site.
+  #
+  # `definition` is the ordered list of checks as JSON, written from the `shio/gates/<name>.yaml` file
+  # a site keeps in its tree. JSON rather than YAML in the column because the CLI owns the file format
+  # and the wire is JSON everywhere else in this product; the server parses one shape, not two.
+  #
+  # `enabled` so a gate can be held without deleting what it says — the override SH998 adds is a
+  # per-publish decision, and this is the operator-level one.
+  #
+  # `site_id` is a plain VARCHAR for the JPQL invariant `agents.md` states, the same as sh_release.
+  # `tenant_id`, lowercase, as every content table carries (SH22); no backfill. Types DB-agnostic per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh997-create-sh-publish-gate
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_publish_gate
+      changes:
+        - createTable:
+            tableName: sh_publish_gate
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_publish_gate
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: definition
+                  type: CLOB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: boolean
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor
+                  type: VARCHAR(255)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: modified_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: sh997-unique-sh-publish-gate-site-name
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: UK_sh_publish_gate_site_name
+      changes:
+        - addUniqueConstraint:
+            tableName: sh_publish_gate
+            columnNames: site_id, name
+            constraintName: UK_sh_publish_gate_site_name

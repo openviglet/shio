@@ -46,8 +46,8 @@
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- 📋 **SH997** (deps: SH993 ✅, SH996 ✅) **nothing checks a page before it goes live, because verify, audit and the render digest are all opt-in** — Shio's pre-publish instruments run only when somebody remembers, and its webhooks all fire after the commit, so no check stands between content and visitors. → §LXVI.8
-- 📋 **SH998** (deps: SH997, SH995 ✅) **a failed gate cannot be waived with a recorded reason, and nothing outside Shio hears it failed** — A check nobody may waive becomes one people disable, and webhooks fire only after commit, so no external approver is told to step in. → §LXVI.9
+- ⏳ **SH997** (deps: SH993 ✅, SH996 ✅) **nothing checks a page before it goes live, because verify, audit and the render digest are all opt-in** — The gate landed on every publish path; left is the shio/gates/<name>.yaml projection and shio gate run, where the audit check belongs. → §LXVI.8
+- 📋 **SH998** (deps: SH997 ⏳, SH995 ✅) **a failed gate cannot be waived with a recorded reason, and nothing outside Shio hears it failed** — A check nobody may waive becomes one people disable, and webhooks fire only after commit, so no external approver is told to step in. → §LXVI.9
 - 📋 **SH1081** (deps: SH990 ✅) **the TypeScript client passes neither state nor locale on its CDA reads, so a front end cannot preview a draft** — SH990 gave every CDA read a state and the route has taken locale since SH53, but getPost, getPostByUrl, listChildren and query build a fixed query string. → §LXVI.10
 - 📋 **SH1082** (deps: SH991 ✅, a calendar component in the viglet design system) **the Scheduled page is a list only, with no month or week calendar and no drag to reschedule** — The console has no calendar component, and one built inside Shio is a copy the duplicate gate refuses. → §LXVI.11
 - 📋 **SH1083** (deps: SH992 ✅) **POST /agent/batch accepts an op field it does not know, so a misspelled cancel publishes now** — Measured on a clean instance: an op carrying cancle answered 200 and planned the write, where shio_write since SH992 refuses the same field by name. → §LXVI.12

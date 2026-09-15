@@ -12,6 +12,7 @@ import java.security.Principal;
 import java.time.Instant;
 
 import com.viglet.shio.api.agent.ShAgentSessionContext;
+import com.viglet.shio.api.gate.ShPublishGateService;
 import java.util.List;
 import java.util.Map;
 
@@ -70,6 +71,8 @@ public class ShPostUnifiedAPI {
     private final ShPostRevisionService shPostRevisionService;
     /** SH996 — what Publish would do, answered in the agent's own change-set shape. */
     private final ShConsolePublishPlan shConsolePublishPlan;
+    /** SH997 — what this site says about content before it reaches visitors. */
+    private final ShPublishGateService shPublishGateService;
 
     public ShPostUnifiedAPI(ShPostUnifiedWriteService shPostUnifiedWriteService,
                             ShConsolePostReadService shConsolePostReadService,
@@ -79,7 +82,8 @@ public class ShPostUnifiedAPI {
                             ShPostDraftMergeService shPostDraftMergeService,
                             ShConsolePostVersion shConsolePostVersion,
                             ShPostRevisionService shPostRevisionService,
-                            ShConsolePublishPlan shConsolePublishPlan) {
+                            ShConsolePublishPlan shConsolePublishPlan,
+                            ShPublishGateService shPublishGateService) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shConsolePostReadService = shConsolePostReadService;
         this.shTenantQuotaService = shTenantQuotaService;
@@ -89,6 +93,7 @@ public class ShPostUnifiedAPI {
         this.shConsolePostVersion = shConsolePostVersion;
         this.shPostRevisionService = shPostRevisionService;
         this.shConsolePublishPlan = shConsolePublishPlan;
+        this.shPublishGateService = shPublishGateService;
     }
 
     @PostMapping
@@ -202,6 +207,9 @@ public class ShPostUnifiedAPI {
         // SH730's rule, and the agent's: the DRAFT is the subject. Publishing is not a content
         // change, so matching against the PUBLISHED row would refuse the case publishing exists for.
         shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT);
+        // SH997 — the same gates the agent's op evaluates. A check the console could publish around
+        // would be a rule with a door in it that nobody documented.
+        shPublishGateService.requirePost(id);
         String actor = principal != null ? principal.getName() : null;
         ShAgentSessionContext.set(ShAgentSessionContext.consoleSession(actor, Instant.now()));
         try {

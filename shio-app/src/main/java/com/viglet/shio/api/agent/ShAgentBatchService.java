@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.gate.ShPublishGateService;
 import com.viglet.shio.api.post.ShPostDrift;
 import com.viglet.shio.api.release.ShReleaseRunner;
 import com.viglet.shio.api.release.ShReleaseService;
@@ -378,6 +379,8 @@ public class ShAgentBatchService {
     private final ShReleaseService shReleaseService;
     /** SH993 — running a release, shared with the sweep that fires a scheduled one. */
     private final ShReleaseRunner shReleaseRunner;
+    /** SH997 — what the site says about content before it reaches visitors. */
+    private final ShPublishGateService shPublishGateService;
 
     public ShAgentBatchService(ShHtmlSanitizer shHtmlSanitizer,
                                ShAgentSiteAccess siteAccess,
@@ -404,10 +407,12 @@ public class ShAgentBatchService {
                                ShConsoleSurfaces shConsoleSurfaces,
                                ShPostRevisionService shPostRevisionService,
                                ShReleaseService shReleaseService,
-                               ShReleaseRunner shReleaseRunner) {
+                               ShReleaseRunner shReleaseRunner,
+                               ShPublishGateService shPublishGateService) {
         this.shHtmlSanitizer = shHtmlSanitizer;
         this.shReleaseService = shReleaseService;
         this.shReleaseRunner = shReleaseRunner;
+        this.shPublishGateService = shPublishGateService;
         this.shConsoleSurfaces = shConsoleSurfaces;
         this.shPostRevisionService = shPostRevisionService;
         this.siteAccess = siteAccess;
@@ -1081,6 +1086,9 @@ public class ShAgentBatchService {
             // SH995 — every page this launch puts live is asked for by name.
             for (String going : plan.publishes()) {
                 shContentAclService.requirePublish(going);
+                // SH997 — and every one of them passes the site's gates, before any of them is
+                // published: a launch that stopped halfway is the state a release exists to prevent.
+                shPublishGateService.requirePost(going);
             }
             shReleaseRunner.run(release, session.actor);
         }
@@ -2879,6 +2887,9 @@ public class ShAgentBatchService {
             // SH995 — PUBLISH, not WRITE: this is the call that changes what visitors see, and until
             // now anybody who could edit the page could also put it live.
             shContentAclService.requirePublish(draft.getId());
+            // SH997 — and what the site says about the content itself, evaluated here rather than in
+            // the caller so no surface can publish around it.
+            shPublishGateService.requirePost(draft.getId());
             shPostUnifiedWriteService.publish(draft.getId(), session.actor);
         }
         return session.change(op, address, Change.PUBLISH, null, draft.getId());
@@ -3503,6 +3514,7 @@ public class ShAgentBatchService {
             }
             if (!session.dryRun) {
                 shContentAclService.requirePublish(draft.getId());
+                shPublishGateService.requirePost(draft.getId());
                 shPostUnifiedWriteService.publish(draft.getId(), session.actor);
             }
             return session.change(op, address, Change.PUBLISH, null, draft.getId());

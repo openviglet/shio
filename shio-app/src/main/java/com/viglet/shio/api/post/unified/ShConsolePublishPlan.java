@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.agent.ShAddressResolver;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
+import com.viglet.shio.api.gate.ShPublishGateService;
 import com.viglet.shio.api.post.ShPostDrift;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -49,14 +50,27 @@ public class ShConsolePublishPlan {
 
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShAddressResolver shAddressResolver;
+    private final ShPublishGateService shPublishGateService;
     private final ObjectMapper objectMapper;
 
     public ShConsolePublishPlan(ShPostUnifiedRepository shPostUnifiedRepository,
                                 ShAddressResolver shAddressResolver,
+                                ShPublishGateService shPublishGateService,
                                 ObjectMapper objectMapper) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shAddressResolver = shAddressResolver;
+        this.shPublishGateService = shPublishGateService;
         this.objectMapper = objectMapper;
+    }
+
+    /** The gate that would stop this publish, as one sentence, or {@code null} (SH997). */
+    private String blockedBy(String postId) {
+        return shPublishGateService.evaluatePost(postId).stream()
+                .filter(ShPublishGateService.Outcome::blocked)
+                .findFirst()
+                .map(outcome -> "gate '" + outcome.gate() + "' stops this: "
+                        + outcome.failures().get(0).check())
+                .orElse(null);
     }
 
     /** The plan for publishing one post, by console id. */
@@ -81,6 +95,13 @@ public class ShConsolePublishPlan {
             change = new ShAgentChangeSet.Change(ShAgentBatchService.POST_PUBLISH, address,
                     ShAgentChangeSet.Change.PUBLISH,
                     live.isPresent() ? null : "this URL goes live for the first time", postId);
+        }
+        // SH997 — a plan that could not say which gate would stop it is a plan that promises what the
+        // run refuses. Evaluated here rather than in the console, because the gates are the server's.
+        String stopped = blockedBy(postId);
+        if (stopped != null) {
+            change = new ShAgentChangeSet.Change(change.op(), change.address(), change.action(),
+                    (change.detail() == null ? "" : change.detail() + "; ") + stopped, postId);
         }
         return new ShAgentChangeSet(true, 1, change.isChange() ? 1 : 0, List.of(change));
     }

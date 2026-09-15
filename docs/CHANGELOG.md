@@ -1738,6 +1738,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH994** — release.rollback puts a published release back in one transaction: each page to the revision it replaced, pages the launch first published come down, and the release reads ROLLED_BACK.
 - **SH995** — The console asks /object/{id}/allowed and disables Publish and Unpublish with the server's own sentence; Approve stays per post, since a run touches pages a curator may not all publish (design §LXVI.6 superseded: it asked for Approve to be disabled too, and approval is per post: a disabled button would hide a run the curator may partly approve).
 - **SH996** — Publish opens the server's own plan first: what it would do, which URL starts resolving or stops, and how many published pages link to the one that goes.
+- **SH997 (the gate)** — A site declares checks that every publish path evaluates — the agent's op, the console's button and a release run — refusing with a 409 that names the gate, the check and the page.
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

@@ -99,6 +99,8 @@ public class ShAgentAPI {
     private final ShAgentChangesService shAgentChangesService;
     private final ShAgentDiagnosticsService shAgentDiagnosticsService;
     private final ShAgentMemoryService shAgentMemoryService;
+    /** SH997 — the site's publish gates, read and declared. */
+    private final com.viglet.shio.api.gate.ShAgentGateApiService shAgentGateApiService;
     private final ShBlueprintRegistry shBlueprintRegistry;
     private final ShBlueprintService shBlueprintService;
     private final ShAgentBodyEtag shAgentBodyEtag;
@@ -118,7 +120,9 @@ public class ShAgentAPI {
                       ShBlueprintRegistry shBlueprintRegistry,
                       ShBlueprintService shBlueprintService,
                       ShAgentBodyEtag shAgentBodyEtag,
-                      ShAgentProofService shAgentProofService) {
+                      ShAgentProofService shAgentProofService,
+                      com.viglet.shio.api.gate.ShAgentGateApiService shAgentGateApiService) {
+        this.shAgentGateApiService = shAgentGateApiService;
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
         this.shAddressResolver = shAddressResolver;
@@ -735,6 +739,29 @@ public class ShAgentAPI {
      * @param site  one site's notes plus the instance-wide ones; omit for all
      * @param limit rows to return; {@code found} always describes the full set
      */
+    /**
+     * The publish gates a site declares (SH997) — what stands between its content and visitors.
+     *
+     * <p>A gate travels as its own idempotent write rather than through the op vocabulary, the way
+     * SH161's notes do and for the same reason: it is not content. Folding it into the desired-state
+     * document would make it the thing {@code --prune} deletes the day a tree stops naming it, and
+     * every op name is paid for by every caller that reads {@code tools/list}.</p>
+     */
+    @GetMapping("/gates")
+    @Operation(summary = "The checks this site runs before content reaches visitors")
+    public List<com.viglet.shio.api.gate.ShAgentGate> gates(@RequestParam(name = "site") String site) {
+        return shAgentGateApiService.gates(site);
+    }
+
+    /** Declare one gate, idempotently by {@code (site, name)} — the shape a gate file pushes. */
+    @PutMapping("/gates/{name}")
+    @Operation(summary = "Declare a publish gate")
+    public com.viglet.shio.api.gate.ShAgentGate putGate(@PathVariable String name,
+                               @RequestParam(name = "site") String site,
+                               @RequestBody com.viglet.shio.api.gate.ShAgentGate body) {
+        return shAgentGateApiService.put(site, name, body);
+    }
+
     @GetMapping("/memory")
     @Operation(summary = "Remembered decisions and conventions — what earlier sessions worked out")
     public ShAgentMemory memory(

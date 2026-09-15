@@ -3291,3 +3291,33 @@ disagree, and the one a curator reads before publishing is the one that has to b
 at the same address changes nothing about the site's routes, so an ordinary `include=impact` response
 is byte-identical to what it was. In terse it is its own `routes` line, for the reason `impact` is its
 own line: the header describes the post, and these describe what the site does about it.
+
+## Publish gates: what a site checks before content reaches visitors (SH997, first slice)
+
+Every instrument Shio had was opt-in — the address-scoped verify, the render digest, `shio audit` — so
+the only gate that existed asked **who** may publish (SH995) and never whether this content *should*.
+A gate is the second question: an ordered list of checks with severities, declared per site in
+`sh_publish_gate` and evaluated **where the publish happens**, so the agent's `post.publish`, the
+console's button and `release.run` all pass through it. A rule one surface enforces and another does
+not is worse than no rule — it is a door nobody documented.
+
+**Not a workflow engine.** No state machine, no assignee, no queue: an orchestrator inside Shio would
+be a third contract over the CDA and the console (P10), and the operator driving this instance already
+is one.
+
+**Three checks, and one that cannot be here.** `verify` runs the whole address-scoped verification over
+the **draft** — what this publish would put live, not what is already past the gate — `links-resolve`
+narrows it to SH100's routes group and `render-digest` to the page group. The design also named
+`audit`, and it is **refused** with the reason: `shio audit` drives a browser per viewport, and "the
+instance does not run a browser" is a standing non-goal, so it belongs in CI where the browser already
+is. A check nothing can run is refused at declaration rather than stored, because a gate that cannot be
+evaluated is a gate that silently passes.
+
+A blocking step is about **errors**; a warning-severity step reports errors and warnings without
+stopping anything. That split matters: `link-unresolved` is deliberately a warning, since a front end
+may own routes the CMS has never heard of, and a gate that stopped a launch over one would be wrong
+about the product. The refusal is a 409 naming the gate, the check and the address, with the verify
+call that reproduces it, and SH996's dry run carries the same sentence so a plan cannot promise what
+the run refuses. Gates travel as their own idempotent writes (`GET /agent/gates`, `PUT
+/agent/gates/{name}`), like SH161's notes and for the same reason: a gate is not content, so folding it
+into the desired-state document would make it the thing `--prune` deletes when a tree stops naming it.
