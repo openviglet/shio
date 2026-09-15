@@ -186,6 +186,108 @@ public final class ShControllerScan {
         return List.copyOf(patterns);
     }
 
+    /**
+     * One method mapping, as source: the method's name and the text of its parameter list.
+     *
+     * @param method     the Java method the mapping annotates
+     * @param parameters everything between the method's parentheses, annotations included
+     */
+    public record Mapping(String method, String parameters) {
+    }
+
+    /** A Java identifier: the last one before a method's parenthesis is its name. */
+    private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_$][\\w$]*");
+
+    /**
+     * Every method mapping for {@code verbs} in one comment-stripped source, in file order.
+     *
+     * <h2>Why the parameter list is taken by counting parentheses (SH985)</h2>
+     *
+     * <p>SH985's first draft read it with {@code \\(([^)]*)\\)} and reported one write in
+     * {@code ShStaticFileAPI} where there are three: a parameter annotated
+     * {@code @RequestParam("file")} closes that group early, so every method whose parameters carry an
+     * annotation with arguments was invisible. SH990 needed the same reader over {@code GET}, and a
+     * second copy of it would be the second answer to "what are this method's parameters" — so it
+     * lives here, and both lints ask it.</p>
+     *
+     * @param body  a source from {@link #sources()}
+     * @param verbs the mapping verbs as an alternation, e.g. {@code "Get"} or {@code "Post|Put"}
+     */
+    public static List<Mapping> mappings(String body, String verbs) {
+        Matcher mapping = Pattern.compile("@(" + verbs + ")Mapping\\b").matcher(body);
+        List<Mapping> found = new ArrayList<>();
+        while (mapping.find()) {
+            int at = pastAnnotations(body, mapping.end());
+            int opened = body.indexOf('(', at);
+            if (opened < 0) {
+                continue;
+            }
+            Matcher name = IDENTIFIER.matcher(body.substring(at, opened));
+            String method = null;
+            while (name.find()) {
+                method = name.group();
+            }
+            int closed = balanced(body, opened);
+            found.add(new Mapping(method, closed < 0 ? "" : body.substring(opened + 1, closed - 1)));
+        }
+        return List.copyOf(found);
+    }
+
+    /** Past the mapping's own arguments and any annotation between it and the method. */
+    private static int pastAnnotations(String body, int from) {
+        int at = from;
+        while (at < body.length() && Character.isWhitespace(body.charAt(at))) {
+            at++;
+        }
+        if (at < body.length() && body.charAt(at) == '(') {
+            at = balanced(body, at);
+        }
+        while (at > 0 && at < body.length()) {
+            while (at < body.length() && Character.isWhitespace(body.charAt(at))) {
+                at++;
+            }
+            if (at >= body.length() || body.charAt(at) != '@') {
+                return at;
+            }
+            at++;
+            while (at < body.length()
+                    && (Character.isLetterOrDigit(body.charAt(at)) || "._$".indexOf(body.charAt(at)) >= 0)) {
+                at++;
+            }
+            while (at < body.length() && Character.isWhitespace(body.charAt(at))) {
+                at++;
+            }
+            if (at < body.length() && body.charAt(at) == '(') {
+                at = balanced(body, at);
+            }
+        }
+        return at;
+    }
+
+    /** The index past the {@code )} matching the {@code (} at {@code from}, skipping literals. */
+    private static int balanced(String body, int from) {
+        int depth = 0;
+        int at = from;
+        while (at < body.length()) {
+            char c = body.charAt(at);
+            if (c == '"' || c == '\'') {
+                at++;
+                while (at < body.length() && body.charAt(at) != c) {
+                    at += body.charAt(at) == '\\' ? 2 : 1;
+                }
+            } else if (c == '(') {
+                depth++;
+            } else if (c == ')') {
+                depth--;
+                if (depth == 0) {
+                    return at + 1;
+                }
+            }
+            at++;
+        }
+        return -1;
+    }
+
     /** Every main source file, keyed by file name, with its comments stripped (SH613). */
     public static Map<String, String> sources() {
         try (Stream<Path> files = Files.walk(MAIN)) {

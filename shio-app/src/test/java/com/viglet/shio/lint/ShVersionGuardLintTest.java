@@ -15,7 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.DisplayName;
@@ -56,8 +55,6 @@ class ShVersionGuardLintTest {
     private static final List<String> CONTENT_WRITERS = List.of(
             "ShPostUnifiedAPI.java", "ShFolderAPI.java", "ShObjectAPI.java", "ShStaticFileAPI.java");
 
-    private static final Pattern MAPPING = Pattern.compile("@(Post|Put|Patch|Delete)Mapping\\b");
-    private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_$][\\w$]*");
     /** What a guarded write takes: the HTTP header, by constant or by parameter name. */
     private static final Pattern GUARD = Pattern.compile("IF_MATCH|ifMatch");
 
@@ -135,80 +132,15 @@ class ShVersionGuardLintTest {
             if (body == null) {
                 throw new IllegalStateException(file + " is gone — move this lint with it");
             }
-            Matcher mapping = MAPPING.matcher(body);
-            while (mapping.find()) {
-                int at = pastAnnotations(body, mapping.end());
-                int opened = body.indexOf('(', at);
-                if (opened < 0) {
-                    continue;
-                }
-                Matcher name = IDENTIFIER.matcher(body.substring(at, opened));
-                String method = null;
-                while (name.find()) {
-                    method = name.group();
-                }
-                int closed = balanced(body, opened);
-                String parameters = closed < 0 ? "" : body.substring(opened + 1, closed - 1);
-                found.add(new Write(file.replace(".java", ""), method,
-                        GUARD.matcher(parameters).find()));
+            // The parameter list is read by counting parentheses, which is this lint's own lesson and
+            // now ShControllerScan's: SH990's census over GET needed the same reader.
+            for (ShControllerScan.Mapping mapping
+                    : ShControllerScan.mappings(body, "Post|Put|Patch|Delete")) {
+                found.add(new Write(file.replace(".java", ""), mapping.method(),
+                        GUARD.matcher(mapping.parameters()).find()));
             }
         }
         return found;
-    }
-
-    /** Past the mapping's own arguments and any annotation between it and the method. */
-    private static int pastAnnotations(String body, int from) {
-        int at = from;
-        while (at < body.length() && Character.isWhitespace(body.charAt(at))) {
-            at++;
-        }
-        if (at < body.length() && body.charAt(at) == '(') {
-            at = balanced(body, at);
-        }
-        while (at > 0 && at < body.length()) {
-            while (at < body.length() && Character.isWhitespace(body.charAt(at))) {
-                at++;
-            }
-            if (at >= body.length() || body.charAt(at) != '@') {
-                return at;
-            }
-            at++;
-            while (at < body.length()
-                    && (Character.isLetterOrDigit(body.charAt(at)) || "._$".indexOf(body.charAt(at)) >= 0)) {
-                at++;
-            }
-            while (at < body.length() && Character.isWhitespace(body.charAt(at))) {
-                at++;
-            }
-            if (at < body.length() && body.charAt(at) == '(') {
-                at = balanced(body, at);
-            }
-        }
-        return at;
-    }
-
-    /** The index past the {@code )} matching the {@code (} at {@code from}, skipping literals. */
-    private static int balanced(String body, int from) {
-        int depth = 0;
-        int at = from;
-        while (at < body.length()) {
-            char c = body.charAt(at);
-            if (c == '"' || c == '\'') {
-                at++;
-                while (at < body.length() && body.charAt(at) != c) {
-                    at += body.charAt(at) == '\\' ? 2 : 1;
-                }
-            } else if (c == '(') {
-                depth++;
-            } else if (c == ')') {
-                depth--;
-                if (depth == 0) {
-                    return at + 1;
-                }
-            }
-            at++;
-        }
-        return -1;
     }
 
     @Test

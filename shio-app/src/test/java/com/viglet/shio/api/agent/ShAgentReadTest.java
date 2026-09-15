@@ -494,7 +494,7 @@ class ShAgentReadTest {
         // P6, and not pedantry: falling back to the draft-preferred default on a typo answers a
         // question the caller did not ask, in a shape indistinguishable from a correct answer.
         assertThatThrownBy(() -> read("post:" + siteName + base + "/alpha", "live"))
-                .isInstanceOf(ShAgentReadService.UnknownStateException.class);
+                .isInstanceOf(com.viglet.shio.api.post.ShContentPerspective.UnknownStateException.class);
     }
 
     private static String suffix() {

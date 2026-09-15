@@ -1522,8 +1522,9 @@ services, the CDA mapper and the page render service, and on the CDA the allow-l
 check runs before the state is honoured, so a scoped token cannot read a draft it has no
 rights to.
 
-ShPerspectiveCoverageLintTest lands first, asserting every content-read path accepts the
-parameter, held as a named list. MCP gains one argument on existing tools within AY5's
+ShContentPerspective and ShPerspectiveCoverageLintTest have landed, with /agent/read and
+/preview on the grammar; the lint's REMAINDER family is the worklist, and GraphQL, built
+in code, sits outside its scan. MCP gains one argument on existing tools within AY5's
 reservations; the CLI gains --state.
 
 ### LXVI.2 Scheduled content, visible on every surface (SH991)

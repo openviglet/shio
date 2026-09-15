@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
 
+import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.render.ShPageRenderService.ShRenderedPage;
 
@@ -133,17 +134,19 @@ public class ShRenderAPI {
      * {@code GET /preview/{site}/{path…}} — one rendered page.
      *
      * @param siteKey the site's name, friendly URL or id (SH181's order — a human types this)
-     * @param state   {@code DRAFT} (the default: previewing means seeing unpublished edits)
-     *                or {@code PUBLISHED} to see what a visitor would get
+     * @param state   {@code draft} (the default: previewing means seeing unpublished edits)
+     *                or {@code published} to see what a visitor would get. SH990 — parsed by
+     *                {@link ShContentPerspective}, so a value outside the grammar is a teaching 400;
+     *                before, anything but {@code PUBLISHED} previewed the draft without saying so
      */
     @GetMapping("/{siteKey}/**")
     public ResponseEntity<?> page(@PathVariable String siteKey,
-                                  @RequestParam(defaultValue = "DRAFT") String state,
+                                  @RequestParam(required = false) String state,
                                   @RequestParam(defaultValue = "false") boolean editor,
                                   HttpServletRequest request) {
-        ShPostState wanted = ShPostState.PUBLISHED.name().equalsIgnoreCase(state)
-                ? ShPostState.PUBLISHED
-                : ShPostState.DRAFT;
+        ShPostState wanted = ShContentPerspective.parse(state)
+                .requireRow("/preview", "GET /api/v2/agent/read?address=<address>&state=rev:<n>")
+                .rowOr(ShPostState.DRAFT);
         ShRenderedPage rendered;
         try {
             rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request), wanted,

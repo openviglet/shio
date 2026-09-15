@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
+import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
@@ -279,7 +280,8 @@ public class ShAgentReadService {
      */
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact, String state) {
-        return readDocs(addresses, fields, ids, impact, wanted(state), false, false);
+        return readDocs(addresses, fields, ids, impact, ShContentPerspective.parse(state).row(),
+                false, false);
     }
 
     /**
@@ -321,51 +323,11 @@ public class ShAgentReadService {
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact, String state, boolean digest,
                                  boolean links, boolean revisions) {
-        return readDocs(addresses, fields, ids, impact, wanted(state), digest, links, revisions,
-                revisionOf(state));
-    }
-
-    /**
-     * {@code state=rev:<n>}, or {@code null} when the caller asked for a row (SH987).
-     *
-     * <p>Spelled inside {@code state} rather than as a parameter of its own because it <em>is</em>
-     * the same question: which version of this address am I reading. A caller that has
-     * {@code state=published} in a script changes one value to read what was published before it.</p>
-     */
-    private static Integer revisionOf(String state) {
-        if (state == null || !state.trim().toLowerCase(java.util.Locale.ROOT).startsWith("rev:")) {
-            return null;
-        }
-        String number = state.trim().substring("rev:".length());
-        try {
-            return Integer.valueOf(number.trim());
-        } catch (NumberFormatException e) {
-            throw new UnknownStateException(state);
-        }
-    }
-
-    /**
-     * The {@code state=} parameter, resolved (SH619).
-     *
-     * <p>P6: an unknown value is refused with the two that exist rather than silently falling back
-     * to the default, because a typo that reads as "draft-preferred" answers a question the caller
-     * did not ask and looks like a correct answer.</p>
-     */
-    private static ShPostState wanted(String state) {
-        if (state == null || state.isBlank()) {
-            return null;
-        }
-        String text = state.trim().toLowerCase(java.util.Locale.ROOT);
-        // SH987 — `rev:<n>` is a state in the sense the caller means it, and the row it resolves
-        // against is the draft-preferred one, so a revision of a published-only post still reads.
-        if (text.startsWith("rev:")) {
-            return null;
-        }
-        return switch (text) {
-            case "published" -> ShPostState.PUBLISHED;
-            case "draft" -> ShPostState.DRAFT;
-            default -> throw new UnknownStateException(state);
-        };
+        // SH990 — the grammar is ShContentPerspective's, shared with every other read that takes a
+        // state, so this path and /preview cannot come to disagree about what a value means.
+        ShContentPerspective perspective = ShContentPerspective.parse(state);
+        return readDocs(addresses, fields, ids, impact, perspective.row(), digest, links, revisions,
+                perspective.revision());
     }
 
     private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
@@ -895,21 +857,6 @@ public class ShAgentReadService {
                     .withFix("To see what is inside a folder, use GET /api/v2/agent/find?folder=… "
                             + "or read the sitemap in GET /api/v2/agent/context.")
                     .withExample("post:Blog/blog/hello-world"));
-        }
-    }
-
-    /** A 400: {@code state=} took a value that is not one of the two rows a post can have. */
-    public static class UnknownStateException extends ShTeachingException {
-
-        public UnknownStateException(String sent) {
-            super(ShProblem.badRequest("unknown-state", "'" + sent + "' is not a post state")
-                    .withDetail("A post has at most two rows: the draft that is edited and the "
-                            + "published one that is served. `state` picks which to read.")
-                    .withAllowed(List.of("draft", "published"))
-                    .withDidYouMeanFrom(sent)
-                    .withFix("Use `state=published` to read what is live, `state=draft` for the "
-                            + "editable copy, or omit `state` for the draft-preferred default.")
-                    .withExample("?address=post:Blog/blog/hello-world&state=published"));
         }
     }
 

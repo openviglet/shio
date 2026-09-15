@@ -3042,3 +3042,24 @@ It reaches every surface through a parameter that already existed or an argument
 
 `ShChangedFields.between` is the one comparison, and `ShPostRevisionService` now calls it too: two
 copies that agreed today would disagree the first time one learned a new rule about `null`.
+
+## One `state` grammar, and a census of the reads that do not take it yet (SH990, first slice)
+
+Two reads took `state` and each parsed it itself. `/agent/read` refused a typo with a teaching 400 and
+understood `rev:<n>`; `/preview` compared the value to `PUBLISHED` and previewed the draft for anything
+else, so `state=live` showed the draft under a 200. `ShContentPerspective` is now the one reading:
+`draft` and `published` in any case, `rev:<n>` for a revision, absent for the path's own default (a
+read is draft-preferred, a preview is the draft). Anything else is `unknown-state` with the three
+spellings. A path that reads rows and not revisions says so with `state-revision-not-served` and
+names the call that serves one, instead of answering with a different page than the one asked for.
+`release:<name>` is BA4's, added with the thing it names.
+
+`ShPerspectiveCoverageLintTest` came first and is the worklist. It classifies every `GET` in
+`ShAgentAPI`, `ShRenderAPI` and `ShCdaAPI` as taking `state` or not, with a reason; the reads that
+should and do not are one named family, SH990's remainder, and a read that gains the parameter fails
+until its row moves. It also holds that the literal `"rev:"` lives in `ShContentPerspective` alone, so
+a third private parser is a finding when it is written. The GraphQL schema is built in code and sits
+outside the scan, which is why it is named in the remainder rather than in the census.
+
+The reader that takes a mapping's parameter list by counting parentheses moved from
+`ShVersionGuardLintTest` into `ShControllerScan.mappings`, which both lints now call.
