@@ -483,3 +483,13 @@ has no second document to compare against, and inventing names for it would be t
 Validated with `-DskipITs=false` and Docker running: `ShPostgresSchemaIT` (6.9s) and
 `ShMariaDbSchemaIT` (20.1s) both ran rather than skipping, so the changeset is known to apply on all
 three engines.
+
+## `sh_post_unified.schedule_requested_by` — who set a schedule (SH991)
+
+A nullable `VARCHAR(255)` beside the two SH15 schedule columns, written by
+`ShPostUnifiedWriteService.schedule` with the schedule and cleared when the draft is left with none —
+including after the sweep fires the last one — so a stale name never attributes a schedule somebody
+else set afterwards. The sweep still publishes and unpublishes as `scheduler`, which is what ran it; the
+audit row it writes carries `(scheduled by <person>)` as its detail, read off the draft before the
+transition. No backfill: a schedule set before `v2026.3.31` has no recorded requester, and inventing
+one would be the one wrong answer. `include=schedule` on a read names it as `requestedBy`.

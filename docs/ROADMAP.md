@@ -46,7 +46,7 @@
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- ⏳ **SH991** (deps: —) **nothing lists what is scheduled, so an agent cannot confirm a schedule it set and a curator has no agenda** — There is still no console Scheduled view with the timezone stated, and no record of who set a schedule beside the scheduler that ran it. → §LXVI.2
+- ⏳ **SH991** (deps: —) **nothing lists what is scheduled, so an agent cannot confirm a schedule it set and a curator has no agenda** — The console still has no Scheduled view, and its schedule dialog shows bare datetime inputs with no timezone against a stored instant. → §LXVI.2
 - 📋 **SH992** (deps: SH952 ✅) **shio_publish cannot schedule, and post.unpublish accepts a when it never reads** — The publish tool builds an op with no when, and only postPublish calls scheduleInstant, so an embargoed takedown dated for December takes the page down now and reports success. → §LXVI.3
 - 📋 **SH993** (deps: SH990 ✅, SH986 ✅) **no release groups a launch, so forty related pages go live as forty separate events in sweep order** — One batch call is atomic and nothing persists a set across calls, so a coordinated launch has no unit to stage, preview, approve, schedule or undo. → §LXVI.4
 - 📋 **SH994** (deps: SH993, SH987 ✅) **a release that went live and should not have has no verb to undo it as one unit** — The release stores a rollback anchor per item and a rolled-back state, and none of its six operations reaches either, which leaves atomicity with no reverse. → §LXVI.5

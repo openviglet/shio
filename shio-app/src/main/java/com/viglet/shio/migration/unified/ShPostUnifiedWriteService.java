@@ -465,7 +465,7 @@ public class ShPostUnifiedWriteService {
         // the current one too, rather than only of the ones that have since been replaced.
         shPostRevisionService.capture(saved, ShPostRevision.Reason.PUBLISH, publisher);
         shContentAuditService.record(ShContentAction.PUBLISH, postId,
-                siteIdOf(saved), saved.getTitle(), publisher, changed);
+                siteIdOf(saved), saved.getTitle(), publisher, scheduledBy(draft, publisher), changed);
         publishLifecycle(ShWebhookEventType.PUBLISH, saved);
         return saved;
     }
@@ -585,6 +585,9 @@ public class ShPostUnifiedWriteService {
 
         draft.setPublishScheduledDate(publishAt);
         draft.setUnpublishScheduledDate(unpublishAt);
+        // SH991 — the person behind the transition the sweep fires later, and nobody once nothing is
+        // left scheduled, so a stale name never attributes a schedule somebody else set afterwards.
+        draft.setScheduleRequestedBy(publishAt == null && unpublishAt == null ? null : modifier);
         draft.setModifiedDate(Instant.now());
         if (modifier != null) draft.setModifier(modifier);
         return shPostUnifiedRepository.save(draft);
@@ -647,6 +650,7 @@ public class ShPostUnifiedWriteService {
                     shPostUnifiedRepository.save(draft);
                 });
         self.getObject().publish(postId, SCHEDULER_ACTOR);
+        forgetRequesterWhenIdle(postId);
     }
 
     /**
@@ -661,6 +665,30 @@ public class ShPostUnifiedWriteService {
                     shPostUnifiedRepository.save(draft);
                 });
         self.getObject().unpublish(postId, SCHEDULER_ACTOR);
+        forgetRequesterWhenIdle(postId);
+    }
+
+    /**
+     * {@code scheduled by <person>} for a transition the sweep fired, or {@code null} for one a person
+     * made directly (SH991). Read off the draft, where the schedule and its requester live.
+     */
+    private static String scheduledBy(ShPostUnified draft, String actor) {
+        if (!SCHEDULER_ACTOR.equals(actor) || draft == null || draft.getScheduleRequestedBy() == null) {
+            return null;
+        }
+        return "scheduled by " + draft.getScheduleRequestedBy();
+    }
+
+    /** Clears the requester once the draft carries no schedule, after the fired transition named it. */
+    private void forgetRequesterWhenIdle(String postId) {
+        shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                .filter(draft -> draft.getPublishScheduledDate() == null
+                        && draft.getUnpublishScheduledDate() == null
+                        && draft.getScheduleRequestedBy() != null)
+                .ifPresent(draft -> {
+                    draft.setScheduleRequestedBy(null);
+                    shPostUnifiedRepository.save(draft);
+                });
     }
 
     /** A schedule whose instant has arrived — what the sweep would fire now (SH969). */
@@ -696,6 +724,8 @@ public class ShPostUnifiedWriteService {
     /** Unpublishes the post, and clears a due unpublish schedule for {@link #publish}'s reason (SH969). */
     @Transactional
     public void unpublish(String postId, String actor) {
+        String detail = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                .map(draft -> scheduledBy(draft, actor)).orElse(null);
         shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
                 .filter(draft -> isDue(draft.getUnpublishScheduledDate()))
                 .ifPresent(draft -> {
@@ -708,7 +738,7 @@ public class ShPostUnifiedWriteService {
                     // webhook can still carry its site + url (SH12).
                     ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.UNPUBLISH, published);
                     shContentAuditService.record(ShContentAction.UNPUBLISH, postId,
-                            siteIdOf(published), published.getTitle(), actor);
+                            siteIdOf(published), published.getTitle(), actor, detail, null);
                     shPostUnifiedRepository.delete(published);
                     eventPublisher.publishEvent(event);
                 });

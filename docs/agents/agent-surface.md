@@ -3135,3 +3135,7 @@ list a person re-sorts in their head. A post due to go live and come down is two
 `--to` become the server's window and also bound the entries shown, times are printed in UTC and the
 header says so, and a walk that stopped short exits 1. The CLI help paid for the new verb by cutting why-
 clauses out of `shio clone --help`.
+
+**The third slice is who set it.** A transition the sweep fires is recorded as the `scheduler`'s, and
+the Activity row now reads `Published "…" (scheduled by ana)`; `include=schedule` names the requester
+as `requestedBy`. The schema half is in `docs/agents/database.md`.

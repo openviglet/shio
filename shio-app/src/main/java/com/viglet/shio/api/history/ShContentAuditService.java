@@ -84,6 +84,15 @@ public class ShContentAuditService {
     }
 
     /**
+     * A post's audit entry with a detail as well as its changed fields (SH991): a transition the
+     * scheduler fires names the person who set the schedule, as {@code (scheduled by ana)}.
+     */
+    public void record(ShContentAction action, String postId, String siteId, String title, String actor,
+                       String detail, List<String> fields) {
+        record(action, ShContentSubject.POST, postId, siteId, title, actor, detail, fields);
+    }
+
+    /**
      * Persist a single audit entry for any auditable subject (SH196).
      *
      * <p>{@code detail} exists because the action vocabulary is deliberately not extended per

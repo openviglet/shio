@@ -149,6 +149,13 @@ public class ShPostUnified implements Serializable {
     @Column(name = "unpublish_scheduled_date")
     private Instant unpublishScheduledDate;
 
+    /**
+     * Who set the schedule this row carries (SH991), so the transition the scheduler fires later is
+     * attributed to a person as well as to the sweep. Cleared when nothing is left scheduled.
+     */
+    @Column(name = "schedule_requested_by")
+    private String scheduleRequestedBy;
+
     @Lob
     @Column(name = "data", nullable = false)
     private String data;
@@ -414,6 +421,14 @@ public class ShPostUnified implements Serializable {
 
     public void setUnpublishScheduledDate(Instant unpublishScheduledDate) {
         this.unpublishScheduledDate = unpublishScheduledDate;
+    }
+
+    public String getScheduleRequestedBy() {
+        return scheduleRequestedBy;
+    }
+
+    public void setScheduleRequestedBy(String scheduleRequestedBy) {
+        this.scheduleRequestedBy = scheduleRequestedBy;
     }
 
     public String getData() {

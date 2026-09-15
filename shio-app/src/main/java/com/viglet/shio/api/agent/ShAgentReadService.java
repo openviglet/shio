@@ -784,7 +784,8 @@ public class ShAgentReadService {
                         || draft.getUnpublishScheduledDate() != null)
                 .map(draft -> doc.withSchedule(new ShAgentDoc.Schedule(
                         instant(draft.getPublishScheduledDate()),
-                        instant(draft.getUnpublishScheduledDate()))))
+                        instant(draft.getUnpublishScheduledDate()),
+                        draft.getScheduleRequestedBy())))
                 .orElse(doc);
     }
 

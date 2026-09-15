@@ -90,9 +90,10 @@ public record ShAgentDoc(String address, String type, String state, String folde
      *
      * @param publishAt   ISO-8601, or absent
      * @param unpublishAt ISO-8601, or absent
+     * @param requestedBy who set it, which the Activity row names beside the scheduler that fires it
      */
     @JsonInclude(Include.NON_NULL)
-    public record Schedule(String publishAt, String unpublishAt) {
+    public record Schedule(String publishAt, String unpublishAt, String requestedBy) {
     }
 
     /** The same row with its schedule attached, or unchanged when there is none to attach. */

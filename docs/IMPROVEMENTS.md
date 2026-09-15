@@ -1521,9 +1521,9 @@ and a month and week calendar, each row linking to the post, rescheduling by dra
 through the same verb, and the timezone stated on every row and in the dialog.
 
 A scheduled transition's outcome, and in particular its failure, reports through the
-assistant dock in SH969; this task records schedule_requested_by, so the Activity row
-reads published by the scheduler, scheduled by the person who set it. The assertions set
-a schedule through each surface and read it back through the others.
+assistant dock in SH969; schedule_requested_by has landed, so the Activity row reads
+published by the scheduler, scheduled by the person who set it. The assertions set a
+schedule through each surface and read it back through the others.
 
 ### LXVI.3 Scheduling where a caller looks for it, and a takedown that waits (SH992)
 

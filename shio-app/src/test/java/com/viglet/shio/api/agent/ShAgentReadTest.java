@@ -497,7 +497,9 @@ class ShAgentReadTest {
 
         ShAgentDoc doc = shAgentReadService.read(List.of(address), null, false, false, null, false,
                 false, false, true).get(0);
-        assertThat(doc.schedule()).isEqualTo(new ShAgentDoc.Schedule(goesLive.toString(), null));
+        assertThat(doc.schedule())
+                .as("SH991: the schedule names who set it, for the Activity row the sweep writes later")
+                .isEqualTo(new ShAgentDoc.Schedule(goesLive.toString(), null, "tester"));
         assertThat(shAgentReadService.read(List.of(address), null, false, false, null, false,
                 false, false, false).get(0).schedule())
                 .as("SH991: opt-in, like every other rider on this read")

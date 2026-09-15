@@ -1,0 +1,31 @@
+databaseChangeLog:
+  # SH991 — `sh_post_unified.schedule_requested_by`: who set the schedule a row carries.
+  #
+  # The SH15 sweep fires a scheduled publish as the `scheduler` actor, so the Activity row for a page
+  # that went live at midnight said the scheduler did it and nobody else. The person who chose the
+  # time is who a curator is asking about. The column holds that name while a schedule is set; the
+  # write service writes it with the schedule, the transition the sweep fires reads it into its audit
+  # row as `(scheduled by <person>)`, and it is cleared once the draft carries no schedule, so a stale
+  # name never attributes a schedule somebody else set afterwards.
+  #
+  # Nullable, on the draft row in practice (a schedule is set there, SH15), no backfill: a schedule set
+  # before this changeset has no recorded requester, and inventing one would be the wrong answer. Not a
+  # tenant discriminator, so no ShTenantBackfillRunner entry. VARCHAR per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh991-post-schedule-requested-by
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_post_unified
+                columnName: schedule_requested_by
+      changes:
+        - addColumn:
+            tableName: sh_post_unified
+            columns:
+              - column:
+                  name: schedule_requested_by
+                  type: VARCHAR(255)
