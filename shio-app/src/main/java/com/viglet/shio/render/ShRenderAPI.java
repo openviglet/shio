@@ -145,7 +145,8 @@ public class ShRenderAPI {
                                   @RequestParam(required = false) String state,
                                   @RequestParam(defaultValue = "false") boolean editor,
                                   HttpServletRequest request) {
-        ShContentPerspective perspective = ShContentPerspective.parse(state);
+        ShContentPerspective perspective = ShContentPerspective.parse(state)
+                .requireVersion("/preview", "GET /api/v2/agent/read?address=<address>&state=release:<name>");
         // An asset has no revisions, so a revision preview that lands on one serves the draft's bytes.
         ShPostState wanted = perspective.rowOr(ShPostState.DRAFT);
         ShRenderedPage rendered;

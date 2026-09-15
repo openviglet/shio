@@ -33,6 +33,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentConfirm;
+import com.viglet.shio.api.agent.ShAgentReadService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -76,6 +77,8 @@ class ShReleaseRunTest {
 
     @Autowired
     private ShAgentBatchService shAgentBatchService;
+    @Autowired
+    private ShAgentReadService shAgentReadService;
     @Autowired
     private ShReleaseService shReleaseService;
     @Autowired
@@ -127,7 +130,7 @@ class ShReleaseRunTest {
 
             // One page per test, because a publish in one of them is visible to the next: they
             // share a database, and a release RUNS, so nothing here can be re-used across tests.
-            for (String url : List.of("/a1", "/a2", "/b1", "/b2", "/c1", "/d1", "/e1")) {
+            for (String url : List.of("/a1", "/a2", "/b1", "/b2", "/c1", "/d1", "/e1", "/f1")) {
                 ShPostUnified draft = new ShPostUnified();
                 draft.setId(SITE + url.replace('/', '-'));
                 draft.setState(ShPostState.DRAFT);
@@ -139,7 +142,7 @@ class ShReleaseRunTest {
                 draft.setLocale("en");
                 draft.setOwner("admin");
                 draft.setDate(then);
-                draft.setData("{\"title\":\"" + url + "\"}");
+                draft.setData("{\"title\":\"before\"}");
                 entityManager.persist(draft);
                 posts.add(draft.getId());
             }
@@ -276,6 +279,42 @@ class ShReleaseRunTest {
                 .as("SH993: version_before is what SH994 rolls back to, and an item without one is "
                         + "the page a rollback would silently skip")
                 .allSatisfy(item -> assertThat(item.getVersionBefore()).isNotNull());
+    }
+
+    @Test
+    @DisplayName("SH993: state=release:<name> reads the page as that release found it")
+    void theReleasePerspectiveReadsWhatTheRunReplaced() {
+        String url = "/f1";
+        String postId = SITE + url.replace('/', '-');
+        // A page that was live, saying one thing, before a release publishes it saying another.
+        shPostUnifiedWriteService.publish(postId, "admin");
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShPostUnified draft = shPostUnifiedRepository
+                    .findByIdAndState(postId, ShPostState.DRAFT).orElseThrow();
+            draft.setData("{\"title\":\"after\"}");
+            shPostUnifiedRepository.save(draft);
+        });
+        String name = plan("history-" + RUN, url);
+        String address = "post:" + SITE + url;
+
+        assertThatThrownBy(() -> shAgentReadService.read(List.of(address), null, false, false,
+                "release:" + name, false))
+                .as("SH993: a release that has not run replaced nothing, and the draft is what the "
+                        + "page will become rather than what it was")
+                .isInstanceOf(ShReleaseService.ReleaseHasNotRunException.class);
+
+        shReleaseRunner.run(release(name), "ut-sh993run");
+
+        assertThat(shAgentReadService.read(List.of(address), null, false, false,
+                "release:" + name, false).get(0).data().toString())
+                .as("SH993: state=published is what the launch PUT live; the version only the "
+                        + "release knows is the one it replaced")
+                .contains("before");
+        assertThat(shAgentReadService.read(List.of(address), null, false, false, "published", false)
+                .get(0).data().toString()).contains("after");
+        assertThatThrownBy(() -> shAgentReadService.read(List.of("post:" + SITE + "/a1"), null,
+                false, false, "release:" + name, false))
+                .isInstanceOf(ShReleaseService.PostNotInReleaseException.class);
     }
 
     @Test

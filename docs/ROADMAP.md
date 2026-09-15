@@ -46,7 +46,7 @@
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- ⏳ **SH993** (deps: SH990 ✅, SH986 ✅) **no release groups a launch, so forty related pages go live as forty separate events in sweep order** — The unit and its run landed; left are archive, state=release:<name> on a read, and the shio/releases/<name>.yaml projection a launch is reviewed in. → §LXVI.4
+- ⏳ **SH993** (deps: SH990 ✅, SH986 ✅) **no release groups a launch, so forty related pages go live as forty separate events in sweep order** — The unit, its run and the read landed; left are archive and the shio/releases/<name>.yaml projection a launch is reviewed in. → §LXVI.4
 - 📋 **SH994** (deps: SH993 ⏳, SH987 ✅) **a release that went live and should not have has no verb to undo it as one unit** — The release stores a rollback anchor per item and a rolled-back state, and none of its six operations reaches either, which leaves atomicity with no reverse. → §LXVI.5
 - 📋 **SH995** (deps: —) **there is no publish permission for a person, so any user who may write may also put content live** — mayPublish exists only on an API token and falls back to true for every console session, so an agent can be denied publishing and a curator cannot. → §LXVI.6
 - 📋 **SH996** (deps: SH995) **the console's publish has no dry run, no impact preview and no confirm, while the agent's has all three** — Nothing tells a curator which URLs go live, change or stop resolving before the button writes, and include=impact answers template blast radius, not routes. → §LXVI.7

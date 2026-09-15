@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.release.ShReleaseService;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 
 /**
@@ -46,18 +47,27 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
  * @author Alexandre Oliveira
  * @since 2026.3
  */
-public record ShContentPerspective(ShPostState row, Integer revision) {
+public record ShContentPerspective(ShPostState row, Integer revision, String release) {
+
+    /** The two-field form, before SH993 gave the grammar a release. */
+    public ShContentPerspective(ShPostState row, Integer revision) {
+        this(row, revision, null);
+    }
 
     /** No {@code state} was sent; the path decides. */
-    public static final ShContentPerspective DEFAULT = new ShContentPerspective(null, null);
+    public static final ShContentPerspective DEFAULT = new ShContentPerspective(null, null, null);
 
     private static final String REVISION_PREFIX = "rev:";
+
+    /** SH993 — the page as the named release found it: the version its run replaced. */
+    private static final String RELEASE_PREFIX = "release:";
 
     /** A revision number as its listing shows it: positive, and short enough not to overflow. */
     private static final Pattern REVISION_NUMBER = Pattern.compile("[1-9]\\d{0,8}");
 
     /** The three spellings a caller can send, as the refusal lists them. */
-    private static final List<String> ALLOWED = List.of("draft", "published", "rev:<n>");
+    private static final List<String> ALLOWED =
+            List.of("draft", "published", "rev:<n>", "release:<name>");
 
     /**
      * Parses a {@code state=} value.
@@ -79,6 +89,13 @@ public record ShContentPerspective(ShPostState row, Integer revision) {
             }
             throw new UnknownStateException(sent);
         }
+        if (text.startsWith(RELEASE_PREFIX)) {
+            // The name is checked by the same rule that accepts one on a release address, so a
+            // spelling that could never have been created is refused here rather than resolving to
+            // nothing one layer down.
+            return new ShContentPerspective(null, null,
+                    ShReleaseService.requireName(sent.trim().substring(RELEASE_PREFIX.length())));
+        }
         return switch (text) {
             case "draft" -> new ShContentPerspective(ShPostState.DRAFT, null);
             case "published" -> new ShContentPerspective(ShPostState.PUBLISHED, null);
@@ -88,7 +105,12 @@ public record ShContentPerspective(ShPostState row, Integer revision) {
 
     /** Whether the caller named nothing, so the path's default applies. */
     public boolean isDefault() {
-        return row == null && revision == null;
+        return row == null && revision == null && release == null;
+    }
+
+    /** Whether the caller asked for a page as a release found it (SH993). */
+    public boolean isRelease() {
+        return release != null;
     }
 
     /** Whether the caller asked for a captured revision rather than a row. */
@@ -112,7 +134,24 @@ public record ShContentPerspective(ShPostState row, Integer revision) {
      */
     public ShContentPerspective requireRow(String path, String instead) {
         if (isRevision()) {
-            throw new RevisionNotServedException(path, revision, instead);
+            throw new RevisionNotServedException(path, "rev:" + revision, instead);
+        }
+        // SH993 — a release perspective is a version of a page, so a path that cannot answer a
+        // revision cannot answer this either. Refused rather than read as the default, which would
+        // answer the live page to a caller asking what the launch replaced.
+        return requireVersion(path, instead);
+    }
+
+    /**
+     * This perspective, on a path that serves a revision but not a release (SH993).
+     *
+     * <p>Every path that reads {@code state} has to decide about a word the grammar accepts, and the
+     * failure of not deciding is silent: {@code release:} leaves {@code row} and {@code revision}
+     * both null, which is exactly what "no state was sent" looks like.</p>
+     */
+    public ShContentPerspective requireVersion(String path, String instead) {
+        if (isRelease()) {
+            throw new RevisionNotServedException(path, RELEASE_PREFIX + release, instead);
         }
         return this;
     }
@@ -137,9 +176,9 @@ public record ShContentPerspective(ShPostState row, Integer revision) {
     /** A 400: a revision was asked of a path that reads rows only. */
     public static class RevisionNotServedException extends ShTeachingException {
 
-        public RevisionNotServedException(String path, int revision, String instead) {
+        public RevisionNotServedException(String path, String spelling, String instead) {
             super(ShProblem.badRequest("state-revision-not-served",
-                            "'rev:" + revision + "' is not served on " + path)
+                            "'" + spelling + "' is not served on " + path)
                     .withDetail(path + " reads the draft or the published row. Answering a "
                             + "revision with one of them would show a different page than the one "
                             + "asked for.")

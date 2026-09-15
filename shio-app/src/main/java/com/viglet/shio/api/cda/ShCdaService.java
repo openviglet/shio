@@ -465,7 +465,10 @@ public class ShCdaService {
      * refusal depends on the token alone and says nothing about a site or a post.</p>
      */
     private ShContentPerspective perspective(String state) {
-        ShContentPerspective perspective = ShContentPerspective.parse(state);
+        // SH993 — the delivery API serves what a visitor may see; "the version a launch replaced" is
+        // a question for the agent surface, and answering it here would be a second history.
+        ShContentPerspective perspective = ShContentPerspective.parse(state)
+                .requireVersion("the delivery API", "GET /api/v2/agent/read?address=<address>&state=release:<name>");
         if ((perspective.row() == ShPostState.DRAFT || perspective.isRevision()) && !preview()) {
             throw new PreviewTokenRequiredException(state);
         }

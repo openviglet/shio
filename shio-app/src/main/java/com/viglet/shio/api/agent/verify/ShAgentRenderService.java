@@ -140,7 +140,10 @@ public class ShAgentRenderService {
         if (hasAddress == hasUrl) {
             throw new NoDigestTargetException(hasAddress);
         }
-        ShContentPerspective perspective = ShContentPerspective.parse(state);
+        // SH993 — a release names a version per post, and a digest is about one page at one version;
+        // read it there instead of rendering the live page under the name of a launch.
+        ShContentPerspective perspective = ShContentPerspective.parse(state)
+                .requireVersion("/agent/render", "GET /api/v2/agent/read?address=<address>&state=release:<name>");
         if (hasUrl && !perspective.isDefault()) {
             throw new StateWithUrlException(state);
         }
@@ -169,7 +172,8 @@ public class ShAgentRenderService {
 
     /** As {@link #editable(String)}, for the version of the page {@code state} names (SH990). */
     public ShAgentEditable editable(String rawAddress, String state) {
-        ShContentPerspective perspective = ShContentPerspective.parse(state);
+        ShContentPerspective perspective = ShContentPerspective.parse(state)
+                .requireVersion("/agent/editable", "GET /api/v2/agent/read?address=<address>&state=release:<name>");
         ShPostUnified post = postFor(rawAddress, perspective);
         String address = shAddressResolver.addressOf(post).toString();
 

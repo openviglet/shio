@@ -39,6 +39,7 @@ import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
@@ -375,8 +376,9 @@ public class ShAgentReadService {
      */
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact, String state) {
-        return readDocs(addresses, fields, ids, impact, ShContentPerspective.parse(state).row(),
-                false, false);
+        // SH993 — through the full parse rather than `.row()`: this overload read only the row, so a
+        // `state=release:<name>` or `rev:<n>` sent to it was dropped and the draft answered instead.
+        return read(addresses, fields, ids, impact, state, false);
     }
 
     /**
@@ -442,7 +444,7 @@ public class ShAgentReadService {
         // state, so this path and /preview cannot come to disagree about what a value means.
         ShContentPerspective perspective = ShContentPerspective.parse(state);
         return readDocs(addresses, fields, ids, impact, perspective.row(), digest, links, revisions,
-                perspective.revision());
+                perspective.revision(), perspective.release());
     }
 
     private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
@@ -454,6 +456,19 @@ public class ShAgentReadService {
     private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
                                       boolean impact, ShPostState state, boolean digest,
                                       boolean links, boolean revisions, Integer revision) {
+        return readDocs(addresses, fields, ids, impact, state, digest, links, revisions, revision,
+                null);
+    }
+
+    /**
+     * @param release SH993 — {@code state=release:<name>}: every address is read at the revision that
+     *                release replaced. Resolved per post rather than once, because one release holds
+     *                many pages and each was at its own version when the launch ran.
+     */
+    private List<ShAgentDoc> readDocs(List<String> addresses, List<String> fields, boolean ids,
+                                      boolean impact, ShPostState state, boolean digest,
+                                      boolean links, boolean revisions, Integer revision,
+                                      String release) {
         if (addresses == null || addresses.isEmpty()) {
             throw new NoAddressException();
         }
@@ -468,16 +483,25 @@ public class ShAgentReadService {
             // back to reading them one at a time to find out which one was wrong. A single
             // address still throws, because a one-address read that 404s is correct.
             if (addresses.size() == 1) {
-                docs.add(doc(address, wanted, ids, impact, state, digest, links, revisions, revision));
+                docs.add(doc(address, wanted, ids, impact, state, digest, links, revisions, revision,
+                        release));
                 continue;
             }
             try {
-                docs.add(doc(address, wanted, ids, impact, state, digest, links, revisions, revision));
+                docs.add(doc(address, wanted, ids, impact, state, digest, links, revisions, revision,
+                        release));
             } catch (ShTeachingException failure) {
                 docs.add(failed(address, failure));
             }
         }
         return List.copyOf(docs);
+    }
+
+    /** The revision {@code state=release:<name>} means for this post (SH993). */
+    private Integer anchorOf(ShPostUnified post, String release, String rawAddress) {
+        ShSite site = ShFolderSite.of(post.getShFolder());
+        return shReleaseService.anchorOf(site == null ? null : site.getId(),
+                site == null ? "" : site.getName(), release, post.getId(), rawAddress);
     }
 
     /**
@@ -500,16 +524,21 @@ public class ShAgentReadService {
 
     private ShAgentDoc doc(String rawAddress, List<String> fields, boolean ids, boolean impact,
                            ShPostState state, boolean digest, boolean links, boolean revisions,
-                           Integer revision) {
+                           Integer revision, String release) {
         var resolved = shAddressResolver.resolve(rawAddress);
         ShPostUnified post = rowFor(rawAddress, resolved, state);
+        // SH993 — `state=release:<name>` is a revision per post, resolved here because the post is
+        // what knows which one: a release holds many pages and each was at its own version.
+        // An if rather than a ternary: `int` on one arm and `Integer` on the other unboxes the
+        // whole expression, so `state=published` would have thrown a NullPointerException here.
+        final Integer asOf = release == null ? revision : anchorOf(post, release, rawAddress);
         // SH987 — `state=rev:<n>` answers with what the page said then, at the address it is at
         // now. The row is still read, because everything around the document — the type, the
         // folder, the links — is a fact about the post rather than about the revision.
-        ShRevisionRow asked = revision == null ? null : shPostRevisionService
-                .row(post.getId(), revision)
+        ShRevisionRow asked = asOf == null ? null : shPostRevisionService
+                .row(post.getId(), asOf)
                 .orElseThrow(() -> ShPostStateNotFoundException.noSuchRevision(post.getId(),
-                        revision, shPostRevisionService.rows(post.getId()).stream()
+                        asOf, shPostRevisionService.rows(post.getId()).stream()
                                 .map(ShRevisionRow::version).toList()));
         JsonNode data = asked != null ? asked.data() : readTree(post.getData());
         JsonNode projected = fields.isEmpty() ? data : project(data, fields, post);

@@ -183,6 +183,28 @@ public class ShReleaseService {
         return touched(release, actor);
     }
 
+    /**
+     * SH993 — the revision {@code state=release:<name>} answers with: what this post was immediately
+     * before the release ran.
+     *
+     * <p>The version the release <em>published</em> is what {@code state=published} already reads, so
+     * the one a release knows and nothing else does is the one it replaced — which is also the anchor
+     * a rollback returns to, so the read and the undo are about the same number.</p>
+     */
+    @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
+    public int anchorOf(String siteId, String siteName, String name, String postId, String address) {
+        ShRelease release = require(siteId, siteName, name);
+        ShReleaseItem item = shReleaseItemRepository
+                .findByReleaseIdOrderByAddedAtAsc(release.getId()).stream()
+                .filter(held -> held.getPostId().equals(postId))
+                .findFirst()
+                .orElseThrow(() -> new PostNotInReleaseException(name, address));
+        if (item.getVersionBefore() == null) {
+            throw new ReleaseHasNotRunException(name, release.getState());
+        }
+        return item.getVersionBefore();
+    }
+
     /** SH993 — the releases the sweep should run now, oldest instant first. */
     @Transactional(readOnly = true)
     public List<ShRelease> dueRuns(Instant now) {
@@ -243,6 +265,34 @@ public class ShReleaseService {
                     .withFix("Create it first with release.upsert, in the same batch or before.")
                     .withExample("{\"op\":\"release.upsert\",\"address\":\"release:" + site + "/"
                             + name + "\"}"));
+        }
+    }
+
+    /** SH993 — a page read as of a release that does not hold it. */
+    public static class PostNotInReleaseException extends ShTeachingException {
+
+        public PostNotInReleaseException(String name, String address) {
+            super(ShProblem.of("post-not-in-release", HttpStatus.NOT_FOUND,
+                            "'" + name + "' does not hold " + address)
+                    .withDetail("`state=release:" + name + "` reads what this page was before that "
+                            + "release ran, and the release never touched it.")
+                    .withFix("List what it holds with GET /api/v2/agent/find?site=<site>&release="
+                            + name + ", or read the page with state=published.")
+                    .withExample("state=published"));
+        }
+    }
+
+    /** SH993 — a page read as of a release that has not run yet, so nothing was replaced. */
+    public static class ReleaseHasNotRunException extends ShTeachingException {
+
+        public ReleaseHasNotRunException(String name, String state) {
+            super(ShProblem.conflict("release-has-not-run",
+                            "'" + name + "' is " + state + ", so it has replaced nothing yet")
+                    .withDetail("`state=release:<name>` reads what a page was before the release "
+                            + "ran. Until it runs there is no such version, and the draft is what "
+                            + "the page will become rather than what it was.")
+                    .withFix("Run it with release.run, or read the page with state=draft.")
+                    .withExample("state=draft"));
         }
     }
 

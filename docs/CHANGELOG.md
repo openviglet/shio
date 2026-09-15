@@ -1734,7 +1734,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH990** — Every content read takes state through ShContentPerspective: the agent reads over REST, MCP and the CLI, /preview with revisions, and the CDA and GraphQL, where a draft or revision needs a preview token (design §LXVI.1 recorded in `docs/agents/agent-surface.md`).
 - **SH991** — What is scheduled reads back everywhere: find, shio_find and read, shio schedule, and the console's Scheduled page with its timezone stated, and a scheduled transition names who set it (design §LXVI.2 recorded in `docs/agents/console-ui.md`).
 - **SH992** — shio_publish and shio publish take when and cancel, post.unpublish honours when so a dated takedown waits, a cancel clears only its own instant, and shio_write refuses op fields it does not declare.
-- **SH993 (the unit and the run)** — A release is a named set of posts in one site — sh_release, the release: address, release.upsert/add/remove, find?release= — and release.run publishes it in one transaction, confirmed, now or at an instant.
+- **SH993 (the unit, the run and the read)** — A release is a named set of posts in one site; release.run publishes it in one transaction, confirmed, now or at an instant; and state=release:<name> reads a page as that release found it.
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

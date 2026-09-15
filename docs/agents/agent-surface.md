@@ -3211,3 +3211,24 @@ release including the ones that publish as noops — an item with no anchor is t
 silently skip (SH994). A release above `shio.agent.batch.max-ops` is refused while planning, naming the
 count: split it and the atomicity is gone, which is the thing a release is for. A release naming a post
 whose draft was deleted is a 409 rather than a shorter launch.
+
+### `state=release:<name>` (SH993, third slice)
+
+The version grammar gains a fourth form, and it answers the one question a release knows and nothing
+else does: **what a page was immediately before that release ran**. What the launch *put* live is what
+`state=published` already reads; what it replaced is the item's `version_before`, which is also
+SH994's rollback anchor — so the read and the undo are about the same number.
+
+It is served on `/agent/read` only, and resolved **per post**, because one release holds many pages and
+each was at its own version. Two refusals a reader can act on: a page the release does not hold is
+`post-not-in-release` (404, pointing at `find?release=`), and a release that has not run is
+`release-has-not-run` (409) — until it runs there is no such version, and the draft is what the page
+*will become* rather than what it was.
+
+**Every other path that reads `state` had to decide about it**, and not deciding is the silent kind of
+wrong: `release:` leaves both `row` and `revision` null, which is exactly what "no state was sent"
+looks like. So `requireRow` refuses it wherever it already refuses `rev:<n>`, and a second guard,
+`requireVersion`, refuses it on the paths that *do* serve revisions — `/agent/render`,
+`/agent/editable`, `/preview` and the delivery API — each naming the read that answers it. One overload
+of `read` was passing `parse(state).row()` and dropping the rest; it now goes through the full parse,
+which is where a `rev:<n>` sent to it was being answered with the draft.
