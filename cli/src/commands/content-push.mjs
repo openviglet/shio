@@ -20,6 +20,8 @@
  */
 import { join } from "node:path";
 
+import { READ_ONLY_FIELDS, releaseOps } from "../releases-store.mjs";
+import { readLocalReleases, readRemoteReleases } from "../releases-sync.mjs";
 import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
@@ -338,6 +340,13 @@ export async function run(flags, _positionals, ctx) {
     );
   }
 
+  // SH993 — the releases, applied after the content and outside the document, for the reason the
+  // notes below are: a release is not content, it GROUPS content, so folding it into the
+  // desired-state document would make it the thing `--prune` deletes when a tree stops naming it.
+  // The file declares a membership and a description; `state` and `scheduledAt` are read back and
+  // never pushed, because a push that could run a launch is a launch a merge can trigger.
+  await pushReleases(client, ctx, { sites: sitesOf(local, markers), site, planOnly });
+
   // SH161 — the site memory, applied after the content and outside the document.
   //
   // Deliberately *not* compiled into the desired-state document, and this is the load-bearing
@@ -556,6 +565,36 @@ async function writeMoveBaseline(ctx, path, baseline, moves) {
 function dirOfPath(path) {
   const cut = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
   return cut <= 0 ? path : path.slice(0, cut);
+}
+
+/**
+ * SH993 — makes the instance's releases match the files, and says what it left alone.
+ *
+ * One batch, not one per release: a launch is a set and the ops that assemble it should land the way
+ * the launch does. A release that already ran is skipped with its state named — converging a closed
+ * one would be refused op by op, halfway through, which is the failure this reports instead.
+ */
+async function pushReleases(client, ctx, { sites, site, planOnly }) {
+  const local = await readLocalReleases(ctx, { site });
+  if (!local.length) {
+    return;
+  }
+  const remote = await readRemoteReleases(client, sites.length ? sites : [...new Set(local.map((r) => r.site))]);
+  const { ops, skipped } = releaseOps(local, remote);
+  for (const row of skipped) {
+    ctx.stdout.write(`shio push --content: left ${row.address} alone — ${row.reason}.\n`);
+  }
+  if (!ops.length) {
+    return;
+  }
+  if (!planOnly) {
+    await client.batch({ dryRun: false, ops });
+  }
+  ctx.stdout.write(
+    `shio push --content: ${ops.length} release op(s)${planOnly ? " (not written)" : ""}; ` +
+      `${READ_ONLY_FIELDS.join(" and ")} are read from the instance, never pushed — running a ` +
+      "release is `release.run`, which takes a confirm token.\n",
+  );
 }
 
 async function pushNotes(client, ctx, { base, sites, dir, planOnly }) {

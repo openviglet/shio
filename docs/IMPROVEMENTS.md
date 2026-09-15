@@ -1505,27 +1505,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.4 A release: a named set that publishes atomically (SH993)
-
-Each scheduled transition runs in its own transaction, and the CLI's publish splits
-above the batch ceiling and says so: atomic per chunk, not across them. So no surface
-can publish a two-hundred-page site atomically, and there is no release entity or
-release op anywhere. The grouping idea exists for another job: the review queue groups
-changes by agent session with approve and revert over the set.
-
-A release is a named, addressable set of post versions that publish atomically.
-sh_release holds name, description, site, a state of PLANNED, SCHEDULED, PUBLISHED or
-ROLLED_BACK, scheduled_at, actor and tenant_id; sh_release_item holds the release, the
-post, added_at and version_before, the AZ2 revision that is its rollback anchor.
-release.create, add, remove, schedule, run and archive join the batch vocabulary, so
-plan computes everything without writing and run requires a confirm token from its own
-plan, the widest blast radius in the product. The service compiles a release into ops
-for the existing runner, and a release above the op ceiling is refused at plan time
-naming the count.
-
-It projects to shio/releases/<name>.yaml, three-way merged like content, so a launch is
-reviewable in a pull request, and it reads back as state=release:<name>.
-
 ### LXVI.5 Rolling a release back, as the unit it went live as (SH994)
 
 BA4 records version_before on every release item and declares ROLLED_BACK among its

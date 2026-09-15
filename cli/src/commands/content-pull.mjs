@@ -24,6 +24,8 @@
  */
 import { join } from "node:path";
 
+import { RELEASES_DIR } from "../releases-store.mjs";
+import { readRemoteReleases, writeReleases } from "../releases-sync.mjs";
 import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
@@ -484,6 +486,20 @@ export async function run(flags, _positionals, ctx) {
       },
       flags.baseFile ?? BASE_FILE,
     );
+  }
+
+  // SH993 — the releases of the sites this projection covers, written beside the content they
+  // group. After the content, because a release file names addresses and the pages should be on
+  // disk by the time somebody reads it.
+  if (!dryRun) {
+    const releases = await readRemoteReleases(agent, siteScope);
+    const { written, removed } = await writeReleases(ctx, releases, { site });
+    if (written.length || removed.length) {
+      ctx.stdout.write(
+        `shio pull --content: ${written.length} release(s) under ${RELEASES_DIR}` +
+          `${removed.length ? `, ${removed.length} no longer listed and removed` : ""}\n`,
+      );
+    }
   }
 
   ctx.stdout.write(render(report, { dir, dryRun, truncated: truncated || foldersTruncated }));

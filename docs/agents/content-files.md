@@ -673,3 +673,27 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   - Deleting an asset is **not** projected: bytes go when their post goes (SH38's cleanup
     listener), and a File post can be referenced by content this tree does not own.
 
+
+## `shio/releases/<site>/<name>.yaml` (SH993)
+
+A release projects to a file, so a launch is reviewable in a pull request rather than only in an
+instance. `shio pull --content` writes one per release of the sites it covers, after the content —
+a release file names addresses, and the pages should be on disk by the time somebody reads it — and
+removes the file of a release the instance no longer lists, because archiving is how a launch stops
+being something the next reader scrolls past.
+
+**Two of the five fields are read-only, and that is the safety decision in this projection.** `state`
+and `scheduledAt` are written so a reviewer can see what a release is doing, and ignored on push: a
+file that could schedule or publish a launch would make `shio push --content` — the command a CI job
+runs on every merge — a way to put forty pages live by editing a line. Publishing stays `release.run`
+with its confirm token (P7). What the file declares is the **membership and the description**, which
+is the half a person actually reviews, and a push converges those with `release.upsert`,
+`release.add` and `release.remove` in one batch.
+
+A release that already ran is left alone with its state named in the report: converging a closed one
+would be refused op by op, halfway through a launch somebody already shipped. Releases travel
+**outside** the desired-state document, like the SH161 site memory and for the same reason — a release
+is not content, it *groups* content, so folding it in would make it the thing `--prune` deletes when a
+tree stops naming it. The format is hand-written and byte-stable (P5): a re-pull of unchanged content
+is an empty diff, and the parser refuses a line it cannot read rather than producing a launch that is
+missing pages.
