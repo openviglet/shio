@@ -1,8 +1,8 @@
 {
   "acl.title": "Permissions",
   "acl.permissions": "Permissions",
-  "acl.description": "Control who can read and write this content.",
-  "acl.descriptionFor": "Control who can read and write \"{{name}}\".",
+  "acl.description": "Control who can read, write and publish this content.",
+  "acl.descriptionFor": "Control who can read, write and publish \"{{name}}\".",
   "acl.openHint": "No restrictions — anyone signed in can access this. Add a grant to restrict it.",
   "acl.addGrant": "Add grant",
   "acl.saved": "Permissions saved",
@@ -11,5 +11,6 @@
   "acl.principal.GROUP": "Group",
   "acl.principal.ROLE": "Role",
   "acl.permission.READ": "Read",
-  "acl.permission.WRITE": "Write"
+  "acl.permission.WRITE": "Write",
+  "acl.permission.PUBLISH": "Publish"
 }

@@ -1,0 +1,30 @@
+databaseChangeLog:
+  # SH995 — every WRITE grant becomes PUBLISH.
+  #
+  # `ShAclPermission` gains a third level above WRITE, because "may put content live" had been a flag
+  # on an API token whose accessor returns true for every console session: the agent was the one actor
+  # the product could stop from publishing, and a team had no separation between author and approver.
+  #
+  # The migration is the design decision rather than a detail. An upgrade must not take a capability
+  # away from somebody who had it — a curator who could publish on Monday and cannot on Tuesday reads
+  # as the product breaking, and the operator who would grant it back does not know yet that the level
+  # exists. So everyone keeps what they had, and separation is opt-in from here.
+  #
+  # Stored as the enum name, so this is a string update and nothing re-orders. SH26: preserve
+  # identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh995-acl-write-becomes-publish
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: sh_content_acl
+      changes:
+        - update:
+            tableName: sh_content_acl
+            columns:
+              - column:
+                  name: permission
+                  value: PUBLISH
+            where: permission = 'WRITE'

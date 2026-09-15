@@ -171,6 +171,32 @@ class ShContentAclServiceTest {
     }
 
     @Test
+    void sh995AWriteGrantSavesAndDoesNotPublish() {
+        // SH995's assertion, and the separation the product had no way to express: a curator who may
+        // edit this branch of the tree is not automatically the one who decides it goes live.
+        aclService.replaceAcl(folderId, List.of(
+                new AclEntry(ShAclPrincipalType.USER, "alice", ShAclPermission.WRITE),
+                new AclEntry(ShAclPrincipalType.USER, "bob", ShAclPermission.PUBLISH)));
+
+        authAs("alice");
+        assertThat(aclService.canWrite(postId))
+                .as("SH995: the draft is still hers to save — this is a level above write, not a "
+                        + "narrower write")
+                .isTrue();
+        assertThat(aclService.canPublish(postId)).isFalse();
+        assertThatThrownBy(() -> aclService.requirePublish(postId))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("the draft is saved");
+
+        authAs("bob");
+        assertThat(aclService.canPublish(postId)).isTrue();
+        assertThat(aclService.canWrite(postId))
+                .as("SH995: PUBLISH implies WRITE, so an approver is not locked out of the page "
+                        + "they are approving")
+                .isTrue();
+    }
+
+    @Test
     void adminBypassesAnyAcl() {
         aclService.replaceAcl(folderId, List.of(
                 new AclEntry(ShAclPrincipalType.USER, "bob", ShAclPermission.READ)));

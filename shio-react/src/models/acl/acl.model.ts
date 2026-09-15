@@ -1,5 +1,6 @@
 export type ShAclPrincipalType = "USER" | "GROUP" | "ROLE"
-export type ShAclPermission = "READ" | "WRITE"
+/** SH995 — PUBLISH implies WRITE implies READ, the order the backend enum declares. */
+export type ShAclPermission = "READ" | "WRITE" | "PUBLISH"
 
 /** A single content-access grant (SH54), mirroring the backend `ShContentAcl`. */
 export interface ShContentAcl {

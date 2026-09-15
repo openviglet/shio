@@ -170,7 +170,10 @@ public class ShPostUnifiedAPI {
             @PathVariable String id,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
             Principal principal) {
-        shContentAclService.requireWrite(id);
+        // SH995 — PUBLISH rather than WRITE: a curator who may edit this page is not automatically
+        // the one who decides it goes live. The draft is saved either way, which is what the refusal
+        // says.
+        shContentAclService.requirePublish(id);
         // SH730's rule, and the agent's: the DRAFT is the subject. Publishing is not a content
         // change, so matching against the PUBLISHED row would refuse the case publishing exists for.
         shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT);
@@ -181,7 +184,7 @@ public class ShPostUnifiedAPI {
 
     @PostMapping("/{id}/unpublish")
     public ResponseEntity<Void> unpublish(@PathVariable String id, Principal principal) {
-        shContentAclService.requireWrite(id);
+        shContentAclService.requirePublish(id);
         shPostUnifiedWriteService.unpublish(id, principal != null ? principal.getName() : null);
         return ResponseEntity.noContent().build();
     }
@@ -411,7 +414,8 @@ public class ShPostUnifiedAPI {
     public ResponseEntity<ShConsolePost> schedule(@PathVariable String id,
                                                   @RequestBody SchedulePayload payload,
                                                   Principal principal) {
-        shContentAclService.requireWrite(id);
+        // SH995 — a schedule is a publish with a date on it.
+        shContentAclService.requirePublish(id);
         try {
             return ResponseEntity.ok(shConsolePostReadService.written(shPostUnifiedWriteService.schedule(
                     id, toInstant(payload.publishAt()), toInstant(payload.unpublishAt()),

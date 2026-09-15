@@ -1,8 +1,8 @@
 {
   "acl.title": "Permissões",
   "acl.permissions": "Permissões",
-  "acl.description": "Controle quem pode ler e escrever este conteúdo.",
-  "acl.descriptionFor": "Controle quem pode ler e escrever \"{{name}}\".",
+  "acl.description": "Controle quem pode ler, escrever e publicar este conteúdo.",
+  "acl.descriptionFor": "Controle quem pode ler, escrever e publicar \"{{name}}\".",
   "acl.openHint": "Sem restrições — qualquer pessoa autenticada pode acessar. Adicione uma concessão para restringir.",
   "acl.addGrant": "Adicionar concessão",
   "acl.saved": "Permissões salvas",
@@ -11,5 +11,6 @@
   "acl.principal.GROUP": "Grupo",
   "acl.principal.ROLE": "Papel",
   "acl.permission.READ": "Leitura",
-  "acl.permission.WRITE": "Escrita"
+  "acl.permission.WRITE": "Escrita",
+  "acl.permission.PUBLISH": "Publicar"
 }

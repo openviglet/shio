@@ -1736,6 +1736,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH992** — shio_publish and shio publish take when and cancel, post.unpublish honours when so a dated takedown waits, a cancel clears only its own instant, and shio_write refuses op fields it does not declare.
 - **SH993** — A release projects to shio/releases/<site>/<name>.yaml, three-way with the tree: the file declares membership and description, while state and scheduledAt are read-only so a push cannot launch.
 - **SH994** — release.rollback puts a published release back in one transaction: each page to the revision it replaced, pages the launch first published come down, and the release reads ROLLED_BACK.
+- **SH995 (the permission)** — PUBLISH sits above WRITE, every publish path asks for it, a lint holds the ones that do not, and every existing WRITE grant was migrated so nobody loses a capability.
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

@@ -13,7 +13,8 @@ import { reportProblem } from "@/lib/problem"
 const service = new ShAclService()
 
 const PRINCIPAL_TYPES: ShAclPrincipalType[] = ["USER", "GROUP", "ROLE"]
-const PERMISSIONS: ShAclPermission[] = ["READ", "WRITE"]
+// SH995 — three levels, in the order they widen: a grant of PUBLISH carries WRITE with it.
+const PERMISSIONS: ShAclPermission[] = ["READ", "WRITE", "PUBLISH"]
 
 /**
  * SH54 — edit the content ACL of a folder/post. An empty list means "open"

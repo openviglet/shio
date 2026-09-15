@@ -806,3 +806,28 @@ that is recorded as a decision: three fixtures the scan should have treated as p
 hand-persisted row, one with its site set, one created through the write path and overwritten — all
 came back with an empty report, and each attempt was becoming a test of `scan()` rather than of this
 rule. The rule's one call sits beside the link and image checks that walk the same fields.
+
+## PUBLISH, a permission above WRITE (SH995)
+
+`ShAclPermission` was READ and WRITE for two blocks, and "may put content live" lived only on an API
+token — whose accessor returns **true when no token is in play**, which is every console session. So
+the *agent*, whose work the review queue exists to gate, was the one actor the product could stop from
+publishing, and a team had no separation between the person who writes and the person who approves.
+
+There are now three levels, ordered: PUBLISH ⊇ WRITE ⊇ READ, with `satisfies` comparing ordinals rather
+than listing pairs. `ShContentAclService.requirePublish` is what every path that changes the live site
+asks, and its refusal says what to do about it — the draft is saved either way, and somebody granted
+PUBLISH on that branch is who finishes it. **Every existing WRITE grant became PUBLISH**
+(`v2026.3.34`): an upgrade must not take a capability from somebody who had it, so separation is opt-in
+from the day it exists rather than a surprise the morning after. The API token's `mayPublish` is
+unchanged and still a second lock — a token needs both.
+
+**The sweep landed before the fixes (SH322).** "Where does this product publish" is not a question a
+reader can answer — thirteen call sites across six classes, and the one that is missed does not fail,
+it silently lets somebody publish. `ShPublishPermissionLintTest` reads every method that calls the
+write service's publish, unpublish or schedule and asserts it asks, with four declared exemptions:
+`ShPostUnifiedWriteService` (it *is* the writer), `ShPostScheduler` (a timer acting as nobody, firing
+what somebody authorised when they scheduled it), `ShReleaseRunner` (the ops ask; asking here would
+gate the timer) and `ShPostDraftMergeService` (its callers ask). It found nine unguarded methods,
+including the console's own publish, unpublish and schedule routes and the review queue's approve —
+the one act a team most wants held apart from writing.

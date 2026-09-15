@@ -228,7 +228,9 @@ public class ShReviewService {
                 continue;
             }
             try {
-                shContentAclService.requireWrite(postId);
+                // SH995 — approving an agent's run publishes it, and approval is exactly the act a
+                // team wants to hold apart from writing: the reviewer needs PUBLISH, not WRITE.
+                shContentAclService.requirePublish(postId);
                 shPostUnifiedWriteService.publish(postId, actor);
                 done.add(postId);
             } catch (RuntimeException e) {
@@ -308,11 +310,17 @@ public class ShReviewService {
                 }
                 shPostUnifiedWriteService.restoreDraftFromPublished(postId, actor);
             }
-            case PUBLISH -> shPostUnifiedWriteService.unpublish(postId, actor);
+            // SH995 — the two branches that change what visitors see ask for PUBLISH. Reverting the
+            // rest of a run is a write: it puts a draft back, which is what WRITE is for.
+            case PUBLISH -> {
+                shContentAclService.requirePublish(postId);
+                shPostUnifiedWriteService.unpublish(postId, actor);
+            }
             case UNPUBLISH -> {
                 if (!hasDraft) {
                     return Optional.of("no draft to publish back");
                 }
+                shContentAclService.requirePublish(postId);
                 shPostUnifiedWriteService.publish(postId, actor);
             }
             case DELETE -> {

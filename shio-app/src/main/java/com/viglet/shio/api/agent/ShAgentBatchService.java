@@ -986,10 +986,10 @@ public class ShAgentBatchService {
         }
         if (!session.dryRun) {
             for (String going : undo.restores()) {
-                shContentAclService.requireWrite(going);
+                shContentAclService.requirePublish(going);
             }
             for (String going : undo.downs()) {
-                shContentAclService.requireWrite(going);
+                shContentAclService.requirePublish(going);
             }
             shReleaseRunner.rollback(release, session.actor);
         }
@@ -1078,8 +1078,9 @@ public class ShAgentBatchService {
             throw new ReleaseTooLargeException(address, plan.size(), max);
         }
         if (!session.dryRun) {
+            // SH995 — every page this launch puts live is asked for by name.
             for (String going : plan.publishes()) {
-                shContentAclService.requireWrite(going);
+                shContentAclService.requirePublish(going);
             }
             shReleaseRunner.run(release, session.actor);
         }
@@ -2875,7 +2876,9 @@ public class ShAgentBatchService {
             return session.change(op, address, Change.NOOP, null, draft.getId());
         }
         if (!session.dryRun) {
-            shContentAclService.requireWrite(draft.getId());
+            // SH995 — PUBLISH, not WRITE: this is the call that changes what visitors see, and until
+            // now anybody who could edit the page could also put it live.
+            shContentAclService.requirePublish(draft.getId());
             shPostUnifiedWriteService.publish(draft.getId(), session.actor);
         }
         return session.change(op, address, Change.PUBLISH, null, draft.getId());
@@ -2984,7 +2987,8 @@ public class ShAgentBatchService {
                 return session.change(op, address, Change.NOOP, "no " + verb + " scheduled", id);
             }
             if (!session.dryRun) {
-                shContentAclService.requireWrite(id);
+                // SH995 — a schedule is a publish with a date on it, so it asks the same permission.
+                shContentAclService.requirePublish(id);
                 shPostUnifiedWriteService.schedule(id, publishing ? null : publishAt,
                         publishing ? unpublishAt : null, session.actor);
             }
@@ -2997,7 +3001,7 @@ public class ShAgentBatchService {
                     "already scheduled to " + verb + " at " + pending, id);
         }
         if (!session.dryRun) {
-            shContentAclService.requireWrite(id);
+            shContentAclService.requirePublish(id);
             shPostUnifiedWriteService.schedule(id, publishing ? when : publishAt,
                     publishing ? unpublishAt : when, session.actor);
         }
@@ -3039,7 +3043,8 @@ public class ShAgentBatchService {
                 state(site, address, ShPostState.DRAFT).orElse(null), published.get());
         String id = published.get().getId();
         if (!session.dryRun) {
-            shContentAclService.requireWrite(id);
+            // SH995 — taking a page down is the same act as putting it up, from the other side.
+            shContentAclService.requirePublish(id);
             shPostUnifiedWriteService.unpublish(id, session.actor);
         }
         return session.change(op, address, Change.UNPUBLISH, null, id);
@@ -3497,7 +3502,7 @@ public class ShAgentBatchService {
                 return session.change(op, address, Change.NOOP, null, draft.getId());
             }
             if (!session.dryRun) {
-                shContentAclService.requireWrite(draft.getId());
+                shContentAclService.requirePublish(draft.getId());
                 shPostUnifiedWriteService.publish(draft.getId(), session.actor);
             }
             return session.change(op, address, Change.PUBLISH, null, draft.getId());
@@ -3507,7 +3512,7 @@ public class ShAgentBatchService {
         }
         requireDraftBehind(op, address, draft, published);
         if (!session.dryRun) {
-            shContentAclService.requireWrite(published.getId());
+            shContentAclService.requirePublish(published.getId());
             shPostUnifiedWriteService.unpublish(published.getId(), session.actor);
         }
         return session.change(op, address, Change.UNPUBLISH, null, published.getId());

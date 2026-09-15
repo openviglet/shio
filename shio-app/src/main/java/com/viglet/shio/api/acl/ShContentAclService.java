@@ -98,6 +98,12 @@ public class ShContentAclService {
         return hasPermission(objectId, ShAclPermission.WRITE);
     }
 
+    /** SH995 — whether the current user may change what visitors see. */
+    @Transactional(readOnly = true)
+    public boolean canPublish(String objectId) {
+        return hasPermission(objectId, ShAclPermission.PUBLISH);
+    }
+
     /** Throw {@link AccessDeniedException} (→ 403) unless the current user may read it. */
     /**
      * SH225 — annotated because this is the <b>entry point</b>, not because `canRead` is.
@@ -120,6 +126,21 @@ public class ShContentAclService {
     public void requireWrite(String objectId) {
         if (!canWrite(objectId)) {
             throw new AccessDeniedException("No write permission on " + objectId);
+        }
+    }
+
+    /**
+     * SH995 — throw unless the current user may put this object in front of visitors.
+     *
+     * <p>The message says what to do about it, because the person who reads it is a curator being
+     * told no by a product that used to say yes: the draft is saved either way, and somebody with
+     * PUBLISH on this branch of the tree is who finishes it.</p>
+     */
+    @Transactional(readOnly = true)
+    public void requirePublish(String objectId) {
+        if (!canPublish(objectId)) {
+            throw new AccessDeniedException("No publish permission on " + objectId
+                    + " — the draft is saved, and somebody granted PUBLISH here can put it live");
         }
     }
 

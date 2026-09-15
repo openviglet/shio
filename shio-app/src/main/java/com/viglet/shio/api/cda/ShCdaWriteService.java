@@ -52,15 +52,19 @@ public class ShCdaWriteService {
     private final ShCdaMapper mapper;
     // SH335 — the merge itself is not this surface's; only the allow-list that guards it is.
     private final ShPostDraftMergeService draftMergeService;
+    /** SH995 — publishing from the editor is the same permission it is everywhere else. */
+    private final com.viglet.shio.api.acl.ShContentAclService shContentAclService;
 
     public ShCdaWriteService(ShPostUnifiedRepository shPostUnifiedRepository,
                              ShPostUnifiedWriteService shPostUnifiedWriteService,
                              ShCdaMapper mapper,
-                             ShPostDraftMergeService draftMergeService) {
+                             ShPostDraftMergeService draftMergeService,
+                             com.viglet.shio.api.acl.ShContentAclService shContentAclService) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.mapper = mapper;
         this.draftMergeService = draftMergeService;
+        this.shContentAclService = shContentAclService;
     }
 
     /**
@@ -97,6 +101,8 @@ public class ShCdaWriteService {
 
     /** Promote the post's draft to {@code PUBLISHED} (Universal Editor "publish"). */
     public Optional<ShCdaPost> publish(String postId, String actor) {
+        // SH995 — the delivery API's write path publishes too, and asked for nothing above write.
+        shContentAclService.requirePublish(postId);
         Optional<ShPostUnified> draft = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
                 .filter(post -> siteAllowed(siteIdOf(post)));
         if (draft.isEmpty()) {
