@@ -1639,26 +1639,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-### LXVII.3 Decisions per change, with a reason (SH1001)
-
-The review API has two mutations, each taking a session: approve publishes every draft
-the run wrote, revert undoes all of them. The console renders two buttons per run; the
-entry rows carry badges and a diff button and no control. Each entry already has a
-revertable flag, and the outcome DTO already reports skipped entries with reasons, so
-the surface can report per-post outcomes and cannot take per-post instructions.
-
-Move the decision from the run to the change. A decisions call takes a list of post,
-decision of APPROVE, REJECT or HOLD, and note, applied atomically and reporting per
-entry in the existing outcome shape; the two whole-run verbs become that call over every
-entry. sh_review_decision makes HOLD and REJECT durable, since today a decision's only
-record is its side effect, and the pending count subtracts held entries. Approve
-requires BA6's PUBLISH.
-
-The queue gains a CLI, shio review list, show and decide with notes, so CI can gate on
-it, and a dry run showing what approve would publish and skip. The console gets
-per-entry selection with range select, a required note on reject, and keyboard triage,
-because this is a screen a curator lives in.
-
 ### LXVII.4 The verdict, readable by the one it is about (SH1002)
 
 The conformance test holds the review queue as a decided exception, because an agent

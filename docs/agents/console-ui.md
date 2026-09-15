@@ -1785,3 +1785,26 @@ the console and holds every open run. Capped at twenty pages with the cut report
 when something was comparable — "0 of 0 pages" is a sentence about the instrument, not about the
 run. The count travels with the list because without the denominator an empty `moved` reads as
 "nothing moved" when it may mean "nothing was comparable".
+
+## Triaging a run, one change at a time (SH1001)
+
+`ReviewTriage` is its own component rather than more of the queue page: the page renders a list of
+runs, and this is a tool over one run's changes with a selection, a keyboard and a refusal of its
+own. The two whole-run buttons stay, because "all of it" is a real answer and the common one.
+
+**Shift-click takes a range** from the last box touched — a run is often one sweep, and eleven pages
+of the same change should not be eleven clicks. **Reject is disabled until a reason is typed**,
+because the server refuses one without and a curator should not learn the rule from a refusal; the
+keyboard path refuses it too, or the rule would be a property of one button. `HOLD` takes no reason,
+which is what keeps the requirement from taxing the act of parking something.
+
+**Keyboard triage**: `j`/`k` move, `x` selects, `a`/`h` decide the selection — or the row under the
+cursor when nothing is selected. `r` **focuses the reason box rather than rejecting**: the one
+destructive key on this list must not be a keystroke away from acting. None of them fire while the
+reason is being typed, or `a` in "the prices are wrong" would approve the page.
+
+The decision is one request for the whole triage, and the page re-reads the run and the badge after
+it (SH207): a page showing the old answer after an action is the one number a curator learns to
+distrust. `review.service.ts` also stopped importing bare `axios` — it worked only because
+`@/lib/axios` mutates the global defaults and something else had been imported first, so CSRF and
+the base URL were arriving by import order.

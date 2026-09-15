@@ -392,6 +392,57 @@ export class ShioAgentClient {
   }
 
   /**
+   * GET /api/v2/review/sessions (SH1001) — the runs, newest first.
+   *
+   * Not under `/agent/**` on purpose, and the client follows the server's reason: this is the
+   * surface that reviews an agent, so an agent's own credential should not be what approves its
+   * work. The CLI reaches it with the console credentials it already carries.
+   */
+  async reviewSessions(limit) {
+    return this.#json(`${this.baseUrl}/api/v2/review/sessions`
+      + (limit ? `?limit=${encodeURIComponent(limit)}` : ""));
+  }
+
+  /** GET /api/v2/review/sessions/{session} (SH1001) — one run's changes and its decisions. */
+  async reviewDetail(session) {
+    return this.#json(`${this.baseUrl}/api/v2/review/sessions/${encodeURIComponent(session)}`);
+  }
+
+  /** POST /api/v2/review/sessions/{session}/decisions (SH1001) — one call, one transaction. */
+  async reviewDecide(session, decisions) {
+    return this.#json(
+      `${this.baseUrl}/api/v2/review/sessions/${encodeURIComponent(session)}/decisions`,
+      { method: "POST", body: JSON.stringify(decisions) },
+    );
+  }
+
+  /**
+   * One JSON request against an absolute URL on this instance.
+   *
+   * The review surface is not under `/agent/**`, so `#get` cannot reach it — and a second copy of
+   * the auth, headers and error handling is the thing that comes to disagree with the first.
+   */
+  async #json(url, { method = "GET", body } = {}) {
+    const headers = {
+      Authorization: this.#authHeader(),
+      Accept: "application/json",
+      ...this.#runHeaders(),
+    };
+    if (body) headers["Content-Type"] = "application/json";
+    const res = await this.fetch(url, { method, headers, body });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        detail = await res.text();
+      } catch {
+        /* ignore */
+      }
+      throw new ShioHttpError(res.status, url, detail);
+    }
+    return res.json();
+  }
+
+  /**
    * GET /api/v2/agent/runs (SH1000) — who these runs were, and what each said it was for.
    *
    * Asked by the ids the feed already names in `agent`, never listed: the premise is one sentence

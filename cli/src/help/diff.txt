@@ -1,21 +1,17 @@
 shio diff --site <name> - compare what a replica serves with what declared it
 
-Walks the capture's pages, asks the instance for each one, and reads the served bytes with
-the same scanner the capture used: counts, not pixels. Exits 1 when a page lost something;
-a fact the replica GAINED is never a failure.
+Reads the served bytes with the capture's own scanner: counts, not pixels. Exits 1 when a
+page lost something; a fact the replica GAINED is never a failure.
 
-A page composed from the section vocabulary drops the source's nav, favicon and stylesheet
-by design, so --mode says what the counts are a claim about (default: the plan).
+--mode says what the counts are a claim about (default: the plan).
 
   --site <name>        The site the replica lives in (required)
   --against <what>     Which declaration to judge against (default: capture)
                        capture  - the served page against what the source declared
                        proposal - the content the instance holds against what the plan
-                                  said the conversion would make. Reads documents, not
-                                  the wire
+                                  said the conversion would make
                        published - the draft against what is live: which fields would
-                                  change if you published now. Needs no capture and no
-                                  plan
+                                  change if you published now
                        revision - the draft against a captured revision. Needs --address
                                   and --from
   --from <n>           The revision (--against revision); `shio versions` lists them
@@ -31,7 +27,7 @@ by design, so --mode says what the counts are a claim about (default: the plan).
 Examples:
   shio diff --site Acme
   shio diff --site Acme --json
-  shio diff --site Acme --against proposal   # did the write make what the plan accepted
-  shio diff --site Acme --mode fidelity      # judge every fact, whatever the plan says
-  shio diff --site Acme --against published  # what goes live if you publish now
+  shio diff --site Acme --against proposal
+  shio diff --site Acme --mode fidelity
+  shio diff --site Acme --against published
   shio diff --site Acme --against published --address post:Acme/blog/hello-world

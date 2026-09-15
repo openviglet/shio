@@ -74,10 +74,28 @@ export interface ShReviewAppearance {
   note?: string | null
 }
 
+/** One instruction about one change (SH1001). `note` is required on a REJECT. */
+export interface ShReviewDecisionInput {
+  postId: string
+  decision: "APPROVE" | "REJECT" | "HOLD"
+  note?: string
+}
+
+/** A standing decision, as the detail reports it. */
+export interface ShReviewDecided {
+  postId: string
+  decision: string
+  note?: string | null
+  actor?: string | null
+  at?: string | null
+}
+
 export interface ShReviewDetail {
   session: string
   actor?: string
   appearance?: ShReviewAppearance | null
+  /** SH1001 — what has already been said about these changes; absent keys are undecided. */
+  decisions?: ShReviewDecided[]
   entries: ShReviewEntry[]
 }
 

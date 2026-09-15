@@ -1,17 +1,15 @@
 shio verify — lint the content and its routes; exits 1 on an error (the CI gate)
 
-The content-side type-check: empty required fields, references to posts that do not exist,
-images with no bytes, two pages on one URL, links that resolve to nothing. Errors exit 1;
-warnings are printed and counted.
+Empty required fields, references to posts that do not exist, images with no bytes, two
+pages on one URL, links that resolve to nothing. Errors exit 1; warnings are counted.
 
   --site <idOrName>    Scope to one site
   --checks <groups>    projection,replication,content,routes,page,diagnostics,delivery
                        (default: all that can run). projection and replication read the
                        file tree only; page renders each published page
-  --delivery           Also prove each published route by fetching it from the site's own
-                       origin
+  --delivery           Also fetch each published route from the site's own origin
   --strict             Fail on warnings too (off by default)
-  --limit <n>          Findings to print (the counts always cover the whole run)
+  --limit <n>          Findings to print (counts cover the whole run)
   --folder <address>   Scope to a folder subtree (folder:<site>/<chain>)
   --address <a,b>      Scope to named posts (post:<site>/<url>, comma-separated)
   --since <cursor>     Scope to what changed after an SH88 cursor (shio changes --cursor)
@@ -24,7 +22,7 @@ warnings are printed and counted.
   --assets-dir <dir>   Local asset tree          (default shio/assets)
   --folders-dir <dir>  Local folder markers      (default shio/folders)
 
-A scoped run says so: the report carries scope/partial, and the counts cover the subset.
+A scoped run says so: the report carries scope/partial.
 
 Examples:
   shio verify --checks projection,replication

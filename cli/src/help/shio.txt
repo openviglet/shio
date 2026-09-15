@@ -20,6 +20,7 @@ Commands:
   gate           The checks a site runs before content goes live (run, list)
   verify         Lint the content and its routes; exits non-zero on an error
   changes        What changed, with a cursor to resume from
+  review         What an agent run left for a person (list, show, decide)
   report         What changed, preview links, open questions
   remember       Write down a decision for the next session
   digest <page>  Structural digest of one page: outline, landmarks, links, images

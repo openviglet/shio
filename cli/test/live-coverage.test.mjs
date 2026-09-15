@@ -246,6 +246,10 @@ const UNEXERCISED = {
     // gate, pushes content that fails it and reads the refusal, which is the SH748 shape (declared
     // while nothing runs it, covered once an instance answers).
     "gate",
+    // SH1001 — `review` joins on arrival, for `gate`'s reason: its live scenario is a run that
+    // leaves drafts, a decision against one of them, and the queue reporting what is still
+    // waiting — declared while nothing runs it, covered once an instance answers.
+    "review",
     // SH711 spawned ten of these as a process. What is left splits three ways, and the split is
     // more useful than the count:
     //

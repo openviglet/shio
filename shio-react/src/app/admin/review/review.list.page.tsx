@@ -7,13 +7,18 @@ import { Badge } from "@/components/ui/badge"
 import { ROUTES } from "@/app/routes.const"
 import { useReviewPending } from "@/contexts/review-pending.context"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
+import { ReviewTriage } from "@/components/review-triage"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import type { ShPostTypeSchemaField } from "@/models/post-unified/post-unified"
 import { ShReviewService } from "@/services/review/review.service"
-import type { ShReviewDetail, ShReviewSession } from "@/models/review/review.model"
+import type {
+  ShReviewDecisionInput,
+  ShReviewDetail,
+  ShReviewSession,
+} from "@/models/review/review.model"
 import { formatDistanceToNow } from "date-fns"
-import { Bot, Check, ChevronDown, ChevronRight, GitCompare, RefreshCw, Undo2 } from "lucide-react"
+import { Bot, Check, ChevronDown, ChevronRight, RefreshCw, Undo2 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
@@ -96,6 +101,32 @@ export default function ReviewListPage() {
       setOpen((prev) => ({ ...prev, [session]: detail }))
     } catch (error) {
       reportProblem(error, t("common.error"))
+    }
+  }
+
+  /**
+   * SH1001 — carry out a per-change triage, then re-read the run.
+   *
+   * The same refresh the whole-run verbs do, and for the same reason: a decision changes what the
+   * badge counts and what the row below it says, and a page that showed the old answer after an
+   * action is the one number a curator learns to distrust (SH207).
+   */
+  const triage = async (session: string, decisions: ShReviewDecisionInput[]) => {
+    setBusy(session)
+    try {
+      const outcome = await service.decide(session, decisions)
+      toast.success(t("review.decided", { count: outcome.changed }))
+      for (const skipped of outcome.skipped) {
+        toast.warning(`${skipped.postId}: ${skipped.reason}`)
+      }
+      const detail = await service.detail(session)
+      setOpen((prev) => ({ ...prev, [session]: detail }))
+      load()
+      refreshPending()
+    } catch (error) {
+      reportProblem(error, t("common.error"))
+    } finally {
+      setBusy(null)
     }
   }
 
@@ -282,53 +313,21 @@ export default function ReviewListPage() {
                               {detail.appearance.note ? ` — ${detail.appearance.note}` : ""}
                             </p>
                           )}
-                          <ul className="divide-y">
-                            {detail.entries.map((entry, index) => (
-                              <li
-                                key={`${entry.postId}-${entry.date}-${index}`}
-                                className="flex items-center gap-3 py-2 text-sm"
-                              >
-                                <Badge
-                                  variant="outline"
-                                  className={`text-[10px] ${ACTION_BADGE[entry.action] ?? ""}`}
-                                >
-                                  {entry.action}
-                                </Badge>
-                                <span className="flex-1 min-w-0 truncate">
-                                  {entry.title || entry.postId}
-                                  {entry.address && (
-                                    <code className="ml-2 text-xs text-muted-foreground">
-                                      {entry.address}
-                                    </code>
-                                  )}
-                                </span>
-                                {entry.draft && (
-                                  <Badge variant="secondary" className="text-[10px]">
-                                    {t("review.draft")}
-                                  </Badge>
-                                )}
-                                {entry.published && (
-                                  <Badge variant="secondary" className="text-[10px]">
-                                    {t("review.published")}
-                                  </Badge>
-                                )}
-                                {entry.trashed && (
-                                  <Badge variant="secondary" className="text-[10px]">
-                                    {t("review.trashed")}
-                                  </Badge>
-                                )}
-                                {entry.postId && entry.published && entry.draft && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => openDiff(entry.postId!)}
-                                  >
-                                    <GitCompare className="mr-1 h-3.5 w-3.5" /> {t("review.diff")}
-                                  </Button>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
+                          {/*
+                            SH1001 — the decision moves from the run to the change. The two buttons
+                            above still decide the whole run, because "all of it" is a real answer
+                            and the common one; this is the answer for a run where one page is
+                            wrong, which used to force a curator to accept all of it or undo all
+                            of it.
+                          */}
+                          <ReviewTriage
+                            entries={detail.entries}
+                            decided={new Map((detail.decisions ?? []).map((each) =>
+                              [each.postId, each.decision]))}
+                            busy={busy === session.session}
+                            onDecide={(decisions) => triage(session.session, decisions)}
+                            onDiff={openDiff}
+                          />
                           </>
                         )}
                       </div>

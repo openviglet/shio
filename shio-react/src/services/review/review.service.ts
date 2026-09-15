@@ -1,5 +1,10 @@
-import axios from "axios"
+// SH1001 — the shared singleton, not the bare module. This file imported `axios` directly and
+// worked only because `@/lib/axios` mutates the global defaults and some other service had already
+// been imported: the CSRF header, the base URL and every shared interceptor were arriving by import
+// order. That is the SH233 defect one step from happening again.
+import axios from "@/lib/axios"
 import type {
+  ShReviewDecisionInput,
   ShReviewDetail,
   ShReviewOutcome,
   ShReviewPending,
@@ -33,6 +38,21 @@ export class ShReviewService {
   async detail(session: string): Promise<ShReviewDetail> {
     const response = await axios.get<ShReviewDetail>(
       `/v2/review/sessions/${encodeURIComponent(session)}`,
+    )
+    return response.data
+  }
+
+  /**
+   * Decide this run's changes one at a time (SH1001).
+   *
+   * One call for the whole triage, because a curator deciding eleven pages means them together:
+   * sent one at a time, a refusal halfway leaves the run in a state nobody chose and this page has
+   * to work out which of its eleven requests landed.
+   */
+  async decide(session: string, decisions: ShReviewDecisionInput[]): Promise<ShReviewOutcome> {
+    const response = await axios.post<ShReviewOutcome>(
+      `/v2/review/sessions/${encodeURIComponent(session)}/decisions`,
+      decisions,
     )
     return response.data
   }

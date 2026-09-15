@@ -4109,3 +4109,18 @@ section reads the first one, and the premise decides whether the list below is t
 quoted from the stored intent rather than reconstructed, and a run that declared none is named with
 the flag that would have supplied one: silently omitting it makes a handoff of ten runs look like a
 handoff of the three that happened to say something.
+
+## `shio review` (SH1001)
+
+`list`, `show` and `decide`. A command for the one screen whose whole job is a person looking reads
+like a contradiction, and is not: a pipeline that runs an agent wants to **gate** on what the run
+left behind. `shio review list --strict` exits 1 while anything is waiting, which is the one exit
+code that was previously only askable by opening a browser.
+
+`decide <session> --approve a,b --hold c --reject d --note "<why>"` takes addresses or post ids and
+sends **one call**. `--reject` without `--note` is refused here as well as on the server: a CI job
+that learns the rule from a 400 has already spent a round trip on a run it is gating.
+
+`--dry-run` prints which named changes would publish and which would be skipped, read off the
+`draft` flag each entry already carries. That is SH996's discipline applied to a terminal: the facts
+are the server's, the rendering is the caller's, and nothing here decides what approving would do.
