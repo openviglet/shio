@@ -219,7 +219,8 @@ export class ShioAgentClient {
   /**
    * GET /api/v2/agent/render (SH101) — a page's structural digest.
    *
-   * @param {{ address?: string, url?: string }} query exactly one of the two
+   * @param {{ address?: string, url?: string, state?: string }} query exactly one of the first two;
+   *   `state` (SH990) beside an address only
    */
   async digest(query = {}) {
     return this.#get("render", query);

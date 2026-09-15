@@ -168,6 +168,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "state" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "url" : {
             "description" : "#string",
             "type" : "string"
@@ -197,6 +201,10 @@
             "type" : "string"
           },
           "site" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "state" : {
             "description" : "#string",
             "type" : "string"
           },
@@ -333,6 +341,10 @@
             "type" : "string"
           },
           "site" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "state" : {
             "description" : "#string",
             "type" : "string"
           }

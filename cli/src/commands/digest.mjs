@@ -44,8 +44,10 @@ export async function run(flags, positionals, ctx) {
     );
   }
   const isUrl = /^https?:\/\//i.test(String(target));
+  // SH990 — `--state` rides along either way; beside a URL the instance refuses it and says why,
+  // which is the one place that knows a delivered page has a single version.
   const digest = await client.digest(
-    isUrl ? { url: target } : { address: target },
+    isUrl ? { url: target, state: flags.state } : { address: target, state: flags.state },
   );
 
   ctx.stdout.write(render(digest));

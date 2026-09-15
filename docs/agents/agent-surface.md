@@ -3085,3 +3085,12 @@ against over both states, since "published depends on unpublished" and "two post
 questions about both rows whichever is the subject; the report says so in a note. Both refuse
 `rev:<n>` with `state-revision-not-served`: a revision is a version of one page, not a set to list or a
 site to lint, and the refusal names the read and the digest that do serve one.
+
+**The fourth gave MCP and the CLI the argument.** `shio_find`, `shio_verify` and `shio_digest` take
+`state` (the last also for its `include=editable` half), and `shio digest --state` and
+`shio verify --state` pass it; `shio verify --state` over the file-tree groups alone is refused, since
+those have no rows to choose between. The tool list measured 2843 against its 2820 ceiling with the
+three arguments, and was brought back by trimming rather than raised: `shio_digest`'s examples of a page
+shape said why a digest is useful to a caller that has already chosen to call it, and the three new
+descriptions are their values alone. The list is now at its wall, and `token-budgets.properties` says
+so beside the ceiling.

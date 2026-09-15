@@ -1524,8 +1524,8 @@ rights to.
 
 ShContentPerspective and ShPerspectiveCoverageLintTest have landed, with every agent
 read and /preview (revisions included) on the grammar; the lint's REMAINDER family is
-the worklist, and GraphQL, built in code, sits outside its scan. MCP gains one argument
-on existing tools within AY5's reservations; the CLI gains --state.
+the worklist, and GraphQL, built in code, sits outside its scan. MCP and the CLI carry
+it for those reads; the CDA is what is left.
 
 ### LXVI.2 Scheduled content, visible on every surface (SH991)
 

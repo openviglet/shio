@@ -47,10 +47,12 @@ public class ShDigestTool implements ShMcpTool {
 
     @Override
     public String description() {
+        // SH990 trimmed the examples of a shape (a missing hero, an empty section) to pay for
+        // `state` here and on shio_verify: they said why a digest is useful, and the list is re-sent
+        // every turn to callers who have already decided to call it.
         return "Structural digest of one page: heading outline, landmarks, every link and image "
-                + "with its alt text, word count. Use it to confirm a page's shape — a missing "
-                + "hero, an empty section, an image with no alt — instead of asking someone to "
-                + "look at it. Pass address for the authoring view, url for what a visitor gets.";
+                + "with its alt text, word count. Use it to confirm a page's shape instead of "
+                + "looking at it. Pass address for the authoring view, url for what a visitor gets.";
     }
 
     @Override
@@ -64,22 +66,25 @@ public class ShDigestTool implements ShMcpTool {
                 // headroom, and a new tool the size of this one costs 146. This costs a fraction of
                 // that and answers from the render already being taken.
                 "include", ShMcpTool.string(
-                        "editable — the fields a curator could edit here.")),
+                        "editable — the fields a curator could edit here."),
+                // SH990 — REST's state=, which a revision renders through like /preview.
+                "state", ShMcpTool.string("published, draft or rev:<n>.")),
                 List.of());
     }
 
     @Override
     public String call(JsonNode arguments) {
         String address = ShMcpArgs.string(arguments, "address");
+        String state = ShMcpArgs.string(arguments, "state");
         String digest = ShAgentVerifyTerse.digest(
-                shAgentRenderService.digest(address, ShMcpArgs.string(arguments, "url")));
+                shAgentRenderService.digest(address, ShMcpArgs.string(arguments, "url"), state));
 
         // Only for an address: `url` digests somebody else's delivery, and the editable surface is
         // a claim about content this instance holds. Asking for it there would answer about a page
         // Shio does not own, which is worse than refusing (P6's rule about a silent default).
         String include = ShMcpArgs.string(arguments, "include");
         if (include != null && include.contains("editable") && address != null) {
-            return digest + ShAgentVerifyTerse.editable(shAgentRenderService.editable(address));
+            return digest + ShAgentVerifyTerse.editable(shAgentRenderService.editable(address, state));
         }
         return digest;
     }

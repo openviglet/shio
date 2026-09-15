@@ -67,7 +67,9 @@ public class ShVerifyTool implements ShMcpTool {
                 "limit", ShMcpTool.integer("Findings to return (default 200)."),
                 "folder", ShMcpTool.string("folder: address — this subtree only."),
                 "address", ShMcpTool.string("post: addresses, comma-separated."),
-                "since", ShMcpTool.string("A shio_changes cursor — only newer content.")),
+                "since", ShMcpTool.string("A shio_changes cursor — only newer content."),
+                // SH990 — REST's state=: lint what is live, or the draft a publish would put there.
+                "state", ShMcpTool.string("published or draft.")),
                 List.of());
     }
 
@@ -79,6 +81,7 @@ public class ShVerifyTool implements ShMcpTool {
                 ShMcpArgs.integer(arguments, "limit"),
                 ShMcpArgs.string(arguments, "folder"),
                 ShMcpArgs.string(arguments, "address"),
-                ShMcpArgs.string(arguments, "since")));
+                ShMcpArgs.string(arguments, "since"),
+                ShMcpArgs.string(arguments, "state")));
     }
 }

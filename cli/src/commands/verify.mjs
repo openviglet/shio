@@ -82,7 +82,16 @@ export async function run(flags, positionals, ctx) {
       folder: flags.folder,
       address: flags.address,
       since: flags.since,
+      // SH990 — published lints what is live, draft what a publish would put there.
+      state: flags.state,
     });
+  } else if (flags.state) {
+    // The file-tree groups have no rows to choose between, so a state here would be dropped
+    // without a word — the same refusal --delivery gets for the same reason.
+    throw new Error(
+      "shio verify: --state picks which rows the instance lints, and the groups named run on the "
+        + "file tree alone. Add a server-side group. Example: shio verify --checks content --state published",
+    );
   } else if (flags.delivery) {
     // A caller who asked for the strongest proof there is and named the one group that cannot
     // leave the process has asked for two different things. Silently dropping one is SH320's

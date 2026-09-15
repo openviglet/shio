@@ -57,7 +57,9 @@ public class ShFindTool implements ShMcpTool {
                 "limit", ShMcpTool.integer("Maximum rows (default 25)."),
                 // Worth its schema (P3): without it an MCP-only client is back to the dead end
                 // SH146 removed — a result past the cap it can see is truncated and cannot finish.
-                "after", ShMcpTool.string("Cursor from a truncated result, to get the next page.")),
+                "after", ShMcpTool.string("Cursor from a truncated result, to get the next page."),
+                // SH990 — REST's state=, within this tool's SH977 reservation.
+                "state", ShMcpTool.string("published or draft.")),
                 List.of());
     }
 
@@ -70,6 +72,8 @@ public class ShFindTool implements ShMcpTool {
                 ShMcpArgs.string(arguments, "q"),
                 ShMcpArgs.integer(arguments, "limit"),
                 false,
-                ShMcpArgs.string(arguments, "after")));
+                ShMcpArgs.string(arguments, "after"),
+                false,
+                ShMcpArgs.string(arguments, "state")));
     }
 }

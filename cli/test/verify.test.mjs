@@ -172,6 +172,29 @@ test("site, checks and limit reach the query string; a bare positional is the si
   assert.equal(url.searchParams.get("limit"), "5");
 });
 
+test("SH990: --state reaches verify's query, and is refused where only the file tree runs", async () => {
+  const fetchImpl = scriptedFetch(CLEAN);
+  await verify.run({ checks: "content", state: "published" }, ["Blog"], ctxWith(fetchImpl));
+
+  assert.equal(new URL(fetchImpl.calls[0].url).searchParams.get("state"), "published");
+
+  const offline = scriptedFetch(CLEAN);
+  await assert.rejects(
+    () => verify.run({ checks: "projection", state: "published" }, [], ctxWith(offline)),
+    /--state picks which rows the instance lints/,
+  );
+  assert.equal(offline.calls.length, 0, "SH990: the file-tree groups have no rows to choose between");
+});
+
+test("SH990: digest --state reaches the render query beside an address", async () => {
+  const fetchImpl = scriptedFetch(DIGEST);
+  await digest.run({ state: "rev:3" }, ["post:Blog/blog/hello"], ctxWith(fetchImpl));
+
+  const url = new URL(fetchImpl.calls[0].url);
+  assert.equal(url.searchParams.get("address"), "post:Blog/blog/hello");
+  assert.equal(url.searchParams.get("state"), "rev:3");
+});
+
 test("--delivery adds the group without dropping the ones that need no network", async () => {
   const fetchImpl = scriptedFetch(CLEAN);
   await verify.run({ delivery: true }, ["Blog"], ctxWith(fetchImpl));
