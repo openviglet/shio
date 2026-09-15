@@ -3108,3 +3108,23 @@ refuses a revision. Every listing in `ShCdaService` now takes its states as one 
 draft-preferred read, one is that state), which is what let the perspective in without a second copy of
 each query. The census's remainder family is empty and gone: a new page read takes `state` or declares
 why not.
+
+## What is scheduled, readable (SH991, first slice)
+
+Scheduling worked end to end through the batch, and nothing read it back: the only queries over
+`publishScheduledDate` and `unpublishScheduledDate` were the sweep's due-only finders, so an agent could
+not confirm the schedule it had just set.
+
+`/agent/find?scheduled=` lists only scheduled posts, and those rows carry `publishAt` and `unpublishAt`
+(terse `publish-at=`/`unpublish-at=`). Without the filter no row carries them, so an ordinary listing is
+byte-identical. `shio_find` takes the same argument inside its SH977 reservation. The value is `any`, or
+an ISO-8601 range `from..to` with either end optional and the top exclusive (`ShScheduleWindow`), so
+consecutive windows never count a post twice. It is **one** parameter where the design named `before`
+and `after`, because `after` is already find's page cursor and a second meaning under one name is the
+collision that silently skips a page. The schedule is read off the **draft** row, where SH15 sets it,
+and the index is taken before `state=` narrows the rows, so a published-only listing of scheduled posts
+still sees it.
+
+`/agent/read?include=schedule` attaches `schedule: {publishAt, unpublishAt}` when one is set. `shio_read`
+does not take it: its reservation had 7 tokens left, less than an argument, and `shio_find scheduled`
+already gives an MCP client the confirmation.

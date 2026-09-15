@@ -69,6 +69,8 @@ class ShAgentReadTest {
     @Autowired
     private ShAgentBatchService shAgentBatchService;
     @Autowired
+    private com.viglet.shio.migration.unified.ShPostUnifiedWriteService shPostUnifiedWriteService;
+    @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
     private ObjectMapper objectMapper;
@@ -459,6 +461,50 @@ class ShAgentReadTest {
                         the live row's FIELDS, which nothing on this surface could return. SH545                         added `published`, and that answers WHETHER a live row exists — the right                         field for that question and a different one from this (SH619).""")
                 .isEqualTo("As published");
         assertThat(live.state()).isEqualTo("PUBLISHED");
+    }
+
+    @Test
+    @DisplayName("SH991: a schedule an agent set can be listed and read back, and an unscheduled row is unchanged")
+    void aScheduleCanBeConfirmed() {
+        String marker = "sh991sched" + suffix();
+        String address = "post:" + siteName + "/" + marker;
+        run(new Op(ShAgentBatchService.POST_UPSERT, address, postTypeName, "/",
+                data("Scheduled " + marker, "Later")));
+        String quiet = "post:" + siteName + "/" + marker + "-quiet";
+        run(new Op(ShAgentBatchService.POST_UPSERT, quiet, postTypeName, "/",
+                data("Unscheduled " + marker, "Never")));
+        String postId = shAgentReadService.read(List.of(address), null, true).get(0).id();
+        java.time.Instant goesLive = java.time.Instant.parse("2031-05-01T09:00:00Z");
+        shPostUnifiedWriteService.schedule(postId, goesLive, null, "tester");
+
+        ShAgentFound any = shAgentReadService.find(siteName, null, null, marker, null, false, null,
+                false, null, "any");
+        assertThat(any.results())
+                .extracting(ShAgentFound.Row::address, ShAgentFound.Row::publishAt)
+                .as("SH991: the confirmation an agent could not get — the listing names the instant")
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(address, goesLive.toString()));
+        assertThat(shAgentReadService.find(siteName, null, null, marker, null, false, null, false,
+                null, "2031-05-01T00:00:00Z..2031-05-02T00:00:00Z").results()).hasSize(1);
+        assertThat(shAgentReadService.find(siteName, null, null, marker, null, false, null, false,
+                null, "..2031-05-01T09:00:00Z").results())
+                .as("SH991: the upper bound is exclusive, so a range can be walked without overlap")
+                .isEmpty();
+        assertThat(shAgentReadService.find(siteName, null, null, marker, null, false, null, false,
+                null, null).results())
+                .as("SH991: without the filter no row carries an instant, so a listing is byte-identical")
+                .hasSize(2)
+                .allSatisfy(row -> assertThat(row.publishAt()).isNull());
+
+        ShAgentDoc doc = shAgentReadService.read(List.of(address), null, false, false, null, false,
+                false, false, true).get(0);
+        assertThat(doc.schedule()).isEqualTo(new ShAgentDoc.Schedule(goesLive.toString(), null));
+        assertThat(shAgentReadService.read(List.of(address), null, false, false, null, false,
+                false, false, false).get(0).schedule())
+                .as("SH991: opt-in, like every other rider on this read")
+                .isNull();
+        assertThatThrownBy(() -> shAgentReadService.find(siteName, null, null, marker, null, false,
+                null, false, null, "next week"))
+                .isInstanceOf(com.viglet.shio.api.post.ShScheduleWindow.UnknownWindowException.class);
     }
 
     @Test

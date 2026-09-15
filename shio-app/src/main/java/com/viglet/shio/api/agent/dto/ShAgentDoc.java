@@ -67,7 +67,41 @@ public record ShAgentDoc(String address, String type, String state, String folde
                          Problem error, Impact impact, String locale, String translationOf,
                          Boolean published, String url, String digest, String curatorUrl,
                          String previewUrl,
-                         java.util.List<ShRevisionRow> revisions) {
+                         java.util.List<ShRevisionRow> revisions,
+                         Schedule schedule) {
+
+    /** The seventeen-field form, before SH991 let a read carry the post's schedule. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published, String url, String digest, String curatorUrl,
+                      String previewUrl, java.util.List<ShRevisionRow> revisions) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, url, digest, curatorUrl, previewUrl, revisions, null);
+    }
+
+    /**
+     * When this post goes live or comes down, as it is scheduled now (SH991) — only with
+     * {@code include=schedule}, and only when one is set.
+     *
+     * <p>Read off the draft row whichever row the read returned, because a schedule is set on the
+     * draft (SH15) and is a fact about the post rather than about a state of it: a read of what is
+     * published still wants to know that it is due to change.</p>
+     *
+     * @param publishAt   ISO-8601, or absent
+     * @param unpublishAt ISO-8601, or absent
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Schedule(String publishAt, String unpublishAt) {
+    }
+
+    /** The same row with its schedule attached, or unchanged when there is none to attach. */
+    public ShAgentDoc withSchedule(Schedule due) {
+        return due == null ? this
+                : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                        locale, translationOf, published, url, digest, curatorUrl, previewUrl,
+                        revisions, due);
+    }
 
     /** The sixteen-field form, before SH987 let a read carry the page's history. */
     public ShAgentDoc(String address, String type, String state, String folder,
@@ -91,7 +125,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return history == null || history.isEmpty() ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
                         locale, translationOf, published, url, digest, curatorUrl, previewUrl,
-                        history);
+                        history, schedule);
     }
 
     /** The fourteen-field form, before SH981 attached the console's own links. */
@@ -132,7 +166,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
     public ShAgentDoc withDigest(String stateDigest) {
         return stateDigest == null ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                        locale, translationOf, published, url, stateDigest, curatorUrl, previewUrl, revisions);
+                        locale, translationOf, published, url, stateDigest, curatorUrl, previewUrl, revisions, schedule);
     }
 
     /**
@@ -149,7 +183,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return declared.equals(path)
                 ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                        locale, translationOf, published, declared, digest, curatorUrl, previewUrl, revisions);
+                        locale, translationOf, published, declared, digest, curatorUrl, previewUrl, revisions, schedule);
     }
 
     /**
@@ -172,7 +206,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
     /** The same row with SH348's locale attached. */
     public ShAgentDoc withLocale(String postLocale) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                postLocale, translationOf, published, url, digest, curatorUrl, previewUrl, revisions);
+                postLocale, translationOf, published, url, digest, curatorUrl, previewUrl, revisions, schedule);
     }
 
     /**
@@ -189,7 +223,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withTranslationOf(String anchorAddress) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
-                anchorAddress, published, url, digest, curatorUrl, previewUrl, revisions);
+                anchorAddress, published, url, digest, curatorUrl, previewUrl, revisions, schedule);
     }
 
     /** The seven-field form: a row that resolved, which is every row before SH171. */
@@ -215,7 +249,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     public ShAgentDoc withPublished(Boolean live) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                locale, translationOf, live, url, digest, curatorUrl, previewUrl, revisions);
+                locale, translationOf, live, url, digest, curatorUrl, previewUrl, revisions, schedule);
     }
 
     /**
@@ -232,13 +266,13 @@ public record ShAgentDoc(String address, String type, String state, String folde
     public ShAgentDoc withLinks(String console, String preview) {
         return console == null && preview == null ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
-                        locale, translationOf, published, url, digest, console, preview, revisions);
+                        locale, translationOf, published, url, digest, console, preview, revisions, schedule);
     }
 
     /** The same row with SH262's blast radius attached. */
     public ShAgentDoc withImpact(Impact blastRadius) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, blastRadius,
-                locale, translationOf, published, url, digest, curatorUrl, previewUrl, revisions);
+                locale, translationOf, published, url, digest, curatorUrl, previewUrl, revisions, schedule);
     }
 
     /**

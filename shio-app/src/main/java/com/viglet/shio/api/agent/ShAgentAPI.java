@@ -311,11 +311,13 @@ public class ShAgentAPI {
             @RequestParam(name = "after", required = false) String after,
             // SH990 — `published` lists what is live, `draft` what is being edited.
             @RequestParam(name = "state", required = false) String state,
+            // SH991 — `any`, or `from..to` in ISO instants; rows then carry the scheduled instants.
+            @RequestParam(name = "scheduled", required = false) String scheduled,
             @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
         ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids, after, trash,
-                state);
+                state, scheduled);
         return isTerse(format)
                 ? shAgentBodyEtag.terse("find", ShAgentReadTerse.found(found), ifNoneMatch)
                 : shAgentBodyEtag.json("find", found, ifNoneMatch);
@@ -368,7 +370,9 @@ public class ShAgentAPI {
         // address. Neither needed an endpoint, which is what keeps the tool count where it is.
         List<ShAgentDoc> docs = shAgentReadService.read(address, split(fields), ids,
                 includes(include, "impact"), state, includes(include, "digest"),
-                includes(include, "links"), includes(include, "revisions"));
+                includes(include, "links"), includes(include, "revisions"),
+                // SH991 — when the post goes live or comes down, read off its draft row.
+                includes(include, "schedule"));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
                 : shAgentBodyEtag.json("read", docs, ifNoneMatch);

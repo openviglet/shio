@@ -73,7 +73,16 @@ public record ShAgentFound(int count, boolean truncated, List<Row> results, List
      */
     @JsonInclude(Include.NON_NULL)
     public record Row(String address, String type, String state, String title, String id,
-                      String locale, Boolean published) {
+                      String locale, Boolean published, String publishAt, String unpublishAt) {
+
+        /**
+         * The seven-field form, before SH991. {@code publishAt} and {@code unpublishAt} are set only
+         * on a {@code scheduled=} listing, so every other row stays byte-identical to what it was.
+         */
+        public Row(String address, String type, String state, String title, String id,
+                   String locale, Boolean published) {
+            this(address, type, state, title, id, locale, published, null, null);
+        }
 
         /** The five-field form, before SH348 made a non-default locale visible. */
         public Row(String address, String type, String state, String title, String id) {

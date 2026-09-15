@@ -200,6 +200,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "scheduled" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "site" : {
             "description" : "#string",
             "type" : "string"

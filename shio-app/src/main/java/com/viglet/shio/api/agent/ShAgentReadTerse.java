@@ -61,6 +61,9 @@ public final class ShAgentReadTerse {
                     .flag("published", Boolean.TRUE.equals(row.published()))
                     .attr("id", row.id())
                     .attr("locale", row.locale())
+                    // SH991 — present only on a `scheduled=` listing, so an ordinary row is unchanged.
+                    .attr("publish-at", row.publishAt())
+                    .attr("unpublish-at", row.unpublishAt())
                     .attr("title", row.title())
                     .build());
         }
@@ -93,6 +96,9 @@ public final class ShAgentReadTerse {
                     // Here as well as in the JSON because a terse reader is the one that cannot
                     // ask a second time: it is the projection a `pull` uses.
                     .attr("url", doc.url())
+                    // SH991 — only with include=schedule and only when one is set.
+                    .attr("publish-at", doc.schedule() == null ? null : doc.schedule().publishAt())
+                    .attr("unpublish-at", doc.schedule() == null ? null : doc.schedule().unpublishAt())
                     .attr("id", doc.id())
                     // SH1073 — SH721's digest, which the JSON form carried and this line dropped:
                     // a terse reader asking for it got the row without the one value it asked for.

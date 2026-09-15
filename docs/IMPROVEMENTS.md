@@ -1513,12 +1513,12 @@ publishScheduledDate and unpublishScheduledDate are the two due-only sweep finde
 cannot confirm the schedule it just set. The console has a one-post dialog whose inputs
 are bare datetime-local fields, with no timezone shown against a server-stored instant.
 
-Reads first: shio_find gains scheduled, before and after, and shio_read gains
-include=schedule, both within AY5's reservations; shio schedule prints an agenda for a
-site and a range; and a scheduled endpoint answers the console. Then the console gets a
-Scheduled view, an agenda list and a month and week calendar, each row linking to the
-post, rescheduling by drag through the same verb, and the timezone stated on every row
-and in the dialog.
+The reads have landed: find and shio_find take scheduled=any|from..to, one value because
+after is find's cursor, and REST read takes include=schedule, which shio_read had no
+room for; shio schedule prints an agenda for a site and a range; and a scheduled
+endpoint answers the console. Then the console gets a Scheduled view, an agenda list and
+a month and week calendar, each row linking to the post, rescheduling by drag through
+the same verb, and the timezone stated on every row and in the dialog.
 
 A scheduled transition's outcome, and in particular its failure, reports through the
 assistant dock in SH969; this task records schedule_requested_by, so the Activity row

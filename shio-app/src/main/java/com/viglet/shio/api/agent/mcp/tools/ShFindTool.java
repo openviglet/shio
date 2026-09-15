@@ -59,7 +59,9 @@ public class ShFindTool implements ShMcpTool {
                 // SH146 removed — a result past the cap it can see is truncated and cannot finish.
                 "after", ShMcpTool.string("Cursor from a truncated result, to get the next page."),
                 // SH990 — REST's state=, within this tool's SH977 reservation.
-                "state", ShMcpTool.string("published or draft.")),
+                "state", ShMcpTool.string("published or draft."),
+                // SH991 — within this tool's SH977 reservation, which named a schedule predicate.
+                "scheduled", ShMcpTool.string("any, or from..to in ISO instants.")),
                 List.of());
     }
 
@@ -74,6 +76,7 @@ public class ShFindTool implements ShMcpTool {
                 false,
                 ShMcpArgs.string(arguments, "after"),
                 false,
-                ShMcpArgs.string(arguments, "state")));
+                ShMcpArgs.string(arguments, "state"),
+                ShMcpArgs.string(arguments, "scheduled")));
     }
 }

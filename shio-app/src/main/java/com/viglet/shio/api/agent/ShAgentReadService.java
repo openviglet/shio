@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.post.ShContentPerspective;
+import com.viglet.shio.api.post.ShScheduleWindow;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
@@ -178,6 +179,19 @@ public class ShAgentReadService {
      */
     public ShAgentFound find(String site, String type, String folder, String q,
                              Integer limit, boolean ids, String after, boolean trash, String state) {
+        return find(site, type, folder, q, limit, ids, after, trash, state, null);
+    }
+
+    /**
+     * @param scheduled SH991 — only posts with a schedule: {@code any}, or one falling in
+     *                  {@code from..to} (see {@link ShScheduleWindow}). Rows then carry the scheduled
+     *                  instants, which is how an agent confirms the schedule it just set; without the
+     *                  filter they carry none, so an ordinary listing is byte-identical.
+     */
+    public ShAgentFound find(String site, String type, String folder, String q,
+                             Integer limit, boolean ids, String after, boolean trash, String state,
+                             String scheduled) {
+        ShScheduleWindow window = ShScheduleWindow.parse(scheduled);
         ShPostState wanted = ShContentPerspective.parse(state)
                 .requireRow("/agent/find", "GET /api/v2/agent/read?address=<address>&state=rev:<n>")
                 .row();
@@ -201,6 +215,9 @@ public class ShAgentReadService {
         // SH545 — taken before `dedupe`, which is the only place both rows of a post are in hand.
         // Asking per row afterwards would be one query per match on the cheapest read there is.
         Set<String> live = publishedIds(matches);
+        // SH991 — a schedule is set on the draft row (SH15), so the index is taken before `state`
+        // narrows the rows: a published-only listing of scheduled posts must still see it.
+        Map<String, ShPostUnified> drafts = window == null ? Map.of() : draftsById(matches);
         if (wanted != null) {
             // After `publishedIds`, which needs both rows; before `dedupe`, which would otherwise
             // keep the draft of a post whose published row is the one asked for.
@@ -209,7 +226,11 @@ public class ShAgentReadService {
         List<ShAgentFound.Row> rows = dedupe(matches).stream()
                 .filter(post -> folderIds.isEmpty() || inScope(post, folderIds))
                 .filter(post -> type == null || type.isBlank() || matchesType(post, type))
-                .map(post -> row(post, ids, live.contains(post.getId()), trash))
+                .filter(post -> window == null || scheduledIn(drafts.get(post.getId()), window))
+                .map(post -> window == null
+                        ? row(post, ids, live.contains(post.getId()), trash)
+                        : withSchedule(row(post, ids, live.contains(post.getId()), trash),
+                                drafts.get(post.getId())))
                 .filter(row -> from == null || row.address().compareTo(from) > 0)
                 .sorted(Comparator.comparing(ShAgentFound.Row::address))
                 .toList();
@@ -344,6 +365,26 @@ public class ShAgentReadService {
     public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
                                  boolean impact, String state, boolean digest,
                                  boolean links, boolean revisions) {
+        return read(addresses, fields, ids, impact, state, digest, links, revisions, false);
+    }
+
+    /**
+     * The same read, optionally carrying the post's schedule (SH991).
+     *
+     * @param schedule attach when the post goes live or comes down, read off the draft row, and only
+     *                 when one is set — absent otherwise, as every other opt-in on this read is
+     */
+    public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
+                                 boolean impact, String state, boolean digest,
+                                 boolean links, boolean revisions, boolean schedule) {
+        List<ShAgentDoc> docs = readWithoutSchedule(addresses, fields, ids, impact, state, digest,
+                links, revisions);
+        return schedule ? docs.stream().map(this::withSchedule).toList() : docs;
+    }
+
+    private List<ShAgentDoc> readWithoutSchedule(List<String> addresses, List<String> fields,
+                                                 boolean ids, boolean impact, String state,
+                                                 boolean digest, boolean links, boolean revisions) {
         // SH990 — the grammar is ShContentPerspective's, shared with every other read that takes a
         // state, so this path and /preview cannot come to disagree about what a value means.
         ShContentPerspective perspective = ShContentPerspective.parse(state);
@@ -732,6 +773,47 @@ public class ShAgentReadService {
      *                other row and answers nothing, which is worse than no listing: the one thing
      *                this call exists to produce is an address a restore can take.</p>
      */
+    /** A doc with its post's schedule, when it resolved to a post that has one (SH991). */
+    private ShAgentDoc withSchedule(ShAgentDoc doc) {
+        if (doc.address() == null || doc.error() != null) {
+            return doc;
+        }
+        var resolved = shAddressResolver.resolve(doc.address());
+        return shPostUnifiedRepository.findByIdAndState(resolved.id(), ShPostState.DRAFT)
+                .filter(draft -> draft.getPublishScheduledDate() != null
+                        || draft.getUnpublishScheduledDate() != null)
+                .map(draft -> doc.withSchedule(new ShAgentDoc.Schedule(
+                        instant(draft.getPublishScheduledDate()),
+                        instant(draft.getUnpublishScheduledDate()))))
+                .orElse(doc);
+    }
+
+    /** The draft row of each post among {@code rows}, which is where a schedule lives (SH15). */
+    private static Map<String, ShPostUnified> draftsById(List<ShPostUnified> rows) {
+        Map<String, ShPostUnified> byId = new LinkedHashMap<>();
+        for (ShPostUnified row : rows) {
+            if (row.getState() == ShPostState.DRAFT) {
+                byId.put(row.getId(), row);
+            }
+        }
+        return byId;
+    }
+
+    private static boolean scheduledIn(ShPostUnified draft, ShScheduleWindow window) {
+        return draft != null
+                && window.matches(draft.getPublishScheduledDate(), draft.getUnpublishScheduledDate());
+    }
+
+    private static ShAgentFound.Row withSchedule(ShAgentFound.Row row, ShPostUnified draft) {
+        return new ShAgentFound.Row(row.address(), row.type(), row.state(), row.title(), row.id(),
+                row.locale(), row.published(), instant(draft.getPublishScheduledDate()),
+                instant(draft.getUnpublishScheduledDate()));
+    }
+
+    private static String instant(java.time.Instant at) {
+        return at == null ? null : at.toString();
+    }
+
     private ShAgentFound.Row row(ShPostUnified post, boolean ids, boolean live, boolean trashed) {
         return new ShAgentFound.Row(
                 trashed ? ShAddress.id(post.getId()).toString()
