@@ -104,6 +104,31 @@ public class ShContentAclService {
         return hasPermission(objectId, ShAclPermission.PUBLISH);
     }
 
+    /**
+     * SH995 — what the current user may do with this object, and why not, in the server's words.
+     *
+     * <p>The console asks this to decide whether Publish is a button or an explanation. It carries
+     * the <b>sentence</b> rather than a flag the console phrases itself: the refusal a curator would
+     * have got from the server is the one they should read before making the request, or the product
+     * has two answers to one question and only one of them is enforced.</p>
+     *
+     * @param publishHint {@code null} when they may publish — a hint beside a permitted action is
+     *                    something a reader has to work out is not about them
+     */
+    public record Allowed(boolean read, boolean write, boolean publish, String publishHint) {
+    }
+
+    @Transactional(readOnly = true)
+    public Allowed allowed(String objectId) {
+        boolean publish = canPublish(objectId);
+        return new Allowed(canRead(objectId), canWrite(objectId), publish,
+                publish ? null : PUBLISH_DENIED);
+    }
+
+    /** One sentence, used by the refusal and by the console that avoids provoking it. */
+    private static final String PUBLISH_DENIED =
+            "the draft is saved, and somebody granted PUBLISH here can put it live";
+
     /** Throw {@link AccessDeniedException} (→ 403) unless the current user may read it. */
     /**
      * SH225 — annotated because this is the <b>entry point</b>, not because `canRead` is.
@@ -140,7 +165,7 @@ public class ShContentAclService {
     public void requirePublish(String objectId) {
         if (!canPublish(objectId)) {
             throw new AccessDeniedException("No publish permission on " + objectId
-                    + " — the draft is saved, and somebody granted PUBLISH here can put it live");
+                    + " — " + PUBLISH_DENIED);
         }
     }
 

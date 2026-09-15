@@ -197,6 +197,33 @@ class ShContentAclServiceTest {
     }
 
     @Test
+    void sh995TheConsoleIsToldWhatItMayDoAndWhyNot() {
+        // What GET /v2/object/{id}/allowed answers, which is how the console disables Publish rather
+        // than offering it and producing a 403 after the click.
+        aclService.replaceAcl(folderId, List.of(
+                new AclEntry(ShAclPrincipalType.USER, "alice", ShAclPermission.WRITE)));
+
+        authAs("alice");
+        ShContentAclService.Allowed allowed = aclService.allowed(postId);
+
+        assertThat(allowed.write()).isTrue();
+        assertThat(allowed.publish()).isFalse();
+        assertThat(allowed.publishHint())
+                .as("SH995: the console shows the server's own sentence — a console that wrote its "
+                        + "own would be a second authorisation story, and only one is enforced")
+                .isEqualTo("the draft is saved, and somebody granted PUBLISH here can put it live");
+        assertThatThrownBy(() -> aclService.requirePublish(postId))
+                .hasMessageContaining(allowed.publishHint());
+
+        aclService.replaceAcl(folderId, List.of(
+                new AclEntry(ShAclPrincipalType.USER, "alice", ShAclPermission.PUBLISH)));
+        assertThat(aclService.allowed(postId).publishHint())
+                .as("SH995: a hint beside a permitted action is something a reader has to work out "
+                        + "is not about them")
+                .isNull();
+    }
+
+    @Test
     void adminBypassesAnyAcl() {
         aclService.replaceAcl(folderId, List.of(
                 new AclEntry(ShAclPrincipalType.USER, "bob", ShAclPermission.READ)));

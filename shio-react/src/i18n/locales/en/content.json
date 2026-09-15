@@ -258,5 +258,6 @@
   "content.conflictMine": "Yours",
   "content.conflictEmpty": "(empty)",
   "content.conflictApply": "Save what I chose",
-  "content.conflictNoFields": "Nothing differs any more — saving again will apply your version."
+  "content.conflictNoFields": "Nothing differs any more — saving again will apply your version.",
+  "content.publishNotAllowed": "Publishing is not yours to do here — {{reason}}."
 }

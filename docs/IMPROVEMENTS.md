@@ -1505,26 +1505,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.6 Publish as a permission above write (SH995)
-
-ShAclPermission has two values, READ and WRITE, with WRITE implying READ, and the
-content ACL service exposes requireRead and requireWrite. mayPublish lives on the API
-token and its accessor returns true when no token is in play, which is every console
-session. The review service's approve calls requireWrite. So the agent, whose work the
-review queue exists to gate, is the only actor the product can stop from publishing, and
-a team has no separation between author and approver.
-
-Add PUBLISH above WRITE, so PUBLISH implies WRITE, and route every publish through
-requirePublish: publish, unpublish and schedule, the release run and rollback, and
-review approve. The migration is the design decision: every existing WRITE grant is
-backfilled to PUBLISH in the same changeset, so nobody loses a capability on upgrade and
-separation is opt-in from then on.
-
-Per SH322 the sweep lands before the fix: a lint listing every method that publishes
-without asking for PUBLISH, held as an asserted list. The console disables Publish and
-Approve with the server's own fix text, and the ACL editor offers the third level. The
-assertion: a write-only user is refused a publish and still allowed a save.
-
 ### LXVI.7 The curator's publish gets the agent's safeguards (SH996)
 
 The visual editor's Publish patches with publish true and, when nothing was edited,

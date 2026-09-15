@@ -1713,3 +1713,24 @@ the one listing, and the zone line in both places in both locales.
 The design's month and week calendar, with rescheduling by drag, is SH1082: this console has no
 calendar component (the design-system section above lists it as unavailable), and a hand-rolled one
 is the second copy the no-duplicate-components gate exists to refuse.
+
+## Publish, when the curator may not (SH995)
+
+The post editor asks `GET /api/v2/object/{id}/allowed` once per post and disables **Publish** and
+**Unpublish** when the answer says no, carrying `publishHint` as the control's title and as a line
+beside it. Asked rather than assumed: the alternative is offering a button and answering it with a
+403, which tells somebody they cannot do a thing only after they have tried. A permission read that
+fails leaves the buttons as they were — the server is what decides, and hiding a control because a
+side call broke is the worse guess.
+
+**The sentence comes from the server** (`ShContentAclService.Allowed#publishHint`, the same words its
+refusal uses) and the console interpolates it rather than writing its own: two phrasings of one rule
+is two authorisation stories, and only one of them is enforced. The i18n key takes `{{reason}}` for
+exactly that reason.
+
+**Agent Review's Approve is deliberately NOT disabled**, which is where this departs from SH995's
+design. Approval is per post — a run touches many, and a curator may hold PUBLISH on some branches of
+the tree and not others — so a disabled button would hide a partially permitted run. The server
+already publishes what it may and returns every refusal as a skipped row carrying the server's own
+sentence, which the page raises one toast per post for. The permissions dialog offers the third
+level, `PUBLISH`, in both locales.

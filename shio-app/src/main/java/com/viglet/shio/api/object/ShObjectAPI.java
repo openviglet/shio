@@ -149,6 +149,21 @@ public class ShObjectAPI {
         return ResponseEntity.ok(shContentAclService.getAcl(id));
     }
 
+    /**
+     * SH995 — what the signed-in user may do with this object: read, write, publish, and the sentence
+     * to show instead of a Publish button when they may not.
+     *
+     * <p>Readable by anybody who may read the object, because that is exactly who the answer is
+     * about. It exists so the console can disable a control rather than offer it and produce a 403 —
+     * and it hands over the server's own wording, so the explanation a curator reads is the one the
+     * refusal would have given.</p>
+     */
+    @GetMapping("/{id}/allowed")
+    public ResponseEntity<ShContentAclService.Allowed> allowed(@PathVariable String id) {
+        shContentAclService.requireRead(id);
+        return ResponseEntity.ok(shContentAclService.allowed(id));
+    }
+
     /** Replace an object's ACL grants (SH54). Editing requires WRITE on the object (admins always pass). */
     @PutMapping("/{id}/acl")
     public ResponseEntity<List<ShContentAcl>> putAcl(@PathVariable String id, @RequestBody List<AclEntry> entries) {

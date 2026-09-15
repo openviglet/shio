@@ -18,6 +18,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import axios from "axios"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
+import { ShAclService } from "@/services/acl/acl.service"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import { PostTranslationsMenu } from "@/components/post-translations.menu"
@@ -33,6 +34,8 @@ import {
 
 const unifiedService = new ShPostUnifiedService()
 const previewService = new ShPreviewTokenService()
+// SH995 — asked once per post: whether this curator may put it live.
+const aclService = new ShAclService()
 
 export default function PostUnifiedEditPage() {
   const { postId } = useParams() as { postId: string }
@@ -61,6 +64,13 @@ export default function PostUnifiedEditPage() {
   const [isPublishing, setIsPublishing] = useState(false)
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
   const [versionsOpen, setVersionsOpen] = useState(false)
+  /**
+   * SH995 — publishing is a permission above writing, so the two controls that change what visitors
+   * see are disabled when this curator does not hold it, carrying the server's own sentence. Asked
+   * rather than assumed: the alternative is offering a button and answering it with a 403, which
+   * tells somebody they cannot do a thing only after they have tried.
+   */
+  const [publishHint, setPublishHint] = useState<string | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   /**
    * SH985 — the refusal that needs a view rather than a message.
@@ -87,6 +97,13 @@ export default function PostUnifiedEditPage() {
       const unified: ShPostUnified | null = editable ?? live
       if (!unified) return
       const resolvedState: ShPostState = editable ? "DRAFT" : "PUBLISHED"
+
+      aclService
+        .allowed(postId)
+        .then((allowed) => setPublishHint(allowed.publish ? null : (allowed.publishHint ?? null)))
+        // A permission read that fails leaves the buttons as they were: the server is the one that
+        // decides, and hiding a control because a side call broke would be the worse guess.
+        .catch(() => setPublishHint(null))
 
       setPost(unified)
       setState(resolvedState)
@@ -339,7 +356,8 @@ export default function PostUnifiedEditPage() {
                   type="button"
                   size="sm"
                   loading={isPublishing}
-                  disabled={isLoading}
+                  disabled={isLoading || publishHint !== null}
+                  title={publishHint ?? undefined}
                   onClick={handlePublish}
                 >
                   <Upload className="size-4" />
@@ -351,12 +369,18 @@ export default function PostUnifiedEditPage() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={isLoading || isPublishing}
+                  disabled={isLoading || isPublishing || publishHint !== null}
+                  title={publishHint ?? undefined}
                   onClick={handleUnpublish}
                 >
                   <EyeOff className="size-4" />
                   {t("content.unpublish")}
                 </GradientButton>
+              )}
+              {publishHint && (
+                <span className="text-xs text-muted-foreground max-w-xs">
+                  {t("content.publishNotAllowed", { reason: publishHint })}
+                </span>
               )}
               <GradientButton type="button" size="sm" variant="outline" disabled={isLoading} onClick={() => handleSave(true)}>
                 {t("content.saveAndClose")}
