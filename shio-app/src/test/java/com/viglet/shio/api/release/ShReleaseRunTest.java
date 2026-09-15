@@ -33,6 +33,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentConfirm;
+import com.viglet.shio.api.agent.ShAgentContextService;
+import com.viglet.shio.api.agent.ShAgentContextTerse;
 import com.viglet.shio.api.agent.ShAgentReadService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
@@ -77,6 +79,8 @@ class ShReleaseRunTest {
 
     @Autowired
     private ShAgentBatchService shAgentBatchService;
+    @Autowired
+    private ShAgentContextService shAgentContextService;
     @Autowired
     private ShAgentReadService shAgentReadService;
     @Autowired
@@ -130,7 +134,8 @@ class ShReleaseRunTest {
 
             // One page per test, because a publish in one of them is visible to the next: they
             // share a database, and a release RUNS, so nothing here can be re-used across tests.
-            for (String url : List.of("/a1", "/a2", "/b1", "/b2", "/c1", "/d1", "/e1", "/f1")) {
+            for (String url : List.of("/a1", "/a2", "/b1", "/b2", "/c1", "/d1", "/e1", "/f1",
+                    "/g1", "/h1")) {
                 ShPostUnified draft = new ShPostUnified();
                 draft.setId(SITE + url.replace('/', '-'));
                 draft.setState(ShPostState.DRAFT);
@@ -315,6 +320,53 @@ class ShReleaseRunTest {
         assertThatThrownBy(() -> shAgentReadService.read(List.of("post:" + SITE + "/a1"), null,
                 false, false, "release:" + name, false))
                 .isInstanceOf(ShReleaseService.PostNotInReleaseException.class);
+    }
+
+    @Test
+    @DisplayName("SH993: archiving takes a release out of the listing and out of the sweep, reversibly")
+    void archivingHidesAndStops() {
+        String name = plan("done-" + RUN, "/g1");
+        run(false, null, runOp(name, WHEN, null));
+
+        run(false, null, new ShAgentBatch.Op(ShAgentBatchService.RELEASE_ARCHIVE,
+                "release:" + SITE + "/" + name, null, null, null, null));
+
+        assertThat(release(name).getArchivedAt()).isNotNull();
+        assertThat(shReleaseService.listed(siteId))
+                .as("SH993: archiving is what keeps the pack a reader scrolls short")
+                .noneMatch(listed -> listed.getName().equals(name));
+        assertThat(shReleaseService.dueRuns(Instant.parse("2099-11-01T00:00:00Z")))
+                .as("SH993: archiving a scheduled release is how a launch is called off for good, "
+                        + "so a sweep that still fired it would publish a set somebody put away")
+                .noneMatch(due -> due.getName().equals(name));
+        assertThatThrownBy(() -> run(false, null, runOp(name, null, null)))
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                .satisfies(failure -> assertThat(String.valueOf(((ShAgentBatchService.BatchOpException)
+                        failure).problem().toProblemDetail().getType())).endsWith("release-archived"));
+
+        run(false, null, new ShAgentBatch.Op(ShAgentBatchService.RELEASE_ARCHIVE,
+                "release:" + SITE + "/" + name, null, null, null, null, null, null, null, null,
+                null, null, true));
+
+        assertThat(release(name).getArchivedAt()).as("SH993: and it is not a delete").isNull();
+        assertThat(shReleaseService.listed(siteId)).anyMatch(listed -> listed.getName().equals(name));
+    }
+
+    @Test
+    @DisplayName("SH993: the context pack lists a site's releases when asked for them")
+    void thePackListsThem() {
+        String name = plan("packed-" + RUN, "/h1");
+
+        String terse = ShAgentContextTerse.render(
+                shAgentContextService.context(SITE, 1, null, "releases", null));
+
+        assertThat(terse)
+                .as("SH993: a release is addressed by a name, and find?release= answers only a name "
+                        + "it is given — without a listing an agent cannot discover one")
+                .contains("release release:" + SITE + "/" + name + " state=PLANNED posts=1");
+        assertThat(ShAgentContextTerse.render(shAgentContextService.context(SITE, 1, null, null, null)))
+                .as("SH993: and a default pack is unchanged, because it is opt-in")
+                .doesNotContain("release release:" + SITE + "/" + name);
     }
 
     @Test

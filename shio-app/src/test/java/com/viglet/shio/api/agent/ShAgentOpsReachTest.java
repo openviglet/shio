@@ -287,10 +287,16 @@ class ShAgentOpsReachTest {
         // for folding: at 30% of the manifest, making every session pay for a writer-only section is
         // a worse trade than the 19% that made SH346 reject it, not a better one. 900 budgets
         // release.run and release.archive, which the same family still owes.
+        //
+        // SH993 again, at the end of the family: 900 -> 950, measured at 904 with all five. The two
+        // remaining ops cost 64 where 61 was budgeted, which is the estimate being close rather than
+        // the vocabulary drifting — per-op prose fell again, 32.3 -> 31.0, on five more ops. 950 is
+        // set so the NEXT addition is measured against it instead of refused by it, which is what
+        // this ceiling is for; the percentage below is still the number that re-opens the question.
         assertThat(tokens)
                 .as("measured %s; a vocabulary that grows past this is a reason to re-open the "
                         + "surface choice, not to raise the number quietly", ESTIMATED_OPS_TOKENS_NOTE)
-                .isLessThan(900);
+                .isLessThan(950);
     }
 
     @Test

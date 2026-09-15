@@ -215,8 +215,11 @@ public final class ShAgentOps {
                     "Take `data.posts` out again."),
             new OpSpec(ShAgentBatchService.RELEASE_RUN,
                     List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, CANCEL),
-                    "Publish the whole release, atomically. Needs `confirm` from its own dry run, "
-                            + "unless `when` schedules it or `cancel` calls that off."));
+                    "Publish the release, atomically. Needs `confirm` from its own dry run; `when` "
+                            + "schedules it, `cancel` calls that off."),
+            new OpSpec(ShAgentBatchService.RELEASE_ARCHIVE,
+                    List.of(ADDRESS), List.of(), List.of(), List.of(CANCEL),
+                    "Take it out of the listing; `cancel:true` puts it back. Not a delete."));
 
     private ShAgentOps() {
         // utility

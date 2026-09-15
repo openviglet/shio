@@ -30,7 +30,16 @@ public interface ShReleaseRepository extends JpaRepository<ShRelease, String> {
     /** In name order, which is the order a teaching error lists them and a projection writes them. */
     List<ShRelease> findBySiteIdOrderByNameAsc(String siteId);
 
-    /** SH993 — the SH15 sweep asks this for releases whose instant has arrived. */
-    List<ShRelease> findByStateAndScheduledAtLessThanEqualOrderByScheduledAtAsc(String state,
-                                                                               java.time.Instant due);
+    /**
+     * SH993 — the SH15 sweep asks this for releases whose instant has arrived.
+     *
+     * <p>Archived ones are excluded here rather than filtered afterwards: archiving a scheduled
+     * release is how a launch is called off for good, and a sweep that still fired it would publish
+     * the set somebody had just put away.</p>
+     */
+    List<ShRelease> findByStateAndArchivedAtIsNullAndScheduledAtLessThanEqualOrderByScheduledAtAsc(
+            String state, java.time.Instant due);
+
+    /** SH993 — what the context pack lists: the site's releases, newest first. */
+    List<ShRelease> findBySiteIdAndArchivedAtIsNullOrderByCreatedAtDesc(String siteId);
 }

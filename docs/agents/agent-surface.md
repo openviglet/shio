@@ -3232,3 +3232,22 @@ looks like. So `requireRow` refuses it wherever it already refuses `rev:<n>`, an
 `/agent/editable`, `/preview` and the delivery API — each naming the read that answers it. One overload
 of `read` was passing `parse(state).row()` and dropping the rest; it now goes through the full parse,
 which is where a `rev:<n>` sent to it was being answered with the draft.
+
+### Archiving one, and finding out they exist (SH993, fourth slice)
+
+`release.archive` takes a release out of the way, and `cancel: true` puts it back. It is **not** a
+delete: the release stays addressable and `find?release=` still reads what it holds, because the record
+of what went live together is the thing not to throw away. What archiving removes is its place in the
+listing a reader scrolls — and its place in the sweep, since archiving a SCHEDULED release is how a
+launch is called off for good; a sweep that still fired it would publish a set somebody had just put
+away, so `dueRuns` excludes archived ones in the query rather than filtering afterwards.
+
+**`include=releases` on the context pack** is how an agent learns a release exists. A release is
+addressed by a name and `find?release=` answers only a name it is given, so without a listing an agent
+could create releases and never discover the ones already there — P1, not P3. It sits on the pack rather
+than on a tool argument for the SH977 ladder's reason: `tools/list` is paid every turn by every session,
+and this is a question a session asks once if at all, so `shio_context include=releases` reaches it for
+nothing. Opt-in and attached after the digest, like `manifest`, `ops` and `usage`, so asking for it does
+not invalidate a cached pack. It carries counts, not members: forty addresses per release in the pack is
+the regression the opt-in sections exist to avoid, and `find?site=&release=<name>` is the read for what
+one holds.

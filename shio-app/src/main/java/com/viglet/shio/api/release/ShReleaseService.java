@@ -208,13 +208,38 @@ public class ShReleaseService {
     /** SH993 — the releases the sweep should run now, oldest instant first. */
     @Transactional(readOnly = true)
     public List<ShRelease> dueRuns(Instant now) {
-        return shReleaseRepository.findByStateAndScheduledAtLessThanEqualOrderByScheduledAtAsc(
-                ShRelease.State.SCHEDULED.name(), now);
+        return shReleaseRepository
+                .findByStateAndArchivedAtIsNullAndScheduledAtLessThanEqualOrderByScheduledAtAsc(
+                        ShRelease.State.SCHEDULED.name(), now);
+    }
+
+    /** SH993 — the site's releases as the context pack lists them: newest first, archived ones out. */
+    @Transactional(readOnly = true)
+    public List<ShRelease> listed(String siteId) {
+        return siteId == null ? List.of()
+                : shReleaseRepository.findBySiteIdAndArchivedAtIsNullOrderByCreatedAtDesc(siteId);
+    }
+
+    /**
+     * SH993 — takes a release out of the way, or puts it back.
+     *
+     * <p>Not a delete, and the distinction is the point: the release stays addressable and
+     * {@code find?release=} still reads what it holds, because a record of what went live together is
+     * the thing not to throw away. What archiving removes is its place in the listing a reader
+     * scrolls and in the tree a launch is reviewed in.</p>
+     */
+    @Transactional
+    public ShRelease archive(ShRelease release, boolean archived, String actor) {
+        release.setArchivedAt(archived ? Instant.now() : null);
+        return touched(release, actor);
     }
 
     /** A release runs once: PLANNED or SCHEDULED, never one that already went live or was undone. */
     public static void requireRunnable(ShRelease release) {
         String state = release.getState();
+        if (release.getArchivedAt() != null) {
+            throw new ReleaseArchivedException(release.getName());
+        }
         if (!ShRelease.State.PLANNED.name().equals(state)
                 && !ShRelease.State.SCHEDULED.name().equals(state)) {
             throw new ReleaseClosedException(release.getName(), state, false);
@@ -265,6 +290,20 @@ public class ShReleaseService {
                     .withFix("Create it first with release.upsert, in the same batch or before.")
                     .withExample("{\"op\":\"release.upsert\",\"address\":\"release:" + site + "/"
                             + name + "\"}"));
+        }
+    }
+
+    /** SH993 — a run asked of a release somebody put away. */
+    public static class ReleaseArchivedException extends ShTeachingException {
+
+        public ReleaseArchivedException(String name) {
+            super(ShProblem.conflict("release-archived",
+                            "release '" + name + "' is archived and does not run")
+                    .withDetail("Archiving is how a launch is called off for good, so the sweep "
+                            + "skips it too.")
+                    .withFix("Put it back with release.archive and `cancel:true`, then run it.")
+                    .withExample("{\"op\":\"release.archive\",\"address\":\"release:<site>/"
+                            + name + "\",\"cancel\":true}"));
         }
     }
 

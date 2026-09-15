@@ -508,3 +508,8 @@ invariant: a post's key is `(id, state)` so a foreign key would have to name the
 and an `ShSite` is an `ShObject` subclass that JPQL must not navigate past `.id`. Both unique
 constraints are declared on the entities as well as in `v2026.3.32.yaml`, since the unit suite builds
 its schema from the metadata (SH729).
+
+`sh_release.archived_at` (SH993) is the second changeset, `v2026.3.33`: a timestamp rather than a
+boolean, for `deleted_date`'s reason — "when" is free here and answers the question a boolean raises.
+Archiving hides a release from the context pack's listing and from the sweep's due query; it never
+removes a row, and `find?release=` still reads what the release holds.

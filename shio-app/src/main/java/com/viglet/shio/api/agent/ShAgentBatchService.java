@@ -276,6 +276,14 @@ public class ShAgentBatchService {
      * caller has to have seen the set. Scheduling one confirms nothing: that call moves a date.</p>
      */
     public static final String RELEASE_RUN = "release.run";
+
+    /**
+     * SH993 — takes a release out of the listing, or with {@code cancel} puts it back.
+     *
+     * <p>Not a delete: what a release holds is the record of what went live together, and the thing
+     * archiving removes is its place in the pack a reader scrolls, not the record.</p>
+     */
+    public static final String RELEASE_ARCHIVE = "release.archive";
     /** SH993 — the list of posts {@code release.add} and {@code release.remove} act on. */
     public static final String RELEASE_POSTS_KEY = "posts";
 
@@ -300,7 +308,7 @@ public class ShAgentBatchService {
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_COPY, FOLDER_DELETE,
             POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
             POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION, RELEASE_UPSERT,
-            RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN);
+            RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -829,6 +837,7 @@ public class ShAgentBatchService {
             case RELEASE_ADD -> releaseAdd(op, session);
             case RELEASE_REMOVE -> releaseRemove(op, session);
             case RELEASE_RUN -> releaseRun(op, session);
+            case RELEASE_ARCHIVE -> releaseArchive(op, session);
             default -> throw new UnknownOpException(op.op());
         };
     }
@@ -944,6 +953,24 @@ public class ShAgentBatchService {
                 + moved.size() + ": " + named
                 + (unmoved == 0 ? "" : "; " + unmoved + (adding ? " already in it" : " not in it")),
                 releaseId);
+    }
+
+    /** SH993 — {@code release.archive}, and {@code cancel:true} to put it back. */
+    private Change releaseArchive(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.RELEASE);
+        String name = ShReleaseService.requireName(address.releaseName());
+        ShSite site = requireSite(address.site(), session);
+        ShRelease release = shReleaseService.require(site.getId(), site.getName(), name);
+        boolean archived = release.getArchivedAt() != null;
+        if (archived == !cancels(op)) {
+            return session.change(op, address, Change.NOOP,
+                    archived ? "already archived" : "not archived", release.getId());
+        }
+        if (!session.dryRun) {
+            shReleaseService.archive(release, !cancels(op), session.actor);
+        }
+        return session.change(op, address, Change.UPDATE,
+                cancels(op) ? "back in the listing" : "archived", release.getId());
     }
 
     /**

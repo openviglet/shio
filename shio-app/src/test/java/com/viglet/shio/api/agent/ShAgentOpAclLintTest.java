@@ -71,6 +71,9 @@ class ShAgentOpAclLintTest {
         EXEMPT.put("render.provision",
                 "SH186's addressless op: it installs post-types on the instance, so it acts on no "
                         + "content object and there is no id an ACL could hang on");
+        EXEMPT.put("release.archive",
+                "SH993 — it moves a release in and out of the listing and touches no post, so there "
+                        + "is no content id to ask about; the site it names is checked by requireSite");
         EXEMPT.put("release.upsert",
                 "SH993 — it writes a release row and touches no post, so there is no content id to "
                         + "ask about; the site it names is checked by requireSite, and release.add "

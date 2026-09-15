@@ -85,6 +85,10 @@ public class ShRelease implements Serializable {
     @Column(name = "scheduled_at")
     private Instant scheduledAt;
 
+    /** SH993 — when it was taken out of the way; still addressable, just not listed. */
+    @Column(name = "archived_at")
+    private Instant archivedAt;
+
     /** Who last changed it. */
     @Column(name = "actor", length = 255)
     private String actor;

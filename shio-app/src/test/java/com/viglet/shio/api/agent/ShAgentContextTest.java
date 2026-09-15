@@ -453,9 +453,11 @@ class ShAgentContextTest {
                     // write vocabulary, and a caller that never learns the section exists is back
                     // to the MCP-only state SH346 closed. `usage` is the same argument about
                     // spend: a budget a caller cannot ask about is one it has to be told.
+                    // SH993 — `releases` joins the opt-in three for the same reason `ops` did: a
+                    // caller that never learns the section exists cannot discover a release by name.
                     assertThat(properties.get("allowed")).isEqualTo(
                             List.of("instance", "sites", "model", "sitemap", "conventions",
-                                    "manifest", "ops", "usage"));
+                                    "manifest", "ops", "usage", "releases"));
                 });
     }
 

@@ -70,6 +70,18 @@ public final class ShAgentContextTerse {
             // is: one document, one spelling, whichever surface asked for it.
             out.append(pack.usage());
         }
+        // SH993 — one line per release, the shape `find`'s envelope uses, so a reader who has seen
+        // one has seen both.
+        for (ShAgentContext.Release release : pack.releases() == null
+                ? List.<ShAgentContext.Release>of() : pack.releases()) {
+            out.append(ShTerse.line("release")
+                    .word(release.address())
+                    .attr("state", release.state())
+                    .attr("posts", String.valueOf(release.posts()))
+                    .attr("scheduled-at", release.scheduledAt())
+                    .attr("description", release.description())
+                    .build());
+        }
         out.append(ShTerse.line("digest").word(pack.digest()).build());
         ShAgentContext.Budget budget = pack.budget();
         if (budget != null) {

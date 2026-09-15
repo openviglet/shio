@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.dto.ShAgentContext;
+import com.viglet.shio.api.release.ShReleaseService;
+import com.viglet.shio.persistence.model.release.ShRelease;
 import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
 import com.viglet.shio.api.cda.ShCdaMapper;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
@@ -84,6 +86,8 @@ public class ShAgentContextService {
     private final ShAgentManifestService shAgentManifestService;
     private final ShTemplateEngine shTemplateEngine;
     private final ShAgentUsageService shAgentUsageService;
+    /** SH993 — the site's releases, for `include=releases`. */
+    private final ShReleaseService shReleaseService;
 
     public ShAgentContextService(ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -94,8 +98,10 @@ public class ShAgentContextService {
                                 ShAgentMemoryService memoryService,
                                 ShAgentManifestService shAgentManifestService,
                                 ShTemplateEngine shTemplateEngine,
-                                ShAgentUsageService shAgentUsageService) {
+                                ShAgentUsageService shAgentUsageService,
+                                ShReleaseService shReleaseService) {
         this.shAgentUsageService = shAgentUsageService;
+        this.shReleaseService = shReleaseService;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -203,10 +209,36 @@ public class ShAgentContextService {
         ShAgentContext withUsage = sections.contains(ShAgentContextSection.USAGE)
                 ? withOps.withUsage(shAgentUsageService.terse())
                 : withOps;
+        // SH993 — the site's releases, on the same terms: opt-in, and after the digest. A release is
+        // addressed by a name, and `find?release=` answers only a name it is given, so without this
+        // an agent could create releases and never discover the ones already there.
+        ShAgentContext withReleases = sections.contains(ShAgentContextSection.RELEASES)
+                ? withUsage.withReleases(releases(sites))
+                : withUsage;
         // SH608 — attached last, and after the digest, for the reason `budget` is: this describes
         // the REQUEST, not the content, so a caller narrowing the pack must not get a different
         // entity tag for the same instance state.
-        return withUsage.withOmitted(omitted(sections));
+        return withReleases.withOmitted(omitted(sections));
+    }
+
+    /**
+     * The releases of every site this pack covers (SH993), newest first within each.
+     *
+     * <p>Counts rather than members: what a release holds is `find?site=&release=<name>`, and forty
+     * addresses per release would be the regression the opt-in sections exist to avoid.</p>
+     */
+    private List<ShAgentContext.Release> releases(List<ShSite> sites) {
+        List<ShAgentContext.Release> rows = new ArrayList<>();
+        for (ShSite site : sites) {
+            for (ShRelease release : shReleaseService.listed(site.getId())) {
+                rows.add(new ShAgentContext.Release(
+                        ShAddress.release(site.getName(), release.getName()).toString(),
+                        release.getState(), release.getDescription(),
+                        release.getScheduledAt() == null ? null : release.getScheduledAt().toString(),
+                        shReleaseService.postIds(release.getId()).size()));
+            }
+        }
+        return List.copyOf(rows);
     }
 
     /**

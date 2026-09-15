@@ -1,0 +1,31 @@
+databaseChangeLog:
+  # SH993 — `sh_release.archived_at`: a release taken out of the way.
+  #
+  # A site accumulates releases, and every one of them stays in the context pack and, when it lands,
+  # in the projected tree. Archiving is how a finished or abandoned launch stops being something the
+  # next reader has to scroll past. It is not a delete: the release is still addressable by name, and
+  # `find?site=&release=` still reads what it holds, because a record of what went live together is
+  # exactly the thing not to throw away.
+  #
+  # A timestamp rather than a boolean, for the same reason `deleted_date` is one: "when" is free here
+  # and answers the question a boolean raises.
+  #
+  # Nullable, no backfill — a release archived before this column existed is a thing that cannot have
+  # happened. SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh993-release-archived-at
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_release
+                columnName: archived_at
+      changes:
+        - addColumn:
+            tableName: sh_release
+            columns:
+              - column:
+                  name: archived_at
+                  type: TIMESTAMP

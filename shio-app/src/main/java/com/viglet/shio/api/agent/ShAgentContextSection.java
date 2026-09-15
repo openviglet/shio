@@ -73,17 +73,32 @@ public enum ShAgentContextSection {
      * document that never repeats, which is precisely what SH116's conditional read exists to
      * avoid.</p>
      */
-    USAGE;
+    USAGE,
+    /**
+     * SH993 — the site's releases: name, state, the instant a scheduled one runs, and how many posts
+     * each holds.
+     *
+     * <p><b>Asked for by name</b>, like the three above, and its own reason is P1 rather than P3.
+     * A release is addressed by a name a caller has to know, and {@code find?release=} answers only
+     * a name it is given — so without a listing an agent could create releases and never discover the
+     * ones already there. It lands here rather than as a tool argument for the SH977 ladder's reason:
+     * {@code tools/list} is paid every turn by every session, and this is a question a session asks
+     * once, if at all. It carries counts and not the posts: {@code find?site=&release=<name>} is the
+     * read for what one holds, and forty addresses per release in the pack would be the P3 regression
+     * the opt-in sections exist to avoid.</p>
+     */
+    RELEASES;
 
     /**
      * What a bare {@code /agent/context} returns, and what {@code include=all} means.
      *
-     * <p>Everything except {@link #MANIFEST}, {@link #OPS} and {@link #USAGE} — see their notes.
+     * <p>Everything except {@link #MANIFEST}, {@link #OPS}, {@link #USAGE} and {@link #RELEASES} —
+     * see their notes.
      * "All the sections of the context pack" and "the context pack plus a different document" are
      * different requests, and only the first one should be reachable without saying so.</p>
      */
     private static Set<ShAgentContextSection> defaults() {
-        return EnumSet.complementOf(EnumSet.of(MANIFEST, OPS, USAGE));
+        return EnumSet.complementOf(EnumSet.of(MANIFEST, OPS, USAGE, RELEASES));
     }
 
     /**
