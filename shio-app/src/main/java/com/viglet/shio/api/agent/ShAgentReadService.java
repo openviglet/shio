@@ -26,6 +26,7 @@ import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.post.ShScheduleWindow;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.agent.verify.ShPostLinks;
 import com.viglet.shio.api.release.ShReleaseService;
 import com.viglet.shio.persistence.model.release.ShRelease;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
@@ -100,6 +101,8 @@ public class ShAgentReadService {
     private final ShPostRevisionService shPostRevisionService;
     /** SH993 — the posts a release holds, for `find?release=`. */
     private final ShReleaseService shReleaseService;
+    /** SH996 — who links to a URL this publish would create or break (SH140's scanner). */
+    private final ShPostLinks shPostLinks;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -111,7 +114,8 @@ public class ShAgentReadService {
                               ShTemplateGraph shTemplateGraph,
                               ShConsoleSurfaces shConsoleSurfaces,
                               ShPostRevisionService shPostRevisionService,
-                              ShReleaseService shReleaseService) {
+                              ShReleaseService shReleaseService,
+                              ShPostLinks shPostLinks) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -123,7 +127,11 @@ public class ShAgentReadService {
         this.shConsoleSurfaces = shConsoleSurfaces;
         this.shPostRevisionService = shPostRevisionService;
         this.shReleaseService = shReleaseService;
+        this.shPostLinks = shPostLinks;
     }
+
+    /** How many inbound links a routes block counts before it stops counting (SH140's cap). */
+    private static final int INBOUND_LINK_CAP = 50;
 
     /**
      * Finds posts, returning addresses and titles.
@@ -670,10 +678,63 @@ public class ShAgentReadService {
      * list of addresses should not have to know which ones are templates before it asks.</p>
      */
     private ShAgentDoc.Impact impactOf(ShPostUnified post) {
-        return shTemplateGraph.impactOf(post)
+        ShAgentDoc.Impact template = shTemplateGraph.impactOf(post)
                 .map(found -> new ShAgentDoc.Impact(found.kind(), found.layouts(),
                         found.postTypes(), found.pages(), found.published()))
                 .orElse(null);
+        // SH996 — the other blast radius, and the one a curator is actually asking about: which URLs
+        // this publish would make resolve, move or break. Attached to the same opt-in because it is
+        // one question asked of two kinds of post, and absent when nothing about the site's URLs
+        // changes, which is almost every publish.
+        ShAgentDoc.Routes routes = routesOf(post);
+        if (routes == null) {
+            return template;
+        }
+        return template == null
+                ? new ShAgentDoc.Impact(null, null, null, 0, 0, routes)
+                : template.withRoutes(routes);
+    }
+
+    /**
+     * SH996 — what publishing this draft would do to the site's URLs, or {@code null} for nothing.
+     *
+     * <p>Three cases, and the third is the one nobody sees coming. A draft with no published row
+     * <b>goes live</b> at its URL. A draft whose {@code furl} was changed since it went live
+     * <b>moves</b> the live page, so the old URL <b>stops</b> resolving — which is the case that
+     * breaks inbound links, so the count comes with it. Everything else — an edit to a page already
+     * live at the same address — changes no URL at all and gets no section.</p>
+     *
+     * <p>The inbound count uses SH140's scanner, the one {@code post.move} reports with. Two counts
+     * of "who links here" would eventually disagree, and the one a curator reads before publishing is
+     * the one that has to be right.</p>
+     */
+    private ShAgentDoc.Routes routesOf(ShPostUnified post) {
+        if (post.getState() != ShPostState.DRAFT) {
+            return null;
+        }
+        ShSite site = ShFolderSite.of(post.getShFolder());
+        Optional<ShPostUnified> live = shPostUnifiedRepository
+                .findByIdAndState(post.getId(), ShPostState.PUBLISHED);
+        String draftUrl = post.getFurl();
+        if (live.isEmpty()) {
+            return draftUrl == null || draftUrl.isBlank() ? null
+                    : new ShAgentDoc.Routes(draftUrl, null, null, inboundTo(site, draftUrl, post));
+        }
+        String liveUrl = live.get().getFurl();
+        if (draftUrl == null || draftUrl.equals(liveUrl)) {
+            return null;
+        }
+        // The old URL is what breaks, so it is the one counted: a link to the address the page is
+        // moving AWAY from is the link that stops working the moment this is published.
+        return new ShAgentDoc.Routes(null, draftUrl, liveUrl, inboundTo(site, liveUrl, post));
+    }
+
+    private Integer inboundTo(ShSite site, String path, ShPostUnified post) {
+        if (site == null || path == null || path.isBlank()) {
+            return null;
+        }
+        int found = shPostLinks.linkingTo(site, path, post.getId(), INBOUND_LINK_CAP).found();
+        return found == 0 ? null : found;
     }
 
     /**

@@ -1737,6 +1737,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH993** — A release projects to shio/releases/<site>/<name>.yaml, three-way with the tree: the file declares membership and description, while state and scheduledAt are read-only so a push cannot launch.
 - **SH994** — release.rollback puts a published release back in one transaction: each page to the revision it replaced, pages the launch first published come down, and the release reads ROLLED_BACK.
 - **SH995** — The console asks /object/{id}/allowed and disables Publish and Unpublish with the server's own sentence; Approve stays per post, since a run touches pages a curator may not all publish (design §LXVI.6 superseded: it asked for Approve to be disabled too, and approval is per post: a disabled button would hide a run the curator may partly approve).
+- **SH996 (the routes)** — include=impact now says which URL a publish makes resolve, which it moves, which stops, and how many published pages link to the one that goes — absent when no URL moves.
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

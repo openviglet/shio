@@ -129,7 +129,7 @@ public final class ShAgentReadTerse {
                         .build());
                 continue;
             }
-            if (doc.impact() != null) {
+            if (doc.impact() != null && doc.impact().kind() != null) {
                 // SH262 — its own line rather than attributes on `doc`, because the header describes
                 // the post and this describes everything *else* the post reaches. A reader that does
                 // not know the line skips it; one that read `doc` as the whole row would have been
@@ -140,6 +140,18 @@ public final class ShAgentReadTerse {
                         .attr("types", String.join(",", doc.impact().postTypes()))
                         .count("pages", doc.impact().pages())
                         .count("published", doc.impact().published())
+                        .build());
+            }
+            // SH996 — what publishing this draft would do to the site's URLs, on its own line for
+            // `impact`'s reason: a template's blast radius and a URL moving are different facts, and
+            // a post can have both.
+            if (doc.impact() != null && doc.impact().routes() != null) {
+                out.append(ShTerse.line("routes")
+                        .attr("goes-live", doc.impact().routes().goesLive())
+                        .attr("moves-to", doc.impact().routes().moves())
+                        .attr("stops", doc.impact().routes().stops())
+                        .attr("inbound", doc.impact().routes().inbound() == null ? null
+                                : String.valueOf(doc.impact().routes().inbound()))
                         .build());
             }
             if (doc.revisions() != null) {

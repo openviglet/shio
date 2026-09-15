@@ -1083,12 +1083,16 @@ class ShTemplateGraphTest {
                         is invisible — every read would simply be bigger.""")
                 .isNull();
 
+        // SH996 — an ordinary post still gets no TEMPLATE impact, which is what this holds: a
+        // caller reading a mixed list of addresses must not have to know which of them are
+        // templates before it asks. What it may now carry is `routes`, the other blast radius, and
+        // the assertion is sharpened rather than dropped: `kind` is what says "this is a template".
         assertThat(readService.read(List.of("post:" + siteName + "/a1"), null, false, true)
                 .getFirst().impact())
-                .as("an ordinary post asked with impact=true gets no section rather than an "
-                        + "error: a caller reading a mixed list of addresses must not have to know "
-                        + "which of them are templates before it asks")
-                .isNull();
+                .satisfies(impact -> assertThat(impact == null ? null : impact.kind())
+                        .as("an ordinary post asked with impact=true is told nothing about layouts "
+                                + "and post-types, and is not answered with an error either")
+                        .isNull());
     }
 
     @Test

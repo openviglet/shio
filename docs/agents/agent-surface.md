@@ -3272,3 +3272,22 @@ radius pointed the other way — and joins SH107's publish gate for the same rea
 Only a `PUBLISHED` release rolls back: a planned one replaced nothing, and one already rolled back would
 go back to the state its own rollback wrote. What it put back reads through `state=release:<name>`,
 which is the same anchors from the other end.
+
+## Which URLs a publish moves (SH996, first slice)
+
+`include=impact` answered one question — a template's blast radius, which layouts and post-types a
+region reaches — and a curator about to press Publish is asking a different one: what starts
+resolving, what moves, and what breaks. The same opt-in now carries both, because they are one
+question asked of two kinds of post, and a page can be both.
+
+`impact.routes` has three cases and the third is the one nobody sees coming. A draft with no published
+row **goes live** at its URL. A draft whose `furl` changed since it went live **moves** the live page,
+so the old URL **stops** resolving — and that is the case that breaks inbound links, so `inbound`
+comes with it: how many *published* pages link to the URL that disappears, counted with SH140's
+scanner, the one `post.move` already reports with. Two counts of "who links here" would eventually
+disagree, and the one a curator reads before publishing is the one that has to be right.
+
+**Absent when a publish moves no URL**, which is almost every publish: an edit to a page already live
+at the same address changes nothing about the site's routes, so an ordinary `include=impact` response
+is byte-identical to what it was. In terse it is its own `routes` line, for the reason `impact` is its
+own line: the header describes the post, and these describe what the site does about it.

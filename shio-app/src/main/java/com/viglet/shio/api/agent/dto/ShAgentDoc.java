@@ -301,7 +301,48 @@ public record ShAgentDoc(String address, String type, String state, String folde
      */
     @JsonInclude(Include.NON_NULL)
     public record Impact(String kind, java.util.List<String> layouts,
-                         java.util.List<String> postTypes, int pages, int published) {
+                         java.util.List<String> postTypes, int pages, int published,
+                         Routes routes) {
+
+        /** The five-field form, before SH996 answered which URLs a publish moves. */
+        public Impact(String kind, java.util.List<String> layouts, java.util.List<String> postTypes,
+                      int pages, int published) {
+            this(kind, layouts, postTypes, pages, published, null);
+        }
+
+        /** The same impact, carrying what publishing this draft would do to the site's URLs. */
+        public Impact withRoutes(Routes value) {
+            return new Impact(kind, layouts, postTypes, pages, published, value);
+        }
+    }
+
+    /**
+     * What publishing this draft would do to the URLs visitors use (SH996).
+     *
+     * <p>{@code include=impact} answered <em>template</em> blast radius — which layouts and
+     * post-types a region touches — and a curator about to press Publish is asking a different
+     * question: which addresses start resolving, which move, and what breaks. So the same opt-in
+     * carries both, because they are one question asked of two kinds of post.</p>
+     *
+     * <p><b>Absent when a publish changes no URL</b>, which is almost every publish: an edit to a
+     * page already live moves nothing. That keeps an ordinary read byte-identical to what it was
+     * before this shipped (SH121's rule for ids, applied to a section).</p>
+     *
+     * @param goesLive  the URL this publish makes resolve for the first time, or {@code null}
+     * @param moves     the URL this publish moves the live page <em>to</em>, when the draft was
+     *                  renamed since it went live
+     * @param stops     the URL that stops resolving because of the move
+     * @param inbound   how many <b>published</b> pages link to the URL that appears or disappears —
+     *                  the number that says whether this is a quiet change or a hundred broken links.
+     *                  Counted with the SH140 scanner the move lint uses, so the two cannot disagree
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Routes(String goesLive, String moves, String stops, Integer inbound) {
+
+        /** Whether anything about the site's URLs would change — the test for attaching it at all. */
+        public boolean any() {
+            return goesLive != null || moves != null || stops != null;
+        }
     }
 
     /**
