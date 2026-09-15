@@ -1639,26 +1639,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-### LXVII.6 Every new projected field, with a rule for who wins (SH1004)
-
-This round adds content to the file projection in several places. BA4 projects releases
-and says they are three-way merged like content, the only task that states a merge. BB5
-projects open notes into sidecars. Constraint blocks join post-type files in Block BC,
-translation provenance joins sidecar metadata in Block BH, and asset alt, caption and
-tags join the asset sidecar in Block BE.
-
-content-base.json is the common ancestor. A field the projector writes but the merger
-does not know is either clobbered on the next pull or in conflict on every pull,
-depending on which side is treated as authoritative. Notes are the sharpest case, being
-the one projected field a person edits locally and the server also mutates: resolving a
-note in the console while the local tree holds an edited body is a conflict with no
-rule.
-
-The deliverable is the rule per new field, stated once in content-files.md: which side
-wins, whether the field participates in the base, and how a conflict is reported. Each
-gains a round-trip assertion in the existing coverage test. It is small and dull, and it
-is what keeps P4's promise for everything this round projects.
-
 ### LXVII.7 One reader over the audit table, for both surfaces (SH1005)
 
 The history endpoints take a limit and nothing else: no since, no cursor, and no action,

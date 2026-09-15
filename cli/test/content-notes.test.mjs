@@ -92,6 +92,12 @@ describe("content-notes: the file format", () => {
     assert.equal(notesSiteOf("Blog/.memory.yaml"), "Blog");
     // Not a notes file: a post, and a marker one level down.
     assert.equal(notesSiteOf("Blog/hello.md"), null);
+    // SH1004 — the open-notes projection is NOT site memory, and the reader that decides which
+    // files a push parses has to say so. Both live at a site's root with a leading dot, which is
+    // exactly the pair a prefix match would confuse; the memory reader keys on the whole name.
+    assert.equal(notesSiteOf("Blog/.notes.yaml"), null,
+      "SH1004: `.notes.yaml` is projected and never read back — a reader that claimed it would "
+        + "make the push parse a file the server owns");
     assert.equal(notesSiteOf("Blog/news/.memory.yaml"), null);
   });
 });

@@ -54,7 +54,6 @@
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
-- 📋 **SH1004** (deps: SH1003 ✅) **notes, constraints, translation metadata and asset metadata land in the file projection with no merge rule** — Only releases state how a concurrent edit merges, so a pull carrying new sidecar fields can silently lose a local edit against content-base.json. → §LXVII.6
 - 📋 **SH1005** (deps: SH999 ✅) **the activity trail cannot be paged or filtered, and a post has no history panel** — Every history read is page zero capped at five hundred with no cursor or filter, while the agent's change feed already has a keyset cursor and a measured budget. → §LXVII.7
 - 📋 **SH1006** (deps: SH1003 ✅, SH1000 ✅, SH967 ✅) **a curator cannot ask the connected agent anything from the assistant dock** — VigletAssistant opens into a chat only when a product supplies onSend, and Shio hosts no model, so the chat must reach the external agent and nothing relays to it. → §LXVII.8
 - 📋 **SH1007** (deps: SH1006, SH1001 ✅, DS VDS134) **an agent's answer in the dock cannot carry the change it proposes** — A reply that says it drafted a new hero leaves the curator searching for the draft, while each dock message can offer an action and review already groups changes by run. → §LXVII.9

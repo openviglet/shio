@@ -733,3 +733,33 @@ asked for, and a tree that could edit it would be a second writer of the same ro
 A site with nothing open **loses its file** rather than keeping an empty one: the absence is the
 honest empty state, and a stale file listing a request somebody closed reads exactly like a clean
 site. Rows are sorted by address, so a re-pull of an unchanged site is an empty diff (P5).
+
+## What merges, and who wins (SH1004)
+
+`content-base.json` is the common ancestor of the three-way merge, and a field the **projector**
+writes but the **merger** does not know is either clobbered on the next pull or in conflict on every
+pull — neither of which announces itself. The rule is therefore stated per artefact, here, and
+`cli/test/merge-rules.test.mjs` fails the build when a writer arrives without one. The merger cannot
+be asked what it has never heard of: a field it does not handle produces no branch, no error and no
+log line, so the declaration **is** the instrument (SH338).
+
+| Writer | In the base | Who wins | How a conflict is reported |
+|---|---|---|---|
+| `writeDoc` | per field | neither — the file is left alone | `conflicts` on the pull report, per field, by address (SH148) |
+| `writeRemoteSidecar` | per field | neither — a sidecar **is** a field (SH191) | the same per-field conflict its post's other fields raise |
+| `writeAssetBytes` | whole | neither — half an image is not a merge | `conflicts` on the pull report, by asset path |
+| `writeFolderMarker` | no | the server: that a folder exists is the server's fact | none is possible — the file carries no value a person authors |
+| `writeLocalNotes` | per key | neither — neither copy is written | `notes.conflicts`, as `<site>:<key>` (SH161) |
+| `writeLocalInstanceNotes` | no | the server; the tree pushes back only with `--adopt-memory` (SH231) | none is possible: projected, never read back |
+| `writeOpenNotes` | no | the server, always (SH1003) | none is possible: never parsed, never pushed |
+| `writeBase` | no | the pull that wrote it — this **is** the base | none: it records the agreement rather than joining one |
+
+**Notes were the sharpest case**, and the reason this table exists rather than a convention. They
+are the one projected artefact a person edits in the console *while* the tree holds a copy, and
+"resolve it in the console with an edited body locally" has no natural answer. SH1003 chose one —
+the file is a projection and is never read back — and this is where that choice is recorded, so a
+later reader does not have to re-derive it from the absence of a parser.
+
+**An artefact outside the base has to name an authoritative side.** That is asserted, not just
+written: "outside the merge" with nobody winning is how a local edit disappears on the next pull
+with no report, which is the failure this whole table is about.
