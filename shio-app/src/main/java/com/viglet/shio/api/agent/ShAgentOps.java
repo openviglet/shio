@@ -105,6 +105,8 @@ public final class ShAgentOps {
     private static final String EXPECT = "expect";
     /** SH987 — which captured version post.rollback puts back. */
     private static final String REVISION = "revision";
+    /** SH992 — clears the pending instant of the transition the op names. */
+    private static final String CANCEL = "cancel";
 
     /**
      * SH197 — a {@code LinkedHashMap}, not the stability helper wrapped around a {@code Map.of}.
@@ -154,16 +156,17 @@ public final class ShAgentOps {
                     "Change a post's URL, its folder, or both, keeping its id and history. A "
                             + "published post's live URL changes immediately."),
             new OpSpec(ShAgentBatchService.POST_PUBLISH,
-                    List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, EXPECT),
-                    "Publish the draft at that address, or schedule it with an ISO-8601 `when` "
-                            + "(SH342). Needs a credential with mayPublish. Takes `id:` too, and "
-                            + "only here: an asset has no URL to be addressed by, and an "
-                            + "uploaded one is already published, so this answers noop rather "
-                            + "than failing the batch (SH462)."),
+                    List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, CANCEL, EXPECT),
+                    // SH992 paid for `cancel` and unpublish's `when` out of this sentence rather than
+                    // the SH346 ceiling: the asset clause kept its decision and lost its explanation.
+                    "Publish the draft at that address, or at an ISO-8601 `when`; `cancel:true` "
+                            + "clears a pending one. Needs mayPublish. Takes `id:` too, for an "
+                            + "asset: an uploaded one is already published, so this answers noop "
+                            + "(SH462)."),
             new OpSpec(ShAgentBatchService.POST_UNPUBLISH,
-                    List.of(ADDRESS), List.of(), List.of(), List.of(),
-                    "Withdraw the published row; the draft stays. Takes `id:` on the same "
-                            + "terms as post.publish."),
+                    List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, CANCEL),
+                    "Withdraw the published row; the draft stays. `when`, `cancel` and `id:` as "
+                            + "for post.publish."),
             new OpSpec(ShAgentBatchService.POST_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(EXPECT, DATA),
                     "Trash a post. Needs `confirm` from its own dry run."),

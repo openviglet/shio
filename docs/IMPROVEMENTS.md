@@ -1505,25 +1505,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.3 Scheduling where a caller looks for it, and a takedown that waits (SH992)
-
-ShPublishTool declares address, unpublish and dryRun and builds its op without when,
-while its description says it is the only call that changes what visitors see, which is
-exactly where an agent looks for scheduling. when is a component of the single Op
-record, so JSON binds it on every op, and scheduleInstant has one call site, inside
-postPublish. postUnpublish never reads it, so an unpublish carrying a future instant
-happens immediately and answers as if it had been scheduled.
-
-AV3 lands the instrument that makes this a class: every declared tool argument and op
-key is read by its handler or refused. This task lands the behaviour. shio_publish gains
-when and cancel, measured against its AY5 reservation. post.unpublish compiles a real
-when into the write service's existing unpublish-at column, and a cancel on either
-clears the pending instant and reports what it cleared. The dry run reports the schedule
-it would set, identically, so a plan cannot promise what a run will refuse.
-
-The assertions carry the id on both halves: shio_publish with when leaves the page
-unpublished until the instant, and post.unpublish with a future when leaves it live.
-
 ### LXVI.4 A release: a named set that publishes atomically (SH993)
 
 Each scheduled transition runs in its own transaction, and the CLI's publish splits
@@ -1681,6 +1662,31 @@ Dropping an entry on a day keeps its time of day and calls the post-unified sche
 endpoint with the new instant, which records the dropper as the requester SH991 stores.
 The zone line stays above every view. A test drives a drop and reads the change back
 through the agent's scheduled listing.
+
+### LXVI.12 The batch refuses an op field it does not know (SH1083)
+
+SH992 made shio_write refuse an op field it does not declare, since a dropped `cancel`
+would publish the page instead of standing it down. The REST batch, the other door to
+the same service, still drops what it does not know. Measured on a clean instance: a dry
+run of `site.upsert` carrying `cancle: true` answered 200 and planned the create, saying
+nothing about the ignored field. On `post.publish` the same misspelling publishes now
+and reports success.
+
+The cause is binding rather than handling. `ShAgentBatch.Op` is a record that Jackson
+fills, Spring's default mapper ignores unknown properties, and nothing between the
+controller and the service looks at what arrived.
+
+The fix refuses an unknown op field on `POST /api/v2/agent/batch` with the teaching
+shape shio_write already uses: the field named, the allowed names (the `Op` components),
+a did-you-mean, and a fix. It is scoped to the op object, not the mapper globally,
+because other request bodies may rely on lenient binding and this change should not
+decide that for them. `shio publish` and the TS client send only known fields, so no
+caller breaks.
+
+A test with the id posts a batch whose `post.publish` op carries `cancle` and asserts a
+400 naming `cancel`, with the page still unpublished. ShAgentOpsContractTest's list of
+declared keys is the natural source for the allowed names, so the vocabulary and the
+refusal cannot disagree.
 
 ## LXVII The curator's return channel, and the conversation with the agent (Block BB)
 

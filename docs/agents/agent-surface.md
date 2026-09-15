@@ -3139,3 +3139,26 @@ clauses out of `shio clone --help`.
 **The third slice is who set it.** A transition the sweep fires is recorded as the `scheduler`'s, and
 the Activity row now reads `Published "…" (scheduled by ana)`; `include=schedule` names the requester
 as `requestedBy`. The schema half is in `docs/agents/database.md`.
+
+## A takedown that waits, and a schedule called off (SH992)
+
+`post.unpublish` bound `when` and never read it, so a takedown dated for December happened on the call
+and reported success; `shio_publish` built its op with no `when` at all. Both ops now go through one
+helper in `ShAgentBatchService` (`scheduled`), on both address forms: `when` sets that transition's
+instant, `cancel: true` clears it and the change row says what it cleared (`cancelled the unpublish
+scheduled for …`), and the same instant twice is a noop. `when` beside `cancel` is a 400
+(`cancel-with-when`), because either precedence drops something the caller sent. A scheduled unpublish
+is checked before "not published", so a page whose launch is itself scheduled can carry its takedown,
+which is an embargo window. It still refuses a published row with no draft behind it (SH462), the same
+refusal an immediate unpublish gives.
+
+**The instant the op does not name is carried through.** SH342's path passed `null` for the unpublish
+instant, so scheduling a launch cancelled the takedown already set for that page. And
+`ShPostUnifiedWriteService#schedule` now changes the requester only for somebody who set an instant:
+cancelling one of two, or saving both unchanged, leaves the other attributed to whoever chose it.
+
+`shio_publish` takes `when` and `cancel` inside its SH977 reservation. `shio_write` could not declare
+`cancel`, since it is at its per-tool wall, so it now **refuses any op field it does not declare**
+(`undeclared-op-field`) instead of dropping it. Dropped, a `cancel` that shio://ops lists would have
+arrived as a plain publish, and the op would have gone live instead of standing down. The refusal
+names `shio_publish` for `cancel`. `shio publish --when <instant>` and `--cancel` are the CLI leg.

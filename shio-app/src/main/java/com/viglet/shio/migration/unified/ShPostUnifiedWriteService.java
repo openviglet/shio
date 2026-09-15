@@ -583,11 +583,19 @@ public class ShPostUnifiedWriteService {
                 .findByIdAndState(postId, ShPostState.DRAFT)
                 .orElseGet(() -> draftFromPublished(postId));
 
-        draft.setPublishScheduledDate(publishAt);
-        draft.setUnpublishScheduledDate(unpublishAt);
         // SH991 — the person behind the transition the sweep fires later, and nobody once nothing is
         // left scheduled, so a stale name never attributes a schedule somebody else set afterwards.
-        draft.setScheduleRequestedBy(publishAt == null && unpublishAt == null ? null : modifier);
+        // SH992 — and only someone who set an instant becomes it: cancelling one of two, or saving
+        // both unchanged, leaves the other attributed to whoever chose it.
+        boolean sets = (publishAt != null && !publishAt.equals(draft.getPublishScheduledDate()))
+                || (unpublishAt != null && !unpublishAt.equals(draft.getUnpublishScheduledDate()));
+        if (publishAt == null && unpublishAt == null) {
+            draft.setScheduleRequestedBy(null);
+        } else if (sets || draft.getScheduleRequestedBy() == null) {
+            draft.setScheduleRequestedBy(modifier);
+        }
+        draft.setPublishScheduledDate(publishAt);
+        draft.setUnpublishScheduledDate(unpublishAt);
         draft.setModifiedDate(Instant.now());
         if (modifier != null) draft.setModifier(modifier);
         return shPostUnifiedRepository.save(draft);

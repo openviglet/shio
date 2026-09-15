@@ -57,14 +57,23 @@ export async function run(flags, positionals, ctx) {
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
 
   const addresses = await targets(flags, positionals, site, client, ctx, verb);
-  const ops = addresses.map((address) => ({ op: `post.${verb}`, address }));
+  // SH992 — the transition at an instant, or the pending one called off. Both are passed as the op
+  // spells them and judged by the server: a past instant, or both at once, is refused there.
+  const when = typeof flags.when === "string" ? flags.when : undefined;
+  const cancel = Boolean(flags.cancel);
+  const ops = addresses.map((address) => ({
+    op: `post.${verb}`,
+    address,
+    ...(when ? { when } : {}),
+    ...(cancel ? { cancel: true } : {}),
+  }));
   const dryRun = Boolean(flags.dryRun);
 
   const runs = await send(client, ops, { dryRun, ids: Boolean(flags.ids) }).catch((error) => {
     throw retellUnknownSite(error, { command: "publish", site: site ?? "<name>" });
   });
 
-  ctx.stdout.write(render(runs, { verb, dryRun, addresses: addresses.length }));
+  ctx.stdout.write(render(runs, { verb, dryRun, addresses: addresses.length, when, cancel }));
   return merge(runs);
 }
 
@@ -208,14 +217,21 @@ function merge(runs) {
  * Noops are counted and not listed. On a re-run they are every line, and a caller re-running this
  * after a failure is the case the idempotence exists for.
  */
-function render(runs, { verb, dryRun, addresses }) {
+function render(runs, { verb, dryRun, addresses, when, cancel }) {
   const result = merge(runs);
   const rows = result.results.filter((change) => change.action !== "noop");
   const noops = result.results.length - rows.length;
+  // SH992 — a noop on a schedule is not a page already live: it is the same instant already set, or
+  // nothing pending to call off.
+  const unchanged = when
+    ? "already scheduled then"
+    : cancel
+      ? `with no ${verb} scheduled`
+      : `already ${verb === "publish" ? "live" : "down"}`;
   const header =
     `shio ${verb}: ${result.changed} of ${addresses} post(s)` +
     (dryRun ? " would change — nothing written" : " changed") +
-    (noops ? `, ${noops} already ${verb === "publish" ? "live" : "down"}` : "");
+    (noops ? `, ${noops} ${unchanged}` : "");
   const lines = rows.flatMap((change) => {
     const detail = change.detail ? ` (${change.detail})` : "";
     const line = `  ${change.action} ${change.address}${change.id ? ` ${change.id}` : ""}${detail}`;

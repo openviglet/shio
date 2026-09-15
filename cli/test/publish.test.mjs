@@ -120,6 +120,34 @@ test("SH546: --unpublish is the same verb inverted, not a second command", async
   assert.equal(fetchImpl.calls[0].body.ops[0].op, "post.unpublish");
 });
 
+test("SH992: --when and --cancel ride the op as the batch spells them", async () => {
+  const fetchImpl = scriptedFetch((url, method, body) => ({ payload: changed(body.ops) }));
+
+  await publish.run({ unpublish: true, when: "2099-12-01T09:00:00Z" }, ["post:Acme/promo"],
+    ctxWith(fetchImpl));
+  await publish.run({ cancel: true }, ["post:Acme/launch"], ctxWith(fetchImpl));
+
+  assert.deepEqual(fetchImpl.calls[0].body.ops[0],
+    { op: "post.unpublish", address: "post:Acme/promo", when: "2099-12-01T09:00:00Z" },
+    "SH992: a takedown dated for December has to reach the server with its date, or it happens now");
+  assert.deepEqual(fetchImpl.calls[1].body.ops[0],
+    { op: "post.publish", address: "post:Acme/launch", cancel: true });
+});
+
+test("SH992: a noop on a schedule is not reported as a page already live", async () => {
+  const fetchImpl = scriptedFetch((url, method, body) => ({
+    payload: {
+      dryRun: false, ops: 1, changed: 0,
+      results: [{ op: body.ops[0].op, address: body.ops[0].address, action: "noop" }],
+    },
+  }));
+  const ctx = ctxWith(fetchImpl);
+
+  await publish.run({ cancel: true }, ["post:Acme/launch"], ctx);
+
+  assert.match(ctx.stdout.text, /1 with no publish scheduled/);
+});
+
 test("SH546: --dry-run asks the server to write nothing", async () => {
   const fetchImpl = scriptedFetch((url, method, body) => ({
     payload: { dryRun: true, ops: body.ops.length, changed: 1, results: [] },

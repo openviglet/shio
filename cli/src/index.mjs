@@ -78,6 +78,8 @@ const BOOLEANS = [
   // instead of from my argv" — a decision, so a flag. `--unpublish` is the same verb inverted,
   // spelled the way `shio_publish` spells it rather than as a second command.
   "all", "unpublish",
+  // SH992: `--cancel` calls off the pending publish or unpublish; `--when` takes its instant.
+  "cancel",
   // SH591: a site declared disposable by the run that made it, and the only set `site rm` will
   // ever act on. A flag rather than a value because it is a declaration, not a parameter.
   "scratch",

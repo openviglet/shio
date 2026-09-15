@@ -10,16 +10,14 @@ shio clone <url> — capture a site that already exists, and write no content
   --scripts                With --assets: take this site's own <script src> too
   --refresh                Re-check the capture's pages by ETag (needs --markup); new links
                            are noted, not followed
-  --render                 Drive a browser, for a page that renders itself (needs
-                           playwright)
+  --render                 Drive a browser for a self-rendering page (needs playwright)
   --ignore-robots          Crawl anyway; recorded in the inventory
   --delay <seconds>        Wait between requests (default: the site's own Crawl-delay)
   --timeout <ms>           Per-page timeout with --render (default 30000)
   --no-progress            Skip clone-status.json and clone-progress.jsonl
   --out <file>             Inventory path (default shio/.shio/source-inventory.json)
   --json                   The inventory on stdout instead of the report
-  --url <url>              The site, when no positional is given; here --url is the target,
-                           not the instance
+  --url <url>              The site, if no positional: here the target, not the instance
 
 Examples:
   shio clone https://acme.example.com --markup

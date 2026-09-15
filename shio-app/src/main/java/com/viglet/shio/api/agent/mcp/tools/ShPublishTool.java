@@ -53,9 +53,9 @@ public class ShPublishTool implements ShMcpTool {
 
     @Override
     public String description() {
-        return "Make drafts live, or take live posts down (unpublish=true). This is the only "
-                + "call that changes what visitors see — everything you write before it is "
-                + "invisible. Atomic across all the addresses you pass; re-publishing unchanged "
+        return "Make drafts live, or take live posts down (unpublish=true), now or at `when`. This "
+                + "is the only call that changes what visitors see — everything you write before it "
+                + "is invisible. Atomic across all the addresses you pass; re-publishing unchanged "
                 + "content reports noop.";
     }
 
@@ -64,6 +64,10 @@ public class ShPublishTool implements ShMcpTool {
         return ShMcpTool.schema(Map.of(
                 "address", ShMcpTool.strings("One or more post addresses to publish."),
                 "unpublish", ShMcpTool.bool("Take them down instead."),
+                // SH992 — inside the room SH977 reserved for exactly these two. They are parameters of
+                // the publish rather than ops, which is the ladder's test for a tool argument.
+                "when", ShMcpTool.string("ISO-8601 instant to do it at."),
+                "cancel", ShMcpTool.bool("Clear the pending one instead."),
                 "dryRun", ShMcpTool.bool("Report what would change and do nothing.")),
                 List.of("address"));
     }
@@ -77,8 +81,13 @@ public class ShPublishTool implements ShMcpTool {
         String op = ShMcpArgs.bool(arguments, "unpublish")
                 ? ShAgentBatchService.POST_UNPUBLISH
                 : ShAgentBatchService.POST_PUBLISH;
+        // SH992 — the op used to be built with no `when`, so the tool whose description says it is
+        // the one call that changes what visitors see could not say when.
+        String when = ShMcpArgs.string(arguments, "when");
+        Boolean cancel = ShMcpArgs.bool(arguments, "cancel") ? Boolean.TRUE : null;
         List<ShAgentBatch.Op> ops = addresses.stream()
-                .map(address -> new ShAgentBatch.Op(op, address, null, null, null))
+                .map(address -> new ShAgentBatch.Op(op, address, null, null, null, null, when, null,
+                        null, null, null, null, cancel))
                 .toList();
         return ShAgentReadTerse.changes(shAgentBatchService.run(
                 new ShAgentBatch(ShMcpArgs.bool(arguments, "dryRun"), ops),

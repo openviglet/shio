@@ -120,10 +120,23 @@ public record ShAgentBatch(boolean dryRun, List<Op> ops, String confirm, boolean
      *                and a {@code when} in the past is refused rather than treated as "now". SH15's
      *                sweep is what fires it; this is the agent-native form of a capability the
      *                manifest advertised and only an id-keyed console route could reach.
+     *                {@code post.unpublish} reads it too since SH992; before that it bound and was
+     *                ignored, so a takedown dated for December happened at once
+     * @param cancel  {@code true} to clear the pending instant of the transition the op names,
+     *                leaving the other one alone (SH992). Refused beside {@code when}, which would
+     *                be one op asking to set and to clear the same thing
      */
     public record Op(String op, String address, String type, String folder, String to,
                      JsonNode data, String when, String locale, String translationOf, String url,
-                     String expect, Integer revision) {
+                     String expect, Integer revision, Boolean cancel) {
+
+        /** The twelve-field form, before SH992 let a publish or an unpublish clear its schedule. */
+        public Op(String op, String address, String type, String folder, String to, JsonNode data,
+                  String when, String locale, String translationOf, String url, String expect,
+                  Integer revision) {
+            this(op, address, type, folder, to, data, when, locale, translationOf, url, expect,
+                    revision, null);
+        }
 
         /**
          * The eleven-field form, before SH987 gave the vocabulary a rollback.

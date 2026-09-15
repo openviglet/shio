@@ -9,6 +9,7 @@
 package com.viglet.shio.api.agent;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -2503,7 +2504,11 @@ public class ShAgentBatchService {
         // be published — short-circuiting here would silently skip the publish and make
         // apply disagree with its own plan.
         if (session.dryRun && session.alreadyPlanned(address)) {
-            return session.change(op, address, Change.PUBLISH, "the draft this batch creates", null);
+            // SH992 — the plan reports a schedule as the run will: a draft this batch creates is
+            // scheduled rather than published, and has nothing yet to cancel.
+            Change planned = scheduled(op, address, session, null, true);
+            return planned != null ? planned
+                    : session.change(op, address, Change.PUBLISH, "the draft this batch creates", null);
         }
         ShPostUnified draft = state(site, address, ShPostState.DRAFT).orElse(null);
         Optional<ShPostUnified> published = state(site, address, ShPostState.PUBLISHED);
@@ -2514,22 +2519,17 @@ public class ShAgentBatchService {
         requireExpectedState(op, address, draft);
         if (draft == null) {
             if (published.isPresent()) {
-                return session.change(op, address, Change.NOOP, "no draft to publish",
-                        published.get().getId());
+                return session.change(op, address, Change.NOOP, cancels(op)
+                        ? "no publish scheduled" : "no draft to publish", published.get().getId());
             }
             throw new ShAddressResolver.UnresolvedAddressException(address, List.of());
         }
         // SH342 — a scheduled publish, which is the same op with a `when`. It comes *before* the
         // no-drift check on purpose: "the draft already matches what is published" makes publishing
         // now a noop, and says nothing about a transition asked for at a later instant.
-        Instant when = scheduleInstant(op, address);
-        if (when != null) {
-            if (!session.dryRun) {
-                shContentAclService.requireWrite(draft.getId());
-                shPostUnifiedWriteService.schedule(draft.getId(), when, null, session.actor);
-            }
-            return session.change(op, address, Change.UPDATE, "scheduled to publish at " + when,
-                    draft.getId());
+        Change scheduled = scheduled(op, address, session, draft, true);
+        if (scheduled != null) {
+            return scheduled;
         }
         if (published.isPresent() && sameContent(draft, published.get())) {
             return session.change(op, address, Change.NOOP, null, draft.getId());
@@ -2600,13 +2600,96 @@ public class ShAgentBatchService {
         return when;
     }
 
+    /** Whether the op names an instant at all, before {@link #scheduleInstant} judges it (SH992). */
+    private static boolean hasWhen(ShAgentBatch.Op op) {
+        return op.when() != null && !op.when().isBlank();
+    }
+
+    /** Whether the op asks to clear its transition's pending instant (SH992). */
+    private static boolean cancels(ShAgentBatch.Op op) {
+        return Boolean.TRUE.equals(op.cancel());
+    }
+
+    /**
+     * SH992 — the op's schedule set or cleared, or {@code null} when it asked for the transition now.
+     *
+     * <p>One helper for both ops and both address forms, because the defect was a handler and its
+     * twin disagreeing: {@code postPublish} read {@code when} and {@code postUnpublish} bound it and
+     * never looked, so a takedown dated for December happened at once and reported success.</p>
+     *
+     * <p>Both instants live on the draft, and the one the op does not name is carried through: the
+     * SH342 publish path passed {@code null} for the unpublish instant, so scheduling a launch quietly
+     * cancelled the takedown already set for it. A repeat of the pending instant is a noop (P5), and
+     * a dry run returns the row the run does, because a plan must not promise what the run refuses.</p>
+     *
+     * @param draft the draft row, or {@code null} for one this batch has only planned — in which case
+     *              nothing is pending and nothing is written, since only a dry run gets here without it
+     */
+    private Change scheduled(ShAgentBatch.Op op, ShAddress address, Session session,
+                             ShPostUnified draft, boolean publishing) {
+        Instant when = scheduleInstant(op, address);
+        if (when == null && !cancels(op)) {
+            return null;
+        }
+        if (when != null && cancels(op)) {
+            throw new CancelWithWhenException(op.op(), address);
+        }
+        String verb = publishing ? "publish" : "unpublish";
+        String id = draft == null ? null : draft.getId();
+        Instant publishAt = draft == null ? null : draft.getPublishScheduledDate();
+        Instant unpublishAt = draft == null ? null : draft.getUnpublishScheduledDate();
+        Instant pending = publishing ? publishAt : unpublishAt;
+        if (when == null) {
+            if (pending == null) {
+                return session.change(op, address, Change.NOOP, "no " + verb + " scheduled", id);
+            }
+            if (!session.dryRun) {
+                shContentAclService.requireWrite(id);
+                shPostUnifiedWriteService.schedule(id, publishing ? null : publishAt,
+                        publishing ? unpublishAt : null, session.actor);
+            }
+            return session.change(op, address, Change.UPDATE,
+                    "cancelled the " + verb + " scheduled for " + pending, id);
+        }
+        if (pending != null && pending.truncatedTo(ChronoUnit.MILLIS)
+                .equals(when.truncatedTo(ChronoUnit.MILLIS))) {
+            return session.change(op, address, Change.NOOP,
+                    "already scheduled to " + verb + " at " + pending, id);
+        }
+        if (!session.dryRun) {
+            shContentAclService.requireWrite(id);
+            shPostUnifiedWriteService.schedule(id, publishing ? when : publishAt,
+                    publishing ? unpublishAt : when, session.actor);
+        }
+        return session.change(op, address, Change.UPDATE, "scheduled to " + verb + " at " + when
+                + (pending == null ? "" : ", replacing " + pending), id);
+    }
+
     private Change postUnpublish(ShAgentBatch.Op op, Session session) {
         ShAddress address = stateAddress(op);
         if (address.kind() == ShAddress.Kind.ID) {
             return publishById(op, address, session, false);
         }
         ShSite site = requireSite(address.site(), session);
+        if (session.dryRun && session.alreadyPlanned(address)) {
+            Change planned = scheduled(op, address, session, null, false);
+            if (planned != null) {
+                return planned;
+            }
+        }
         Optional<ShPostUnified> published = state(site, address, ShPostState.PUBLISHED);
+        ShPostUnified draft = state(site, address, ShPostState.DRAFT).orElse(null);
+        // SH992 — before "not published", on purpose: a page whose launch is itself scheduled can
+        // carry its takedown too, which is an embargo window, and calling one off needs no live page.
+        if (hasWhen(op) || cancels(op)) {
+            if (draft == null && published.isEmpty() && hasWhen(op)) {
+                throw new ShAddressResolver.UnresolvedAddressException(address, List.of());
+            }
+            if (hasWhen(op) && published.isPresent()) {
+                requireDraftBehind(op, address, draft, published.get());
+            }
+            return scheduled(op, address, session, draft, false);
+        }
         if (published.isEmpty()) {
             return session.change(op, address, Change.NOOP, "not published", null);
         }
@@ -3057,6 +3140,19 @@ public class ShAgentBatchService {
         ShSite site = ShFolderSite.of(any.getShFolder());
         requireSite(site == null ? null : site.getName(), session);
 
+        // SH992 — the `id:` form schedules on the same terms as an address, or it would be the one
+        // path where a dated publish still happened now.
+        if (hasWhen(op) || cancels(op)) {
+            if (draft == null) {
+                if (!cancels(op) && !publishing) {
+                    requireDraftBehind(op, address, null, published);
+                }
+                return session.change(op, address, Change.NOOP, cancels(op)
+                        ? "no " + (publishing ? "publish" : "unpublish") + " scheduled"
+                        : "no draft to publish", published.getId());
+            }
+            return scheduled(op, address, session, draft, publishing);
+        }
         if (publishing) {
             if (draft == null) {
                 return session.change(op, address, Change.NOOP, "no draft to publish",
@@ -3427,6 +3523,26 @@ public class ShAgentBatchService {
                     .withExample("{\"op\":\"" + op + "\",\"address\":\""
                             + (address == null ? "post:Blog/blog/hello" : address.toString())
                             + "\",\"when\":\"2026-08-01T09:00:00Z\"}"));
+        }
+    }
+
+    /**
+     * SH992 — {@code when} and {@code cancel} on one op.
+     *
+     * <p>Refused rather than resolved by precedence, since either reading loses something the caller
+     * meant: honouring the instant ignores a request to clear, and honouring the cancel drops a date
+     * the caller took the trouble to send.</p>
+     */
+    public static class CancelWithWhenException extends ShTeachingException {
+
+        public CancelWithWhenException(String op, ShAddress address) {
+            super(ShProblem.badRequest("cancel-with-when", "`cancel` and `when` on one op")
+                    .withDetail("`when` sets the " + op + " instant and `cancel` clears it, so the "
+                            + "op asks for both.")
+                    .withFix("Send `when` to schedule or reschedule, or `cancel` alone to call it off.")
+                    .withExample("{\"op\":\"" + op + "\",\"address\":\""
+                            + (address == null ? "post:Blog/blog/hello" : address.toString())
+                            + "\",\"cancel\":true}"));
         }
     }
 
