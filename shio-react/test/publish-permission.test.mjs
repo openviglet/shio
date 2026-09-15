@@ -59,6 +59,35 @@ test("SH995: the ACL editor offers all three levels, in both locales", () => {
   }
 })
 
+test("SH998: the override appears in the refusal, and never before it", () => {
+  const dialog = read("src", "components", "publish-preview.dialog.tsx")
+  const page = read("src", "app", "content", "post.edit.page.tsx")
+  const service = read("src", "services", "post-unified", "post-unified.service.ts")
+
+  assert.match(dialog, /\{gateRefusal && \(/,
+    "SH998: a reason box on every publish trains a curator to fill one in, which is how a waiver "
+      + "stops meaning anything")
+  assert.match(dialog, /disabled=\{publishing \|\| loading \|\| \(!!gateRefusal && !override\.trim\(\)\)\}/,
+    "SH998: the record is the whole of the override, so a blank one cannot be sent")
+  assert.match(page, /problem\.type\?\.endsWith\("publish-gate-failed"\)/,
+    "SH998: branched on the problem's type, never on its sentence — the sentence is for the "
+      + "curator and is meant to be improvable")
+  assert.match(service, /params: override \? \{ override \} : undefined/,
+    "SH998: absent means no override; empty means an override with nothing written down, which "
+      + "the server refuses on purpose")
+
+  for (const locale of ["en", "pt"]) {
+    const content = JSON.parse(read("src", "i18n", "locales", locale, "content.json"))
+    for (const key of ["content.publishGateStopped", "content.publishOverrideLabel",
+      "content.publishOverrideHint", "content.publishOverrideConfirm"]) {
+      assert.ok(content[key], `SH998: ${locale} is missing ${key}`)
+    }
+    assert.match(content["content.publishOverrideHint"], /hist|read/i,
+      `SH998: ${locale} must say who will read the sentence — a waiver written in private is the `
+        + "one thing this is not")
+  }
+})
+
 test("SH996: Publish opens the server's plan before it writes", () => {
   const page = read("src", "app", "content", "post.edit.page.tsx")
   const dialog = read("src", "components", "publish-preview.dialog.tsx")

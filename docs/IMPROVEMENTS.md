@@ -1505,25 +1505,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.9 An override that leaves a record, and the events an orchestrator needs (SH998)
-
-BA8 makes a gate refuse a publish. A gate with no sanctioned way past it is one a team
-removes the day it blocks something urgent, and a waiver nobody can see is worse than no
-gate.
-
-A user holding PUBLISH, from BA6, may publish past a failing gate by supplying a reason.
-The override is recorded as an audit row naming the gate, the failing check, the address
-and the reason, and as a revision reason on the content, so both the Activity page and
-shio changes show that a gate was waived and by whom. An agent credential cannot
-override, which keeps the non-goal that an agent does not approve its own work.
-
-The outbound edge gains GATE_FAILED and REVIEW_REQUESTED, dispatched when a gate refuses
-and when a run enters review. That is the honest integration with an external
-orchestrator: Shio reports, and something else decides whether to page a human, pause a
-pipeline or open a ticket. The assertions: an override without a reason is refused, one
-with a reason publishes and records both rows, and a failing gate emits GATE_FAILED with
-the check in its payload.
-
 ### LXVI.10 The client asks for the version the CDA can serve (SH1081)
 
 SH990 gave every CDA read a state parameter: published for any token, draft and rev:<n>
@@ -1586,6 +1567,56 @@ A test with the id posts a batch whose `post.publish` op carries `cancle` and as
 400 naming `cancel`, with the page still unpublished. ShAgentOpsContractTest's list of
 declared keys is the natural source for the allowed names, so the vocabulary and the
 refusal cannot disagree.
+
+### LXVI.13 A gate with two doors, and the lint that finds the next one (SH1084)
+
+SH997 put the gate "where the publish happens" so no surface could bypass it, and named
+three: the agent's op, the console's button, a release run. Two more exist and neither
+was found, because nothing looks.
+
+`ShReviewService.approve` publishes every draft an agent run wrote — the one press the
+review queue exists for — and calls `shPostUnifiedWriteService.publish` directly, past
+the gate. `ShPostDraftMergeService.merge(..., publish=true)` is the same: it is what
+`PATCH /v2/post-unified/{id}` does when the payload says `publish`, which is the
+Universal Editor's save-and-publish. Both were found by reading every call site of the
+gate service: four, none of them these.
+
+That is precisely the failure SH997's own prose describes — a rule one surface enforces
+and another does not, which is worse than no rule because it reads as enforced. A
+curator who approved an agent's run past a failing check has no way to know the check
+did not run.
+
+The fix is two calls, and it is not the deliverable. SH338 binds here: the instrument
+lands first. A lint walks every caller of `ShPostUnifiedWriteService.publish` and fails
+on one that reaches a publish with no gate evaluation on the way, holding its exemptions
+as a named list rather than a count — a count lets the next surface spend it. Then the
+two fixes, and SH998's waiver reaching both: an Approve a gate stops must be able to say
+why it goes anyway, or the queue becomes a place work gets stuck with no way forward.
+
+### LXVI.14 Casing without a locale, measured (SH1085)
+
+`String.toLowerCase()` with no argument uses `Locale.getDefault()`, and Turkish maps `I`
+to the dotless `ı`. Verified rather than suspected:
+`"PUBLISH".toLowerCase(Locale.forLanguageTag("tr"))` returns `publısh`.
+
+That value is `ShWebhookEventType.wire()` — the `event` field of every signed outbound
+payload, which the `create-shio-app` receiver matches on byte-for-byte. On a JVM whose
+default locale is Turkish, every publish webhook this product has ever sent would be
+silently ignored by its own reference receiver, and nothing here or there would report a
+failure: the delivery succeeds, the handler falls through.
+
+There are nine such calls in `shio-app`, found by one grep, and the others are not
+decoration. `ShURLFormatter` lower-cases a friendly URL, so the same title mints a
+different address depending on where the JVM runs — and an address is the product's
+identity for a page (SH79). `ShSiteExportService` and `ShSiteImportService` each slug
+independently, so an export taken on one box may not re-import on another.
+`ShMarketplaceInstaller` looks a blueprint up by a lower-cased id, and
+`ShCsrfAccessDeniedHandler` decides whether a cookie name contains `SESSION`.
+
+SH338's order: the lint first. It fails on any `toLowerCase()` / `toUpperCase()` with no
+`Locale`, naming the file, which is what finds the tenth. Then the nine become
+`Locale.ROOT`, which is the answer in every one of these cases — none of them is casing
+text for a person to read.
 
 ## LXVII The curator's return channel, and the conversation with the agent (Block BB)
 

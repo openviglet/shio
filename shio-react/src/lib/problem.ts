@@ -24,6 +24,14 @@ import { toast } from "@viglet/viglet-design-system"
 
 /** What the backend says when it refuses. Every field past `title` is optional and usually there. */
 export interface Problem {
+  /**
+   * The refusal's own name, as the URI `ShProblem` stamps — it ends in the slug (SH998).
+   *
+   * The one field a caller can branch on. Everything else here is prose the server chose for a
+   * person to read, and a console that decided what to offer by matching a sentence would break the
+   * day somebody improved the wording.
+   */
+  type?: string
   /** The short name of the refusal — `ShProblem.of(slug, status, title)`. */
   title: string
   /** What went wrong, at length. The headline a person reads. */
@@ -60,6 +68,7 @@ export function problemOf(error: unknown): Problem {
     const title = [raw.title, raw.message].find((value) => typeof value === "string" && value)
     if (typeof title === "string") {
       const problem: Problem = { title }
+      if (typeof raw.type === "string" && raw.type) problem.type = raw.type
       if (typeof raw.detail === "string" && raw.detail) problem.detail = raw.detail
       if (typeof raw.fix === "string" && raw.fix) problem.fix = raw.fix
       if (typeof raw.didYouMean === "string" && raw.didYouMean) problem.didYouMean = raw.didYouMean

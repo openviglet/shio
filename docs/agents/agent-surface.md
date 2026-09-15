@@ -3321,3 +3321,42 @@ call that reproduces it, and SH996's dry run carries the same sentence so a plan
 the run refuses. Gates travel as their own idempotent writes (`GET /agent/gates`, `PUT
 /agent/gates/{name}`), like SH161's notes and for the same reason: a gate is not content, so folding it
 into the desired-state document would make it the thing `--prune` deletes when a tree stops naming it.
+
+## Waiving a gate, and the two events an orchestrator needs (SH998)
+
+A gate with no sanctioned way past it is one a team removes the day it blocks something urgent, and
+then nothing checks anything. So a person holding PUBLISH may publish past a failing gate by supplying
+a **reason** — `POST /v2/post-unified/{id}/publish?override=<sentence>` — and the reason is the whole
+of it. Two refusals sit around that: a blank one is `400 waiver-needs-a-reason`, because a waiver
+nobody can see is worse than no gate (it looks exactly like the gate having held), and an **agent
+credential** is `403 agent-cannot-waive`, because "the agent never approves, holds or rejects its own
+work" is a standing non-goal and waving content past the check that judges it is that, one word later.
+`ShApiTokenContext.current()` is what tells the two apart, so a console session is a person and a token
+is not, with no new flag to keep in step.
+
+**Recorded twice, because the two records answer different questions.** The audit row
+(`waived gate 'ready' (verify): <reason>`, alongside SH991's `scheduled by`) is what somebody asking
+"what happened on Tuesday" reads, in the Activity page and in `shio changes`. `sh_post_revision.note`
+is what somebody who started at the *content* reads, in `shio versions` and the history panel. Either
+one alone leaves a reader with no way to find out a check was overridden. The waiver is **not** a
+fourth `ShPostRevision.Reason`: that column answers why a snapshot exists, and a waived publish is
+still a publish — folding them would force a reader to choose between "this went live" and "somebody
+overrode a check" when the honest answer is both.
+
+**Two new webhook events, and the subscription rule that had to change with them.**
+`GATE_FAILED` fires when a gate refuses — nothing moved, which is exactly why something outside has to
+hear about it — and `REVIEW_REQUESTED` when an agent run leaves drafts a person has to release.
+`GATE_FAILED` is **dispatched**, not published as a Spring event: `ShPostLifecycleEvent`'s listener
+runs `AFTER_COMMIT` and there is no commit here, the transaction being the one abandoned, so a notice
+that waited for one is a notice nobody receives. `REVIEW_REQUESTED` does wait, because the drafts have
+to exist before an approver is told to look; it is deduplicated per transaction and site, so a
+forty-page conversion sends one notice rather than forty. Each carries its own facts flat in the
+payload — `gate`, `check`, `severity`, `address` for the first, `session` for the second — so a
+receiver routing on the failing check reads it the way it reads `postId`.
+
+And an **empty `events` set now means every content transition**, not literally every event. Nobody
+chose the old reading for events that did not exist: every existing subscriber, the SH9
+`/api/revalidate` receiver included, subscribed to what the enum held at the time, and widening it
+under them would have revalidated a Next.js cache on a gate *failure* — the one moment nothing changed
+— with no way to narrow it back, an empty set being the only subscription they had written. A notice
+is delivered only where a subscription names it.

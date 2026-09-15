@@ -1734,3 +1734,18 @@ the tree and not others — so a disabled button would hide a partially permitte
 already publishes what it may and returns every refusal as a skipped row carrying the server's own
 sentence, which the page raises one toast per post for. The permissions dialog offers the third
 level, `PUBLISH`, in both locales.
+
+## The publish override, and why the box appears only after the refusal (SH998)
+
+A reason box on every publish would train a curator to fill one in, which is how a waiver stops meaning
+anything. So `PublishPreviewDialog` shows one **only** once the server has refused: `handlePublish`
+catches the 409, keeps the dialog open and puts the gate's own sentence in it, and the confirm button
+becomes "publish past the check" and stays disabled until something is typed — the server refuses a
+blank waiver, and the button knowing that is what stops a curator learning the rule from a second
+refusal.
+
+The branch is on `problem.type` (which `problemOf` now reads off the `application/problem+json` body),
+never on the refusal's prose. The prose is written for the curator and is meant to be improvable; a
+console that decided what to offer by matching a sentence would break the day somebody improved one.
+`Problem.type` is the only field on that document a caller should branch on, and it is the reason it
+is now carried.

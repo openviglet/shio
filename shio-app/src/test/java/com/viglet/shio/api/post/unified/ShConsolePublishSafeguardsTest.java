@@ -136,7 +136,7 @@ class ShConsolePublishSafeguardsTest {
     void aDryRunWritesNothing() {
         String postId = SITE + "-planned";
 
-        Object body = api.publish(postId, null, true, () -> "ana").getBody();
+        Object body = api.publish(postId, null, true, null, () -> "ana").getBody();
 
         assertThat(body).isInstanceOf(ShAgentChangeSet.class);
         ShAgentChangeSet answer = (ShAgentChangeSet) body;
@@ -156,7 +156,7 @@ class ShConsolePublishSafeguardsTest {
     void aConsolePublishIsReviewable() {
         String postId = SITE + "-reviewed";
 
-        api.publish(postId, null, false, () -> "ana");
+        api.publish(postId, null, false, null, () -> "ana");
 
         assertThat(live("/reviewed")).isTrue();
         String session = ShAgentSessionContext.consoleSession("ana", Instant.now());

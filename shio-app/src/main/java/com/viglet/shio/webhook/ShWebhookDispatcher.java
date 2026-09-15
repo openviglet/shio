@@ -24,7 +24,6 @@ import com.viglet.shio.tenant.ShTenantHandoff;
 
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Outbound webhook emitter (SH12). Listens for {@link ShPostLifecycleEvent}s
@@ -81,6 +80,19 @@ public class ShWebhookDispatcher {
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onPostLifecycle(ShPostLifecycleEvent event) {
+        dispatch(event);
+    }
+
+    /**
+     * Deliver one event now, without waiting for a commit (SH998).
+     *
+     * <p>Which is the whole difference between the two kinds of thing on this edge. A publish is
+     * announced once the database agrees it happened, so it rides the listener above. A
+     * {@code GATE_FAILED} is a refusal: the transaction it is about is the one being abandoned, and
+     * an {@code AFTER_COMMIT} listener waiting for a commit that never comes is how the approver is
+     * never told. Called straight, it is delivered exactly when the refusal is.</p>
+     */
+    public void dispatch(ShPostLifecycleEvent event) {
         if (!properties.isEnabled()) {
             return;
         }
@@ -172,16 +184,8 @@ public class ShWebhookDispatcher {
     }
 
     private byte[] buildBody(ShPostLifecycleEvent event) {
-        ObjectNode node = objectMapper.createObjectNode();
-        node.put("event", event.type().wire());
-        node.put("siteId", event.siteId());
-        node.put("postId", event.postId());
-        if (event.url() != null) {
-            node.put("url", event.url());
-        }
-        if (event.occurredAt() != null) {
-            node.put("occurredAt", event.occurredAt().toString());
-        }
-        return objectMapper.writeValueAsBytes(node);
+        // SH998 — a pure function of the event, so what a receiver verifies can be asserted without
+        // standing one up. See ShWebhookPayload for why that is worth its own class.
+        return ShWebhookPayload.of(objectMapper, event);
     }
 }

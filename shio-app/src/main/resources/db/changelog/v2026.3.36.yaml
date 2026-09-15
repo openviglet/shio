@@ -1,0 +1,35 @@
+databaseChangeLog:
+  # SH998 — `sh_post_revision.note`: what a person said about the moment this revision was taken.
+  #
+  # Written by the one case that has something to say: a publish that went past a failing gate on a
+  # waiver. The reason the curator typed travels here so `shio versions` and the console's history
+  # show it beside the version it belongs to, rather than only in the audit feed — a waiver nobody
+  # can see where the content is read is most of the way back to no gate at all.
+  #
+  # Why not a fourth `reason` value. That column answers "why was a snapshot taken" and its three
+  # values — PUBLISH, SAVE, ROLLBACK — are the reasons a row exists at all. A waived publish is still
+  # a publish: the snapshot is there because the row went live. Folding the waiver into that
+  # vocabulary would make a reader choose between "this went live" and "somebody overrode a check",
+  # and the honest answer is both. So the waiver is a note on the revision, and the enum keeps
+  # answering the question it was written for.
+  #
+  # Nullable with no backfill: every revision captured before this column existed carries nothing to
+  # say, and a default sentence would be a claim nobody made. Types DB-agnostic per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh998-add-sh-post-revision-note
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_post_revision
+                columnName: note
+      changes:
+        - addColumn:
+            tableName: sh_post_revision
+            columns:
+              - column:
+                  name: note
+                  type: VARCHAR(510)

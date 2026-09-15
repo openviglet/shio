@@ -97,6 +97,16 @@ public class ShPostRevisionService {
      */
     @Transactional
     public ShPostRevision capture(ShPostUnified post, Reason reason, String actor) {
+        return capture(post, reason, actor, null);
+    }
+
+    /**
+     * The same, carrying what a person said about this moment (SH998).
+     *
+     * @param note the sentence, or {@code null} — today only a waived gate has one
+     */
+    @Transactional
+    public ShPostRevision capture(ShPostUnified post, Reason reason, String actor, String note) {
         if (post == null || post.getData() == null) {
             return null;
         }
@@ -112,6 +122,9 @@ public class ShPostRevisionService {
         revision.setPostTypeId(post.getShPostType() == null ? null : post.getShPostType().getId());
         revision.setData(post.getData());
         revision.setActor(actor);
+        // Bounded to the column, for SH544's reason: the record describes the write and must never
+        // be what refuses it. A curator whose reason ran long gets it clipped, not their publish.
+        revision.setNote(note != null && note.length() > 510 ? note.substring(0, 510) : note);
         revision.setAgentSessionId(ShAgentSessionContext.current().orElse(null));
         revision.setCapturedAt(Instant.now());
         ShPostRevision saved = shPostRevisionRepository.save(revision);
@@ -169,8 +182,8 @@ public class ShPostRevisionService {
     private ShRevisionRow row(ShPostRevision revision, ShPostRevision previous) {
         return new ShRevisionRow(revision.getVersionNo(), revision.getState(), revision.getReason(),
                 revision.getActor(), revision.getAgentSessionId(), revision.getCapturedAt(),
-                revision.getTitle(), digestOf(revision), changedFields(previous, revision),
-                parse(revision.getData()));
+                revision.getTitle(), revision.getNote(), digestOf(revision),
+                changedFields(previous, revision), parse(revision.getData()));
     }
 
     /**

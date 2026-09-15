@@ -4079,3 +4079,10 @@ read.
 fixture assuming a *widget's* projection behaviour, not a type's existence — and a `type:` reader
 cannot see it. The design said a static reader "covers most of it", and this is the most, not the
 all.
+
+## `shio versions` prints a waived gate (SH998)
+
+A revision carries a `note` when somebody overrode a failing gate to create it, and `shio versions`
+prints it above the `changed:` line — "somebody overrode a check" outranks which fields moved. This is
+the half of the record a reader who started at the content will find; `shio changes` carries the other
+half, as the audit row's parenthetical.

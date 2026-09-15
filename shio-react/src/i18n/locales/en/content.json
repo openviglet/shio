@@ -264,5 +264,10 @@
   "content.publishPreviewHint": "What the server says this would do. Nothing is written yet.",
   "content.publishGoesLive": "{{url}} starts resolving for the first time.",
   "content.publishMoves": "The live page moves to {{to}}, and {{from}} stops resolving.",
-  "content.publishInbound": "{{count}} published page(s) link to {{url}}."
+  "content.publishInbound": "{{count}} published page(s) link to {{url}}.",
+  "content.publishGateStopped": "A check stopped this publish: {{reason}}",
+  "content.publishOverrideLabel": "Publish anyway, and say why",
+  "content.publishOverrideHint": "Everyone who reads this page's history will see this sentence and your name.",
+  "content.publishOverridePlaceholder": "Why this goes live past the check",
+  "content.publishOverrideConfirm": "Publish past the check"
 }

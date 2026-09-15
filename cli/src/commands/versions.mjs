@@ -66,6 +66,12 @@ function render(address, revisions) {
   for (const revision of revisions) {
     lines.push(`  ${String(revision.version).padStart(4)}  ${revision.reason ?? ""}`
       + `  ${revision.capturedAt ?? ""}  ${revision.actor ?? "—"}`);
+    // SH998 — a waived gate is the one thing a revision has to say for itself, and the place a
+    // reader who started at the content will look. Printed above `changed`, because "somebody
+    // overrode a check" outranks which fields moved.
+    if (revision.note) {
+      lines.push(`        ${revision.note}`);
+    }
     if (revision.changed?.length) {
       lines.push(`        changed: ${revision.changed.join(", ")}`);
     }

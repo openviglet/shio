@@ -172,9 +172,14 @@ export class ShPostUnifiedService {
    * Throws where no draft row exists (`Draft not found`), which is why the edit screen
    * only offers the button while it is editing one.
    */
-  async publish(id: string): Promise<ShPostUnified> {
+  /**
+   * @param override SH998 — the reason a curator gave for publishing past a failing gate. Sent only
+   *                 when they typed one: an absent parameter is "no override", and an empty one is
+   *                 an override with nothing written down, which the server refuses on purpose.
+   */
+  async publish(id: string, override?: string): Promise<ShPostUnified> {
     const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/publish`, undefined,
-      { headers: this.ifMatch(id, "DRAFT") })
+      { headers: this.ifMatch(id, "DRAFT"), params: override ? { override } : undefined })
     // The draft row survives a publish, so the tag the write answers with is the draft's.
     this.remember(id, "DRAFT", response.headers)
     return response.data

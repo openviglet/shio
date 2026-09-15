@@ -11,6 +11,8 @@ package com.viglet.shio.api.post.revision;
 import java.time.Instant;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -35,6 +37,8 @@ import tools.jackson.databind.JsonNode;
  * @param agentSession the agent session that wrote it, when one did (SH106)
  * @param capturedAt when
  * @param title     the title as it was, so a list reads without a second call
+ * @param note      what a person said about this moment, when one did — today, the reason a gate
+ *                  was waived (SH998); {@code null} on every revision nobody overrode anything for
  * @param digest    what this content would digest as in the post's present place — see
  *                  {@link ShPostRevisionService#digestOf} for what that sentence is doing there
  * @param changed   field names this revision altered, against the revision before it
@@ -48,6 +52,12 @@ public record ShRevisionRow(
         String agentSession,
         Instant capturedAt,
         String title,
+        // On the component alone, not the record: `data` is deliberately a written null in a
+        // listing (SH987 — "no body here" said out loud), and a note is absent on every revision
+        // nobody overrode anything for, which is almost all of them. Fifty rows paying for fifty
+        // `"note":null` is P3's cost for a fact that is the exception.
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        String note,
         String digest,
         List<String> changed,
         JsonNode data) {
@@ -55,6 +65,6 @@ public record ShRevisionRow(
     /** The same row without its body, which is what a listing answers with. */
     public ShRevisionRow terse() {
         return new ShRevisionRow(version, state, reason, actor, agentSession, capturedAt, title,
-                digest, changed, null);
+                note, digest, changed, null);
     }
 }

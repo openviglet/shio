@@ -11,6 +11,7 @@ package com.viglet.shio.api.gate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -25,13 +26,25 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
+import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.post.revision.ShPostRevisionService;
 import com.viglet.shio.api.post.unified.ShConsolePublishPlan;
 import com.viglet.shio.api.post.unified.ShPostUnifiedAPI;
+import com.viglet.shio.persistence.model.history.ShHistory;
+import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
+import com.viglet.shio.persistence.model.token.ShApiTokenScope;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
+import com.viglet.shio.spring.security.auth.ShApiTokenContext;
+import com.viglet.shio.webhook.ShPostLifecycleEvent;
+import com.viglet.shio.webhook.ShWebhookPayload;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -42,6 +55,8 @@ import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.persistence.repository.gate.ShPublishGateRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
+
+import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.widget.ShSystemWidget;
 
@@ -75,6 +90,12 @@ class ShPublishGateTest {
     private ShConsolePublishPlan shConsolePublishPlan;
     @Autowired
     private ShPostUnifiedAPI api;
+    @Autowired
+    private ShPostRevisionService shPostRevisionService;
+    @Autowired
+    private ShHistoryRepository shHistoryRepository;
+    @Autowired
+    private ObjectMapper objectMapper;
     @Autowired
     private ShPublishGateRepository shPublishGateRepository;
     @Autowired
@@ -152,7 +173,8 @@ class ShPublishGateTest {
             type.setShPostTypeAttrs(new HashSet<>(Set.of(title, body, subtitle)));
             entityManager.persist(type);
 
-            for (String url : List.of("/broken", "/sound", "/console")) {
+            for (String url : List.of("/broken", "/sound", "/console", "/waived", "/unreasoned",
+                    "/agent-waived")) {
                 ShPostUnified draft = new ShPostUnified();
                 draft.setId(SITE + url.replace('/', '-'));
                 draft.setState(ShPostState.DRAFT);
@@ -241,9 +263,94 @@ class ShPublishGateTest {
                 .as("SH997: a plan that could not say which gate would stop it promises what the run "
                         + "refuses")
                 .contains("gate 'ready' stops this: verify");
-        assertThatThrownBy(() -> api.publish(postId, null, false, () -> "ana"))
+        assertThatThrownBy(() -> api.publish(postId, null, false, null, () -> "ana"))
                 .isInstanceOf(ShPublishGateService.GateFailedException.class);
         assertThat(live("/console")).isFalse();
+    }
+
+    @Test
+    @DisplayName("SH998: an override with no reason is refused — the record is the whole of it")
+    void aWaiverNeedsAReason() {
+        String postId = SITE + "-unreasoned";
+
+        assertThatThrownBy(() -> api.publish(postId, null, false, "  ", () -> "ana"))
+                .isInstanceOf(ShPublishGateService.WaiverNeedsReasonException.class)
+                .satisfies(failure -> assertThat(((ShTeachingException) failure).problem()
+                        .toProblemDetail().getDetail())
+                        .as("SH998: a waiver nobody can see is worse than no gate, because it looks "
+                                + "exactly like the gate having held")
+                        .contains("worse than no gate"));
+        assertThat(live("/unreasoned")).isFalse();
+    }
+
+    @Test
+    @DisplayName("SH998: with a reason it publishes, and both the audit row and the revision say so")
+    void aWaiverPublishesAndIsRecordedTwice() {
+        String postId = SITE + "-waived";
+
+        api.publish(postId, null, false, "the campaign page it links to launches tomorrow",
+                () -> "ana");
+
+        assertThat(live("/waived")).isTrue();
+        assertThat(shHistoryRepository.findAll().stream()
+                .filter(row -> postId.equals(row.getShObject()))
+                .map(ShHistory::getDescription)
+                .filter(description -> description != null && description.contains("waived"))
+                .toList())
+                .as("SH998: the Activity page is where somebody asking what happened on Tuesday is "
+                        + "reading, and it has to name the gate, the check and the reason")
+                .singleElement().asString()
+                .contains("gate 'ready'").contains("verify")
+                .contains("launches tomorrow");
+        assertThat(shPostRevisionService.rows(postId).get(0).note())
+                .as("SH998: and the revision, because a reader who started at the content would "
+                        + "otherwise have no way to find out a check was overridden")
+                .contains("gate 'ready'").contains("launches tomorrow");
+    }
+
+    @Test
+    @DisplayName("SH998: an agent credential cannot waive its own work past the check that judges it")
+    void anAgentCannotWaive() {
+        String postId = SITE + "-agent-waived";
+        var authentication = new UsernamePasswordAuthenticationToken("sh998-agent", null,
+                List.of(new SimpleGrantedAuthority("ROLE_AGENT")));
+        authentication.setDetails(new ShApiTokenContext("tok-sh998", ShApiTokenScope.AGENT,
+                Set.of(), ShApiTokenEnv.PROD, true));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        try {
+            assertThatThrownBy(() -> api.publish(postId, null, false, "it is fine, I checked",
+                    () -> "sh998-agent"))
+                    .isInstanceOf(ShPublishGateService.AgentCannotWaiveException.class);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+        assertThat(live("/agent-waived"))
+                .as("SH998: 'the agent never approves its own work' is a standing non-goal, and "
+                        + "waving content past the check that judges it is that, one word later")
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("SH998: a failing gate tells the outbound edge, with the check in the payload")
+    void aFailingGateIsAnnounced() {
+        ShPublishGateService.Outcome outcome =
+                shPublishGateService.evaluatePost(SITE + "-console").get(0);
+
+        ShPostLifecycleEvent event = ShPublishGateService.gateFailed(outcome, siteId,
+                "post:" + SITE + "/console");
+        String body = new String(ShWebhookPayload.of(objectMapper, event), StandardCharsets.UTF_8);
+
+        assertThat(body)
+                .as("SH998: webhooks fire only after commit, so nothing outside Shio was ever told a "
+                        + "publish had been refused — the half an external approver needs")
+                .contains("\"event\":\"gate_failed\"")
+                .contains("\"gate\":\"ready\"")
+                .contains("\"check\":\"verify\"")
+                .contains("post:" + SITE + "/console");
+        assertThat(body)
+                .as("SH998: nothing moved, so there is no post this is about — an absent key rather "
+                        + "than a null one (SH190)")
+                .doesNotContain("postId");
     }
 
     @Test

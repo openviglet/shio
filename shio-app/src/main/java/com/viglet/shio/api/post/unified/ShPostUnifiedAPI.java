@@ -196,6 +196,9 @@ public class ShPostUnifiedAPI {
             @PathVariable String id,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
             @RequestParam(name = "dryRun", required = false, defaultValue = "false") boolean dryRun,
+            // SH998 — the sanctioned way past a failing gate, and its price is the sentence: a gate
+            // with no way past it is one a team removes the day it blocks something urgent.
+            @RequestParam(name = "override", required = false) String override,
             Principal principal) {
         // SH995 — PUBLISH rather than WRITE: a curator who may edit this page is not automatically
         // the one who decides it goes live. The draft is saved either way, which is what the refusal
@@ -208,13 +211,14 @@ public class ShPostUnifiedAPI {
         // change, so matching against the PUBLISHED row would refuse the case publishing exists for.
         shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT);
         // SH997 — the same gates the agent's op evaluates. A check the console could publish around
-        // would be a rule with a door in it that nobody documented.
-        shPublishGateService.requirePost(id);
+        // would be a rule with a door in it that nobody documented. SH998 — unless a person waived
+        // it, in which case what they wrote travels into the audit row beside the publish.
+        String waived = shPublishGateService.requirePost(id, override);
         String actor = principal != null ? principal.getName() : null;
         ShAgentSessionContext.set(ShAgentSessionContext.consoleSession(actor, Instant.now()));
         try {
             ShConsolePost written = shConsolePostReadService
-                    .written(shPostUnifiedWriteService.publish(id, actor));
+                    .written(shPostUnifiedWriteService.publish(id, actor, waived));
             return ResponseEntity.ok().eTag(shConsolePostVersion.etagAfterWriting(id)).body(written);
         } finally {
             // The thread is pooled, so a session left bound would stamp the next request's audit

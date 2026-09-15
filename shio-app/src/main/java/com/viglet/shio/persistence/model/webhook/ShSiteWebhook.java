@@ -107,10 +107,23 @@ public class ShSiteWebhook implements Serializable {
     @Column(name = "owner")
     private String owner;
 
-    /** True when this subscription should fire for the given site + event. */
+    /**
+     * True when this subscription should fire for the given site + event.
+     *
+     * <h2>Why an empty set stopped meaning literally every event (SH998)</h2>
+     *
+     * <p>It means every <b>content transition</b>, and a notice — {@code GATE_FAILED},
+     * {@code REVIEW_REQUESTED} — is delivered only where a subscription names it. Nobody chose the
+     * old reading for the events it could not have known about: every existing receiver, the SH9
+     * {@code /api/revalidate} one included, subscribed to what the enum held at the time. Widening
+     * the enum under them would have made a Next.js cache revalidate on a gate <em>failure</em> —
+     * the one moment nothing changed — and the operator who noticed would have had no way to
+     * narrow it back, an empty set being the only subscription they had written.</p>
+     */
     public boolean matches(String eventSiteId, ShWebhookEventType type) {
         boolean siteOk = siteId == null || siteId.isBlank() || siteId.equals(eventSiteId);
-        boolean eventOk = events == null || events.isEmpty() || events.contains(type);
-        return enabled && siteOk && eventOk;
+        boolean named = events != null && events.contains(type);
+        boolean everything = (events == null || events.isEmpty()) && type.contentTransition();
+        return enabled && siteOk && (named || everything);
     }
 }

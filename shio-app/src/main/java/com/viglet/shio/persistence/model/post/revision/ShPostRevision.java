@@ -117,6 +117,16 @@ public class ShPostRevision implements Serializable {
     @Column(name = "actor", length = 255)
     private String actor;
 
+    /**
+     * What a person said about this moment, when one had something to say (SH998).
+     *
+     * <p>Today that is exactly one thing: the reason a curator gave for publishing past a failing
+     * gate. It is not folded into {@link Reason} because that column answers a different question —
+     * why a snapshot exists — and a waived publish is still a publish. See {@code v2026.3.36}.</p>
+     */
+    @Column(name = "note", length = 510)
+    private String note;
+
     /** The agent session that wrote it, when one did (SH106). */
     @Column(name = "agent_session_id", length = 255)
     private String agentSessionId;

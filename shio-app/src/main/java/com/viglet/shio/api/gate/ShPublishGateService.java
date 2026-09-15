@@ -10,10 +10,13 @@ package com.viglet.shio.api.gate;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +31,11 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.model.webhook.ShWebhookEventType;
+import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 import com.viglet.shio.persistence.repository.gate.ShPublishGateRepository;
+import com.viglet.shio.webhook.ShPostLifecycleEvent;
+import com.viglet.shio.webhook.ShWebhookDispatcher;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -117,17 +124,20 @@ public class ShPublishGateService {
     private final ShAgentVerifyService shAgentVerifyService;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShAddressResolver shAddressResolver;
+    private final ShWebhookDispatcher shWebhookDispatcher;
     private final ObjectMapper objectMapper;
 
     public ShPublishGateService(ShPublishGateRepository shPublishGateRepository,
                                 ShAgentVerifyService shAgentVerifyService,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ShAddressResolver shAddressResolver,
+                                ShWebhookDispatcher shWebhookDispatcher,
                                 ObjectMapper objectMapper) {
         this.shPublishGateRepository = shPublishGateRepository;
         this.shAgentVerifyService = shAgentVerifyService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shAddressResolver = shAddressResolver;
+        this.shWebhookDispatcher = shWebhookDispatcher;
         this.objectMapper = objectMapper;
     }
 
@@ -140,13 +150,25 @@ public class ShPublishGateService {
      */
     @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
     public void requirePost(String postId) {
-        subject(postId).ifPresent(post -> {
+        requirePost(postId, null);
+    }
+
+    /**
+     * SH998 — the same, with a waiver, returning the line to record beside the publish.
+     *
+     * @return the audit detail naming what was waived and why, or {@code null} when nothing was
+     */
+    @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
+    public String requirePost(String postId, String waiver) {
+        return subject(postId).map(post -> {
             ShSite site = ShFolderSite.of(post.getShFolder());
-            if (site != null) {
-                require(site.getName(), site.getId(),
-                        shAddressResolver.addressOf(post).toString());
+            if (site == null) {
+                return null;
             }
-        });
+            List<Outcome> waivedGates = require(site.getName(), site.getId(),
+                    shAddressResolver.addressOf(post).toString(), waiver);
+            return waivedGates.isEmpty() ? null : waived(waivedGates, waiver);
+        }).orElse(null);
     }
 
     /** What this site's gates say about one post, without deciding — the dry run's half (SH996). */
@@ -223,11 +245,103 @@ public class ShPublishGateService {
      */
     @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
     public void require(String siteName, String siteId, String address) {
-        for (Outcome outcome : evaluate(siteName, siteId, address)) {
-            if (outcome.blocked()) {
-                throw new GateFailedException(outcome, address);
-            }
+        require(siteName, siteId, address, null);
+    }
+
+    /**
+     * SH998 — the same check, with a waiver a person may hold it against.
+     *
+     * <h2>Why an override exists at all</h2>
+     *
+     * <p>A gate with no sanctioned way past it is one a team removes the day it blocks something
+     * urgent, and then nothing checks anything. The override is the sanctioned way, and its price is
+     * a <b>reason</b>: a waiver nobody can see is worse than no gate, because it looks like the gate
+     * held.</p>
+     *
+     * <h2>Two refusals around it</h2>
+     *
+     * <p>A waiver with no reason is refused — the record <em>is</em> the feature, so an empty one is
+     * the feature missing. And an <b>agent credential cannot waive</b>: "the agent never approves,
+     * holds or rejects its own work" is a standing non-goal, and an agent that could wave its own
+     * content past a check is exactly that, one word later.</p>
+     *
+     * @param waiver the reason a person gave, or {@code null} for no override
+     * @return what was waived, so the caller can record it where the publish is recorded
+     */
+    @Transactional(readOnly = true, noRollbackFor = ShTeachingException.class)
+    public List<Outcome> require(String siteName, String siteId, String address, String waiver) {
+        List<Outcome> blocking = evaluate(siteName, siteId, address).stream()
+                .filter(Outcome::blocked)
+                .toList();
+        if (blocking.isEmpty()) {
+            return List.of();
         }
+        if (waiver == null) {
+            throw refusing(blocking.get(0), siteId, address, new GateFailedException(blocking.get(0), address));
+        }
+        if (waiver.isBlank()) {
+            throw refusing(blocking.get(0), siteId, address,
+                    new WaiverNeedsReasonException(blocking.get(0), address));
+        }
+        if (ShApiTokenContext.current().isPresent()) {
+            throw refusing(blocking.get(0), siteId, address,
+                    new AgentCannotWaiveException(blocking.get(0), address));
+        }
+        return blocking;
+    }
+
+    /**
+     * Announce the refusal on the outbound edge, then hand the caller its exception (SH998).
+     *
+     * <p>Every branch that stops a publish comes through here, which is the point: the three are one
+     * fact to anybody outside — this address did not go live and a check is why — and a branch added
+     * later that forgot to say so would be silent in the way this task exists to fix.</p>
+     *
+     * <p>Dispatched, not published as a Spring event. {@link ShPostLifecycleEvent}'s listener runs
+     * {@code AFTER_COMMIT}, and there is no commit here: the transaction this refusal belongs to is
+     * the one being abandoned. A notice that waits for it is a notice nobody receives.</p>
+     */
+    private <T extends RuntimeException> T refusing(Outcome outcome, String siteId, String address,
+                                                    T refusal) {
+        shWebhookDispatcher.dispatch(gateFailed(outcome, siteId, address));
+        return refusal;
+    }
+
+    /**
+     * What the outbound edge is told when a gate stops an address (SH998).
+     *
+     * <p>Built here and not inside {@link #refusing} so the payload a subscriber receives can be read
+     * from a real outcome without a subscriber — the check's name in it is the assertion this task
+     * turns on, and it would otherwise only be observable by standing up an HTTP receiver.</p>
+     */
+    public static ShPostLifecycleEvent gateFailed(Outcome outcome, String siteId, String address) {
+        Failure first = outcome.failures().stream().filter(Failure::blocking)
+                .findFirst().orElse(outcome.failures().get(0));
+        // Insertion order, for the signed body's sake — see ShPostLifecycleEvent's constructor.
+        Map<String, String> facts = new LinkedHashMap<>();
+        facts.put("gate", outcome.gate());
+        facts.put("check", first.check());
+        facts.put("severity", first.severity());
+        facts.put("address", address);
+        if (first.detail() != null) {
+            facts.put("reason", first.detail());
+        }
+        // `url` stays null: the event's url is the friendly URL of a post that went live, and this
+        // one did not. The address is a fact about the refusal and travels as one.
+        return new ShPostLifecycleEvent(ShWebhookEventType.GATE_FAILED,
+                null, siteId, null, null, Instant.now(), facts);
+    }
+
+    /** One line for the audit row, naming what was waived and why (SH998). */
+    public static String waived(List<Outcome> outcomes, String reason) {
+        return outcomes.stream()
+                .map(outcome -> "gate '" + outcome.gate() + "' ("
+                        + outcome.failures().stream().map(Failure::check)
+                                .reduce((left, right) -> left + ", " + right).orElse("")
+                        + ")")
+                .reduce((left, right) -> left + "; " + right)
+                .map(gates -> "waived " + gates + ": " + reason)
+                .orElse(null);
     }
 
     /** One step against one address, or empty when it passed. */
@@ -262,6 +376,37 @@ public class ShPublishGateService {
     private String text(JsonNode node, String field) {
         JsonNode value = node == null ? null : node.get(field);
         return value == null || !value.isString() ? null : value.asString();
+    }
+
+    /** SH998 — a waiver with nothing written down, which is the waiver missing. */
+    public static class WaiverNeedsReasonException extends ShTeachingException {
+
+        public WaiverNeedsReasonException(Outcome outcome, String address) {
+            super(ShProblem.badRequest("waiver-needs-a-reason",
+                            "waiving gate '" + outcome.gate() + "' needs a reason")
+                    .withDetail("The record is the whole of the override: a waiver nobody can see is "
+                            + "worse than no gate, because it looks like the gate held.")
+                    .withFix("Say why this page goes live past the check, in a sentence the next "
+                            + "person reading the Activity page can act on.")
+                    .withExample("{\"override\":\"the link is to a page the campaign launches "
+                            + "tomorrow\"}"));
+        }
+    }
+
+    /** SH998 — an agent asking to wave its own work past a check. */
+    public static class AgentCannotWaiveException extends ShTeachingException {
+
+        public AgentCannotWaiveException(Outcome outcome, String address) {
+            super(ShProblem.of("agent-cannot-waive", HttpStatus.FORBIDDEN,
+                            "an agent credential cannot waive gate '" + outcome.gate() + "'")
+                    .withDetail("\"The agent never approves, holds or rejects its own work\" is a "
+                            + "standing rule here, and waving content past the check that judges it "
+                            + "is that, one word later.")
+                    .withFix("Fix what the check reports, or ask somebody who holds PUBLISH to "
+                            + "review it: GET /api/v2/agent/verify?address=" + address
+                            + "&state=draft is the same report.")
+                    .withExample("GET /api/v2/agent/verify?address=" + address + "&state=draft"));
+        }
     }
 
     /** A 400 for a check nothing here runs. */

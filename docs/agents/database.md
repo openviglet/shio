@@ -513,3 +513,18 @@ its schema from the metadata (SH729).
 boolean, for `deleted_date`'s reason — "when" is free here and answers the question a boolean raises.
 Archiving hides a release from the context pack's listing and from the sweep's due query; it never
 removes a row, and `find?release=` still reads what the release holds.
+
+## `sh_post_revision.note` — what a person said about a moment (SH998)
+
+`v2026.3.36` adds one nullable `VARCHAR(510)`. Today exactly one thing writes it: the reason a curator
+gave for publishing past a failing gate, so `shio versions` and the console's history show the waiver
+beside the version it belongs to rather than only in the audit feed. Nullable with no backfill —
+every revision captured before the column existed has nothing to say, and a default sentence would be
+a claim nobody made. It is bounded in `ShPostRevisionService.capture` for SH544's reason: the record
+describes the write and must never be what refuses it, so a reason that ran long is clipped and the
+publish still happens.
+
+Why it is not a fourth value of the `reason` column: that one answers *why a snapshot was taken* and
+its three values are the reasons a row exists at all. A waived publish is still a publish — the
+snapshot is there because the row went live — so the waiver is a note on the revision and the enum
+goes on answering the question it was written for.

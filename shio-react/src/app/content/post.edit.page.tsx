@@ -75,6 +75,8 @@ export default function PostUnifiedEditPage() {
   const [scheduleOpen, setScheduleOpen] = useState(false)
   /** SH996 — Publish arms behind the server's own plan, rather than being a button with no preview. */
   const [publishPreviewOpen, setPublishPreviewOpen] = useState(false)
+  /** SH998 — what a gate said about this publish, which turns the dialog into the override. */
+  const [gateRefusal, setGateRefusal] = useState<string | null>(null)
   /**
    * SH985 — the refusal that needs a view rather than a message.
    *
@@ -224,20 +226,30 @@ export default function PostUnifiedEditPage() {
    * never saw — draft-default (P7) is only meaningful if the deliberate act promotes
    * what is on screen.
    */
-  async function handlePublish() {
-    setPublishPreviewOpen(false)
+  async function handlePublish(override?: string) {
     setIsPublishing(true)
     try {
       const saved = await unifiedService.update(postId, { data, state })
-      await unifiedService.publish(postId)
+      await unifiedService.publish(postId, override)
       setPost(saved)
       setData(saved.data || {})
       setIsLive(true)
+      setGateRefusal(null)
+      setPublishPreviewOpen(false)
       toast.success(t("content.publishSuccess"))
     } catch (error) {
       if (await openConflict(error)) return
       // SH955 — the toast says what happened; `at` says where, so the field is marked too.
       const problem = reportProblem(error, t("common.error"))
+      // SH998 — a gate is the one refusal this dialog can do something about, so it stays open and
+      // asks for the reason instead of closing over a toast. Matched on the problem's `type`, never
+      // on its sentence: the sentence is for the curator and is meant to be improvable.
+      if (problem.type?.endsWith("publish-gate-failed")
+        || problem.type?.endsWith("waiver-needs-a-reason")) {
+        setGateRefusal(headlineOf(problem, t("common.error")))
+        return
+      }
+      setPublishPreviewOpen(false)
       const field = fieldOf(problem)
       setRefusal(field ? { field, message: headlineOf(problem, t("common.error")) } : undefined)
     } finally {
@@ -465,9 +477,13 @@ export default function PostUnifiedEditPage() {
       <PublishPreviewDialog
         postId={postId}
         open={publishPreviewOpen}
-        setOpen={setPublishPreviewOpen}
+        setOpen={(next) => {
+          setPublishPreviewOpen(next)
+          if (!next) setGateRefusal(null)
+        }}
         onConfirm={handlePublish}
         publishing={isPublishing}
+        gateRefusal={gateRefusal}
       />
       <PostScheduleDialog
         postId={postId}

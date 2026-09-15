@@ -264,5 +264,10 @@
   "content.publishPreviewHint": "O que o servidor diz que isto faria. Nada foi gravado ainda.",
   "content.publishGoesLive": "{{url}} passa a responder pela primeira vez.",
   "content.publishMoves": "A página no ar vai para {{to}}, e {{from}} deixa de responder.",
-  "content.publishInbound": "{{count}} página(s) publicada(s) apontam para {{url}}."
+  "content.publishInbound": "{{count}} página(s) publicada(s) apontam para {{url}}.",
+  "content.publishGateStopped": "Uma verificação impediu esta publicação: {{reason}}",
+  "content.publishOverrideLabel": "Publicar mesmo assim, dizendo por quê",
+  "content.publishOverrideHint": "Quem ler o histórico desta página vai ver esta frase e o seu nome.",
+  "content.publishOverridePlaceholder": "Por que isto vai ao ar apesar da verificação",
+  "content.publishOverrideConfirm": "Publicar apesar da verificação"
 }

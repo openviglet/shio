@@ -10,6 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { ShPublishPlan, ShPublishRoutes } from "@/models/post-unified/post-unified"
 
@@ -27,6 +29,14 @@ const service = new ShPostUnifiedService()
  * <p>It opens on every Publish rather than only when something moves. A confirmation that appears
  * only sometimes trains a curator to click through the times it does, which is the opposite of what
  * it is for — and the ordinary case is one line saying the page goes live.</p>
+ *
+ * <h2>SH998 — the override, and why it appears only after the refusal</h2>
+ *
+ * <p>A reason box on every publish would train a curator to fill one in, which is how a waiver stops
+ * meaning anything. So the gate refuses first, in the server's own words, and the box appears in the
+ * refusal: the only person who ever sees it is the one who has just been told which check stopped
+ * them and why. The sentence they write is not a formality — it is the whole of the override, and
+ * the hint says who will read it.</p>
  */
 export function PublishPreviewDialog({
   postId,
@@ -34,23 +44,28 @@ export function PublishPreviewDialog({
   setOpen,
   onConfirm,
   publishing,
+  gateRefusal,
 }: {
   postId: string
   open: boolean
   setOpen: (open: boolean) => void
-  onConfirm: () => void
+  onConfirm: (override?: string) => void
   publishing: boolean
+  /** SH998 — what the gate said, when one has already refused this publish. */
+  gateRefusal?: string | null
 }) {
   const { t } = useTranslation()
   const [plan, setPlan] = useState<ShPublishPlan | null>(null)
   const [routes, setRoutes] = useState<ShPublishRoutes | null>(null)
   const [loading, setLoading] = useState(false)
+  const [override, setOverride] = useState("")
 
   useEffect(() => {
     if (!open) return
     setLoading(true)
     setPlan(null)
     setRoutes(null)
+    setOverride("")
     Promise.all([service.publishPlan(postId), service.publishRoutes(postId)])
       .then(([answer, moved]) => {
         setPlan(answer)
@@ -99,10 +114,32 @@ export function PublishPreviewDialog({
           </div>
         )}
 
+        {gateRefusal && (
+          <div className="space-y-2 text-sm">
+            <p className="text-destructive">
+              {t("content.publishGateStopped", { reason: gateRefusal })}
+            </p>
+            <Label htmlFor="publish-override">{t("content.publishOverrideLabel")}</Label>
+            <Textarea
+              id="publish-override"
+              rows={2}
+              value={override}
+              onChange={(event) => setOverride(event.target.value)}
+              placeholder={t("content.publishOverridePlaceholder")}
+            />
+            <p className="text-muted-foreground">{t("content.publishOverrideHint")}</p>
+          </div>
+        )}
+
         <DialogFooter className="gap-2">
-          <Button onClick={onConfirm} disabled={publishing || loading}>
+          <Button
+            onClick={() => onConfirm(gateRefusal ? override : undefined)}
+            // A blank reason is refused by the server, which is the rule; the button knows it too, so
+            // a curator is not taught the rule by a second refusal.
+            disabled={publishing || loading || (!!gateRefusal && !override.trim())}
+          >
             {publishing ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
-            {t("content.publish")}
+            {gateRefusal ? t("content.publishOverrideConfirm") : t("content.publish")}
           </Button>
           <Button variant="ghost" onClick={() => setOpen(false)}>
             {t("common.cancel")}

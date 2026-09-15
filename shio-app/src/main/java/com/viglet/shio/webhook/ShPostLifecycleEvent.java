@@ -6,6 +6,9 @@
 package com.viglet.shio.webhook;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.viglet.shio.persistence.model.webhook.ShWebhookEventType;
 
@@ -27,10 +30,29 @@ import com.viglet.shio.persistence.model.webhook.ShWebhookEventType;
  * @param url        the friendly URL, leading-slash normalised (may be {@code null})
  * @param locale     the post's locale tag, e.g. {@code en} (may be {@code null})
  * @param occurredAt when the transition committed
+ * @param facts      what this event is about beyond the post, written flat into the payload — the
+ *                   gate and check of a {@code GATE_FAILED}, the run of a {@code REVIEW_REQUESTED}
+ *                   (SH998). Empty for a content transition, which the post itself describes.
  *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
 public record ShPostLifecycleEvent(ShWebhookEventType type, String postId, String siteId,
-                                   String url, String locale, Instant occurredAt) {
+                                   String url, String locale, Instant occurredAt,
+                                   Map<String, String> facts) {
+
+    /** The pre-SH998 form: a transition, which the five fields above already describe. */
+    public ShPostLifecycleEvent(ShWebhookEventType type, String postId, String siteId,
+                                String url, String locale, Instant occurredAt) {
+        this(type, postId, siteId, url, locale, occurredAt, Map.of());
+    }
+
+    public ShPostLifecycleEvent {
+        // Insertion order, and never Map.copyOf: the body is HMAC-signed over its exact bytes, so
+        // two deliveries of one event have to serialize identically (P5). A hash-ordered map makes
+        // that true per JVM run and false between them, which is the worst of the two states — it
+        // passes here and fails at a receiver comparing signatures.
+        facts = facts == null || facts.isEmpty() ? Map.of()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(facts));
+    }
 }

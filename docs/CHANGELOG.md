@@ -1739,6 +1739,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH995** — The console asks /object/{id}/allowed and disables Publish and Unpublish with the server's own sentence; Approve stays per post, since a run touches pages a curator may not all publish (design §LXVI.6 superseded: it asked for Approve to be disabled too, and approval is per post: a disabled button would hide a run the curator may partly approve).
 - **SH996** — Publish opens the server's own plan first: what it would do, which URL starts resolving or stops, and how many published pages link to the one that goes.
 - **SH997** — A gate projects to shio/gates/<site>/<name>.yaml and shio gate run is the CI form, exiting 1 on a blocking check; audit stays there because the instance runs no browser (design §LXVI.8 superseded: it named audit among the server-side checks, and the instance does not run a browser — a standing non-goal — so that check is refused at declaration and runs in CI).
+- **SH998** — A gate can now be waived by a person with a reason, recorded in the audit row and on the revision, and refusals and review entries reach the outbound edge (design §LXVI.9 superseded: it called the second record a revision *reason*, and that column answers why a snapshot exists — a waived publish is still a publish, so the waiver is a note beside it).
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

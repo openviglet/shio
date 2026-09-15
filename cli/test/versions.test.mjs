@@ -21,6 +21,7 @@ const REVISIONS = [
   {
     version: 2, state: "PUBLISHED", reason: "PUBLISH", actor: "ana",
     capturedAt: "2026-09-10T12:00:00Z", digest: "bbb", changed: ["TITLE", "body"],
+    note: "waived gate 'ready' (verify): the campaign page launches tomorrow",
   },
   {
     version: 1, state: "PUBLISHED", reason: "PUBLISH", actor: "agent-7",
@@ -63,6 +64,9 @@ test("SH987: shio versions asks for the history, and prints one line per revisio
   assert.match(printed, /2\s+PUBLISH\s+2026-09-10T12:00:00Z\s+ana/);
   assert.match(printed, /changed: TITLE, body/,
     "SH987: the field names are what makes a list worth reading — they say which revision to fetch");
+  assert.match(printed, /waived gate 'ready' \(verify\): the campaign page launches tomorrow/,
+    "SH998: a reader who started at the content must be able to find out that a check was "
+      + "overridden — a waiver visible only in the audit feed is most of the way back to no gate");
 });
 
 test("SH987: a page with no captured revision says so, and exits non-zero", async () => {
