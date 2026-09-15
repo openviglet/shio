@@ -5,11 +5,11 @@
   "exceptions": [
     {
       "suite": "conformance",
-      "test": "conformance/docs-stack.conformance.mjs — every stated Spring Boot version matches pom.xml; conformance/docs-coverage.conformance.mjs — SH653: the summary's counts are the tables' counts",
+      "test": "conformance/docs-stack.conformance.mjs — every stated Spring Boot version matches pom.xml",
       "task": "SH1070",
       "declared": "2026-09-14",
       "expires": "2026-09-21",
-      "why": "Run for SH989 against a clean store on :2711: 123 tests, 121 pass, and both failures are SH1070's two drifts, word for word — developer-guide.md:44 states Spring Boot 4.1.0 against the pom's 4.1.1, and COVERAGE.md's summary disagrees with its rows. Both live in the vigletdocs checkout the docs suites read, and neither reads a byte SH989 changed: every scenario that drives the instance, the CLI and the change feed passed. Not fixed in this commit because the fix is a vigletdocs commit, and COVERAGE.md there carries uncommitted rows from earlier today (SH1072's half that has not landed) which a summary correction cannot be committed apart from. Run against a clean export of vigletdocs HEAD instead it is 119 of 123, the extra two being SH758 and SH747, because docs/coverage-named.json was mirrored from those uncommitted rows. It goes away with SH1070, and this entry is deleted in that commit."
+      "why": "Run for SH989 against a clean store on :2711: 123 tests, 121 pass, and both failures are SH1070's two drifts, word for word — developer-guide.md:44 states Spring Boot 4.1.0 against the pom's 4.1.1, and COVERAGE.md's summary disagrees with its rows. Both live in the vigletdocs checkout the docs suites read, and neither reads a byte SH989 changed: every scenario that drives the instance, the CLI and the change feed passed. Not fixed in this commit because the fix is a vigletdocs commit, and COVERAGE.md there carries uncommitted rows from earlier today (SH1072's half that has not landed) which a summary correction cannot be committed apart from. Run against a clean export of vigletdocs HEAD instead it is 119 of 123, the extra two being SH758 and SH747, because docs/coverage-named.json was mirrored from those uncommitted rows. It goes away with SH1070, and this entry is deleted in that commit. Narrowed on 2026-09-15 by SH991's docs pass: naming SH984-SH990 in the same uncommitted COVERAGE.md made the summary recountable, and it now agrees with its tables there, so SH653 passes and the Spring Boot version is the one drift still red."
     }
   ]
 }
