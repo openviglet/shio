@@ -62,6 +62,11 @@ public final class ShAgentChangesTerse {
                 .attr("subject", change.subject())
                 .attr("at", change.at())
                 .attr("by", change.by())
+                // SH999 — the name when the run gave one, else the id it was minted as. One
+                // attribute rather than the JSON's two: the terse form exists to answer "was this
+                // me, or a person" in the fewest tokens that can answer it, and on a feed with no
+                // agent rows it costs nothing at all.
+                .attr("agent", change.agentName() != null ? change.agentName() : change.agent())
                 .attr("site", change.site())
                 .attr("id", change.id())
                 .attr("what", change.what())

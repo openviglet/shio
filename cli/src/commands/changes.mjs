@@ -58,6 +58,9 @@ export async function run(flags, positionals, ctx) {
     limit: flags.limit,
     // SH989 — the fields each write changed, the one account of an approved run the approve leaves.
     include: flags.fields ? "fields" : undefined,
+    // SH999 — `agent`, `human` or a session. A pipeline that pulls when something moved wants the
+    // half it did not write itself, and until now every row looked the same.
+    by: flags.by,
   });
 
   if (flags.cursor) {
@@ -131,7 +134,12 @@ function render(changes) {
   ];
   for (const change of changes.changes ?? []) {
     const address = change.address ?? "(gone)";
-    lines.push(`  ${change.action} ${address} — ${change.what ?? ""} [${change.by} at ${change.at}]`);
+    // SH999 — the run beside the person, because both are true: an agent acts AS someone, and a
+    // line naming only the credential was the same line for both.
+    const who = change.agent
+      ? `${change.by} via ${change.agentName ?? change.agent} at ${change.at}`
+      : `${change.by} at ${change.at}`;
+    lines.push(`  ${change.action} ${address} — ${change.what ?? ""} [${who}]`);
     // SH970 — an arrival from the site's form, said as one rather than left to the actor string.
     if (change.submission) {
       const summary = change.submission.summary ? `: ${change.submission.summary}` : "";

@@ -71,7 +71,11 @@ public class ShChangesTool implements ShMcpTool {
                 "limit", ShMcpTool.integer("How many entries (default 50, max 500)."),
                 // SH989 — REST's include=fields. After an approve the draft and the live row are one
                 // document, so these names are the only description of the run that was accepted.
-                "fields", ShMcpTool.bool("Name the fields each update or publish changed.")),
+                "fields", ShMcpTool.bool("Name the fields each update or publish changed."),
+                // SH999 — the question this tool's own description promised and could not answer.
+                // `by=human` is "what changed that was not me", which is what a resuming session is
+                // actually asking; every row looked the same before.
+                "by", ShMcpTool.string("Whose writes: agent, human, or a session id.")),
                 List.of());
     }
 
@@ -83,6 +87,7 @@ public class ShChangesTool implements ShMcpTool {
                 ShMcpArgs.string(arguments, "since"),
                 ShMcpArgs.integer(arguments, "limit"),
                 false, null,
-                ShMcpArgs.bool(arguments, "fields")));
+                ShMcpArgs.bool(arguments, "fields"),
+                ShMcpArgs.string(arguments, "by")));
     }
 }

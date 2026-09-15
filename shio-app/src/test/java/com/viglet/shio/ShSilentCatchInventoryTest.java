@@ -163,7 +163,16 @@ class ShSilentCatchInventoryTest {
             // describes, which is SH544's defect; on the feed it is one bad row taking down every
             // `include=fields` read. Both values are written by this codebase's own serializer, so the
             // only way here is an older or broken writer, and the row's action and date still stand.
-            "api", 67,
+            // 68 since SH999, in `ShAgentRunService.introduce`: the row that records what an MCP
+            // client called itself. Not an incident, and this is the case the message below calls
+            // "genuinely not worth reporting" rather than the invisible one. A run whose name could
+            // not be stored is a run with no name, which is a state the product already has for
+            // every session the REST surface was handed rather than minted and for every run older
+            // than the table — both readers report the id instead, by design. The alternative is
+            // worse in the direction that matters: `initialize` is the first call of a session, so
+            // propagating would turn "your agent has no label in the Activity page" into "your
+            // agent cannot start".
+            "api", 68,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

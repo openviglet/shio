@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -108,6 +109,7 @@ public class ShAgentChangesService {
     private final ShAgentIncidentStore incidentStore;
     private final ShTemplateGraph templateGraph;
     private final ShAuditFeedWatermark watermark;
+    private final ShAgentRunService shAgentRunService;
 
     public ShAgentChangesService(ShHistoryRepository shHistoryRepository,
                                  ShPostUnifiedRepository shPostUnifiedRepository,
@@ -117,7 +119,8 @@ public class ShAgentChangesService {
                                  ShAgentProperties properties,
                                  ShAgentIncidentStore incidentStore,
                                  ShTemplateGraph templateGraph,
-                                 ShAuditFeedWatermark watermark) {
+                                 ShAuditFeedWatermark watermark,
+                                 ShAgentRunService shAgentRunService) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
@@ -127,6 +130,7 @@ public class ShAgentChangesService {
         this.incidentStore = incidentStore;
         this.templateGraph = templateGraph;
         this.watermark = watermark;
+        this.shAgentRunService = shAgentRunService;
     }
 
     /** Before SH723 gave the feed a token ceiling — {@code null} takes the configured one. */
@@ -161,6 +165,33 @@ public class ShAgentChangesService {
      */
     public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
                                   Integer budget, boolean fields) {
+        return changes(site, since, limit, ids, budget, fields, null);
+    }
+
+    /**
+     * Reads the feed, narrowed to who wrote it (SH999).
+     *
+     * <h2>Filtered in the query, never after the page</h2>
+     *
+     * <p>A post-filter would hand back a short page — or an empty one — while the rows the caller
+     * asked for sat behind the cursor, and the caller would read that as "nothing happened". The
+     * predicate rides with the keyset, so a filtered feed pages exactly the way the whole one
+     * does.</p>
+     *
+     * @param by {@code agent} for every run's writes, {@code human} for every person's — <b>which
+     *           includes a curator's console session</b>, because that is a person (SH996) — or a
+     *           session id for one run. {@code null} is everything, and is what every caller before
+     *           this one passes, so the unfiltered feed is the result set it always was
+     */
+    public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
+                                  Integer budget, boolean fields, String by) {
+        String wanted = by == null || by.isBlank() ? null : by.trim();
+        // A word or an id, told apart here rather than in the query: `agent` and `human` are the
+        // vocabulary, and anything else is a session, which is the one case that needs no list of
+        // valid values — a session nobody wrote under is an empty feed, not a refusal.
+        String kind = "agent".equalsIgnoreCase(wanted) || "human".equalsIgnoreCase(wanted)
+                ? wanted.toLowerCase(java.util.Locale.ROOT) : null;
+        String session = wanted == null || kind != null ? null : wanted;
         ShAgentProperties.Changes config = properties.getChanges();
         int cap = limit == null || limit <= 0
                 ? config.getDefaultLimit()
@@ -181,8 +212,8 @@ public class ShAgentChangesService {
         // page — a full page that happens to be the last one would otherwise send the
         // caller back for an empty round trip every time.
         List<ShHistory> entries = window
-                ? newestFirst(scope, ceiling, cap)
-                : afterCursor(scope, ceiling, from, cap + 1);
+                ? newestFirst(scope, ceiling, cap, session, kind)
+                : afterCursor(scope, ceiling, from, cap + 1, session, kind);
         boolean more = !window && entries.size() > cap;
         if (more) {
             entries = entries.subList(0, cap);
@@ -490,26 +521,28 @@ public class ShAgentChangesService {
 
     // --- querying ---
 
-    private List<ShHistory> newestFirst(Scope scope, Instant ceiling, int cap) {
+    private List<ShHistory> newestFirst(Scope scope, Instant ceiling, int cap, String session,
+                                        String kind) {
         PageRequest page = PageRequest.of(0, cap);
         if (scope.unrestricted()) {
-            return shHistoryRepository.findWindow(ceiling, page);
+            return shHistoryRepository.findWindow(ceiling, session, kind, page);
         }
         return scope.siteIds().isEmpty()
                 ? List.of()
-                : shHistoryRepository.findWindowInSites(ceiling, scope.siteIds(), page);
+                : shHistoryRepository.findWindowInSites(ceiling, scope.siteIds(), session, kind,
+                        page);
     }
 
     private List<ShHistory> afterCursor(Scope scope, Instant ceiling, ShAgentChangeCursor from,
-                                        int cap) {
+                                        int cap, String session, String kind) {
         PageRequest page = PageRequest.of(0, cap);
         if (scope.unrestricted()) {
-            return shHistoryRepository.findSince(ceiling, from.at(), from.id(), page);
+            return shHistoryRepository.findSince(ceiling, from.at(), from.id(), session, kind, page);
         }
         return scope.siteIds().isEmpty()
                 ? List.of()
                 : shHistoryRepository.findSinceInSites(ceiling, scope.siteIds(), from.at(),
-                        from.id(), page);
+                        from.id(), session, kind, page);
     }
 
     /**
@@ -552,6 +585,13 @@ public class ShAgentChangesService {
         // SH193 — one graph read per distinct object, for the same reason the addresses are
         // memoized: a region that was updated and published is two rows and one blast radius.
         Map<String, Optional<ShAgentChanges.Affects>> impacts = new LinkedHashMap<>();
+        // SH999 — one query for the page's runs, the way the addresses are memoized: twenty rows of
+        // one run is one run, and a name resolved per row is nineteen queries answering a question
+        // already answered.
+        Map<String, String> runNames = shAgentRunService.names(entries.stream()
+                .map(ShHistory::getAgentSessionId)
+                .filter(session -> session != null && !ShAgentSessionContext.isConsole(session))
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)));
         List<ShAgentChanges.Change> changes = new ArrayList<>(entries.size());
         for (ShHistory entry : entries) {
             // SH376 — a position this JVM never issued is proof of a second application node, and
@@ -577,12 +617,19 @@ public class ShAgentChangesService {
                     && ShFormSubmitter.isSubmitter(entry.getOwner())
                     ? submissionOf(objectId)
                     : Optional.empty();
+            // SH999 — a console session is a curator's own publishing (SH996), so it is a person
+            // and carries no agent. Reported absent rather than as a session nobody can look up.
+            String run = entry.getAgentSessionId() == null
+                    || ShAgentSessionContext.isConsole(entry.getAgentSessionId())
+                    ? null : entry.getAgentSessionId();
             changes.add(new ShAgentChanges.Change(
                     entry.getAction(),
                     subject == ShContentSubject.POST ? null : subject.wire(),
                     address.orElse(null),
                     entry.getDate() == null ? null : entry.getDate().toString(),
                     entry.getOwner(),
+                    run,
+                    run == null ? null : runNames.get(run),
                     entry.getDescription(),
                     entry.getShSite() == null ? null : scope.names().get(entry.getShSite()),
                     ids ? objectId : null,

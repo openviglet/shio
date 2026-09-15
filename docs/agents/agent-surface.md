@@ -3360,3 +3360,34 @@ chose the old reading for events that did not exist: every existing subscriber, 
 under them would have revalidated a Next.js cache on a gate *failure* — the one moment nothing changed
 — with no way to narrow it back, an empty set being the only subscription they had written. A notice
 is delivered only where a subscription names it.
+
+## A machine's change, told apart from a person's (SH999)
+
+`ShHistory.agent_session_id` has recorded which run wrote a row since SH106, and **neither reader
+carried it**. `ShAgentChanges.Change#by` reported the bare principal while its own javadoc went on
+promising that the agent session was stamped into that string "so a caller can tell its own writes
+from a human's" — true until SH106 moved the fact to its own column, and printed for six blocks
+after, because nothing asserted it.
+
+The change row now carries **`agent`** (the session) and **`agentName`** (what that run called
+itself), both omitted when absent, so a person's row is byte-identical to what it was. The terse
+form carries one attribute, `agent=`, holding the name where there is one and the id otherwise: the
+terse feed is what an MCP session actually reads, and a distinction only the JSON had would be a
+distinction the agent surface does not have.
+
+**`by=agent` · `by=human` · `by=<session>`** narrows the feed, on `GET /agent/changes`, `shio changes
+--by` and `shio_changes`. It is filtered **in the query**, with the keyset predicate, because this
+feed is resumable: a post-filter would hand back a short page while the matching rows sat behind the
+cursor, and the caller would read that as nothing having happened. `by=human` is the question a
+resuming session actually has — *what changed that was not me* — and until now every row looked the
+same.
+
+**A curator's console session counts as human.** SH996 gives a curator's own publishing a session id
+so it reaches the review queue, so a predicate written from the column rather than from the question
+files a person's own press under the machines. That is the case the assertion pins.
+
+`agentName` comes from **`sh_agent_run`**, written on MCP's `initialize` from the `clientInfo` this
+server used to discard — the one call in the protocol whose purpose is a client saying what it is.
+A run that never introduced itself (every session the REST surface was handed rather than minted,
+and every run older than the table) reports **no name rather than "unknown"**: a row naming an agent
+called unknown is a row nobody can tell from one written by an agent that is called that.

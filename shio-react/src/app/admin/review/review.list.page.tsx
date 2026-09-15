@@ -67,6 +67,22 @@ export default function ReviewListPage() {
     void fetchSessions()
   }, [t, fetchSessions])
 
+  /**
+   * SH999 — arriving from the Activity page's agent chip, with one run named.
+   *
+   * Opened once the list is in, and only for a session the list actually holds: a link to a run
+   * that has been approved away should land on the queue rather than on an empty expander, which
+   * is the same fact the page already states by not listing it.
+   */
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("session")
+    if (!wanted || sessions.every((each) => each.session !== wanted) || wanted in open) return
+    void toggle(wanted)
+    // `toggle` is re-created every render and `open` changes as a result of this; the guard above
+    // is what makes running once enough, so neither belongs in the dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessions])
+
   const toggle = async (session: string) => {
     if (session in open) {
       const next = { ...open }

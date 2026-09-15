@@ -209,8 +209,19 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      *                read — absent when the object no longer exists, which is the normal state
      *                of a {@code DELETE} row and the reason {@code what} carries the title
      * @param at      ISO-8601 instant of the transition
-     * @param by      who did it. SH75 stamps the agent session into this string, so a
-     *                caller can tell its own writes from a human's
+     * @param by      who did it: the human whose credential was used, and nothing else. It used to
+     *                carry the agent session as a suffix and stopped in SH106, which moved that fact
+     *                to its own column — this javadoc went on promising the suffix for six blocks,
+     *                and {@code agent} below is the field that keeps the promise (SH999)
+     * @param agent   the run that wrote this, when one did: the session id
+     *                {@code ShHistory.agent_session_id} records. Absent on a person's own write,
+     *                which is what makes the distinction readable rather than inferable — and absent
+     *                on a curator's console session too, because that <b>is</b> a person (SH996)
+     * @param agentName what that run called itself on {@code initialize}, e.g. {@code claude-code}
+     *                (SH999). Absent when the run never introduced itself, which is every run older
+     *                than {@code sh_agent_run} and every session the REST surface was handed rather
+     *                than minted. Absent rather than "unknown": a row naming an agent called unknown
+     *                is a row nobody can tell from one written by an agent that is called that
      * @param what    the human-readable description recorded at the time
      * @param site    the site's name, for a feed that spans more than one
      * @param id      the object id — omitted unless the caller asked for ids (SH121)
@@ -230,8 +241,16 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      */
     @JsonInclude(Include.NON_NULL)
     public record Change(String action, String subject, String address, String at, String by,
-                         String what, String site, String id, Affects affects,
-                         Submission submission, List<String> fields) {
+                         String agent, String agentName, String what, String site, String id,
+                         Affects affects, Submission submission, List<String> fields) {
+
+        /** Before SH999 told a machine's change from a person's. */
+        public Change(String action, String subject, String address, String at, String by,
+                      String what, String site, String id, Affects affects, Submission submission,
+                      List<String> fields) {
+            this(action, subject, address, at, by, null, null, what, site, id, affects, submission,
+                    fields);
+        }
 
         /** Before SH989 named the changed fields. */
         public Change(String action, String subject, String address, String at, String by,

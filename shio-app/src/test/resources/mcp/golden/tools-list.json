@@ -104,6 +104,10 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "by" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "fields" : {
             "description" : "#string",
             "type" : "boolean"

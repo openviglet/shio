@@ -1749,3 +1749,16 @@ never on the refusal's prose. The prose is written for the curator and is meant 
 console that decided what to offer by matching a sentence would break the day somebody improved one.
 `Problem.type` is the only field on that document a caller should branch on, and it is the reason it
 is now carried.
+
+## The Activity page says which changes were a machine's (SH999)
+
+An agent chip in the Who column, beside the principal rather than instead of it — both are true, and
+a column showing only the name said the same thing about a machine's write and a person's. It
+carries `agentName` where the run gave one and the first eight characters of the session where it
+did not, and links to `/admin/review?session=<id>`, which the queue opens on arrival for a session it
+still lists. Reading that run and undoing it is the next thing a curator who noticed the chip wants.
+
+Three buttons — Everyone / Agents / People — rather than a select, because the whole vocabulary is
+three words. The split is the **server's** (`?agent=agent|human`), never computed here: a console
+deciding for itself which rows were an agent's would be a second answer to a question
+`/agent/changes` already answers, and it would get the SH996 console session wrong the first time.

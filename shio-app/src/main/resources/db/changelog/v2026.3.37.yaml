@@ -1,0 +1,60 @@
+databaseChangeLog:
+  # SH999 — `sh_agent_run`: which agent a session id belongs to.
+  #
+  # `ShHistory.agent_session_id` has carried the run since SH106 and it is a uuid, so every surface
+  # that wanted to say "an agent wrote this" could only say "7f3c9a2e wrote this". MCP's `initialize`
+  # already receives `clientInfo` — a name and a version the client chose — and threw it away. This
+  # is where it lands, keyed by the session id the same call mints, so the id resolves to a name.
+  #
+  # The primary key is the session id itself, not a surrogate: the id is minted by the transport and
+  # is already unique, and a second key would let two rows claim one run. VARCHAR(255) because the
+  # column it joins to is, and because a session id is whatever a client sent on the header — the
+  # REST surface accepts one it did not mint (SH106), and those rows simply have no run.
+  #
+  # No foreign key to `sh_history`: a run row is written on `initialize`, before the first write
+  # exists, and a run that wrote nothing is a fact worth keeping rather than an orphan.
+  #
+  # `tenant_id`, lowercase, as every content table carries (SH22); no backfill — a run that happened
+  # before this table existed has no name to give it, and inventing one would be a claim nobody made.
+  # Types DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on
+  # PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh999-create-sh-agent-run
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_agent_run
+      changes:
+        - createTable:
+            tableName: sh_agent_run
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_agent_run
+              - column:
+                  name: client_name
+                  type: VARCHAR(255)
+              - column:
+                  name: client_version
+                  type: VARCHAR(100)
+              - column:
+                  name: transport
+                  type: VARCHAR(16)
+              - column:
+                  name: actor
+                  type: VARCHAR(255)
+              - column:
+                  name: started_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)

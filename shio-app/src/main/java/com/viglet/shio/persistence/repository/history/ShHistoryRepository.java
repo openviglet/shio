@@ -35,6 +35,25 @@ import com.viglet.shio.persistence.model.history.ShHistory;
 @Repository
 public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 
+	/**
+	 * The feed's SH999 attribution filter, as one clause the four feed queries share.
+	 *
+	 * <p>Two nullable parameters rather than four query variants: {@code session} narrows to one
+	 * run, {@code kind} to {@code agent} or {@code human}, and both {@code null} is every row —
+	 * which is what every caller from SH88 to SH998 passes, so the unfiltered feed is the same
+	 * result set it always was.</p>
+	 *
+	 * <p>A <b>console</b> session is a person (SH996), so it belongs on the human side of this
+	 * predicate. That is the reason the test asserts the split rather than the column: a filter
+	 * that read "has a session id" would file a curator's own publish under the machines.</p>
+	 */
+	String WROTE_IT = "and (:session is null or h.agentSessionId = :session) "
+			+ "and (:kind is null "
+			+ "  or (:kind = 'agent' and h.agentSessionId is not null "
+			+ "      and h.agentSessionId not like 'console:%') "
+			+ "  or (:kind = 'human' and (h.agentSessionId is null "
+			+ "      or h.agentSessionId like 'console:%'))) ";
+
 	List<ShHistory> findAll();
 
 	Optional<ShHistory> findById(String id);
@@ -91,12 +110,14 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 			+ "order by h.date asc, h.id asc")
 	List<ShHistory> findByAgentSession(String session);
 
-	@Query("select h from ShHistory h where h.date <= :ceiling order by h.date desc, h.id desc")
-	List<ShHistory> findWindow(Instant ceiling, Pageable pageable);
-
-	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds "
+	@Query("select h from ShHistory h where h.date <= :ceiling " + WROTE_IT
 			+ "order by h.date desc, h.id desc")
-	List<ShHistory> findWindowInSites(Instant ceiling, Collection<String> siteIds, Pageable pageable);
+	List<ShHistory> findWindow(Instant ceiling, String session, String kind, Pageable pageable);
+
+	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds " + WROTE_IT
+			+ "order by h.date desc, h.id desc")
+	List<ShHistory> findWindowInSites(Instant ceiling, Collection<String> siteIds, String session,
+			String kind, Pageable pageable);
 
 	/**
 	 * Everything strictly after the {@code (at, id)} position, oldest first (SH88).
@@ -107,13 +128,14 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	 * cursor's second, which on a batch write is most of them.</p>
 	 */
 	@Query("select h from ShHistory h where h.date <= :ceiling "
-			+ "and (h.date > :at or (h.date = :at and h.id > :id)) "
+			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT
 			+ "order by h.date asc, h.id asc")
-	List<ShHistory> findSince(Instant ceiling, Instant at, String id, Pageable pageable);
+	List<ShHistory> findSince(Instant ceiling, Instant at, String id, String session, String kind,
+			Pageable pageable);
 
 	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds "
-			+ "and (h.date > :at or (h.date = :at and h.id > :id)) "
+			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT
 			+ "order by h.date asc, h.id asc")
 	List<ShHistory> findSinceInSites(Instant ceiling, Collection<String> siteIds, Instant at,
-			String id, Pageable pageable);
+			String id, String session, String kind, Pageable pageable);
 }

@@ -464,3 +464,17 @@ a read, a search and a publish.
 
 A later task that adds an argument cites its reservation rather than the ceiling, and one that wants
 more has to say which planned capability is giving up its room.
+
+## `initialize` is kept, not just answered (SH999)
+
+The handshake's `clientInfo` — the name and version a client chooses for itself — used to be read
+for nothing. It is now written to `sh_agent_run` against the session id the same call mints, which
+is what turns the uuid on every audit row into `claude-code` on the change feed and on the console's
+Activity page. Writing it never refuses the handshake: `initialize` is the first call of a session,
+so a failure there would turn "your agent has no label" into "your agent cannot start", and a run
+with no name is a state both readers already handle.
+
+`shio_changes` gains **`by`** (`agent`, `human`, or a session id) — REST's own filter, which P1 puts
+here first. It was paid for out of `shio_publish`'s reservation rather than out of the ceiling:
+SH977 held 216 there for SH992's `when` and `cancel`, those shipped at 197, and a reservation whose
+capability has landed is room the allocation counts and nobody can spend.

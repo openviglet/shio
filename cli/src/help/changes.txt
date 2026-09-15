@@ -6,6 +6,7 @@ shio changes — what changed, with a cursor to resume from
   --site <name>        Scope to one site
   --limit <n>          Entries to print
   --fields             Name the fields each write changed
+  --by <who>           agent, human, or a session id
   --json               Raw JSON instead of lines (a line per event with --follow)
   --follow             Stay open, printing each change; reconnects without loss
   --base-file <file>   Where the last content pull's position is kept
@@ -14,3 +15,4 @@ Examples:
   shio changes --since last
   SINCE=$(shio changes --cursor)
   shio changes --follow --site Blog
+  shio changes --since last --by human

@@ -15,5 +15,9 @@
   "activity.actionDelete": "Deleted",
   "activity.actionRestore": "Restored",
   "activity.fields": "Fields: {{fields}}",
-  "activity.noFieldsChanged": "No field changed"
+  "activity.noFieldsChanged": "No field changed",
+  "activity.byAgent": "Agent run — open it in the review queue",
+  "activity.filterAll": "Everyone",
+  "activity.filterAgent": "Agents",
+  "activity.filterHuman": "People"
 }

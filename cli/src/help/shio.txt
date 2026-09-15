@@ -20,8 +20,8 @@ Commands:
   gate           The checks a site runs before content goes live (run, list)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
   changes        What changed, with a cursor to resume from
-  report         The human handoff: what changed, preview links, open questions
-  remember       Write down a decision the next session should not re-derive
+  report         What changed, preview links, open questions
+  remember       Write down a decision for the next session
   digest <page>  Structural digest of one page: outline, landmarks, links, images
   snapshot <page> PNG of a page, and whether it looks different (playwright)
   audit <page>   What is wrong with a rendered page, as text with a selector each
@@ -42,7 +42,7 @@ Commands:
   types          Generate a TypeScript .d.ts from the live post-types (CDA token)
   dev            Types, dev server, model watch (--content syncs shio/content/**)
   deploy         push (apply) then types
-  doctor         Can I work here? Instance, build stamp, drift, sites, content tree
+  doctor         Instance, build stamp, drift, sites, content tree
 
 Post-types as code:
   shio/post-types/ holds *.json or *.ts/*.mjs DSL (@viglet/shio-model); push and

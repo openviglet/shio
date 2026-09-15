@@ -2,7 +2,7 @@ shio clone <url> — capture a site that already exists, and write no content
 
   --depth <n>              How deep to follow internal links (default 3; 0 = the seed page)
   --max-pages <n>          Ceiling on pages fetched (default 200); a cut is recorded
-  --markup                 Keep each page's HTML — what shio propose computes from
+  --markup                 Keep each page's HTML
   --assets                 Download the bytes the inventory names (needs --site)
   --site <name>            With --assets: whose asset tree the bytes go under
   --max-assets <n>         With --assets: ceiling on downloads (default 500)

@@ -4086,3 +4086,9 @@ A revision carries a `note` when somebody overrode a failing gate to create it, 
 prints it above the `changed:` line — "somebody overrode a check" outranks which fields moved. This is
 the half of the record a reader who started at the content will find; `shio changes` carries the other
 half, as the audit row's parenthetical.
+
+## `shio changes --by` (SH999)
+
+`agent`, `human`, or a session id. A pipeline that pulls when something moved wants the half it did
+not write itself, and every row used to look the same. The printed line now reads
+`[ana via claude-code at <instant>]` when a run wrote it and `[ana at <instant>]` when a person did.

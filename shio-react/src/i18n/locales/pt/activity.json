@@ -15,5 +15,9 @@
   "activity.actionDelete": "Excluído",
   "activity.actionRestore": "Restaurado",
   "activity.fields": "Campos: {{fields}}",
-  "activity.noFieldsChanged": "Nenhum campo alterado"
+  "activity.noFieldsChanged": "Nenhum campo alterado",
+  "activity.byAgent": "Execução de agente — abrir na fila de revisão",
+  "activity.filterAll": "Todos",
+  "activity.filterAgent": "Agentes",
+  "activity.filterHuman": "Pessoas"
 }

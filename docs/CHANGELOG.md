@@ -1743,6 +1743,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
+- **SH999** — Both readers now carry the run and its client name, with a by/agent filter, and the javadoc's promise has an assertion instead of a paragraph.
+
 ## Block BC — The authoring surface, field by field
 
 ## Block BD — Finding, selecting and acting on content

@@ -528,3 +528,18 @@ Why it is not a fourth value of the `reason` column: that one answers *why a sna
 its three values are the reasons a row exists at all. A waived publish is still a publish — the
 snapshot is there because the row went live — so the waiver is a note on the revision and the enum
 goes on answering the question it was written for.
+
+## `sh_agent_run` — which agent a session id belongs to (SH999)
+
+`v2026.3.37`. The primary key **is the session id**, not a surrogate: the transport mints it and it
+is already unique, so a second key would let two rows claim one run — the one thing a lookup by
+session must not find. There is no foreign key to `sh_history` either: the row is written on
+`initialize`, before the run has written anything, and a run that wrote nothing is a fact worth
+keeping rather than an orphan.
+
+It follows that a run row can be **absent**, and that is by design: the REST agent surface accepts a
+session id it did not mint (SH106), so a caller can write under a session that never introduced
+itself. Both readers report the id in that case rather than inventing a name. No backfill — a run
+that happened before this table existed has no name to give it.
+
+Console sessions (`console:<curator>:<date>`, SH996) are never written here. They are people.

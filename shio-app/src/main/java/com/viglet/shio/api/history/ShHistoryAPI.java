@@ -9,7 +9,10 @@
 package com.viglet.shio.api.history;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.agent.ShAgentRunService;
+import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.repository.history.ShHistoryPageableRepository;
 
@@ -43,32 +48,87 @@ public class ShHistoryAPI {
     private static final int DEFAULT_LIMIT = 100;
 
     private final ShHistoryPageableRepository shHistoryPageableRepository;
+    private final ShAgentRunService shAgentRunService;
 
-    public ShHistoryAPI(ShHistoryPageableRepository shHistoryPageableRepository) {
+    public ShHistoryAPI(ShHistoryPageableRepository shHistoryPageableRepository,
+                        ShAgentRunService shAgentRunService) {
         this.shHistoryPageableRepository = shHistoryPageableRepository;
+        this.shAgentRunService = shAgentRunService;
     }
 
-    /** Recent activity across all content in the current tenant, newest first. */
+    /**
+     * Recent activity across all content in the current tenant, newest first.
+     *
+     * @param agent SH999 — {@code agent} for what a run wrote, {@code human} for what a person did
+     *              (a curator's console session is a person), or a session id for one run
+     * @param actor SH999 — one principal's rows, which is the other question the Activity page is
+     *              asked: an agent and a person share a credential, so filtering by name and
+     *              filtering by machine are not the same filter and the page needs both
+     */
     @GetMapping
-    public List<ShHistoryResponse> recent(@RequestParam(name = "limit", defaultValue = "100") int limit) {
-        return shHistoryPageableRepository.findAllByOrderByDateDesc(page(limit))
-                .stream().map(ShHistoryResponse::of).toList();
+    public List<ShHistoryResponse> recent(@RequestParam(name = "limit", defaultValue = "100") int limit,
+                                          @RequestParam(name = "agent", required = false) String agent,
+                                          @RequestParam(name = "actor", required = false) String actor) {
+        return shape(shHistoryPageableRepository.findAllByOrderByDateDesc(page(limit)), agent, actor);
     }
 
     /** Activity for a single post (the {@code shObject} id), newest first. */
     @GetMapping("/object/{objectId}")
     public List<ShHistoryResponse> byObject(@PathVariable String objectId,
-                                            @RequestParam(name = "limit", defaultValue = "100") int limit) {
-        return shHistoryPageableRepository.findByShObjectOrderByDateDesc(objectId, page(limit))
-                .stream().map(ShHistoryResponse::of).toList();
+                                            @RequestParam(name = "limit", defaultValue = "100") int limit,
+                                            @RequestParam(name = "agent", required = false) String agent,
+                                            @RequestParam(name = "actor", required = false) String actor) {
+        return shape(shHistoryPageableRepository
+                .findByShObjectOrderByDateDesc(objectId, page(limit)), agent, actor);
     }
 
     /** Activity for a single site, newest first. */
     @GetMapping("/site/{siteId}")
     public List<ShHistoryResponse> bySite(@PathVariable String siteId,
-                                          @RequestParam(name = "limit", defaultValue = "100") int limit) {
-        return shHistoryPageableRepository.findByShSiteOrderByDateDesc(siteId, page(limit))
-                .stream().map(ShHistoryResponse::of).toList();
+                                          @RequestParam(name = "limit", defaultValue = "100") int limit,
+                                          @RequestParam(name = "agent", required = false) String agent,
+                                          @RequestParam(name = "actor", required = false) String actor) {
+        return shape(shHistoryPageableRepository
+                .findByShSiteOrderByDateDesc(siteId, page(limit)), agent, actor);
+    }
+
+    /**
+     * The page, filtered and named (SH999).
+     *
+     * <h2>Why this one filters after the query and the agent feed does not</h2>
+     *
+     * <p>The agent feed is <b>resumable</b>: it hands back a cursor, so a page short of its limit is
+     * read as "that is all there was" and the rows behind the cursor are never asked for again. This
+     * page is not — the console asks for the newest N and re-asks, so a filtered page that is short
+     * is a short page and nothing is lost. Filtering here keeps three finders from becoming twelve
+     * for a screen that reads at most five hundred rows.</p>
+     */
+    private List<ShHistoryResponse> shape(List<ShHistory> rows, String agent, String actor) {
+        List<ShHistory> kept = rows.stream()
+                .filter(row -> wroteIt(row, agent))
+                .filter(row -> actor == null || actor.isBlank() || actor.equals(row.getOwner()))
+                .toList();
+        Map<String, String> names = shAgentRunService.names(kept.stream()
+                .map(ShHistory::getAgentSessionId)
+                .filter(session -> session != null && !ShAgentSessionContext.isConsole(session))
+                .collect(Collectors.toCollection(LinkedHashSet::new)));
+        return kept.stream().map(row -> ShHistoryResponse.of(row, names)).toList();
+    }
+
+    /** The same three-way split the agent feed applies, and for the same reason (SH999). */
+    private static boolean wroteIt(ShHistory row, String agent) {
+        if (agent == null || agent.isBlank()) {
+            return true;
+        }
+        String session = row.getAgentSessionId();
+        boolean machine = session != null && !ShAgentSessionContext.isConsole(session);
+        if ("agent".equalsIgnoreCase(agent)) {
+            return machine;
+        }
+        if ("human".equalsIgnoreCase(agent)) {
+            return !machine;
+        }
+        return agent.equals(session);
     }
 
     private static Pageable page(int limit) {
@@ -85,11 +145,22 @@ public class ShHistoryAPI {
      */
     public record ShHistoryResponse(String id, String action, String description,
                                     String owner, Instant date, String shObject, String shSite,
-                                    List<String> changedFields) {
-        static ShHistoryResponse of(ShHistory h) {
+                                    List<String> changedFields, String agent, String agentName,
+                                    String subjectKind) {
+
+        static ShHistoryResponse of(ShHistory h, Map<String, String> names) {
+            String session = h.getAgentSessionId();
+            // SH999 — a console session is a curator publishing their own work (SH996). It is a
+            // person, and reporting it as an agent would put a curator's own press under a chip
+            // reading "agent" on the page they opened to find out who did this.
+            String run = session == null || ShAgentSessionContext.isConsole(session) ? null : session;
             return new ShHistoryResponse(h.getId(), h.getAction(), h.getDescription(),
                     h.getOwner(), h.getDate(), h.getShObject(), h.getShSite(),
-                    ShChangedFields.decode(h.getChangedFields()));
+                    ShChangedFields.decode(h.getChangedFields()),
+                    run, run == null ? null : names.get(run),
+                    // SH196 has recorded this on every row since it shipped and no reader carried
+                    // it, so the Activity page called a folder rename a post.
+                    h.getSubjectKind());
         }
     }
 }

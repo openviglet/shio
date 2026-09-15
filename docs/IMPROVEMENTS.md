@@ -1639,25 +1639,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-### LXVII.1 A machine's change, told apart from a person's (SH999)
-
-ShHistory.agent_session_id is written with every content write and read by the review
-queue. The console history response is id, action, description, owner, date, object and
-site, with no agent field and no subject kind, and the change feed passes the owner into
-by while its javadoc still says the agent session is stamped into that string so a
-caller can tell its own writes from a human's. That stopped being true when the actor
-suffix was removed, and no test asserted the guarantee, which is why it drifted.
-
-Add agent and agentName to the change row, omitted when null so a human row stays
-byte-identical, with a by filter of agent, human or a session. Add agent, agentName and
-subjectKind to the console history response, with agent and actor filters. Persisting
-the MCP clientInfo name on initialize into a run row makes agentName a name rather than
-a uuid, and that row is where BB2 hangs intent.
-
-Fix the javadoc in the same commit and land ShAgentChangesAttributionTest: an agent
-write and a human write by the same credential are distinguishable on the feed. The
-console renders an agent chip in the Who column linking to the run.
-
 ### LXVII.2 A run that says what it was for (SH1000)
 
 ShReviewSession holds session, actor, changes, counts by action, first and last seen,

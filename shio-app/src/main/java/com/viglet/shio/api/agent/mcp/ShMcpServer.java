@@ -16,6 +16,8 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.viglet.shio.api.agent.ShAgentManifestService;
+import com.viglet.shio.api.agent.ShAgentRunService;
+import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.error.ShDidYouMean;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.utils.ShStableMap;
@@ -106,12 +108,15 @@ public class ShMcpServer {
     private final List<ShMcpTool> tools;
     private final List<ShMcpResource> resources;
     private final List<ShMcpPrompt> prompts;
+    private final ShAgentRunService shAgentRunService;
     private final ObjectMapper objectMapper;
 
     public ShMcpServer(List<ShMcpTool> tools,
                        List<ShMcpResource> resources,
                        List<ShMcpPrompt> prompts,
+                       ShAgentRunService shAgentRunService,
                        ObjectMapper objectMapper) {
+        this.shAgentRunService = shAgentRunService;
         // Sorted by name so tools/list is byte-stable: the list is part of every
         // session's context, and an unstable order would defeat client-side caching
         // for no reason (P5).
@@ -175,6 +180,14 @@ public class ShMcpServer {
     // --- lifecycle ---
 
     private ObjectNode initialize(JsonNode params) {
+        // SH999 — the one call in the protocol whose purpose is a client saying what it is, and this
+        // server discarded the half that said it. Kept against the session id this same call mints,
+        // so the uuid on every audit row resolves to a name a reviewer recognises.
+        JsonNode clientInfo = params == null ? null : params.get("clientInfo");
+        ShAgentSessionContext.current().ifPresent(session ->
+                shAgentRunService.introduce(session, text(clientInfo, "name"),
+                        text(clientInfo, "version"), ShAgentRunService.MCP,
+                        ShAgentSessionContext.actor()));
         ObjectNode result = objectMapper.createObjectNode();
         result.put("protocolVersion", PROTOCOL_VERSION);
         ObjectNode capabilities = result.putObject("capabilities");

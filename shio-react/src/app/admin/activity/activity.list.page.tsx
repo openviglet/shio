@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { History, RefreshCw } from "lucide-react"
+import { Bot, History, RefreshCw } from "lucide-react"
+import { Link } from "react-router-dom"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { ShHistoryService } from "@/services/history/history.service"
@@ -28,12 +29,14 @@ export default function ActivityListPage() {
   const { t } = useTranslation()
   const [items, setItems] = useState<ShHistory[]>([])
   const [loading, setLoading] = useState(true)
+  /** SH999 — everyone, the machines, or the people. The server decides which rows those are. */
+  const [who, setWho] = useState<"" | "agent" | "human">("")
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
   const fetchRecent = useCallback(
-    () => service.recent(200).then(setItems).catch(() => setItems([]))
+    () => service.recent(200, who || undefined).then(setItems).catch(() => setItems([]))
       .finally(() => setLoading(false)),
-    [],
+    [who],
   )
 
   /** The curator asked, so the spinner is a response to them (SH701). */
@@ -66,10 +69,28 @@ export default function ActivityListPage() {
         subtitle={t("activity.description")}
         urlBase={ROUTES.ADMIN_ROOT}
         actions={
-          <Button onClick={load} size="sm" variant="outline" disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            {t("activity.refresh")}
-          </Button>
+          <div className="flex items-center gap-2">
+            {/*
+              SH999 — three buttons rather than a select: the whole vocabulary is three words, and a
+              curator asking "was that us or the agent" should not have to open a menu to ask it.
+            */}
+            {([["", "activity.filterAll"], ["agent", "activity.filterAgent"],
+              ["human", "activity.filterHuman"]] as const).map(([value, key]) => (
+              <Button
+                key={key}
+                size="sm"
+                variant={who === value ? "default" : "outline"}
+                disabled={loading}
+                onClick={() => setWho(value)}
+              >
+                {t(key)}
+              </Button>
+            ))}
+            <Button onClick={load} size="sm" variant="outline" disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              {t("activity.refresh")}
+            </Button>
+          </div>
         }
       />
       <div className="p-6">
@@ -113,7 +134,28 @@ export default function ActivityListPage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{item.owner}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {item.owner}
+                        {/*
+                          SH999 — the run beside the person, because both are true: an agent acts as
+                          somebody's credential, so a column showing only the name said the same
+                          thing about a machine's write and a person's. It links to the queue where
+                          that run can be read and undone, which is the next thing a curator who
+                          noticed this wants.
+                        */}
+                        {item.agent && (
+                          <Link
+                            to={`${ROUTES.ADMIN_REVIEW}?session=${encodeURIComponent(item.agent)}`}
+                            title={t("activity.byAgent")}
+                            className="ml-2 inline-flex items-center gap-1 align-middle"
+                          >
+                            <Badge variant="outline" className="vg-accent-text gap-1">
+                              <Bot className="h-3 w-3" />
+                              {item.agentName ?? item.agent.slice(0, 8)}
+                            </Badge>
+                          </Link>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {item.date ? new Date(item.date).toLocaleString() : ""}
                       </TableCell>

@@ -826,3 +826,15 @@ would make the queue a log, which the Activity page already is, and one per cura
 — and it is derived rather than stored, so two publishes an hour apart join without anything recording
 that they belong together. The context is cleared in a `finally`: the thread is pooled, and a session
 left bound would stamp the next request's audit rows with this curator's day.
+
+## `/api/v2/history` carries the three facts it recorded and never returned (SH999)
+
+The Activity read gains **`agent`**, **`agentName`** and **`subjectKind`**. The last of those has
+been on every row since SH196 and no reader carried it, so the console called a folder rename a
+post. `agent` and `actor` filter the read — and they are **not the same filter**, which is the whole
+point: an agent acts *as* somebody, so the credential is the same on a run's rows and on that
+person's own, and a page that offers only one of the two cannot answer "was that us or the agent".
+
+Filtered after the query here, unlike the agent feed, and the difference is resumability: this read
+is "the newest N, again", so a short filtered page is a short page and nothing is lost. The agent
+feed hands back a cursor, so the same shortcut would hide rows forever.
