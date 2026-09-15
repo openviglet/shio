@@ -213,7 +213,14 @@ const UNEXERCISED = {
     // fills it and then RUNS it, and the run is the next slice. Written now it would assert the half
     // that exists and be rewritten by the task that finishes the other half. They are proved in
     // ShReleaseOpsTest against the service and the listing.
+    // `note.add` and `note.resolve` arrive with SH1003 and join the list together, for the reason
+    // the release family did: a live scenario for a note is the one that leaves a request on a page
+    // an earlier call in the same run wrote, and then closes it — and the half of that which is
+    // worth asserting live is that a curator's sentence reaches a resumed session, which is the
+    // slice that puts notes on the read. They are proved in ShNoteTest against the service and the
+    // op vocabulary.
     "folder.delete", "folder.restore",
+    "note.add", "note.resolve",
     "post.move", "post.restore", "post.rollback", "post.unpublish",
     "release.add", "release.archive", "release.remove", "release.rollback", "release.run",
     "release.upsert",

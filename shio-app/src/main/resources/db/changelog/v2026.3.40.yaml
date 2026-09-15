@@ -1,0 +1,118 @@
+databaseChangeLog:
+  # SH1003 — `sh_note`: a curator's correction, anchored where it is about.
+  #
+  # Searching this backend for a comment, mention or annotation class returned nothing. The review
+  # queue reviews *runs*, not documents, so a curator who wants one paragraph fixed had no channel
+  # and an agent had nothing to read: the correction lived in a conversation somewhere else, and the
+  # next session started without it.
+  #
+  # The anchor is three columns, narrowing: `object_id` is required, `field_path` and `revision_no`
+  # are not. "This page is wrong", "this field is wrong" and "this field was wrong at version 7" are
+  # the same kind of statement at three resolutions, and a design that made them three tables would
+  # have three read paths for one question.
+  #
+  # `object_id` is a plain VARCHAR, not a foreign key, for the JPQL invariant `agents.md` states: a
+  # post's key is composite, so a foreign key would have to name a state — and the row it named is
+  # the one publishing deletes. A note has to outlive exactly that.
+  #
+  # `parent_id` threads replies. Self-referential and nullable: a root note has none, and a reply
+  # carries the root's id rather than a thread table, because a thread with no second message is by
+  # far the common case and a table for it would be a join answering "no".
+  #
+  # `kind` is COMMENT, REQUEST or REPLY. Assignment and "please fix this" are the same mechanism as
+  # a remark, one column apart — the alternative is an assignee column, a request table and a
+  # comment table that all mean "somebody said something about this".
+  #
+  # `body` at 4000: a paragraph, not a document. Long enough for the correction a curator actually
+  # writes, short enough that a thread on a page cannot become the page.
+  #
+  # `tenant_id`, lowercase, as every content table carries (SH22); no backfill. Types DB-agnostic per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1003-create-sh-note
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_note
+      changes:
+        - createTable:
+            tableName: sh_note
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_note
+              - column:
+                  name: object_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field_path
+                  type: VARCHAR(255)
+              - column:
+                  name: revision_no
+                  type: INT
+              - column:
+                  name: parent_id
+                  type: VARCHAR(36)
+              - column:
+                  name: kind
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: VARCHAR(4000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: author
+                  type: VARCHAR(255)
+              - column:
+                  name: agent_session_id
+                  type: VARCHAR(255)
+              - column:
+                  name: resolved
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resolved_by
+                  type: VARCHAR(255)
+              - column:
+                  name: resolved_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: sh1003-index-sh-note-object
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: IDX_sh_note_object
+      changes:
+        - createIndex:
+            tableName: sh_note
+            indexName: IDX_sh_note_object
+            columns:
+              - column:
+                  name: object_id
+              - column:
+                  name: resolved

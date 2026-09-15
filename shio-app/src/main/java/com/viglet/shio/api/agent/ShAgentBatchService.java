@@ -300,6 +300,27 @@ public class ShAgentBatchService {
     public static final String RELEASE_POSTS_KEY = "posts";
 
     /**
+     * SH1003 — {@code note.add}: say something about a page, where it is about.
+     *
+     * <p>An op rather than an endpoint of its own, and it is the ladder SH977 describes working:
+     * anything expressible as an addressed write costs a name in this enum and no schema. A note IS
+     * an addressed write — it hangs on an object and carries a body — so it belongs here rather than
+     * in a thirteenth tool.</p>
+     */
+    public static final String NOTE_ADD = "note.add";
+
+    /** SH1003 — {@code note.resolve}: mark one done, or {@code cancel} to re-open it. */
+    public static final String NOTE_RESOLVE = "note.resolve";
+
+    /** The keys {@code note.add} reads from {@code data}. */
+    public static final String NOTE_BODY_KEY = "body";
+    public static final String NOTE_KIND_KEY = "kind";
+    public static final String NOTE_FIELD_KEY = "field";
+    public static final String NOTE_REVISION_KEY = "revision";
+    public static final String NOTE_PARENT_KEY = "parent";
+    public static final String NOTE_ID_KEY = "note";
+
+    /**
      * SH413 — reindexing rides {@code site.upsert} rather than being a twelfth op name.
      *
      * <p>It was written as {@code search.reindex} first, and {@code ShAgentOpsReachTest} refused
@@ -320,7 +341,8 @@ public class ShAgentBatchService {
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_COPY, FOLDER_DELETE,
             POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
             POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION, RELEASE_UPSERT,
-            RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE, RELEASE_ROLLBACK);
+            RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE, RELEASE_ROLLBACK,
+            NOTE_ADD, NOTE_RESOLVE);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -381,6 +403,9 @@ public class ShAgentBatchService {
     private final ShReleaseRunner shReleaseRunner;
     /** SH997 — what the site says about content before it reaches visitors. */
     private final ShPublishGateService shPublishGateService;
+    private final com.viglet.shio.api.note.ShNoteService shNoteService;
+    /** SH1003 — a note hangs on the object an address names, resolved the one way this product does. */
+    private final ShAddressResolver shAddressResolver;
 
     public ShAgentBatchService(ShHtmlSanitizer shHtmlSanitizer,
                                ShAgentSiteAccess siteAccess,
@@ -408,11 +433,15 @@ public class ShAgentBatchService {
                                ShPostRevisionService shPostRevisionService,
                                ShReleaseService shReleaseService,
                                ShReleaseRunner shReleaseRunner,
-                               ShPublishGateService shPublishGateService) {
+                               ShPublishGateService shPublishGateService,
+                               com.viglet.shio.api.note.ShNoteService shNoteService,
+                               ShAddressResolver shAddressResolver) {
         this.shHtmlSanitizer = shHtmlSanitizer;
         this.shReleaseService = shReleaseService;
         this.shReleaseRunner = shReleaseRunner;
         this.shPublishGateService = shPublishGateService;
+        this.shNoteService = shNoteService;
+        this.shAddressResolver = shAddressResolver;
         this.shConsoleSurfaces = shConsoleSurfaces;
         this.shPostRevisionService = shPostRevisionService;
         this.siteAccess = siteAccess;
@@ -855,6 +884,8 @@ public class ShAgentBatchService {
             case RELEASE_RUN -> releaseRun(op, session);
             case RELEASE_ARCHIVE -> releaseArchive(op, session);
             case RELEASE_ROLLBACK -> releaseRollback(op, session);
+            case NOTE_ADD -> noteAdd(op, session);
+            case NOTE_RESOLVE -> noteResolve(op, session);
             default -> throw new UnknownOpException(op.op());
         };
     }
@@ -1004,6 +1035,85 @@ public class ShAgentBatchService {
     }
 
     /** SH993 — {@code release.archive}, and {@code cancel:true} to put it back. */
+    /**
+     * SH1003 — a note on the object an address names.
+     *
+     * <p>The address is resolved the same way every other op resolves one, so a note hangs on the
+     * page a caller can already name rather than on a uuid it would have to look up. A dry run
+     * reports the row it would write and writes nothing: a note is a write like any other, and a
+     * plan that silently posted comments would be the one surprise this surface must not have.</p>
+     */
+    private Change noteAdd(ShAgentBatch.Op op, Session session) {
+        ShAddress address = noteAddress(op);
+        String objectId = shAddressResolver.resolve(address).id();
+        JsonNode data = requireData(op, NOTE_BODY_KEY, "the correction itself");
+        String body = text(data, NOTE_BODY_KEY);
+        if (session.dryRun) {
+            return session.change(op, address, Change.UPDATE, "a note", objectId);
+        }
+        shNoteService.add(objectId, text(data, NOTE_FIELD_KEY), integerOf(data, NOTE_REVISION_KEY),
+                text(data, NOTE_PARENT_KEY), text(data, NOTE_KIND_KEY), body, session.actor);
+        return session.change(op, address, Change.UPDATE, "a note", objectId);
+    }
+
+    /** SH1003 — close a note, or re-open it with {@code cancel}. */
+    private Change noteResolve(ShAgentBatch.Op op, Session session) {
+        ShAddress address = noteAddress(op);
+        String objectId = shAddressResolver.resolve(address).id();
+        requireData(op, NOTE_ID_KEY, "which note");
+        boolean closing = !cancels(op);
+        if (session.dryRun) {
+            return session.change(op, address, Change.UPDATE,
+                    closing ? "resolve a note" : "re-open a note", objectId);
+        }
+        shNoteService.resolve(text(op.data(), NOTE_ID_KEY), closing, session.actor);
+        return session.change(op, address, Change.UPDATE,
+                closing ? "note resolved" : "note re-opened", objectId);
+    }
+
+    /**
+     * The address a note hangs on — a page or a section, resolved the way every other op resolves
+     * one (SH1003).
+     *
+     * <p>Not restricted to {@code post:} even though a page is the common case: a note on a section
+     * is the same statement about a bigger thing, and the resolver already answers both. What it is
+     * restricted from is a {@code site:} address, which the writes vocabulary never takes.</p>
+     */
+    private ShAddress noteAddress(ShAgentBatch.Op op) {
+        if (op.address() == null || op.address().isBlank()) {
+            throw new MissingOpFieldException("address", op.op(), null,
+                    "post:<site>/<url>", "A note hangs on the thing it is about.");
+        }
+        ShAddress address = ShAddress.parse(op.address());
+        if (address.kind() != ShAddress.Kind.POST && address.kind() != ShAddress.Kind.FOLDER
+                && address.kind() != ShAddress.Kind.ID) {
+            throw new WrongAddressKindException(op.op(), address, ShAddress.Kind.POST);
+        }
+        return address;
+    }
+
+    /**
+     * The op's {@code data}, refused when it is absent (SH1003).
+     *
+     * <p>Checked on a dry run too, which is the point: a key the vocabulary calls required and the
+     * service does not is worse than no vocabulary — the caller supplies it, believes it matters,
+     * and the day it stops being sent nothing says so.</p>
+     */
+    private static JsonNode requireData(ShAgentBatch.Op op, String key, String what) {
+        JsonNode data = op.data();
+        if (data == null || data.get(key) == null || text(data, key) == null) {
+            throw new MissingOpFieldException("data." + key, op.op(), null, what,
+                    "A note carries " + what + " in `data`.");
+        }
+        return data;
+    }
+
+    /** A number from an op's data, or {@code null} — a note's revision is optional. */
+    private static Integer integerOf(JsonNode data, String field) {
+        JsonNode value = data == null ? null : data.get(field);
+        return value == null || !value.isNumber() ? null : value.asInt();
+    }
+
     private Change releaseArchive(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.RELEASE);
         String name = ShReleaseService.requireName(address.releaseName());

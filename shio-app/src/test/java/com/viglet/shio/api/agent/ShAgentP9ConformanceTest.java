@@ -131,6 +131,12 @@ class ShAgentP9ConformanceTest {
                 yes("ShStaticFileItem.java", "sha256"),
                 no("ShStaticFileItem.java", "finding", NOT_CONTENT_NO_FINDINGS),
                 no("ShStaticFileItem.java", "routes", NO_ROUTE_MOVED)));
+        // SH1003 — the answer is the note, which is the whole of what was asked for.
+        byPath.put("/api/v2/note", new Proof(
+                no("ShNoteAPI.java", "ChangeSet", ONE_OBJECT_NO_SET),
+                no("ShNoteAPI.java", "digest", THE_ROW_IS_THE_ANSWER),
+                no("ShNoteAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
+                no("ShNoteAPI.java", "routes", NO_ROUTE_MOVED)));
         byPath.put("/api/v2/import", new Proof(
                 no("ShExchangeImportAPI.java", "ChangeSet",
                         "it answers with the site it created, and what arrived inside it is a read "

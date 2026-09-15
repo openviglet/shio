@@ -567,3 +567,12 @@ one publishing deletes.
 A decision outlives the content it is about, which is the point of the table and a trap for a
 fixture: a test that rebuilds its posts per run has to delete these too, or its answer depends on
 what the previous test decided.
+
+## `sh_note` — the channel back from a curator (SH1003)
+
+`v2026.3.40`. `object_id` is a plain VARCHAR for the JPQL invariant `agents.md` states: a post's key
+is composite, so a foreign key would have to name a state, and the row it named is the one
+publishing deletes — a note has to outlive exactly that. `parent_id` is self-referential and
+nullable, because a thread with no second message is by far the common case and a thread table for
+it would be a join answering "no". `body` at 4000 is a paragraph, not a document: a thread on a page
+must not become the page.

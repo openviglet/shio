@@ -78,6 +78,17 @@ class ShAgentOpAclLintTest {
                 "SH993 — it writes a release row and touches no post, so there is no content id to "
                         + "ask about; the site it names is checked by requireSite, and release.add "
                         + "asks the ACL for every post it puts in");
+        // SH1003 — both ask, one layer down. `ShNoteService.add` calls requireRead and `resolve`
+        // calls requireWrite on the object the note hangs on, which is the same call the console's
+        // own `/api/v2/note` route relies on. Duplicating it in the op would be two authorisation
+        // checks over one decision, and the day they disagreed is the day the op or the route would
+        // be the wrong one — which is worse than the absence this lint scans for.
+        EXEMPT.put("note.add",
+                "SH1003 — ShNoteService.add asks requireRead on the object, shared with the console "
+                        + "route; a second check in the op would be two answers to one question");
+        EXEMPT.put("note.resolve",
+                "SH1003 — ShNoteService.resolve asks requireWrite on the object the note hangs on, "
+                        + "shared with the console route, for the reason note.add is here");
     }
 
     /**

@@ -122,17 +122,16 @@ public final class ShAgentOps {
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Create a blank site, or fill an empty url/description/furl on one that "
                             + "exists. `data.postTypeLayout` binds a post-type to a PageLayout "
-                            + "title, per key. `data.scratch:true` marks the new site DISPOSABLE, "
-                            + "on the CREATE only. `data.reindex:true` back-fills the search "
-                            + "index, paged by `data.limit`/`data.from`. Never replaces a value "
-                            + "somebody set."),
+                            + "title, per key. `data.scratch:true` marks it DISPOSABLE, on the "
+                            + "CREATE only. `data.reindex:true` back-fills the search index, paged "
+                            + "by `data.limit`/`data.from`. Never replaces a set value."),
             new OpSpec(ShAgentBatchService.SITE_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Trash a site and every folder and post in it. Needs `confirm` from its own "
                     + "dry run."),
             new OpSpec(ShAgentBatchService.FOLDER_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
-                    "Create a folder at that whole name chain, or confirm it is there."),
+                    "Create a folder at that whole name chain, or confirm it."),
             new OpSpec(ShAgentBatchService.FOLDER_MOVE,
                     List.of(ADDRESS, TO), List.of(), List.of(), List.of(),
                     "Rename or relocate a section. `to` is the whole new name chain, so its last "
@@ -140,8 +139,7 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.FOLDER_COPY,
                     List.of(ADDRESS, TO), List.of(), List.of(), List.of(),
                     "Duplicate a section and everything under it, as drafts. `to` is the copy's "
-                            + "own name chain; occupied is refused. Unlike a move, it may cross "
-                            + "sites."),
+                            + "own name chain; occupied is refused. May cross sites."),
             new OpSpec(ShAgentBatchService.FOLDER_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Trash a folder and everything beneath it. Needs `confirm` from its own dry "
@@ -160,9 +158,8 @@ public final class ShAgentOps {
                     // SH992 paid for `cancel` and unpublish's `when` out of this sentence rather than
                     // the SH346 ceiling: the asset clause kept its decision and lost its explanation.
                     "Publish the draft at that address, or at an ISO-8601 `when`; `cancel:true` "
-                            + "clears a pending one. Needs mayPublish. Takes `id:` too, for an "
-                            + "asset: an uploaded one is already published, so this answers noop "
-                            + "(SH462)."),
+                            + "clears a pending one. Needs mayPublish. Takes `id:` too; an asset "
+                            + "answers noop (SH462)."),
             new OpSpec(ShAgentBatchService.POST_UNPUBLISH,
                     List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, CANCEL),
                     "Withdraw the published row; the draft stays. `when`, `cancel` and `id:` as "
@@ -195,13 +192,11 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.RENDER_PROVISION,
                     List.of(), List.of(), List.of(), List.of(ADDRESS, DATA),
                     "Create the PageLayout/Region/Theme post-types this instance renders with, "
-                            + "idempotently. Do this once before writing a layout: post.upsert "
-                            + "cannot create a system type. `data.reconcile:true` also adds the "
-                            + "fields an older instance's render types are missing. `data.types` "
-                            + "installs "
-                            + "SH95 vocabulary types by name (Page, SectionHero) - a bare "
-                            + "instance ships none. `data.fields` {Type:[name]} appends missing "
-                            + "Text fields to a type that exists. Takes no address."),
+                            + "idempotently. Do this once before writing a layout. "
+                            + "`data.reconcile:true` also adds the fields an older instance's "
+                            + "render types are missing. `data.types` installs SH95 vocabulary "
+                            + "types by name (Page, SectionHero). `data.fields` {Type:[name]} "
+                            + "appends missing Text fields to a type that exists. No address."),
             // SH993 — a release: a named set of posts in one site that goes live as one unit. Read one
             // back with find?site=<site>&release=<name>.
             new OpSpec(ShAgentBatchService.RELEASE_UPSERT,
@@ -219,11 +214,20 @@ public final class ShAgentOps {
                             + "schedules it, `cancel` calls that off."),
             new OpSpec(ShAgentBatchService.RELEASE_ARCHIVE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(CANCEL),
-                    "Take it out of the listing; `cancel:true` puts it back. Not a delete."),
+                    "Take it out of the listing; `cancel` puts it back. Not a delete."),
             new OpSpec(ShAgentBatchService.RELEASE_ROLLBACK,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Put a published release back: each page to what it replaced, pages it first "
-                            + "published come down. Needs `confirm`."));
+                            + "published come down. Needs `confirm`."),
+            // SH1003 — the channel back. `data.body` is the correction itself; `field` narrows it to
+            // one field and `revision` to one version, and `kind` is comment, request or reply.
+            new OpSpec(ShAgentBatchService.NOTE_ADD,
+                    List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
+                    "Say something about this page: `data.body`; also `field`, `revision`, "
+                            + "`parent`, `kind` (comment/request/reply)."),
+            new OpSpec(ShAgentBatchService.NOTE_RESOLVE,
+                    List.of(ADDRESS, DATA), List.of(), List.of(), List.of(CANCEL),
+                    "Close `data.note`; `cancel` re-opens."));
 
     private ShAgentOps() {
         // utility

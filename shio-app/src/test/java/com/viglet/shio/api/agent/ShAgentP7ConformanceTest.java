@@ -137,6 +137,15 @@ class ShAgentP7ConformanceTest {
                 no("ShStaticFileAPI.java", "confirm", DELETE_IS_THE_CONSOLE_GESTURE),
                 yes("ShStaticFileService.java", "shContentAuditService"),
                 yes("ShReviewService.java", "findAgentEntries")));
+        // SH1003 — a note is a remark about content, not content. It leaves no audit row and no
+        // review entry because the note IS the record: the row a curator wrote is the durable
+        // statement, and putting "somebody commented" in a queue of things to approve or revert
+        // would ask a curator to approve their own sentence.
+        byPath.put("/api/v2/note", new Guards(
+                no("ShNoteAPI.java", "dryRun", PLAN_IS_THE_CALL),
+                no("ShNoteAPI.java", "confirm", NOT_DESTRUCTIVE),
+                no("ShNoteAPI.java", "shContentAuditService", NOT_CONTENT),
+                no("ShNoteAPI.java", "findAgentEntries", NO_WRITE_TO_REVIEW)));
         byPath.put("/api/v2/import", new Guards(
                 no("ShExchangeImportAPI.java", "dryRun", PLAN_IS_THE_CALL),
                 no("ShExchangeImportAPI.java", "confirm", NOT_DESTRUCTIVE),

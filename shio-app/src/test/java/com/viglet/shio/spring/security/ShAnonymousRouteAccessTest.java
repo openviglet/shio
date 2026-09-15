@@ -137,6 +137,9 @@ class ShAnonymousRouteAccessTest {
 			new Route("/api/v2/post-type/**", "/api/v2/post-type", Access.AUTHENTICATED),
 			new Route("/api/v2/post-unified/**", "/api/v2/post-unified/x", Access.AUTHENTICATED),
 			new Route("/api/v2/post/**", "/api/v2/post/xp/x", Access.AUTHENTICATED),
+			// SH1003 — a note is as visible as the object it hangs on, and the service asks the
+			// content ACL for every read and write. Reaching the route still takes a credential.
+			new Route("/api/v2/note/**", "/api/v2/note", Access.AUTHENTICATED),
 			new Route("/api/v2/preview-token", "/api/v2/preview-token", Access.AUTHENTICATED),
 			new Route("/api/v2/provider/**", "/api/v2/provider/auth", Access.AUTHENTICATED),
 			new Route("/api/v2/render/**", "/api/v2/render/post-types", Access.AUTHENTICATED),

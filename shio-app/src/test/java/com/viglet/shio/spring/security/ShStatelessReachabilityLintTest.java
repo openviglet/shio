@@ -157,6 +157,11 @@ class ShStatelessReachabilityLintTest {
         // is an argument for the HTTP path being reachable, not for the gap being acceptable. The
         // narrowed exemption is in ShSecurityConfig; this comment is what stops the row coming back.
 
+        // SH1003 — every operation here has an addressed op: `note.add` says something about a
+        // page and `note.resolve` closes it, both on /agent/batch and both taking the same address
+        // a caller already holds. This route is the console's door to the same rows.
+        byPath.put("/api/v2/note", agentEquivalent(Set.of("POST"),
+                "note.add / note.resolve"));
         byPath.put("/api/v2/api-token", new Requirement(Reason.CONSOLE_ADMIN,
                 "an agent minting or widening its own credential is the escalation Block L is "
                 + "built to prevent — the one entry here that must never move"));

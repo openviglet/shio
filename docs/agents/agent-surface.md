@@ -3497,3 +3497,33 @@ strand rows behind the cursor.
 no decide path, the resource names none, and a note is readable by the credential that wrote the run
 and by no other. The index assertion matches on word boundaries, because `/preview-token` contains
 "review" — SH794's over-match, met again.
+
+## Notes: a correction anchored where it is about (SH1003, the note)
+
+Searching this backend for a comment, mention or annotation class returned nothing. The review queue
+reviews **runs**, not documents, so a curator who wanted one paragraph fixed had no channel and an
+agent had nothing to read — the correction lived in a conversation somewhere else, and the next
+session started without it. Instance memory (SH114) was the nearest thing and answers "how we write
+here", not "this sentence is wrong".
+
+`sh_note` anchors on three columns, narrowing: `object_id` is required, `field_path` and
+`revision_no` are not. "This page is wrong", "this field is wrong" and "this field was wrong at
+version 7" are one kind of statement at three resolutions, and three tables for them would be three
+read paths for one question. `kind` is `COMMENT`, `REQUEST` or `REPLY`: assignment **is** a request,
+and the alternative — an assignee column, a request table and a comment table — would be three
+shapes that all mean "somebody said something about this".
+
+**Visibility is the object's, never its own.** Every read and write goes through the SH54 content
+ACL for `objectId`: "who may see this remark" has one honest answer, which is "whoever may see the
+page". Resolving asks for WRITE rather than for authorship, because closing a request is a claim
+about the content — and tying it to the author would mean an agent could not close a request a
+curator made of it, which is the one closing gesture this exists to enable.
+
+**`note.add` and `note.resolve` are ops, not a thirteenth tool.** A note is an addressed write — it
+hangs on an object and carries a body — so it costs a name in `shio_write`'s enum and no schema,
+which is the ladder SH977 describes. Measured: 3 est. tokens each, and they took `shio_write` to
+490, its own ceiling. The next op on it is SH993's `max-per-tool` conversation, not something anybody
+slips in. They were paid for by releasing `shio_read`'s and `shio_find`'s reservations, whose planned
+additions (SH990, SH991) had all shipped.
+
+The console reaches the same rows through `/api/v2/note` — one vocabulary, two callers (P10).
