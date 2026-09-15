@@ -14,7 +14,10 @@ import org.springframework.stereotype.Component;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
+import com.viglet.shio.api.release.ShReleaseRunner;
+import com.viglet.shio.api.release.ShReleaseService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
+import com.viglet.shio.persistence.model.release.ShRelease;
 import com.viglet.shio.persistence.model.tenant.ShTenant;
 import com.viglet.shio.persistence.model.tenant.ShTenantStatus;
 import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
@@ -46,13 +49,27 @@ public class ShPostScheduler {
     /** The start of a failed unpublish's incident message (SH969). */
     static final String UNPUBLISH_FAILED = "scheduled unpublish failed: ";
 
+    /** The start of a failed release run's incident message (SH993). */
+    static final String RELEASE_FAILED = "scheduled release run failed: ";
+
     /** One remedy for both halves of the sweep: the post's state is not what was asked. */
+    /** SH993 — what a curator does about a release that did not run. */
+    private static final String RELEASE_FIX =
+            "The release is still SCHEDULED and its instant has passed, so the next sweep tries "
+                    + "again. Read what it holds (GET /api/v2/agent/find?site=<site>&release=<name>) "
+                    + "and run it explicitly with release.run once the post it failed on is fixed.";
+
     private static final String SCHEDULE_FIX =
             "The post is still in its previous state. Read it (GET /api/v2/agent/read) and "
                     + "publish or unpublish it explicitly, then re-schedule if the timing still "
                     + "matters.";
 
+    /** SH993 — the actor a release the sweep fires is recorded as, beside SH15's per-post one. */
+    private static final String SCHEDULER = "scheduler";
+
     private final ShPostUnifiedWriteService writeService;
+    private final ShReleaseService shReleaseService;
+    private final ShReleaseRunner shReleaseRunner;
     private final ShScheduleProperties properties;
     private final ShAgentIncidentLog incidentLog;
     private final ShTenantRepository shTenantRepository;
@@ -77,11 +94,15 @@ public class ShPostScheduler {
     }
 
     public ShPostScheduler(ShPostUnifiedWriteService writeService,
+                           ShReleaseService shReleaseService,
+                           ShReleaseRunner shReleaseRunner,
                            ShScheduleProperties properties,
                            ShAgentIncidentLog incidentLog,
                            ShTenantRepository shTenantRepository,
                            ShAppProperties shAppProperties) {
         this.writeService = writeService;
+        this.shReleaseService = shReleaseService;
+        this.shReleaseRunner = shReleaseRunner;
         this.properties = properties;
         this.incidentLog = incidentLog;
         this.shTenantRepository = shTenantRepository;
@@ -197,6 +218,24 @@ public class ShPostScheduler {
                 incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "id:" + id,
                         UNPUBLISH_FAILED + e.getMessage(), SCHEDULE_FIX,
                         ShAgentIncidentFrames.of(e), due.siteId());
+            }
+        }
+
+        // SH993 — a release due now goes live as one transaction, through the same runner the
+        // `release.run` op calls. A launch that behaved differently at midnight than on the call
+        // would be the worst kind of surprise to debug, so there is one implementation of running.
+        for (ShRelease due : shReleaseService.dueRuns(now)) {
+            try {
+                shReleaseRunner.run(due, SCHEDULER);
+                log.info("Scheduled release run fired for {}", due.getName());
+            } catch (Exception e) {
+                log.warn("Scheduled release run failed for {}: {}", due.getName(), e.getMessage());
+                // The release stays SCHEDULED and still due, so the next pass tries again — the same
+                // shape SH969 gave a failed post transition, and the incident is what says so while
+                // nobody is watching.
+                incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, "release:" + due.getName(),
+                        RELEASE_FAILED + e.getMessage(), RELEASE_FIX,
+                        ShAgentIncidentFrames.of(e), due.getSiteId());
             }
         }
     }

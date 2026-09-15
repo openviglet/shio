@@ -79,18 +79,43 @@ public final class ShAgentConfirm {
     public static boolean mayDestroy(List<ShAgentBatch.Op> ops) {
         return ops.stream()
                 .filter(op -> op != null && op.op() != null)
-                .anyMatch(op -> ShAgentBatchService.DESTRUCTIVE_OPS.contains(
-                        op.op().trim().toLowerCase(Locale.ROOT)));
+                .anyMatch(ShAgentConfirm::needsConfirm);
     }
 
-    /** What a plan would actually destroy, in a canonical order. */
+    /**
+     * SH993 — and a release run, which destroys nothing and is the widest thing on the surface.
+     *
+     * <p>Two steps for the same reason a delete takes them: what the run puts in front of visitors is
+     * the whole set, and the caller has to have seen it. A run carrying {@code when} or {@code cancel}
+     * only moves a date, so it confirms nothing — the token would be asked for at the moment nothing
+     * goes live, and not asked for at midnight when it does.</p>
+     */
+    private static boolean needsConfirm(ShAgentBatch.Op op) {
+        String name = op.op().trim().toLowerCase(Locale.ROOT);
+        if (ShAgentBatchService.DESTRUCTIVE_OPS.contains(name)) {
+            return true;
+        }
+        return ShAgentBatchService.RELEASE_RUN.equals(name)
+                && (op.when() == null || op.when().isBlank())
+                && !Boolean.TRUE.equals(op.cancel());
+    }
+
+    /**
+     * What a plan would destroy or put live, in a canonical order.
+     *
+     * <p>A release row carries its own detail into the token (SH993), which is what makes the token
+     * cover the <em>set</em>: the detail counts the posts, so adding one between the plan and the run
+     * makes the confirm stale instead of silently launching a page the caller never saw.</p>
+     */
     public static List<String> deletions(ShAgentChangeSet plan) {
         if (plan == null || plan.results() == null) {
             return List.of();
         }
         return plan.results().stream()
-                .filter(row -> ShAgentChangeSet.Change.DELETE.equals(row.action()))
-                .map(ShAgentChangeSet.Change::address)
+                .filter(row -> ShAgentChangeSet.Change.DELETE.equals(row.action())
+                        || ShAgentBatchService.RELEASE_RUN.equals(row.op()))
+                .map(row -> ShAgentChangeSet.Change.DELETE.equals(row.action()) ? row.address()
+                        : row.address() + " — " + (row.detail() == null ? "" : row.detail()))
                 .sorted()
                 .toList();
     }
@@ -165,9 +190,9 @@ public final class ShAgentConfirm {
 
         public ConfirmRequiredException(String expected, List<String> rows) {
             super(ShProblem.of("confirm-required", HttpStatus.PRECONDITION_REQUIRED,
-                            "this run deletes " + rows.size() + " thing(s) and needs confirming")
-                    .withDetail("Destructive operations take two steps (SH108). What would go: "
-                            + naming(rows))
+                            "this run changes " + rows.size() + " thing(s) and needs confirming")
+                    .withDetail("A delete, and since SH993 a release run, takes two steps (SH108). "
+                            + "What this one covers: " + naming(rows))
                     .withFix("Run it again with `dryRun` to see the whole list, then repeat the "
                             + "call with `confirm` set to the value below.")
                     .withAllowed(List.of(expected))
@@ -180,9 +205,9 @@ public final class ShAgentConfirm {
 
         public ConfirmStaleException(String expected, List<String> rows) {
             super(ShProblem.conflict("confirm-stale",
-                            "the deletions changed since you confirmed them")
+                            "what this run covers changed since you confirmed it")
                     .withDetail("The confirm token covers a different set of " + rows.size()
-                            + " deletion(s) than this run would make. What would go now: "
+                            + " change(s) than this run would make. What it covers now: "
                             + naming(rows))
                     .withFix("Re-plan with `dryRun`, read the new list, and confirm that one. "
                             + "The content changed underneath you — that is what this check is for.")

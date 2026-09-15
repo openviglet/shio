@@ -10,6 +10,7 @@ package com.viglet.shio.api.release;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Map;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -150,6 +151,54 @@ public class ShReleaseService {
         return gone.stream().map(ShReleaseItem::getPostId).toList();
     }
 
+    /** SH993 — the release runs at this instant instead of now; the SH15 sweep fires it. */
+    @Transactional
+    public ShRelease scheduleAt(ShRelease release, Instant when, String actor) {
+        requireRunnable(release);
+        release.setState(ShRelease.State.SCHEDULED.name());
+        release.setScheduledAt(when);
+        return touched(release, actor);
+    }
+
+    /** SH993 — the pending run is called off, and the release goes back to being assembled. */
+    @Transactional
+    public ShRelease unschedule(ShRelease release, String actor) {
+        release.setState(ShRelease.State.PLANNED.name());
+        release.setScheduledAt(null);
+        return touched(release, actor);
+    }
+
+    /**
+     * SH993 — the release ran: each item keeps the revision its post was at, which is where
+     * {@code release.rollback} will return to, and the release becomes the record of what went live.
+     */
+    @Transactional
+    public ShRelease published(ShRelease release, Map<String, Integer> anchors, String actor) {
+        shReleaseItemRepository.findByReleaseIdOrderByAddedAtAsc(release.getId()).forEach(item -> {
+            item.setVersionBefore(anchors.get(item.getPostId()));
+            shReleaseItemRepository.save(item);
+        });
+        release.setState(ShRelease.State.PUBLISHED.name());
+        release.setScheduledAt(null);
+        return touched(release, actor);
+    }
+
+    /** SH993 — the releases the sweep should run now, oldest instant first. */
+    @Transactional(readOnly = true)
+    public List<ShRelease> dueRuns(Instant now) {
+        return shReleaseRepository.findByStateAndScheduledAtLessThanEqualOrderByScheduledAtAsc(
+                ShRelease.State.SCHEDULED.name(), now);
+    }
+
+    /** A release runs once: PLANNED or SCHEDULED, never one that already went live or was undone. */
+    public static void requireRunnable(ShRelease release) {
+        String state = release.getState();
+        if (!ShRelease.State.PLANNED.name().equals(state)
+                && !ShRelease.State.SCHEDULED.name().equals(state)) {
+            throw new ReleaseClosedException(release.getName(), state, false);
+        }
+    }
+
     /**
      * A release that ran is a record of what went live together, so its membership is closed. Only a
      * PLANNED or SCHEDULED release takes posts in or out.
@@ -157,7 +206,7 @@ public class ShReleaseService {
     public static void requireOpen(ShRelease release) {
         String state = release.getState();
         if (!ShRelease.State.PLANNED.name().equals(state) && !ShRelease.State.SCHEDULED.name().equals(state)) {
-            throw new ReleaseClosedException(release.getName(), state);
+            throw new ReleaseClosedException(release.getName(), state, true);
         }
     }
 
@@ -197,15 +246,25 @@ public class ShReleaseService {
         }
     }
 
-    /** A 409 for changing the posts of a release that already ran. */
+    /**
+     * A 409 for changing or re-running a release that already ran.
+     *
+     * <p>One exception, two messages, for {@code BadScheduleException}'s reason: the state is the same
+     * fact and what differs is what the caller was trying to do with it. A run says <em>runs once</em>
+     * rather than <em>takes no posts</em>, because an agent reading the membership message after a
+     * second {@code release.run} would go looking for the post it thought it was adding.</p>
+     */
     public static class ReleaseClosedException extends ShTeachingException {
 
-        public ReleaseClosedException(String name, String state) {
+        public ReleaseClosedException(String name, String state, boolean membership) {
             super(ShProblem.conflict("release-closed",
-                            "release '" + name + "' is " + state + " and takes no posts in or out")
-                    .withDetail("A release that ran is the record of what went live together, so its "
-                            + "posts are fixed.")
-                    .withFix("Plan a new release for the next change.")
+                            "release '" + name + "' is " + state
+                                    + (membership ? " and takes no posts in or out" : " and runs once"))
+                    .withDetail("A release that ran is the record of what went live together, so "
+                            + (membership ? "its posts are fixed." : "running it again would claim a "
+                                    + "second launch of the same set."))
+                    .withFix("Plan a new release for the next change"
+                            + (membership ? "." : ", or roll this one back."))
                     .withExample("{\"op\":\"release.upsert\",\"address\":\"release:<site>/<new-name>\"}"));
         }
     }

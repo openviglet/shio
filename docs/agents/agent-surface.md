@@ -3190,3 +3190,24 @@ inherited, and the decomposition settled it — per-op prose **fell** (35.6 → 
 16 → 19, which is the vocabulary gaining ops rather than drifting, and folding it into the manifest at
 30% is a worse trade than the 19% that made SH346 reject it. The ceiling is 900, which budgets
 `release.run` and `release.archive`.
+
+### Running one (SH993, second slice)
+
+`release.run` publishes every post in the release **in one transaction** — `ShReleaseRunner`, which is
+also what the SH15 sweep calls for a release whose instant has arrived, because a launch that behaved
+differently at midnight than on the call is the worst kind of thing to debug. A post that refuses takes
+the rest of the launch back with it, which is the half-live site a release exists to make unreachable.
+
+It takes **SH108's confirm token from its own dry run**, and it is the first op to do so without
+destroying anything: what a run puts in front of visitors is a *set*, so the caller has to have seen the
+set. The token is taken over the release's change row *including its detail*, which counts the posts —
+so a page added between the plan and the run makes the confirm stale instead of launching quietly.
+`when` and `cancel` carry SH992's grammar (schedule it, or call the pending run off) and confirm
+nothing, because those calls move a date rather than a page. `release.run` also joins SH107's publish
+gate: a credential without `mayPublish` was otherwise one `release.run` away from publishing a site.
+
+Each item keeps `version_before`, the SH986 revision its post was at, recorded for **every** post in the
+release including the ones that publish as noops — an item with no anchor is the page a rollback would
+silently skip (SH994). A release above `shio.agent.batch.max-ops` is refused while planning, naming the
+count: split it and the atomicity is gone, which is the thing a release is for. A release naming a post
+whose draft was deleted is a 409 rather than a shorter launch.

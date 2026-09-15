@@ -144,6 +144,18 @@ public class ShPostRevisionService {
         return List.copyOf(rows);
     }
 
+    /**
+     * The highest revision number this post has, or empty when nothing has been captured (SH993).
+     *
+     * <p>Read rather than derived from {@link #rows}: a release records one anchor per post before it
+     * publishes, and loading every revision of every page of a launch to learn the last number is the
+     * cost P3 measures.</p>
+     */
+    @Transactional(readOnly = true)
+    public Optional<Integer> latestVersion(String postId) {
+        return Optional.ofNullable(shPostRevisionRepository.maxVersionNo(postId));
+    }
+
     /** One revision, with its document, or empty when the number names nothing. */
     @Transactional(readOnly = true)
     public Optional<ShRevisionRow> row(String postId, int versionNo) {

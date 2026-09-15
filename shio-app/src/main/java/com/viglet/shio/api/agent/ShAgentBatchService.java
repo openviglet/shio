@@ -31,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.post.ShPostDrift;
+import com.viglet.shio.api.release.ShReleaseRunner;
 import com.viglet.shio.api.release.ShReleaseService;
 import com.viglet.shio.persistence.model.release.ShRelease;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
@@ -264,6 +266,16 @@ public class ShAgentBatchService {
     public static final String RELEASE_ADD = "release.add";
     /** SH993 — takes them out again. */
     public static final String RELEASE_REMOVE = "release.remove";
+
+    /**
+     * SH993 — the release goes live: every post in it publishes in one transaction, now or at
+     * {@code when}, and {@code cancel} calls a scheduled run off.
+     *
+     * <p>The widest gesture on the surface, so it takes SH108's confirm token from its own dry run —
+     * not because it destroys anything, but because what it puts in front of visitors is a set, and a
+     * caller has to have seen the set. Scheduling one confirms nothing: that call moves a date.</p>
+     */
+    public static final String RELEASE_RUN = "release.run";
     /** SH993 — the list of posts {@code release.add} and {@code release.remove} act on. */
     public static final String RELEASE_POSTS_KEY = "posts";
 
@@ -288,7 +300,7 @@ public class ShAgentBatchService {
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_COPY, FOLDER_DELETE,
             POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
             POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION, RELEASE_UPSERT,
-            RELEASE_ADD, RELEASE_REMOVE);
+            RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -345,6 +357,8 @@ public class ShAgentBatchService {
     private final ShPostRevisionService shPostRevisionService;
     /** SH993 — what a release is, answered in one place for the ops and the listing. */
     private final ShReleaseService shReleaseService;
+    /** SH993 — running a release, shared with the sweep that fires a scheduled one. */
+    private final ShReleaseRunner shReleaseRunner;
 
     public ShAgentBatchService(ShHtmlSanitizer shHtmlSanitizer,
                                ShAgentSiteAccess siteAccess,
@@ -370,9 +384,11 @@ public class ShAgentBatchService {
                                ShTuringTextExtractor shTuringTextExtractor,
                                ShConsoleSurfaces shConsoleSurfaces,
                                ShPostRevisionService shPostRevisionService,
-                               ShReleaseService shReleaseService) {
+                               ShReleaseService shReleaseService,
+                               ShReleaseRunner shReleaseRunner) {
         this.shHtmlSanitizer = shHtmlSanitizer;
         this.shReleaseService = shReleaseService;
+        this.shReleaseRunner = shReleaseRunner;
         this.shConsoleSurfaces = shConsoleSurfaces;
         this.shPostRevisionService = shPostRevisionService;
         this.siteAccess = siteAccess;
@@ -728,9 +744,12 @@ public class ShAgentBatchService {
         if (ShApiTokenContext.currentMayPublish()) {
             return;
         }
+        // SH993 — a release run publishes a whole set, so it is gated by the same grant. Reading only
+        // post.publish here would have made the release the way around the capability.
         boolean publishes = ops.stream()
                 .anyMatch(op -> op != null && op.op() != null
-                        && POST_PUBLISH.equals(op.op().trim().toLowerCase(Locale.ROOT)));
+                        && List.of(POST_PUBLISH, RELEASE_RUN)
+                                .contains(op.op().trim().toLowerCase(Locale.ROOT)));
         if (publishes) {
             throw new PublishNotPermittedException();
         }
@@ -809,6 +828,7 @@ public class ShAgentBatchService {
             case RELEASE_UPSERT -> releaseUpsert(op, session);
             case RELEASE_ADD -> releaseAdd(op, session);
             case RELEASE_REMOVE -> releaseRemove(op, session);
+            case RELEASE_RUN -> releaseRun(op, session);
             default -> throw new UnknownOpException(op.op());
         };
     }
@@ -924,6 +944,78 @@ public class ShAgentBatchService {
                 + moved.size() + ": " + named
                 + (unmoved == 0 ? "" : "; " + unmoved + (adding ? " already in it" : " not in it")),
                 releaseId);
+    }
+
+    /**
+     * SH993 — {@code release.run}: the set goes live in one transaction, now or at {@code when}.
+     *
+     * <p>One change row for the release rather than one per post, and the row says how many went live
+     * and how many were already there. That row is also what the confirm token is taken over, so
+     * adding a post between the plan and the run makes the token stale rather than launching a page
+     * the caller never saw.</p>
+     */
+    private Change releaseRun(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.RELEASE);
+        String name = ShReleaseService.requireName(address.releaseName());
+        ShSite site = requireSite(address.site(), session);
+        if (session.dryRun && (isPending(site) || session.releasePlanned(address))
+                && (isPending(site) || shReleaseService.find(site.getId(), name).isEmpty())) {
+            return session.change(op, address, Change.PUBLISH, "the release this batch plans", null);
+        }
+        ShRelease release = shReleaseService.require(site.getId(), site.getName(), name);
+        Instant when = scheduleInstant(op, address);
+        if (when != null && cancels(op)) {
+            throw new CancelWithWhenException(op.op(), address);
+        }
+        if (cancels(op)) {
+            Instant pending = release.getScheduledAt();
+            if (pending == null) {
+                return session.change(op, address, Change.NOOP, "no run scheduled", release.getId());
+            }
+            if (!session.dryRun) {
+                shReleaseService.unschedule(release, session.actor);
+            }
+            return session.change(op, address, Change.UPDATE,
+                    "cancelled the run scheduled for " + pending, release.getId());
+        }
+        if (when != null) {
+            ShReleaseService.requireRunnable(release);
+            Instant pending = release.getScheduledAt();
+            if (pending != null && pending.truncatedTo(ChronoUnit.MILLIS)
+                    .equals(when.truncatedTo(ChronoUnit.MILLIS))) {
+                return session.change(op, address, Change.NOOP,
+                        "already scheduled to run at " + pending, release.getId());
+            }
+            if (!session.dryRun) {
+                shReleaseService.scheduleAt(release, when, session.actor);
+            }
+            return session.change(op, address, Change.UPDATE, "scheduled to run at " + when
+                    + (pending == null ? "" : ", replacing " + pending), release.getId());
+        }
+        ShReleaseService.requireRunnable(release);
+        ShReleaseRunner.Plan plan = shReleaseRunner.plan(release);
+        if (plan.size() == 0) {
+            return session.change(op, address, Change.NOOP, "holds no posts", release.getId());
+        }
+        if (!plan.missing().isEmpty()) {
+            throw new ReleaseHoldsNothingException(address, plan.missing().size());
+        }
+        // One transaction is the promise, and the batch ceiling is what one transaction is allowed to
+        // be. Refused while planning, with the count, because a launch that fails at post 201 is the
+        // half-applied state a release exists to make unreachable.
+        int max = properties.getBatch().getMaxOps();
+        if (plan.size() > max) {
+            throw new ReleaseTooLargeException(address, plan.size(), max);
+        }
+        if (!session.dryRun) {
+            for (String going : plan.publishes()) {
+                shContentAclService.requireWrite(going);
+            }
+            shReleaseRunner.run(release, session.actor);
+        }
+        return session.change(op, address, Change.PUBLISH, plan.publishes().size() + " live"
+                + (plan.unchanged().isEmpty() ? "" : ", " + plan.unchanged().size() + " unchanged"),
+                release.getId());
     }
 
     /**
@@ -3217,20 +3309,15 @@ public class ShAgentBatchService {
 
     /** True when publishing the draft would not change what a visitor sees. */
     private boolean sameContent(ShPostUnified draft, ShPostUnified published) {
-        return readTree(draft.getData()).equals(readTree(published.getData()))
-                && nullSafe(draft.getTitle()).equals(nullSafe(published.getTitle()))
-                && nullSafe(draft.getFurl()).equals(nullSafe(published.getFurl()));
+        // SH993 moved the body to ShPostDrift: a release asks the same question over a whole set, and
+        // two implementations would let one surface call a page changed while the other calls it live.
+        return ShPostDrift.sameContent(objectMapper, draft, published);
     }
 
     private JsonNode readTree(String json) {
-        if (json == null || json.isBlank()) {
-            return objectMapper.createObjectNode();
-        }
-        try {
-            return objectMapper.readTree(json);
-        } catch (JacksonException e) {
-            return objectMapper.createObjectNode();
-        }
+        // SH993 — one decision about unparseable stored data, in ShPostDrift, which is also where
+        // the drift comparison reads it. Two copies of it would be two silent catches (SH270).
+        return ShPostDrift.tree(objectMapper, json);
     }
 
     // --- address handling ---
@@ -3747,6 +3834,36 @@ public class ShAgentBatchService {
                     .withDidYouMeanFrom(sent)
                     .withFix("Use one of the listed ops.")
                     .withExample(POST_UPSERT));
+        }
+    }
+
+    /** SH993 — a release naming a post whose draft is gone, which a run cannot publish. */
+    public static class ReleaseHoldsNothingException extends ShTeachingException {
+
+        public ReleaseHoldsNothingException(ShAddress release, int missing) {
+            super(ShProblem.conflict("release-holds-a-deleted-post",
+                            missing + " post(s) in " + release + " no longer exist")
+                    .withDetail("A post was trashed or deleted after it was put in this release, so "
+                            + "the run cannot publish the set it was confirmed as.")
+                    .withFix("Take them out with release.remove, or restore them, then run it again. "
+                            + "GET /api/v2/agent/find?site=" + release.site() + "&release="
+                            + release.releaseName() + " lists what it holds.")
+                    .withExample("{\"op\":\"release.remove\",\"address\":\"" + release
+                            + "\",\"data\":{\"posts\":[\"post:" + release.site() + "/gone\"]}}"));
+        }
+    }
+
+    /** SH993 — a release bigger than one transaction, refused while planning. */
+    public static class ReleaseTooLargeException extends ShTeachingException {
+
+        public ReleaseTooLargeException(ShAddress release, int posts, int max) {
+            super(ShProblem.badRequest("release-too-large",
+                            release + " holds " + posts + " posts and one run is capped at " + max)
+                    .withDetail("A release goes live in one transaction, so it cannot be larger than "
+                            + "one batch. Split above this and the atomicity is gone, which is the "
+                            + "thing a release is for.")
+                    .withFix("Plan two releases, or raise shio.agent.batch.max-ops on the instance.")
+                    .withExample(max));
         }
     }
 

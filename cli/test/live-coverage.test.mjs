@@ -215,7 +215,7 @@ const UNEXERCISED = {
     // ShReleaseOpsTest against the service and the listing.
     "folder.delete", "folder.restore",
     "post.move", "post.restore", "post.rollback", "post.unpublish",
-    "release.add", "release.remove", "release.upsert", "site.delete", "site.restore",
+    "release.add", "release.remove", "release.run", "release.upsert", "site.delete", "site.restore",
   ],
   /**
    * The MCP resources no live suite has ever read (SH760).

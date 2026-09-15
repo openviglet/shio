@@ -212,7 +212,11 @@ public final class ShAgentOps {
                     "Put `data.posts` in a release that has not run."),
             new OpSpec(ShAgentBatchService.RELEASE_REMOVE,
                     List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
-                    "Take `data.posts` out again."));
+                    "Take `data.posts` out again."),
+            new OpSpec(ShAgentBatchService.RELEASE_RUN,
+                    List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, CANCEL),
+                    "Publish the whole release, atomically. Needs `confirm` from its own dry run, "
+                            + "unless `when` schedules it or `cancel` calls that off."));
 
     private ShAgentOps() {
         // utility
