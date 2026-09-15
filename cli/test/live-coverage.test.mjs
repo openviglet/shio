@@ -215,7 +215,8 @@ const UNEXERCISED = {
     // ShReleaseOpsTest against the service and the listing.
     "folder.delete", "folder.restore",
     "post.move", "post.restore", "post.rollback", "post.unpublish",
-    "release.add", "release.archive", "release.remove", "release.run", "release.upsert",
+    "release.add", "release.archive", "release.remove", "release.rollback", "release.run",
+    "release.upsert",
     "site.delete", "site.restore",
   ],
   /**

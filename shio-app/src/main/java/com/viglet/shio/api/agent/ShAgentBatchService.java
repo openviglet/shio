@@ -284,6 +284,17 @@ public class ShAgentBatchService {
      * archiving removes is its place in the pack a reader scrolls, not the record.</p>
      */
     public static final String RELEASE_ARCHIVE = "release.archive";
+
+    /**
+     * SH994 — puts a release back, as the unit it went live as.
+     *
+     * <p>The reverse {@code release.run} promised and did not have: BA4 recorded an anchor per item
+     * and declared a ROLLED_BACK state, and nothing reached either — a column written and never read
+     * is the shape that rots, because the next reader cannot tell whether it is dead or load-bearing.
+     * It takes the same confirm token {@code release.run} does, for the same reason and with the same
+     * blast radius, and the same {@code mayPublish} grant: it changes what visitors see.</p>
+     */
+    public static final String RELEASE_ROLLBACK = "release.rollback";
     /** SH993 — the list of posts {@code release.add} and {@code release.remove} act on. */
     public static final String RELEASE_POSTS_KEY = "posts";
 
@@ -308,7 +319,7 @@ public class ShAgentBatchService {
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_COPY, FOLDER_DELETE,
             POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
             POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION, RELEASE_UPSERT,
-            RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE);
+            RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE, RELEASE_ROLLBACK);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -756,7 +767,7 @@ public class ShAgentBatchService {
         // post.publish here would have made the release the way around the capability.
         boolean publishes = ops.stream()
                 .anyMatch(op -> op != null && op.op() != null
-                        && List.of(POST_PUBLISH, RELEASE_RUN)
+                        && List.of(POST_PUBLISH, RELEASE_RUN, RELEASE_ROLLBACK)
                                 .contains(op.op().trim().toLowerCase(Locale.ROOT)));
         if (publishes) {
             throw new PublishNotPermittedException();
@@ -838,6 +849,7 @@ public class ShAgentBatchService {
             case RELEASE_REMOVE -> releaseRemove(op, session);
             case RELEASE_RUN -> releaseRun(op, session);
             case RELEASE_ARCHIVE -> releaseArchive(op, session);
+            case RELEASE_ROLLBACK -> releaseRollback(op, session);
             default -> throw new UnknownOpException(op.op());
         };
     }
@@ -953,6 +965,37 @@ public class ShAgentBatchService {
                 + moved.size() + ": " + named
                 + (unmoved == 0 ? "" : "; " + unmoved + (adding ? " already in it" : " not in it")),
                 releaseId);
+    }
+
+    /**
+     * SH994 — {@code release.rollback}: every page in the release goes back to what it replaced.
+     *
+     * <p>One change row for the release, like the run, and it is what the confirm token is taken over:
+     * the detail counts the pages that go back and the ones that come down, so a release whose items
+     * changed since the plan makes the token stale rather than undoing a different set.</p>
+     */
+    private Change releaseRollback(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.RELEASE);
+        String name = ShReleaseService.requireName(address.releaseName());
+        ShSite site = requireSite(address.site(), session);
+        ShRelease release = shReleaseService.require(site.getId(), site.getName(), name);
+        ShReleaseService.requireRollbackable(release);
+        ShReleaseRunner.Undo undo = shReleaseRunner.undo(release);
+        if (undo.size() == 0) {
+            return session.change(op, address, Change.NOOP, "holds no posts", release.getId());
+        }
+        if (!session.dryRun) {
+            for (String going : undo.restores()) {
+                shContentAclService.requireWrite(going);
+            }
+            for (String going : undo.downs()) {
+                shContentAclService.requireWrite(going);
+            }
+            shReleaseRunner.rollback(release, session.actor);
+        }
+        return session.change(op, address, Change.UPDATE, undo.restores().size() + " back"
+                + (undo.downs().isEmpty() ? "" : ", " + undo.downs().size() + " down"),
+                release.getId());
     }
 
     /** SH993 — {@code release.archive}, and {@code cancel:true} to put it back. */

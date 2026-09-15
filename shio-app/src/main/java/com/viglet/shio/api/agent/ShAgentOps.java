@@ -219,7 +219,11 @@ public final class ShAgentOps {
                             + "schedules it, `cancel` calls that off."),
             new OpSpec(ShAgentBatchService.RELEASE_ARCHIVE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(CANCEL),
-                    "Take it out of the listing; `cancel:true` puts it back. Not a delete."));
+                    "Take it out of the listing; `cancel:true` puts it back. Not a delete."),
+            new OpSpec(ShAgentBatchService.RELEASE_ROLLBACK,
+                    List.of(ADDRESS), List.of(), List.of(), List.of(),
+                    "Put a published release back: each page to what it replaced, pages it first "
+                            + "published come down. Needs `confirm`."));
 
     private ShAgentOps() {
         // utility

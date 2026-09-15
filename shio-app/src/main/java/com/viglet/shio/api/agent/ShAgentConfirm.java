@@ -95,6 +95,10 @@ public final class ShAgentConfirm {
         if (ShAgentBatchService.DESTRUCTIVE_OPS.contains(name)) {
             return true;
         }
+        // SH994 — and a rollback, which has the run's blast radius pointed the other way.
+        if (ShAgentBatchService.RELEASE_ROLLBACK.equals(name)) {
+            return true;
+        }
         return ShAgentBatchService.RELEASE_RUN.equals(name)
                 && (op.when() == null || op.when().isBlank())
                 && !Boolean.TRUE.equals(op.cancel());
@@ -113,7 +117,8 @@ public final class ShAgentConfirm {
         }
         return plan.results().stream()
                 .filter(row -> ShAgentChangeSet.Change.DELETE.equals(row.action())
-                        || ShAgentBatchService.RELEASE_RUN.equals(row.op()))
+                        || ShAgentBatchService.RELEASE_RUN.equals(row.op())
+                        || ShAgentBatchService.RELEASE_ROLLBACK.equals(row.op()))
                 .map(row -> ShAgentChangeSet.Change.DELETE.equals(row.action()) ? row.address()
                         : row.address() + " — " + (row.detail() == null ? "" : row.detail()))
                 .sorted()

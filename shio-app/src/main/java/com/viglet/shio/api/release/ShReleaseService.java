@@ -213,6 +213,32 @@ public class ShReleaseService {
                         ShRelease.State.SCHEDULED.name(), now);
     }
 
+    /** SH994 — the items with the revision each was at, in the order they were added. */
+    @Transactional(readOnly = true)
+    public List<ShReleaseItem> items(String releaseId) {
+        return shReleaseItemRepository.findByReleaseIdOrderByAddedAtAsc(releaseId);
+    }
+
+    /** SH994 — the release was undone as a unit, which is the state BA4 declared and never reached. */
+    @Transactional
+    public ShRelease rolledBack(ShRelease release, String actor) {
+        release.setState(ShRelease.State.ROLLED_BACK.name());
+        return touched(release, actor);
+    }
+
+    /**
+     * SH994 — a release rolls back only from PUBLISHED.
+     *
+     * <p>A PLANNED one put nothing in front of visitors, so there is nothing to undo and the offer of
+     * an undo would be the misleading part; one already ROLLED_BACK would roll back to the state its
+     * own rollback wrote, which is not what anybody means by it.</p>
+     */
+    public static void requireRollbackable(ShRelease release) {
+        if (!ShRelease.State.PUBLISHED.name().equals(release.getState())) {
+            throw new ReleaseNotRunException(release.getName(), release.getState());
+        }
+    }
+
     /** SH993 — the site's releases as the context pack lists them: newest first, archived ones out. */
     @Transactional(readOnly = true)
     public List<ShRelease> listed(String siteId) {
@@ -290,6 +316,21 @@ public class ShReleaseService {
                     .withFix("Create it first with release.upsert, in the same batch or before.")
                     .withExample("{\"op\":\"release.upsert\",\"address\":\"release:" + site + "/"
                             + name + "\"}"));
+        }
+    }
+
+    /** SH994 — a rollback asked of a release that never went live. */
+    public static class ReleaseNotRunException extends ShTeachingException {
+
+        public ReleaseNotRunException(String name, String state) {
+            super(ShProblem.conflict("release-not-run",
+                            "release '" + name + "' is " + state + " and has nothing to roll back")
+                    .withDetail("A rollback puts back what a release replaced, and a release that "
+                            + "has not run replaced nothing. One that was already rolled back would "
+                            + "go back to the state its own rollback wrote.")
+                    .withFix("Read what it holds with find?release=, or run it with release.run.")
+                    .withExample("{\"op\":\"release.run\",\"address\":\"release:<site>/" + name
+                            + "\"}"));
         }
     }
 

@@ -1735,6 +1735,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH991** — What is scheduled reads back everywhere: find, shio_find and read, shio schedule, and the console's Scheduled page with its timezone stated, and a scheduled transition names who set it (design §LXVI.2 recorded in `docs/agents/console-ui.md`).
 - **SH992** — shio_publish and shio publish take when and cancel, post.unpublish honours when so a dated takedown waits, a cancel clears only its own instant, and shio_write refuses op fields it does not declare.
 - **SH993** — A release projects to shio/releases/<site>/<name>.yaml, three-way with the tree: the file declares membership and description, while state and scheduledAt are read-only so a push cannot launch.
+- **SH994** — release.rollback puts a published release back in one transaction: each page to the revision it replaced, pages the launch first published come down, and the release reads ROLLED_BACK.
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

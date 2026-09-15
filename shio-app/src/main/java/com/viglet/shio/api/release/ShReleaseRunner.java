@@ -23,6 +23,7 @@ import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.release.ShRelease;
+import com.viglet.shio.persistence.model.release.ShReleaseItem;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
 import tools.jackson.databind.ObjectMapper;
@@ -75,6 +76,73 @@ public class ShReleaseRunner {
         public int size() {
             return publishes.size() + unchanged.size() + missing.size();
         }
+    }
+
+    /**
+     * SH994 — what rolling this release back would do, item by item.
+     *
+     * @param restores post ids that go back to the revision the release replaced
+     * @param downs    post ids the release put live for the FIRST time, so the undo is a takedown:
+     *                 they have no anchor because there was no earlier version to keep
+     */
+    public record Undo(List<String> restores, List<String> downs) {
+
+        public int size() {
+            return restores.size() + downs.size();
+        }
+    }
+
+    /** The rollback, planned and written by nothing. */
+    @Transactional(readOnly = true)
+    public Undo undo(ShRelease release) {
+        List<String> restores = new ArrayList<>();
+        List<String> downs = new ArrayList<>();
+        for (ShReleaseItem item : shReleaseService.items(release.getId())) {
+            if (item.getVersionBefore() == null) {
+                downs.add(item.getPostId());
+            } else {
+                restores.add(item.getPostId());
+            }
+        }
+        return new Undo(List.copyOf(restores), List.copyOf(downs));
+    }
+
+    /**
+     * SH994 — puts the release back, as the unit it went live as.
+     *
+     * <p>Per item, SH987's rollback into the draft <b>and then a publish</b>, which is the half that
+     * makes this an undo rather than a stack of drafts: what went wrong here is what visitors are
+     * reading, and a rollback that left the live pages alone would answer a curator's "put it back"
+     * with "the draft is correct now". SH987's own rule is kept where it belongs — the restore
+     * captures a revision rather than deleting one, so the launch this undoes is still there to come
+     * forward to.</p>
+     *
+     * <p>An item the release put live for the first time has no anchor, and its undo is a takedown:
+     * there was no earlier version, so putting one back is not available and leaving it live would be
+     * the page the rollback missed.</p>
+     */
+    @Transactional
+    public Undo rollback(ShRelease release, String actor) {
+        ShReleaseService.requireRollbackable(release);
+        Undo undo = undo(release);
+        for (String postId : undo.restores()) {
+            shPostUnifiedWriteService.restoreRevision(postId,
+                    anchorOf(release, postId), actor);
+            shPostUnifiedWriteService.publish(postId, actor);
+        }
+        for (String postId : undo.downs()) {
+            shPostUnifiedWriteService.unpublish(postId, actor);
+        }
+        shReleaseService.rolledBack(release, actor);
+        return undo;
+    }
+
+    private int anchorOf(ShRelease release, String postId) {
+        return shReleaseService.items(release.getId()).stream()
+                .filter(item -> item.getPostId().equals(postId))
+                .map(ShReleaseItem::getVersionBefore)
+                .findFirst()
+                .orElseThrow();
     }
 
     /** The plan, written by nothing: the same read the run makes, one step earlier. */

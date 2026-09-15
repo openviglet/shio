@@ -1505,25 +1505,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.5 Rolling a release back, as the unit it went live as (SH994)
-
-BA4 records version_before on every release item and declares ROLLED_BACK among its
-states, and its operations are create, add, remove, schedule, run and archive. A column
-written and never read is the shape that rots, because the next reader cannot tell
-whether it is dead or load-bearing, and a declared state with no transition into it is
-the same defect one level up.
-
-It is also the undo a curator will ask for first. A launch that went live wrongly is the
-scenario releases exist for, and atomicity without a reverse is half the promise.
-release.rollback with a name and a confirm joins the batch vocabulary the way run does.
-It compiles to per-item restores to each version_before through AZ3's rollback, requires
-a confirm token from its own plan because its blast radius equals run's, and writes a
-new revision per item rather than deleting one, the rule AZ3 sets for a single post.
-Reading the result back is state=release:<name> against the pre-run perspective.
-
-The assertion carries the id: run a release, roll it back, and every item's bytes match
-its anchor revision, with the release reading ROLLED_BACK.
-
 ### LXVI.6 Publish as a permission above write (SH995)
 
 ShAclPermission has two values, READ and WRITE, with WRITE implying READ, and the

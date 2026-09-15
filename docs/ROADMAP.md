@@ -46,7 +46,6 @@
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- 📋 **SH994** (deps: SH993 ✅, SH987 ✅) **a release that went live and should not have has no verb to undo it as one unit** — The release stores a rollback anchor per item and a rolled-back state, and none of its six operations reaches either, which leaves atomicity with no reverse. → §LXVI.5
 - 📋 **SH995** (deps: —) **there is no publish permission for a person, so any user who may write may also put content live** — mayPublish exists only on an API token and falls back to true for every console session, so an agent can be denied publishing and a curator cannot. → §LXVI.6
 - 📋 **SH996** (deps: SH995) **the console's publish has no dry run, no impact preview and no confirm, while the agent's has all three** — Nothing tells a curator which URLs go live, change or stop resolving before the button writes, and include=impact answers template blast radius, not routes. → §LXVI.7
 - 📋 **SH997** (deps: SH993 ✅, SH996) **nothing checks a page before it goes live, because verify, audit and the render digest are all opt-in** — Shio's pre-publish instruments run only when somebody remembers, and its webhook events all fire after the commit, so no check stands between content and visitors. → §LXVI.8

@@ -3251,3 +3251,24 @@ nothing. Opt-in and attached after the digest, like `manifest`, `ops` and `usage
 not invalidate a cached pack. It carries counts, not members: forty addresses per release in the pack is
 the regression the opt-in sections exist to avoid, and `find?site=&release=<name>` is the read for what
 one holds.
+
+## Rolling a release back, as the unit it went live as (SH994)
+
+SH993 recorded an anchor per item and declared a `ROLLED_BACK` state, and nothing reached either — a
+column written and never read is the shape that rots, because the next reader cannot tell whether it is
+dead or load-bearing, and atomicity without a reverse is half a promise.
+
+`release.rollback` is the reverse of `release.run`, in one transaction. Per item it is SH987's rollback
+into the draft **and then a publish**, and that second half is what makes it an undo rather than a
+stack of drafts: what went wrong is what visitors are reading, so a rollback that left the live pages
+alone would answer "put it back" with "the draft is correct now". SH987's own rule is kept where it
+belongs — the restore captures a revision rather than deleting one, so the launch this undoes is still
+there to come forward to.
+
+**An item the release published for the first time has no anchor, and its undo is a takedown.** There
+was no earlier version to put back, and leaving it live would be the page a rollback missed; the change
+row says so, counting both (`2 back, 1 down`). It takes `release.run`'s confirm token — the same blast
+radius pointed the other way — and joins SH107's publish gate for the same reason `release.run` did.
+Only a `PUBLISHED` release rolls back: a planned one replaced nothing, and one already rolled back would
+go back to the state its own rollback wrote. What it put back reads through `state=release:<name>`,
+which is the same anchors from the other end.
