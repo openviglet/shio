@@ -46,7 +46,6 @@
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- ⏳ **SH991** (deps: —) **nothing lists what is scheduled, so an agent cannot confirm a schedule it set and a curator has no agenda** — The console still has no Scheduled view, and its schedule dialog shows bare datetime inputs with no timezone against a stored instant. → §LXVI.2
 - 📋 **SH992** (deps: SH952 ✅) **shio_publish cannot schedule, and post.unpublish accepts a when it never reads** — The publish tool builds an op with no when, and only postPublish calls scheduleInstant, so an embargoed takedown dated for December takes the page down now and reports success. → §LXVI.3
 - 📋 **SH993** (deps: SH990 ✅, SH986 ✅) **no release groups a launch, so forty related pages go live as forty separate events in sweep order** — One batch call is atomic and nothing persists a set across calls, so a coordinated launch has no unit to stage, preview, approve, schedule or undo. → §LXVI.4
 - 📋 **SH994** (deps: SH993, SH987 ✅) **a release that went live and should not have has no verb to undo it as one unit** — The release stores a rollback anchor per item and a rolled-back state, and none of its six operations reaches either, which leaves atomicity with no reverse. → §LXVI.5
@@ -55,6 +54,7 @@
 - 📋 **SH997** (deps: SH993, SH996) **nothing checks a page before it goes live, because verify, audit and the render digest are all opt-in** — Shio's pre-publish instruments run only when somebody remembers, and its webhook events all fire after the commit, so no check stands between content and visitors. → §LXVI.8
 - 📋 **SH998** (deps: SH997, SH995) **a failed gate cannot be waived with a recorded reason, and nothing outside Shio hears it failed** — A check nobody may waive becomes one people disable, and webhooks fire only after commit, so no external approver is told to step in. → §LXVI.9
 - 📋 **SH1081** (deps: SH990 ✅) **the TypeScript client passes neither state nor locale on its CDA reads, so a front end cannot preview a draft** — SH990 gave every CDA read a state and the route has taken locale since SH53, but getPost, getPostByUrl, listChildren and query build a fixed query string. → §LXVI.10
+- 📋 **SH1082** (deps: SH991 ✅, a calendar component in the viglet design system) **the Scheduled page is a list only, with no month or week calendar and no drag to reschedule** — The console has no calendar component, and one built inside Shio is a copy the duplicate gate refuses. → §LXVI.11
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
@@ -124,7 +124,7 @@
 - 📋 **SH1047** (deps: SH1046) **no console fetch can be cancelled, so a fast navigation renders whichever response arrives last** — AbortController appears nowhere, and the browser's page fetch is recreated on each folder, sort or query change with nothing cancelling the request before it. → §LXXII.5
 - 📋 **SH1048** (deps: SH1046) **the console API sends no ETag and no Cache-Control, so an unchanged read costs its full body every time** — Both cache filters are registered for the delivery and agent paths only, so every endpoint the console calls answers a full 200 with no validator. → §LXXII.6
 - 📋 **SH1049** (deps: SH1046, SH955 ✅) **one error boundary guards the whole console, and a failed fetch leaves a spinner that never ends** — A render throw blanks the application, an unhandled load settles into a permanent spinner, and the design system's load provider and skeleton are used by nothing. → §LXXII.7
-- 📋 **SH1050** (deps: SH1048, SH991 ⏳, SH1003) **the dashboard downloads two whole collections to show two numbers** — Home fetches every site and every post type to use their length, and in an agent-first CMS its question should be what the agent did that nobody has looked at. → §LXXII.8
+- 📋 **SH1050** (deps: SH1048, SH991 ✅, SH1003) **the dashboard downloads two whole collections to show two numbers** — Home fetches every site and every post type to use their length, and in an agent-first CMS its question should be what the agent did that nobody has looked at. → §LXXII.8
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
 - 📋 **SH1052** (deps: —) **every post-editor field is a label with no htmlFor over a widget that cannot take an id** — The widget contract is attr, onChange and postId, so a screen reader meets each field of every post type as an unnamed edit box and a label click focuses nothing. → §LXXII.10
 - 📋 **SH1053** (deps: DS VDS141, SH964) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
@@ -184,13 +184,6 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
-
-## Done when — SH991
-
-- **A schedule set on one surface reads back on every other** A schedule set through the
-  batch, the console dialog and shio schedule reads back through find, read, shio
-  schedule and the console's Scheduled view with its timezone shown, and the Activity
-  row names who set it beside the scheduler that ran it.
 
 ## Non-goals (do NOT add as tasks)
 

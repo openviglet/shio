@@ -23,6 +23,7 @@ import {
   IconSearch,
   IconShieldCog,
   IconTrash,
+  IconCalendarTime,
   IconWebhook,
 } from "@tabler/icons-react"
 import type { BentoNavGroup, BentoNavItem } from "@viglet/viglet-design-system/bento"
@@ -139,6 +140,7 @@ const DECORATION: Record<string, Omit<ShioNavItem, "id" | "section" | "bentoRout
   "post-types": { titleKey: "content.postTypes", descriptionKey: "nav.desc.postTypes", icon: IconForms, tone: "indigo", route: ROUTES.POST_TYPE_ROOT },
   "files": { titleKey: "staticFile.title", descriptionKey: "nav.desc.files", icon: IconPhoto, tone: "blue", route: ROUTES.FILES },
   "trash": { titleKey: "content.trash", descriptionKey: "nav.desc.trash", icon: IconTrash, tone: "slate", route: ROUTES.TRASH },
+  "scheduled": { titleKey: "content.scheduledTitle", descriptionKey: "nav.desc.scheduled", icon: IconCalendarTime, tone: "blue", route: ROUTES.SCHEDULED },
   "universal-editor": { titleKey: "sidebar.universalEditor", descriptionKey: "nav.desc.universalEditor", icon: IconLayersIntersect, tone: "violet", route: ROUTES.UNIVERSAL_EDITOR },
   "admin": { titleKey: "admin.title", descriptionKey: "nav.desc.admin", icon: IconShieldCog, tone: "amber", route: ROUTES.ADMIN_ROOT },
   "api-tokens": { titleKey: "apiToken.title", descriptionKey: "nav.desc.apiTokens", icon: IconKey, tone: "amber", route: ROUTES.ADMIN_TOKENS },

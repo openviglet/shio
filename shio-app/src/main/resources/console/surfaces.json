@@ -113,6 +113,16 @@
       }
     },
     {
+      "id": "scheduled",
+      "section": "content",
+      "route": "/bento/content/scheduled",
+      "capability": "see what goes live or comes down, and when",
+      "agent": {
+        "kind": "tool",
+        "target": "shio_find"
+      }
+    },
+    {
       "id": "universal-editor",
       "section": "content",
       "route": "/bento/universal-editor",

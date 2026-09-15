@@ -1695,3 +1695,21 @@ Three things the round settled, each of which had a wrong version that looked ri
   not do: that path exists on one machine and CI would go red on it. The entry carries
   `unprobeable` with its reason instead, and the version pin is what ends that wait. A wait with no
   entry is invisible; a wait whose entry lies is worse, because it is trusted.
+
+## What is scheduled, as a page, and the zone a schedule is read in (SH991)
+
+**Scheduled** (`/bento/content/scheduled`) lists what goes live or comes down, earliest first. It is
+declared in `console/surfaces.json` with `shio_find` as its agent leg, because it reads exactly what an
+agent reads: `ShScheduleService` walks `/api/v2/agent/find?scheduled=any&ids=true` to the end and sorts
+by instant, since find sorts by address (its page cursor). A post due to go live and come down is two
+rows, each linking to the post's editor. It is the Activity page's shape — a read-mostly table under a
+`PageHero` — because an agenda is read down a column.
+
+The times are the reader's local time, and **the page and the schedule dialog both say which zone that
+is**: the dialog's `datetime-local` inputs are local time against an instant the server stores, and
+nothing used to say whose local time. `scheduled-surface.test.mjs` holds the declaration, the route,
+the one listing, and the zone line in both places in both locales.
+
+The design's month and week calendar, with rescheduling by drag, is SH1082: this console has no
+calendar component (the design-system section above lists it as unavailable), and a hand-rolled one
+is the second copy the no-duplicate-components gate exists to refuse.

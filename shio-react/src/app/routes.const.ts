@@ -78,6 +78,8 @@ export const ROUTES = {
   POST_TYPE_NEW: `${CONSOLE_BASE}/content/post-type/new`,
   SEARCH: `${CONSOLE_BASE}/content/search`,
   TRASH: `${CONSOLE_BASE}/content/trash`,
+  /** SH991 — what goes live or comes down, in the order it will happen. */
+  SCHEDULED: `${CONSOLE_BASE}/content/scheduled`,
   FILES: `${CONSOLE_BASE}/content/files`,
   ADMIN_ROOT: `${CONSOLE_BASE}/admin`,
   ADMIN_USERS: `${CONSOLE_BASE}/admin/users`,

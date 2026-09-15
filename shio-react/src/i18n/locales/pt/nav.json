@@ -9,6 +9,7 @@
   "nav.desc.postTypes": "Os campos que cada tipo de conteúdo carrega.",
   "nav.desc.files": "Imagens, documentos e tudo mais entregue como bytes.",
   "nav.desc.trash": "Conteúdo excluído, ainda restaurável.",
+  "nav.desc.scheduled": "O que entra ou sai do ar, e quando.",
   "nav.desc.universalEditor": "Edite uma página na própria página, onde o leitor a vê.",
   "nav.desc.admin": "Usuários, grupos e os papéis que decidem quem pode o quê.",
   "nav.desc.apiTokens": "Credenciais de longa duração para agentes e integrações.",

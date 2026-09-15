@@ -97,6 +97,13 @@ function PostScheduleBody({
             {t("content.schedulePublishUnpublish")}
           </DialogTitle>
           <DialogDescription>{t("content.scheduleHint")}</DialogDescription>
+          {/*
+            SH991 — the inputs are local time and the server stores an instant, so the dialog names
+            which local time it means rather than leaving a curator to guess the browser's zone.
+          */}
+          <p className="text-xs text-muted-foreground">
+            {t("content.scheduleZone", { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
+          </p>
         </DialogHeader>
 
         <div className="space-y-4">

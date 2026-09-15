@@ -1505,26 +1505,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.2 Scheduled content, visible on every surface (SH991)
-
-Scheduling works end to end through the REST batch, and the only repository queries over
-publishScheduledDate and unpublishScheduledDate are the two due-only sweep finders.
-/agent/find has no schedule predicate and ShAgentDoc no schedule component, so an agent
-cannot confirm the schedule it just set. The console has a one-post dialog whose inputs
-are bare datetime-local fields, with no timezone shown against a server-stored instant.
-
-The reads have landed: find and shio_find take scheduled=any|from..to, one value because
-after is find's cursor, and REST read takes include=schedule, which shio_read had no
-room for; shio schedule prints the agenda for a site and a range; a scheduled endpoint
-for the console is still to come. Then the console gets a Scheduled view, an agenda list
-and a month and week calendar, each row linking to the post, rescheduling by drag
-through the same verb, and the timezone stated on every row and in the dialog.
-
-A scheduled transition's outcome, and in particular its failure, reports through the
-assistant dock in SH969; schedule_requested_by has landed, so the Activity row reads
-published by the scheduler, scheduled by the person who set it. The assertions set a
-schedule through each surface and read it back through the others.
-
 ### LXVI.3 Scheduling where a caller looks for it, and a takedown that waits (SH992)
 
 ShPublishTool declares address, unpublish and dryRun and builds its op without when,
@@ -1681,6 +1661,26 @@ union, so rev:<n> needs no template-literal type and the server stays the one pl
 says what is allowed. The 403 comes back through the client's existing error path; its
 test should assert that the problem's slug survives. The React SDK, which wraps this
 client, needs nothing beyond the new parameters.
+
+### LXVI.11 A calendar over the Scheduled page (SH1082)
+
+SH991 gave the console a Scheduled page: an agenda list, earliest first, each row linked
+to its post, with the reader's timezone stated. The design also asked for a month and a
+week calendar, and for rescheduling by dragging an entry to another day, through the
+same schedule write the dialog uses.
+
+That half is waiting on a component rather than on a decision. The console's
+design-system notes list calendar as unavailable, and a calendar grid built inside Shio
+would be exactly the second copy the no-duplicate-components gate refuses, since the
+design system is where a bento-shaped date grid belongs and where its keyboard and
+screen-reader behaviour would be checked.
+
+When the design system ships one, the Scheduled page gains a view switch between the
+list it has, a month grid and a week grid, fed by the same ShScheduleService entries.
+Dropping an entry on a day keeps its time of day and calls the post-unified schedule
+endpoint with the new instant, which records the dropper as the requester SH991 stores.
+The zone line stays above every view. A test drives a drop and reads the change back
+through the agent's scheduled listing.
 
 ## LXVII The curator's return channel, and the conversation with the agent (Block BB)
 

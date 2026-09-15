@@ -40,6 +40,7 @@ import PostTypeNewPage from "./app/content/post-type.new.page"
 import SearchPage from "./app/content/search.page"
 import StaticFileListPage from "./app/content/static-file.list.page"
 import TrashPage from "./app/content/trash.page"
+import ScheduledPage from "./app/content/scheduled.page"
 import NotFoundPage from "./app/system/not-found.page"
 import LoginPage from "./app/login/login.page"
 import SetupPage from "./app/setup/setup.page"
@@ -143,6 +144,10 @@ function App() {
                 <Route
                   path="content/trash"
                   element={<TrashPage />}
+                />
+                <Route
+                  path="content/scheduled"
+                  element={<ScheduledPage />}
                 />
                 <Route
                   path="content/files"
