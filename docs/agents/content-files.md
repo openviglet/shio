@@ -697,3 +697,23 @@ is not content, it *groups* content, so folding it in would make it the thing `-
 tree stops naming it. The format is hand-written and byte-stable (P5): a re-pull of unchanged content
 is an empty diff, and the parser refuses a line it cannot read rather than producing a launch that is
 missing pages.
+
+## `shio/gates/<site>/<name>.yaml`, and `shio gate run` (SH997)
+
+A gate projects to a file like a release does, so what a site checks before publishing is reviewed in
+a pull request rather than configured where nobody reads it. `shio pull --content` writes one per
+gate, `shio push --content` declares each with its own idempotent PUT — outside the desired-state
+document, like the SH161 notes, because a gate is not content and `--prune` must not delete it for
+going unmentioned.
+
+**The file is the whole checklist; the instance keeps the half it can enforce.** `audit` drives a
+browser per viewport and the instance deliberately runs none, so the push leaves that step behind and
+says so, and `shio gate run` runs it here where the browser already is. The split is written into the
+file's own header, because a curator should not have to learn from a refusal which of their checks the
+server keeps.
+
+`shio gate run --site <name> [address...]` checks the addresses named, or every draft the site holds,
+and **exits 1 when a blocking check failed** — so CI stops before the publish does. The verdict comes
+from `GET /agent/gates/check`, not from judging the content here: a pipeline with a second opinion
+about its own site is how a gate passes in CI and refuses in production. `shio gate list` prints what
+a site declares.

@@ -76,6 +76,13 @@ public class ShAgentGateApiService {
                 ShAgentSessionContext.actor()));
     }
 
+    /** SH997 — the CI form's answer: the same evaluation a publish makes, without publishing. */
+    @Transactional(readOnly = true)
+    public List<ShPublishGateService.Outcome> check(String site, String address) {
+        ShSite found = siteAccess.require(site);
+        return shPublishGateService.evaluate(found.getName(), found.getId(), address);
+    }
+
     private ShAgentGate wire(ShPublishGate gate) {
         List<ShPublishGateService.Step> steps = shPublishGateService.steps(gate);
         return new ShAgentGate(gate.getName(), gate.isEnabled(), steps.stream()

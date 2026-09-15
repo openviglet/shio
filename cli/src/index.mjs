@@ -105,6 +105,7 @@ const COMMANDS = {
   resolve: () => import("./commands/resolve.mjs"),
   impact: () => import("./commands/impact.mjs"),
   apply: () => import("./commands/apply.mjs"),
+  gate: () => import("./commands/gate.mjs"),
   publish: () => import("./commands/publish.mjs"),
   import: () => import("./commands/import.mjs"),
   blueprints: () => import("./commands/blueprints.mjs"),

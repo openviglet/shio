@@ -6,9 +6,9 @@ Usage:
 
 Commands:
   init [name]    Scaffold a Next.js site wired to the Shio CDA (--blueprint <name>)
-  context        Print the agent context pack: model + sitemap + conventions (one call)
+  context        The agent context pack: model + sitemap + conventions, in one call
   surfaces       What the console offers, and how to do each of those things from here
-  mcp            Bridge stdio to this instance's MCP endpoint (claude mcp add shio -- shio mcp)
+  mcp            Bridge stdio to this instance's MCP endpoint
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
   impact <addr>  What a change to this template would affect: layouts, types, page counts
   apply [file]   Plan/apply a desired-state content document, or a package
@@ -17,25 +17,22 @@ Commands:
   blueprints     List the appliable starting points (blueprints <name> for its parameters)
   marketplace    Browse and install blueprint packages from a catalogue
   publish [addr] Make drafts live, or take live pages down (--unpublish)
+  gate           The checks a site runs before content goes live (run, list)
   verify         Lint the content and its routes; exits non-zero on an error (CI gate)
   changes        What changed, with a cursor to resume from
   report         The human handoff: what changed, preview links, open questions
   remember       Write down a decision the next session should not re-derive
   digest <page>  Structural digest of one page: outline, landmarks, links, images
-  snapshot <page> PNG of a page + whether it looks different (needs playwright)
+  snapshot <page> PNG of a page, and whether it looks different (playwright)
   audit <page>   What is wrong with a rendered page, as text with a selector each
   annotations <page>
                  The props a page emits vs the fields its types declare
-                 (exits 1 when a rendered field is not editable)
-  judge          Run verify/diff (audit/snapshot on request) and answer once, naming
-                 where the instruments disagreed
-  site           List the sites, marking the disposable ones; site rm --scratch
-                 sweeps them in one confirmation
+  judge          Run verify/diff (audit/snapshot on request) and answer once
+  site           List the sites; site rm --scratch sweeps the disposable ones
   clone <url>    Capture a site that already exists: an inventory, and no content
-  propose        Which captured blocks could become sections, and what each would lose
+  propose        Which captured blocks could become sections, and what each loses
   convert        Apply the accepted conversion plan: sections, theme and scripts, as DRAFT
-  diff           Compare what a replica serves with the capture that declared it,
-                 with what is live, or with a revision (counts, not pixels)
+  diff           Compare a replica with its capture, what is live, or a revision
   versions <addr> What this page has been: one line per captured revision
   rollback <addr> Put a revision back into the draft (--to <n>, --apply)
   schedule       What goes live or comes down, in time order
@@ -43,14 +40,13 @@ Commands:
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)
   types          Generate a TypeScript .d.ts from the live post-types (CDA token)
-  dev            Generate types, start the dev server, watch the model
-                 (--content syncs shio/content/** both ways)
+  dev            Types, dev server, model watch (--content syncs shio/content/**)
   deploy         push (apply) then types
-  doctor         Can I work here? Instance, build stamp, model drift, sites, content tree
+  doctor         Can I work here? Instance, build stamp, drift, sites, content tree
 
 Post-types as code:
-  shio/post-types/ may hold *.json or *.ts/*.mjs DSL sources (@viglet/shio-model).
-  push and build compile DSL sources to canonical JSON before diffing/emitting.
+  shio/post-types/ holds *.json or *.ts/*.mjs DSL (@viglet/shio-model); push and
+  build compile DSL to canonical JSON first.
 
 Connection:
   --url <baseUrl>      Shio base URL          (env SHIO_URL, default http://localhost:2710)
@@ -60,8 +56,7 @@ Connection:
 
 Common options:
   --dir <dir>          Post-types directory   (default shio/post-types) [pull/push/build]
-  --out <file>         Output path            (.d.ts for types; dir for pull/build, default shio/.out;
-                       a file for context)
+  --out <file>         Output path            (.d.ts for types; dir for pull/build)
   --dry-run            push/apply: print the plan, change nothing
   --check              push/apply: drift guard — exit non-zero if the plan is non-empty (CI)
   --prune              push: delete remote types absent locally (never system types)

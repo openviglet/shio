@@ -1505,26 +1505,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.8 Publish gates as appliable checklists in the content tree (SH997)
-
-The address-scoped verify grades unresolved links, missing themes, head conventions and
-field lint; render produces structural and appearance digests; shio audit reports
-overflow and contrast per viewport. All are opt-in. The webhook vocabulary is PUBLISH,
-UNPUBLISH and DELETE, dispatched after commit, and the only gate that exists checks who
-may publish, never whether this content should.
-
-Not a workflow engine: an orchestrator inside Shio would be a third contract over the
-CDA and the console, which P10 forbids, and Shio's operator already is one. Instead a
-site declares shio/gates/<name>.yaml, an ordered list of checks, verify, audit,
-render-digest-unchanged-except and links-resolve, each with a severity, loaded from the
-content tree the way blueprints are. post.publish, the console publish from BA7 and
-release.run evaluate them server-side, so no surface can bypass them, and a failure
-answers a teaching 409 whose fix names the failing check and the address that failed it.
-
-shio gate run is the CI form and a publish dry run shows which gates would fail. A
-no-unresolved-notes check arrives with notes in Block BB. The override and the outbound
-events are BA9.
-
 ### LXVI.9 An override that leaves a record, and the events an orchestrator needs (SH998)
 
 BA8 makes a gate refuse a publish. A gate with no sanctioned way past it is one a team

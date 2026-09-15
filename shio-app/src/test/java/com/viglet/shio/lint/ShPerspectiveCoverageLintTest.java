@@ -96,8 +96,13 @@ class ShPerspectiveCoverageLintTest {
             Map.entry("ShAgentAPI#changes", HISTORY),
             Map.entry("ShAgentAPI#memory", NOT_A_PAGE),
             // SH997 — a gate is a rule about publishing, not a version of a page: there is no
-            // draft of a checklist, and a `state` here would name nothing.
+            // draft of a checklist, and a `state` here would name nothing. The check reads the
+            // DRAFT by construction — it answers what publishing would put live — so a `state`
+            // would be the one thing it must not take.
             Map.entry("ShAgentAPI#gates", NOT_A_PAGE),
+            Map.entry("ShAgentAPI#checkGates", "it answers about the draft by construction: a gate "
+                    + "is asked what THIS publish would put live, and what is live is already past "
+                    + "it"),
             Map.entry("ShAgentAPI#diagnostics", HISTORY),
             Map.entry("ShRenderAPI#editorScript", "it serves the editor bridge's script, which is "
                     + "code the preview loads and not a page"),

@@ -24,6 +24,8 @@
  */
 import { join } from "node:path";
 
+import { GATES_DIR } from "../gates-store.mjs";
+import { readRemoteGates, writeGates } from "../gates-sync.mjs";
 import { RELEASES_DIR } from "../releases-store.mjs";
 import { readRemoteReleases, writeReleases } from "../releases-sync.mjs";
 import { ShioAdminClient } from "../admin-client.mjs";
@@ -492,6 +494,17 @@ export async function run(flags, _positionals, ctx) {
   // group. After the content, because a release file names addresses and the pages should be on
   // disk by the time somebody reads it.
   if (!dryRun) {
+    // SH997 — the gates beside the releases, and for the same reason: what a site decides about
+    // publishing belongs in the tree a pull produces, or it is configuration nobody reviews.
+    const gates = await readRemoteGates(agent, siteScope);
+    const gateFiles = await writeGates(ctx, gates, { site });
+    if (gateFiles.written.length || gateFiles.removed.length) {
+      ctx.stdout.write(
+        `shio pull --content: ${gateFiles.written.length} gate(s) under ${GATES_DIR}` +
+          `${gateFiles.removed.length ? `, ${gateFiles.removed.length} removed` : ""}
+`,
+      );
+    }
     const releases = await readRemoteReleases(agent, siteScope);
     const { written, removed } = await writeReleases(ctx, releases, { site });
     if (written.length || removed.length) {

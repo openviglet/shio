@@ -427,6 +427,27 @@ export class ShioAgentClient {
     return this.#get("memory", query);
   }
 
+  /** GET /api/v2/agent/gates (SH997) — the checks a site runs before content reaches visitors. */
+  async gates(site) {
+    return this.#get("gates", { site });
+  }
+
+  /** PUT /api/v2/agent/gates/{name} (SH997) — declare one gate, idempotently by name. */
+  async putGate(site, name, body) {
+    return this.#send("PUT", `gates/${encodeURIComponent(name)}?site=${encodeURIComponent(site)}`,
+      body);
+  }
+
+  /**
+   * GET /api/v2/agent/gates/check (SH997) — what the gates say about one address.
+   *
+   * Asked of the server rather than judged here, because a gate a pipeline judges differently from
+   * the instance is a gate that passes in CI and refuses in production.
+   */
+  async checkGates(site, address) {
+    return this.#get("gates/check", { site, address });
+  }
+
   /**
    * PUT /api/v2/agent/memory (SH114) — remember one decision, idempotently by key.
    *

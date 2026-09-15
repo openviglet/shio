@@ -20,6 +20,7 @@
  */
 import { join } from "node:path";
 
+import { pushGates, readLocalGates } from "../gates-sync.mjs";
 import { READ_ONLY_FIELDS, releaseOps } from "../releases-store.mjs";
 import { readLocalReleases, readRemoteReleases } from "../releases-sync.mjs";
 import { ShioAdminClient } from "../admin-client.mjs";
@@ -346,6 +347,20 @@ export async function run(flags, _positionals, ctx) {
   // The file declares a membership and a description; `state` and `scheduledAt` are read back and
   // never pushed, because a push that could run a launch is a launch a merge can trigger.
   await pushReleases(client, ctx, { sites: sitesOf(local, markers), site, planOnly });
+
+  // SH997 — the gates, outside the document like the releases and the notes: what a site checks
+  // before publishing is not content, and --prune must not delete it for going unmentioned.
+  const localGates = await readLocalGates(ctx, { site });
+  if (localGates.length && !planOnly) {
+    const { pushed, ciOnly } = await pushGates(client, localGates);
+    ctx.stdout.write(
+      `shio push --content: ${pushed.length} gate(s) declared` +
+        (ciOnly.length
+          ? `; ${ciOnly.length} keep check(s) that run in \`shio gate run\` rather than on the ` +
+            "instance, which has no browser"
+          : "") + "\n",
+    );
+  }
 
   // SH161 — the site memory, applied after the content and outside the document.
   //

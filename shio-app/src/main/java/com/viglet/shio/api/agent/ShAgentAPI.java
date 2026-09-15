@@ -753,6 +753,22 @@ public class ShAgentAPI {
         return shAgentGateApiService.gates(site);
     }
 
+    /**
+     * SH997 — what this site's gates say about one address, without publishing it.
+     *
+     * <p>The CI form: `shio gate run` asks this for each page a pipeline is about to put live, and the
+     * answer is the same evaluation the publish makes — asked here rather than recomputed in the CLI,
+     * because a gate a pipeline judges differently from the server is a gate that passes in CI and
+     * refuses in production.</p>
+     */
+    @GetMapping("/gates/check")
+    @Operation(summary = "What this site's gates say about one address")
+    public List<com.viglet.shio.api.gate.ShPublishGateService.Outcome> checkGates(
+            @RequestParam(name = "site") String site,
+            @RequestParam(name = "address") String address) {
+        return shAgentGateApiService.check(site, address);
+    }
+
     /** Declare one gate, idempotently by {@code (site, name)} — the shape a gate file pushes. */
     @PutMapping("/gates/{name}")
     @Operation(summary = "Declare a publish gate")

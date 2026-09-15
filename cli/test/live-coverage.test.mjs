@@ -242,6 +242,10 @@ const UNEXERCISED = {
     "shio://manifest", "shio://ops", "shio://schema/", "shio://surfaces",
   ],
   verbs: [
+    // SH997 — `gate` joins the list on arrival: its live scenario is a pipeline that declares a
+    // gate, pushes content that fails it and reads the refusal, which is the SH748 shape (declared
+    // while nothing runs it, covered once an instance answers).
+    "gate",
     // SH711 spawned ten of these as a process. What is left splits three ways, and the split is
     // more useful than the count:
     //

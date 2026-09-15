@@ -1,14 +1,11 @@
 shio diff --site <name> - compare what a replica serves with what declared it
 
 Walks the capture's pages, asks the instance for each one, and reads the served bytes with
-the same scanner the capture used. What comes back is not pixels: the counts the source
-recorded against the counts the page shows, per page and per fact.
-
-Exits 1 when a page lost something; a fact the replica GAINED is never a failure.
+the same scanner the capture used: counts, not pixels. Exits 1 when a page lost something;
+a fact the replica GAINED is never a failure.
 
 A page composed from the section vocabulary drops the source's nav, favicon and stylesheet
-by design, so the capture's counts are not a claim about it. --mode says what they ARE a
-claim about, and defaults to reading it off the conversion plan.
+by design, so --mode says what the counts are a claim about (default: the plan).
 
   --site <name>        The site the replica lives in (required)
   --against <what>     Which declaration to judge against (default: capture)
