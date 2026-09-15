@@ -1732,7 +1732,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block BA — Releases, scheduling and the publish gate
 
 - **SH990** — Every content read takes state through ShContentPerspective: the agent reads over REST, MCP and the CLI, /preview with revisions, and the CDA and GraphQL, where a draft or revision needs a preview token (design §LXVI.1 recorded in `docs/agents/agent-surface.md`).
-- **SH991 (the agent reads)** — find and shio_find take scheduled=any or from..to and name the instants, and read takes include=schedule, so an agent can confirm a schedule it set.
+- **SH991 (agent reads and shio schedule)** — find and shio_find take scheduled=any or from..to and name the instants, read takes include=schedule, and shio schedule prints the agenda in time order, in UTC.
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

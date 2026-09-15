@@ -1,0 +1,10 @@
+shio schedule — what goes live or comes down, in time order
+
+  --site <name>        One site (or the first argument)
+  --from <instant>     ISO-8601; entries at or after it
+  --to <instant>       ISO-8601; entries before it
+  --json               The entries as JSON
+
+Examples:
+  shio schedule Blog
+  shio schedule --from 2026-09-15T00:00:00Z --to 2026-09-22T00:00:00Z

@@ -38,6 +38,7 @@ Commands:
                  with what is live, or with a revision (counts, not pixels)
   versions <addr> What this page has been: one line per captured revision
   rollback <addr> Put a revision back into the draft (--to <n>, --apply)
+  schedule       What goes live or comes down, in time order
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio (--dry-run, --prune, --content)
   build          Compile local DSL/JSON post-types to canonical JSON (--out)

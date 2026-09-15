@@ -123,6 +123,7 @@ const COMMANDS = {
   convert: () => import("./commands/convert.mjs"),
   diff: () => import("./commands/diff.mjs"),
   versions: () => import("./commands/versions.mjs"),
+  schedule: () => import("./commands/schedule.mjs"),
   rollback: () => import("./commands/rollback.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),

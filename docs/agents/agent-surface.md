@@ -3128,3 +3128,10 @@ still sees it.
 `/agent/read?include=schedule` attaches `schedule: {publishAt, unpublishAt}` when one is set. `shio_read`
 does not take it: its reservation had 7 tokens left, less than an argument, and `shio_find scheduled`
 already gives an MCP client the confirmation.
+
+**The second slice is `shio schedule`**, the agenda: it walks `/agent/find?scheduled=` to the end and
+sorts by instant, because find sorts by address (its page cursor) and an agenda in address order is a
+list a person re-sorts in their head. A post due to go live and come down is two entries, `--from` and
+`--to` become the server's window and also bound the entries shown, times are printed in UTC and the
+header says so, and a walk that stopped short exits 1. The CLI help paid for the new verb by cutting why-
+clauses out of `shio clone --help`.

@@ -249,7 +249,9 @@ const UNEXERCISED = {
     // they need a live instance with a published post behind them, which is exactly the fixture a
     // live scenario has and a MockMvc proof invents.
     "annotations", "apply", "audit", "build", "deploy", "dev", "impact", "import", "judge",
-    "mcp", "publish", "remember", "report", "rollback", "snapshot", "surfaces", "types",
+    // `schedule` arrives with SH991, and for `versions`' reason: it needs a live instance holding a
+    // scheduled post, which a live scenario has and a scripted fetch invents.
+    "mcp", "publish", "remember", "report", "rollback", "schedule", "snapshot", "surfaces", "types",
     "versions",
   ],
 };
