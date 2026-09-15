@@ -54,7 +54,6 @@
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
-- 📋 **SH1002** (deps: SH1001 ✅) **an agent cannot read the verdict on its own run, so every correction needs a person to re-explain it** — Approval rightly stays off the agent namespace, and no read-only resource lets a session learn that a change was rejected, held or reverted, or why. → §LXVII.4
 - 📋 **SH1003** (deps: SH999 ✅) **a curator's correction has nowhere to live, with no note anchored to a page, a field or a revision** — No comment or annotation entity exists in the backend, so the only channel back to the agent is a person re-explaining out of band. → §LXVII.5
 - 📋 **SH1004** (deps: SH1003) **notes, constraints, translation metadata and asset metadata land in the file projection with no merge rule** — Only releases state how a concurrent edit merges, so a pull carrying new sidecar fields can silently lose a local edit against content-base.json. → §LXVII.6
 - 📋 **SH1005** (deps: SH999 ✅) **the activity trail cannot be paged or filtered, and a post has no history panel** — Every history read is page zero capped at five hundred with no cursor or filter, while the agent's change feed already has a keyset cursor and a measured budget. → §LXVII.7

@@ -3466,3 +3466,34 @@ The pending count subtracts held pages, so parking one stops the badge saying th
 ever — the failure mode SH615's `unreleased` was written to avoid, one layer up. One standing
 decision per change per run: a curator who changes their mind replaces it, and the history of what
 *happened* is the audit trail's job.
+
+## The verdict, readable by the one it is about (SH1002)
+
+An agent approving its own work is a standing non-goal, the review surface stays off `/agent/**`
+because of it, and none of that changes here. What was missing is the **other direction**: a revert
+leaves ordinary restore and delete audit rows that look exactly like a curator's own edit, and an
+approve leaves publish rows, so a resumed session could not tell "my page came back" from "somebody
+rejected my page". Every correction needed a person to re-explain it — a loop with a curator in the
+one part a machine could have done.
+
+**`GET /agent/review`** answers what a curator decided about runs made with *this credential*, with
+`?decision=reject|approve|hold`. Scoped by the run's actor (SH999), which is a narrower claim than
+"the review queue, read-only": a rejection's note is written for whoever is going to fix the page,
+and a credential that did not write it has no business reading what a curator said about somebody
+else's work.
+
+**`shio://review/mine`** is the MCP resource over it, rejections only — the other two verdicts are
+legible in the content, an approved page being live and a held one still a draft. A resource rather
+than a tool for the reason that keeps deciding this: it is the first thing a resumed session should
+read, and `tools/list` is re-sent every turn (P3).
+
+**The change row gains `review`** (decision, note, by, at), omitted on every row nobody has decided
+— which is most of them — so an ordinary feed is byte-identical. `GET /agent/changes?decision=reject`
+narrows it, filtered **in the query** with the keyset: a decision is keyed by the same two columns a
+change row already carries, so the predicate is a subquery rather than a post-filter that would
+strand rows behind the cursor.
+
+**What keeps the first decision intact** is asserted, not assumed: the manifest's endpoint index has
+no decide path, the resource names none, and a note is readable by the credential that wrote the run
+and by no other. The index assertion matches on word boundaries, because `/preview-token` contains
+"review" — SH794's over-match, met again.

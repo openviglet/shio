@@ -233,6 +233,11 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
      * @param submission SH970 — present only on the {@code CREATE} a site's form wrote, so an
      *                arrival is told apart from a post someone made. Absent on every other row, for
      *                the reason {@code affects} is
+     * @param review  SH1002 — what a curator decided about this change, when one has. Absent on
+     *                every row nobody has decided, which is most of them, so an ordinary feed is
+     *                byte-identical to what it was. It is the read that closes the loop: a revert
+     *                leaves ordinary restore and delete rows that look like a curator's own edit,
+     *                so "my page came back" and "somebody rejected my page" were the same thing here
      * @param fields  SH989 — the names of the fields the write changed, only with
      *                {@code include=fields}. {@code []} means the row recorded that nothing changed;
      *                absent means it recorded nothing, which is every create and delete and every row
@@ -242,7 +247,15 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
     @JsonInclude(Include.NON_NULL)
     public record Change(String action, String subject, String address, String at, String by,
                          String agent, String agentName, String what, String site, String id,
-                         Affects affects, Submission submission, List<String> fields) {
+                         Affects affects, Submission submission, Review review, List<String> fields) {
+
+        /** Before SH1002 carried the verdict. */
+        public Change(String action, String subject, String address, String at, String by,
+                      String agent, String agentName, String what, String site, String id,
+                      Affects affects, Submission submission, List<String> fields) {
+            this(action, subject, address, at, by, agent, agentName, what, site, id, affects,
+                    submission, null, fields);
+        }
 
         /** Before SH999 told a machine's change from a person's. */
         public Change(String action, String subject, String address, String at, String by,
@@ -257,6 +270,18 @@ public record ShAgentChanges(int found, boolean window, String since, String cur
                       String what, String site, String id, Affects affects, Submission submission) {
             this(action, subject, address, at, by, what, site, id, affects, submission, null);
         }
+    }
+
+    /**
+     * A curator's verdict on one change (SH1002).
+     *
+     * @param decision {@code APPROVE}, {@code REJECT} or {@code HOLD}
+     * @param note     why — always there on a rejection, which is the one this exists for
+     * @param by       who decided
+     * @param at       when
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record Review(String decision, String note, String by, String at) {
     }
 
     /**

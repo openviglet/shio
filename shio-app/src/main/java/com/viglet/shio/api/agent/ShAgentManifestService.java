@@ -286,6 +286,10 @@ public class ShAgentManifestService {
         // stated reason: there is still no raster on this surface, and an agent that read
         // `visualSnapshot: true` would go looking for a PNG. Two capabilities, two answers.
         features.put("appearanceDigest", true);
+        // SH1002 — the read half of review, and the only half on this namespace. A revert leaves
+        // ordinary restore and delete audit rows that look like a curator's own edit, so a resumed
+        // session could not tell "my page came back" from "somebody rejected my page".
+        features.put("reviewVerdicts", true);
         // SH391's page audit — the third browser command, and the first one shaped for an agent:
         // `shio audit <page>` renders the page and returns the overflowing boxes, the failed
         // requests, the console errors, the contrast floor and the fallback fonts as *text*, each
@@ -371,6 +375,12 @@ public class ShAgentManifestService {
         // the fact worth publishing — so the pointer names the route and says whose credential.
         // Terse because this document has a ceiling and SH743 keeps room under it: the sentence the
         // caller needs is who may call it, and the console's own listing needs no pointer from here.
+        // SH1002 — half of it is no longer elsewhere, and the pointer names the half that is: what
+        // an AGENT token may not do is *decide*. The read it can make has its own flag
+        // (`reviewVerdicts`) rather than a second pointer, because a pointer says "go somewhere
+        // else" and that read is here. It is deliberately not in the endpoint index: that index is
+        // curated and has a ceiling SH743 keeps room under, and this capability is already
+        // published three ways — the flag, `shio://review/mine`, and this sentence.
         elsewhere.put("reviewQueue", "GET /review/sessions (operator credential, not AGENT)");
         // SH732 — `trash` was here and had been wrong for a block. SH222 gave an agent
         // `find?trash=true` to list it and `post.restore`/`folder.restore` to undo a delete, and
@@ -483,14 +493,13 @@ public class ShAgentManifestService {
                         "console", "GET /api/v2/agent/verify?format=terse"),
                 new ShAgentEndpoint("GET", "/agent/render",
                         "Structural digest of one page — heading outline, landmarks, links and "
-                                + "images with alt, word count. Cheap proof the page came out "
-                                + "right; ?url= digests what a visitor gets when fetching is enabled.",
+                                + "images with alt, word count. ?url= digests what a visitor gets "
+                                + "when fetching is enabled.",
                         "console", "GET /api/v2/agent/render?address=post:Blog/blog/hello-world"),
                 new ShAgentEndpoint("GET", "/agent/changes",
                         "What changed while you were away: content transitions with an "
                                 + "address each, and a `cursor` to pass back as since= so the "
-                                + "next call is only the delta. Read it before trusting a "
-                                + "cached context digest.",
+                                + "next call is only the delta.",
                         "console", "GET /api/v2/agent/changes?since=2026-07-26T10:00:00Z|<id>"),
                 new ShAgentEndpoint("GET", "/agent/diagnostics",
                         "What failed after you moved on: webhook deliveries, image transforms, "

@@ -65,7 +65,7 @@ const ACTION_LABELS = {
  * @param {string} [input.title]  heading for the document
  * @returns {{ markdown: string, cursor: string|null, changed: number, caveats: string[] }}
  */
-export function buildReport({ changes, verify, context, runs, title } = {}) {
+export function buildReport({ changes, verify, context, runs, verdicts, title } = {}) {
   const sites = siteUrls(context);
   const entries = (changes?.changes ?? []).map((change) => decorate(change, sites));
   const caveats = collectCaveats(changes, verify);
@@ -82,6 +82,7 @@ export function buildReport({ changes, verify, context, runs, title } = {}) {
     lines.push(...changeSection(entries));
   }
 
+  lines.push(...decided(verdicts));
   lines.push(...broke(changes));
   lines.push(...openQuestions(verify));
 
@@ -178,6 +179,26 @@ function whatFor(runs) {
         ? `- **${who}** — ${run.intent}`
         : `- **${who}** — no intent declared (pass \`--intent "<sentence>"\`)`,
     );
+  }
+  lines.push("");
+  return lines;
+}
+
+/**
+ * What the curator decided (SH1002).
+ *
+ * Below the changes and above the caveats: a reader wants to know what was written before they can
+ * read what was turned down. Rejections carry their reason, which is the field the whole read
+ * exists for; the other two verdicts are a line each, because "approved" and "held" are legible in
+ * the content and the reason is usually absent.
+ */
+function decided(verdicts) {
+  if (!Array.isArray(verdicts) || verdicts.length === 0) return [];
+  const lines = ["## What the curator decided", ""];
+  for (const verdict of verdicts) {
+    const why = verdict.note ? ` — ${verdict.note}` : "";
+    lines.push(`- **${verdict.decision}** \`${verdict.address ?? "(gone)"}\`` +
+      `${verdict.by ? ` by ${verdict.by}` : ""}${why}`);
   }
   lines.push("");
   return lines;

@@ -238,8 +238,12 @@ const UNEXERCISED = {
     // `shio://surfaces` arrived with SH979 and joins the list for the ordinary reason: nothing
     // live reads it yet. Its HTTP twin is asserted against the console's own declaration in
     // ShConsoleSurfaceP1Test, which is a proof about the document and not about the wire.
+    // `shio://review/mine` arrives with SH1002, unexercised for a reason a scenario can fix: it
+    // needs a run that wrote drafts AND a curator who rejected one of them, which is two actors in
+    // one fixture. `ShAgentReviewReadOnlyTest` proves the scoping and the read-only shape; what a
+    // live suite would add is that a real agent credential sees its own rejection over the wire.
     "shio://blueprint/", "shio://blueprints", "shio://context", "shio://diagnostics",
-    "shio://manifest", "shio://ops", "shio://schema/", "shio://surfaces",
+    "shio://manifest", "shio://ops", "shio://review/mine", "shio://schema/", "shio://surfaces",
   ],
   verbs: [
     // SH997 — `gate` joins the list on arrival: its live scenario is a pipeline that declares a

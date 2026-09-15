@@ -73,11 +73,17 @@ export async function run(flags, positionals, ctx) {
     .runs((changes?.changes ?? []).map((change) => change.agent))
     .catch(() => []);
 
+  // SH1002 — what the curator did about the range this report covers. A handoff that lists what an
+  // agent wrote and not what was turned down is the half of the conversation the agent already
+  // knew.
+  const verdicts = await client.verdicts({ limit: flags.limit }).catch(() => []);
+
   const report = buildReport({
     changes,
     verify,
     context,
     runs,
+    verdicts,
     title: typeof flags.title === "string" ? flags.title : undefined,
   });
 

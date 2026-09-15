@@ -418,6 +418,13 @@ class ShAgentP1ConformanceTest {
         // SH975 — reclassified from CONSOLE_ONLY, which was the wrong half of the truth: the
         // credential is the boundary, not the browser. A curator reaches this with HTTP Basic from a
         // terminal; an AGENT token is refused, which is the decision SH109 made.
+        // SH1002 — the read half, which is not an exception at all: `GET /agent/review` answers
+        // what a curator already decided about runs made with the calling credential. It exists
+        // because the *content* cannot say it — a revert leaves ordinary restore and delete rows
+        // that look exactly like a curator's own edit — and it carries no way to decide anything,
+        // which is what keeps `reviewQueue` below a decided exception rather than a gap.
+        byFeature.put("reviewVerdicts", mcpResource("shio://review/mine",
+                "the verdict on your own runs, with each rejection's reason"));
         byFeature.put("reviewQueue", new Delivery(Reach.OPERATOR_HTTP, "/review/sessions",
                 "SH109 put this off the agent namespace on purpose — it is the human's veto over "
                 + "the agent's work, so an agent approving its own run is the thing it prevents. The "

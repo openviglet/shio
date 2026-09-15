@@ -392,6 +392,17 @@ export class ShioAgentClient {
   }
 
   /**
+   * GET /api/v2/agent/review (SH1002) — what a curator decided about this credential's runs.
+   *
+   * On the agent namespace and read-only: an agent approving its own work is a standing non-goal,
+   * so there is no decide path here. This is the other direction, which was missing — a revert
+   * leaves ordinary restore rows, so the content alone cannot say a page was turned down.
+   */
+  async verdicts({ decision, limit } = {}) {
+    return this.#get("review", { decision, limit });
+  }
+
+  /**
    * GET /api/v2/review/sessions (SH1001) — the runs, newest first.
    *
    * Not under `/agent/**` on purpose, and the client follows the server's reason: this is the

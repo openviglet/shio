@@ -287,10 +287,13 @@ class ShAgentResponseBudgetTest {
             // rather than to the measurement — so the entry stopped excusing anything, and the
             // staleness check below said so on the run that raised it. That is the list working:
             // an exemption outliving its wall hides the next budget that needs one.
-            "manifest.check",
-            "include=features,limits is already the smallest reading of the manifest — 385 tokens "
-                    + "against the full 2636 — so there is no leaner shape to reach for; its "
-                    + "ceiling is a wall because the payload is close to irreducible");
+            // `manifest.check` was here and left with SH1002, the same way `manifest` left with
+            // SH809 and for the same reason: adding `reviewVerdicts` took it over 390, and the
+            // ceiling went to 420 — the 4% headroom this rule asks for — rather than to the
+            // measurement. A wall that has room behind it excuses nothing, and the staleness check
+            // below said so on the run that raised it. The list is empty now, which is the state it
+            // is supposed to be in between breaches.
+            );
 
     /** Below this fraction of its ceiling free, a budget refuses the next line rather than sizing it. */
     private static final double REQUIRED_HEADROOM = 0.04;

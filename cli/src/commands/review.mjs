@@ -34,13 +34,42 @@ export async function run(flags, positionals, ctx) {
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
   const verb = positionals[1] ?? "list";
 
+  if (verb === "mine") return mine(client, flags, ctx);
   if (verb === "list") return list(client, flags, ctx);
   if (verb === "show") return show(client, flags, positionals, ctx);
   if (verb === "decide") return decide(client, flags, positionals, ctx);
   throw new Error(
-    `shio review: unknown subcommand "${verb}". It is one of list, show or decide.\n` +
+    `shio review: unknown subcommand "${verb}". It is one of list, show, decide or mine.\n` +
       "Example: shio review decide <session> --reject post:Blog/about --note \"last quarter's prices\"",
   );
+}
+
+/**
+ * What a curator decided about this credential's own runs (SH1002).
+ *
+ * Rejections by default, because the other two verdicts are legible in the content — an approved
+ * page is live and a held one is still a draft — while a rejection leaves ordinary restore rows
+ * that look exactly like a curator's own edit.
+ *
+ * `--strict` exits 1 when anything was rejected, so a pipeline that runs an agent and then runs
+ * this fails on work somebody turned down rather than on work it merely left.
+ */
+async function mine(client, flags, ctx) {
+  const decision = typeof flags.decision === "string" ? flags.decision : "reject";
+  const verdicts = await client.verdicts({ decision, limit: flags.limit });
+  if (flags.json) {
+    ctx.stdout.write(`${JSON.stringify(verdicts, null, 2)}\n`);
+    return { verdicts, exitCode: flags.strict && verdicts.length > 0 ? 1 : 0 };
+  }
+  const lines = [`shio review mine: ${verdicts.length} ${decision}(s)`];
+  for (const verdict of verdicts) {
+    lines.push(`  ${verdict.decision} ${verdict.address ?? "(gone)"} by ${verdict.by ?? "—"}`);
+    // The reason on its own line: it is the only unbounded field, and it is the one an agent is
+    // reading this for.
+    if (verdict.note) lines.push(`      ${verdict.note}`);
+  }
+  ctx.stdout.write(`${lines.join("\n")}\n`);
+  return { verdicts, exitCode: flags.strict && verdicts.length > 0 ? 1 : 0 };
 }
 
 /** One line per run: what it was for, what it did, and how much is still waiting. */

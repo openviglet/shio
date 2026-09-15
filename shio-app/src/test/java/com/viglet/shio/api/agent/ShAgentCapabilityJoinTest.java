@@ -129,6 +129,7 @@ class ShAgentCapabilityJoinTest {
         // answers "does this instance do X" about this surface.
         byEntry.put("resource:shio://surfaces", MIRROR);
 
+
         byEntry.put("prompt:new-site", PROMPT);
         byEntry.put("prompt:add-section", PROMPT);
         byEntry.put("prompt:translate-site", PROMPT);

@@ -19,6 +19,8 @@ import com.viglet.shio.api.agent.ShAgentManifestService;
 import com.viglet.shio.api.agent.ShConsoleSurfaces;
 import com.viglet.shio.api.agent.ShAgentOps;
 import com.viglet.shio.api.agent.ShAgentUsageService;
+import com.viglet.shio.api.agent.ShAgentVerdictService;
+import com.viglet.shio.api.agent.ShAgentVerdictTerse;
 import com.viglet.shio.api.agent.diagnostics.ShAgentDiagnosticsService;
 import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.api.agent.verify.ShAgentVerifyTerse;
@@ -84,6 +86,34 @@ public class ShMcpResources {
                         + "before assuming a curator's screen has no equivalent here.",
                 JSON, "/api/v2/agent/manifest?include=surfaces",
                 uri -> objectMapper.writeValueAsString(surfaces.surfaces()));
+    }
+
+    /**
+     * The verdicts on this credential's own runs (SH1002).
+     *
+     * <p>A <b>resource</b>, and this one is the clearest case the distinction has: it is the first
+     * thing a resumed session should read, and it is read once rather than called when the model
+     * decides to act. It is also why it is not a tool — {@code tools/list} is re-sent every turn
+     * (P3), and a read that matters at the start of a session should not be billed at every step
+     * of it.</p>
+     *
+     * <p><b>There is no decide path here and there will not be one.</b> An agent approving its own
+     * work is a standing non-goal; this resource answers what a curator <em>already</em> decided,
+     * scoped to runs made with the calling credential, and nothing on this namespace writes a
+     * decision. {@code ShAgentReviewReadOnlyTest} asserts both halves.</p>
+     *
+     * <p>Rejections only. The other two verdicts are legible in the content — an approved page is
+     * live and a held one is still a draft — while a rejection leaves ordinary restore and delete
+     * rows that look exactly like a curator's own edit, which is the whole reason this exists.</p>
+     */
+    @Bean
+    ShMcpResource shMcpReviewResource(ShAgentVerdictService verdictService) {
+        return resource("shio://review/mine", "Rejections on your runs",
+                "What a curator rejected from your own runs, with the reason each time. Read it "
+                        + "first on a resumed session: a revert leaves ordinary restore rows, so "
+                        + "the content alone cannot tell you a page was turned down.",
+                TEXT, "/api/v2/agent/review?decision=reject",
+                uri -> ShAgentVerdictTerse.render(verdictService.mine("reject", null)));
     }
 
     /**

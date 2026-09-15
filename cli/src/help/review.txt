@@ -3,18 +3,21 @@ shio review — what an agent run left for a person, and what to do about it
   list                 One line per run: its intent, its counts, what is waiting
   show <session>       That run's changes, with whatever has been decided
   decide <session>     Approve, reject or hold named changes
+  mine                 What a curator decided about your own runs
 
   --approve <a,b>      Publish these (address or post id)
   --reject <a,b>       Undo these; needs --note
   --hold <a,b>         Park these; the queue stops counting them
   --note "<why>"       Why — required with --reject
   --dry-run            Print what it would do, change nothing
-  --strict             list: exit 1 while anything is waiting (CI)
-  --limit <n>          list: how many runs
+  --strict             Exit 1 while anything is waiting, or was rejected (CI)
+  --decision <kind>    mine: reject (default), approve or hold
+  --limit <n>          How many rows
   --json               Raw JSON instead of lines
 
 Examples:
   shio review list --strict
+  shio review mine --strict
   shio review show 7f3c9a2e
   shio review decide 7f3c9a2e --approve post:Blog/about --hold post:Blog/pricing
   shio review decide 7f3c9a2e --reject post:Blog/news --note "prices are last quarter's"

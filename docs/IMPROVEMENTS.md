@@ -1639,26 +1639,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-### LXVII.4 The verdict, readable by the one it is about (SH1002)
-
-The conformance test holds the review queue as a decided exception, because an agent
-approving its own run is what it prevents, and the manifest asserts the approve route is
-absent from its endpoint index. That decision is right and this task does not touch it.
-The gap is read-only: a revert produces ordinary restore and delete audit rows that look
-like a curator's own edit, and approve produces publish rows, with no outcome, no reason
-and no typed event.
-
-BB3 writes decisions as typed rows, so the read is cheap. /agent/changes gains review
-with decision, by, at and note, omitted when null so ordinary rows stay byte-identical,
-and a filter to rejected changes only. shio://review/mine is a resource scoped to the
-calling credential's own runs, off tools/list, and the first thing a resumed session
-reads. shio review --since last prints rejections with their notes, and shio report
-gains what the curator changed.
-
-The assertions keep the decision intact: the manifest's endpoint index still lacks the
-approve route, the new resource exposes no decide path, and a rejected change's note is
-readable by the session that wrote it and by no other.
-
 ### LXVII.5 Notes: a thread anchored to an address is the next prompt (SH1003)
 
 Searching the backend for a comment, mention or annotation class returns nothing. The

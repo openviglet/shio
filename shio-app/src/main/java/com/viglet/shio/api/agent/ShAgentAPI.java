@@ -33,6 +33,7 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.api.agent.dto.ShAgentRunRow;
+import com.viglet.shio.api.agent.dto.ShAgentVerdict;
 import com.viglet.shio.api.agent.dto.ShAgentContext;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
@@ -103,6 +104,7 @@ public class ShAgentAPI {
     /** SH997 — the site's publish gates, read and declared. */
     private final com.viglet.shio.api.gate.ShAgentGateApiService shAgentGateApiService;
     private final ShAgentRunService shAgentRunService;
+    private final ShAgentVerdictService shAgentVerdictService;
     private final ShBlueprintRegistry shBlueprintRegistry;
     private final ShBlueprintService shBlueprintService;
     private final ShAgentBodyEtag shAgentBodyEtag;
@@ -124,9 +126,11 @@ public class ShAgentAPI {
                       ShAgentBodyEtag shAgentBodyEtag,
                       ShAgentProofService shAgentProofService,
                       com.viglet.shio.api.gate.ShAgentGateApiService shAgentGateApiService,
-                      ShAgentRunService shAgentRunService) {
+                      ShAgentRunService shAgentRunService,
+                      ShAgentVerdictService shAgentVerdictService) {
         this.shAgentGateApiService = shAgentGateApiService;
         this.shAgentRunService = shAgentRunService;
+        this.shAgentVerdictService = shAgentVerdictService;
         this.shAgentManifestService = shAgentManifestService;
         this.shAgentContextService = shAgentContextService;
         this.shAddressResolver = shAddressResolver;
@@ -712,6 +716,9 @@ public class ShAgentAPI {
      * @param include {@code fields} (SH989) names the fields each update, publish and restore
      *                changed — the one description of an approved run that survives the approve,
      *                since publishing makes the draft and the live row the same document
+     * @param decision SH1002 — narrow to the changes a curator decided one way: {@code reject},
+     *                {@code approve} or {@code hold}. Filtered in the query with the keyset, so a
+     *                narrowed feed pages exactly the way the whole one does
      * @param by      SH999 — narrow to who wrote it: {@code agent}, {@code curator} (a console
      *                session counts as one) or a session id. This is the question the feed was built
      *                to answer and could not: an agent polling for what changed wants what changed
@@ -728,10 +735,11 @@ public class ShAgentAPI {
             @RequestParam(name = "include", required = false) String include,
             @RequestParam(name = "format", required = false) String format,
             @RequestParam(name = "by", required = false) String by,
+            @RequestParam(name = "decision", required = false) String decision,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
         ShAgentChanges changes = shAgentChangesService.changes(site, since, limit, ids, budget,
-                includes(include, "fields"), by);
+                includes(include, "fields"), by, decision);
         return isTerse(format)
                 ? shAgentBodyEtag.terse("changes", ShAgentChangesTerse.render(changes), ifNoneMatch)
                 : shAgentBodyEtag.json("changes", changes, ifNoneMatch);
@@ -748,6 +756,29 @@ public class ShAgentAPI {
      * @param site  one site's notes plus the instance-wide ones; omit for all
      * @param limit rows to return; {@code found} always describes the full set
      */
+    /**
+     * What a curator decided about this credential's own runs (SH1002).
+     *
+     * <h2>Read-only, on purpose and permanently</h2>
+     *
+     * <p>An agent approving its own work is a standing non-goal, and the review surface stays off
+     * this namespace for that reason — there is no decide path here and there will not be one. What
+     * this closes is the other direction: a revert leaves ordinary restore and delete audit rows
+     * that look like a curator's own edit, so a resumed session could not tell "my page came back"
+     * from "somebody rejected my page", and every correction needed a person to re-explain it.</p>
+     *
+     * @param decision {@code reject}, {@code approve} or {@code hold}; omit for all of them. A
+     *                 resumed session almost always wants the rejections — the rest it can see in
+     *                 the content
+     */
+    @GetMapping("/review")
+    @Operation(summary = "What a curator decided about this credential's runs (read-only)")
+    public List<ShAgentVerdict> review(
+            @RequestParam(name = "decision", required = false) String decision,
+            @RequestParam(name = "limit", required = false) Integer limit) {
+        return shAgentVerdictService.mine(decision, limit);
+    }
+
     /**
      * What these runs were, and what each said it was for (SH1000).
      *

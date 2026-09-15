@@ -36,4 +36,13 @@ public interface ShAgentRunRepository extends JpaRepository<ShAgentRun, String> 
      * answering a question already answered.</p>
      */
     List<ShAgentRun> findByIdIn(Collection<String> ids);
+
+    /**
+     * The runs one credential has made (SH1002).
+     *
+     * <p>How a verdict read stays scoped: a rejection's note is written for whoever is going to fix
+     * the page, and a credential that did not write it has no business reading what a curator said
+     * about somebody else's work.</p>
+     */
+    List<ShAgentRun> findByActor(String actor);
 }

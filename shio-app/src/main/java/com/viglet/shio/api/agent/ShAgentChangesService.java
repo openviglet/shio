@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,7 +40,9 @@ import com.viglet.shio.schedule.ShPostScheduler;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
+import com.viglet.shio.persistence.model.review.ShReviewDecision;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.review.ShReviewDecisionRepository;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
@@ -110,6 +113,7 @@ public class ShAgentChangesService {
     private final ShTemplateGraph templateGraph;
     private final ShAuditFeedWatermark watermark;
     private final ShAgentRunService shAgentRunService;
+    private final ShReviewDecisionRepository shReviewDecisionRepository;
 
     public ShAgentChangesService(ShHistoryRepository shHistoryRepository,
                                  ShPostUnifiedRepository shPostUnifiedRepository,
@@ -120,7 +124,8 @@ public class ShAgentChangesService {
                                  ShAgentIncidentStore incidentStore,
                                  ShTemplateGraph templateGraph,
                                  ShAuditFeedWatermark watermark,
-                                 ShAgentRunService shAgentRunService) {
+                                 ShAgentRunService shAgentRunService,
+                                 ShReviewDecisionRepository shReviewDecisionRepository) {
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
@@ -131,6 +136,7 @@ public class ShAgentChangesService {
         this.templateGraph = templateGraph;
         this.watermark = watermark;
         this.shAgentRunService = shAgentRunService;
+        this.shReviewDecisionRepository = shReviewDecisionRepository;
     }
 
     /** Before SH723 gave the feed a token ceiling — {@code null} takes the configured one. */
@@ -168,6 +174,12 @@ public class ShAgentChangesService {
         return changes(site, since, limit, ids, budget, fields, null);
     }
 
+    /** Before SH1002 could narrow the feed to what a curator decided one way. */
+    public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
+                                  Integer budget, boolean fields, String by) {
+        return changes(site, since, limit, ids, budget, fields, by, null);
+    }
+
     /**
      * Reads the feed, narrowed to who wrote it (SH999).
      *
@@ -184,7 +196,9 @@ public class ShAgentChangesService {
      *           caller before this one passes, so the unfiltered feed is the result set it always was
      */
     public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
-                                  Integer budget, boolean fields, String by) {
+                                  Integer budget, boolean fields, String by, String decision) {
+        String verdict = decision == null || decision.isBlank()
+                ? null : decision.trim().toUpperCase(java.util.Locale.ROOT);
         String wanted = by == null || by.isBlank() ? null : by.trim();
         // A word or an id, told apart here rather than in the query: `agent` and `curator` are the
         // vocabulary, and anything else is a session, which is the one case that needs no list of
@@ -212,8 +226,8 @@ public class ShAgentChangesService {
         // page — a full page that happens to be the last one would otherwise send the
         // caller back for an empty round trip every time.
         List<ShHistory> entries = window
-                ? newestFirst(scope, ceiling, cap, session, kind)
-                : afterCursor(scope, ceiling, from, cap + 1, session, kind);
+                ? newestFirst(scope, ceiling, cap, session, kind, verdict)
+                : afterCursor(scope, ceiling, from, cap + 1, session, kind, verdict);
         boolean more = !window && entries.size() > cap;
         if (more) {
             entries = entries.subList(0, cap);
@@ -522,27 +536,28 @@ public class ShAgentChangesService {
     // --- querying ---
 
     private List<ShHistory> newestFirst(Scope scope, Instant ceiling, int cap, String session,
-                                        String kind) {
+                                        String kind, String decision) {
         PageRequest page = PageRequest.of(0, cap);
         if (scope.unrestricted()) {
-            return shHistoryRepository.findWindow(ceiling, session, kind, page);
+            return shHistoryRepository.findWindow(ceiling, session, kind, decision, page);
         }
         return scope.siteIds().isEmpty()
                 ? List.of()
                 : shHistoryRepository.findWindowInSites(ceiling, scope.siteIds(), session, kind,
-                        page);
+                        decision, page);
     }
 
     private List<ShHistory> afterCursor(Scope scope, Instant ceiling, ShAgentChangeCursor from,
-                                        int cap, String session, String kind) {
+                                        int cap, String session, String kind, String decision) {
         PageRequest page = PageRequest.of(0, cap);
         if (scope.unrestricted()) {
-            return shHistoryRepository.findSince(ceiling, from.at(), from.id(), session, kind, page);
+            return shHistoryRepository.findSince(ceiling, from.at(), from.id(), session, kind,
+                    decision, page);
         }
         return scope.siteIds().isEmpty()
                 ? List.of()
                 : shHistoryRepository.findSinceInSites(ceiling, scope.siteIds(), from.at(),
-                        from.id(), session, kind, page);
+                        from.id(), session, kind, decision, page);
     }
 
     /**
@@ -575,6 +590,16 @@ public class ShAgentChangesService {
         return names;
     }
 
+    /**
+     * A decision's key: the run and the page (SH1002).
+     *
+     * <p>A record rather than a concatenated string, and the reason is SH859's: a composite key
+     * wants a separator that cannot occur in either half, and a session id is whatever a caller
+     * sent on the header. A pair has no separator to get wrong.</p>
+     */
+    private record Verdict(String session, String postId) {
+    }
+
     // --- shaping ---
 
     private List<ShAgentChanges.Change> shape(List<ShHistory> entries, Scope scope, boolean ids,
@@ -588,6 +613,21 @@ public class ShAgentChangesService {
         // SH999 — one query for the page's runs, the way the addresses are memoized: twenty rows of
         // one run is one run, and a name resolved per row is nineteen queries answering a question
         // already answered.
+        // SH1002 — one query for every decision the page's runs hold. Keyed by (session, post),
+        // which a change row already carries, so this costs a lookup rather than a join per row.
+        //
+        // Skipped when the page names no run, and that guard is a budget rather than a nicety:
+        // SH967 bounds an idle event stream at four statements per pass, paid per open tab for as
+        // long as the tab is open, and an unguarded lookup over an empty set made it five.
+        Set<String> decided = entries.stream()
+                .map(ShHistory::getAgentSessionId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        Map<Verdict, ShReviewDecision> verdicts = new LinkedHashMap<>();
+        if (!decided.isEmpty()) {
+            shReviewDecisionRepository.findBySessionIn(decided).forEach(row ->
+                    verdicts.put(new Verdict(row.getSession(), row.getPostId()), row));
+        }
         Map<String, String> runNames = shAgentRunService.names(entries.stream()
                 .map(ShHistory::getAgentSessionId)
                 .filter(session -> session != null && !ShAgentSessionContext.isConsole(session))
@@ -622,6 +662,9 @@ public class ShAgentChangesService {
             String run = entry.getAgentSessionId() == null
                     || ShAgentSessionContext.isConsole(entry.getAgentSessionId())
                     ? null : entry.getAgentSessionId();
+            ShReviewDecision verdict = entry.getAgentSessionId() == null || objectId == null
+                    ? null
+                    : verdicts.get(new Verdict(entry.getAgentSessionId(), objectId));
             changes.add(new ShAgentChanges.Change(
                     entry.getAction(),
                     subject == ShContentSubject.POST ? null : subject.wire(),
@@ -635,6 +678,9 @@ public class ShAgentChangesService {
                     ids ? objectId : null,
                     affects.orElse(null),
                     submission.orElse(null),
+                    verdict == null ? null : new ShAgentChanges.Review(verdict.getDecision(),
+                            verdict.getNote(), verdict.getActor(),
+                            verdict.getDecidedAt() == null ? null : verdict.getDecidedAt().toString()),
                     // SH989 — read off the row, never recomputed: after a publish the two documents
                     // it compared are one document, so the row is the only place the answer is.
                     fields ? ShChangedFields.decode(entry.getChangedFields()) : null));

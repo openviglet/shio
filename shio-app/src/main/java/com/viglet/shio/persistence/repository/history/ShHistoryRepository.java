@@ -51,6 +51,18 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	 * predicate. That is the reason the test asserts the split rather than the column: a filter that
 	 * read "has a session id" would file a curator's own publish under the machines.</p>
 	 */
+	/**
+	 * SH1002 — narrowed to the changes a curator decided one way.
+	 *
+	 * <p>A subquery rather than a filter applied after the page, for the reason the attribution
+	 * filter states one clause up: this feed is resumable, so a post-filter would hand back a short
+	 * page while the matching rows sat behind the cursor. A decision is keyed by the same two
+	 * columns a change row already carries, which is what makes the predicate cheap.</p>
+	 */
+	String DECIDED = "and (:decision is null or exists (select 1 from ShReviewDecision d "
+			+ "  where d.session = h.agentSessionId and d.postId = h.shObject "
+			+ "  and d.decision = :decision)) ";
+
 	String WROTE_IT = "and (:session is null or h.agentSessionId = :session) "
 			+ "and (:kind is null "
 			+ "  or (:kind = 'agent' and h.agentSessionId is not null "
@@ -114,14 +126,15 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 			+ "order by h.date asc, h.id asc")
 	List<ShHistory> findByAgentSession(String session);
 
-	@Query("select h from ShHistory h where h.date <= :ceiling " + WROTE_IT
+	@Query("select h from ShHistory h where h.date <= :ceiling " + WROTE_IT + DECIDED
 			+ "order by h.date desc, h.id desc")
-	List<ShHistory> findWindow(Instant ceiling, String session, String kind, Pageable pageable);
+	List<ShHistory> findWindow(Instant ceiling, String session, String kind, String decision,
+			Pageable pageable);
 
 	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds " + WROTE_IT
-			+ "order by h.date desc, h.id desc")
+			+ DECIDED + "order by h.date desc, h.id desc")
 	List<ShHistory> findWindowInSites(Instant ceiling, Collection<String> siteIds, String session,
-			String kind, Pageable pageable);
+			String kind, String decision, Pageable pageable);
 
 	/**
 	 * Everything strictly after the {@code (at, id)} position, oldest first (SH88).
@@ -132,14 +145,14 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	 * cursor's second, which on a batch write is most of them.</p>
 	 */
 	@Query("select h from ShHistory h where h.date <= :ceiling "
-			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT
+			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT + DECIDED
 			+ "order by h.date asc, h.id asc")
 	List<ShHistory> findSince(Instant ceiling, Instant at, String id, String session, String kind,
-			Pageable pageable);
+			String decision, Pageable pageable);
 
 	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds "
-			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT
+			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT + DECIDED
 			+ "order by h.date asc, h.id asc")
 	List<ShHistory> findSinceInSites(Instant ceiling, Collection<String> siteIds, Instant at,
-			String id, String session, String kind, Pageable pageable);
+			String id, String session, String kind, String decision, Pageable pageable);
 }

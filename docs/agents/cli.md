@@ -4124,3 +4124,15 @@ that learns the rule from a 400 has already spent a round trip on a run it is ga
 `--dry-run` prints which named changes would publish and which would be skipped, read off the
 `draft` flag each entry already carries. That is SH996's discipline applied to a terminal: the facts
 are the server's, the rendering is the caller's, and nothing here decides what approving would do.
+
+## `shio review mine` (SH1002)
+
+What a curator decided about this credential's own runs — rejections by default, with the reason on
+its own line under each. `--strict` exits 1 when anything was rejected, so a pipeline can fail on
+work somebody turned down rather than on work it merely left waiting.
+
+It is a list, not a feed: the design asked for `--since last`, and the verdicts read is small and
+unpaged on purpose — a cursor over a list that is usually under ten rows would be a second feed to
+keep resumable. `shio report` gains **What the curator decided**, below the changes, because a
+handoff that lists what an agent wrote and not what was turned down is the half of the conversation
+the agent already knew.
