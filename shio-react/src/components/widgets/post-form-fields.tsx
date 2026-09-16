@@ -179,6 +179,12 @@ function buildAttrFromValue(field: ShPostTypeSchemaField, value: unknown): ShPos
 }
 
 function extractValueFromAttr(field: ShPostTypeSchemaField, attr: ShPostAttr): unknown {
+  // SH1012 — a repeatable field answers with its array even when the array is empty. Falling
+  // through to `strValue ?? null` would make "the curator removed the last item" indistinguishable
+  // from "this field was never filled in", and the removal would not survive the save.
+  if (isRepeatable(field)) {
+    return (attr.shChildrenRelatorItems ?? []).map((item) => relatorItemToValue(field, item))
+  }
   if (attr.shChildrenRelatorItems && attr.shChildrenRelatorItems.length > 0) {
     return attr.shChildrenRelatorItems.map((item) => relatorItemToValue(field, item))
   }
@@ -191,18 +197,31 @@ function extractValueFromAttr(field: ShPostTypeSchemaField, attr: ShPostAttr): u
   return attr.strValue ?? null
 }
 
+/** A `Relator` whose children are declared inline — SH95's collection, the one repeatable field. */
+function isRepeatable(field: ShPostTypeSchemaField): boolean {
+  return field.widget === "Relator" && (field.children?.length ?? 0) > 0
+}
+
 function valueToRelatorItem(field: ShPostTypeSchemaField) {
   return (value: Record<string, unknown>): ShRelatorItem => {
+    // Minted before the children, because each child's id is scoped by it — two rows of the same
+    // collection otherwise give their `title` fields the same id, and React reuses the wrong input.
+    const rowId = (value._id as string) || crypto.randomUUID()
     const childAttrs: ShPostAttr[] = []
     const children = field.children ?? []
     for (const child of children) {
       childAttrs.push({
         ...buildAttrFromValue(child, value[child.name]),
-        id: `${String(value._id ?? "")}-${child.name}`,
+        id: `${rowId}-${child.name}`,
       })
     }
     return {
-      id: (value._id as string) || "",
+      // SH1012 — minted here, never read back out. A row of an SH95 collection has no id: the
+      // stored value is `{title, body}` and nothing else, which `ShPostDraftMergeService` says in
+      // as many words and `ShCdaWriteTest` fixes as a shape. The id exists so React and dnd-kit
+      // can tell two rows apart across a reorder, which is exactly the job `FieldRow.key` does one
+      // screen over — and like that one it is stripped before saving.
+      id: rowId,
       title: (value._title as string | undefined) ?? undefined,
       summary: (value._summary as string | undefined) ?? undefined,
       ordinal: (value._ordinal as number) ?? 0,
@@ -211,13 +230,20 @@ function valueToRelatorItem(field: ShPostTypeSchemaField) {
   }
 }
 
+/**
+ * SH1012 — the row as the post actually stores it: the declared child fields, and nothing else.
+ *
+ * This used to write `_id`, `_ordinal`, and `_title`/`_summary` when present. Nothing server-side
+ * has ever read them — a collection row is a plain map of child names, which is why
+ * `ShPostDraftMergeService` can address `features.1.body` at all — so they were four undeclared
+ * keys waiting to be written into content. They never were, for the one reason this task is about:
+ * the widget could not save. Making it editable without this is how the fix becomes the defect.
+ *
+ * Position is the ordinal. A separate `_ordinal` is a second answer to a question the array already
+ * answers, and two answers is how they disagree.
+ */
 function relatorItemToValue(field: ShPostTypeSchemaField, item: ShRelatorItem): Record<string, unknown> {
-  const out: Record<string, unknown> = {
-    _id: item.id,
-    _ordinal: item.ordinal,
-  }
-  if (item.title !== undefined) out._title = item.title
-  if (item.summary !== undefined) out._summary = item.summary
+  const out: Record<string, unknown> = {}
   for (const child of field.children ?? []) {
     const childAttr = item.shChildrenPostAttrs.find((a) => a.shPostTypeAttr?.name === child.name)
     if (childAttr) {

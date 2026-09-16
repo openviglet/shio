@@ -1792,26 +1792,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.4 The repeatable field, editable again (SH1012)
-
-The relator widget's own comment says inline editing of relator subtrees is not wired
-through the unified form and that modifying children is intentionally disabled, and it
-tells the curator so. It destructures only attr, so its onChange is never called. The
-console-ui doc still lists Relator as a nested items list with add and remove, a
-capability lost in the unified-model migration and never reconciled.
-
-This is the rare case where the whole chain is complete and only the console leg is
-missing: nested items convert to and from data in full, post.upsert writes them, and the
-Markdown projection carries them. Rebuild the widget as an array editor: add with the
-child schema rendered inline, remove with undo, duplicate, collapse and expand with a
-title from the child marked isTitle, and reorder by drag with a keyboard equivalent,
-writing ordinals on drop. dnd-kit is already a dependency, used only to reorder a
-model's fields.
-
-Fix the doc row in the same commit, and add the guard that would have caught the drift:
-every widget the documentation calls editable must call onChange. BC2's minItems and
-maxItems then apply to it.
-
 ### LXVIII.5 Insights beside the form (SH1013)
 
 A grep of shio-react/src for the agent namespace returns two i18n strings describing a

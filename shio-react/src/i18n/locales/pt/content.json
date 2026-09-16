@@ -297,5 +297,11 @@
   "content.autosaveStopped": "Salvamento automático parado — salve manualmente",
   "content.bufferedOffer": "Este navegador guardou alterações não salvas de {{when}}.",
   "content.bufferedRestore": "Restaurar",
-  "content.bufferedDiscard": "Descartar"
+  "content.bufferedDiscard": "Descartar",
+  "content.relatorAdd": "Adicionar item",
+  "content.relatorRemove": "Remover este item",
+  "content.relatorDuplicate": "Duplicar este item",
+  "content.relatorReorder": "Arraste para reordenar, ou use as setas com o foco aqui",
+  "content.relatorUndoRemove": "Desfazer remoção",
+  "content.relatorItemNumber": "Item {{number}}"
 }

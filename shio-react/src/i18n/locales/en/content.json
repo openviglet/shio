@@ -297,5 +297,11 @@
   "content.autosaveStopped": "Autosave stopped — save manually",
   "content.bufferedOffer": "This browser kept unsaved changes from {{when}}.",
   "content.bufferedRestore": "Restore them",
-  "content.bufferedDiscard": "Discard them"
+  "content.bufferedDiscard": "Discard them",
+  "content.relatorAdd": "Add item",
+  "content.relatorRemove": "Remove this item",
+  "content.relatorDuplicate": "Duplicate this item",
+  "content.relatorReorder": "Drag to reorder, or focus and use the arrow keys",
+  "content.relatorUndoRemove": "Undo remove",
+  "content.relatorItemNumber": "Item {{number}}"
 }

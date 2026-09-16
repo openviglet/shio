@@ -148,7 +148,7 @@ name is the contract, and there is no server-side extension point to look for.
 | `Ace Editor - CSS` | CodeMirror (SH252 — a `Theme`'s stylesheet) | `strValue` |
 | `Content Select` | ID input + status indicator + clear button | `strValue` |
 | `File` | ID input + status indicator + clear button | `strValue` |
-| `Relator` | Nested items list with add/remove (uses `crypto.randomUUID()`) | `shChildrenRelatorItems` |
+| `Relator` | Repeatable rows: add, remove with undo, duplicate, collapse, reorder by drag or arrow keys (SH1012) | `shChildrenRelatorItems` |
 | `Tab` | Groups fields into tabs (container, no data) | none |
 
 ### WidgetProps Interface
@@ -1882,3 +1882,30 @@ The CLI half SH1011 designed — `shio post set`, one field against a live insta
 here. It was written and withdrawn: the merge verb carrying `If-Match` refuses a cookieless caller
 by a decision `ShStatelessReachabilityLintTest` records, the CDA's merge is stateless but has no
 precondition at all, and the agent's only write declares whole state. SH1091 holds the choice.
+
+## The repeatable field, and the keys it must not write (SH1012)
+
+`RelatorWidget` destructured `attr` alone, so the `onChange` in its props was never called and it
+told the curator editing was disabled — while the widget table above described add and remove.
+Everything underneath was already complete: rows convert to and from `data`, the merge verb writes
+them, the projection carries them. Only the console leg was missing.
+
+It is now an array editor: add, remove **with undo**, duplicate, collapse with a headline taken from
+the child marked `isTitle`, and reorder by drag **or arrow keys** (dnd-kit's `KeyboardSensor`, the
+same wiring the post-type editor uses — drag alone is a feature some curators do not have).
+
+**The part that is not about the widget.** `relatorItemToValue` used to write `_id`, `_ordinal` and
+`_title`/`_summary` back into the stored row. A row of an SH95 collection is a plain map of its
+declared child fields — `{title, body}` — which is exactly what lets `ShPostDraftMergeService`
+address `features.1.body`. Those four keys were undeclared content waiting to be written, harmless
+only because the widget could not save; making it editable without removing them is how this fix
+becomes the defect. So identity is minted on read, held for React and dnd-kit, and **stripped on
+write**; position is the ordinal and there is no second copy of it.
+
+`extractValueFromAttr` also answers `[]` for an emptied repeatable. It used to fall through to
+`strValue ?? null`, which made "the curator removed the last row" indistinguishable from "never
+filled in" — the removal did not survive the save.
+
+`widget-editability.test.mjs` is the guard: every row of the widget table not described as a
+container or hidden must call `onChange`, and every name in the table must be one `WIDGET_MAP`
+registers. It fails on the widget exactly as it shipped.

@@ -63,7 +63,6 @@
 
 ## Block BC — The authoring surface, field by field
 
-- 📋 **SH1012** (deps: —) **Relator, the only repeatable field, is read-only, while the documentation says it adds and removes items** — The widget takes onChange in its props and never calls it and prints that editing is disabled, while the whole data chain for nested items round-trips. → §LXVIII.4
 - 📋 **SH1013** (deps: SH955 ✅) **the editor never calls the content intelligence the backend already computes for the page being edited** — The console makes no request to the agent surface, so dozens of verify rules and a structural page digest stay invisible to the person who could fix what they find. → §LXVIII.5
 - 📋 **SH1014** (deps: SH1011 ✅) **previewing unsaved edits is impossible, because the preview renders the last saved draft** — The preview token addresses a post id rather than a payload, and no endpoint renders a page from proposed field values, for a curator or an agent. → §LXVIII.6
 - 📋 **SH1015** (deps: SH956 ✅) **a page body is one opaque HTML string, so an agent cannot address a paragraph** — The rich-text value is innerHTML with no schema, so Edit lands inside one blob, canonical serialisation is impossible and the digest must parse markup to find structure. → §LXVIII.7
