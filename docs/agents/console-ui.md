@@ -149,6 +149,7 @@ name is the contract, and there is no server-side extension point to look for.
 | `Content Select` | ID input + status indicator + clear button | `strValue` |
 | `File` | ID input + status indicator + clear button | `strValue` |
 | `Relator` | Repeatable rows: add, remove with undo, duplicate, collapse, reorder by drag or arrow keys (SH1012) | `shChildrenRelatorItems` |
+| `Blocks` | Typed block body: insert menu, reorder by drag or arrow keys, marks from the selection, paste as blocks (SH1017) | `blocksValue` |
 | `Tab` | Groups fields into tabs (container, no data) | none |
 
 ### WidgetProps Interface
@@ -1964,3 +1965,41 @@ exactly the thing a curator could mistake for having saved it.
 **Not done:** the split view with a persisted ratio. The editor is a vertical stack of section
 cards, and a two-pane layout is a change to the page's shape rather than an addition to it. The
 preview is a card in that stack for now.
+
+## The block editor, and why it is not a contentEditable (SH1017)
+
+The widget `Blocks` replaces called `document.execCommand` for bold, italic, lists, link and code,
+asked for every URL with `prompt()`, and had no paste handling — so a paste from a word processor
+arrived as that processor's spans. Every one of those is a symptom of editing **markup** in the
+browser's own editor and then trying to get a document back out.
+
+SH1015 made the document a list of typed blocks whose inline emphasis is a range over the block's
+own text. A range is exactly what a plain `<textarea>` already reports — `selectionStart` and
+`selectionEnd` — so a mark is applied by **reading two numbers**, not by asking the browser to
+mutate a DOM and then parsing what it did. The editor is therefore ordinary form controls, which is
+also what makes every gesture keyboard-reachable without arranging for it.
+
+**The cost is named rather than hidden:** emphasis is not shown bold while typing. It appears as a
+removable chip under the field carrying the text it covers, and the page's live preview (SH1014)
+renders the real thing. That is a worse WYSIWYG and a better document — and the document is what a
+front end, an agent and a diff all read.
+
+**Routing is by widget, never by the value's shape.** A blocks document and a relator's rows are
+both arrays of objects, so `buildAttrFromValue` would have handed a body to the relator editor. A
+`Blocks` field goes to its own `blocksValue` slot, and an emptied one answers `[]` rather than
+`null` — removing the last block is an edit that has to survive the save.
+
+**Accessibility is in the construction, not added after.** Every block is a `<section>` labelled
+*Block 3 of 7, heading*; inserts, removals and moves are announced through a polite live region,
+because a move has no visual anchor for a screen reader and the keyboard path is the one a
+screen-reader user takes. Drag has ↑/↓ buttons as its equivalent.
+
+**Paste is a document, not a string.** Clipboard HTML is parsed and only the shapes the model names
+survive — headings, paragraphs, list items, quotes, code. A `<script>` produces no block, because a
+shape with no name is not content this instance can store. Text is taken as `textContent`, so a
+paste can never introduce a tag; text that *looks* like a tag is stored as the characters it is and
+escaped by SH1016's renderer, which is the difference between storing markup and storing prose.
+
+`lib/blocks.ts` mirrors the server's vocabulary so the editor offers only what `ShBlocks` accepts.
+`blankBlock("heading")` sets `level` for that reason: an editor that can compose a document the
+instance will refuse teaches its user a shape that does not exist.

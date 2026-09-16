@@ -11,6 +11,7 @@ import { AceEditorWidget } from "./ace-editor.widget"
 import { ContentSelectWidget } from "./content-select.widget"
 import { FileWidget } from "./file.widget"
 import { RelatorWidget } from "./relator.widget"
+import { BlocksWidget } from "./blocks.widget"
 import { TabWidget } from "./tab.widget"
 
 export interface WidgetProps {
@@ -35,6 +36,8 @@ const WIDGET_MAP: Record<string, React.ComponentType<WidgetProps>> = {
   "Content Select": ContentSelectWidget,
   "File": FileWidget,
   "Relator": RelatorWidget,
+  // SH1017 — the body an agent can address a paragraph of, edited as blocks.
+  "Blocks": BlocksWidget,
   "Tab": TabWidget,
 }
 
@@ -55,5 +58,6 @@ export {
   ContentSelectWidget,
   FileWidget,
   RelatorWidget,
+  BlocksWidget,
   TabWidget,
 }

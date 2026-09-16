@@ -37,6 +37,15 @@ export type ShPostAttr = {
   }
   shChildrenPostAttrs?: ShPostAttr[]
   shChildrenRelatorItems?: ShRelatorItem[]
+  /**
+   * SH1017 — a `Blocks` field's document.
+   *
+   * Its own slot and not `shChildrenRelatorItems`, although both are arrays of objects: the
+   * form used to route by the VALUE's shape, so a blocks array would have been read as
+   * relator rows and rendered by the wrong widget. The widget decides, as it does for the
+   * file projection.
+   */
+  blocksValue?: unknown[]
 }
 
 export type ShRelatorItem = {

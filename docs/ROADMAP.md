@@ -63,7 +63,6 @@
 
 ## Block BC — The authoring surface, field by field
 
-- 📋 **SH1017** (deps: SH1015 ✅) **a curator has no editor for block bodies, only the execCommand toolbar over a contentEditable** — Blocks stored and delivered are unusable by a person without a slash menu, drag handles and keyboard moves, so curators would keep choosing the HTML widget. → §LXVIII.9
 - 📋 **SH1018** (deps: SH1010 ✅) **changing a post type leaves existing content violating it, with no report and no migration** — Constraints are checked on write only, and a renamed or removed field leaves every existing post holding data under a key the model no longer declares. → §LXVIII.10
 - 📋 **SH1019** (deps: SH1006, SH1007) **a field cannot ask the connected agent for a suggestion it can apply** — The assistant's reference design offers a suggested title with a button to apply it, and Shio's only route to an answer is a request from the dock. → §LXVIII.11
 - 📋 **SH1090** (deps: —) **no console page can block an in-app navigation, because the router is not a data router** — useBlocker and usePrompt both call useDataRouterContext, and main.tsx mounts BrowserRouter, so a form with unsaved work can only catch a tab close. → §LXVIII.12

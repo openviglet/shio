@@ -1792,26 +1792,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.9 The block editor (SH1017)
-
-The current rich-text widget calls document.execCommand for bold, italic, lists, link
-and code, its link tool is prompt(), and it has no paste handling. BC7 gives the body a
-model and nothing to edit it with.
-
-The block widget renders each block as its own editable region with a handle: a slash
-menu inserts a block of any registered type, the handle drags it, and a keyboard chord
-moves it up or down. Inline marks come from a small floating toolbar, links open an
-inline form rather than prompt(), and paste converts clipboard HTML into blocks through
-the same allow-list the sanitizer uses, so a paste from a word processor becomes
-paragraphs and headings instead of spans. Image and reference blocks open the existing
-content browser dialog.
-
-It meets BG's accessibility rules from the start: every block region is labelled with
-its type and position, moves are announced, and every mouse gesture has a keyboard path.
-Undo covers block moves as well as text. The assertions insert, move and delete blocks
-by keyboard alone, paste a document with headings, and compare the stored array with the
-expected canonical form.
-
 ### LXVIII.10 A model change reconciled with the content it governs (SH1018)
 
 BC2 protects every row written after it and says nothing about rows already stored: a

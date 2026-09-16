@@ -24,6 +24,7 @@ import enHome from "./locales/en/home.json";
 import enStaticFile from "./locales/en/staticFile.json";
 import enNote from "./locales/en/note.json";
 import enInsights from "./locales/en/insights.json";
+import enBlocks from "./locales/en/blocks.json";
 import enReview from "./locales/en/review.json";
 import enMarketplace from "./locales/en/marketplace.json";
 
@@ -48,6 +49,7 @@ import ptHome from "./locales/pt/home.json";
 import ptStaticFile from "./locales/pt/staticFile.json";
 import ptNote from "./locales/pt/note.json";
 import ptInsights from "./locales/pt/insights.json";
+import ptBlocks from "./locales/pt/blocks.json";
 import ptReview from "./locales/pt/review.json";
 import ptMarketplace from "./locales/pt/marketplace.json";
 
@@ -56,7 +58,7 @@ const en = {
   ...enContent, ...enAdmin, ...enGraphql, ...enUniversalEditor, ...enApiToken,
   ...enTenantAdmin, ...enAuthProvider, ...enExchangeProvider, ...enEmailConfig,
   ...enActivity, ...enAcl, ...enSiteWebhook, ...enHome, ...enStaticFile, ...enReview, ...enNote, ...enMarketplace,
-  ...enInsights,
+  ...enInsights, ...enBlocks,
 };
 
 const pt = {
@@ -64,7 +66,7 @@ const pt = {
   ...ptContent, ...ptAdmin, ...ptGraphql, ...ptUniversalEditor, ...ptApiToken,
   ...ptTenantAdmin, ...ptAuthProvider, ...ptExchangeProvider, ...ptEmailConfig,
   ...ptActivity, ...ptAcl, ...ptSiteWebhook, ...ptHome, ...ptStaticFile, ...ptReview, ...ptNote, ...ptMarketplace,
-  ...ptInsights,
+  ...ptInsights, ...ptBlocks,
 };
 
 i18n

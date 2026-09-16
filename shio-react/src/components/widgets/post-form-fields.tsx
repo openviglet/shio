@@ -163,6 +163,15 @@ function buildAttrFromValue(field: ShPostTypeSchemaField, value: unknown): ShPos
     shPostTypeAttr,
   }
 
+  // SH1017 — a Blocks field is routed by its WIDGET, before the value's shape is consulted. Both a
+  // blocks document and a relator's rows are arrays of objects, so shape alone would hand a body to
+  // the relator editor — the same "the widget decides, never the post-type" rule the file
+  // projection follows.
+  if (field.widget === "Blocks") {
+    attr.blocksValue = Array.isArray(value) ? value : []
+    return attr
+  }
+
   if (value == null) return attr
 
   if (Array.isArray(value)) {
@@ -192,6 +201,11 @@ function buildAttrFromValue(field: ShPostTypeSchemaField, value: unknown): ShPos
 }
 
 function extractValueFromAttr(field: ShPostTypeSchemaField, attr: ShPostAttr): unknown {
+  // SH1017 — and back out the same way, answering [] for an emptied document rather than null, for
+  // the reason a repeatable field does: removing the last block is an edit that has to survive.
+  if (field.widget === "Blocks") {
+    return attr.blocksValue ?? []
+  }
   // SH1012 — a repeatable field answers with its array even when the array is empty. Falling
   // through to `strValue ?? null` would make "the curator removed the last item" indistinguishable
   // from "this field was never filled in", and the removal would not survive the save.
