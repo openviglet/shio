@@ -1754,6 +1754,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BC — The authoring surface, field by field
 
+- **SH1009** — ShRequiredFields is the one evaluator of "is this page complete", and a publish is refused when it is not: the write service every publish passes through (the console's press, REST's, the batch's post.publish, the scheduler's sweep), plus the create that goes straight to PUBLISHED, which is the one publish that does not. A draft is never refused — drafts are where work happens, and refusing a half-written one would be worse than the defect — so the line is the publish, and the refusal is a teaching 400 whose at is data.field, which SH955's console reader already maps onto the input. The plans report it instead of refusing, in SH997's shape, so a plan of ten ops still reports ten: the console's publish preview and the batch's dry run both say which fields would stop it. Verify's own required-field-empty rule now calls the same evaluator, because two definitions of empty would mean a page verify calls complete and a publish refuses. Two defects the suites found in the first version: a post-type's attribute set is flat, so an unfiltered walk asked the document for a Relator child's field and every first-party section post refused to publish; and refusing regardless of SH998's waiver put a second lock on the one door that task built, so a recorded waiver — refused to an agent, written to the audit row and the revision — publishes.
+
 ## Block BD — Finding, selecting and acting on content
 
 ## Block BE — Media: what the bytes mean

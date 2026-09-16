@@ -294,7 +294,10 @@ class ShAgentVerifyTest {
             assertThat(finding.field()).isEqualTo("headline");
             assertThat(finding.severity()).isEqualTo(ShAgentReport.ERROR);
             // P6: a finding an agent cannot act on has spent tokens to produce a feeling.
-            assertThat(finding.fix()).contains("post.upsert");
+            // SH1009 changed what the fix says, and the change is the point: the remedy is no
+            // longer "write it with an op" but "a publish refuses this page until you do" —
+            // the rule is enforced at the writer now, and this report is the reader of it.
+            assertThat(finding.fix()).contains("refuses this page");
         });
     }
 

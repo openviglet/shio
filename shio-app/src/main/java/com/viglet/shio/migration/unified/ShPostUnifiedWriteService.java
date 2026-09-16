@@ -30,6 +30,7 @@ import com.viglet.shio.api.history.ShChangedFields;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.post.ShRequiredFields;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.post.unified.ShRestoreTitleConflictException;
@@ -231,6 +232,13 @@ public class ShPostUnifiedWriteService {
         // After the title is derived, never before: a template's title is a *field* (SH183's model
         // is content), so there is nothing to check until the write has decided what it will be.
         shTemplateTitles.checkFree(row);
+
+        // SH1009 — a create straight to PUBLISHED is a publish, and the only one that does not go
+        // through `publish` below. A draft is never refused: drafts are where work happens, and a
+        // rule that refused a half-written page would be worse than the defect it closes.
+        if (state == ShPostState.PUBLISHED) {
+            ShRequiredFields.requireComplete(postType, clean, named(row));
+        }
 
         ShPostUnified saved = shPostUnifiedRepository.save(row);
         shContentAuditService.record(ShContentAction.CREATE, saved.getId(),
@@ -454,6 +462,20 @@ public class ShPostUnifiedWriteService {
     public ShPostUnified publish(String postId, String publisher, String waived) {
         ShPostUnified draft = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
                 .orElseThrow(() -> new IllegalArgumentException("Draft not found: " + postId));
+        // SH1009 — here, and not on each caller, because this method is what every publish in the
+        // product passes through: the console's press, REST's, the agent batch's `post.publish`
+        // and the scheduler's sweep. A required field that is empty stops being somebody's work in
+        // progress and becomes a page a visitor is served missing what its type says it must have.
+        //
+        // Unless a person waived, which is SH998's door and this rule must not put a second lock
+        // on it: `required-field-empty` is a check a site's gate can declare, so a refusal here
+        // that ignored the waiver would make that check the one nothing could ever get past. The
+        // waiver is the sanctioned override — recorded on the audit row AND on the revision, and
+        // refused to an agent outright — so the page that goes live incomplete goes live with a
+        // person's name and their reason attached to it.
+        if (waived == null) {
+            requireCompleteToPublish(draft);
+        }
         if (isDue(draft.getPublishScheduledDate())) {
             draft.setPublishScheduledDate(null);
             shPostUnifiedRepository.save(draft);
@@ -1124,6 +1146,63 @@ public class ShPostUnifiedWriteService {
             trimmed = trimmed.substring(1);
         }
         return trimmed.isBlank() ? null : trimmed;
+    }
+
+    /**
+     * Refuses a publish whose page is missing a field its type declares required (SH1009).
+     *
+     * <p>Public because the agent's batch calls it while <b>planning</b>: a dry run that reported a
+     * publish the apply would refuse is a plan an agent acts on and then fails, which is the one
+     * thing a plan exists to prevent. One evaluation for both, rather than the batch parsing the row
+     * a second time and deciding for itself what empty means.</p>
+     *
+     * <p>Read off the stored row rather than off a request body, which is what makes it true of
+     * every writer: a caller that sent only the field it was changing still publishes the whole
+     * document, and a check over the request would pass a page whose title was emptied yesterday.</p>
+     *
+     * <p>Unparseable data is <b>not</b> a required-field refusal. It is a different defect with a
+     * different remedy, and reporting it as an empty field would send whoever reads the message to
+     * fill in a value that is already there.</p>
+     */
+    public void requireCompleteToPublish(ShPostUnified draft) {
+        List<String> empty = requiredEmpty(draft);
+        if (!empty.isEmpty()) {
+            throw new ShRequiredFields.RequiredFieldEmptyException(empty, named(draft));
+        }
+    }
+
+    /**
+     * The required fields this stored row leaves empty (SH1009) — what a <b>plan</b> reports.
+     *
+     * <p>A dry run says what the apply would refuse rather than refusing: the console's publish
+     * preview and the batch's plan both follow SH997's shape, where a gate that would stop the
+     * publish is a sentence on the change rather than a thrown refusal. A plan that stopped at the
+     * first problem would report one op of ten, which is most of what a plan is for.</p>
+     */
+    public List<String> requiredEmpty(ShPostUnified draft) {
+        if (draft == null) {
+            return List.of();
+        }
+        JsonNode data;
+        try {
+            data = objectMapper.readTree(draft.getData() == null ? "{}" : draft.getData());
+        } catch (JacksonException malformed) {
+            // silent-catch: stored data this service cannot parse is not a required-field finding,
+            // and the paths that DO report it — verify's `invalid-data` rule and the read that
+            // surfaces it — are unchanged by this guard. Refusing here would turn one defect into
+            // a message about another one.
+            return List.of();
+        }
+        return ShRequiredFields.missing(draft.getShPostType(), data);
+    }
+
+    /** What to call this page in a refusal: what a person would call it, never a uuid. */
+    private static String named(ShPostUnified draft) {
+        if (draft.getTitle() != null && !draft.getTitle().isBlank()) {
+            return "\"" + draft.getTitle() + "\"";
+        }
+        return draft.getFurl() != null && !draft.getFurl().isBlank()
+                ? draft.getFurl() : "this page";
     }
 
     private static String normalizeUrl(String furl) {

@@ -21,6 +21,7 @@ import com.viglet.shio.api.gate.ShPublishGateService;
 import com.viglet.shio.api.post.ShPostDrift;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
 import tools.jackson.databind.ObjectMapper;
@@ -52,11 +53,15 @@ public class ShConsolePublishPlan {
     private final ShAddressResolver shAddressResolver;
     private final ShPublishGateService shPublishGateService;
     private final ObjectMapper objectMapper;
+    /** SH1009 — the one evaluator of "is this page complete", shared with the writer. */
+    private final ShPostUnifiedWriteService shPostUnifiedWriteService;
 
     public ShConsolePublishPlan(ShPostUnifiedRepository shPostUnifiedRepository,
                                 ShAddressResolver shAddressResolver,
                                 ShPublishGateService shPublishGateService,
-                                ObjectMapper objectMapper) {
+                                ObjectMapper objectMapper,
+                                ShPostUnifiedWriteService shPostUnifiedWriteService) {
+        this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shAddressResolver = shAddressResolver;
         this.shPublishGateService = shPublishGateService;
@@ -102,6 +107,17 @@ public class ShConsolePublishPlan {
         if (stopped != null) {
             change = new ShAgentChangeSet.Change(change.op(), change.address(), change.action(),
                     (change.detail() == null ? "" : change.detail() + "; ") + stopped, postId);
+        }
+        // SH1009 — and the same for a field the type says must be filled in. The preview is where a
+        // curator finds out, which is the whole reason it exists: the alternative is pressing
+        // Publish and reading the refusal.
+        List<String> incomplete = draft.map(shPostUnifiedWriteService::requiredEmpty)
+                .orElseGet(List::of);
+        if (!incomplete.isEmpty()) {
+            change = new ShAgentChangeSet.Change(change.op(), change.address(), change.action(),
+                    (change.detail() == null ? "" : change.detail() + "; ")
+                            + "this publish is refused: " + String.join(", ", incomplete)
+                            + " required and empty", postId);
         }
         return new ShAgentChangeSet(true, 1, change.isChange() ? 1 : 0, List.of(change));
     }

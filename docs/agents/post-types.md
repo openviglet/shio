@@ -350,3 +350,39 @@ The rule the lint enforces is narrow on purpose: a sort is flagged only when its
 this codebase knows repeats — `ordinal` and `position`, both curator-editable numbers nothing forbids
 from colliding. A name, an id, an address or a URI needs no tiebreaker, and demanding one is how a
 lint gets muted.
+
+## Required means required, on every writer (SH1009)
+
+A post-type has always been able to declare a field required. Nothing enforced it. The console's
+form painted the asterisk and posted the data unconditionally; REST's create and update validated
+the post-type name and nothing else; the agent's batch refused an **undeclared** key and never an
+empty required one. The only enforcement anywhere was `required-field-empty` in `shio verify` —
+after the fact, and only if somebody ran it — so a page missing its title published, served, and
+reached a reviewer looking complete.
+
+**A draft may be incomplete; a publish may not.** Drafts are where work happens, and a rule that
+refused an incomplete one would be worse than the defect: a curator could not save a page they had
+half written, and an agent could not build one in two ops. So saving is never refused and publishing
+always is — the moment the page stops being somebody's work in progress and becomes what a visitor
+is served. The refusal is a teaching 400 whose `at` is `data.<field>`, which the console's problem
+reader already maps onto the input, so the curator lands in the box to type in.
+
+`ShRequiredFields` is the one evaluator, and the reason it is extracted rather than written where it
+was needed is the verify rule: two definitions of "empty" would mean a page verify calls complete
+and a publish refuses. Three callers — the write service (which every publish passes through: the
+console's, REST's, the batch's, the scheduler's), the plans (the console's publish preview and the
+batch's dry run, which report it in SH997's shape rather than refusing, so a plan of ten ops reports
+ten), and verify.
+
+Two things the first draft of it got wrong, both caught by a suite rather than by review:
+
+- **A post-type's attribute set is flat.** A Relator's child fields carry the same post-type, so an
+  unfiltered walk asked the document for `title` when `title` is a column inside each row of
+  `features` — and every first-party section post refused to publish, naming a field it was never
+  supposed to carry. The filter is `getShParentPostTypeAttr() == null`, which is what verify already
+  did.
+- **A gate's waiver has to get past it.** `required-field-empty` is a check a site's gate can
+  declare, so a refusal that ignored SH998's waiver would put a second lock on the one door that
+  task built. A recorded waiver publishes; it is refused to an agent outright and written to both
+  the audit row and the revision, so the page that goes live incomplete carries a person's name and
+  their reason.

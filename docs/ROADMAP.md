@@ -62,8 +62,7 @@
 
 ## Block BC — The authoring surface, field by field
 
-- 📋 **SH1009** (deps: —) **a required field saves empty from the console, from REST and from the agent batch alike** — The form paints an asterisk and nothing reads required again, and the only enforcement is required-field-empty, raised later if somebody runs verify. → §LXVIII.1
-- 📋 **SH1010** (deps: SH1009) **a field can declare only whether it is required, with no length, pattern, range, enum or uniqueness** — The attribute definition carries name, label, widget, required and a few flags and no constraint vocabulary, so every rule beyond presence lives in someone's head. → §LXVIII.2
+- 📋 **SH1010** (deps: SH1009 ✅) **a field can declare only whether it is required, with no length, pattern, range, enum or uniqueness** — The attribute definition carries name, label, widget, required and a few flags and no constraint vocabulary, so every rule beyond presence lives in someone's head. → §LXVIII.2
 - 📋 **SH1011** (deps: SH985 ✅) **the post editor has no dirty state, no autosave and no unsaved-change guard** — Closing the tab mid-edit loses everything silently, while the design system ships the unsaved cue and the backend ships the field-level merge verb. → §LXVIII.3
 - 📋 **SH1012** (deps: —) **Relator, the only repeatable field, is read-only, while the documentation says it adds and removes items** — The widget takes onChange in its props and never calls it and prints that editing is disabled, while the whole data chain for nested items round-trips. → §LXVIII.4
 - 📋 **SH1013** (deps: SH955 ✅) **the editor never calls the content intelligence the backend already computes for the page being edited** — The console makes no request to the agent surface, so dozens of verify rules and a structural page digest stay invisible to the person who could fix what they find. → §LXVIII.5

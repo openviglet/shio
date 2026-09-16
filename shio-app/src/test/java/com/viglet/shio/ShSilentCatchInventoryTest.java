@@ -280,7 +280,13 @@ class ShSilentCatchInventoryTest {
             // a changelog that has not run — and the honest consequence is that the address guard
             // is off until it has, not that content is wrong. Refusing to start over it would take
             // the instance down to protect a constraint that has nothing to protect yet.
-            "migration", 2,
+            // SH1009 raised this from 2 to 3. `ShPostUnifiedWriteService.requiredEmpty`
+            // reads the stored document to decide whether a publish is complete, and data
+            // it cannot parse is not a required-field finding: it is a different defect
+            // with a different remedy, already reported by verify's own rule and by the
+            // read that surfaces it. Refusing here would answer one problem with a message
+            // about another, sending whoever read it to fill in a value that is there.
+            "migration", 3,
             // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
             // as "no text", and does not record it. The render path already reports that exact post
             // as a CONTENT degradation, which is the branch of SH270's own rule this falls under —

@@ -1766,27 +1766,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.1 Required means required, on every writer (SH1009)
-
-The post form renders the required marker and posts data unconditionally. On the backend
-the create and update endpoints validate only the post-type name, and the batch refuses
-undeclared keys but never an empty required one. The only enforcement is the verify
-rule, which runs after the fact, so a draft missing its title reaches review looking
-complete.
-
-One evaluator, called from exactly three places so the surfaces cannot disagree: the
-unified write service, the batch's post upsert beside its expectation check, and the
-draft merge. A draft may be incomplete, since drafts are where work happens, so saving a
-draft with an empty required field succeeds and returns a finding; publishing refuses
-with a teaching 400 whose at is data.<field> and whose fix names it. A dry run returns
-the same findings.
-
-This task enforces required alone; BC2 adds the rest of the vocabulary through the same
-evaluator. The console reads the finding onto the field through AV6's problem reader.
-The assertion carries the id on all three writers: publishing a post with an empty
-required field is refused by the console, REST and the batch, and saving it as a draft
-is not.
-
 ### LXVIII.2 A constraint vocabulary, evaluated where required already is (SH1010)
 
 ShPostTypeAttr carries name, label, description, widget, required, isTitle, isSummary,

@@ -42,6 +42,7 @@ import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding;
 import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.post.ShRequiredFields;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.post.type.ShVocabularyPostTypes;
@@ -1594,10 +1595,14 @@ public class ShAgentVerifyService {
         }
         JsonNode value = data.get(field);
 
-        if (attr.getRequired() == 1 && !CONTAINER_WIDGETS.contains(widget) && isEmpty(value)) {
+        // SH1009 — the decision is ShRequiredFields', not this rule's, and that is the point of
+        // moving it: a publish refuses on the same evaluation, so there is no page this reports as
+        // complete and the writer refuses, or the other way round.
+        if (attr.getRequired() == 1 && !CONTAINER_WIDGETS.contains(widget)
+                && ShRequiredFields.isEmpty(value)) {
             findings.add(Finding.error(check, "required-field-empty", address, field,
                     "Required field '" + field + "' is empty.",
-                    "Set it with a post.upsert op on POST /api/v2/agent/batch, or drop the "
+                    "Fill it in — a publish refuses this page until you do (SH1009) — or drop the "
                             + "required flag on the post-type if it is genuinely optional."));
         }
         // SH154 — a Multi Select that declares it holds post URLs (the SH95 vocabulary's
