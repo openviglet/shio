@@ -30,6 +30,8 @@ import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unif
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
 import { fieldOf, headlineOf, problemOf, reportProblem } from "@/lib/problem"
+import { isDirty } from "@/lib/dirty"
+import { useUnsavedGuard } from "@/hooks/use-unsaved-guard"
 import {
   conflictsBetween,
   PostConflictDialog,
@@ -128,6 +130,20 @@ export default function PostUnifiedEditPage() {
     load()
   }, [postId])
 
+  /**
+   * SH1011 — is there unsaved work here?
+   *
+   * Derived from a canonical serialization against the post as it was loaded, rather than tracked
+   * by a flag somebody has to remember to set: a widget hands back a new object on every keystroke,
+   * so reference equality says dirty always, and a flag set on change and cleared on save is one
+   * more thing that can be wrong in the direction that loses work.
+   */
+  const dirty = useMemo(() => post != null && isDirty(post.data ?? {}, data), [post, data])
+
+  // The browser asks before the tab closes, and only while there is something to lose. An in-app
+  // route change still walks away silently — that needs a data router (SH1090).
+  useUnsavedGuard(dirty)
+
   const schema = useMemo(() => postFormSchema(post?.shPostType), [post])
   const postTypeName = post?.shPostType?.title || post?.shPostType?.name
 
@@ -138,10 +154,19 @@ export default function PostUnifiedEditPage() {
 
   const hasSite = Boolean(post?.shFolder?.shSite?.id || post?.shSite?.id)
 
-  const navigateBack = () =>
-    parentFolderId
-      ? navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
-      : navigate(ROUTES.CONTENT_ROOT)
+  const navigateBack = () => {
+    // SH1011 — this page's own exit, which is the one in-app navigation it can still guard: a
+    // router blocker needs a data router (SH1090), and the alternative to asking here is Cancel
+    // meaning "discard" without ever saying so.
+    if (dirty && !globalThis.confirm(t("content.discardUnsaved"))) {
+      return
+    }
+    if (parentFolderId) {
+      navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
+    } else {
+      navigate(ROUTES.CONTENT_ROOT)
+    }
+  }
 
   async function handlePreview() {
     setIsPreviewing(true)
@@ -304,6 +329,9 @@ export default function PostUnifiedEditPage() {
         onCancel={navigateBack}
         loading={isLoading}
         titleMissing={!post.title}
+        // SH1011 — the design system has rendered this cue since it shipped, on a prop this page
+        // was the only one not passing.
+        dirty={dirty}
         saveBadges={
             <>
               <BadgeColorful text={postTypeName || ""} className="text-xs" />

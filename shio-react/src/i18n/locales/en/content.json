@@ -290,5 +290,6 @@
   "content.hintMinItems": "at least {{n}} entries",
   "content.hintMaxItems": "at most {{n}} entries",
   "content.hintUnique": "must be unique",
-  "content.hintRecommended": "{{n}} characters reads best (advice, never refused)"
+  "content.hintRecommended": "{{n}} characters reads best (advice, never refused)",
+  "content.discardUnsaved": "You have unsaved changes on this page. Leave without saving?"
 }

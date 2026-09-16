@@ -1823,3 +1823,27 @@ the curator last clicked.
 
 Two kinds in the composer, not three: a reply is a note under another one, and the rail threads by
 page, so offering it would be a control that means nothing until a thread exists to reply into.
+
+## Unsaved work, and the guard this router cannot have (SH1011)
+
+The post editor held its data in `useState` and never compared it with the post it loaded, so
+nothing on the page knew the difference between "opened and read" and "typed into and not saved".
+Closing the tab lost everything silently. The design system has rendered an **Unsaved changes** cue
+on `dirty` since it shipped, and the one page that needed it passed only `titleMissing`.
+
+`dirty` is **derived**, not tracked: `isDirty(post.data, data)` compares a canonical serialization —
+recursively sorted keys, `null` folded to `""` — rather than a flag set on change and cleared on
+save, which is one more thing that can be wrong in the direction that loses work. Two failures that
+rule exists for, both of which make the cue useless by leaving it always on: a widget hands back the
+same document with its keys in a different order, and a widget that clears its input hands back
+`null` where the load had `""`. A list's order is *not* folded — a reordered list is a changed list.
+
+**`beforeunload` is registered only while there is something to lose**, and removed when there is
+not. A permanently-registered handler makes every reload of every clean page show the browser's
+dialog, which is how a guard becomes the thing people click through without reading.
+
+**There is no router blocker, and there cannot be one yet.** React Router 7's `useBlocker` — and
+`unstable_usePrompt`, which wraps it — call `useDataRouterContext`, and `main.tsx` mounts
+`<BrowserRouter>`: calling either throws rather than degrading. So the editor guards its own exit
+(Cancel asks) and the browser guards the rest, while an in-app route change still walks away
+silently. SH1090 is the change that closes it, for every page at once.

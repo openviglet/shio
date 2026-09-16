@@ -290,5 +290,6 @@
   "content.hintMinItems": "pelo menos {{n}} entradas",
   "content.hintMaxItems": "no máximo {{n}} entradas",
   "content.hintUnique": "deve ser único",
-  "content.hintRecommended": "{{n}} caracteres lê melhor (sugestão, nunca recusada)"
+  "content.hintRecommended": "{{n}} caracteres lê melhor (sugestão, nunca recusada)",
+  "content.discardUnsaved": "Há alterações não salvas nesta página. Sair sem salvar?"
 }
