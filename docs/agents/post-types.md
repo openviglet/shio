@@ -485,6 +485,10 @@ whose rules need an application running is one nobody checks.
   falls through to nothing, because a projection that silently drops a block is how an author's work
   disappears through a round trip.
 
+A heading is a field of a block rather than a tag to be found, so an outline can be *read* off the
+document (P9). The digest still parses the rendered page, which is the right subject for it — what
+changed is that the document itself can now answer the question without markup in the way.
+
 **Marks are ranges, not nesting.** `{from, to, type}` over the block's own text. `<b><i>x</i></b>`
 and `<i><b>x</b></i>` are one content with two spellings, which is precisely what makes `innerHTML`
 uncanonical; a range has one. They are applied back to front when writing Markdown, so an earlier

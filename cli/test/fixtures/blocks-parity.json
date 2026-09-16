@@ -1,0 +1,45 @@
+[
+  {
+    "name": "headings, prose and a list",
+    "blocks": [
+      { "key": "b1", "type": "heading", "level": 2, "text": "Why" },
+      { "key": "b2", "type": "paragraph", "text": "Because." },
+      { "key": "b3", "type": "list", "ordered": false, "items": ["one", "two"] },
+      { "key": "b4", "type": "list", "ordered": true, "items": ["first", "second"] }
+    ]
+  },
+  {
+    "name": "marks, including two in one paragraph",
+    "blocks": [
+      {
+        "key": "b1",
+        "type": "paragraph",
+        "text": "one two three",
+        "marks": [
+          { "from": 0, "to": 3, "type": "strong" },
+          { "from": 8, "to": 13, "type": "em" }
+        ]
+      },
+      {
+        "key": "b2",
+        "type": "paragraph",
+        "text": "call run now",
+        "marks": [{ "from": 5, "to": 8, "type": "code" }]
+      }
+    ]
+  },
+  {
+    "name": "code, image, quote and the two comment blocks",
+    "blocks": [
+      { "key": "b1", "type": "code", "language": "js", "text": "x()" },
+      { "key": "b2", "type": "image", "src": "/a.png", "alt": "A chart" },
+      { "key": "b3", "type": "quote", "text": "Said once." },
+      { "key": "b4", "type": "embed", "url": "https://example.com/v" },
+      { "key": "b5", "type": "reference", "address": "post:Acme/about" }
+    ]
+  },
+  {
+    "name": "an empty document",
+    "blocks": []
+  }
+]

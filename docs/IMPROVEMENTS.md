@@ -1792,32 +1792,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.7 A block content model, stored and addressable (SH1015)
-
-The model landed: `ShBlocks` validates on the way in from both batch write paths,
-`canonical` gives P5 its one spelling, `markdown` gives P4 real headings, and an unknown
-type is refused with the registered list. The `Blocks` widget is seeded and a clean
-instance creates it.
-
-What is left is the files side, and the obstacle is specific. `sidecarsOf` writes `text:
-String(data[field])` and `projectedPost` reads it back as a string — the whole sidecar
-mechanism assumes the value **is** one, deliberately and verbatim, because SH253 showed
-that normalizing a body's bytes makes every later pull report a local change nobody
-made. A blocks value is an array, so it does not fit that contract without a JSON-aware
-branch on both sides, and the base fingerprint the three-way merge compares is taken
-from those bytes.
-
-The harder half is the body form the design actually asked for. Blocks → Markdown is
-what P4 wants, and Markdown → blocks cannot recover a block's `key`, which is its
-identity across a reorder. Regenerating keys on every push would make each `shio push`
-rewrite every block's identity, which is the reordering defect this model exists to
-prevent.
-
-So the round-trip guard has to say which property it holds. Markdown → blocks → Markdown
-being stable is checkable and useful; blocks → Markdown → blocks is not achievable
-without carrying keys in the file. Decide that before writing the parser, because the
-answer picks the file format.
-
 ### LXVIII.8 Blocks delivered, with a rendered view beside them (SH1016)
 
 BC7 stores a body as typed blocks. Delivery still thinks of a body as a string, which is

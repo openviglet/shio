@@ -763,3 +763,34 @@ later reader does not have to re-derive it from the absence of a parser.
 **An artefact outside the base has to name an authoritative side.** That is asserted, not just
 written: "outside the merge" with nobody winning is how a local edit disappears on the next pull
 with no report, which is the failure this whole table is about.
+
+## A blocks body is a Markdown file (SH1015)
+
+A `Blocks` field is the body ahead of an `HTML Editor`, because it *is* the document: blocks project
+to Markdown natively where an HTML body projects to it only by being one. Ahead rather than instead,
+and no existing file moves — no post-type had a Blocks field before the widget existed.
+
+**`blockKeys:` in the frontmatter.** A block's `key` is its identity and Markdown has nowhere to put
+one. The alternatives were a comment per block in the body, which litters the file P4 exists to make
+pleasant, and deriving the key from content, which changes identity whenever a paragraph is edited —
+the opposite of what a key is for. An ordered list beside the body is exact for an unedited file,
+which is the property `shio pull` needs: it is what makes a re-pull write identical bytes and the
+three-way merge's base trustworthy.
+
+Its cost is named rather than hidden: **insert a paragraph by hand and the keys after it shift by
+one**, so those blocks are re-identified. Nothing outside the document references a key today, so the
+price is that an editor re-keys them once. Content is never lost or reordered, which is the property
+that mattered, and `blocks-projection.test.mjs` pins that this is the failure mode rather than a
+worse one.
+
+**The parse keys off `blockKeys:`, never off the post-type.** Reading a file back has not depended
+on the model since SH86 and does not start here: a file that carries the key list carries it for
+this reason only, and one without it keeps a string body.
+
+**The rule is implemented twice, and that is made safe rather than argued about.** `ShBlocks.markdown`
+is the reference and `cli/src/blocks.mjs` is what `shio pull` runs — asking the instance to project
+was the alternative, and a pull that needs a round trip to format a file is not the files tier P4
+describes. Both sides read `cli/test/fixtures/blocks-parity.json`, the Java expectations are written
+by hand rather than generated, and `ShBlocksParityTest` also asserts the corpus covers **every**
+registered block type: a parity corpus missing two types keeps two implementations in step for the
+six it has and says nothing about where they would actually drift.

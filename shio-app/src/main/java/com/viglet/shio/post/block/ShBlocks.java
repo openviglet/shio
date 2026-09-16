@@ -37,8 +37,9 @@ import tools.jackson.databind.node.ObjectNode;
  *       paragraph rather than a byte offset into a blob.</li>
  *   <li><b>P5</b> — {@link #canonical} is byte-identical for equal content. {@code innerHTML} is
  *       not: attribute order, whitespace and entity spelling all vary without the content doing.</li>
- *   <li><b>P9</b> — the digest's outline is <em>read</em> from the headings rather than parsed out
- *       of markup, so it cannot disagree with the document.</li>
+ *   <li><b>P9</b> — a heading is a field of a block, so an outline can be <em>read</em> rather than
+ *       parsed out of markup. The digest still parses the rendered page, which is the right
+ *       subject for it; what changes is that the document itself can now answer the question.</li>
  *   <li><b>P6</b> — an unknown block type is refused with the registered ones listed.</li>
  * </ul>
  *

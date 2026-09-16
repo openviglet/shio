@@ -2336,8 +2336,11 @@ public class ShAgentBatchService {
                             noteSanitized(resolved, post.getShPostType())));
             if (!session.dryRun) {
                 shContentAclService.requireWrite(post.getId());
+                // SH1015 — canonicalized after the checks accepted it, so the row holds the one
+                // spelling and no reader has to normalize what it reads.
                 shPostUnifiedWriteService.update(post.getId(),
-                        new UpdateRequest(resolved.data(), ShPostState.DRAFT, session.actor));
+                        new UpdateRequest(withCanonicalBlocks(resolved, updating).data(),
+                                ShPostState.DRAFT, session.actor));
             }
             return session.change(op, address, Change.UPDATE, undeclared, post.getId());
         }
@@ -2366,7 +2369,10 @@ public class ShAgentBatchService {
         shContentAclService.requireWrite(folder.getId());
         shTenantQuotaService.checkCanCreatePost();
         ShPostUnified created = shPostUnifiedWriteService.create(new CreateRequest(
-                folder.getId(), postType.id(), created0.data(), ShPostState.DRAFT,
+                // SH1015 — the same canonicalization on create, or a post's first write is
+                // the one that stores an uncanonical document.
+                folder.getId(), postType.id(),
+                withCanonicalBlocks(created0, postType).data(), ShPostState.DRAFT,
                 // SH348 — the locale is honoured on create and nowhere else. The writer defaults a
                 // blank one, so absent still means DEFAULT_LOCALE and nothing changes for a
                 // monolingual tree.
@@ -2413,6 +2419,48 @@ public class ShAgentBatchService {
      * carries a UUID. Each is a 400 naming the form the field wants (P6). A value with no scheme is
      * left exactly as sent: it is a URL, and whether it resolves is {@code verify}'s question.</p>
      */
+    /**
+     * SH1015 — a Blocks field is stored in its one spelling.
+     *
+     * <p>P5 is only worth something at the boundary where content enters: canonicalizing on the way
+     * out would leave the stored bytes varying while every read normalized them, so two pulls of an
+     * unchanged post could still differ. Normalizing here means the row holds the canonical form and
+     * every reader — the projection, the digest, the merge's base fingerprint — is looking at the
+     * same bytes the writer meant.</p>
+     *
+     * <p>It runs after {@link #checkBlocks}, so nothing is canonicalized that was not first accepted:
+     * sorting the keys of a document this instance would refuse is work done for a write that is
+     * about to fail.</p>
+     */
+    private ShAgentBatch.Op withCanonicalBlocks(ShAgentBatch.Op op, TypeRef declaredIn) {
+        JsonNode data = op.data();
+        if (data == null || !data.isObject() || declaredIn == null
+                || declaredIn.blockFields().isEmpty()) {
+            return op;
+        }
+        tools.jackson.databind.node.ObjectNode rewritten = null;
+        for (String field : declaredIn.blockFields()) {
+            JsonNode value = data.get(field);
+            if (value == null || !value.isArray()) {
+                continue;
+            }
+            JsonNode canonical = ShBlocks.canonical(value);
+            if (canonical.toString().equals(value.toString())) {
+                continue;
+            }
+            if (rewritten == null) {
+                rewritten = objectMapper.createObjectNode().setAll(
+                        (tools.jackson.databind.node.ObjectNode) data);
+            }
+            rewritten.set(field, canonical);
+        }
+        if (rewritten == null) {
+            return op;
+        }
+        return new ShAgentBatch.Op(op.op(), op.address(), op.type(), op.folder(), op.to(),
+                rewritten, op.when(), op.locale(), op.translationOf(), op.url(), op.expect());
+    }
+
     private ShAgentBatch.Op withResolvedRelations(ShAgentBatch.Op op, ShAddress address,
                                                   ShPostType postType) {
         JsonNode data = op.data();

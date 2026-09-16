@@ -39,6 +39,8 @@
  *    sidecar, named in the frontmatter the way `body:` already names the document body.
  */
 
+import { BLOCK_KEYS, keysOf, toMarkdown, fromMarkdown } from "./blocks.mjs";
+
 /** Frontmatter delimiter. */
 const FENCE = "---";
 
@@ -46,7 +48,7 @@ const FENCE = "---";
 // SH348 — `locale` sits after `folder` because it is *state* the server reports, unlike `publish`
 // and `movedFrom` after it, which are instructions the author writes. The order is observable in
 // every file, so it is a decision rather than an accident (P5).
-const META_ORDER = ["site", "url", "type", "folder", "locale", "translationOf", "publish", "movedFrom", "body"];
+const META_ORDER = ["site", "url", "type", "folder", "locale", "translationOf", "publish", "movedFrom", "body", BLOCK_KEYS];
 
 /**
  * The widgets whose value is **code**, and the extension each one's sidecar takes (SH191).
@@ -89,10 +91,11 @@ const NUMERIC = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
 const NEEDS_QUOTE_START = /^[-?:,[\]{}#&*!|>'"%@`]/;
 
 /**
- * The field a post's body maps to: the first rich-text field by ordinal.
+ * The field a post's body maps to: a `Blocks` field if the type has one, else the first
+ * `HTML Editor` by ordinal.
  *
- * The choice is narrow on purpose — only an `HTML Editor` is treated as the body, never
- * a `Text Area`. A rule that guessed at the "main" text field would move the body from
+ * The choice is narrow on purpose — a `Text Area` is never the body, and neither is any other
+ * prose field. A rule that guessed at the "main" text field would move the body from
  * one field to another when someone added a field, which is a silent content change in a
  * diff that looks like a formatting change. The chosen name is written into the file as
  * `body:`, so reading a file back never depends on the model at all.
@@ -102,10 +105,25 @@ const NEEDS_QUOTE_START = /^[-?:,[\]{}#&*!|>'"%@`]/;
  */
 export function bodyFieldFor(def) {
   const fields = (def?.fields ?? []).filter((field) => field?.name);
+  // SH1015 — a `Blocks` field is the body ahead of an `HTML Editor`, because it IS the document:
+  // blocks project to Markdown natively where an HTML body projects to it only by being one.
+  // Ahead rather than instead, and this moves no existing file: no post-type had a Blocks field
+  // before the widget existed, so the rule changes only the types that adopt it.
+  const blocks = fields
+    .filter((field) => field.widget === "Blocks")
+    .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0));
+  if (blocks.length) return blocks[0].name;
   const rich = fields
     .filter((field) => field.widget === "HTML Editor")
     .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0));
   return rich.length ? rich[0].name : null;
+}
+
+/** SH1015 — whether a post-type's body field holds blocks rather than markup. */
+export function bodyIsBlocks(def) {
+  const body = bodyFieldFor(def);
+  return Boolean(body) && (def?.fields ?? [])
+    .some((field) => field?.name === body && field.widget === "Blocks");
 }
 
 /**
@@ -358,10 +376,15 @@ export function serializePost(doc, bodyField = null, sidecarFields = []) {
   // The one normalization in the format: a body's line endings become LF. Without it a
   // server value holding CRLF would serialize one way and parse back another, and every
   // pull would report a change nobody made.
-  const body =
-    bodyField && bodySafe(data[bodyField])
-      ? String(data[bodyField]).replace(/\r\n?/g, "\n")
-      : null;
+  // SH1015 — a blocks body is projected, never stringified: the value is an array, and
+  // `String([{…}])` is the shape that writes `[object Object]` into somebody's content file.
+  const blocksBody = bodyField && Array.isArray(data[bodyField]) ? data[bodyField] : null;
+  let body = null;
+  if (blocksBody) {
+    body = toMarkdown(blocksBody);
+  } else if (bodyField && bodySafe(data[bodyField])) {
+    body = String(data[bodyField]).replace(/\r\n?/g, "\n");
+  }
   const meta = {
     site: doc.site,
     // SH585 — the stored spelling, which the filename cannot carry: `/x` and `/x/` are one file,
@@ -389,6 +412,10 @@ export function serializePost(doc, bodyField = null, sidecarFields = []) {
     // Recorded only when the body is actually in the document, so a file never claims a
     // body field whose value stayed in `fields`.
     body: body === null ? undefined : bodyField,
+    // SH1015 — the block identities, in order, because Markdown has nowhere to put one and a key
+    // is what tells two paragraphs apart across a reorder. Written only for a blocks body, so no
+    // existing file grows a key it has no use for.
+    [BLOCK_KEYS]: blocksBody ? keysOf(blocksBody) : undefined,
   };
 
   const lines = [FENCE];
@@ -648,7 +675,15 @@ export function parsePost(relPath, text) {
           "`body: <field name>` to the frontmatter, or move the text into `fields:`",
       );
     }
-    data[bodyField] = body;
+    // SH1015 — a `blockKeys:` in the frontmatter says the body is a blocks document, so it is
+    // parsed back into blocks with those identities re-attached. The key list is what decides,
+    // not the post-type: reading a file back never depends on the model (the same rule `body:`
+    // has followed since SH86), and a file that carries keys carries them for this reason only.
+    // The list round-trips as a real array: `encodeScalar` JSON-stringifies a non-string and
+    // `decodeScalar` parses anything starting with `[`, so no second encoding is invented here.
+    data[bodyField] = meta[BLOCK_KEYS] === undefined
+      ? body
+      : fromMarkdown(body, Array.isArray(meta[BLOCK_KEYS]) ? meta[BLOCK_KEYS] : []);
   }
   return {
     site,
