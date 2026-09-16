@@ -462,3 +462,33 @@ time anybody opened one.
 The post form shows the rules as one sentence under the input. That is the point of the vocabulary
 reaching the form at all: a rule stops being a discovery on save. It shows the `patternMessage` and
 never the expression, and it includes the recommendation, named as advice.
+
+## `Blocks` — a body an agent can address a paragraph of (SH1015)
+
+A rich-text value is `innerHTML`: one string with no schema. P4 promises `Edit` and `Grep` are the
+agent's cheapest tools and lands them inside a blob where a paragraph has no address and two saves
+of the same document differ in whitespace nobody typed. `Blocks` stores an ordered array of typed
+blocks instead — `heading`, `paragraph`, `list`, `quote`, `code`, `image`, `embed`, `reference`.
+
+`ShBlocks` is the authority, and it is a pure function over JSON with no Spring context: a model
+whose rules need an application running is one nobody checks.
+
+- **`require(field, value)`** validates on the way **in**, from both batch write paths. A malformed
+  document that reached storage would be found by whatever renders it — a blank region on somebody's
+  page, the shape SH168 refused for an undeclared key. An unknown type is refused with the
+  registered list (P6), and so are a duplicate `key`, a heading with no `level`, and a mark whose
+  range runs off its own text (which otherwise renders as a silently truncated emphasis).
+- **`canonical(value)`** sorts keys inside each object and **never** reorders the blocks: key order
+  is not content and block order is. That is P5 — the same document twice is the same bytes, which
+  `innerHTML` cannot manage because attribute order, whitespace and entity spelling all vary freely.
+- **`markdown(value)`** is the P4 projection: real `##` headings, `-` lists, fenced code. Nothing
+  falls through to nothing, because a projection that silently drops a block is how an author's work
+  disappears through a round trip.
+
+**Marks are ranges, not nesting.** `{from, to, type}` over the block's own text. `<b><i>x</i></b>`
+and `<i><b>x</b></i>` are one content with two spellings, which is precisely what makes `innerHTML`
+uncanonical; a range has one. They are applied back to front when writing Markdown, so an earlier
+mark's offsets are still valid after a later one has inserted its delimiters.
+
+**`HTML Editor` stays.** `shio convert` produces HTML for imported bodies, and SH956's sanitizer
+already guards that path.

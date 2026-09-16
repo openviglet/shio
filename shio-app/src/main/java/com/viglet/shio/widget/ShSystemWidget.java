@@ -52,4 +52,10 @@ public class ShSystemWidget {
 	public static final String MULTI_SELECT = "Multi Select";
 	public static final String TAB = "Tab";
 	public static final String CHECK_BOX = "Check Box";
+	/**
+	 * SH1015 — an ordered array of typed blocks, where {@link #HTML_EDITOR} is one opaque
+	 * string. The HTML widget stays for imported bodies: `shio convert` produces HTML, and
+	 * SH956's sanitizer already guards that path.
+	 */
+	public static final String BLOCKS = "Blocks";
 }

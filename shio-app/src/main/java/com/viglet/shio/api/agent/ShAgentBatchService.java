@@ -54,6 +54,7 @@ import com.viglet.shio.api.agent.verify.ShPostLinks;
 import com.viglet.shio.api.agent.verify.ShPostReferenceFields;
 import com.viglet.shio.api.error.ShDataIntegrityProblem;
 import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.post.block.ShBlocks;
 import com.viglet.shio.render.ShTemplateTitles;
 import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
@@ -2321,11 +2322,14 @@ public class ShAgentBatchService {
             if (resolved.data() == null || sameData(post, resolved.data())) {
                 return session.change(op, address, Change.NOOP, null, post.getId());
             }
+            TypeRef updating = TypeRef.of(post.getShPostType(), session.declaredFieldsOf(
+                    post.getShPostType().getName()));
             String undeclared = note(note(
-                    checkDeclaredFields(resolved, address, session,
-                            TypeRef.of(post.getShPostType(), session.declaredFieldsOf(
-                                    post.getShPostType().getName())),
+                    note(checkDeclaredFields(resolved, address, session, updating,
                             readTree(post.getData())),
+                            // SH1015 — before the write, so a blocks document this instance cannot
+                            // store never becomes a blank region on somebody's page.
+                            checkBlocks(resolved, address, session, updating)),
                     checkTemplates(resolved, address, session, post.getShPostType().getName())),
                     note(planTemplateTitle(resolved, session, post.getShPostType(), site,
                             post.getId()),
@@ -2349,7 +2353,8 @@ public class ShAgentBatchService {
         // value is stored as sent, which is what it did before, and `verify` still reports it.
         ShAgentBatch.Op created0 = withResolvedRelations(op, address, livePostType(postType));
         String undeclared = note(note(
-                checkDeclaredFields(created0, address, session, postType, null),
+                note(checkDeclaredFields(created0, address, session, postType, null),
+                        checkBlocks(created0, address, session, postType)),
                 checkTemplates(created0, address, session, postType.name())),
                 note(planTemplateTitle(created0, session, livePostType(postType), site, null),
                         noteSanitized(created0, livePostType(postType))));
@@ -3447,13 +3452,71 @@ public class ShAgentBatchService {
      * dry run. So the type that stands in for a plan cannot become the type a create is
      * written against.</p>
      */
-    private record TypeRef(String name, Set<String> fields, String id) {
+    private record TypeRef(String name, Set<String> fields, String id, Set<String> blockFields) {
 
         private static TypeRef of(ShPostType live, Set<String> alsoDeclared) {
             Set<String> names = new LinkedHashSet<>(declaredFieldNamesOf(live));
             names.addAll(alsoDeclared);
-            return new TypeRef(live.getName(), names, live.getId());
+            // SH1015 — which of those fields hold blocks, read here rather than looked up again at
+            // check time: the type is already loaded, and a second read is a second answer.
+            return new TypeRef(live.getName(), names, live.getId(), blockFieldNamesOf(live));
         }
+    }
+
+    /** SH1015 — the declared fields whose widget is {@code Blocks}. */
+    private static Set<String> blockFieldNamesOf(ShPostType postType) {
+        Set<String> names = new LinkedHashSet<>();
+        collectBlockFieldNames(postType.getShPostTypeAttrs(), names);
+        return names;
+    }
+
+    private static void collectBlockFieldNames(Set<ShPostTypeAttr> attrs, Set<String> into) {
+        if (attrs == null) {
+            return;
+        }
+        for (ShPostTypeAttr attr : attrs) {
+            if (attr.getName() != null && attr.getShWidget() != null
+                    && ShSystemWidget.BLOCKS.equals(attr.getShWidget().getName())) {
+                into.add(attr.getName());
+            }
+            collectBlockFieldNames(attr.getShPostTypeAttrs(), into);
+        }
+    }
+
+    /**
+     * SH1015 — a Blocks field holds a document this instance can store, or the write is refused.
+     *
+     * <p>Follows {@link #checkDeclaredFields} exactly, and for its reason: a real run refuses and a
+     * plan reports, so a `shio push` of several posts says everything wrong with them in one answer
+     * rather than dying on the first.</p>
+     *
+     * <p>Validated on the way <b>in</b> and not on the way out. A malformed blocks document that
+     * reached storage would be discovered by whatever renders it, which is a blank region on
+     * somebody's page — the shape SH168 refused for an undeclared key, for the same reason.</p>
+     */
+    private String checkBlocks(ShAgentBatch.Op op, ShAddress address, Session session,
+                               TypeRef declaredIn) {
+        JsonNode data = op.data();
+        if (data == null || !data.isObject() || declaredIn == null
+                || declaredIn.blockFields().isEmpty()) {
+            return null;
+        }
+        List<String> bad = new ArrayList<>();
+        for (String field : declaredIn.blockFields()) {
+            JsonNode value = data.get(field);
+            if (value == null) {
+                continue;
+            }
+            try {
+                ShBlocks.require(field, value);
+            } catch (ShBlocks.ShInvalidBlocksException e) {
+                if (!session.dryRun) {
+                    throw e;
+                }
+                bad.add(e.getMessage());
+            }
+        }
+        return bad.isEmpty() ? null : String.join("; ", bad);
     }
 
     private TypeRef requirePostType(ShAgentBatch.Op op, ShAddress address, Session session) {
@@ -3469,7 +3532,10 @@ public class ShAgentBatchService {
             return TypeRef.of(postType, session.declaredFieldsOf(name));
         }
         if (session.declaresPostType(name)) {
-            return new TypeRef(name, session.declaredFieldsOf(name), null);
+            // SH1015 — no live type, so nothing declares a widget: a batch provisioning its own
+            // post-type has no Blocks field to check until the type exists, and guessing one from
+            // the declaration would validate against a model this instance has not accepted yet.
+            return new TypeRef(name, session.declaredFieldsOf(name), null, Set.of());
         }
         List<String> allowed = new ArrayList<>(shPostTypeRepository.findAll().stream()
                 .map(ShPostType::getName)

@@ -120,6 +120,9 @@ public class ShWidgetOnStartup {
 		specs.add(new Spec(ShSystemWidget.MULTI_SELECT, "Multi Select Widget", TEXT_TYPE));
 		specs.add(new Spec(ShSystemWidget.TAB, "Tab Widget", TEXT_TYPE));
 		specs.add(new Spec(ShSystemWidget.CHECK_BOX, "Check Box Widget", TEXT_TYPE));
+		// SH1015 — appended rather than inserted, so an existing instance gains the row and no
+		// existing row moves: this list is read in order and a widget is found by name.
+		specs.add(new Spec(ShSystemWidget.BLOCKS, "Blocks Widget", TEXT_TYPE));
 		return specs;
 	}
 
