@@ -30,8 +30,10 @@ import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unif
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
 import { fieldOf, headlineOf, problemOf, reportProblem } from "@/lib/problem"
-import { isDirty } from "@/lib/dirty"
+import { changedAttrs, isDirty } from "@/lib/dirty"
+import { bufferDraft, clearBuffer, readBuffer } from "@/lib/draft-buffer"
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard"
+import { useAutosave } from "@/hooks/use-autosave"
 import {
   conflictsBetween,
   PostConflictDialog,
@@ -143,6 +145,61 @@ export default function PostUnifiedEditPage() {
   // The browser asks before the tab closes, and only while there is something to lose. An in-app
   // route change still walks away silently — that needs a data router (SH1090).
   useUnsavedGuard(dirty)
+
+  /**
+   * SH1011 — what an autosave would send: the changed keys, and only those.
+   *
+   * A PATCH of the whole document would be a PUT with extra steps, and it would overwrite a field
+   * somebody else changed while this page sat open. The merge verb's rule is that a field not named
+   * keeps its value, and that rule is worth something only if the caller names as little as it can.
+   */
+  const pendingAttrs = useMemo(
+    () => (post == null ? {} : changedAttrs(post.data ?? {}, data)),
+    [post, data],
+  )
+
+  const autosave = useAutosave({
+    dirty,
+    // Never while the curator's own write is in flight: two writes racing on one row is the thing
+    // SH985's guard would then refuse, and the refusal would be this page arguing with itself.
+    busy: isLoading || isPublishing || conflict !== undefined,
+    attrs: pendingAttrs,
+    save: async (attrs) => {
+      const saved = await unifiedService.patch(postId, attrs)
+      setPost(saved)
+      void clearBuffer(postId)
+    },
+  })
+
+  // SH1011 — and the browser's own copy, kept as the curator types. It covers what autosave cannot:
+  // the seconds before the next write, and every case where the write cannot happen at all.
+  useEffect(() => {
+    if (!dirty) return
+    void bufferDraft(postId, data)
+  }, [dirty, postId, data])
+
+  /**
+   * SH1011 — a buffer this browser kept, offered rather than restored.
+   *
+   * Restoring it would make the page a second writer with no name on it: a curator who opens a post
+   * and finds text they do not remember typing cannot tell whether it is theirs, an agent's, or
+   * yesterday's. So the page loads what the server has, and asks.
+   */
+  const [offered, setOffered] = useState<{ data: unknown; at: number } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void readBuffer(postId).then((buffer) => {
+      if (cancelled || !buffer || post == null) return
+      if (isDirty(post.data ?? {}, buffer.data)) {
+        setOffered({ data: buffer.data, at: buffer.at })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+    // Once the post is loaded, and only then: the comparison is against what the server sent.
+  }, [postId, post])
 
   const schema = useMemo(() => postFormSchema(post?.shPostType), [post])
   const postTypeName = post?.shPostType?.title || post?.shPostType?.name
@@ -334,6 +391,21 @@ export default function PostUnifiedEditPage() {
         dirty={dirty}
         saveBadges={
             <>
+              {/*
+                SH1011 — what the draft on the server knows, in the bar where the curator is
+                deciding whether they still have to press Save. "Stopped" is said out loud rather
+                than by the absence of "saved": a silent autosave that has given up is worse than
+                one that never ran.
+              */}
+              {autosave.status === "saving" && (
+                <BadgeColorful text={t("content.autosaveSaving")} className="text-xs" />
+              )}
+              {autosave.status === "saved" && (
+                <BadgeColorful text={t("content.autosaveSaved")} className="text-xs" />
+              )}
+              {autosave.status === "stopped" && (
+                <BadgeColorful text={t("content.autosaveStopped")} className="text-xs" />
+              )}
               <BadgeColorful text={postTypeName || ""} className="text-xs" />
               <BadgeColorful
                 text={state}
@@ -439,6 +511,41 @@ export default function PostUnifiedEditPage() {
           }
       />
       <div className="p-6 space-y-6">
+
+        {/*
+          SH1011 — the offer, never the restore. It says when the buffer was kept, because "restore
+          what you were typing" is a different decision depending on whether that was a minute ago
+          or last Tuesday.
+        */}
+        {offered && (
+          <div className="flex flex-wrap items-center gap-3 rounded-md border border-dashed px-3 py-2 text-sm">
+            <span>{t("content.bufferedOffer", {
+              when: new Date(offered.at).toLocaleString(),
+            })}</span>
+            <GradientButton
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setData((offered.data ?? {}) as Record<string, unknown>)
+                setOffered(null)
+              }}
+            >
+              {t("content.bufferedRestore")}
+            </GradientButton>
+            <GradientButton
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                void clearBuffer(postId)
+                setOffered(null)
+              }}
+            >
+              {t("content.bufferedDiscard")}
+            </GradientButton>
+          </div>
+        )}
 
         {/*
           SH1008 — above the fields, because the point of it is to be read BEFORE anyone types.

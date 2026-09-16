@@ -40,3 +40,30 @@ export function canonicalJson(value: unknown): string {
 export function isDirty(loaded: unknown, current: unknown): boolean {
   return canonicalJson(loaded) !== canonicalJson(current)
 }
+
+/**
+ * SH1011 — the keys that differ, which is what an autosave sends.
+ *
+ * A `PATCH` of the whole document would be a `PUT` with extra steps, and it would overwrite a field
+ * somebody else changed while this page sat open — the merge verb's rule is that a field *not
+ * named* keeps its value, and that rule is only worth anything if the caller names as little as
+ * possible.
+ *
+ * A key present in the load and absent from the form counts: clearing a field is an edit, and an
+ * autosave that could not express it would silently keep the old value.
+ */
+export function changedKeys(loaded: unknown, current: unknown): string[] {
+  const before = (loaded ?? {}) as Record<string, unknown>
+  const after = (current ?? {}) as Record<string, unknown>
+  const names = new Set([...Object.keys(before), ...Object.keys(after)])
+  return [...names]
+    .filter((name) => canonicalJson(before[name]) !== canonicalJson(after[name]))
+    .sort((a, b) => a.localeCompare(b))
+}
+
+/** Those keys, as the object a `PATCH` takes — `""` for one the form cleared. */
+export function changedAttrs(loaded: unknown, current: unknown): Record<string, unknown> {
+  const after = (current ?? {}) as Record<string, unknown>
+  return Object.fromEntries(changedKeys(loaded, current)
+    .map((name) => [name, after[name] ?? ""]))
+}

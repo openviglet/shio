@@ -24,13 +24,14 @@ import { fileURLToPath } from "node:url"
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const read = (...path) => readFileSync(join(ROOT, ...path), "utf8")
 
-/** The module is TypeScript with no imports, so its two functions can be executed as JS. */
-const source = read("src", "lib", "dirty.ts")
-  .replace(/export function/gu, "function")
-  .replace(/: unknown|: string|: boolean|<unknown>|<string>/gu, "")
-  .replace(/ as Record<string, unknown>/gu, "")
-const { isDirty, canonicalJson } = new Function(
-  `${source}; return { isDirty, canonicalJson };`)()
+/**
+ * Imported, not read: Node 26 strips the types itself, so these run the module the console loads
+ * rather than a copy of it a regex in this file reconstructed. The earlier version did the latter
+ * and broke the moment a `string[]` appeared — a test that can fail for a reason that has nothing
+ * to do with the rule it asserts.
+ */
+const { isDirty, canonicalJson, changedAttrs, changedKeys } =
+  await import("../src/lib/dirty.ts")
 
 test("SH1011: key order is not a change", () => {
   assert.equal(isDirty({ a: 1, b: 2 }, { b: 2, a: 1 }), false,
@@ -91,4 +92,62 @@ test("SH1011: Cancel asks before it discards", () => {
     const content = JSON.parse(read("src", "i18n", "locales", locale, "content.json"))
     assert.ok(content["content.discardUnsaved"], `SH1011: ${locale} is missing the question`)
   }
+})
+
+test("SH1011: an autosave names the changed keys and nothing else", () => {
+  assert.deepEqual(changedKeys({ a: 1, b: 2 }, { a: 1, b: 3 }), ["b"],
+    "SH1011: naming `a` too would overwrite another writer's change to a field this page never "
+      + "touched — the merge verb's rule is that a field NOT named keeps its value, and that is "
+      + "worth something only if the caller names as little as it can")
+  assert.deepEqual(changedKeys({ a: 1 }, { a: 1 }), [])
+})
+
+test("SH1011: clearing a field is an edit an autosave can express", () => {
+  assert.deepEqual(changedKeys({ title: "x" }, {}), ["title"],
+    "SH1011: a key present in the load and absent from the form is a clear, and an autosave that "
+      + "could not say so would silently keep the old value")
+  assert.deepEqual(changedAttrs({ title: "x" }, {}), { title: "" },
+    "SH1011: and it is sent as the empty value, not as undefined, which JSON would drop")
+})
+
+test("SH1011: autosave writes the draft, stops on a refusal, and never races the curator", () => {
+  const hook = read("src", "hooks", "use-autosave.ts")
+
+  assert.match(hook, /stopped\.current = true/u,
+    "SH1011: a conditional write refused with a 409 means somebody else wrote — retrying is the "
+      + "overwrite the guard exists to prevent, and retrying silently on a timer is that overwrite "
+      + "with nobody watching")
+  assert.match(hook, /if \(!dirty \|\| busy \|\| !pending \|\| stopped\.current\)/u,
+    "SH1011: `busy` is the curator's own save, publish or dialog — two writes racing on one row is "
+      + "what SH985 would then refuse, and the refusal would be the page arguing with itself")
+  assert.match(hook, /\}, \[dirty, busy, pending, signature\]\)/u,
+    "SH1011: debounced on the VALUE — on the key list alone it would fire three seconds after the "
+      + "FIRST keystroke rather than after the typing stops")
+
+  const page = read("src", "app", "content", "post.edit.page.tsx")
+  assert.match(page, /unifiedService\.patch\(postId, attrs\)/u,
+    "SH1011: the merge verb (SH335), which the console service already sends If-Match on")
+  assert.match(page, /busy: isLoading \|\| isPublishing \|\| conflict !== undefined/u)
+})
+
+test("SH1011: the browser's own copy is offered, never restored", () => {
+  const page = read("src", "app", "content", "post.edit.page.tsx")
+  const buffer = read("src", "lib", "draft-buffer.ts")
+
+  assert.match(page, /setOffered\(\{ data: buffer\.data, at: buffer\.at \}\)/u,
+    "SH1011: a buffer that restored itself would make the page a second writer with no name on "
+      + "it — a curator who finds text they do not remember typing cannot tell whose it is")
+  assert.match(page, /content\.bufferedRestore/u)
+  assert.match(page, /content\.bufferedDiscard/u)
+  for (const locale of ["en", "pt"]) {
+    const content = JSON.parse(read("src", "i18n", "locales", locale, "content.json"))
+    for (const key of ["content.bufferedOffer", "content.bufferedRestore",
+      "content.bufferedDiscard", "content.autosaveSaved", "content.autosaveStopped"]) {
+      assert.ok(content[key], `SH1011: ${locale} is missing ${key}`)
+    }
+  }
+
+  assert.match(buffer, /request\.onerror = \(\) => resolve\(null\)/u,
+    "SH1011: a private window, blocked site data or a quota refuses, and a dialog about browser "
+      + "storage helps nobody — the work is still on screen and autosave is still running")
 })

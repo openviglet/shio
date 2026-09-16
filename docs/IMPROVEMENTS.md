@@ -1792,25 +1792,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.3 An editor that does not lose work (SH1011)
-
-The editor holds data in useState and never compares it with the loaded post; the page
-hero accepts dirty and the editor passes only titleMissing, while the folder and site
-pages pass it. No useBlocker or beforeunload exists in the console. The design system
-renders an Unsaved changes cue when dirty is true, built and unreachable on the one page
-that needs it. The merge verb, whose rule is that a field not named keeps its value, is
-called only by the visual editor.
-
-Three layers, cheapest first. Derive dirty from a canonical serialisation of the data
-against the loaded post, with stable key order, and pass it, which lights the cue; add a
-router blocker and a beforeunload guard. Then a debounced patch of only the changed
-keys, sending the ETag from SH985 so autosave cannot multiply the race it would
-otherwise hide, with the save bar reading saved a few seconds ago. Then a recovery
-buffer in IndexedDB keyed by post id, offered explicitly and never restored silently.
-
-The CLI gains shio post set for a single field. The assertions: navigating away from a
-dirty form asks, and an autosave with a stale ETag is refused.
-
 ### LXVIII.4 The repeatable field, editable again (SH1012)
 
 The relator widget's own comment says inline editing of relator subtrees is not wired
@@ -1991,6 +1972,31 @@ The instrument is the deliverable here too: a lint that fails when a page import
 `useBlocker` outside a data router would have caught this before it was written into a
 design. The cheaper version is a test that mounts the router and asserts it is a data
 router, which is one assertion and cannot go stale.
+
+### LXVIII.13 A partial write no stateless caller can make (SH1091)
+
+SH1011's design asked the CLI for `shio post set`. It was built and then withdrawn,
+because all three routes to a partial write are blocked in a different place, and
+choosing between them is a security decision rather than an implementation one.
+
+`PATCH /api/v2/post-unified/{id}` is the merge the console uses and the only one
+carrying `If-Match`. It refuses a cookieless caller: the path is absent from the
+narrowed CSRF exemptions in `ShSecurityConfig`, and `ShStatelessReachabilityLintTest`
+records that as deliberate — *the merge exists for the editor's concurrency problem,
+several curators on one site, which an agent does not have*. A CLI invoked by a person
+against a live instance has exactly that problem, so the recorded reason is the thing to
+revisit, not to route around.
+
+`PATCH /api/v2/cda/post/{id}` merges, is stateless, and takes a `WRITE` token — but has
+no `If-Match` at all, so it cannot say *refuse this if the post moved under me*.
+`post.upsert` declares whole state by design (SH168), which is the failure this verb
+exists to avoid.
+
+So the deliverable is the decision: widen the exemption to the narrowed matcher every
+other stateless path already uses and update the lint's entry, or give the CDA's merge a
+precondition and spend a token. The verb is small once that is settled; the working
+command, its help and its conformance scenario were written and reverted in one commit,
+so the cost of having tried is recorded here rather than paid twice.
 
 ## LXIX Finding, selecting and acting on content (Block BD)
 

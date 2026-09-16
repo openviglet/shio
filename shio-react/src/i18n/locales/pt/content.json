@@ -291,5 +291,11 @@
   "content.hintMaxItems": "no máximo {{n}} entradas",
   "content.hintUnique": "deve ser único",
   "content.hintRecommended": "{{n}} caracteres lê melhor (sugestão, nunca recusada)",
-  "content.discardUnsaved": "Há alterações não salvas nesta página. Sair sem salvar?"
+  "content.discardUnsaved": "Há alterações não salvas nesta página. Sair sem salvar?",
+  "content.autosaveSaving": "Salvando…",
+  "content.autosaveSaved": "Rascunho salvo",
+  "content.autosaveStopped": "Salvamento automático parado — salve manualmente",
+  "content.bufferedOffer": "Este navegador guardou alterações não salvas de {{when}}.",
+  "content.bufferedRestore": "Restaurar",
+  "content.bufferedDiscard": "Descartar"
 }

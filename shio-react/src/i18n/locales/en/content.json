@@ -291,5 +291,11 @@
   "content.hintMaxItems": "at most {{n}} entries",
   "content.hintUnique": "must be unique",
   "content.hintRecommended": "{{n}} characters reads best (advice, never refused)",
-  "content.discardUnsaved": "You have unsaved changes on this page. Leave without saving?"
+  "content.discardUnsaved": "You have unsaved changes on this page. Leave without saving?",
+  "content.autosaveSaving": "Saving…",
+  "content.autosaveSaved": "Draft saved",
+  "content.autosaveStopped": "Autosave stopped — save manually",
+  "content.bufferedOffer": "This browser kept unsaved changes from {{when}}.",
+  "content.bufferedRestore": "Restore them",
+  "content.bufferedDiscard": "Discard them"
 }

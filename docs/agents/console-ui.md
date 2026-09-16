@@ -1847,3 +1847,38 @@ dialog, which is how a guard becomes the thing people click through without read
 `<BrowserRouter>`: calling either throws rather than degrading. So the editor guards its own exit
 (Cancel asks) and the browser guards the rest, while an in-app route change still walks away
 silently. SH1090 is the change that closes it, for every page at once.
+
+### Autosave, and the buffer behind it (SH1011)
+
+The draft is written after the typing stops — `useAutosave`, three seconds quiet, debounced on the
+**value** of the changed fields rather than on their key list, because on the key list alone it
+would fire three seconds after the *first* keystroke and call that "after the typing stops".
+
+Three rules it will not bend:
+
+- **Only the changed keys go on the wire.** `changedAttrs` diffs against the post as loaded and the
+  `PATCH` names nothing else. The merge verb's rule is that a field *not* named keeps its value,
+  which is worth something only if the caller names as little as it can — otherwise autosave
+  overwrites another writer's change to a field this page never touched. Clearing a field is an
+  edit, so a key present in the load and absent from the form is sent as `""`.
+- **It writes the draft and only the draft.** Autosaving is a write nobody asked for, which is the
+  shape P7 refuses, so it is confined to the row a visitor cannot see. Publish stays explicit.
+- **The first refusal ends it.** A 409 means somebody else wrote; retrying is the overwrite the
+  guard exists to prevent, and retrying silently on a timer is that overwrite with nobody watching.
+  The save bar says *stopped* out loud — a silent autosave that has given up is worse than one that
+  never ran. It is also paused while the curator's own save, publish or conflict dialog is in
+  flight, or the page would race itself into SH985's refusal.
+
+`draft-buffer.ts` keeps what is on screen in **IndexedDB** keyed by post id, covering what autosave
+cannot: the seconds before the next write, and every case where the write cannot happen at all.
+It is **offered, never restored** — a buffer that restored itself makes the page a second writer
+with no name on it, and a curator who finds text they do not remember typing cannot tell whether it
+is theirs, an agent's, or yesterday's. Every access is wrapped and a failure resolves to `null`: a
+private window or a quota refusal is not an error worth a dialog, because the work is still on
+screen. IndexedDB rather than `localStorage` because a rich-text body is not small and
+`localStorage` is a few megabytes for the whole origin.
+
+The CLI half SH1011 designed — `shio post set`, one field against a live instance — is **not**
+here. It was written and withdrawn: the merge verb carrying `If-Match` refuses a cookieless caller
+by a decision `ShStatelessReachabilityLintTest` records, the CDA's merge is stateless but has no
+precondition at all, and the agent's only write declares whole state. SH1091 holds the choice.
