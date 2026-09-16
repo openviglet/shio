@@ -1792,26 +1792,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.5 Insights beside the form (SH1013)
-
-A grep of shio-react/src for the agent namespace returns two i18n strings describing a
-token scope, and no call. The address-scoped verify returns required-field-empty,
-dangling-reference, image-no-alt, link-broken, duplicate-url and the head conventions,
-each with an address and a fix, and render returns the heading outline, landmarks, link
-and image inventory and word count. A logged-in curator's session can already reach that
-namespace. A content-quality engine is one service file away from the person editing.
-
-An Insights panel beside the form, grouped as Blockers, Suggestions and Page shape:
-outline, word count, reading time, link counts and images missing alt. Each finding
-carrying a field anchors to it and focuses the field when clicked, which is why SH955's
-problem reader lands first. It runs on save and on demand, never per keystroke, since P3
-applies to HTTP too.
-
-Two honesty changes on the backend: verify accepts state=DRAFT so the panel lints what
-is being edited, and every content finding carries its field name. This also answers the
-SEO request without a second SEO engine. The assertion plants an image with no alt and
-reads the finding anchored to its field.
-
 ### LXVIII.6 Render what would be, before writing it (SH1014)
 
 The editor mints a preview token for a post id and opens it; the preview route renders
@@ -1977,6 +1957,32 @@ other stateless path already uses and update the lint's entry, or give the CDA's
 precondition and spend a token. The verb is small once that is settled; the working
 command, its help and its conformance scenario were written and reverted in one commit,
 so the cost of having tried is recorded here rather than paid twice.
+
+### LXVIII.14 A draft lint that is silent about its own gaps (SH1092)
+
+`ShAgentVerifyService.markup` scans published rows only, and says why: *a draft's broken
+link is work in progress*. That reasoning is sound for a site-wide sweep. What is wrong
+is that a caller who asks for `state=draft` is never told the rules were skipped.
+
+The response carries one note — *state=draft: the rules reported on DRAFT rows only; the
+indexes they check against still read both states* — which describes the opposite
+concern. A caller reads `errors: 0, warnings: 0` and concludes the draft is clean. It is
+not: `link-broken`, `link-unresolved`, `image-no-alt`, `image-missing-file` and
+`html-unsafe` never ran against it.
+
+SH1013 met this from the console and routed around it — the panel takes its missing-alt
+count from `/agent/render`, whose digest does inventory a draft's images. That works for
+the page in front of a curator and does nothing for `shio verify --state draft`, which
+an agent runs over a site before publishing and reads as a verdict.
+
+Two fixes, and the cheap one is not the weak one. **Say it**: name the skipped rules in
+`notes`, so a green draft report stops meaning more than it does — P6 applied to a
+report rather than to a refusal, and it cannot be wrong. **Or run them**, downgraded to
+warnings on a draft, which is a defensible reading of *work in progress* but changes
+what an existing gate reports.
+
+The note lands either way, since even a version that runs the rules has to say what its
+severity means. Start there.
 
 ## LXIX Finding, selecting and acting on content (Block BD)
 

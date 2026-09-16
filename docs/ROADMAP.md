@@ -63,7 +63,6 @@
 
 ## Block BC — The authoring surface, field by field
 
-- 📋 **SH1013** (deps: SH955 ✅) **the editor never calls the content intelligence the backend already computes for the page being edited** — The console makes no request to the agent surface, so dozens of verify rules and a structural page digest stay invisible to the person who could fix what they find. → §LXVIII.5
 - 📋 **SH1014** (deps: SH1011 ✅) **previewing unsaved edits is impossible, because the preview renders the last saved draft** — The preview token addresses a post id rather than a payload, and no endpoint renders a page from proposed field values, for a curator or an agent. → §LXVIII.6
 - 📋 **SH1015** (deps: SH956 ✅) **a page body is one opaque HTML string, so an agent cannot address a paragraph** — The rich-text value is innerHTML with no schema, so Edit lands inside one blob, canonical serialisation is impossible and the digest must parse markup to find structure. → §LXVIII.7
 - 📋 **SH1016** (deps: SH1015) **a front end cannot receive structured blocks, only the rendered HTML of a body** — The CDA, GraphQL and both SDKs return a body as a string, so a headless site cannot render a quote or an image block with its own components. → §LXVIII.8
@@ -72,6 +71,7 @@
 - 📋 **SH1019** (deps: SH1006, SH1007) **a field cannot ask the connected agent for a suggestion it can apply** — The assistant's reference design offers a suggested title with a button to apply it, and Shio's only route to an answer is a request from the dock. → §LXVIII.11
 - 📋 **SH1090** (deps: —) **no console page can block an in-app navigation, because the router is not a data router** — useBlocker and usePrompt both call useDataRouterContext, and main.tsx mounts BrowserRouter, so a form with unsaved work can only catch a tab close. → §LXVIII.12
 - 📋 **SH1091** (deps: —) **no stateless caller can change one field of a post without declaring the whole document** — The console's merge verb refuses a cookieless caller, the CDA's has no If-Match, and the agent's only write replaces whole state, so a CLI correction cannot be both partial and safe. → §LXVIII.13
+- 📋 **SH1092** (deps: —) **a draft lint reports clean without saying that five markup rules never ran against it** — markup scans published rows only, deliberately, and the notes on a state=draft report describe the indexes instead, so zero errors reads as a verdict it is not. → §LXVIII.14
 
 ## Block BD — Finding, selecting and acting on content
 

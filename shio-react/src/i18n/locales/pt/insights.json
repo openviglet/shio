@@ -1,0 +1,18 @@
+{
+  "insights.section": "Análise",
+  "insights.refresh": "Verificar de novo",
+  "insights.unavailable": "Não foi possível ler a análise desta página.",
+  "insights.blockers": "Impedimentos",
+  "insights.suggestions": "Sugestões",
+  "insights.pageShape": "Forma da página",
+  "insights.noBlockers": "Nada impedindo.",
+  "insights.noSuggestions": "Nada a sugerir.",
+  "insights.noDigest": "Esta página não é renderizada, então não há forma a relatar.",
+  "insights.goToField": "Ir para {{field}}",
+  "insights.imageNoAlt": "A imagem {{src}} não tem atributo alt.",
+  "insights.imageNoAltFix": "Adicione um texto alternativo, ou alt=\"\" se for decorativa — um atributo ausente e um vazio significam coisas diferentes para um leitor de tela.",
+  "insights.words": "{{count}} palavras",
+  "insights.readingTime": "{{minutes}} min de leitura",
+  "insights.links": "{{count}} links",
+  "insights.images": "{{count}} imagens"
+}

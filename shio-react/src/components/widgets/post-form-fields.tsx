@@ -79,6 +79,9 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
     return (
       <div
         key={field.name}
+        // SH1013 — the anchor a finding scrolls to. A panel that says which field is wrong and
+        // cannot take you there leaves the curator scanning a sixteen-field form for the name.
+        id={fieldAnchorId(field.name)}
         className={`rounded-lg border border-l-4 ${refused ? "border-destructive" : accent} bg-background p-4 space-y-3 transition-shadow hover:shadow-sm`}
       >
         <div className="flex items-center gap-2 flex-wrap">
@@ -137,6 +140,16 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
       ))}
     </Tabs>
   )
+}
+
+/**
+ * SH1013 — the id a finding's "go to field" resolves against.
+ *
+ * Exported so the panel and the form cannot disagree about the spelling: an anchor scheme written
+ * twice is one that drifts, and the failure is silent — the button scrolls nowhere.
+ */
+export function fieldAnchorId(name: string): string {
+  return `sh-field-${name}`
 }
 
 function buildAttrFromValue(field: ShPostTypeSchemaField, value: unknown): ShPostAttr {

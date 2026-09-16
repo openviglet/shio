@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
-import { IconFileText, IconHistory, IconMessage } from "@tabler/icons-react"
+import { IconFileText, IconHistory, IconMessage, IconSparkles } from "@tabler/icons-react"
 import { Clock, Eye, EyeOff, History, Loader2, Save, Sparkles, Upload } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -21,6 +21,8 @@ import { ShPreviewTokenService } from "@/services/preview-token/preview-token.se
 import { ShAclService } from "@/services/acl/acl.service"
 import { NoteRail } from "@/components/note-rail"
 import { PostHistoryPanel } from "@/components/post-history.panel"
+import { PostInsightsPanel } from "@/components/post-insights.panel"
+import { fieldAnchorId } from "@/components/widgets/post-form-fields"
 import { WorkingLine } from "@/components/working-line"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
@@ -187,6 +189,9 @@ export default function PostUnifiedEditPage() {
    */
   const [offered, setOffered] = useState<{ data: unknown; at: number } | null>(null)
 
+  /** SH1013 — bumped by a save the curator asked for, which is when the lint is worth re-reading. */
+  const [insightsAt, setInsightsAt] = useState(0)
+
   useEffect(() => {
     let cancelled = false
     void readBuffer(postId).then((buffer) => {
@@ -247,6 +252,10 @@ export default function PostUnifiedEditPage() {
     setRefusal(undefined)
     try {
       const updated = await unifiedService.update(postId, { data, state })
+      // SH1013 — the insights re-read on the curator's own save, not on autosave's. Both write the
+      // same row, but a lint renders the page server-side, and doing that every three seconds of
+      // typing is the cost P3 exists to refuse for an answer nobody asked for.
+      setInsightsAt((n) => n + 1)
       toast.success(t("common.saved"))
       if (close) {
         navigateBack()
@@ -316,6 +325,7 @@ export default function PostUnifiedEditPage() {
     try {
       const saved = await unifiedService.update(postId, { data, state })
       await unifiedService.publish(postId, override)
+      setInsightsAt((n) => n + 1)
       setPost(saved)
       setData(saved.data || {})
       setIsLive(true)
@@ -628,6 +638,26 @@ export default function PostUnifiedEditPage() {
           <AdaptiveSectionCard.StaticHeader icon={IconHistory} title={t("activity.section")} />
           <AdaptiveSectionCard.Content>
             <PostHistoryPanel objectId={postId} onCompare={() => setVersionsOpen(true)} />
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
+
+        {/*
+          SH1013 — the lint and the page digest the instance already computes, on the page they are
+          about. Addressed by `id:`, the escape hatch SH172 kept for a console that holds an id
+          rather than a friendly URL.
+        */}
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader icon={IconSparkles} title={t("insights.section")} />
+          <AdaptiveSectionCard.Content>
+            <PostInsightsPanel
+              address={`id:${postId}`}
+              revision={insightsAt}
+              onGoToField={(name) => {
+                const anchor = document.getElementById(fieldAnchorId(name))
+                anchor?.scrollIntoView({ behavior: "smooth", block: "center" })
+                anchor?.querySelector<HTMLElement>("input, textarea, select, [contenteditable]")?.focus()
+              }}
+            />
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
       </div>

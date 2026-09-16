@@ -1,0 +1,18 @@
+{
+  "insights.section": "Insights",
+  "insights.refresh": "Check again",
+  "insights.unavailable": "Could not read the insights for this page.",
+  "insights.blockers": "Blockers",
+  "insights.suggestions": "Suggestions",
+  "insights.pageShape": "Page shape",
+  "insights.noBlockers": "Nothing blocking.",
+  "insights.noSuggestions": "Nothing to suggest.",
+  "insights.noDigest": "This page does not render, so it has no shape to report.",
+  "insights.goToField": "Go to {{field}}",
+  "insights.imageNoAlt": "Image {{src}} has no alt attribute.",
+  "insights.imageNoAltFix": "Add alt text, or alt=\"\" if it is decorative — an absent attribute and an empty one mean different things to a screen reader.",
+  "insights.words": "{{count}} words",
+  "insights.readingTime": "{{minutes}} min read",
+  "insights.links": "{{count}} links",
+  "insights.images": "{{count}} images"
+}

@@ -1909,3 +1909,33 @@ filled in" — the removal did not survive the save.
 `widget-editability.test.mjs` is the guard: every row of the widget table not described as a
 container or hidden must call `onChange`, and every name in the table must be one `WIDGET_MAP`
 registers. It fails on the widget exactly as it shipped.
+
+## Insights: the lint and the digest, on the page they are about (SH1013)
+
+The instance computes a lint with a fix per finding (`/agent/verify`) and a structural digest of any
+page (`/agent/render`), and the console asked for neither. A curator could not see that the page in
+front of them had an image with no alt text or an outline that starts at `h3`, while `shio verify`
+printed both to a terminal nobody had open.
+
+`PostInsightsPanel` reads both, addressed by `id:<uuid>` — the escape hatch SH172 kept for a console
+that holds an id — and scoped to `state=draft`, so it lints what is being edited rather than what
+is live. Three groups, and the third is deliberately not a judgement: **Blockers** are the errors,
+**Suggestions** the warnings, **Page shape** is the digest. Folding the digest in would make "this
+page is 340 words" look like something to fix.
+
+**Where the missing-alt count comes from, and why not from the linter.**
+`ShAgentVerifyService.markup` scans **published rows only** and says so in as many words — *a
+draft's broken link is work in progress*. That is right for a site-wide sweep and this does not
+touch it. But the panel's subject is one page the curator is looking at, and the digest inventories
+a draft's images with their alt text, so the same fact arrives by the read whose scope already
+matches the question. `alt=""` is a decision and an absent `alt` is not, so only the second is
+reported.
+
+**It reads on demand and on the curator's own save — not on autosave's.** Both calls render the page
+server-side; doing that every three seconds of typing is the cost P3 refuses, one layer out from
+tokens. `setInsightsAt` is bumped in `handleSave` and `handlePublish` and nowhere else.
+
+A finding that carries a `field` offers a button that scrolls to it and focuses the input;
+`fieldAnchorId` is exported from `post-form-fields.tsx` so the two sides cannot spell the anchor
+differently. A rule that knows no field — a broken link belongs to the rendered page, not to one box
+— offers no button rather than one that lands somewhere arbitrary.
