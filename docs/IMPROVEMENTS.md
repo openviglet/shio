@@ -2001,33 +2001,6 @@ about the file.
 It is the one rung of P1's ladder this capability is missing: MCP has it, REST has it,
 the console has it, and files do not.
 
-### LXVIII.18 The React helper needs a package first (SH1096)
-
-SH1016 delivered blocks to every tier a consumer reads: the CDA carries the array and a
-rendered HTML view beside it, GraphQL types the field as a `ShBlock` union a client
-narrows with an inline fragment, and `@viglet/shio-client` exports a discriminated union
-plus `shioBlocks(post, field)`.
-
-Its design also asked for a renderer helper in the React SDK. **There is no React SDK.**
-`shio-client` is the only client package and carries no React dependency, which is not
-an oversight: *Don't couple the JS SDK to React* is a standing non-goal, and the client
-is consumed from Next, from a build script and from example sites that are not all
-React.
-
-So the helper needs a package of its own, which is a product decision: a second
-published npm package is a release surface, a version to keep in step, and a dependency
-a consumer chooses between. The non-goal does not forbid it — a separate package is how
-the constraint is honoured — but nobody should add one as a side effect of a task about
-delivery.
-
-What it contains is already specified by the types that shipped: a `ShioBlocks`
-component taking `blocks` and a `components` map keyed by block type, and falling back
-**per block** rather than per document — a page with one unknown block should still
-render the seven it knows.
-
-Worth doing when a second React consumer wants it. One site writes thirty lines; two
-make a package.
-
 ## LXIX Finding, selecting and acting on content (Block BD)
 
 The content browser is where a curator spends the day, and it is the console's weakest

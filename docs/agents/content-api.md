@@ -946,5 +946,9 @@ narrows with no cast — plus `ShioBlockMark`, `SHIO_BLOCK_TYPES` and `shioBlock
 answers `null` for a field that is not blocks rather than making a consumer cast and find out by
 rendering nothing.
 
-The React renderer the design also asked for is **SH1096**: there is no React SDK, and *Don't couple
-the JS SDK to React* is why.
+**`@viglet/shio-react-sdk`** gains `<ShioBlocks blocks components fallbackHtml>`, which maps block
+types onto components the site owns. The fallback is **per block, not per document**: a page with
+one unhandled type should render the seven it knows, and falling back wholesale would make adding a
+block type to the model blank a page that was working — the failure a fallback exists to prevent,
+arriving by the fallback. An unclaimed block renders a readable default from its own fields rather
+than nothing, because "I wrote no component for `embed`" must not mean "the embed is gone".

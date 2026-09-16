@@ -16,6 +16,10 @@ export { useShioQuery } from "./hooks/use-shio-query";
 
 // Render components
 export { ShioRichText } from "./components/shio-rich-text";
+// SH1016 — a blocks body rendered with components the site owns, falling back per block.
+export { ShioBlocks } from "./components/shio-blocks";
+export type { ShioBlocksProps, ShioBlockComponent, ShioBlockComponents }
+  from "./components/shio-blocks";
 export type { ShioRichTextProps } from "./components/shio-rich-text";
 export { ShioImage } from "./components/shio-image";
 export type { ShioImageProps } from "./components/shio-image";
