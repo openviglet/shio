@@ -157,10 +157,17 @@ class ShAgentReadReachabilityLintTest {
                 "delivery: the published page a visitor is served. What an agent reads about a "
                 + "site is its content, through /agent/read and the CDA"));
 
-        byRoot.put("/api/v2/history", new Read(Reach.GAP, null,
-                "the audit trail per object and per site. /agent/changes walks the same rows by "
-                + "cursor and cannot answer 'what happened to this page', which is the question a "
-                + "correction starts from", List.of("SH1005")));
+        // SH1005 closed the last one. It was the audit trail per object: /agent/changes walked the
+        // same rows by cursor and could not answer "what happened to this page", which is the
+        // question a correction starts from — a curator leaves a note about one page (SH1003), and
+        // the run that fixes it wants that page's history and not the instance's. It takes
+        // `address=` now, addressed the way every other read on this surface is, and both surfaces
+        // read through one query set, so the console cannot grow a narrowing the agent lacks
+        // without this classification going stale.
+        byRoot.put("/api/v2/history", agentEquivalent("/api/v2/agent/changes",
+                "the same trail, addressed: ?address=post:Blog/hello-world is one page's own "
+                + "history. The console pages it back from the newest row and an agent walks it "
+                + "forward from a cursor, over one reader"));
 
         return byRoot;
     }
@@ -285,9 +292,12 @@ class ShAgentReadReachabilityLintTest {
         assertThat(byReach.getOrDefault(Reach.GAP, List.of()))
                 .as("""
                         the gaps are the deliverable: each is something the product knows and its \
-                        own primary operator cannot read over HTTP. Closing one is an edit here; \
-                        gaining one must be a reviewable diff naming the task that closes it.""")
-                .containsExactly("/api/v2/history");
+                        own primary operator cannot read over HTTP. SH1005 closed the last one \
+                        this instrument held — the audit trail of one page — so the list is empty, \
+                        and gaining one must be a reviewable diff naming the task that closes it. \
+                        Empty is not the same as vacuous: the count above proves the scan found \
+                        roots, and every one of them is classified.""")
+                .isEmpty();
     }
 
     /** Roots that read and never write — the surface neither sibling instrument sees. */

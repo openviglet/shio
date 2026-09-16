@@ -54,10 +54,11 @@
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
-- 📋 **SH1005** (deps: SH999 ✅) **the activity trail cannot be paged or filtered, and a post has no history panel** — Every history read is page zero capped at five hundred with no cursor or filter, while the agent's change feed already has a keyset cursor and a measured budget. → §LXVII.7
 - 📋 **SH1006** (deps: SH1003 ✅, SH1000 ✅, SH967 ✅) **a curator cannot ask the connected agent anything from the assistant dock** — VigletAssistant opens into a chat only when a product supplies onSend, and Shio hosts no model, so the chat must reach the external agent and nothing relays to it. → §LXVII.8
 - 📋 **SH1007** (deps: SH1006, SH1001 ✅, DS VDS134) **an agent's answer in the dock cannot carry the change it proposes** — A reply that says it drafted a new hero leaves the curator searching for the draft, while each dock message can offer an action and review already groups changes by run. → §LXVII.9
 - 📋 **SH1008** (deps: SH967 ✅, SH999 ✅, SH985 ✅) **a curator editing a page cannot see that an agent is working on the same page right now** — Concurrency guards refuse a stale write after the fact, and nothing shows, before anyone types, that another writer is active on the address. → §LXVII.10
+- 📋 **SH1086** (deps: SH1005 ✅) **the trail's four new filters reach REST and the console, and neither MCP nor the CLI** — SH1005 gave /agent/changes action, actor, subject and address; shio_changes and shio changes still offer site, since and by, so P1's own order runs backwards for them. → §LXVII.11
+- 📋 **SH1087** (deps: SH1005 ✅) **the console's live-update client is proved by reading its source and never by receiving an event** — A stream that silently never delivers looks exactly like a quiet instance, and SH1005's only assertions about it are that the file says EventSource and withCredentials. → §LXVII.12
 
 ## Block BC — The authoring surface, field by field
 

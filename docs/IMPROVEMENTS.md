@@ -1639,25 +1639,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-### LXVII.7 One reader over the audit table, for both surfaces (SH1005)
-
-The history endpoints take a limit and nothing else: no since, no cursor, and no action,
-actor or site filter. The per-object and per-site reads have typed client methods with
-no callers, and the console asks for two hundred rows and stops. /agent/changes over the
-same table has a keyset cursor, a commit-order watermark and a measured budget. This is
-P1 working and P10 not applied: the console built a second, weaker reader.
-
-/api/v2/history gains since, before, action, actor, agent, site and subject, delegating
-to the agent changes service rather than a second query set, with the same
-instant-and-id cursor so the two surfaces cannot disagree about what a cursor is, and
-the duplicated finders are removed rather than extended.
-
-The console's Activity page gains filters mirrored into the URL and cursor paging, and
-the post editor gains a history panel for that object, with each row linking to AZ4's
-diff. That is the question every CMS is asked and the one this console cannot answer on
-screen. Live updates arrive through SH967's stream, and the plan's notification inbox is
-replaced by the assistant dock.
-
 ### LXVII.8 The dock's chat, relayed to the agent over notes (SH1006)
 
 The design the dock was drawn from called a model API from the browser, and the package
@@ -1714,6 +1695,55 @@ writer touched it a moment ago before planning its next write.
 The assertions: an agent write shows the presence line within the stream's latency and
 it clears after the window, and a curator's save while the mark is showing still goes
 through AZ1's guard rather than being blocked.
+
+### LXVII.11 The narrowings that stopped at REST (SH1086)
+
+SH1005 put every narrowing of the audit trail in one query set and exposed the four new
+ones — action, actor, subject and address — on `/agent/changes` and on the console's
+page. That was the right place to stop for one task and the wrong place to leave it: P1
+reads MCP → CLI → REST → console, and these landed on the last two.
+
+The cost is why they stopped there. `shio_changes`'s input schema is re-sent on every
+turn of every session, so an argument there is paid whether or not it is used, against a
+`tools.list` ceiling that three tasks have already had to trim to stay under. The CLI's
+help has the same shape one budget down. Neither is an argument for never adding them;
+both are an argument for measuring first.
+
+So this is the measurement and then the decision: what each argument costs, what
+trimming pays for, and which of the four earn it. `address` is the strongest candidate —
+it answers "what happened to this page", which is the question a correction starts from,
+and the one an agent reaches for after reading a note (SH1003). `subject` is the
+weakest: an agent that asked for a folder's history already knows the address it asked
+about.
+
+The CLI is cheaper and should not wait on the tool schema. `shio changes --action` and
+`--actor` are flags over a REST surface that already takes them, and the help budget can
+be measured in one run.
+
+### LXVII.12 A stream nobody has seen deliver (SH1087)
+
+SH967 built the event stream and SH1005 gave it its first console client: the Activity
+page opens an `EventSource`, and a `changes` event raises a line offering the new rows
+rather than redrawing under the curator. Every assertion about that is a source scan —
+the file says `EventSource`, it says `withCredentials`, it does not tear the connection
+down on an error.
+
+That is the one shape this repository already knows is not evidence. A stream that never
+delivers produces no error, no log line and no failing test; it looks exactly like an
+instance where nothing has happened, which on a quiet install is most of the time. The
+same reasoning made SH460 refuse a dev-mode instance and SH579 refuse an unexplained
+red: silence is not a pass.
+
+The console has the instrument already — `e2e/*.check.mjs`, which caught SH702's dialog
+keeping a restore button for a version it was no longer showing. The check is small and
+the point is that it is end to end: open the page against a live instance, write one
+post through the API, and assert the line appears without a reload. A second one asserts
+the negative that costs more to get wrong — that the table did **not** move while it
+appeared.
+
+Worth measuring in the same run: what an open tab costs. SH967 bounded an idle pass at
+four statements, and a page that holds a connection for as long as it is open is where
+that ceiling is actually spent.
 
 ## LXVIII The authoring surface, field by field (Block BC)
 

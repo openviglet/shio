@@ -2812,9 +2812,18 @@ equivalent (`/api/v2/events` → `/agent/changes`, `/api/v2/post/xp` → `/agent
 `/api/v2/system/info` → `/agent/manifest`, `/preview` → `/agent/render`), one entry point
 (`/api/v2/discovery`, read before the manifest), one console-only (`/api/v2/locale`, the language
 picker's catalogue — nothing validates a write against it), six not agent-facing (the console shell,
-`/`, `/api/v2/csrf`, `/api/v2/ping`, `/sites`), and **one gap**: `/api/v2/history`. `/agent/changes`
-walks the same audit rows by cursor and cannot answer "what happened to this page", which is the
-question a correction starts from; SH1005 is the line that closes it.
+`/`, `/api/v2/csrf`, `/api/v2/ping`, `/sites`), and **one gap**: `/api/v2/history`. That feed walked
+the same audit rows by cursor and could not answer "what happened to this page", which is the
+question a correction starts from.
+
+**SH1005 closed it, and that root is an agent equivalent now.**
+`/agent/changes?address=post:Blog/hello-world` is that page's own trail, addressed the way every
+other read on this surface is — an id is not something an agent has, and a feed that took a uuid
+would make this the one question you have to look something up to ask. The console's Activity page
+and this feed read through **one** query set (`ShAgentChangesService`), walked from opposite ends: an
+agent forward from a cursor under a token budget, a person back from the newest row. The gap list is
+empty, which is not the same as vacuous — the run's own count of roots is printed beside it, and
+every root is classified.
 
 Both lints read one scanner, `ShControllerScan` — a second copy of "what is a controller root" is the
 cheapest way for two inventories to disagree about one file. It resolves a class-level

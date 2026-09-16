@@ -1,31 +1,34 @@
 import axios from "@/lib/axios"
-import type { ShHistory } from "@/models/history/history.model"
+import type { ShHistoryPage, ShHistoryQuery } from "@/models/history/history.model"
+
+/** Only the keys that were actually set: an absent parameter is "everything". */
+function params(query: ShHistoryQuery): Record<string, string | number> {
+  const sent: Record<string, string | number> = { limit: query.limit ?? 100 }
+  for (const key of ["before", "since", "agent", "actor", "action", "subject", "site"] as const) {
+    const value = query[key]
+    if (value) sent[key] = value
+  }
+  return sent
+}
 
 /**
  * Read-only client for the SH51 audit / activity trail (`/api/v2/history`).
+ *
+ * SH1005 — a page with a cursor, not a list. Both methods return the same shape, because they are
+ * the same read narrowed differently; `bySite` is gone, since a site is one narrowing among six and
+ * a method per narrowing is how a client grows a second reader.
  */
 export class ShHistoryService {
-  /**
-   * Recent activity across all content in the current tenant, newest first.
-   *
-   * @param who SH999 — `agent`, `human` or a session id. Sent only when set: an absent parameter is
-   *            "everything", which is what the page asks for until a curator narrows it.
-   */
-  async recent(limit = 100, who?: string): Promise<ShHistory[]> {
-    const response = await axios.get<ShHistory[]>("/v2/history",
-      { params: { limit, ...(who ? { agent: who } : {}) } })
+  /** Recent activity across all content in the current tenant, newest first. */
+  async recent(query: ShHistoryQuery = {}): Promise<ShHistoryPage> {
+    const response = await axios.get<ShHistoryPage>("/v2/history", { params: params(query) })
     return response.data
   }
 
-  /** Activity for a single post, newest first. */
-  async byObject(objectId: string, limit = 100): Promise<ShHistory[]> {
-    const response = await axios.get<ShHistory[]>(`/v2/history/object/${objectId}`, { params: { limit } })
-    return response.data
-  }
-
-  /** Activity for a single site, newest first. */
-  async bySite(siteId: string, limit = 100): Promise<ShHistory[]> {
-    const response = await axios.get<ShHistory[]>(`/v2/history/site/${siteId}`, { params: { limit } })
+  /** One object's own trail — what the post editor's history panel asks for. */
+  async byObject(objectId: string, query: ShHistoryQuery = {}): Promise<ShHistoryPage> {
+    const response = await axios.get<ShHistoryPage>(`/v2/history/object/${objectId}`,
+      { params: params(query) })
     return response.data
   }
 }

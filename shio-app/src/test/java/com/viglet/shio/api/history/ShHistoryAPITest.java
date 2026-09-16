@@ -147,26 +147,30 @@ class ShHistoryAPITest {
     void historyByObjectReturnsTransitionsNewestFirst() throws Exception {
         mockMvc.perform(get("/api/v2/history/object/" + postId).principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$.rows.length()").value(2))
                 // Newest first: PUBLISH precedes CREATE.
-                .andExpect(jsonPath("$[0].action").value("PUBLISH"))
-                .andExpect(jsonPath("$[0].owner").value("admin"))
-                .andExpect(jsonPath("$[0].shObject").value(postId))
-                .andExpect(jsonPath("$[0].description").value("Published \"Audited Post\""))
-                .andExpect(jsonPath("$[1].action").value("CREATE"));
+                .andExpect(jsonPath("$.rows[0].action").value("PUBLISH"))
+                .andExpect(jsonPath("$.rows[0].owner").value("admin"))
+                .andExpect(jsonPath("$.rows[0].shObject").value(postId))
+                .andExpect(jsonPath("$.rows[0].description").value("Published \"Audited Post\""))
+                .andExpect(jsonPath("$.rows[1].action").value("CREATE"));
     }
 
+    /**
+     * SH1005 — the site is a filter now, not a path: it is one narrowing among six, and a path per
+     * narrowing is how one reader becomes a query set.
+     */
     @Test
     void historyBySiteReturnsTransitions() throws Exception {
-        mockMvc.perform(get("/api/v2/history/site/" + siteId).principal(mockPrincipal))
+        mockMvc.perform(get("/api/v2/history").param("site", siteId).principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].shSite").value(siteId));
+                .andExpect(jsonPath("$.rows[0].shSite").value(siteId));
     }
 
     @Test
     void recentActivityIncludesThePost() throws Exception {
         mockMvc.perform(get("/api/v2/history").param("limit", "50").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.rows").isArray());
     }
 }

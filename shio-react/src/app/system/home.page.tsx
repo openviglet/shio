@@ -89,7 +89,8 @@ export default function BentoHomePage() {
     siteService.query().then((s) => setSiteCount(s.length)).catch(() => setSiteCount(0))
     postTypeService.query().then((p) => setPostTypeCount(p.length)).catch(() => setPostTypeCount(0))
     systemInfoService.getInfo().then((i) => setAppVersion(i.appVersion)).catch(() => setAppVersion(""))
-    historyService.recent(8).then(setActivity).catch(() => setActivity([]))
+    historyService.recent({ limit: 8 }).then((page) => setActivity(page.rows))
+      .catch(() => setActivity([]))
   }, [])
 
   const stats = useMemo(() => [

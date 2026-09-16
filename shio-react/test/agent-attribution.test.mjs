@@ -38,10 +38,12 @@ test("SH999: the three-way filter is the server's, not the console's", () => {
   const page = read("src", "app", "admin", "activity", "activity.list.page.tsx")
   const service = read("src", "services", "history", "history.service.ts")
 
-  assert.match(service, /\.\.\.\(who \? \{ agent: who \} : \{\}\)/,
+  // SH1005 moved this from one hand-written spread to a loop over every narrowing, because there
+  // are six of them now. The claim is the same one: a parameter that was not set is not sent.
+  assert.match(service, /if \(value\) sent\[key\] = value/,
     "SH999: sent only when set — an absent parameter is everything, which is what the page asks "
       + "for until a curator narrows it")
-  assert.match(page, /service\.recent\(200, who \|\| undefined\)/,
+  assert.match(page, /agent: who \|\| undefined/,
     "SH999: a console that decided for itself which rows were an agent's would be a second answer "
       + "to the question /agent/changes already answers")
   assert.doesNotMatch(page, /agentSessionId|startsWith\("console:"\)/,

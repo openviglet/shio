@@ -7,7 +7,9 @@
   "activity.who": "Who",
   "activity.action": "Action",
   "activity.what": "What",
+  "activity.site": "Site",
   "activity.refresh": "Refresh",
+  "activity.actionAny": "Any action",
   "activity.actionCreate": "Created",
   "activity.actionUpdate": "Updated",
   "activity.actionPublish": "Published",
@@ -17,7 +19,15 @@
   "activity.fields": "Fields: {{fields}}",
   "activity.noFieldsChanged": "No field changed",
   "activity.byAgent": "Agent run — open it in the review queue",
+  "activity.byActor": "Show only what this person did",
   "activity.filterAll": "Everyone",
   "activity.filterAgent": "Agents",
-  "activity.filterCurator": "Curators"
+  "activity.filterCurator": "Curators",
+  "activity.arrived": "Something changed while you were reading — show it",
+  "activity.older": "Older",
+  "activity.newer": "Newer",
+  "activity.section": "History",
+  "activity.none": "Nothing has been recorded for this page yet.",
+  "activity.compare": "Compare this page's versions",
+  "activity.more": "Show older"
 }

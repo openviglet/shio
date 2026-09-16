@@ -53,6 +53,7 @@ import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.history.ShHistoryFilter;
 import com.viglet.shio.blueprint.ShBlueprintRegistry;
 import com.viglet.shio.blueprint.ShBlueprintService;
 import com.viglet.shio.blueprint.ShBlueprintWriteService;
@@ -726,6 +727,15 @@ public class ShAgentAPI {
      *                session counts as one) or a session id. This is the question the feed was built
      *                to answer and could not: an agent polling for what changed wants what changed
      *                <em>outside its own run</em>, and every row looked the same
+     * @param action  SH1005 — one transition kind: {@code CREATE}, {@code UPDATE}, {@code PUBLISH},
+     *                {@code UNPUBLISH}, {@code DELETE} or {@code RESTORE}
+     * @param actor   SH1005 — one principal's rows. An agent acts <em>as</em> somebody, so this and
+     *                {@code by} are different questions
+     * @param subject SH1005 — {@code post}, {@code folder} or {@code site} (SH196)
+     * @param address SH1005 — one page's own history, e.g. {@code post:Blog/hello-world}. This feed
+     *                walked the same rows and could not answer "what happened to this page", which
+     *                is the question a correction starts from and the one read
+     *                {@code ShAgentReadReachabilityLintTest} held as a gap
      */
     @GetMapping("/changes")
     @Operation(summary = "Content changes since a cursor: what a human (or another session) did")
@@ -739,10 +749,19 @@ public class ShAgentAPI {
             @RequestParam(name = "format", required = false) String format,
             @RequestParam(name = "by", required = false) String by,
             @RequestParam(name = "decision", required = false) String decision,
+            @RequestParam(name = "action", required = false) String action,
+            @RequestParam(name = "actor", required = false) String actor,
+            @RequestParam(name = "subject", required = false) String subject,
+            @RequestParam(name = "address", required = false) String address,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
+        // SH1005 — the narrowings the console needed land here as well, and not only there: a
+        // filter only one surface has is the console-only capability P1 refuses, and the reader
+        // underneath is one query set now, so they cost this endpoint a parameter each and nothing
+        // on the payloads an MCP session pays for on every turn (P3).
         ShAgentChanges changes = shAgentChangesService.changes(site, since, limit, ids, budget,
-                includes(include, "fields"), by, decision);
+                includes(include, "fields"),
+                new ShHistoryFilter(by, decision, action, actor, subject, address));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("changes", ShAgentChangesTerse.render(changes), ifNoneMatch)
                 : shAgentBodyEtag.json("changes", changes, ifNoneMatch);

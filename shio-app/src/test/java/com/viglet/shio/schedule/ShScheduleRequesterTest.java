@@ -40,7 +40,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
-import com.viglet.shio.persistence.repository.history.ShHistoryPageableRepository;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.revision.ShPostRevisionRepository;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
@@ -76,7 +76,7 @@ class ShScheduleRequesterTest {
     @Autowired
     private ShPostRevisionRepository shPostRevisionRepository;
     @Autowired
-    private ShHistoryPageableRepository shHistoryPageableRepository;
+    private ShHistoryRepository shHistoryRepository;
     @Autowired
     private ShWidgetRepository shWidgetRepository;
     @Autowired
@@ -156,7 +156,7 @@ class ShScheduleRequesterTest {
     }
 
     private ShHistory last(String postId, ShContentAction action) {
-        List<ShHistory> rows = shHistoryPageableRepository
+        List<ShHistory> rows = shHistoryRepository
                 .findByShObjectOrderByDateDesc(postId, PageRequest.of(0, 50)).stream()
                 .filter(row -> action.name().equals(row.getAction()))
                 .sorted(Comparator.comparing(ShHistory::getDate))

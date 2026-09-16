@@ -48,7 +48,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
-import com.viglet.shio.persistence.repository.history.ShHistoryPageableRepository;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.revision.ShPostRevisionRepository;
 import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
@@ -88,7 +88,7 @@ class ShAuditChangedFieldsTest {
     @Autowired
     private ShAgentChangesService shAgentChangesService;
     @Autowired
-    private ShHistoryPageableRepository shHistoryPageableRepository;
+    private ShHistoryRepository shHistoryRepository;
     @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
     @Autowired
@@ -186,7 +186,7 @@ class ShAuditChangedFieldsTest {
 
     /** The post's audit rows, oldest first. */
     private List<ShHistory> trail(String postId) {
-        return shHistoryPageableRepository.findByShObjectOrderByDateDesc(postId, PageRequest.of(0, 50))
+        return shHistoryRepository.findByShObjectOrderByDateDesc(postId, PageRequest.of(0, 50))
                 .stream()
                 .sorted(java.util.Comparator.comparing(ShHistory::getDate))
                 .toList();

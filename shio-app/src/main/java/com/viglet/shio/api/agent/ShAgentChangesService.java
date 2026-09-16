@@ -31,6 +31,7 @@ import com.viglet.shio.api.history.ShAuditFeedWatermark;
 import com.viglet.shio.api.history.ShChangedFields;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentSubject;
+import com.viglet.shio.api.history.ShHistoryFilter;
 import com.viglet.shio.persistence.model.agent.ShAgentIncident;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -171,13 +172,13 @@ public class ShAgentChangesService {
      */
     public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
                                   Integer budget, boolean fields) {
-        return changes(site, since, limit, ids, budget, fields, null);
+        return changes(site, since, limit, ids, budget, fields, ShHistoryFilter.ALL);
     }
 
     /** Before SH1002 could narrow the feed to what a curator decided one way. */
     public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
                                   Integer budget, boolean fields, String by) {
-        return changes(site, since, limit, ids, budget, fields, by, null);
+        return changes(site, since, limit, ids, budget, fields, ShHistoryFilter.of(by, null));
     }
 
     /**
@@ -190,22 +191,15 @@ public class ShAgentChangesService {
      * predicate rides with the keyset, so a filtered feed pages exactly the way the whole one
      * does.</p>
      *
-     * @param by {@code agent} for every run's writes, {@code curator} for every person's —
-     *           <b>including a console session</b>, which is a curator publishing their own work
-     *           (SH996) — or a session id for one run. {@code null} is everything, and is what every
-     *           caller before this one passes, so the unfiltered feed is the result set it always was
+     * @param filter every narrowing this trail can be read through (SH1005). {@code agent} or
+     *               {@code curator} on {@code by} — a console session is a curator publishing their
+     *               own work (SH996) — or a session id for one run. {@link ShHistoryFilter#ALL} is
+     *               everything, and is what every caller before SH1005 passes, so the unfiltered
+     *               feed is the result set it always was
      */
     public ShAgentChanges changes(String site, String since, Integer limit, boolean ids,
-                                  Integer budget, boolean fields, String by, String decision) {
-        String verdict = decision == null || decision.isBlank()
-                ? null : decision.trim().toUpperCase(java.util.Locale.ROOT);
-        String wanted = by == null || by.isBlank() ? null : by.trim();
-        // A word or an id, told apart here rather than in the query: `agent` and `curator` are the
-        // vocabulary, and anything else is a session, which is the one case that needs no list of
-        // valid values — a session nobody wrote under is an empty feed, not a refusal.
-        String kind = "agent".equalsIgnoreCase(wanted) || "curator".equalsIgnoreCase(wanted)
-                ? wanted.toLowerCase(java.util.Locale.ROOT) : null;
-        String session = wanted == null || kind != null ? null : wanted;
+                                  Integer budget, boolean fields, ShHistoryFilter rawFilter) {
+        ShHistoryFilter filter = addressed(rawFilter);
         ShAgentProperties.Changes config = properties.getChanges();
         int cap = limit == null || limit <= 0
                 ? config.getDefaultLimit()
@@ -226,8 +220,8 @@ public class ShAgentChangesService {
         // page — a full page that happens to be the last one would otherwise send the
         // caller back for an empty round trip every time.
         List<ShHistory> entries = window
-                ? newestFirst(scope, ceiling, cap, session, kind, verdict)
-                : afterCursor(scope, ceiling, from, cap + 1, session, kind, verdict);
+                ? newestFirst(scope, ceiling, null, cap, filter)
+                : afterCursor(scope, ceiling, from, cap + 1, filter);
         boolean more = !window && entries.size() > cap;
         if (more) {
             entries = entries.subList(0, cap);
@@ -284,6 +278,119 @@ public class ShAgentChangesService {
         tokens.add(ShAgentChangesTerse.header(draft));
         return withBudget(draft, new ShAgentChanges.Budget(tokens.spentTokens(),
                 tokens.limitTokens(), cut));
+    }
+
+    /**
+     * The filter with its {@code object} resolved from an SH79 address (SH1005).
+     *
+     * <h2>The read gap this closes</h2>
+     *
+     * <p>{@code ShAgentReadReachabilityLintTest} held {@code /api/v2/history} as the one read an
+     * agent could not make: this feed walked the same rows and could not answer <b>"what happened
+     * to this page"</b>, which is the question a correction starts from — a curator leaves a note
+     * about one page (SH1003), and the run that fixes it wants that page's history and not the
+     * instance's.</p>
+     *
+     * <p>Addressed rather than by id, because an id is not something an agent has: every other
+     * read on this surface takes {@code post:site/url}, and a feed that took a uuid would make
+     * this the one question you have to look something up to ask. An address that resolves to
+     * nothing raises the resolver's own teaching 404 listing what is there, rather than an empty
+     * feed that reads as "nothing happened".</p>
+     */
+    private ShHistoryFilter addressed(ShHistoryFilter filter) {
+        String object = filter.object();
+        if (object == null || !object.contains(":")) {
+            return filter;
+        }
+        return new ShHistoryFilter(filter.by(), filter.decision(), filter.action(), filter.actor(),
+                filter.subject(), shAddressResolver.resolve(object).id());
+    }
+
+    /**
+     * One page of the same trail, for a reader that scrolls rather than resumes (SH1005).
+     *
+     * <h2>Why the console reads through here and not through its own queries</h2>
+     *
+     * <p>It had its own: page zero, five hundred rows, no cursor and no filter, over a second set of
+     * finders. That is P1 working and P10 not applied — the agent's feed was the better reader of
+     * the same table and the console built a weaker one beside it, so the two could disagree about
+     * scope, about the ordering guard, and about what a cursor even is. They cannot now: this is the
+     * feed's query set, its site scope and its SH147 ceiling, asked from the other end.</p>
+     *
+     * <h2>Why not the feed's own response shape</h2>
+     *
+     * <p>The feed is <b>oldest-first with a token budget</b>, because an agent walks it forward once
+     * and pays for every row. A person reads the newest first and scrolls back, and dropping the
+     * oldest rows of their page to stay under a token ceiling would be answering a question they did
+     * not ask. So this returns the rows and the two positions, and the caller shapes them: same
+     * reader, same cursor grammar, different end.</p>
+     *
+     * @param before the position to page back from — a {@code cursor} from a previous call;
+     *               {@code null} starts at the newest row in scope
+     * @param since  a position to read <em>forward</em> from instead, which is the arrivals poll:
+     *               what has been written since the page was drawn. Wins over {@code before}, since
+     *               asking both is asking for two different pages
+     */
+    public Trail trail(String site, ShHistoryFilter raw, String before, String since, int limit) {
+        ShHistoryFilter filter = addressed(raw);
+        ShAgentProperties.Changes config = properties.getChanges();
+        Instant ceiling = watermark.ceiling().minusMillis(Math.max(0, config.getLagMillis()));
+        Scope scope = scope(site);
+        int cap = Math.max(1, limit);
+        ShAgentChangeCursor after = since == null || since.isBlank()
+                ? null : ShAgentChangeCursor.parse(since);
+        ShAgentChangeCursor from = before == null || before.isBlank()
+                ? null : ShAgentChangeCursor.parse(before);
+
+        // cap + 1 for the same reason the feed does it: `more` is then a fact rather than an
+        // inference from a full page, which would send a reader at the end of the trail to an
+        // empty page every time.
+        List<ShHistory> rows = after == null
+                ? newestFirst(scope, ceiling, from, cap + 1, filter)
+                : afterCursor(scope, ceiling, after, cap + 1, filter);
+        boolean more = rows.size() > cap;
+        if (more) {
+            rows = rows.subList(0, cap);
+        }
+        if (after != null) {
+            // The forward query answers oldest first; this reader always renders newest first, so
+            // the two directions hand back one order and the caller has no mode to get wrong.
+            rows = reversedRows(rows);
+        }
+        // SH376 — the same foreign-write observation the feed makes, because these are the same
+        // rows and a position this JVM never issued is proof of a second node either way.
+        for (ShHistory row : rows) {
+            watermark.observe(row.getDate());
+        }
+        return new Trail(List.copyOf(rows), position(rows, 0), position(rows, rows.size() - 1),
+                more, scope.names());
+    }
+
+    /**
+     * A page of the trail, newest first (SH1005).
+     *
+     * @param latest the newest row's position: pass it as {@code since} to ask what has arrived
+     * @param cursor the oldest row's position: pass it as {@code before} for the next page back
+     * @param more   rows remain beyond this page in the direction it was read
+     * @param sites  site id to name, for the sites this read could see — so a caller names a site
+     *               without a query per row, and never names one it may not read
+     */
+    public record Trail(List<ShHistory> rows, String latest, String cursor, boolean more,
+                        Map<String, String> sites) {
+    }
+
+    private static List<ShHistory> reversedRows(List<ShHistory> ascending) {
+        List<ShHistory> descending = new ArrayList<>(ascending);
+        Collections.reverse(descending);
+        return descending;
+    }
+
+    private static String position(List<ShHistory> rows, int index) {
+        if (rows.isEmpty()) {
+            return null;
+        }
+        ShHistory row = rows.get(index);
+        return new ShAgentChangeCursor(row.getDate(), row.getId()).toString();
     }
 
     /**
@@ -535,29 +642,44 @@ public class ShAgentChangesService {
 
     // --- querying ---
 
-    private List<ShHistory> newestFirst(Scope scope, Instant ceiling, int cap, String session,
-                                        String kind, String decision) {
+    /**
+     * The newest rows in scope, optionally starting behind {@code before} (SH1005).
+     *
+     * <p>The filter is unpacked here, once, and the repository's parameter list is long because a
+     * JPQL query has no other shape. That is the trade SH1005 made deliberately: one long signature
+     * nobody outside this file calls, against a second query set that the console had to keep in
+     * step with this one and did not.</p>
+     */
+    private List<ShHistory> newestFirst(Scope scope, Instant ceiling, ShAgentChangeCursor before,
+                                        int cap, ShHistoryFilter filter) {
         PageRequest page = PageRequest.of(0, cap);
+        Instant at = before == null ? null : before.at();
+        String id = before == null ? null : before.id();
         if (scope.unrestricted()) {
-            return shHistoryRepository.findWindow(ceiling, session, kind, decision, page);
+            return shHistoryRepository.findWindow(ceiling, at, id, filter.session(), filter.kind(),
+                    filter.decision(), filter.action(), filter.actor(), filter.subject(),
+                    filter.object(), page);
         }
         return scope.siteIds().isEmpty()
                 ? List.of()
-                : shHistoryRepository.findWindowInSites(ceiling, scope.siteIds(), session, kind,
-                        decision, page);
+                : shHistoryRepository.findWindowInSites(ceiling, scope.siteIds(), at, id,
+                        filter.session(), filter.kind(), filter.decision(), filter.action(),
+                        filter.actor(), filter.subject(), filter.object(), page);
     }
 
     private List<ShHistory> afterCursor(Scope scope, Instant ceiling, ShAgentChangeCursor from,
-                                        int cap, String session, String kind, String decision) {
+                                        int cap, ShHistoryFilter filter) {
         PageRequest page = PageRequest.of(0, cap);
         if (scope.unrestricted()) {
-            return shHistoryRepository.findSince(ceiling, from.at(), from.id(), session, kind,
-                    decision, page);
+            return shHistoryRepository.findSince(ceiling, from.at(), from.id(), filter.session(),
+                    filter.kind(), filter.decision(), filter.action(), filter.actor(),
+                    filter.subject(), filter.object(), page);
         }
         return scope.siteIds().isEmpty()
                 ? List.of()
                 : shHistoryRepository.findSinceInSites(ceiling, scope.siteIds(), from.at(),
-                        from.id(), session, kind, decision, page);
+                        from.id(), filter.session(), filter.kind(), filter.decision(),
+                        filter.action(), filter.actor(), filter.subject(), filter.object(), page);
     }
 
     /**

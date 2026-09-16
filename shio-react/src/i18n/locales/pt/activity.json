@@ -7,7 +7,9 @@
   "activity.who": "Quem",
   "activity.action": "Ação",
   "activity.what": "O quê",
+  "activity.site": "Site",
   "activity.refresh": "Atualizar",
+  "activity.actionAny": "Qualquer ação",
   "activity.actionCreate": "Criado",
   "activity.actionUpdate": "Atualizado",
   "activity.actionPublish": "Publicado",
@@ -17,7 +19,15 @@
   "activity.fields": "Campos: {{fields}}",
   "activity.noFieldsChanged": "Nenhum campo alterado",
   "activity.byAgent": "Execução de agente — abrir na fila de revisão",
+  "activity.byActor": "Mostrar apenas o que esta pessoa fez",
   "activity.filterAll": "Todos",
   "activity.filterAgent": "Agentes",
-  "activity.filterCurator": "Curadores"
+  "activity.filterCurator": "Curadores",
+  "activity.arrived": "Algo mudou enquanto você lia — mostrar",
+  "activity.older": "Mais antigas",
+  "activity.newer": "Mais recentes",
+  "activity.section": "Histórico",
+  "activity.none": "Nada foi registrado para esta página ainda.",
+  "activity.compare": "Comparar as versões desta página",
+  "activity.more": "Mostrar mais antigas"
 }

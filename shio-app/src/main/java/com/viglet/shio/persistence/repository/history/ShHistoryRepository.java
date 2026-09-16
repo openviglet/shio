@@ -70,6 +70,23 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 			+ "  or (:kind = 'curator' and (h.agentSessionId is null "
 			+ "      or h.agentSessionId like 'console:%'))) ";
 
+	/**
+	 * SH1005 — the three narrowings the console asked for and one reader now answers.
+	 *
+	 * <p>Here rather than in a second query set, and applied before the page rather than after it,
+	 * for the reason {@link com.viglet.shio.api.history.ShHistoryFilter} states: this trail is
+	 * resumable from both ends now, so a filter applied to what came back would hand a caller a
+	 * short page while the rows it asked for sat behind the cursor.</p>
+	 *
+	 * <p>{@code subjectKind} is coalesced rather than compared, because a row written before SH196
+	 * added that column carries {@code null} and <em>is</em> a post — asking for posts and not
+	 * getting the oldest ones would make the filter quietly mean "posts since SH196".</p>
+	 */
+	String MATCHING = "and (:action is null or h.action = :action) "
+			+ "and (:actor is null or h.owner = :actor) "
+			+ "and (:subject is null or coalesce(h.subjectKind, 'POST') = :subject) "
+			+ "and (:object is null or h.shObject = :object) ";
+
 	List<ShHistory> findAll();
 
 	Optional<ShHistory> findById(String id);
@@ -86,32 +103,21 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	void delete(String id);
 
 	/**
-	 * Most recent audit entries first (SH83's {@code changes}).
+	 * One object's whole trail, newest first.
 	 *
-	 * <p>{@code shSite} is a plain id column here, not an association, so filtering on
-	 * it cannot trip the SH22 {@code @TenantId} JOINED-join hazard — and the row's own
-	 * {@code tenantId} discriminator already scopes the result. Paged rather than
-	 * sorted in memory because an audit table is the one table that only grows.</p>
+	 * <p>The last derived finder over this table, and it is here because a <b>read-back</b> is not
+	 * a surface: a test asserting what a write recorded wants the rows and none of the scope,
+	 * ceiling and cursor the two readers exist to apply. SH1005 deleted the other four — the
+	 * console's whole query set, which duplicated the feed's more weakly — and merged
+	 * {@code ShHistoryPageableRepository} into this one, because two repositories over one table
+	 * is how a second reader gets written without anybody deciding to write one.</p>
+	 *
+	 * <p>{@code shObject} is a plain id column here, not an association, so filtering on it cannot
+	 * trip the SH22 {@code @TenantId} JOINED-join hazard — and the row's own {@code tenantId}
+	 * discriminator already scopes the result.</p>
 	 */
-	@Query("select h from ShHistory h order by h.date desc, h.id desc")
-	List<ShHistory> findRecent(Pageable pageable);
+	List<ShHistory> findByShObjectOrderByDateDesc(String shObject, Pageable pageable);
 
-	@Query("select h from ShHistory h where h.shSite = :siteId order by h.date desc, h.id desc")
-	List<ShHistory> findRecentBySite(String siteId, Pageable pageable);
-
-	/**
-	 * The change feed's window (SH88): the newest entries up to {@code ceiling}.
-	 *
-	 * <p>The ceiling is the SH147 watermark — the oldest write that has stamped and not
-	 * finished, so an entry cannot be reported while a transaction that stamped before it is
-	 * still committing and could land <em>behind</em> a cursor that has already moved past it.
-	 * See {@code ShAuditFeedWatermark}.</p>
-	 *
-	 * <p>Two shapes of each query rather than one with an {@code or} on a flag: an
-	 * unrestricted credential reads the whole trail (including entries whose site could
-	 * not be recorded), a site-scoped one reads only the sites it can see, and expressing
-	 * that as a parameter would put an access rule inside a query string.</p>
-	 */
 	/**
 	 * The agent-made entries, newest first (SH109). {@code agent_session_id} is exactly the
 	 * column SH106 added for this: before it, "which changes did that run make" was a
@@ -126,15 +132,41 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 			+ "order by h.date asc, h.id asc")
 	List<ShHistory> findByAgentSession(String session);
 
-	@Query("select h from ShHistory h where h.date <= :ceiling " + WROTE_IT + DECIDED
-			+ "order by h.date desc, h.id desc")
-	List<ShHistory> findWindow(Instant ceiling, String session, String kind, String decision,
+	/**
+	 * The change feed's window (SH88): the newest entries up to {@code ceiling}.
+	 *
+	 * <p>The ceiling is the SH147 watermark — the oldest write that has stamped and not
+	 * finished, so an entry cannot be reported while a transaction that stamped before it is
+	 * still committing and could land <em>behind</em> a cursor that has already moved past it.
+	 * See {@code ShAuditFeedWatermark}.</p>
+	 *
+	 * <p>Two shapes of each query rather than one with an {@code or} on a flag: an
+	 * unrestricted credential reads the whole trail (including entries whose site could
+	 * not be recorded), a site-scoped one reads only the sites it can see, and expressing
+	 * that as a parameter would put an access rule inside a query string.</p>
+	 *
+	 * <p><b>SH1005 — and everything strictly <em>before</em> {@code (at, id)}, when one is
+	 * given.</b></p>
+	 *
+	 * <p>The window and the page behind it are one query because they are one question asked from
+	 * one end: "the newest rows in scope, starting here". A null position is the edge of the feed,
+	 * which is what every caller before SH1005 asked for, so the unfiltered window is the result
+	 * set it always was — and the console's back-paging is the same keyset predicate as SH88's,
+	 * reversed, rather than a second reader with its own idea of what a cursor is.</p>
+	 */
+	@Query("select h from ShHistory h where h.date <= :ceiling "
+			+ "and (:at is null or h.date < :at or (h.date = :at and h.id < :id)) "
+			+ WROTE_IT + DECIDED + MATCHING + "order by h.date desc, h.id desc")
+	List<ShHistory> findWindow(Instant ceiling, Instant at, String id, String session, String kind,
+			String decision, String action, String actor, String subject, String object,
 			Pageable pageable);
 
-	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds " + WROTE_IT
-			+ DECIDED + "order by h.date desc, h.id desc")
-	List<ShHistory> findWindowInSites(Instant ceiling, Collection<String> siteIds, String session,
-			String kind, String decision, Pageable pageable);
+	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds "
+			+ "and (:at is null or h.date < :at or (h.date = :at and h.id < :id)) "
+			+ WROTE_IT + DECIDED + MATCHING + "order by h.date desc, h.id desc")
+	List<ShHistory> findWindowInSites(Instant ceiling, Collection<String> siteIds, Instant at,
+			String id, String session, String kind, String decision, String action, String actor,
+			String subject, String object, Pageable pageable);
 
 	/**
 	 * Everything strictly after the {@code (at, id)} position, oldest first (SH88).
@@ -145,14 +177,16 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	 * cursor's second, which on a batch write is most of them.</p>
 	 */
 	@Query("select h from ShHistory h where h.date <= :ceiling "
-			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT + DECIDED
+			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT + DECIDED + MATCHING
 			+ "order by h.date asc, h.id asc")
 	List<ShHistory> findSince(Instant ceiling, Instant at, String id, String session, String kind,
-			String decision, Pageable pageable);
+			String decision, String action, String actor, String subject, String object,
+			Pageable pageable);
 
 	@Query("select h from ShHistory h where h.date <= :ceiling and h.shSite in :siteIds "
-			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT + DECIDED
+			+ "and (h.date > :at or (h.date = :at and h.id > :id)) " + WROTE_IT + DECIDED + MATCHING
 			+ "order by h.date asc, h.id asc")
 	List<ShHistory> findSinceInSites(Instant ceiling, Collection<String> siteIds, Instant at,
-			String id, String session, String kind, String decision, Pageable pageable);
+			String id, String session, String kind, String decision, String action, String actor,
+			String subject, String object, Pageable pageable);
 }

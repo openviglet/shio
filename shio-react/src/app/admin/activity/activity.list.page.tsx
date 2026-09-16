@@ -4,16 +4,24 @@ import { PageHero } from "@/components/page-hero"
 import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { Bot, History, RefreshCw } from "lucide-react"
-import { Link } from "react-router-dom"
-import { useCallback, useEffect, useState } from "react"
+import { Bot, ChevronLeft, ChevronRight, History, RefreshCw, X } from "lucide-react"
+import { Link, useSearchParams } from "react-router-dom"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { useChangeStream } from "@/hooks/use-change-stream"
 import { ShHistoryService } from "@/services/history/history.service"
 import type { ShHistory } from "@/models/history/history.model"
 
 const service = new ShHistoryService()
+
+/** One page. Smaller than the old 200 because there is a page after this one now (SH1005). */
+const PAGE_SIZE = 50
+
+/** The whole transition vocabulary (SH51), which is short enough to offer rather than describe. */
+const ACTIONS = ["CREATE", "UPDATE", "PUBLISH", "UNPUBLISH", "DELETE", "RESTORE"] as const
 
 /** Maps an audit action to its badge styling. Unknown actions fall back to a neutral badge. */
 const ACTION_BADGE: Record<string, string> = {
@@ -27,32 +35,98 @@ const ACTION_BADGE: Record<string, string> = {
 
 export default function ActivityListPage() {
   const { t } = useTranslation()
+  /**
+   * SH1005 — the filters live in the URL, not in component state.
+   *
+   * A narrowed trail is a thing a curator sends to somebody ("look at what this run did on
+   * Tuesday"), and state that only exists in a component cannot be sent, bookmarked, or survive
+   * the browser's own back button. The reader underneath takes them as query predicates, so what
+   * the URL says and what the server was asked are the same list.
+   */
+  const [search, setSearch] = useSearchParams()
+  const who = search.get("who") ?? ""
+  const action = search.get("action") ?? ""
+  const actor = search.get("actor") ?? ""
+  const before = search.get("before") ?? ""
+
   const [items, setItems] = useState<ShHistory[]>([])
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [more, setMore] = useState(false)
   const [loading, setLoading] = useState(true)
-  /** SH999 — everyone, the machines, or the people. The server decides which rows those are. */
-  const [who, setWho] = useState<"" | "agent" | "curator">("")
+  /** SH1005 — the stream said the trail moved; the curator decides when their page moves. */
+  const [arrived, setArrived] = useState(false)
+  /** The positions walked past, so "newer" goes back exactly the way "older" came. */
+  const back = useRef<string[]>([])
+
+  /** One narrowing changed: page one again, and the walk starts over from the newest row. */
+  const narrow = useCallback((key: string, value: string) => {
+    back.current = []
+    const next = new URLSearchParams(search)
+    if (value) next.set(key, value)
+    else next.delete(key)
+    next.delete("before")
+    setSearch(next, { replace: false })
+  }, [search, setSearch])
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
-  const fetchRecent = useCallback(
-    () => service.recent(200, who || undefined).then(setItems).catch(() => setItems([]))
+  const fetchPage = useCallback(
+    () => service.recent({
+      limit: PAGE_SIZE,
+      before: before || undefined,
+      agent: who || undefined,
+      action: action || undefined,
+      actor: actor || undefined,
+    })
+      .then((page) => {
+        setItems(page.rows)
+        setCursor(page.cursor)
+        setMore(page.more)
+        setArrived(false)
+      })
+      .catch(() => {
+        setItems([])
+        setCursor(null)
+        setMore(false)
+      })
       .finally(() => setLoading(false)),
-    [who],
+    [before, who, action, actor],
   )
 
   /** The curator asked, so the spinner is a response to them (SH701). */
   const load = useCallback(() => {
     setLoading(true)
-    void fetchRecent()
-  }, [fetchRecent])
+    void fetchPage()
+  }, [fetchPage])
 
   useEffect(() => {
-    void fetchRecent()
-  }, [t, fetchRecent])
+    void fetchPage()
+  }, [t, fetchPage])
 
-  const actionLabel = (action: string) => {
-    const key = `activity.action${action.charAt(0)}${action.slice(1).toLowerCase()}`
+  useChangeStream(useCallback(() => setArrived(true), []))
+
+  const pageAt = (position: string) => {
+    const next = new URLSearchParams(search)
+    if (position) next.set("before", position)
+    else next.delete("before")
+    setSearch(next, { replace: false })
+  }
+
+  const older = () => {
+    if (!cursor) return
+    back.current = [...back.current, before]
+    pageAt(cursor)
+  }
+
+  const newer = () => {
+    const previous = back.current.at(-1)
+    back.current = back.current.slice(0, -1)
+    pageAt(previous ?? "")
+  }
+
+  const actionLabel = (value: string) => {
+    const key = `activity.action${value.charAt(0)}${value.slice(1).toLowerCase()}`
     const label = t(key)
-    return label === key ? action : label
+    return label === key ? value : label
   }
 
   return (
@@ -69,7 +143,7 @@ export default function ActivityListPage() {
         subtitle={t("activity.description")}
         urlBase={ROUTES.ADMIN_ROOT}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {/*
               SH999 — three buttons rather than a select: the whole vocabulary is three words, and a
               curator asking "was that us or the agent" should not have to open a menu to ask it.
@@ -81,11 +155,34 @@ export default function ActivityListPage() {
                 size="sm"
                 variant={who === value ? "default" : "outline"}
                 disabled={loading}
-                onClick={() => setWho(value)}
+                onClick={() => narrow("who", value)}
               >
                 {t(key)}
               </Button>
             ))}
+            {/*
+              SH1005 — six kinds is a menu rather than six more buttons, and it is the narrowing a
+              curator reaches for first: "what went live today" is a question this page was asked
+              and could only answer by scrolling.
+            */}
+            <Select value={action || "all"}
+              onValueChange={(value) => narrow("action", value === "all" ? "" : value)}>
+              <SelectTrigger className="w-40" aria-label={t("activity.action")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("activity.actionAny")}</SelectItem>
+                {ACTIONS.map((value) => (
+                  <SelectItem key={value} value={value}>{actionLabel(value)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {actor && (
+              <Button size="sm" variant="secondary" onClick={() => narrow("actor", "")}>
+                {actor}
+                <X className="ml-2 h-3 w-3" />
+              </Button>
+            )}
             <Button onClick={load} size="sm" variant="outline" disabled={loading}>
               <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               {t("activity.refresh")}
@@ -93,7 +190,21 @@ export default function ActivityListPage() {
           </div>
         }
       />
-      <div className="p-6">
+      <div className="p-6 space-y-4">
+        {/*
+          SH1005 — SH967's stream, as a line the curator acts on rather than a table that moves
+          under them. Redrawing on every event would take the row they were reading off the screen,
+          and on this page the row they are reading is the reason they came (P7).
+        */}
+        {arrived && (
+          <button
+            type="button"
+            onClick={load}
+            className="w-full rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
+          >
+            {t("activity.arrived")}
+          </button>
+        )}
         {items.length === 0 ? (
           <EmptyState
             icon={IconHistory}
@@ -108,6 +219,7 @@ export default function ActivityListPage() {
                   <TableRow>
                     <TableHead className="w-32">{t("activity.action")}</TableHead>
                     <TableHead>{t("activity.what")}</TableHead>
+                    <TableHead className="w-32">{t("activity.site")}</TableHead>
                     <TableHead className="w-40">{t("activity.who")}</TableHead>
                     <TableHead className="w-52">{t("activity.when")}</TableHead>
                   </TableRow>
@@ -119,6 +231,16 @@ export default function ActivityListPage() {
                         <Badge variant="outline" className={ACTION_BADGE[item.action] ?? ""}>
                           {actionLabel(item.action)}
                         </Badge>
+                        {/*
+                          SH196 recorded the subject on every row and no reader carried it, so a
+                          folder rename read as a post's. Said only when it is not a post, because
+                          a badge on every row is a column that says nothing.
+                        */}
+                        {item.subjectKind && item.subjectKind !== "POST" && (
+                          <Badge variant="outline" className="ml-1 text-[10px]">
+                            {item.subjectKind.toLowerCase()}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">{item.description}</div>
@@ -134,8 +256,22 @@ export default function ActivityListPage() {
                           </div>
                         )}
                       </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {item.siteName ?? ""}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {item.owner}
+                        {/*
+                          SH1005 — the name is the filter: "everything this person did" was a
+                          question the server could answer and the page had no way to ask.
+                        */}
+                        <button
+                          type="button"
+                          className="hover:underline"
+                          title={t("activity.byActor")}
+                          onClick={() => narrow("actor", item.owner)}
+                        >
+                          {item.owner}
+                        </button>
                         {/*
                           SH999 — the run beside the person, because both are true: an agent acts as
                           somebody's credential, so a column showing only the name said the same
@@ -165,6 +301,20 @@ export default function ActivityListPage() {
               </Table>
           </Panel>
         )}
+        {/*
+          SH1005 — the trail did not end at row five hundred; that was where the reader stopped.
+        */}
+        <div className="flex items-center justify-end gap-2">
+          <Button size="sm" variant="outline" disabled={loading || back.current.length === 0}
+            onClick={newer}>
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            {t("activity.newer")}
+          </Button>
+          <Button size="sm" variant="outline" disabled={loading || !more} onClick={older}>
+            {t("activity.older")}
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </>
   )

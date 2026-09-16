@@ -449,7 +449,10 @@ const REVEALED = {
   "SH173"  : "content-assets.test.mjs",
   "SH175"  : "ShAgentOpsContractTest.java",
   "SH176"  : "ShAgentSourceAttributionTest.java",
-  "SH196"  : "ShAgentSafetyTest.java",
+  // SH196 was here, credited to ShAgentSafetyTest, and SH1005 paid it: the subject column has been
+  // on every audit row since SH196 and no reader carried it, so a folder rename read as a post's.
+  // `ShHistoryTrailTest` asks the trail for `subject=folder` and gets the folder row and only it —
+  // an assertion at the boundary the defect crossed, which is a reader's, not the writer's.
   // SH203 was here, credited to ShObjectCopyNamingTest, and SH244 paid it: `folder.copy` drives a
   // destination inside the source's own subtree and requires `folder-copy-cycle`, so the guard
   // SH203 installed on `ShFolderWriteService.checkCopyable` — the one both surfaces share — now

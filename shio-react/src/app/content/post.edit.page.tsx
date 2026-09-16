@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
-import { IconFileText, IconMessage } from "@tabler/icons-react"
+import { IconFileText, IconHistory, IconMessage } from "@tabler/icons-react"
 import { Clock, Eye, EyeOff, History, Loader2, Save, Sparkles, Upload } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -20,6 +20,7 @@ import { ShPostUnifiedService } from "@/services/post-unified/post-unified.servi
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
 import { ShAclService } from "@/services/acl/acl.service"
 import { NoteRail } from "@/components/note-rail"
+import { PostHistoryPanel } from "@/components/post-history.panel"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import { PublishPreviewDialog } from "@/components/publish-preview.dialog"
@@ -473,6 +474,17 @@ export default function PostUnifiedEditPage() {
           <AdaptiveSectionCard.StaticHeader icon={IconMessage} title={t("note.section")} />
           <AdaptiveSectionCard.Content>
             <NoteRail objectId={postId} />
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
+
+        {/*
+          SH1005 — "who changed this, and when" is the question every CMS is asked, and answering
+          it meant leaving the page and scanning an instance-wide log for your own post.
+        */}
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader icon={IconHistory} title={t("activity.section")} />
+          <AdaptiveSectionCard.Content>
+            <PostHistoryPanel objectId={postId} onCompare={() => setVersionsOpen(true)} />
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
       </div>

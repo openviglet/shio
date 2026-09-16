@@ -33,4 +33,43 @@ export interface ShHistory {
   agentName?: string | null
   /** SH196 — `POST` or `FOLDER`: what the row is about, recorded since SH196 and never carried. */
   subjectKind?: string | null
+  /** SH1005 — the site as a name, resolved from the page's scope; absent when the row named none. */
+  siteName?: string | null
+}
+
+/**
+ * SH1005 — one page of the trail, and the two positions either side of it.
+ *
+ * Every read of this API used to be page zero, so the five-hundredth row was the last one the
+ * console could show on the one table that only grows. It is the change feed's own keyset cursor,
+ * read from the other end: an agent walks it forward from where it stopped, a person scrolls back
+ * from the newest row.
+ */
+export interface ShHistoryPage {
+  rows: ShHistory[]
+  /** The newest row's position — pass as `since` to ask what has arrived since this page. */
+  latest: string | null
+  /** The oldest row's position — pass as `before` for the page behind this one. */
+  cursor: string | null
+  /** There are rows beyond this page, as a fact rather than a guess from a full one. */
+  more: boolean
+}
+
+/** What a reader can narrow the trail by (SH1005). Every one of these is a query predicate. */
+export interface ShHistoryQuery {
+  limit?: number
+  /** A `cursor` from a previous page: the next page back. */
+  before?: string
+  /** A `latest` from a previous page: what has been written since it was drawn. */
+  since?: string
+  /** `agent`, `curator`, or one run's session id (SH999). */
+  agent?: string
+  /** One principal's rows — a different question from `agent`, because an agent acts as someone. */
+  actor?: string
+  /** One transition kind, e.g. `PUBLISH`. */
+  action?: string
+  /** `post`, `folder` or `site` (SH196). */
+  subject?: string
+  /** One site, by name or id. */
+  site?: string
 }

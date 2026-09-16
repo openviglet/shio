@@ -835,6 +835,46 @@ post. `agent` and `actor` filter the read — and they are **not the same filter
 point: an agent acts *as* somebody, so the credential is the same on a run's rows and on that
 person's own, and a page that offers only one of the two cannot answer "was that us or the agent".
 
-Filtered after the query here, unlike the agent feed, and the difference is resumability: this read
-is "the newest N, again", so a short filtered page is a short page and nothing is lost. The agent
-feed hands back a cursor, so the same shortcut would hide rows forever.
+## One reader over the audit table, for both surfaces (SH1005)
+
+SH999's filters were applied *after* the query, which was defensible only while this read was "the
+newest N, again". It is not any more, and the reason it is not is the defect SH1005 closed: every
+console read of this trail was **page zero**, capped at five hundred, with no cursor and no filter,
+over its own finders — while `/agent/changes` read the same rows with a keyset cursor, a site scope,
+a commit-order ceiling and a measured budget. The five-hundredth row was the last one the product
+could show a person, on the one table that only grows. That is P1 working and P10 not applied, and
+it is the shape a console-only surface takes when nobody names it: the weaker of the two readers is
+the one the curator uses.
+
+Both surfaces now go through `ShAgentChangesService`. The agent walks the trail forward from a
+cursor and pays a token budget; the console walks it back from the newest row, because a person
+scrolls rather than resumes. The query set, the scope and the cursor grammar are one, so the two
+cannot disagree about what happened or about where a position is.
+
+| Parameter | What it narrows |
+|---|---|
+| `before` | the page behind this one — a `cursor` from the previous page |
+| `since` | read forward instead: what has been written since the page was drawn |
+| `agent` | `agent`, `curator`, or one run's session id (SH999) |
+| `actor` | one principal's rows — an agent acts *as* somebody, so this is a different question |
+| `action` | one transition kind, e.g. `PUBLISH` |
+| `subject` | `post`, `folder` or `site` (SH196) |
+| `site` | one site, by name or id |
+
+A page carries `rows`, `latest` (pass it back as `since=`), `cursor` (pass it back as `before=`) and
+`more`, which is read from one row beyond the page rather than inferred from a full one.
+
+Two things follow, and neither is housekeeping. **`/api/v2/history/site/{id}` is gone**: a site is
+one narrowing among six, and a path per narrowing is how one reader becomes a query set.
+`/object/{id}` stays, because that one is not a narrowing — it is the post editor's own history
+panel asking about the object the curator is looking at. And **`action`, `actor` and `subject` land
+on `/agent/changes` too**: a filter only the console has is the console-only capability P1 refuses,
+and they cost a query parameter each rather than schema tokens on the payload an MCP session pays
+for on every turn.
+
+`ShHistoryPageableRepository` is gone with them. Two repositories over one table is how a second
+reader gets written without anybody deciding to write one, and `ShHistoryTrailTest` now fails the
+build if a second file appears in that package, or if the controller reaches for a repository at
+all. It asserts the paging by **tiling** — the pages a reader walks, concatenated, must equal the
+trail exactly — and the narrowing by **page fullness**, because a filter applied after the query
+returns the right kind of row and the wrong number of them.

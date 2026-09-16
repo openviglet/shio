@@ -151,6 +151,11 @@ class ShAgentChangesAttributionTest {
         return shAgentChangesService.changes(site, null, 50, false, 0, false, by).changes();
     }
 
+    /** The console's read of the same rows — a page since SH1005, and the rows are on it. */
+    private List<ShHistoryAPI.ShHistoryResponse> trail(String by, String actor) {
+        return shHistoryAPI.byObject(postId, 50, null, null, by, actor, null).rows();
+    }
+
     @Test
     @DisplayName("SH999: an agent's write and a person's, by the same credential, are distinguishable")
     void theFeedSaysWhichWasTheMachine() {
@@ -203,19 +208,19 @@ class ShAgentChangesAttributionTest {
     @Test
     @DisplayName("SH999: the console's Activity read carries the same three facts and the same filters")
     void theConsoleReadSaysItToo() {
-        List<ShHistoryAPI.ShHistoryResponse> rows = shHistoryAPI.byObject(postId, 50, null, null);
+        List<ShHistoryAPI.ShHistoryResponse> rows = trail(null, null);
 
         assertThat(rows).hasSize(3);
         assertThat(rows).filteredOn(row -> row.agent() != null).singleElement()
                 .satisfies(row -> assertThat(row.agentName()).isEqualTo("claude-code"));
-        assertThat(shHistoryAPI.byObject(postId, 50, "agent", null)).singleElement()
+        assertThat(trail("agent", null)).singleElement()
                 .satisfies(row -> assertThat(row.agent()).isEqualTo(RUN));
-        assertThat(shHistoryAPI.byObject(postId, 50, "curator", null)).hasSize(2);
-        assertThat(shHistoryAPI.byObject(postId, 50, null, "ana"))
+        assertThat(trail("curator", null)).hasSize(2);
+        assertThat(trail(null, "ana"))
                 .as("SH999: an agent and a person share a credential, so filtering by name and "
                         + "filtering by machine are not the same filter and the page needs both")
                 .hasSize(3);
-        assertThat(shHistoryAPI.byObject(postId, 50, null, "someone-else")).isEmpty();
+        assertThat(trail(null, "someone-else")).isEmpty();
     }
 
     @Test
