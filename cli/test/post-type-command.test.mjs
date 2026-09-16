@@ -143,9 +143,90 @@ describe("SH768: a conformance run's leftovers are sweepable, and nothing else i
     assert.match(said(c), /ShioConfRendermsgmgaup2qjcArticle/);
   });
 
-  test("an unknown verb is refused with the two it takes", async () => {
+  test("an unknown verb is refused with the three it takes", async () => {
     const c = ctx();
 
-    await assert.rejects(() => run({}, ["purge"], c), /allowed: ls, rm/);
+    // SH1018 added `check`, so the refusal names three. The list is in the message because a
+    // refusal that says only "no" makes the caller go and read the help.
+    await assert.rejects(() => run({}, ["purge"], c), /allowed: ls, check, rm/);
+  });
+});
+
+/**
+ * SH1018 — the measurement a model change is argued from.
+ *
+ * `shio post-type check` exists before any migration does, which is SH322's rule: a migration
+ * argued for by "some posts probably violate this" is one nobody can size, review or verify
+ * afterwards. What this asserts is the part a reader depends on — that the number reaches them, and
+ * that the exit code lets the command sit in a gate.
+ */
+describe("SH1018: what a post-type's stored content does not satisfy", () => {
+  const REPORT = {
+    postType: "Article",
+    posts: 12,
+    violating: 3,
+    unreadable: 1,
+    rules: [{ field: "headline", rule: "required", says: "This field is required.", posts: 3 }],
+    undeclared: [{ field: "subtitle", posts: 5 }],
+  };
+
+  function checkCtx(report = REPORT) {
+    const out = [];
+    const calls = [];
+    return {
+      out,
+      calls,
+      env: { SHIO_URL: "http://instance", SHIO_USER: "admin", SHIO_PASSWORD: "admin" },
+      stdout: { write: (line) => out.push(line) },
+      async fetch(url) {
+        calls.push(new URL(url).pathname);
+        return new Response(JSON.stringify(report), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      },
+    };
+  }
+
+  test("it reads one type by name, and not the whole listing", async () => {
+    const c = checkCtx();
+
+    await run({}, ["check", "Article"], c);
+
+    assert.deepEqual(c.calls, ["/api/v2/post-type/Article/check"],
+      "SH1018: paying for every type's definition first would make a missing name fail as a "
+        + "connection error, which is the wrong sentence for the wrong problem");
+  });
+
+  test("the counts reach the reader, violations and orphan fields apart", async () => {
+    const c = checkCtx();
+
+    await run({}, ["check", "Article"], c);
+    const said = c.out.join("");
+
+    assert.match(said, /12 post\(s\), 3 violating, 1 unreadable/u,
+      "SH1018: a row whose document will not parse is one the check could not judge, so omitting "
+        + "it would understate the number this command exists to produce");
+    assert.match(said, /3 × headline required/u);
+    assert.match(said, /5 × subtitle .*declares no such field/u,
+      "SH1018: named apart from the violations because the fix is different — a violation is "
+        + "content to correct, an undeclared key is a rename that happened on one side only");
+  });
+
+  test("it exits non-zero when there is something to reconcile, so a gate can use it", async () => {
+    assert.equal(await run({}, ["check", "Article"], checkCtx()), 1);
+
+    const clean = { ...REPORT, violating: 0, unreadable: 0, rules: [], undeclared: [] };
+    const c = checkCtx(clean);
+    assert.equal(await run({}, ["check", "Article"], c), 0);
+    assert.match(c.out.join(""), /nothing to reconcile/u,
+      "SH1018: a clean run says so, or a reader cannot tell it from a command that did nothing");
+  });
+
+  test("it refuses without a name, before it touches the network", async () => {
+    const c = checkCtx();
+
+    await assert.rejects(() => run({}, ["check"], c), /name the type/u);
+    assert.deepEqual(c.calls, []);
   });
 });

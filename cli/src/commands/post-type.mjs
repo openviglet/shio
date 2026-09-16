@@ -46,19 +46,82 @@ export async function run(flags, positionals, ctx) {
   const verb = String(positionals[0] ?? "ls").trim().toLowerCase();
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   const client = new ShioAdminClient({ baseUrl, user, password, fetch: ctx.fetch });
-  const types = await listTypes(client);
 
+  // Before the listing, and deliberately: `check` reads one type by name, so paying for every
+  // type's definition first would make a missing name fail as a connection error.
+  if (verb === "check") {
+    return check(client, positionals[1], flags, ctx);
+  }
+
+  const types = await listTypes(client);
   if (verb === "ls" || verb === "list") {
     return list(types, flags, ctx);
   }
   if (verb !== "rm" && verb !== "delete") {
     throw new Error(
       `shio post-type: "${positionals[0]}" is not a verb this takes.\n`
-        + "  allowed: ls, rm\n"
-        + "  example: shio post-type rm --scratch --dry-run",
+        + "  allowed: ls, check, rm\n"
+        + "  example: shio post-type check Article",
     );
   }
   return remove(client, types, flags, ctx);
+}
+
+/**
+ * SH1018 — what this type's stored content does not satisfy.
+ *
+ * <p>Constraints refuse a bad write and say nothing about the rows already there, so a type given a
+ * required field has an instance full of content that violates it — found one publish at a time.
+ * The same is true one level down and is older: a post's data is keyed by field name, so renaming
+ * or removing a field leaves values under a key nothing declares.</p>
+ *
+ * <p>SH322's rule is that the measurement is the deliverable. A migration argued for by "some posts
+ * probably violate this" is one nobody can size, review, or check afterwards — so this prints the
+ * number first, and exits non-zero when there is something to act on, which is what lets it sit in
+ * a gate.</p>
+ */
+/** Named rather than nested in the line above: the repo's lint refuses a nested template. */
+function unreadableNote(report) {
+  return report.unreadable ? `, ${report.unreadable} unreadable` : "";
+}
+
+async function check(client, name, flags, ctx) {
+  if (!name) {
+    throw new Error(
+      "shio post-type check: name the type.\n"
+        + "  example: shio post-type check Article",
+    );
+  }
+  const report = await client.checkPostType(name);
+  if (!report) {
+    throw new Error(`shio post-type check: no post-type named ${name}.`);
+  }
+  if (flags.json) {
+    ctx.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return report.violating > 0 || report.undeclared.length > 0 ? 1 : 0;
+  }
+
+  ctx.stdout.write(
+    `${report.postType}: ${report.posts} post(s), ${report.violating} violating`
+      // Printed only when there are any, and never omitted when there are: a row whose document
+      // will not parse is one the check could not judge, so leaving it out would understate the
+      // number this command exists to produce.
+      + `${unreadableNote(report)}\n`,
+  );
+  for (const rule of report.rules) {
+    ctx.stdout.write(`  ${rule.posts} × ${rule.field} ${rule.rule} — ${rule.says}\n`);
+  }
+  for (const orphan of report.undeclared) {
+    // Named separately because the fix is different: a violation is content to correct, an
+    // undeclared key is a field the model lost — a rename that only happened on one side.
+    ctx.stdout.write(
+      `  ${orphan.posts} × ${orphan.field} — stored, and this type declares no such field\n`,
+    );
+  }
+  if (!report.rules.length && !report.undeclared.length) {
+    ctx.stdout.write("  nothing to reconcile\n");
+  }
+  return report.violating > 0 || report.undeclared.length > 0 ? 1 : 0;
 }
 
 /**

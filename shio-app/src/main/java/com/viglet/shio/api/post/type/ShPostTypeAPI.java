@@ -72,13 +72,17 @@ public class ShPostTypeAPI {
     private final ShPostTypeAdminService shPostTypeAdminService;
     private final ShModelProposalService shModelProposalService;
     private final ShAgentBodyEtag shAgentBodyEtag;
+    /** SH1018 — the measurement a model change is argued from. */
+    private final ShPostTypeCheckService shPostTypeCheckService;
 
     public ShPostTypeAPI(ShPostTypeAdminService shPostTypeAdminService,
                          ShAgentBodyEtag shAgentBodyEtag,
-                          ShModelProposalService shModelProposalService) {
+                          ShModelProposalService shModelProposalService,
+                          ShPostTypeCheckService shPostTypeCheckService) {
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shModelProposalService = shModelProposalService;
         this.shAgentBodyEtag = shAgentBodyEtag;
+        this.shPostTypeCheckService = shPostTypeCheckService;
     }
 
     /**
@@ -109,6 +113,21 @@ public class ShPostTypeAPI {
                 .map(def -> shAgentBodyEtag.json("post-type." + name, def, ifNoneMatch))
                 // SH621 — a refusal that teaches, where `notFound().build()` sent zero bytes.
                 .orElseThrow(() -> new UnknownPostTypeException(name, declaredNames()));
+    }
+
+    /**
+     * SH1018 — what this type's own content does not satisfy, counted.
+     *
+     * <p>Constraints refuse a bad write and say nothing about what is already stored, so a type
+     * given a required field has an instance full of content that violates it, discovered one
+     * publish at a time. This is the measurement SH322 puts before the migration: how many rows
+     * break each rule, and how many carry a key the model no longer declares.</p>
+     *
+     * <p>A read, so it is reachable by the CLI with the same credential that reads the type.</p>
+     */
+    @GetMapping("/{name}/check")
+    public ResponseEntity<Object> check(@PathVariable String name) {
+        return ResponseEntity.ok(shPostTypeCheckService.check(name));
     }
 
     /** Every declared name, for the refusal above to suggest from and list. */

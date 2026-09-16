@@ -76,6 +76,15 @@ export class ShioAdminClient {
   }
 
   /**
+   * SH1018 — what a post-type's own content does not satisfy, counted.
+   *
+   * A read, so it needs nothing a `shio post-type` call does not already carry.
+   */
+  checkPostType(name) {
+    return this.#at(`/api/v2/post-type/${encodeURIComponent(name)}/check`, "GET");
+  }
+
+  /**
    * GET /api/v2/staticfile — the media inventory (SH62's listing, SH145's index).
    *
    * Each item carries the id, the file name and the containing folder's id, which is

@@ -496,3 +496,32 @@ mark's offsets are still valid after a later one has inserted its delimiters.
 
 **`HTML Editor` stays.** `shio convert` produces HTML for imported bodies, and SH956's sanitizer
 already guards that path.
+
+## `post-type check` — what the content does not satisfy (SH1018)
+
+SH1010 made constraints refuse a bad write and said nothing about the rows already stored, so a type
+given a required field has an instance full of content that violates it — found one publish at a
+time. The hole underneath is older: a post's `data` is keyed by field name, so renaming or removing a
+field leaves values under a key nothing declares, and `shio verify` reported orphan posts and folders
+and never an orphan field.
+
+**The measurement ships before the migration**, which is SH322's rule. A migration argued for by
+"some posts probably violate this" is one nobody can size, review or check afterwards.
+`GET /api/v2/post-type/{name}/check` and `shio post-type check <name>` answer how many rows break
+each rule and how many carry an undeclared key.
+
+Three things it is careful about:
+
+- **Both states.** A draft that violates a constraint is a publish that will be refused; a published
+  row that violates one is a page that is already wrong. Counting drafts alone hides the live half.
+- **Two rule sets**, because the model has two: `ShFieldRules` covers what a field's constraints
+  declare, and `required` is a flag on the attribute that `ShRequiredFields` enforces. The report
+  ran only the first until a test said so — and the required field is the *motivating example*, so
+  it would have missed the case it was written for.
+- **Unreadable rows are counted, not skipped.** A row this cannot parse is one it cannot judge, and
+  leaving it out of the total would understate the number the command exists to produce.
+
+One row per rule with a count, worst first — a shape to act on, not a log to read — and undeclared
+keys listed apart, because the fix is different: a violation is content to correct, an undeclared
+key is a rename that happened on one side only. It exits non-zero when there is anything to
+reconcile, so it can sit in a gate.

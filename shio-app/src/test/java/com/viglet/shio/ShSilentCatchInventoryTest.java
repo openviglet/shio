@@ -194,7 +194,14 @@ class ShSilentCatchInventoryTest {
             // sibling whose data will not parse, and calling that a collision would refuse this
             // publish because of a defect in a different post. Verify reports the unparseable
             // row where it belongs — on that row.
-            "api", 72,
+            // SH1018 raises this 72 to 73, and it is the case the lint's own message calls
+            // "not worth reporting" for a specific reason rather than a general one:
+            // `ShPostTypeCheckService` cannot judge a row whose document will not parse, and
+            // it says so IN THE REPORT — `unreadable` is a field of the answer. Recording an
+            // incident as well would fire one every time somebody runs a read-only check,
+            // over a defect the render path already records where it belongs. The lint keys
+            // on "records or rethrows" and cannot see a count in a return value.
+            "api", 73,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.
