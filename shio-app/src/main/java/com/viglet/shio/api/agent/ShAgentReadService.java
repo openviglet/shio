@@ -25,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.post.ShScheduleWindow;
+import com.viglet.shio.api.query.ShContentQuery;
+import com.viglet.shio.api.query.ShContentQueryResolver;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
 import com.viglet.shio.api.agent.verify.ShPostLinks;
 import com.viglet.shio.api.release.ShReleaseService;
@@ -106,6 +108,8 @@ public class ShAgentReadService {
     /** SH1003 — what a curator is still asking of a page, for `include=notes`. */
     private final com.viglet.shio.api.note.ShNoteService shNoteService;
     private final com.viglet.shio.api.history.ShWorkingService shWorkingService;
+    /** SH1022 — the one place a filter's names become the ids the predicate binds. */
+    private final ShContentQueryResolver contentQueryResolver;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -120,7 +124,9 @@ public class ShAgentReadService {
                               ShReleaseService shReleaseService,
                               ShPostLinks shPostLinks,
                               com.viglet.shio.api.note.ShNoteService shNoteService,
-                              com.viglet.shio.api.history.ShWorkingService shWorkingService) {
+                              com.viglet.shio.api.history.ShWorkingService shWorkingService,
+                              ShContentQueryResolver contentQueryResolver) {
+        this.contentQueryResolver = contentQueryResolver;
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -226,8 +232,33 @@ public class ShAgentReadService {
     public ShAgentFound find(String site, String type, String folder, String q,
                              Integer limit, boolean ids, String after, boolean trash, String state,
                              String scheduled, String release) {
+        return find(ShContentQuery.ALL.withSite(site).withType(type).withFolder(folder).withQ(q)
+                .withState(state), limit, ids, after, trash, scheduled, release);
+    }
+
+    /**
+     * The listing, filtered by the one content-query vocabulary (SH1022).
+     *
+     * <p><b>The predicate is the database's.</b> This used to load both state rows of every post
+     * in the readable sites and then filter the list, so {@code folder=} narrowed the payload and
+     * not the work: one folder of a ten-thousand-post site read twenty thousand rows to answer
+     * with twenty, and {@code state=published} read the draft half before discarding it.
+     * {@code ShFindQueryBenchmarkTest} is the measurement that says so, and it landed before this
+     * did — a cost that is argued rather than measured fails quietly, in somebody else's
+     * instance.</p>
+     *
+     * <p>Two things stayed in memory and both are deliberate. The <b>trash</b> listing reads a
+     * native query that bypasses the entity's soft-delete restriction, so its filters are applied
+     * here; the set is a trash can, not a site. The <b>release</b> membership is a set of ids from
+     * another aggregate, and it is already bounded by the release.</p>
+     *
+     * @param query the filters; see {@link ShContentQuery} for what each word means
+     */
+    public ShAgentFound find(ShContentQuery query, Integer limit, boolean ids, String after,
+                             boolean trash, String scheduled, String release) {
         ShScheduleWindow window = ShScheduleWindow.parse(scheduled);
-        ShPostState wanted = ShContentPerspective.parse(state)
+        String site = query.site();
+        ShPostState wanted = ShContentPerspective.parse(query.state())
                 .requireRow("/agent/find", "GET /api/v2/agent/read?address=<address>&state=rev:<n>")
                 .row();
         List<ShSite> sites = siteAccess.readable(site);
@@ -238,32 +269,34 @@ public class ShAgentReadService {
                 ? properties.getRead().getDefaultLimit()
                 : Math.min(limit, properties.getRead().getMaxLimit());
         String from = cursorFrom(after);
+        Set<String> folderIds = folderScope(sites, query.folder(), query.subtree());
 
         List<ShPostUnified> matches;
         if (trash) {
             // Never `q` and never the live filters: a trashed row is outside every index those
             // read, and quietly answering from them would report an empty trash on an instance
             // whose trash is full — the one answer this call must not give.
-            matches = trashed(sites, type);
+            matches = trashed(sites, query.type()).stream()
+                    .filter(post -> matchesInMemory(post, query))
+                    .toList();
         } else {
-            matches = q != null && !q.isBlank() ? searchText(sites, q) : byFilters(sites, type);
+            matches = shPostUnifiedRepository.findByQuery(
+                    sites.stream().map(ShSite::getId).toList(),
+                    wanted == null ? BOTH_STATES : List.of(wanted),
+                    folderIds, query.q(), contentQueryResolver.typeId(query), query.locale(),
+                    query.modifiedSince(), query.modifiedBefore(), query.author(),
+                    query.modifier());
         }
 
-        Set<String> folderIds = folderScope(sites, folder);
-        // SH545 — taken before `dedupe`, which is the only place both rows of a post are in hand.
-        // Asking per row afterwards would be one query per match on the cheapest read there is.
-        Set<String> live = publishedIds(matches);
-        // SH991 — a schedule is set on the draft row (SH15), so the index is taken before `state`
-        // narrows the rows: a published-only listing of scheduled posts must still see it.
-        Map<String, ShPostUnified> drafts = window == null ? Map.of() : draftsById(matches);
-        if (wanted != null) {
-            // After `publishedIds`, which needs both rows; before `dedupe`, which would otherwise
-            // keep the draft of a post whose published row is the one asked for.
-            matches = matches.stream().filter(row -> row.getState() == wanted).toList();
-        }
+        // SH545 — free while both rows are in hand, and one id-only projection when `state`
+        // narrowed the query so that they are not. Never a query per row: that is what made the
+        // field affordable on the cheapest read there is.
+        Set<String> live = publishedAmong(matches, wanted);
+        // SH991 — a schedule is set on the draft row (SH15), so a published-only listing has to
+        // fetch the drafts it did not select. Only when `scheduled` was asked for.
+        Map<String, ShPostUnified> drafts = window == null ? Map.of() : draftsOf(matches, wanted);
         List<ShAgentFound.Row> rows = dedupe(matches).stream()
-                .filter(post -> folderIds.isEmpty() || inScope(post, folderIds))
-                .filter(post -> type == null || type.isBlank() || matchesType(post, type))
+                .filter(post -> !trash || folderIds.isEmpty() || inScope(post, folderIds))
                 .filter(post -> window == null || scheduledIn(drafts.get(post.getId()), window))
                 .filter(post -> members == null || members.contains(post.getId()))
                 .map(post -> window == null
@@ -873,15 +906,13 @@ public class ShAgentReadService {
     }
 
     // --- query strategies ---
-
-    private List<ShPostUnified> searchText(List<ShSite> sites, String q) {
-        // The term goes in as the caller typed it: SH131 moved the lower-case +
-        // %-wrapping inside the repository, precisely because doing it here was a
-        // contract you could only honour by remembering, and forgetting it produced an
-        // empty result set rather than an error.
-        return shPostUnifiedRepository.searchBySitesAndStateIn(
-                sites.stream().map(ShSite::getId).toList(), BOTH_STATES, q);
-    }
+    //
+    // SH1022 removed two of them. `searchText` and `byFilters` each loaded a whole site and handed
+    // the list to a stream of predicates; they are one repository query now, so the term, the
+    // folder, the type, the state and the four new filters are all decided in the database. The
+    // term still goes in as the caller typed it — SH131 moved the lower-case and %-wrapping inside
+    // the repository precisely because doing it here was a contract you could only honour by
+    // remembering, and forgetting it produced an empty result set rather than an error.
 
     /**
      * The trash, narrowed to the sites this credential may read (SH222).
@@ -908,18 +939,6 @@ public class ShAgentReadService {
                 .toList();
     }
 
-    private List<ShPostUnified> byFilters(List<ShSite> sites, String type) {
-        ShPostType postType = type == null || type.isBlank() ? null : requireType(type);
-        List<ShPostUnified> rows = new ArrayList<>();
-        for (ShSite site : sites) {
-            rows.addAll(postType == null
-                    ? shPostUnifiedRepository.findByShSite_IdAndStateIn(site.getId(), BOTH_STATES)
-                    : shPostUnifiedRepository.findByShSite_IdAndShPostType_IdAndStateIn(
-                            site.getId(), postType.getId(), BOTH_STATES));
-        }
-        return rows;
-    }
-
     /**
      * Whether this instance declares a post-type by that name (SH727).
      *
@@ -941,22 +960,25 @@ public class ShAgentReadService {
     }
 
     private ShPostType requireType(String name) {
-        ShPostType postType = shPostTypeRepository.findByName(name.trim());
-        if (postType == null) {
-            throw new ShAgentBatchService.UnknownPostTypeException(name,
-                    shPostTypeRepository.findAll().stream()
-                            .map(ShPostType::getName)
-                            .filter(candidate -> candidate != null && !candidate.isBlank())
-                            .sorted().toList());
-        }
-        return postType;
+        // SH1022 — one implementation, in the resolver the console listing calls too. A typo has
+        // to read the same on both surfaces or the two come to disagree about what is there.
+        return contentQueryResolver.requireType(name);
     }
 
-    /** The folder named by {@code folder} plus every folder beneath it, as ids. */
-    private Set<String> folderScope(List<ShSite> sites, String folder) {
+    /**
+     * The folder named by {@code folder}, with everything beneath it unless told otherwise.
+     *
+     * @param subtree SH1022 — {@code null} is "not said", and unsaid means the subtree: "everything
+     *                under /blog" is the question this call has always answered, and a word that
+     *                changed that would break every caller to make two surfaces agree. Said
+     *                {@code false}, it is the folder's own posts, which is what a curator looking
+     *                at one section means.
+     */
+    private Set<String> folderScope(List<ShSite> sites, String folder, Boolean subtree) {
         if (folder == null || folder.isBlank()) {
             return Set.of();
         }
+        boolean deep = subtree == null || subtree;
         String path = folder.startsWith("folder:")
                 ? ShAddress.parse(folder).path()
                 : ShAddress.normalizePath(folder);
@@ -965,7 +987,13 @@ public class ShAgentReadService {
 
         Set<String> ids = new HashSet<>();
         for (ShSite site : scope) {
-            descend(site, path).ifPresent(target -> collectSubtree(target, ids));
+            descend(site, path).ifPresent(target -> {
+                if (deep) {
+                    collectSubtree(target, ids);
+                } else {
+                    ids.add(target.getId());
+                }
+            });
         }
         if (ids.isEmpty()) {
             throw new ShAddressResolver.UnresolvedAddressException(
@@ -1065,6 +1093,68 @@ public class ShAgentReadService {
     }
 
     /**
+     * Which of the matched posts are live (SH545), whichever state the query selected (SH1022).
+     *
+     * <p>Three cases and each is the cheapest available. No {@code state} filter: both rows are in
+     * hand and the answer is free, which is the property SH545 relied on. {@code state=published}:
+     * every row selected <em>is</em> the published one. {@code state=draft}: the published rows
+     * were never fetched, so one id-and-state projection answers for the whole page — columns, not
+     * entities, and one query rather than one per row.</p>
+     */
+    private Set<String> publishedAmong(List<ShPostUnified> rows, ShPostState wanted) {
+        if (wanted == null) {
+            return publishedIds(rows);
+        }
+        Set<String> ids = rows.stream().map(ShPostUnified::getId)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        if (wanted == ShPostState.PUBLISHED || ids.isEmpty()) {
+            return ids;
+        }
+        return shPostUnifiedRepository.findStateRowsOf(ids).stream()
+                .filter(columns -> columns[1] == ShPostState.PUBLISHED)
+                .map(columns -> (String) columns[0])
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /**
+     * The draft row of each matched post, which is where a schedule lives (SH15/SH991).
+     *
+     * <p>Free unless {@code state=published} selected the other row, in which case the drafts are
+     * fetched by id — asked for only when {@code scheduled=} was, so an ordinary listing pays
+     * nothing for a filter it did not use.</p>
+     */
+    private Map<String, ShPostUnified> draftsOf(List<ShPostUnified> rows, ShPostState wanted) {
+        if (wanted != ShPostState.PUBLISHED) {
+            return draftsById(rows);
+        }
+        List<String> ids = rows.stream().map(ShPostUnified::getId).toList();
+        return ids.isEmpty() ? Map.of()
+                : draftsById(shPostUnifiedRepository.findByIdInAndState(ids, ShPostState.DRAFT));
+    }
+
+    /**
+     * The content-query filters, applied to a row the database could not filter (SH1022).
+     *
+     * <p>The trash listing only. It reads a native query that bypasses the entity's soft-delete
+     * restriction, so the predicate cannot ride along; the set is a trash can rather than a site,
+     * which is what makes that affordable. Each clause is the same reading as its column in
+     * {@code ShPostUnifiedRepository.QUERY_FILTERS} — inclusive below, exclusive above, the
+     * creation date standing in for a post never edited.</p>
+     */
+    private static boolean matchesInMemory(ShPostUnified post, ShContentQuery query) {
+        java.time.Instant changed = post.getModifiedDate() == null
+                ? post.getDate() : post.getModifiedDate();
+        return (query.locale() == null || query.locale().equals(post.getLocale()))
+                && (query.modifiedSince() == null
+                        || (changed != null && !changed.isBefore(query.modifiedSince())))
+                && (query.modifiedBefore() == null
+                        || (changed != null && changed.isBefore(query.modifiedBefore())))
+                && (query.author() == null || query.author().equalsIgnoreCase(post.getOwner()))
+                && (query.modifier() == null
+                        || query.modifier().equalsIgnoreCase(post.getModifier()));
+    }
+
+    /**
      * The ids among {@code rows} that have a {@code PUBLISHED} row (SH545).
      *
      * <p>The walk fetches {@link #BOTH_STATES} and {@code dedupe} then throws the published row
@@ -1076,10 +1166,6 @@ public class ShAgentReadService {
                 .filter(row -> row.getState() == ShPostState.PUBLISHED)
                 .map(ShPostUnified::getId)
                 .collect(java.util.stream.Collectors.toSet());
-    }
-
-    private static boolean matchesType(ShPostUnified post, String type) {
-        return post.getShPostType() != null && type.equalsIgnoreCase(post.getShPostType().getName());
     }
 
     private static boolean inScope(ShPostUnified post, Set<String> folderIds) {

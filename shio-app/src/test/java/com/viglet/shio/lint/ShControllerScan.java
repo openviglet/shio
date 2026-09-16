@@ -187,12 +187,22 @@ public final class ShControllerScan {
     }
 
     /**
-     * One method mapping, as source: the method's name and the text of its parameter list.
+     * One method mapping, as source: the method's name, its parameter list and what it does.
      *
      * @param method     the Java method the mapping annotates
      * @param parameters everything between the method's parentheses, annotations included
+     * @param body       the method's own statements, or {@code ""} when the braces do not balance.
+     *
+     *                   <p>SH1022 added it, and the reason is a lint that went red for a change
+     *                   that made its answer <em>more</em> true. A read used to say it took
+     *                   {@code state} by declaring a {@code @RequestParam} for it; a read that
+     *                   binds the whole parameter map and parses one vocabulary out of it says so
+     *                   in its first statement instead, and the signature no longer mentions the
+     *                   word. Asking only the signature would have the census demand a second
+     *                   parser for a value already parsed — which is the defect it exists to
+     *                   catch, arrived at from the other side.</p>
      */
-    public record Mapping(String method, String parameters) {
+    public record Mapping(String method, String parameters, String body) {
     }
 
     /** A Java identifier: the last one before a method's parenthesis is its name. */
@@ -228,9 +238,41 @@ public final class ShControllerScan {
                 method = name.group();
             }
             int closed = balanced(body, opened);
-            found.add(new Mapping(method, closed < 0 ? "" : body.substring(opened + 1, closed - 1)));
+            found.add(new Mapping(method,
+                    closed < 0 ? "" : body.substring(opened + 1, closed - 1),
+                    closed < 0 ? "" : methodBody(body, closed)));
         }
         return List.copyOf(found);
+    }
+
+    /**
+     * The statements between the {@code &#123;} after {@code from} and its matching brace.
+     *
+     * <p>Empty for an abstract or interface method, which has none, and empty rather than wrong
+     * when the braces do not balance — a lint reading a truncated body would report an absence
+     * that is really a parse failure, and that is the one answer a census must not give.</p>
+     */
+    private static String methodBody(String source, int from) {
+        int at = from;
+        while (at < source.length() && source.charAt(at) != '{' && source.charAt(at) != ';') {
+            at++;
+        }
+        if (at >= source.length() || source.charAt(at) == ';') {
+            return "";
+        }
+        int depth = 0;
+        for (int index = at; index < source.length(); index++) {
+            char character = source.charAt(index);
+            if (character == '{') {
+                depth++;
+            } else if (character == '}') {
+                depth--;
+                if (depth == 0) {
+                    return source.substring(at + 1, index);
+                }
+            }
+        }
+        return "";
     }
 
     /** Past the mapping's own arguments and any annotation between it and the method. */

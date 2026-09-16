@@ -392,23 +392,98 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      *               {@link #pageConsoleRows(ShFolder, String, Pageable)}, which normalizes for
      *               you (see the SH131 note on {@code FULLTEXT_PREDICATE})
      */
-    @Query("select p from ShPostUnified p where p.shFolder = :folder "
+    @Query("select p from ShPostUnified p where p.shFolder.id in :folderIds "
             + "and (p.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT "
             + "  or not exists (select 1 from ShPostUnified d where d.id = p.id "
             + "    and d.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT)) "
-            + "and (:like is null or " + FULLTEXT_PREDICATE + ")")
-    Page<ShPostUnified> pageConsoleRowsLike(@Param("folder") ShFolder folder,
-                                            @Param("like") String like, Pageable pageable);
+            + "and (:like is null or " + FULLTEXT_PREDICATE + ")" + QUERY_FILTERS
+            // `exists` rather than `p.state = :state`, because this listing answers one row per
+            // logical id and that row is the draft. "Published" here is a question about the
+            // post — is it live — and asking it of the row in hand would empty the listing.
+            + " and (:state is null or exists (select 1 from ShPostUnified s "
+            + "   where s.id = p.id and s.state = :state))")
+    Page<ShPostUnified> pageConsoleRowsLike(@Param("folderIds") Collection<String> folderIds,
+                                            @Param("like") String like,
+                                            @Param("typeId") String typeId,
+                                            @Param("state") ShPostState state,
+                                            @Param("locale") String locale,
+                                            @Param("since") Instant since,
+                                            @Param("before") Instant before,
+                                            @Param("author") String author,
+                                            @Param("modifier") String modifier,
+                                            Pageable pageable);
 
     /**
-     * {@link #pageConsoleRowsLike} with the title filter normalized: {@code null}/blank means
-     * no filter, anything else is lower-cased and {@code %}-wrapped. Call this one — the raw
-     * query is suffixed {@code Like} because normalizing twice searches for {@code %%term%%}
-     * and matches nothing (SH131).
+     * {@link #pageConsoleRowsLike} with the caller's own spellings normalized: {@code null}/blank
+     * means no filter, the term is lower-cased and {@code %}-wrapped, and so are the two people
+     * columns. Call this one — the raw query is suffixed {@code Like} because normalizing twice
+     * searches for {@code %%term%%} and matches nothing (SH131).
      */
-    default Page<ShPostUnified> pageConsoleRows(ShFolder folder, String query, Pageable pageable) {
-        return pageConsoleRowsLike(folder,
-                query == null || query.isBlank() ? null : fullTextPattern(query), pageable);
+    default Page<ShPostUnified> pageConsoleRows(Collection<String> folderIds, String query,
+            String typeId, ShPostState state, String locale, Instant since, Instant before,
+            String author, String modifier, Pageable pageable) {
+        return pageConsoleRowsLike(folderIds,
+                query == null || query.isBlank() ? null : fullTextPattern(query), typeId, state,
+                blankToNull(locale), since, before, lowerOrNull(author), lowerOrNull(modifier),
+                pageable);
+    }
+
+    /**
+     * Every row matching one content query, across the sites a credential may read (SH1022).
+     *
+     * <p><b>The predicate that used to be a stream.</b> {@code /agent/find} loaded both state rows
+     * of every post in the site and then filtered the list — so a {@code folder=} listing on a
+     * ten-thousand-post site read twenty thousand rows to answer with twenty, and a
+     * {@code state=published} one read the draft half it was about to discard.
+     * {@code ShFindQueryBenchmarkTest} measured it before this existed, which is the order this
+     * project requires: the number is the argument for the query, not the other way round.</p>
+     *
+     * <p>{@code anyFolder} rather than a nullable collection: a JPQL {@code in} over an unbound or
+     * empty list is not portable, and the flag makes "no folder scope" a value the query states
+     * instead of an accident of binding. Every association is compared through {@code .id}, which
+     * is the FK column on this table — the SH22 {@code @TenantId} hazard needs an implicit join,
+     * and there is none.</p>
+     *
+     * @param like     a lower-cased, {@code %}-wrapped pattern, or {@code null} for all — prefer
+     *                 {@link #findByQuery}, which normalizes for you (SH131)
+     * @param author   a lower-cased owner, or {@code null}
+     * @param modifier a lower-cased modifier, or {@code null}
+     */
+    @Query("select p from ShPostUnified p where p.shSite.id in :siteIds and p.state in :states "
+            + "and (:anyFolder = true or p.shFolder.id in :folderIds) "
+            + "and (:like is null or " + FULLTEXT_PREDICATE + ")" + QUERY_FILTERS)
+    List<ShPostUnified> findByQueryLower(@Param("siteIds") Collection<String> siteIds,
+                                         @Param("states") Collection<ShPostState> states,
+                                         @Param("anyFolder") boolean anyFolder,
+                                         @Param("folderIds") Collection<String> folderIds,
+                                         @Param("like") String like,
+                                         @Param("typeId") String typeId,
+                                         @Param("locale") String locale,
+                                         @Param("since") Instant since,
+                                         @Param("before") Instant before,
+                                         @Param("author") String author,
+                                         @Param("modifier") String modifier);
+
+    /** {@link #findByQueryLower} with the term and the two people columns normalized once. */
+    default List<ShPostUnified> findByQuery(Collection<String> siteIds,
+            Collection<ShPostState> states, Collection<String> folderIds, String term,
+            String typeId, String locale, Instant since, Instant before, String author,
+            String modifier) {
+        boolean anyFolder = folderIds == null || folderIds.isEmpty();
+        return findByQueryLower(siteIds, states, anyFolder,
+                anyFolder ? List.of("") : folderIds,
+                term == null || term.isBlank() ? null : fullTextPattern(term),
+                blankToNull(typeId), blankToNull(locale), since, before,
+                lowerOrNull(author), lowerOrNull(modifier));
+    }
+
+    static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    static String lowerOrNull(String value) {
+        String text = blankToNull(value);
+        return text == null ? null : text.toLowerCase(java.util.Locale.ROOT);
     }
 
     List<ShPostUnified> findByShSite_IdAndStateIn(String siteId, Collection<ShPostState> states);
@@ -547,6 +622,28 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     String FULLTEXT_PREDICATE =
             "(lower(p.title) like :like or lower(cast(p.summary as string)) like :like "
             + "or lower(cast(p.data as string)) like :like)";
+
+    /**
+     * The SH1022 content-query filters, as one predicate every listing appends.
+     *
+     * <p>One string and not two copies, for the reason SH240 gave {@code FULLTEXT_PREDICATE}: two
+     * surfaces that each spell "modified since" for themselves come to disagree about whether the
+     * bound is inclusive, and nothing fails when they do — both answer 200 with a plausible list.
+     * {@code state} is <em>not</em> here, because the two callers ask it of different things: the
+     * agent's listing answers rows and the console's answers one row per post.</p>
+     *
+     * <p>{@code coalesce(p.modifiedDate, p.date)} because a post created and never edited has no
+     * modified date, and "changed this week" that excludes what was written this week is the
+     * answer nobody means. The lower bound is inclusive and the upper exclusive, so two adjacent
+     * windows partition the timeline instead of overlapping on one instant.</p>
+     */
+    String QUERY_FILTERS =
+            " and (:typeId is null or p.shPostType.id = :typeId)"
+            + " and (:locale is null or p.locale = :locale)"
+            + " and (:since is null or coalesce(p.modifiedDate, p.date) >= :since)"
+            + " and (:before is null or coalesce(p.modifiedDate, p.date) < :before)"
+            + " and (:author is null or lower(p.owner) = :author)"
+            + " and (:modifier is null or lower(p.modifier) = :modifier)";
 
     /**
      * Turns a user-typed term into the LIKE pattern {@link #FULLTEXT_PREDICATE} needs:

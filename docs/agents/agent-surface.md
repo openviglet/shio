@@ -3561,3 +3561,39 @@ Full rationale — why derived rather than declared, and why the window is a con
 names something somebody has to go and fix, and a uuid names nothing anybody can act on. It is
 scoped by site so a pull can project one site's, and filtered by kind so `request` is askable on its
 own.
+
+## One query vocabulary, four surfaces (SH1022)
+
+`/agent/find` filters by **the words every content listing filters by**: `site`, `folder`,
+`subtree`, `type`, `state`, `locale`, `modifiedSince`, `modifiedBefore`, `author`, `modifier` and
+`q`, parsed by `ShContentQuery`. The same eleven are served by `shio_find`, by `shio find` and —
+minus the two the path already answers — by the console's `GET /api/v2/object/{id}/list`, and they
+mean the same thing on each. `author` is the `owner` column, `modifier` the `modifier` column; both
+match case-insensitively. The window is **inclusive below and exclusive above**, so two adjacent
+ranges partition the timeline instead of overlapping on one instant, and it reads
+`coalesce(modifiedDate, date)` because "changed this week" that excludes what was *written* this
+week is the answer nobody means. A bare `2026-09-01` is midnight UTC — the only reading that does
+not depend on where the server is — and the full ISO instant is what the answer returns, so a value
+read out of one call goes straight into the next.
+
+**An unknown parameter is a teaching 400.** Spring binds what it recognises and discards the rest,
+so `?modifedSince=` used to return every row with a `200` — indistinguishable from a filter that
+matched everything, and an agent has no screen to notice the count on. `ShContentQuery.of` is given
+the request's whole parameter map for exactly that reason. Two refusals, because two things go
+wrong: a word nobody spells is a typo and `didYouMean` closes it; a word the *vocabulary* spells
+and this surface does not serve says where it does work. `sort`, `page` and `size` are the second
+kind here — this listing's cursor is an address, so it cannot be ordered by anything else.
+
+**`subtree` is `null` when unsaid, and unsaid keeps each surface's own default.** `/agent/find` has
+always meant the folder and everything under it; the console listing has always meant direct
+children. One word, one meaning, two defaults that were each already true — changing either to make
+them agree would break every caller to win an argument about symmetry.
+
+**The predicate is the database's.** `find` used to load both state rows of every post in the
+readable sites and filter the list, so `folder=` narrowed the payload and not the work.
+`ShFindQueryBenchmarkTest` measured it before the change and prints the ratio on every run: the
+unfiltered read is what a folder listing, a state listing and every new filter used to cost. Two
+things stayed in memory and both are stated in the code: **trash**, whose native query bypasses the
+soft-delete restriction, and **release** membership, which is already bounded by the release. SH545's
+`published` field survived the move — free when both rows are in hand, one id-and-state projection
+when `state` narrowed the query so that they are not, and never a query per row.

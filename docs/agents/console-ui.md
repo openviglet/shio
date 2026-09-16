@@ -2041,3 +2041,25 @@ The actions are now **data** (`rowActions(item)`) handed to `BentoActionsMenu`, 
 naming the row: eight identical "Actions" buttons is what a screen reader hears otherwise. Stating
 the set in one place is a side benefit — what a row can do was previously readable only by scrolling
 the JSX that drew it.
+
+## The filters are the server's, and they travel (SH1022)
+
+The content browser's toolbar has a **Filters** popover — post-type, state, changed-after,
+changed-before, created-by, changed-by, include-subfolders — and every one of them goes into the
+request. Nothing is filtered in the browser, which is the whole point: a client-side filter over a
+paged listing narrows one page, and the rows on that page were chosen by a query that knew nothing
+about the filter. That is the half-migration SH165 already paid for once with `sort`, and it reads
+exactly like a correct answer until a folder outgrows a page.
+
+`src/lib/content-query.ts` holds the words in one exported list rather than spread through JSX,
+because they are a contract with three other surfaces — `/agent/find`, `shio_find` and `shio find`
+spell them identically, and the server answers a word it does not serve with a 400 rather than
+ignoring it. `test/content-query.test.mjs` reads `ShContentQuery.KEYS` out of the Java source and
+fails in both directions: a filter the console sends and the server dropped would be a listing that
+cannot load, and a filter the server gained and the console did not offer is the curator no longer
+being able to ask what an agent can.
+
+`filters` is part of the fetch's dependencies **and** of `queryKey`, so changing one re-queries from
+page 0 and the spinner belongs to that filter's answer rather than to the previous one (SH703). The
+badge on the trigger counts what is set, so a narrowed listing says it is narrowed — a folder that
+looks empty because of a filter left on is the other way this fails quietly.

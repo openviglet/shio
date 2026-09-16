@@ -10,6 +10,7 @@ Commands:
   surfaces       What the console offers, and how to do each of those things from here
   mcp            Bridge stdio to this instance's MCP endpoint
   resolve <addr> Resolve a content address (post:/folder:/site:/id:) to its object
+  find           Posts by site/folder/type/state/locale/date/author, as addresses
   impact <addr>  What a change to this template would affect: layouts, types, page counts
   apply [file]   Plan/apply a desired-state content document, or a package
                  (--blueprint <name> --site <site>)

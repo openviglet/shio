@@ -10,6 +10,7 @@ package com.viglet.shio.api.object;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.cda.dto.ShCdaPath;
 import com.viglet.shio.api.object.dto.ShConsoleListing;
+import com.viglet.shio.api.query.ShContentQuery;
 import com.viglet.shio.api.acl.ShContentAclService.AclEntry;
 import com.viglet.shio.persistence.model.acl.ShContentAcl;
 import com.viglet.shio.persistence.model.object.ShObject;
@@ -41,6 +43,20 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/api/v2/object")
 @Tag(name = "Object", description = "Content object navigation API")
 public class ShObjectAPI {
+
+    /**
+     * The words this listing serves (SH1022).
+     *
+     * <p>Everything but {@code site} and {@code folder}: the folder is the {@code {id}} in the
+     * path, and a second one in the query string would be two answers to one question. They are
+     * refused rather than ignored, and the refusal says where they do work.</p>
+     */
+    private static final List<String> LIST_SERVED = ShContentQuery.KEYS.stream()
+            .filter(key -> !List.of("site", "folder").contains(key)).toList();
+
+    private static final String LIST_ELSEWHERE =
+            "This listing's folder is the {id} in its path. To list across folders or sites, "
+                    + "use GET /api/v2/agent/find, which takes `site` and `folder` as addresses.";
 
     private final ShObjectNavigationService shObjectNavigationService;
     private final ShObjectWriteService shObjectWriteService;
@@ -66,19 +82,23 @@ public class ShObjectAPI {
      * <p>An unknown {@code sort} is a teaching {@code 400} rather than a fallback to the
      * default — see {@link ShUnknownListingSortException}.</p>
      *
-     * @param page zero-based page index (default {@code 0})
-     * @param size posts per page (default {@code 50})
-     * @param sort {@code title} (default), {@code date} or {@code modifiedDate}
-     * @param q    a case-insensitive substring matched against folder names and post titles
+     * <p><b>SH1022 — it now takes the whole content-query vocabulary</b>: {@code type},
+     * {@code state}, {@code locale}, {@code modifiedSince}, {@code modifiedBefore},
+     * {@code author}, {@code modifier} and {@code subtree}, each meaning what it means on
+     * {@code /agent/find}. {@code site} and {@code folder} are the two it does not serve — the
+     * folder is the {@code {id}} in the path, and naming a second one would be two answers to
+     * one question.</p>
+     *
+     * @param params the request's own parameters, which is how an unknown one is refused at all:
+     *               Spring binds what it recognises and silently drops the rest, so
+     *               {@code ?modifedSince=} would otherwise return every row with a {@code 200}
      */
     @GetMapping("/{id}/list")
     public ResponseEntity<ShConsoleListing> list(@PathVariable String id,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size,
-            @RequestParam(required = false) String sort,
-            @RequestParam(required = false) String q) {
+            @RequestParam Map<String, String> params) {
         shContentAclService.requireRead(id);
-        return shObjectNavigationService.list(id, page, size, ShConsoleListingSort.of(sort), q)
+        ShContentQuery query = ShContentQuery.of(params, LIST_SERVED, List.of(), LIST_ELSEWHERE);
+        return shObjectNavigationService.list(id, query)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

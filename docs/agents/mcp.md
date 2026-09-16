@@ -485,3 +485,15 @@ Alongside the name SH999 keeps. The handshake is the one call whose purpose is a
 it is, and "what I am here to do" is the same kind of fact — declared once per run rather than once
 per turn, which is what `tools/list` would have cost. `shio_changes`'s `by` argument uses the same
 vocabulary as the REST filter (`agent`, `curator`, or a session id).
+
+## `shio_find` gained six words inside its reservation (SH1022)
+
+The schema now spells `subtree`, `locale`, `modifiedSince`, `modifiedBefore`, `author` and
+`modifier` beside the nine it had, and it is **still inside SH977's 255-token reservation for this
+tool**. That was paid for by trimming the nine, not by raising the ceiling: `tools/list` is re-sent
+every turn of every session, so a schema is the one place where a word costs its length times every
+turn anybody ever takes. `ShMcpToolBudgetTest` is what says whether the trim covered it.
+
+The tool is a shape over `ShAgentReadService.find(ShContentQuery, …)` — the same call
+`/agent/find` makes, with the same parsing and the same refusals (P10). So there is no MCP-only
+reading of `modifiedSince` to get wrong, and no second place to add the next filter.

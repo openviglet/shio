@@ -21,10 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.cda.dto.ShCdaPath;
 import com.viglet.shio.api.object.dto.ShConsoleListing;
+import com.viglet.shio.api.post.ShContentPerspective;
+import com.viglet.shio.api.query.ShContentQuery;
+import com.viglet.shio.api.query.ShContentQueryResolver;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.object.ShLiveObject;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -53,24 +57,66 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 @Service
 public class ShObjectNavigationService {
 
+    /** What a caller that says nothing gets — the value the endpoint has defaulted to since SH165. */
+    private static final int DEFAULT_PAGE_SIZE = 50;
+
     private final ShObjectRepository shObjectRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShConsoleNavigationMapper mapper;
+    /** SH1022 — names to ids, in the one place that decides what {@code type=Artcle} does. */
+    private final ShContentQueryResolver contentQueryResolver;
 
     public ShObjectNavigationService(ShObjectRepository shObjectRepository, ShFolderRepository shFolderRepository,
                                      ShPostUnifiedRepository shPostUnifiedRepository,
-                                     ShConsoleNavigationMapper mapper) {
+                                     ShConsoleNavigationMapper mapper,
+                                     ShContentQueryResolver contentQueryResolver) {
         this.shObjectRepository = shObjectRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.mapper = mapper;
+        this.contentQueryResolver = contentQueryResolver;
+    }
+
+    /**
+     * The folder ids one listing covers.
+     *
+     * <p>{@code subtree} is unsaid for every caller this endpoint had before SH1022, and unsaid
+     * keeps what it has always done: the folder's own posts. Said {@code true}, it is the folder
+     * and everything beneath it — the same word {@code /agent/find} spells, which defaults the
+     * other way because "everything under /blog" is the question <em>that</em> call has always
+     * answered. One word, one meaning, two defaults that were each already true.</p>
+     */
+    private List<String> folderScope(ShFolder folder, Boolean subtree) {
+        if (subtree == null || !subtree) {
+            return List.of(folder.getId());
+        }
+        List<String> ids = new ArrayList<>();
+        collectSubtree(folder, ids);
+        return ids;
+    }
+
+    private void collectSubtree(ShFolder folder, List<String> ids) {
+        if (ids.contains(folder.getId())) {
+            return;
+        }
+        ids.add(folder.getId());
+        shFolderRepository.findByParentFolderOrderByPositionAsc(folder)
+                .forEach(child -> collectSubtree(child, ids));
     }
 
     /** The whole folder, in title order — the pre-SH165 listing, kept for callers with no paging. */
     @Transactional(readOnly = true)
     public Optional<ShConsoleListing> list(String objectId) {
-        return list(objectId, 0, Integer.MAX_VALUE, ShConsoleListingSort.TITLE, null);
+        return list(objectId, ShContentQuery.ALL.withPaging(0, Integer.MAX_VALUE));
+    }
+
+    /** One page, with only the four words this listing took before SH1022. */
+    @Transactional(readOnly = true)
+    public Optional<ShConsoleListing> list(String objectId, int page, int size,
+                                           ShConsoleListingSort sort, String query) {
+        return list(objectId, ShContentQuery.ALL.withPaging(page, size)
+                .withSort(sort == null ? null : sort.key()).withQ(query));
     }
 
     /**
@@ -86,28 +132,45 @@ public class ShObjectNavigationService {
      * because the browser's search box has always filtered the combined list, and a search
      * that quietly stopped matching folders would be a regression dressed as a feature.</p>
      *
-     * @param sort  the post order; folders keep their manual {@code position} order, which is
-     *              a property of the folder rather than an axis a caller picks
-     * @param query a case-insensitive substring filter, or {@code null} for everything
+     * <p><b>SH1022 — the filters are the one content-query vocabulary.</b> {@code type},
+     * {@code state}, {@code locale}, {@code modifiedSince}, {@code modifiedBefore},
+     * {@code author} and {@code modifier} mean here exactly what they mean on
+     * {@code /agent/find} and in {@code shio_find}, and they are predicates in the same
+     * repository query — so "drafts changed this week by one person" is a listing on every
+     * surface, and the curator and the agent cannot come to see different folders.</p>
+     *
+     * <p>Only the <em>posts</em> are filtered by them. A child folder has no post-type, no state
+     * and no locale, so narrowing the folder list by a post's words would empty the navigation
+     * every time a filter was set — which is the opposite of what a filter is for. The
+     * {@code q} filter still applies to both halves, because the browser's search box has always
+     * filtered the combined list.</p>
+     *
+     * @param query the filters, the order and the page; see {@link ShContentQuery}
      */
     @Transactional(readOnly = true)
-    public Optional<ShConsoleListing> list(String objectId, int page, int size,
-                                           ShConsoleListingSort sort, String query) {
-        int pageIndex = Math.max(page, 0);
-        int pageSize = Math.max(size, 1);
+    public Optional<ShConsoleListing> list(String objectId, ShContentQuery query) {
+        int pageIndex = Math.max(query.page() == null ? 0 : query.page(), 0);
+        int pageSize = Math.max(query.size() == null ? DEFAULT_PAGE_SIZE : query.size(), 1);
+        ShConsoleListingSort sort = ShConsoleListingSort.of(query.sort());
+        String text = query.q();
+        String typeId = contentQueryResolver.typeId(query);
+        ShPostState state = ShContentPerspective.parse(query.state()).row();
         return live(objectId).map(object -> switch (object) {
             case ShFolder folder -> {
-                Page<ShPostUnified> posts = shPostUnifiedRepository.pageConsoleRows(folder, query,
+                Page<ShPostUnified> posts = shPostUnifiedRepository.pageConsoleRows(
+                        folderScope(folder, query.subtree()), text, typeId, state, query.locale(),
+                        query.modifiedSince(), query.modifiedBefore(), query.author(),
+                        query.modifier(),
                         PageRequest.of(pageIndex, pageSize, sort.sort()));
                 yield mapper.listing(folder.getId(),
-                        matching(shFolderRepository.findByParentFolderOrderByPositionAsc(folder), query),
+                        matching(shFolderRepository.findByParentFolderOrderByPositionAsc(folder), text),
                         posts.getContent(), pageIndex, pageSize, posts.getTotalElements());
             }
             // A site lists its root folders. It has no posts of its own — content lives in
             // folders — so this is not an empty answer, it is the answer.
             case ShSite site -> mapper.listing(site.getId(),
                     matching(sortedByPosition(shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1)),
-                            query),
+                            text),
                     List.of(), pageIndex, pageSize, 0L);
             default -> mapper.listing(objectId, List.of(), List.of(), pageIndex, pageSize, 0L);
         });

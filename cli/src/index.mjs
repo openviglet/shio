@@ -104,6 +104,7 @@ const COMMANDS = {
   surfaces: () => import("./commands/surfaces.mjs"),
   mcp: () => import("./commands/mcp.mjs"),
   resolve: () => import("./commands/resolve.mjs"),
+  find: () => import("./commands/find.mjs"),
   impact: () => import("./commands/impact.mjs"),
   apply: () => import("./commands/apply.mjs"),
   gate: () => import("./commands/gate.mjs"),

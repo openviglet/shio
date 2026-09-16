@@ -12,6 +12,7 @@ import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,7 @@ import com.viglet.shio.api.agent.verify.ShAgentVerifyTerse;
 import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.query.ShContentQuery;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.history.ShHistoryFilter;
 import com.viglet.shio.blueprint.ShBlueprintRegistry;
@@ -292,13 +294,30 @@ public class ShAgentAPI {
         return shAddressResolver.resolve(address);
     }
 
+    /** SH1022 — this listing's own parameters, outside the shared content-query vocabulary. */
+    private static final List<String> FIND_OWN = List.of("limit", "ids", "after", "trash",
+            "scheduled", "release", "format");
+
+    /** Where the three words this listing cannot serve do work. */
+    private static final String FIND_ELSEWHERE =
+            "This listing pages with `limit` and `after`, and its cursor is an address — so it "
+                    + "cannot be ordered by anything else. `sort`, `page` and `size` are served by "
+                    + "the console listing, GET /api/v2/object/{id}/list.";
+
     /**
      * Find posts — addresses and titles, never bodies (SH83).
      *
-     * @param site   site name/id/address; omit for every readable site
-     * @param type   post-type name
-     * @param folder folder path or address; matches the folder and everything beneath it
-     * @param q      full-text over title, summary and content
+     * <p>The filters are the one content-query vocabulary (SH1022): {@code site}, {@code folder},
+     * {@code subtree}, {@code type}, {@code state}, {@code locale}, {@code modifiedSince},
+     * {@code modifiedBefore}, {@code author}, {@code modifier} and {@code q}, each meaning here
+     * what it means on the console listing and in {@code shio_find}. See {@link ShContentQuery}.
+     * A word this listing does not serve is a teaching {@code 400} rather than a silent drop —
+     * an ignored filter answers {@code 200} with every row, which reads exactly like a filter
+     * that matched everything.</p>
+     *
+     * @param params the request's own parameters, which is how an unknown one can be refused at
+     *               all: Spring binds what it recognises and discards the rest, so a typo has to
+     *               be caught against the whole map or not at all
      * @param limit  row cap
      * @param ids    include object ids (SH121 default: off)
      * @param after  the previous page's {@code cursor} — how a result past the cap is walked
@@ -310,12 +329,9 @@ public class ShAgentAPI {
      *                    compounds
      */
     @GetMapping("/find")
-    @Operation(summary = "Find posts by site / type / folder / text — identifiers, not bodies")
+    @Operation(summary = "Find posts by site / type / folder / state / date / author — identifiers, not bodies")
     public ResponseEntity<Object> find(
-            @RequestParam(name = "site", required = false) String site,
-            @RequestParam(name = "type", required = false) String type,
-            @RequestParam(name = "folder", required = false) String folder,
-            @RequestParam(name = "q", required = false) String q,
+            @RequestParam Map<String, String> params,
             // SH222 — the read half of the undo every delete already promises. A parameter on the
             // listing rather than an endpoint of its own: the trash is a list of posts, and this is
             // the call that lists posts (P10).
@@ -323,8 +339,6 @@ public class ShAgentAPI {
             @RequestParam(name = "limit", required = false) Integer limit,
             @RequestParam(name = "ids", required = false, defaultValue = "false") boolean ids,
             @RequestParam(name = "after", required = false) String after,
-            // SH990 — `published` lists what is live, `draft` what is being edited.
-            @RequestParam(name = "state", required = false) String state,
             // SH991 — `any`, or `from..to` in ISO instants; rows then carry the scheduled instants.
             @RequestParam(name = "scheduled", required = false) String scheduled,
             // SH993 — a release's name, with `site`: the listing is then the posts it holds.
@@ -332,8 +346,10 @@ public class ShAgentAPI {
             @RequestParam(name = "format", required = false) String format,
             @RequestHeader(name = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) {
 
-        ShAgentFound found = shAgentReadService.find(site, type, folder, q, limit, ids, after, trash,
-                state, scheduled, release);
+        ShContentQuery query = ShContentQuery.of(params, ShContentQuery.FILTERS, FIND_OWN,
+                FIND_ELSEWHERE);
+        ShAgentFound found = shAgentReadService.find(query, limit, ids, after, trash, scheduled,
+                release);
         return isTerse(format)
                 ? shAgentBodyEtag.terse("find", ShAgentReadTerse.found(found), ifNoneMatch)
                 : shAgentBodyEtag.json("find", found, ifNoneMatch);

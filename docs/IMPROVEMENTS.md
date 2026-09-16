@@ -1981,26 +1981,6 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.3 One query vocabulary, four surfaces (SH1022)
-
-The console listing takes page, size, sort and q. /agent/find is richer and still thin,
-with site, type, folder, q, trash, limit, ids and after but no state, date range, locale
-or author, and it loads matches into a list and filters in memory, sorting by address,
-the defect a benchmark already measured and fixed for the file listing. The post rows
-already store owner, modifier and publisher, so an author filter needs no new column,
-only a predicate.
-
-ShContentQuery parses site, folder, subtree, type, state, locale, modifiedSince,
-modifiedBefore, author, modifier, q, sort, page and size from parameters, with a
-teaching 400 naming allowed on an unknown key, the pattern the unknown-sort refusal
-already sets. The benchmark reporting rows fetched lands first and states what the
-in-memory path costs today; then the predicate moves into the database, because a
-client-side filter over a paged listing filters one page.
-
-shio_find's schema gains the fields within SH977's reservation, shio find gains the same
-flags, and the console listing accepts them. The assertions ask the same question
-through all four surfaces and compare the address sets.
-
 ### LXIX.4 Every list's state in its URL (SH1023)
 
 useSearchParams appears in two console files, neither of them a list: one is the visual

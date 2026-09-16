@@ -53,8 +53,19 @@ class ShPerspectiveCoverageLintTest {
     private static final List<String> CONTENT_READERS = List.of(
             "ShAgentAPI.java", "ShRenderAPI.java", "ShCdaAPI.java");
 
-    /** A parameter named {@code state}, by its request name or its Java name. */
-    private static final Pattern STATE = Pattern.compile("\"state\"|\\bString\\s+state\\b");
+    /**
+     * A parameter named {@code state}, by its request name, its Java name, or the vocabulary.
+     *
+     * <p>SH1022 added the third spelling and it is the one that matters now: a read whose filters
+     * are {@code ShContentQuery} takes {@code state} through the shared vocabulary rather than
+     * through a {@code @RequestParam} of its own, and the map it binds is how it refuses a word
+     * nobody serves. The first two spellings would read that as "no version", which is the census
+     * going red for a change that made the answer <em>more</em> true — and the fix for that is
+     * never a second {@code state} parameter beside the map: two places parsing one value is what
+     * this lint's own doc says is a finding at the moment it is written.</p>
+     */
+    private static final Pattern STATE =
+            Pattern.compile("\"state\"|\\bString\\s+state\\b|\\bShContentQuery\\b");
 
     /** The grammar's own spelling of a revision, which only the grammar may carry. */
     private static final Pattern REVISION_LITERAL = Pattern.compile("\"rev:\"");
@@ -135,7 +146,8 @@ class ShPerspectiveCoverageLintTest {
             }
             for (ShControllerScan.Mapping mapping : ShControllerScan.mappings(body, "Get")) {
                 found.add(new Read(file.replace(".java", "") + "#" + mapping.method(),
-                        STATE.matcher(mapping.parameters()).find()));
+                        STATE.matcher(mapping.parameters()).find()
+                                || STATE.matcher(mapping.body()).find()));
             }
         }
         return found;

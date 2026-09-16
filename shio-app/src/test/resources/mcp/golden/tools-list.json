@@ -196,6 +196,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "author" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "folder" : {
             "description" : "#string",
             "type" : "string"
@@ -203,6 +207,22 @@
           "limit" : {
             "description" : "#string",
             "type" : "integer"
+          },
+          "locale" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "modifiedBefore" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "modifiedSince" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "modifier" : {
+            "description" : "#string",
+            "type" : "string"
           },
           "q" : {
             "description" : "#string",
@@ -221,6 +241,10 @@
             "type" : "string"
           },
           "state" : {
+            "description" : "#string",
+            "type" : "string"
+          },
+          "subtree" : {
             "description" : "#string",
             "type" : "string"
           },

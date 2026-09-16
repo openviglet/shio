@@ -177,8 +177,17 @@ class ShContextCacheHeadroomTest {
      * cumulative on the SessionFactory — the SH221 shape, where a sibling's writes would be counted as
      * the stream's. The behaviour tests (ShEventStreamTest) share the default context; only the
      * measurement needed its own.
+     *
+     * SH1022 spent two, to 69, with maxSize raised to 71 beside it, and neither could be folded
+     * into a shared one. ShFindQueryBenchmarkTest counts Hibernate's entity loads, which are
+     * cumulative on the SessionFactory — the SH221 shape, where a sibling's reads are counted as
+     * this listing's and the ratio the whole task rests on becomes a statement about suite order.
+     * ShContentQuerySurfacesTest compares the address SETS two listings answer with, across a
+     * fixture built to differ on every axis the vocabulary names; on the shared context both sets
+     * would carry every other test's content, so they would agree for a reason that has nothing to
+     * do with the predicate agreeing.
      */
-    private static final int DECLARED_CONTEXTS = 67;
+    private static final int DECLARED_CONTEXTS = 69;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

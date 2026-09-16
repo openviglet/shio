@@ -109,6 +109,10 @@ describe("SH711: the CLI as a process, against a live instance", () => {
     { verb: "context", args: ["context", "--site"] },
     { verb: "site", args: ["site"] },
     { verb: "resolve", args: ["resolve", "@ADDRESS@"] },
+    // SH1022 — the listing, driven live rather than declared unexercised. It is the one read
+    // whose exit code carries a second meaning: 1 is "nothing matched", so a run against a
+    // site that HAS content is also the assertion that the filters did not fail closed.
+    { verb: "find", args: ["find", "--site"] },
     { verb: "changes", args: ["changes", "--site"] },
     { verb: "digest", args: ["digest", "@ADDRESS@"] },
     { verb: "verify", args: ["verify", "--site"] },

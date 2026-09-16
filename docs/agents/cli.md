@@ -4147,3 +4147,28 @@ grep over prose.
 
 `shio pull --content` projects the same rows into `shio/content/<site>/.notes.yaml`, which is the
 form a session actually reads: Grep over the tree it already has.
+
+## `shio find` — the listing the CLI had four of and none of (SH1022)
+
+The CLI already walked `/agent/find` four times over: `pull --content` to project a site,
+`publish --all` to pick targets, `verify` to check, `findAll` to page. None of them would answer a
+question, so "which pages are drafts somebody changed this week" had no spelling here and the
+answer was a `curl` with a hand-built query string.
+
+```
+shio find --state draft --modified-since 2026-09-01 --modifier ana
+shio find --site Blog /blog --type Article
+```
+
+Every flag is a word the server takes, and that is not a coincidence held together by care: the
+argument parser camel-cases `--modified-since` to `modifiedSince`, which *is* the server's key, so
+there is no translation table — and a translation table is where two vocabularies start to drift.
+`cli/test/content-query.test.mjs` reads `ShContentQuery.KEYS` out of the Java source and fails when
+a word exists on one side and not the other, in either direction.
+
+Two behaviours worth knowing. It **walks to the end**: `--limit` caps a page, not the answer, because
+a short list is not a smaller answer but one with holes, and a caller acting on "these are the
+drafts" would act on some of them. And it **exits 1 on none**, like the other read commands, so a
+script that finds nothing stops rather than going on to publish an empty selection. A flag it does
+not know is not forwarded — the server would refuse it, and its refusal is a worse message than the
+command's own usage text.

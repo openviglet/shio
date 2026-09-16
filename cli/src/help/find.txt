@@ -1,0 +1,23 @@
+shio find — the posts matching a query, as addresses and titles
+
+  --site <name>          Site; omit for all you can read
+  --folder <path>        /blog or folder:<site>/<path> (or the first argument)
+  --subtree false        That folder's own posts; the default is its subtree
+  --type <name>          Post-type name
+  --state <state>        published or draft
+  --locale <tag>         Locale tag, e.g. pt_BR
+  --modified-since <t>   ISO date/instant; inclusive
+  --modified-before <t>  ISO date/instant; exclusive
+  --author <user>        Created by
+  --modifier <user>      Last changed by
+  --q <text>             Full text: title, summary, fields
+  --limit <n>            Rows per page; the walk still runs to the end
+  --json                 Raw JSON instead of lines
+
+Examples:
+  shio find --state draft --modified-since 2026-09-01 --modifier ana
+  shio find --site Blog /blog --type Article
+
+The same words GET /api/v2/agent/find, shio_find and the console listing
+take. An unknown one is refused with the list that exists, never ignored.
+Exits 1 when nothing matched.

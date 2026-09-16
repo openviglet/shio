@@ -313,5 +313,17 @@
   "content.bulkApply": "Executar",
   "content.bulkRefusedBadge": "recusado",
   "content.bulkDone": "{{count}} item(ns) alterado(s)",
-  "content.bulkRefused": "{{count}} recusado(s): {{names}}"
+  "content.bulkRefused": "{{count}} recusado(s): {{names}}",
+  "content.filters": "Filtros",
+  "content.filterAny": "Qualquer",
+  "content.filterType": "Tipo de conteudo",
+  "content.filterState": "Estado",
+  "content.filterModifiedSince": "Alterado apos",
+  "content.filterModifiedBefore": "Alterado antes",
+  "content.filterAuthor": "Criado por",
+  "content.filterModifier": "Alterado por",
+  "content.filterSubtree": "Incluir subpastas",
+  "content.filterClear": "Limpar",
+  "content.filterPublished": "Publicado",
+  "content.filterDraft": "Rascunho"
 }

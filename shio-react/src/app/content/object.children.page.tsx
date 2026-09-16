@@ -12,7 +12,7 @@ import { ROUTES } from "@/app/routes.const"
 import { IconFileText } from "@tabler/icons-react"
 import { DialogDelete } from "@/components/dialog.delete"
 import { PermissionsDialog } from "@/components/permissions.dialog"
-import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, ClipboardCopy, ShieldCheck, ExternalLink } from "lucide-react"
+import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, ClipboardCopy, ShieldCheck, ExternalLink, SlidersHorizontal } from "lucide-react"
 // SH1020 — the row actions live in the design system's menu, which is where the site list put
 // its four in its own sweep.
 import { BentoActionsMenu } from "@viglet/viglet-design-system/bento"
@@ -32,6 +32,12 @@ import { deleteEach, refusalSummary, type DeleteTarget } from "@/lib/batch-delet
 import { ShPostUnifiedService, type ShBulkResult }
   from "@/services/post-unified/post-unified.service"
 import { headlineOf, problemOf } from "@/lib/problem"
+// SH1022 — the content-query vocabulary, spelled here exactly as the server spells it.
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { filterParams, activeFilterCount, type ShContentFilters }
+  from "@/lib/content-query"
 
 const postTypeService = new ShPostTypeService()
 const siteService = new ShSiteService()
@@ -164,6 +170,7 @@ export default function ObjectChildrenPage() {
     [objectId],
   )
   const [lastPostType, setLastPostType] = useState<ShPostType | null>(null)
+  const [postTypes, setPostTypes] = useState<ShPostType[]>([])
   /**
    * SH703 — which query's rows are on screen. `loading` is **computed** from it rather than set.
    *
@@ -178,6 +185,15 @@ export default function ObjectChildrenPage() {
   const [viewMode, setViewMode] = useState<"list" | "grid" | "spreadsheet">("list")
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  /**
+   * SH1022 — the filters, which are the server's and not a second set computed here.
+   *
+   * A client-side filter over a paged listing filters one page: the rows it is narrowing
+   * were already chosen by a query that did not know about the filter. So every one of
+   * these goes into the request, and the page that comes back is the answer.
+   */
+  const [filters, setFilters] = useState<ShContentFilters>({})
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ObjectChild | null>(null)
   const [permsTarget, setPermsTarget] = useState<ObjectChild | null>(null)
@@ -210,7 +226,8 @@ export default function ObjectChildrenPage() {
   }, [searchQuery])
 
   /** The identity of the current query. `loading` is this against what finished loading. */
-  const queryKey = `${objectId}|${sortBy}|${appliedQuery}`
+  const filterKey = JSON.stringify(filterParams(filters))
+  const queryKey = `${objectId}|${sortBy}|${appliedQuery}|${filterKey}`
   const loading = loadedQuery !== queryKey
 
   /** One page of posts, plus the folder's whole subfolder set. */
@@ -221,8 +238,10 @@ export default function ObjectChildrenPage() {
       sort: POST_SORT[sortBy] ?? "title",
     })
     if (appliedQuery) params.set("q", appliedQuery)
+    // SH1022 — one vocabulary: these are the words `/agent/find` and `shio find` take.
+    for (const [key, value] of Object.entries(filterParams(filters))) params.set(key, value)
     return axios.get<ObjectListResponse>(`/v2/object/${objectId}/list?${params}`)
-  }, [objectId, sortBy, appliedQuery])
+  }, [objectId, sortBy, appliedQuery, filters])
 
   /** The next page, appended. Only the posts accumulate — the folders are already all here. */
   const loadMore = useCallback(async () => {
@@ -268,6 +287,9 @@ export default function ObjectChildrenPage() {
       const savedName = localStorage.getItem("sh-last-post-type")
       const saved = pts.find(p => p.name === savedName)
       setLastPostType(saved || pts.find(p => !p.system) || pts[0] || null)
+      // SH1022 — the names the `type` filter offers, so a curator picks one rather than typing
+      // a name the server would refuse.
+      setPostTypes(pts)
     })
   }, [objectId])
 
@@ -854,6 +876,113 @@ export default function ObjectChildrenPage() {
           </Button>
 
           <div className="flex-1" />
+
+          {/*
+            SH1022 — the filters, which are the server's words and not a second set computed here.
+            A curator asking "drafts changed this week by Ana" is asking the same question an agent
+            asks with `shio find --state draft --modified-since ... --modifier ana`, and it is the
+            same query: a client-side filter over a paged listing would narrow one page.
+          */}
+          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" data-testid="sh-filters">
+                <SlidersHorizontal className="mr-2 h-4 w-4" /> {t("content.filters")}
+                {activeFilterCount(filters) > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-[10px]">
+                    {activeFilterCount(filters)}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs">{t("content.filterType")}</Label>
+                <Select value={filters.type ?? "*"}
+                  onValueChange={(value) =>
+                    setFilters((prev) => ({ ...prev, type: value === "*" ? undefined : value }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="*">{t("content.filterAny")}</SelectItem>
+                    {postTypes.map((postType) => (
+                      <SelectItem key={postType.name} value={postType.name}>
+                        {postType.title || postType.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">{t("content.filterState")}</Label>
+                <Select value={filters.state ?? "*"}
+                  onValueChange={(value) =>
+                    setFilters((prev) => ({ ...prev, state: value === "*" ? undefined : value }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="*">{t("content.filterAny")}</SelectItem>
+                    <SelectItem value="published">{t("content.filterPublished")}</SelectItem>
+                    <SelectItem value="draft">{t("content.filterDraft")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs" htmlFor="sh-filter-since">
+                    {t("content.filterModifiedSince")}
+                  </Label>
+                  <Input id="sh-filter-since" type="date" className="h-8 text-xs"
+                    value={filters.modifiedSince ?? ""}
+                    onChange={(event) => setFilters((prev) => ({
+                      ...prev, modifiedSince: event.target.value || undefined,
+                    }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs" htmlFor="sh-filter-before">
+                    {t("content.filterModifiedBefore")}
+                  </Label>
+                  <Input id="sh-filter-before" type="date" className="h-8 text-xs"
+                    value={filters.modifiedBefore ?? ""}
+                    onChange={(event) => setFilters((prev) => ({
+                      ...prev, modifiedBefore: event.target.value || undefined,
+                    }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs" htmlFor="sh-filter-author">
+                    {t("content.filterAuthor")}
+                  </Label>
+                  <Input id="sh-filter-author" className="h-8 text-xs"
+                    value={filters.author ?? ""}
+                    onChange={(event) => setFilters((prev) => ({
+                      ...prev, author: event.target.value || undefined,
+                    }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs" htmlFor="sh-filter-modifier">
+                    {t("content.filterModifier")}
+                  </Label>
+                  <Input id="sh-filter-modifier" className="h-8 text-xs"
+                    value={filters.modifier ?? ""}
+                    onChange={(event) => setFilters((prev) => ({
+                      ...prev, modifier: event.target.value || undefined,
+                    }))} />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                {/* The subtree word, spelled as the server spells it: unsaid means this folder. */}
+                <label className="flex items-center gap-2 text-xs">
+                  <Checkbox checked={filters.subtree === "true"}
+                    onCheckedChange={(checked) => setFilters((prev) => ({
+                      ...prev, subtree: checked ? "true" : undefined,
+                    }))} />
+                  {t("content.filterSubtree")}
+                </label>
+                <Button variant="ghost" size="sm" onClick={() => setFilters({})}>
+                  {t("content.filterClear")}
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Right: Sort + Select + Batch + Download */}
           <Select value={sortBy} onValueChange={setSortBy}>

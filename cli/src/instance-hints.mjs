@@ -56,6 +56,9 @@ export const NOTES_COMMANDS = new Set([
   // SH1003 — the work list reads the same instance, and what it prints is the other half of what
   // the notice announces.
   "notes",
+  // SH1022 — it is the listing an agent opens a session with, against the instance the notes are
+  // about, and "which pages are drafts" is exactly the question a standing note usually qualifies.
+  "find",
 ]);
 
 /**

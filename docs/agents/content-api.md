@@ -983,3 +983,29 @@ the one that removes content, matching the single-id endpoints.
 
 **There is no `If-Match`.** One header carries one row's version and a selection has many; the
 batch's per-op `expect` is where a caller who cares says it, row by row.
+
+## The console listing takes the agent's filters (SH1022)
+
+`GET /api/v2/object/{id}/list` serves the whole content-query vocabulary — `type`, `state`,
+`locale`, `modifiedSince`, `modifiedBefore`, `author`, `modifier` and `subtree` — beside the
+`page`/`size`/`sort`/`q` it has had since SH165. `site` and `folder` are the two it refuses: the
+folder is the `{id}` in the path, and a second one in the query string would be two answers to one
+question. The refusal names `/agent/find` as where those do work.
+
+The words are `ShContentQuery`'s, parsed from the request's **whole parameter map** so an unknown
+one is a teaching 400 rather than a silent drop, and the filters are
+`ShPostUnifiedRepository.QUERY_FILTERS` — one predicate string, appended by both this listing and
+`/agent/find`, for the reason SH240 gave `FULLTEXT_PREDICATE`: two surfaces that each spell
+"modified since" for themselves come to disagree about whether the bound is inclusive, and nothing
+fails when they do.
+
+**Only the posts are filtered.** A child folder has no post-type, no state and no locale, so
+narrowing the folder list by a post's words would empty the navigation every time a filter was set.
+`q` still applies to both halves — the search box has always filtered the combined list.
+
+**`state` is asked of the post, not of the row.** This listing answers one row per logical id and
+that row is the draft, so `p.state = :state` would empty it; the predicate is
+`exists (… s.id = p.id and s.state = :state)`, which selects the same *posts* `/agent/find?state=`
+selects while still returning the row this listing returns. `ShContentQuerySurfacesTest` compares
+the two address sets filter by filter, which is the only check that catches them drifting — both
+answer `200` with a plausible list when they do.
