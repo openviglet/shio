@@ -201,7 +201,11 @@ class ShSilentCatchInventoryTest {
             // incident as well would fire one every time somebody runs a read-only check,
             // over a defect the render path already records where it belongs. The lint keys
             // on "records or rethrows" and cannot see a count in a return value.
-            "api", 73,
+            // SH1018 raises it again, 73 to 74, for the migration's twin of the same skip:
+            // a row whose document will not parse is the one row a migration must never
+            // rewrite, and `check` already counts it as unreadable on the same content.
+            // Recording here would report the same defect twice for one model change.
+            "api", 74,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

@@ -525,3 +525,32 @@ One row per rule with a count, worst first — a shape to act on, not a log to r
 keys listed apart, because the fix is different: a violation is content to correct, an undeclared
 key is a rename that happened on one side only. It exits non-zero when there is anything to
 reconcile, so it can sit in a gate.
+
+### `post-type migrate` — the change the check argues for (SH1018)
+
+Three mappings and no fourth: `rename` moves a value to the key the model now declares, `drop`
+removes one it no longer has, and `default` fills a field that was added as required. Those are
+exactly the three shapes `check` reports — the migration answers the measurement rather than being a
+general-purpose content rewriter. A fourth, *set this field to a computed value*, is a script, and a
+script inside a content write is a door with no bound on what goes through it.
+
+- **A rename never lands on an occupied key.** It refuses the whole run and names the rows. Both
+  values are somebody's content, and the two rules that would resolve it — old wins, new wins — are
+  each silent data loss half the time.
+- **A default only fills what is empty.** Overwriting a value somebody typed would be the migration
+  deleting content to satisfy a rule that content already met.
+- **Nothing is written until everything is checked.** A run that failed on row 400 of 900 leaves a
+  type half in one shape and half in another with no way to tell which rows are which.
+- **It plans by default.** `dryRun` defaults to *true* on the server and the CLI needs `--apply`:
+  the flag a caller forgets should leave the content alone.
+
+**Where it is not: the batch surface.** The design put it there, and the batch vocabulary's own
+budget refused it — `ShAgentOpsReachTest` measures that list at 950 estimated tokens and says that
+growing past it is a reason to re-open the surface choice rather than raise the number. The op cost
+about fifty, and paying by trimming five other ops' descriptions would have bought room by making
+the rest less clear. It belongs here anyway: the batch surface is the *content* vocabulary, a
+post-type migration is a model operation, and its report is `check` one path along. What batch would
+have given free is a dry run, and that is a query parameter.
+
+Every row the plan names is checked against the content ACL before anything is written. The content
+is what changes, so permission on the model would be permission on the wrong thing.

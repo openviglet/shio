@@ -1792,25 +1792,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.10 A model change reconciled with the content it governs (SH1018)
-
-BC2 protects every row written after it and says nothing about rows already stored: a
-post type with a new required field has an instance full of content that violates it,
-discovered only when each is published. The hole is older than constraints. Post-type
-rename and field removal exist, and a post's data is a JSON object keyed by field name,
-so a removed or renamed field leaves values under a key nothing declares. shio verify
-reports orphan posts and folders and no orphan field.
-
-Per SH322 the measurement comes first: shio post-type check reports, over existing
-content, how many rows violate each declared constraint and how many carry undeclared
-keys, and that number argues for the rest. Then post-type.migrate joins the batch
-vocabulary with rename, drop and default mappings, running through the one writer,
-planned, dry-run and confirm-tokened like every other batch.
-
-A stale-field verify finding and a per-field count of violating posts in the post-type
-editor close the loop. A model change that cannot be applied to its content is what
-makes a team stop changing the model.
-
 ### LXVIII.11 Ask the agent, from the field (SH1019)
 
 The design VigletAssistant was drawn from shows its most useful gesture inside the

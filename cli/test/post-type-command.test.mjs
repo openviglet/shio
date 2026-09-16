@@ -143,12 +143,12 @@ describe("SH768: a conformance run's leftovers are sweepable, and nothing else i
     assert.match(said(c), /ShioConfRendermsgmgaup2qjcArticle/);
   });
 
-  test("an unknown verb is refused with the three it takes", async () => {
+  test("an unknown verb is refused with the four it takes", async () => {
     const c = ctx();
 
-    // SH1018 added `check`, so the refusal names three. The list is in the message because a
-    // refusal that says only "no" makes the caller go and read the help.
-    await assert.rejects(() => run({}, ["purge"], c), /allowed: ls, check, rm/);
+    // SH1018 added `check` and `migrate`, so the refusal names four. The list is in the message
+    // because a refusal that says only "no" makes the caller go and read the help.
+    await assert.rejects(() => run({}, ["purge"], c), /allowed: ls, check, migrate, rm/);
   });
 });
 
@@ -227,6 +227,85 @@ describe("SH1018: what a post-type's stored content does not satisfy", () => {
     const c = checkCtx();
 
     await assert.rejects(() => run({}, ["check"], c), /name the type/u);
+    assert.deepEqual(c.calls, []);
+  });
+});
+
+/**
+ * SH1018 — the change `check` argues for.
+ *
+ * The property worth guarding is the direction a mistake goes. A migration rewrites every post of a
+ * type, so the flag a caller forgets has to leave the content alone.
+ */
+describe("SH1018: applying a model change to the content it governs", () => {
+  const PLAN = {
+    postType: "Article",
+    rows: 4,
+    postIds: ["p1", "p2", "p3", "p4"],
+    renamed: { subtitle: 4 },
+    dropped: {},
+    defaulted: {},
+  };
+
+  function migrateCtx() {
+    const out = [];
+    const calls = [];
+    return {
+      out,
+      calls,
+      env: { SHIO_URL: "http://instance", SHIO_USER: "admin", SHIO_PASSWORD: "admin" },
+      stdout: { write: (line) => out.push(line) },
+      async fetch(url, init = {}) {
+        calls.push(`${init.method ?? "GET"} ${new URL(url).pathname}${new URL(url).search}`);
+        return new Response(JSON.stringify(PLAN), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      },
+    };
+  }
+
+  test("without --apply it plans, and says so", async () => {
+    const c = migrateCtx();
+
+    await run({ rename: "subtitle=summary" }, ["migrate", "Article"], c);
+
+    assert.deepEqual(c.calls, ["POST /api/v2/post-type/Article/migrate?dryRun=true"],
+      "SH1018: a migration rewrites every post of a type, so the flag a caller forgets must "
+        + "leave the content alone");
+    assert.match(c.out.join(""), /would change 4 post\(s\)/u);
+    assert.match(c.out.join(""), /nothing was written. Re-run with --apply/u);
+  });
+
+  test("--apply is the deliberate act", async () => {
+    const c = migrateCtx();
+
+    await run({ rename: "subtitle=summary", apply: true }, ["migrate", "Article"], c);
+
+    assert.deepEqual(c.calls, ["POST /api/v2/post-type/Article/migrate?dryRun=false"]);
+    assert.match(c.out.join(""), /changed 4 post\(s\) — 4 renamed from subtitle/u);
+  });
+
+  test("the three mappings reach the endpoint as the endpoint spells them", async () => {
+    let sent;
+    const c = migrateCtx();
+    const inner = c.fetch;
+    c.fetch = async (url, init) => {
+      sent = JSON.parse(init.body);
+      return inner(url, init);
+    };
+
+    await run({ rename: "a=b", drop: "c", default: "d=e" }, ["migrate", "Article"], c);
+
+    assert.deepEqual(sent, { rename: { a: "b" }, drop: ["c"], default: { d: "e" } });
+  });
+
+  test("it refuses with no mappings, and names the three", async () => {
+    const c = migrateCtx();
+
+    await assert.rejects(() => run({}, ["migrate", "Article"], c),
+      /--rename[\s\S]*--drop[\s\S]*--default/u,
+      "SH1018: a refusal that says only no makes the caller go and read the help");
     assert.deepEqual(c.calls, []);
   });
 });

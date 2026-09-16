@@ -17,6 +17,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import com.viglet.shio.api.acl.ShContentAclService;
+import tools.jackson.databind.JsonNode;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -74,15 +76,22 @@ public class ShPostTypeAPI {
     private final ShAgentBodyEtag shAgentBodyEtag;
     /** SH1018 — the measurement a model change is argued from. */
     private final ShPostTypeCheckService shPostTypeCheckService;
+    /** SH1018 — and the change it argues for. */
+    private final ShPostTypeMigrateService shPostTypeMigrateService;
+    private final ShContentAclService shContentAclService;
 
     public ShPostTypeAPI(ShPostTypeAdminService shPostTypeAdminService,
                          ShAgentBodyEtag shAgentBodyEtag,
                           ShModelProposalService shModelProposalService,
-                          ShPostTypeCheckService shPostTypeCheckService) {
+                          ShPostTypeCheckService shPostTypeCheckService,
+                          ShPostTypeMigrateService shPostTypeMigrateService,
+                          ShContentAclService shContentAclService) {
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shModelProposalService = shModelProposalService;
         this.shAgentBodyEtag = shAgentBodyEtag;
         this.shPostTypeCheckService = shPostTypeCheckService;
+        this.shPostTypeMigrateService = shPostTypeMigrateService;
+        this.shContentAclService = shContentAclService;
     }
 
     /**
@@ -128,6 +137,43 @@ public class ShPostTypeAPI {
     @GetMapping("/{name}/check")
     public ResponseEntity<Object> check(@PathVariable String name) {
         return ResponseEntity.ok(shPostTypeCheckService.check(name));
+    }
+
+    /**
+     * SH1018 — a model change applied to the content it governs.
+     *
+     * <h2>Beside `check` rather than on the batch surface</h2>
+     *
+     * <p>The design put this in the batch vocabulary, and the batch vocabulary's own budget refused
+     * it: {@code ShAgentOpsReachTest} measures that list at 950 estimated tokens and says, in as
+     * many words, that growing past it is a reason to re-open the surface choice rather than raise
+     * the number. This op cost about fifty, and paying for it by trimming five other ops'
+     * descriptions would have bought room by making the rest less clear.</p>
+     *
+     * <p>Here is where it belongs anyway. The batch surface is the <em>content</em> vocabulary —
+     * site, folder, post, release, note — and a post-type migration is a model operation whose
+     * report is {@code check}, one path along. What the batch would have given for free is a dry
+     * run, and that is a query parameter.</p>
+     *
+     * <p>Every row it would rewrite is checked against the content ACL before anything is written,
+     * because the content is what changes: permission on the model would be permission on the wrong
+     * thing.</p>
+     */
+    @PostMapping("/{name}/migrate")
+    public ResponseEntity<Object> migrate(
+            @PathVariable String name,
+            @RequestBody(required = false) JsonNode mappings,
+            @RequestParam(name = "dryRun", required = false, defaultValue = "true") boolean dryRun) {
+        // Planned first, always: the dry pass names the rows a real run would rewrite, which is what
+        // lets the ACL be asked about exactly those.
+        ShPostTypeMigrateService.Plan plan = shPostTypeMigrateService.migrate(name, mappings, true);
+        if (dryRun || plan.isEmpty()) {
+            return ResponseEntity.ok(plan);
+        }
+        for (String postId : plan.postIds()) {
+            shContentAclService.requireWrite(postId);
+        }
+        return ResponseEntity.ok(shPostTypeMigrateService.migrate(name, mappings, false));
     }
 
     /** Every declared name, for the refusal above to suggest from and list. */

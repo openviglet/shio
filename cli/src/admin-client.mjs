@@ -85,6 +85,18 @@ export class ShioAdminClient {
   }
 
   /**
+   * SH1018 — apply a model change to the content it governs.
+   *
+   * `dryRun` defaults to true on the server, so a caller that forgets the flag plans rather than
+   * writes. That is the direction a mistake should go for an op that rewrites every post of a type.
+   */
+  migratePostType(name, mappings, { dryRun = true } = {}) {
+    return this.#at(
+      `/api/v2/post-type/${encodeURIComponent(name)}/migrate?dryRun=${dryRun}`,
+      "POST", mappings ?? {});
+  }
+
+  /**
    * GET /api/v2/staticfile — the media inventory (SH62's listing, SH145's index).
    *
    * Each item carries the id, the file name and the containing folder's id, which is

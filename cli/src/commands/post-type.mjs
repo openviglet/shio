@@ -52,6 +52,9 @@ export async function run(flags, positionals, ctx) {
   if (verb === "check") {
     return check(client, positionals[1], flags, ctx);
   }
+  if (verb === "migrate") {
+    return migrate(client, positionals[1], flags, ctx);
+  }
 
   const types = await listTypes(client);
   if (verb === "ls" || verb === "list") {
@@ -60,7 +63,7 @@ export async function run(flags, positionals, ctx) {
   if (verb !== "rm" && verb !== "delete") {
     throw new Error(
       `shio post-type: "${positionals[0]}" is not a verb this takes.\n`
-        + "  allowed: ls, check, rm\n"
+        + "  allowed: ls, check, migrate, rm\n"
         + "  example: shio post-type check Article",
     );
   }
@@ -80,11 +83,6 @@ export async function run(flags, positionals, ctx) {
  * number first, and exits non-zero when there is something to act on, which is what lets it sit in
  * a gate.</p>
  */
-/** Named rather than nested in the line above: the repo's lint refuses a nested template. */
-function unreadableNote(report) {
-  return report.unreadable ? `, ${report.unreadable} unreadable` : "";
-}
-
 async function check(client, name, flags, ctx) {
   if (!name) {
     throw new Error(
@@ -122,6 +120,79 @@ async function check(client, name, flags, ctx) {
     ctx.stdout.write("  nothing to reconcile\n");
   }
   return report.violating > 0 || report.undeclared.length > 0 ? 1 : 0;
+}
+
+/**
+ * SH1018 — the change `check` argues for.
+ *
+ * <p>Plans unless told otherwise. A migration rewrites every post of a type, so the flag a caller
+ * forgets should leave the content alone — `--apply` is the deliberate act, the way `push` and
+ * `apply` make it.</p>
+ */
+async function migrate(client, name, flags, ctx) {
+  if (!name) {
+    throw new Error(
+      "shio post-type migrate: name the type.\n"
+        + '  example: shio post-type migrate Article --rename subtitle=summary',
+    );
+  }
+  const mappings = mappingsOf(flags);
+  if (!Object.keys(mappings).length) {
+    throw new Error(
+      "shio post-type migrate: name at least one mapping.\n"
+        + "  --rename <old>=<new>   move a value to the key the model now declares\n"
+        + "  --drop <name>          remove a key the model no longer has\n"
+        + "  --default <name>=<v>   fill a field that is empty, never one that is not",
+    );
+  }
+
+  const dryRun = !flags.apply;
+  const plan = await client.migratePostType(name, mappings, { dryRun });
+  if (flags.json) {
+    ctx.stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
+    return 0;
+  }
+  const verb = dryRun ? "would change" : "changed";
+  ctx.stdout.write(`${plan.postType}: ${verb} ${plan.rows} post(s) — ${describe(plan)}\n`);
+  if (dryRun && plan.rows) {
+    ctx.stdout.write("  nothing was written. Re-run with --apply.\n");
+  }
+  return 0;
+}
+
+/** `--rename a=b --drop c --default d=e`, repeatable, as the endpoint's three mappings. */
+function mappingsOf(flags) {
+  const mappings = {};
+  const pairs = (value) => Object.fromEntries(
+    [].concat(value ?? []).map(String)
+      .map((entry) => [entry.slice(0, entry.indexOf("=")), entry.slice(entry.indexOf("=") + 1)])
+      .filter(([key]) => key));
+  const rename = pairs(flags.rename);
+  if (Object.keys(rename).length) mappings.rename = rename;
+  const drop = [].concat(flags.drop ?? []).map(String).filter(Boolean);
+  if (drop.length) mappings.drop = drop;
+  const defaults = pairs(flags.default);
+  if (Object.keys(defaults).length) mappings.default = defaults;
+  return mappings;
+}
+
+function describe(plan) {
+  const parts = [];
+  for (const [from, count] of Object.entries(plan.renamed ?? {})) {
+    parts.push(`${count} renamed from ${from}`);
+  }
+  for (const [name, count] of Object.entries(plan.dropped ?? {})) {
+    parts.push(`${count} dropped ${name}`);
+  }
+  for (const [name, count] of Object.entries(plan.defaulted ?? {})) {
+    parts.push(`${count} defaulted ${name}`);
+  }
+  return parts.length ? parts.join(", ") : "nothing to migrate";
+}
+
+/** Named rather than nested in the line above: the repo's lint refuses a nested template. */
+function unreadableNote(report) {
+  return report.unreadable ? `, ${report.unreadable} unreadable` : "";
 }
 
 /**

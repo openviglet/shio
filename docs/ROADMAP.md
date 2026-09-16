@@ -63,7 +63,6 @@
 
 ## Block BC — The authoring surface, field by field
 
-- ⏳ **SH1018** (deps: SH1010 ✅) **changing a post type leaves existing content violating it, with no report and no migration** — There is still no migration: renaming, dropping or defaulting a field across stored content has no verb, so the report says what is wrong and nothing fixes it. → §LXVIII.10
 - 📋 **SH1019** (deps: SH1006, SH1007) **a field cannot ask the connected agent for a suggestion it can apply** — The assistant's reference design offers a suggested title with a button to apply it, and Shio's only route to an answer is a request from the dock. → §LXVIII.11
 - 📋 **SH1090** (deps: —) **no console page can block an in-app navigation, because the router is not a data router** — useBlocker and usePrompt both call useDataRouterContext, and main.tsx mounts BrowserRouter, so a form with unsaved work can only catch a tab close. → §LXVIII.12
 - 📋 **SH1091** (deps: —) **no stateless caller can change one field of a post without declaring the whole document** — The console's merge verb refuses a cookieless caller, the CDA's has no If-Match, and the agent's only write replaces whole state, so a CLI correction cannot be both partial and safe. → §LXVIII.13
