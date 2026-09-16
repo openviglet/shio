@@ -27,6 +27,7 @@ import org.jsoup.nodes.Document;
 
 import com.viglet.shio.api.agent.verify.dto.ShAgentDigest;
 import com.viglet.shio.render.ShRegionComposer;
+import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.agent.ShAgentReadService;
@@ -103,13 +104,17 @@ public class ShAgentRenderService {
     private final ShPageRenderService pageRenderService;
     /** SH990 — what a page said at a revision, for {@code state=rev:<n>}. */
     private final ShPostRevisionService shPostRevisionService;
+    /** SH1014 — a preview of unsaved values shows content, so it is gated like authoring it. */
+    private final ShContentAclService shContentAclService;
 
     public ShAgentRenderService(ShAddressResolver shAddressResolver,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ObjectMapper objectMapper,
                                 ShAgentDeliveryProbe deliveryProbe,
                                 ShPageRenderService pageRenderService,
-                                ShPostRevisionService shPostRevisionService) {
+                                ShPostRevisionService shPostRevisionService,
+                                ShContentAclService shContentAclService) {
+        this.shContentAclService = shContentAclService;
         this.shPostRevisionService = shPostRevisionService;
         this.shAddressResolver = shAddressResolver;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -190,6 +195,68 @@ public class ShAgentRenderService {
     }
 
     // --- content ------------------------------------------------------------
+
+    /**
+     * SH1014 — the page as it would read, from values nobody has saved.
+     *
+     * <h2>Gated by WRITE, not by READ</h2>
+     *
+     * <p>A caller supplies the document and gets the page back, so this composes content of their
+     * choosing through this site's templates and hands them the result. Read permission is the
+     * wrong question — it asks whether they may see what is stored, and nothing stored is what
+     * comes back. Write is the right one: they may already author exactly this by saving it, so a
+     * preview shows them nothing a save would not, and one call earlier.</p>
+     *
+     * <h2>Digest, and the HTML only when asked</h2>
+     *
+     * <p>The digest is the answer an agent wants — outline, links, images, word count — and it is
+     * small. A whole page is not, and P3 is a budget: the markup is returned only to a caller that
+     * asked for it, which in practice is a console frame showing the page to a person.</p>
+     *
+     * @param data field values laid over the stored document; a field it does not name is unchanged
+     */
+    public ShAgentProposed proposed(String rawAddress, String state, JsonNode data, boolean html) {
+        ShContentPerspective perspective = ShContentPerspective.parse(state)
+                .requireVersion("/agent/render", "POST /api/v2/agent/render");
+        if (perspective.isRevision()) {
+            // A revision is a record of what the page said; laying unsaved values over one would
+            // render a document that has never existed and never could, under a version number.
+            throw new ProposedOnRevisionException(state);
+        }
+        ShPostUnified post = postFor(rawAddress, perspective);
+        shContentAclService.requireWrite(post.getId());
+
+        String address = shAddressResolver.addressOf(post).toString();
+        if (post.getShSite() == null || post.getFurl() == null || post.getFurl().isBlank()) {
+            throw new NotAPageException(rawAddress, "post");
+        }
+        String markup = pageRenderService.renderProposed(post.getShSite().getId(), post.getFurl(),
+                post.getState(), data, Map.of()).html();
+        ShHtmlAppearance.Appearance look = ShHtmlAppearance.of(markup);
+        ShAgentDigest digest = render(SOURCE_RENDERED, address, null, null, List.of(),
+                ShHtmlOutline.of(markup), look, markersOf(markup), regionsOf(markup, look));
+        return new ShAgentProposed(digest, html ? markup : null);
+    }
+
+    /** The digest of the proposed page, and its markup where the caller asked for it. */
+    public record ShAgentProposed(ShAgentDigest digest, String html) {
+    }
+
+    /** {@code state=rev:<n>} names a record; unsaved values have no place in one. */
+    public static class ProposedOnRevisionException extends ShTeachingException {
+        public ProposedOnRevisionException(String state) {
+            super(ShProblem.badRequest("proposed-on-revision",
+                    "A preview of unsaved values cannot be taken of a revision.")
+                    .withDetail("state=" + state + " names a captured revision, which is a record "
+                            + "of what this page said. Laying unsaved values over one would render "
+                            + "a document that never existed, under a version number that says it "
+                            + "did.")
+                    .withFix("Drop `state`, or ask for `state=draft`, which is what a preview of "
+                            + "work in progress is about.")
+                    .withExample("POST /api/v2/agent/render {\"address\":\"post:Acme/about\","
+                            + "\"data\":{\"title\":\"New\"}}"));
+        }
+    }
 
     private ShAgentDigest fromContent(String rawAddress, ShContentPerspective perspective) {
         ShPostUnified post = postFor(rawAddress, perspective);

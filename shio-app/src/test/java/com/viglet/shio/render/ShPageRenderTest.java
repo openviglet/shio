@@ -118,6 +118,11 @@ class ShPageRenderTest {
     private com.viglet.shio.api.post.revision.ShPostRevisionService shPostRevisionService;
     @Autowired
     private com.viglet.shio.persistence.repository.post.revision.ShPostRevisionRepository shPostRevisionRepository;
+    /** SH1014 — to ask the database whether a preview left anything behind. */
+    @Autowired
+    private com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository shPostUnifiedRepository;
+    @Autowired
+    private com.viglet.shio.persistence.repository.site.ShSiteRepository shSiteRepository;
     @Autowired
     private ShPreviewBanner previewBanner;
 
@@ -164,6 +169,79 @@ class ShPageRenderTest {
             post(site, root, article, "Welcome", "/", json("TEXT", "<p>Hello world</p>"), when);
             post(site, root, article, "Second", "/second", json("TEXT", "<p>Two</p>"), when);
         });
+    }
+
+    // ── SH1014: a page rendered from values nobody has saved ────────────────────────
+
+    /**
+     * SH1014 — the overlay reaches the page, and only the fields it names.
+     *
+     * <p>Against the fixture that actually composes, because the question is whether the proposed
+     * document survives the whole path — layout, region, theme, helpers — and not whether one
+     * method copied a field.</p>
+     */
+    @Test
+    @DisplayName("SH1014: proposed values render, and a field the override omits keeps its value")
+    void aProposedRenderShowsWhatWasNotSaved() {
+        String html = shPageRenderService.renderProposed(siteName, "/", ShPostState.DRAFT,
+                objectMapper.readTree("{\"title\":\"Proposed headline\"}"), java.util.Map.of())
+                .html();
+
+        assertThat(html)
+                .as("SH1014: the value nobody saved is on the page — this is the whole feature, and "
+                        + "a curator could not see a change without first making it")
+                .contains("<h1>Proposed headline</h1>")
+                .contains("<title>Proposed headline</title>");
+        assertThat(html)
+                .as("SH1014: and TEXT, which the override never named, is the stored one — the "
+                        + "merge rule (SH335) is what lets a caller ask about one headline without "
+                        + "restating the document")
+                .contains("<p>Hello world</p>");
+        assertThat(html)
+                .as("SH1014: the stored title is gone from the page, or the overlay did not "
+                        + "actually replace anything")
+                .doesNotContain("<h1>Welcome</h1>");
+    }
+
+    /**
+     * SH1014 — and it persists nothing.
+     *
+     * <p>The assertion the design named, and it is worth more than the feature: the render path is
+     * shared, and "it writes nothing" is true today because no writer is called — a claim about
+     * code, which somebody who has not read the paragraph explaining it will edit. So this does not
+     * inspect the implementation. It renders, then asks the database the questions a write would
+     * betray.</p>
+     */
+    @Test
+    @DisplayName("SH1014: a proposed render leaves the row, its title and its revisions alone")
+    void aProposedRenderPersistsNothing() {
+        // By the site's id and never by navigating `p.shSite.name`: @TenantId lives on the JOINED
+        // root, so an implicit join past an ShObject association emits a predicate against a
+        // subclass alias that has no tenant_id column (the agents.md invariant, and it fails at
+        // query-prepare time rather than here).
+        String siteId = shSiteRepository.findByName(siteName).getId();
+        ShPostUnified before = shPostUnifiedRepository
+                .findByShSite_IdAndFurlAndStateOrderByIdAsc(siteId, "/", ShPostState.DRAFT)
+                .stream().findFirst().orElseThrow();
+        String storedData = before.getData();
+        String storedTitle = before.getTitle();
+        long revisionsBefore = shPostRevisionRepository.count();
+
+        shPageRenderService.renderProposed(siteName, "/", ShPostState.DRAFT,
+                objectMapper.readTree("{\"title\":\"Never saved\",\"TEXT\":\"<p>nor this</p>\"}"),
+                java.util.Map.of());
+
+        ShPostUnified after = shPostUnifiedRepository
+                .findByIdAndState(before.getId(), ShPostState.DRAFT).orElseThrow();
+        assertThat(after.getData())
+                .as("SH1014: an overlay that reached the row would replace a curator's saved work "
+                        + "with something they only asked to look at")
+                .isEqualTo(storedData);
+        assertThat(after.getTitle()).isEqualTo(storedTitle);
+        assertThat(shPostRevisionRepository.count())
+                .as("SH1014: no revision captured — a preview that versioned what it previewed "
+                        + "would fill the history with documents nobody chose to keep")
+                .isEqualTo(revisionsBefore);
     }
 
     // ── SH278: which row of a template renders, and in what order ───────────────────

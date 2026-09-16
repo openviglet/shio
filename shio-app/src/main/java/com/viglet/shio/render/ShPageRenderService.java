@@ -48,6 +48,7 @@ import com.viglet.shio.utils.ShStableMap;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -197,6 +198,108 @@ public class ShPageRenderService {
                                  Map<String, String> params) {
         ShSite site = siteByKey(siteKey);
         return renderPage(site, pageAt(site, url, state), state, params, null);
+    }
+
+    /**
+     * SH1014 — the page as it <em>would</em> read, from values nobody has saved.
+     *
+     * <h2>Why this is not a new renderer</h2>
+     *
+     * <p>A curator could not see a change without saving it, and an agent could not either: a dry
+     * run proves a write is legal and says nothing about how the page will look. What was missing
+     * was never a renderer — it was a way to hand this one a document that is not in the database.
+     * SH990's revision path already does exactly that, and says so: {@code asOf} builds a
+     * <b>transient</b> copy carrying the present page's site, folder, type, address and locale, with
+     * a different document in place of the stored one. This is that split again, with the document
+     * coming from the caller instead of from a revision.</p>
+     *
+     * <h2>It merges, and it writes nothing</h2>
+     *
+     * <p>A field the override does not name keeps its stored value — the same rule as the merge
+     * verb (SH335), which is what lets an agent ask "how would the page look with <em>this</em>
+     * headline" without restating the document. And the copy is never passed to a repository: the
+     * transaction is {@code readOnly}, nothing here calls a writer, so no revision is captured, no
+     * webhook fires, nothing is indexed and nothing reaches the trash.
+     * {@code ShProposedRenderWritesNothingTest} is the assertion, because "I did not call a writer"
+     * is a claim about code that will be edited by somebody who has not read this paragraph.</p>
+     *
+     * @param proposed field values to lay over the stored document; {@code null} renders the row
+     */
+    @Transactional(readOnly = true,
+        noRollbackFor = { ShTeachingException.class, ShPageRedirectException.class })
+    public ShRenderedPage renderProposed(String siteKey, String url, ShPostState state,
+                                         JsonNode proposed, Map<String, String> params) {
+        ShSite site = siteByKey(siteKey);
+        ShPostUnified stored = pageAt(site, url, state);
+        return renderPage(site, proposedCopy(stored, proposed), state, params, null);
+    }
+
+    /**
+     * A transient page carrying the caller's values over the stored ones.
+     *
+     * <p>Everything that is a fact about <em>where</em> the page lives comes from the stored row, so
+     * the override cannot move a post, change its type or rename its URL by way of a preview. Only
+     * the document differs, which is the whole of what a preview is asking about.</p>
+     */
+    private ShPostUnified proposedCopy(ShPostUnified stored, JsonNode proposed) {
+        if (proposed == null || !proposed.isObject()) {
+            return stored;
+        }
+        ObjectNode merged = objectMapper.createObjectNode();
+        JsonNode current = readData(stored);
+        if (current != null && current.isObject()) {
+            merged.setAll((ObjectNode) current);
+        }
+        merged.setAll((ObjectNode) proposed);
+
+        ShPostUnified as = new ShPostUnified();
+        as.setId(stored.getId());
+        as.setState(stored.getState());
+        as.setShSite(stored.getShSite());
+        as.setShFolder(stored.getShFolder());
+        as.setShPostType(stored.getShPostType());
+        as.setFurl(stored.getFurl());
+        as.setLocale(stored.getLocale());
+        as.setTranslationGroupId(stored.getTranslationGroupId());
+        as.setOwner(stored.getOwner());
+        as.setDate(stored.getDate());
+        as.setModifiedDate(stored.getModifiedDate());
+        // The title follows the document where the override names it, so a preview's <title> and
+        // its <h1> cannot disagree about the headline the curator just typed.
+        JsonNode title = merged.get("title");
+        as.setTitle(title != null && title.isString() ? title.asString() : stored.getTitle());
+        as.setData(merged.toString());
+        return as;
+    }
+
+    /**
+     * The stored document, or nothing — and it says so when it is nothing.
+     *
+     * <p>SH270's rule, which this path meets for the same reason the two it named do: a preview
+     * whose base document would not parse renders with <em>only</em> the overridden fields, and the
+     * symptom is a page that looks emptier than the curator expects. Silence is the one shape
+     * nobody investigates, so the degradation is recorded rather than swallowed.</p>
+     */
+    private JsonNode readData(ShPostUnified post) {
+        if (post.getData() == null) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(post.getData());
+        } catch (JacksonException e) {
+            incidentLog.record(ShAgentIncidentLog.Kind.CONTENT,
+                    post.getShSite() == null ? null
+                            : ShAddress.post(post.getShSite().getName(), post.getFurl()).toString(),
+                    "This post's stored document is not valid JSON, so a preview of unsaved values "
+                            + "rendered with only the fields that were overridden: "
+                            + e.getOriginalMessage(),
+                    "Read the post and rewrite its data with post.upsert. Until then every preview "
+                            + "of it shows less than the page holds, which reads as content having "
+                            + "gone missing rather than as a document that will not parse.",
+                    ShAgentIncidentFrames.of(e),
+                    post.getShSite() == null ? null : post.getShSite().getId());
+            return null;
+        }
     }
 
     /**

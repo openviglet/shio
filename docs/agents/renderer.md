@@ -1787,3 +1787,32 @@ selectors were collapsing onto their own prefixes, which is the defect stated as
 The whole of this — that the regex works, that it overflows, and by how much the scan wins — came out
 of running the benchmark on the fix, not out of reading it. Ordinary application of *measure before
 you fix*: here the thing measured was the repair rather than the defect.
+
+## Rendering a page from values nobody saved (SH1014)
+
+`renderProposed(siteKey, url, state, proposed, params)` composes the page through the same
+`renderPage` every other path uses, over a **transient** copy of the post. That copy is SH990's
+split again: everything that is a fact about *where* the page lives — site, folder, type, address,
+locale — comes from the stored row, and only the document differs. So a preview cannot move a post,
+change its type or rename its URL, which is the whole of what an override could otherwise smuggle.
+
+It **merges**: a field the override does not name keeps its stored value, the same rule as the merge
+verb (SH335), which is what lets a caller ask *how would this page look with this headline* without
+restating the document. The title follows the document where the override names it, so a preview's
+`<title>` and its `<h1>` cannot disagree about what the curator just typed.
+
+**It persists nothing**, and that is asserted rather than asserted-about: `ShPageRenderTest` renders
+over the fixture that actually composes, then asks the database whether the row, its title and the
+revision count changed. "No writer is called" is a claim about code, and code gets edited by people
+who have not read the paragraph explaining it.
+
+A stored document that will not parse **records a CONTENT incident** rather than being swallowed.
+The symptom otherwise is a preview that renders with only the overridden fields — a page that looks
+emptier than expected, which is the silent shape SH270 refused for the two render paths it named.
+
+The surface is `POST /api/v2/agent/render` (a POST because the document is the argument), gated by
+**write** and not read: the caller supplies the content and gets the page back, so the question is
+whether they could author it, not whether they may see what is stored. `format=html` adds the markup
+for a console frame; an agent asking for an outline does not pay for it. `state=rev:<n>` is refused
+— a revision is a record, and laying unsaved values over one would render a document that never
+existed under a version number saying it did.

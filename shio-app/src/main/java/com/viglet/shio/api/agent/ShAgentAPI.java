@@ -21,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import tools.jackson.databind.JsonNode;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -667,6 +668,40 @@ public class ShAgentAPI {
                 ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
                         .body(ShAgentVerifyTerse.digest(digest))
                 : ResponseEntity.ok(digest);
+    }
+
+    /**
+     * SH1014 — the page as it <em>would</em> read, from values nobody has saved.
+     *
+     * <p>A dry run proves a write is legal and says nothing about how the page will look, and a
+     * preview token addresses a post id rather than a payload — so neither a curator nor an agent
+     * could see a change without first making it. This renders through the same page render service
+     * every other path uses, over a transient copy of the post, and persists nothing.</p>
+     *
+     * <p>A POST because the document is the argument, and it does not fit in a query string. It
+     * writes nothing all the same, which is what {@code ShProposedRenderWritesNothingTest} holds:
+     * the method that would make this a write is the one nobody called.</p>
+     *
+     * @param format {@code html} adds the rendered markup, which is what a console frame needs and
+     *               what an agent asking for an outline should not pay for
+     */
+    @PostMapping("/render")
+    @Operation(summary = "Render a page from proposed field values without saving them")
+    public ResponseEntity<Object> renderProposed(
+            @RequestBody ShProposedRender body,
+            @RequestParam(name = "format", required = false) String format) {
+
+        var proposed = shAgentRenderService.proposed(body.address(), body.state(), body.data(),
+                "html".equalsIgnoreCase(format));
+        return ResponseEntity.ok(proposed.html() == null ? proposed.digest() : proposed);
+    }
+
+    /**
+     * @param address the page to render (SH79)
+     * @param state   {@code draft} or {@code published}; a revision is refused, being a record
+     * @param data    field values laid over the stored document; a field it does not name is kept
+     */
+    public record ShProposedRender(String address, String state, JsonNode data) {
     }
 
     /**

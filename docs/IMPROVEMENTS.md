@@ -1984,6 +1984,34 @@ what an existing gate reports.
 The note lands either way, since even a version that runs the rules has to say what its
 severity means. Start there.
 
+### LXVIII.15 Two flakes, measured before they are fixed (SH1093)
+
+Two suites failed once each during SH1014 and passed on an unchanged re-run, in code
+that commit never touched.
+
+`ShMarketplaceInstallerTest.aPackageInstalls` threw `AccessDeniedException` moving a
+freshly extracted blueprint directory between two Windows temp directories. `Files.move`
+across directories is a rename where it can be, and on Windows a handle another process
+holds for a moment — an indexer, a scanner — makes that rename fail rather than wait.
+
+`exit-path.test.mjs`'s SH440 case measured `shio resolve` at 4057ms against a 100ms
+bound, which is undici's `keepAliveTimeout` exactly. The assertion is worth keeping: it
+catches an exit that waits a socket out. What it cannot distinguish is a process that
+failed to disarm the socket from one descheduled on a loaded machine, and this run had a
+Maven build beside it.
+
+Both are the shape agents.md names as the worst kind: *one run in six, never reproduced,
+undiagnosable*. SH735 guards the half where a green re-run erases the red one before it,
+so the evidence survives and nothing yet asks why.
+
+Neither fix is a retry around the assertion, which turns a flake into a slow pass. The
+installer should copy-then-delete when a move is refused, which is what a portable move
+is. The exit test should split its two claims: observe that the socket is disarmed, and
+keep a wall-clock bound scheduling noise cannot trip.
+
+Measure before fixing — fifty runs each, and record the rate, so *fixed* means a number
+moved rather than a run that happened to pass.
+
 ## LXIX Finding, selecting and acting on content (Block BD)
 
 The content browser is where a curator spends the day, and it is the console's weakest
