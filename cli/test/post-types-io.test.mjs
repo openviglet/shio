@@ -215,3 +215,41 @@ test("SH914: a declaration is drift when it changes, and not otherwise", () => {
   assert.equal(serializeDef(declared), serializeDef(structuredClone(declared)),
     "SH914: and an unchanged declaration must be byte-identical (P5)");
 });
+
+test("SH1010: a field that declares no constraints serializes exactly as it did before", () => {
+  const before = serializeDef(news);
+  assert.ok(!before.includes("constraints"),
+    "SH1010: a block materialized with ten nulls on every field would rewrite every "
+      + "shio/post-types/*.json in every repository on the next pull, for a vocabulary almost "
+      + "none of them use");
+
+  // An empty block and an absent one are the same fact, so they have to be the same bytes.
+  const spelled = structuredClone(news);
+  spelled.fields[0].constraints = {};
+  assert.equal(serializeDef(spelled), before);
+
+  const nulled = structuredClone(news);
+  nulled.fields[0].constraints = { minLength: null, pattern: null, values: [] };
+  assert.equal(serializeDef(nulled), before,
+    "SH1010: and a block whose every key is unset says nothing, which is what absent means");
+});
+
+test("SH1010: a declared constraint is carried, in the server's own key order", () => {
+  const slugged = structuredClone(news);
+  slugged.fields[0].constraints = {
+    maxLength: 40,
+    pattern: "[a-z0-9-]+",
+    patternMessage: "lower-case letters, digits and hyphens only",
+    values: ["a", "b"],
+  };
+
+  const field = normalizeDef(slugged).fields.find((f) => f.name === news.fields[0].name);
+  assert.deepEqual(Object.keys(field.constraints),
+    ["maxLength", "pattern", "patternMessage", "values"],
+    "SH1010: the order is ShFieldConstraints' declaration order, which is what keeps a pulled "
+      + "file comparable to a pushed one by string");
+  assert.deepEqual(field.constraints.values, ["a", "b"]);
+
+  assert.notEqual(serializeDef(slugged), serializeDef(news),
+    "SH1010: adding a constraint has to show up as a change, or a pull would hide it");
+});

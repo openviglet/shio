@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.verify.ShPostReferenceFields;
+import com.viglet.shio.api.post.type.dto.ShFieldConstraints;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeRename;
@@ -495,6 +496,10 @@ public class ShPostTypeAdminService {
             attr.setIsTitle((byte) (def.isTitle() ? 1 : 0));
             attr.setIsSummary((byte) (def.isSummary() ? 1 : 0));
             attr.setWidgetSettings(def.widgetSettings());
+            // SH1010 — stored as the JSON it was declared as, and stored as nothing when the block
+            // says nothing: a field whose constraints were cleared has to serialize back to what it
+            // was before anybody added them, or clearing one is drift on the next pull.
+            attr.setConstraints(constraintsJson(def.constraints()));
             // SH914 — carried verbatim; ShTuringFieldDeclaration has already refused the whole def
             // if any of it is unusable, so a bad declaration never reaches a row.
             attr.setIndexed(def.indexed());
@@ -553,4 +558,18 @@ public class ShPostTypeAdminService {
                 .sorted()
                 .toList();
     }
+    /**
+     * The constraint block as stored JSON, or {@code null} when it declares nothing (SH1010).
+     *
+     * <p>Null rather than {@code "{}"}: the column is read back by
+     * {@code ShFieldRules.of}, which treats blank as no constraints, and writing an empty object
+     * would make a field that never had any differ from one whose block was cleared — two
+     * spellings of the same fact, which is what a canonical serialization exists to prevent.</p>
+     */
+    private String constraintsJson(ShFieldConstraints constraints) {
+        return constraints == null || constraints.declaresNothing()
+                ? null
+                : objectMapper.writeValueAsString(constraints);
+    }
+
 }

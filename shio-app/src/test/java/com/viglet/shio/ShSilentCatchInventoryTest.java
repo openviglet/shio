@@ -183,7 +183,14 @@ class ShSilentCatchInventoryTest {
             // already follows one surface over, and here the absence is reported rather than
             // swallowed — `checked` is the denominator, so a page that could not be compared makes
             // the number smaller instead of making an empty `moved` look like a clean run.
-            "api", 68,
+            // SH1010 raised this from 68 to 71, all three in `ShFieldRules` and all three the same
+            // decision: a constraint the server cannot read back is a defect in the POST-TYPE,
+            // not in the content. An unparseable block, a pattern that does not compile and a
+            // value that is not a number each read as "no rule" rather than as a failing one —
+            // because refusing every publish of every post of that type puts the fix furthest
+            // from the one person who can make it, and the post-type editor is where it belongs.
+            // (The third is reported: the caller turns it into a `not-a-number` finding.)
+            "api", 71,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

@@ -42,6 +42,7 @@ import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding;
 import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.post.ShFieldRules;
 import com.viglet.shio.api.post.ShRequiredFields;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
@@ -763,6 +764,7 @@ public class ShAgentVerifyService {
                 fieldFindings(check, post, address, data, attr, scan, findings);
             }
             undeclaredFields(check, post, address, data, findings);
+            constraintFindings(check, post, address, data, findings);
         }
         duplicateUrls(check, scan, findings);
         folderFindings(check, scan, findings);
@@ -1583,6 +1585,32 @@ public class ShAgentVerifyService {
                             found.message(), found.fix())
                     : Finding.warning(check, found.rule(), address, found.field(),
                             found.message(), found.fix()));
+        }
+    }
+
+    /**
+     * SH1010 — what the model says this field will accept, and whether it does.
+     *
+     * <p>The same evaluator a publish is refused by, which is the whole point of it being one: a
+     * report that called a page valid and a writer that refused it would be two answers to one
+     * question, and the reader most likely to meet both is the agent that ran verify to decide
+     * whether to publish.</p>
+     *
+     * <p>Advice is a <b>warning</b> and never an error. {@code recommendedLength} is a judgement
+     * about how a value reads where it is shown, and a report that graded it as broken content
+     * would teach whoever read it to raise the number rather than shorten the text.</p>
+     */
+    private void constraintFindings(String check, ShPostUnified post, String address, JsonNode data,
+                                    List<Finding> findings) {
+        ShPostType postType = post.getShPostType();
+        for (ShFieldRules.Violation violation
+                : ShFieldRules.violations(postType, data, objectMapper)) {
+            findings.add(Finding.error(check, "constraint-violated", address, violation.field(),
+                    violation.says(), violation.fix()));
+        }
+        for (ShFieldRules.Violation advice : ShFieldRules.advice(postType, data, objectMapper)) {
+            findings.add(Finding.warning(check, "longer-than-recommended", address, advice.field(),
+                    advice.says(), advice.fix()));
         }
     }
 

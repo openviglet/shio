@@ -39,6 +39,7 @@
 - ⏳ **SH1072** (deps: —) **six shipped ids are unnamed in the published coverage matrix, which is past the ceiling** — the COVERAGE.md edit is in the vigletdocs working tree and uncommitted, so a fresh clone still reads the old matrix. → §LXIV.14
 - 📋 **SH1074** (deps: —) **the ARIA-state lint rejects the exact form its own failure message tells you to write** — Its regex refuses any expression not starting with a quote, so the ternary BENTO-AUTHORING gives as correct fails, and nobody saw it because the console had none. → §LXIV.15
 - 📋 **SH1076** (deps: viglet-core 2026.3.11 published) **every CI suite fails before it starts, because the viglet-core BOM version is not in Maven Central** — pom.xml imports viglet-core-bom 2026.3.11, which only a local ~/.m2 holds, so Maven cannot read the POM in CI while every local gate passes. → §LXIV.16
+- 📋 **SH1089** (deps: —) **a changelog can name a table that does not exist, and only a clean instance ever finds out** — The unit suite builds H2 from entity metadata with Liquibase off, so an addColumn on a misspelled table compiles, passes 2233 tests, and refuses to start a fresh store. → §LXIV.17
 
 ## Block AZ — What the content said before
 
@@ -62,7 +63,7 @@
 
 ## Block BC — The authoring surface, field by field
 
-- 📋 **SH1010** (deps: SH1009 ✅) **a field can declare only whether it is required, with no length, pattern, range, enum or uniqueness** — The attribute definition carries name, label, widget, required and a few flags and no constraint vocabulary, so every rule beyond presence lives in someone's head. → §LXVIII.2
+- ⏳ **SH1010** (deps: SH1009 ✅) **a field can declare only whether it is required, with no length, pattern, range, enum or uniqueness** — The attribute definition carries name, label, widget, required and a few flags and no constraint vocabulary, so every rule beyond presence lives in someone's head. → §LXVIII.2
 - 📋 **SH1011** (deps: SH985 ✅) **the post editor has no dirty state, no autosave and no unsaved-change guard** — Closing the tab mid-edit loses everything silently, while the design system ships the unsaved cue and the backend ships the field-level merge verb. → §LXVIII.3
 - 📋 **SH1012** (deps: —) **Relator, the only repeatable field, is read-only, while the documentation says it adds and removes items** — The widget takes onChange in its props and never calls it and prints that editing is disabled, while the whole data chain for nested items round-trips. → §LXVIII.4
 - 📋 **SH1013** (deps: SH955 ✅) **the editor never calls the content intelligence the backend already computes for the page being edited** — The console makes no request to the agent surface, so dozens of verify rules and a structural page digest stay invisible to the person who could fix what they find. → §LXVIII.5
@@ -70,7 +71,7 @@
 - 📋 **SH1015** (deps: SH956 ✅) **a page body is one opaque HTML string, so an agent cannot address a paragraph** — The rich-text value is innerHTML with no schema, so Edit lands inside one blob, canonical serialisation is impossible and the digest must parse markup to find structure. → §LXVIII.7
 - 📋 **SH1016** (deps: SH1015) **a front end cannot receive structured blocks, only the rendered HTML of a body** — The CDA, GraphQL and both SDKs return a body as a string, so a headless site cannot render a quote or an image block with its own components. → §LXVIII.8
 - 📋 **SH1017** (deps: SH1015) **a curator has no editor for block bodies, only the execCommand toolbar over a contentEditable** — Blocks stored and delivered are unusable by a person without a slash menu, drag handles and keyboard moves, so curators would keep choosing the HTML widget. → §LXVIII.9
-- 📋 **SH1018** (deps: SH1010) **changing a post type leaves existing content violating it, with no report and no migration** — Constraints are checked on write only, and a renamed or removed field leaves every existing post holding data under a key the model no longer declares. → §LXVIII.10
+- 📋 **SH1018** (deps: SH1010 ⏳) **changing a post type leaves existing content violating it, with no report and no migration** — Constraints are checked on write only, and a renamed or removed field leaves every existing post holding data under a key the model no longer declares. → §LXVIII.10
 - 📋 **SH1019** (deps: SH1006, SH1007) **a field cannot ask the connected agent for a suggestion it can apply** — The assistant's reference design offers a suggested title with a button to apply it, and Shio's only route to an answer is a request from the dock. → §LXVIII.11
 
 ## Block BD — Finding, selecting and acting on content

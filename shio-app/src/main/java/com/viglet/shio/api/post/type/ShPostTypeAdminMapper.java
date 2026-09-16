@@ -14,7 +14,10 @@ import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
+import com.viglet.shio.api.post.ShFieldRules;
+import com.viglet.shio.api.post.type.dto.ShFieldConstraints;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
+import tools.jackson.databind.ObjectMapper;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -34,6 +37,13 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
  */
 @Component
 public class ShPostTypeAdminMapper {
+
+    /** SH1010 — the constraint block is stored as JSON, and this is what reads it back. */
+    private final ObjectMapper objectMapper;
+
+    public ShPostTypeAdminMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     public ShPostTypeDef toDef(ShPostType postType) {
         if (postType == null) {
@@ -74,7 +84,25 @@ public class ShPostTypeAdminMapper {
                 attr.getIndexed(),
                 attr.getTuringField(),
                 attr.getTuringType(),
+                // SH1010 — what the field will accept, delivered exactly as stored and absent when
+                // nothing is declared: a block materialized as nulls would make every post-type
+                // pulled before this read as drift on the next pull (P5), which is the same trap
+                // `indexed` describes one comment up.
+                constraintsOf(attr),
                 attrDefs(attr.getShPostTypeAttrs(), false));
+    }
+
+    /**
+     * The stored constraint block, parsed, or {@code null} when the field declares none.
+     *
+     * <p>Parsed rather than passed through as a string, unlike {@code widgetSettings}: a widget's
+     * settings are a widget's own business and this surface only carries them, while these are a
+     * vocabulary the API declares — so a caller reads typed keys and a malformed block is one
+     * server-side problem rather than every client's.</p>
+     */
+    private ShFieldConstraints constraintsOf(ShPostTypeAttr attr) {
+        ShFieldConstraints declared = ShFieldRules.of(attr, objectMapper);
+        return declared.declaresNothing() ? null : declared;
     }
 
     /**

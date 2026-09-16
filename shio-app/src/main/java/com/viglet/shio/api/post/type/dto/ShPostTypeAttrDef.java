@@ -41,7 +41,34 @@ public record ShPostTypeAttrDef(
         Boolean indexed,
         String turingField,
         String turingType,
+        ShFieldConstraints constraints,
         List<ShPostTypeAttrDef> fields) {
+
+    /**
+     * The thirteen-field form: every caller before SH1010 gave a field constraints (SH914's form).
+     *
+     * <p>Kept for the same reason SH914's is, one vocabulary later: the canonical serialization
+     * omits a key a field does not have, so a post-type written before this round-trips
+     * byte-identically (P5) — and that is only true if absent and "no constraints" are one thing on
+     * this side too.</p>
+     */
+    public ShPostTypeAttrDef(
+            String name,
+            String label,
+            String description,
+            String widget,
+            boolean required,
+            boolean isTitle,
+            boolean isSummary,
+            int ordinal,
+            String widgetSettings,
+            Boolean indexed,
+            String turingField,
+            String turingType,
+            List<ShPostTypeAttrDef> fields) {
+        this(name, label, description, widget, required, isTitle, isSummary, ordinal,
+                widgetSettings, indexed, turingField, turingType, null, fields);
+    }
 
     /**
      * The ten-field form: every caller before SH914 made a field declarable as indexed.
@@ -65,7 +92,7 @@ public record ShPostTypeAttrDef(
             String widgetSettings,
             List<ShPostTypeAttrDef> fields) {
         this(name, label, description, widget, required, isTitle, isSummary, ordinal,
-                widgetSettings, null, null, null, fields);
+                widgetSettings, null, null, null, null, fields);
     }
 
     /** Whether this field is sent to Turing in a field of its own. Absent means no (SH914). */

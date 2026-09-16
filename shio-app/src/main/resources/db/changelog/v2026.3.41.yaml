@@ -1,0 +1,47 @@
+databaseChangeLog:
+  # SH1010 — `sh_post_type_attr.constraints`: what a field will accept, said by the model.
+  #
+  # A field could declare exactly one rule — `required` — and nothing else. No length, no pattern,
+  # no range, no enum, no item count. So a slug field accepted spaces, a rating accepted eleven, and
+  # every rule beyond presence lived in somebody's head and was enforced, if at all, by whoever
+  # remembered it. SH1009 gave `required` one evaluator on every writer; this gives that evaluator
+  # something to evaluate.
+  #
+  # One column holding a JSON object rather than a column per rule, and the reason is the shape of
+  # the thing: the vocabulary grows (this round adds seven kinds and leaves `unique` and `default`
+  # for the next), and a column per kind would be a migration per kind on a table every post-type
+  # write touches. It is also how `widget_settings` already stores a widget's own options, so a
+  # reader of this table meets one convention rather than two.
+  #
+  # 2000 characters: a pattern with a message and a handful of numbers, not a schema. A constraint
+  # block that does not fit is a rule that belongs in a publish gate (SH997), which is the surface
+  # for policy a site decides rather than a shape the model declares.
+  #
+  # `ShPostTypeAttr`, PascalCase, because this table is the SH26 baseline's and the baseline was
+  # generated from H2 with case-bearing identifiers — the snake_case spelling every changelog since
+  # v2026.3.36 uses belongs to the tables those changelogs CREATED. Getting it wrong is not a
+  # compile error and not a test failure: a clean instance refuses to start, and a dev instance that
+  # already has the column starts fine, so it is a defect only the conformance gate's fresh store
+  # sees. The column is `field_constraints` rather than `constraints` so that a reader of this file
+  # does not meet the word twice in one changeSet meaning two different things.
+  #
+  # Nullable with no backfill and no default: an absent block means no constraints, so every
+  # existing type is unchanged and its canonical serialization does not move (P5). Types DB-agnostic
+  # per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1010-add-constraints-to-sh-post-type-attr
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShPostTypeAttr
+                columnName: field_constraints
+      changes:
+        - addColumn:
+            tableName: ShPostTypeAttr
+            columns:
+              - column:
+                  name: field_constraints
+                  type: VARCHAR(2000)

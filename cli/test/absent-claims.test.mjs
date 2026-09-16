@@ -124,6 +124,11 @@ const DECLARED = new Map(Object.entries({
   "docs/agents/cli.md | is not part of | SH477,SH658":
     "An archetype's mark whose aria-label repeats its visible text. False if the archetype set "
     + "grows one, which is a change in this repository's own corpus.",
+  "docs/agents/post-types.md | are deliberately not here":
+    "`unique` and `default` are not in SH1010's constraint vocabulary. False the day a "
+    + "constraint is evaluated against other rows or filled in on write, which is a change "
+    + "to `ShFieldRules` — a rule per value and a rule that reads the site are different "
+    + "mechanisms, and the block gains the keys on the same commit.",
   "docs/agents/renderer.md | are not here":
     "Rebasing a reference `snapshot --against` can still measure. False if the snapshot "
     + "comparison stops depending on the original's own paths.",

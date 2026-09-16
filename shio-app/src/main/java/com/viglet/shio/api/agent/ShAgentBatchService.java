@@ -2997,11 +2997,10 @@ public class ShAgentBatchService {
         // change rather than a thrown refusal, because a plan that stopped at the first problem
         // would report one op of ten. The apply itself is refused inside `publish`, on the same
         // evaluation, so the two cannot promise different things.
-        List<String> incomplete = shPostUnifiedWriteService.requiredEmpty(draft);
+        List<String> incomplete = shPostUnifiedWriteService.publishBlockers(draft);
         if (session.dryRun && !incomplete.isEmpty()) {
             return session.change(op, address, Change.PUBLISH,
-                    "this publish is refused: " + String.join(", ", incomplete)
-                            + " required and empty", draft.getId());
+                    "this publish is refused: " + String.join("; ", incomplete), draft.getId());
         }
         if (!session.dryRun) {
             // SH995 — PUBLISH, not WRITE: this is the call that changes what visitors see, and until

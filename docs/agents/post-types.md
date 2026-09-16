@@ -386,3 +386,46 @@ Two things the first draft of it got wrong, both caught by a suite rather than b
   task built. A recorded waiver publishes; it is refused to an agent outright and written to both
   the audit row and the revision, so the page that goes live incomplete carries a person's name and
   their reason.
+
+## A constraint vocabulary, evaluated where required already is (SH1010)
+
+`required` was the only rule a field could declare. So a slug field accepted spaces, a rating
+accepted eleven, a locale code accepted `english`, and every rule past presence lived in somebody's
+head — enforced by whoever remembered it, on the surface they happened to be writing, and nowhere on
+the other three.
+
+A field now carries an optional `constraints` block: `minLength`, `maxLength`, `pattern` with a
+`patternMessage`, `min`, `max`, `values`, `minItems`, `maxItems` and an advisory
+`recommendedLength`. `unique` and `default` are deliberately not here — a rule evaluated per value
+and a rule that reads other rows are different mechanisms, and shipping them under one word would
+hide that.
+
+`ShFieldRules` evaluates them at the same three places `ShRequiredFields` is evaluated: the write
+service every publish passes through, the plans (which report rather than refuse, so a plan of ten
+ops still reports ten), and `verify`, which gains `constraint-violated` as an error and
+`longer-than-recommended` as a warning. `shio push --check` fails on the error, so a content tree is
+provably valid before it is applied.
+
+Four decisions worth keeping:
+
+- **An absent value is not a violation.** A constraint describes what a value must look like *when
+  there is one*; applying `minLength` to an empty optional field would make every constrained field
+  required by the back door, which is the one way a constraint vocabulary quietly changes the model
+  it was added to. Presence is `required`'s question and only its question.
+- **Advisory is not a weaker error.** `recommendedLength` never refuses a write and never appears in
+  a refusal. A title over sixty characters is a judgement about search results, not a broken
+  document, and a rule that refused it would teach people to raise the number rather than shorten
+  the title.
+- **A broken rule is no rule.** An unparseable block, or a pattern that does not compile, reads as
+  no constraints rather than as a failing one. Refusing every publish of every post of a type
+  because somebody typed a bad regular expression into it puts the fix furthest from the person who
+  can make it — the post-type editor is where that is reported.
+- **A pattern needs a `patternMessage`.** It is not enforced, and the refusal says so when one is
+  missing: a regular expression quoted back at a curator is a refusal only its author can act on,
+  which is what P6 is about.
+
+**Storage and round-trip.** One column holding JSON rather than a column per kind: the vocabulary
+grows, and a column per kind is a migration per kind on the table every post-type write touches. An
+absent block means no constraints, on both sides — the CLI's canonical serialization omits the key
+entirely, the way SH914's `indexed` is omitted, so every `shio/post-types/*.json` written before
+this round-trips byte for byte (P5).

@@ -30,6 +30,7 @@ import com.viglet.shio.api.history.ShChangedFields;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
+import com.viglet.shio.api.post.ShFieldRules;
 import com.viglet.shio.api.post.ShRequiredFields;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -1165,35 +1166,53 @@ public class ShPostUnifiedWriteService {
      * fill in a value that is already there.</p>
      */
     public void requireCompleteToPublish(ShPostUnified draft) {
-        List<String> empty = requiredEmpty(draft);
+        JsonNode data = storedData(draft);
+        if (data == null) {
+            return;
+        }
+        List<String> empty = ShRequiredFields.missing(draft.getShPostType(), data);
         if (!empty.isEmpty()) {
             throw new ShRequiredFields.RequiredFieldEmptyException(empty, named(draft));
         }
+        // SH1010 — presence first, then shape. A page missing its title and holding a bad slug is
+        // reported as the missing title: a caller fixes one thing, publishes again and is told the
+        // next, which is better than a refusal listing two unrelated kinds of problem at once.
+        ShFieldRules.requireValid(draft.getShPostType(), data, objectMapper, named(draft));
     }
 
     /**
-     * The required fields this stored row leaves empty (SH1009) — what a <b>plan</b> reports.
+     * Every reason this stored row would be refused a publish (SH1009, SH1010) — what a plan says.
      *
      * <p>A dry run says what the apply would refuse rather than refusing: the console's publish
      * preview and the batch's plan both follow SH997's shape, where a gate that would stop the
      * publish is a sentence on the change rather than a thrown refusal. A plan that stopped at the
      * first problem would report one op of ten, which is most of what a plan is for.</p>
      */
-    public List<String> requiredEmpty(ShPostUnified draft) {
-        if (draft == null) {
+    public List<String> publishBlockers(ShPostUnified draft) {
+        JsonNode data = draft == null ? null : storedData(draft);
+        if (data == null) {
             return List.of();
         }
-        JsonNode data;
+        List<String> blockers = new java.util.ArrayList<>();
+        for (String field : ShRequiredFields.missing(draft.getShPostType(), data)) {
+            blockers.add("'" + field + "' is required and empty");
+        }
+        ShFieldRules.violations(draft.getShPostType(), data, objectMapper)
+                .forEach(violation -> blockers.add(violation.says()));
+        return List.copyOf(blockers);
+    }
+
+    /** The stored document, or {@code null} when it cannot be read — see the note above. */
+    private JsonNode storedData(ShPostUnified draft) {
         try {
-            data = objectMapper.readTree(draft.getData() == null ? "{}" : draft.getData());
+            return objectMapper.readTree(draft.getData() == null ? "{}" : draft.getData());
         } catch (JacksonException malformed) {
             // silent-catch: stored data this service cannot parse is not a required-field finding,
             // and the paths that DO report it — verify's `invalid-data` rule and the read that
             // surfaces it — are unchanged by this guard. Refusing here would turn one defect into
             // a message about another one.
-            return List.of();
+            return null;
         }
-        return ShRequiredFields.missing(draft.getShPostType(), data);
     }
 
     /** What to call this page in a refusal: what a person would call it, never a uuid. */

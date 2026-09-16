@@ -1447,6 +1447,32 @@ by resolving the BOM with an empty local repository, or offline against a list o
 published versions. Without that check, the next bump fails the same way and is seen a
 week later.
 
+### LXIV.17 A changelog that names a table nothing created (SH1089)
+
+SH1010's changelog added a column to `sh_post_type_attr`. The table is `ShPostTypeAttr`
+— the SH26 baseline was generated from H2 with case-bearing identifiers, and the
+snake_case spelling every changelog since v2026.3.36 uses belongs to the tables those
+changelogs created. The Java gate went green at 2233 and the clean instance refused to
+start.
+
+It cannot be otherwise as things stand. `src/test/resources/application.properties` sets
+`spring.liquibase.enabled=false` and `ddl-auto=create-drop`, so during `mvn test` the
+schema is the entity model and nothing in `db/changelog` runs at all. SH729 already
+named this and built the instrument for one case — a constraint declared only in
+Liquibase — and that lint deliberately folds case and underscores, so
+`sh_post_type_attr` and `ShPostTypeAttr` are one identifier to it. The database does not
+fold.
+
+The check is cheap and needs no entity model: every `tableName` a changeset alters must
+be spelled exactly as some earlier changeset created it, and every `columnName` it
+references must have been created on that table. That is a walk of the changelogs in
+master order, and it would have failed naming the file and the line.
+
+Worth the same pass: `addColumn` and `createIndex` are not the only changes that name a
+table, and the failure is identical for each. The lint should enumerate the kinds it
+understands and fail on one it does not, so a change type nobody taught it is a red
+build rather than a silent gap.
+
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key

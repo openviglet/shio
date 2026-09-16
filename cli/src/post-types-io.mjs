@@ -51,8 +51,40 @@ function normalizeField(field) {
     }
     if (field.turingType) normalized.turingType = field.turingType;
   }
+  // SH1010 — the same exception, and for the same reason: a `constraints` block materialized with
+  // ten nulls on every field would rewrite every `shio/post-types/*.json` in every repository on
+  // the next pull, for a vocabulary almost none of them use. Absent means no constraints on both
+  // sides, so an absent key is the one spelling of that.
+  const constraints = normalizeConstraints(field.constraints);
+  if (constraints) normalized.constraints = constraints;
   normalized.fields = (field.fields ?? []).slice().sort(byOrdinalThenName).map(normalizeField);
   return normalized;
+}
+
+/**
+ * The constraint block in canonical key order, or `null` when it says nothing.
+ *
+ * Only the keys that are actually set, unlike the field itself: this block is optional as a whole,
+ * so materializing its defaults would put ten keys on every field that has one and make two blocks
+ * that declare the same rule differ by what they leave unsaid. The order is the server's
+ * declaration order (`ShFieldConstraints`), which is what keeps a pulled file comparable to a
+ * pushed one by string.
+ */
+function normalizeConstraints(constraints) {
+  if (!constraints || typeof constraints !== "object") return null;
+  const keys = ["minLength", "maxLength", "pattern", "patternMessage", "min", "max", "values",
+    "minItems", "maxItems", "recommendedLength"];
+  const normalized = {};
+  for (const key of keys) {
+    const value = constraints[key];
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      if (value.length > 0) normalized[key] = value.slice();
+      continue;
+    }
+    normalized[key] = value;
+  }
+  return Object.keys(normalized).length > 0 ? normalized : null;
 }
 
 /**

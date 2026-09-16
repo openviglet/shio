@@ -100,6 +100,18 @@ public class ShPostTypeAttr implements Serializable {
     @Column(name = "widget_settings", length = 5 * 1024 * 1024)
     private String widgetSettings;
 
+    /**
+     * What this field will accept, as JSON, or {@code null} for no constraints (SH1010).
+     *
+     * <p>One column holding an object rather than a column per kind: the vocabulary grows, and a
+     * column per kind is a migration per kind on the table every post-type write touches. It is
+     * also how {@link #widgetSettings} already stores a widget's own options, so a reader of this
+     * table meets one convention rather than two. Parsed by {@code ShFieldRules}; see
+     * {@code ShFieldConstraints} for the vocabulary.</p>
+     */
+    @Column(name = "field_constraints", length = 2000)
+    private String constraints;
+
     @ManyToOne(fetch = FetchType.LAZY, cascade = jakarta.persistence.CascadeType.ALL)
     @JoinColumn(name = "parent_relator_id")
     @JsonIgnore
