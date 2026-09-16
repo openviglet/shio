@@ -16,6 +16,7 @@
 - 📋 **SH946** (deps: SH941 ✅, DS VDS131) **six bento pages set their own max-width, gutters and rhythm, at three different widths** — The contract gives the reading column to the shell, but with no shell exported each page invents one, and the defect exists only between screens. → §LX.7
 - 📋 **SH947** (deps: SH946, SH942 ✅, DS VDS132) **the contract's two named rules have no check inside Shio's own test run** — A page setting its own column and a stylesheet setting --vg-primary directly would both pass pnpm test today, since nothing here spawns a page lint. → §LX.8
 - 📋 **SH948** (deps: DS VDS130) **copy-ds.cmd cannot find the design system, so a package change cannot be tried in Shio unpublished** — It forwards to use:local, whose walk from the package's position on disk now reaches a worktree container, and the wrapper adds nothing but that path. → §LX.9
+- 📋 **SH1088** (deps: —) **eight tasks wait on design-system work that is published, because this console holds 2026.3.10** — VDS129 to VDS135 and VDS140 are all inside 2026.3.11, which npm serves and the lockfile does not take, and the same release removes two exports App.tsx imports. → §LX.11
 
 ## Block AW — One chrome: bento, and nothing left that names another
 
@@ -23,7 +24,7 @@
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
-- 📋 **SH964** (deps: DS VDS133) **the console mounts no Viglet assistant, so its 106 toasts reach no mascot and no dock** — VigletAvatar, VigletAssistant and useAssistantNotifications shipped in the design system's Block E for a CMS screen like this one, and no consumer has mounted them. → §LXIII.1
+- 📋 **SH964** (deps: DS VDS133) **the console mounts no Viglet assistant, so its 106 toasts reach no mascot and no dock** — VigletAvatar, VigletAssistant and useAssistantNotifications shipped in the design system's Block E, but 2026.3.10 is installed here and VDS133 gave them the shell's corner after it. → §LXIII.1
 - 📋 **SH965** (deps: SH964) **nothing checks that a console write reports an outcome, so a silent save leaves the mascot idle** — useAssistantNotifications reads toasts, so a mutation that resolves without one is invisible to the dock, its announcer and the curator at the same moment. → §LXIII.2
 - 📋 **SH966** (deps: SH964, SH955 ✅, DS VDS134) **a refused save reaches the dock as the word Error, with the server's fix left behind** — Once the console reads problem documents, the dock can speak the detail and offer fix, didYouMean and a jump to the failing field instead of a toast. → §LXIII.3
 - 📋 **SH968** (deps: SH967 ✅, DS VDS134) **agent runs and review arrivals surface only as a header count the curator cannot open** — SH936 put the pending count beside the account menu, while the contract says a count belongs to the surface that owns it, and the dock is where the system reports. → §LXIII.5
@@ -54,7 +55,7 @@
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
-- 📋 **SH1006** (deps: SH1003 ✅, SH1000 ✅, SH967 ✅) **a curator cannot ask the connected agent anything from the assistant dock** — VigletAssistant opens into a chat only when a product supplies onSend, and Shio hosts no model, so the chat must reach the external agent and nothing relays to it. → §LXVII.8
+- 📋 **SH1006** (deps: SH1003 ✅, SH1000 ✅, SH967 ✅, SH964) **a curator cannot ask the connected agent anything from the assistant dock** — VigletAssistant opens into a chat only when a product supplies onSend, and Shio hosts no model, so the chat must reach the external agent and nothing relays to it. → §LXVII.8
 - 📋 **SH1007** (deps: SH1006, SH1001 ✅, DS VDS134) **an agent's answer in the dock cannot carry the change it proposes** — A reply that says it drafted a new hero leaves the curator searching for the draft, while each dock message can offer an action and review already groups changes by run. → §LXVII.9
 - 📋 **SH1008** (deps: SH967 ✅, SH999 ✅, SH985 ✅) **a curator editing a page cannot see that an agent is working on the same page right now** — Concurrency guards refuse a stale write after the fact, and nothing shows, before anyone types, that another writer is active on the address. → §LXVII.10
 - 📋 **SH1086** (deps: SH1005 ✅) **the trail's four new filters reach REST and the console, and neither MCP nor the CLI** — SH1005 gave /agent/changes action, actor, subject and address; shio_changes and shio changes still offer site, since and by, so P1's own order runs backwards for them. → §LXVII.11
