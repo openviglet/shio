@@ -2003,3 +2003,41 @@ escaped by SH1016's renderer, which is the difference between storing markup and
 `lib/blocks.ts` mirrors the server's vocabulary so the editor offers only what `ShBlocks` accepts.
 `blankBlock("heading")` sets `level` for that reason: an editor that can compose a document the
 instance will refuse teaches its user a shape that does not exist.
+
+## The content browser, operable without a mouse (SH1020)
+
+The browser's rows carried no `role`, no `tabIndex`, no `aria-selected` and no `onKeyDown`, and its
+**eight row actions** — edit, clone, copy, move, permissions, view, delete — lived inside a
+`hidden group-hover:flex` block. A keyboard user could open a post and do nothing else to it; a
+screen reader was never told the actions existed. The site list fixed exactly this in its own sweep
+and the browser was not part of it.
+
+**It is a listbox now.** `role="listbox"` with `aria-multiselectable` (the checkbox column was
+always a multi-select — the semantics were what was missing), each row a `role="option"` carrying
+`aria-selected`, and a **roving tabindex** so Tab moves past the list rather than through a
+hundred rows. That last part is not a detail: a list that claims the role and does not move on
+arrows is worse than one that claims nothing.
+
+| Key | What it does |
+|---|---|
+| ↑ / ↓, Home / End | Move the focus ring |
+| Space | Toggle this row |
+| Shift + ↑/↓, Shift + click | Extend from the anchor |
+| Enter | Open |
+| Delete / Backspace | The confirm flow, never straight to the server |
+| `/` | Focus search |
+
+**The anchor is state, not the previous row.** Shift extends from where the selection last started,
+which is the rule every file manager uses — and range selection is what makes a bulk verb a gesture
+instead of a hundred clicks.
+
+**`/` opens the field as well as focusing it**, because search sits behind a toggle and a binding
+that only focused would do nothing on a page where nobody clicked the magnifier. It ignores the
+keystroke while an `input`, `textarea` or `contenteditable` has focus — otherwise typing a slash
+into a name jumps the cursor out of the box it was typed in, and the rich-text fields are exactly
+where a slash gets typed.
+
+The actions are now **data** (`rowActions(item)`) handed to `BentoActionsMenu`, with a trigger label
+naming the row: eight identical "Actions" buttons is what a screen reader hears otherwise. Stating
+the set in one place is a side benefit — what a row can do was previously readable only by scrolling
+the JSX that drew it.

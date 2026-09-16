@@ -12,8 +12,11 @@ import { ROUTES } from "@/app/routes.const"
 import { IconFileText } from "@tabler/icons-react"
 import { DialogDelete } from "@/components/dialog.delete"
 import { PermissionsDialog } from "@/components/permissions.dialog"
-import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, ClipboardCopy, ShieldCheck } from "lucide-react"
-import { useEffect, useState, useCallback } from "react"
+import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, ClipboardCopy, ShieldCheck, ExternalLink } from "lucide-react"
+// SH1020 — the row actions live in the design system's menu, which is where the site list put
+// its four in its own sweep.
+import { BentoActionsMenu } from "@viglet/viglet-design-system/bento"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
@@ -402,6 +405,153 @@ export default function ObjectChildrenPage() {
     }
   }
 
+  /**
+   * SH1020 — the roving focus ring, and every key that moves or acts on it.
+   *
+   * <p>A listbox puts exactly one row in the tab order, so Tab moves past the list rather than
+   * through a hundred rows. Everything else is an arrow: that is the contract a screen reader
+   * announces when it reads `role="listbox"`, and a list that claims the role and does not move on
+   * arrows is worse than one that claims nothing.</p>
+   */
+  const [focusedRow, setFocusedRow] = useState(0)
+  const [anchorRow, setAnchorRow] = useState(0)
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([])
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  const focusRow = useCallback((index: number) => {
+    const bounded = Math.max(0, Math.min(index, sortedItems.length - 1))
+    setFocusedRow(bounded)
+    rowRefs.current[bounded]?.focus()
+  }, [sortedItems.length])
+
+  /** Every id from the anchor to here — what makes a bulk verb a gesture rather than N clicks. */
+  const selectRange = useCallback((from: number, to: number) => {
+    const [low, high] = from <= to ? [from, to] : [to, from]
+    const ids = sortedItems.slice(low, high + 1).map((item) => item.id)
+    setSelectedItems((prev) => {
+      const next = new Set(prev)
+      ids.forEach((id) => next.add(id))
+      return next
+    })
+  }, [sortedItems, setSelectedItems])
+
+  const onListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const index = focusedRow
+    const item = sortedItems[index]
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowUp": {
+        event.preventDefault()
+        const next = index + (event.key === "ArrowDown" ? 1 : -1)
+        focusRow(next)
+        // Shift extends from the anchor, which is where the selection last started — the same
+        // rule every file manager uses, and the reason the anchor is state rather than the
+        // previous row.
+        if (event.shiftKey) selectRange(anchorRow, next)
+        else setAnchorRow(Math.max(0, Math.min(next, sortedItems.length - 1)))
+        break
+      }
+      case "Home":
+        event.preventDefault()
+        focusRow(0)
+        break
+      case "End":
+        event.preventDefault()
+        focusRow(sortedItems.length - 1)
+        break
+      case " ":
+        event.preventDefault()
+        if (item) {
+          toggleSelect(item.id)
+          setAnchorRow(index)
+        }
+        break
+      case "Enter":
+        event.preventDefault()
+        if (item) handleItemClick(item)
+        break
+      case "Delete":
+      case "Backspace":
+        event.preventDefault()
+        // Through the confirm flow, never straight to the server: Delete is one keystroke from
+        // every other key on this list.
+        if (item) {
+          setDeleteTarget(item)
+          setDeleteDialogOpen(true)
+        }
+        break
+      default:
+        break
+    }
+  }
+
+  /** Shift-click extends, exactly as Shift with an arrow does. */
+  const onRowClick = (event: React.MouseEvent<HTMLDivElement>, index: number) => {
+    if (event.shiftKey) {
+      event.preventDefault()
+      selectRange(anchorRow, index)
+      setFocusedRow(index)
+      return
+    }
+    setAnchorRow(index)
+  }
+
+  /**
+   * SH1020 — `/` focuses search, which is the one binding that is not about the list.
+   *
+   * <p>Ignored while a field has focus, or typing a slash into a name would jump the cursor out of
+   * the box it was typed in.</p>
+   */
+  useEffect(() => {
+    const onSlash = (event: KeyboardEvent) => {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey) return
+      const active = document.activeElement
+      const editing = active instanceof HTMLInputElement
+        || active instanceof HTMLTextAreaElement
+        || (active as HTMLElement | null)?.isContentEditable
+      if (editing) return
+      event.preventDefault()
+      // Opened as well as focused: the field is behind a toggle, so a binding that only focused it
+      // would do nothing on a page where nobody had clicked the magnifier first.
+      setSearchOpen(true)
+      searchRef.current?.focus()
+    }
+    globalThis.addEventListener("keydown", onSlash)
+    return () => globalThis.removeEventListener("keydown", onSlash)
+  }, [])
+
+  /**
+   * SH1020 — the eight row actions, as data.
+   *
+   * <p>A list rather than eight buttons in the markup, because the menu takes a list and because
+   * the set is now stated in one place: what a row can do was previously readable only by scrolling
+   * through the JSX that drew it.</p>
+   */
+  const rowActions = (item: ObjectChild) => [
+    {
+      label: t("common.edit"),
+      icon: Pencil,
+      onSelect: () => navigate(item.objectType === "FOLDER"
+        ? `${ROUTES.CONTENT_ROOT}/folder/${item.id}/edit`
+        : `${ROUTES.CONTENT_ROOT}/post/${item.id}`),
+    },
+    { label: t("content.clone"), icon: ClipboardCopy, onSelect: () => handleClone(item.id) },
+    { label: t("content.copy"), icon: Copy, onSelect: () => openFolderDialog("copy", [item.id]) },
+    { label: t("content.move"), icon: Move, onSelect: () => openFolderDialog("move", [item.id]) },
+    {
+      label: t("acl.permissions"),
+      icon: ShieldCheck,
+      onSelect: () => { setPermsTarget(item); setPermsOpen(true) },
+    },
+    { label: t("content.viewPage"), icon: ExternalLink, onSelect: () => handleViewPage(item.id) },
+    {
+      label: t("common.delete"),
+      icon: Trash2,
+      tone: "destructive" as const,
+      onSelect: () => { setDeleteTarget(item); setDeleteDialogOpen(true) },
+    },
+  ]
+
   const handleItemClick = (item: ObjectChild) => {
     if (item.objectType === "FOLDER") {
       navigate(`${ROUTES.CONTENT_ROOT}/object/${item.id}`)
@@ -722,6 +872,8 @@ export default function ObjectChildrenPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
+              // SH1020 — `/` focuses this from anywhere on the page.
+              ref={searchRef}
               className="w-full pl-10 pr-4 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder={t("content.filterItems")}
               value={searchQuery}
@@ -737,10 +889,33 @@ export default function ObjectChildrenPage() {
               <div className="px-4 py-12 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
             )}
 
+            {/*
+              SH1020 — a real listbox. The rows carried no role, no tabindex and no selected state,
+              so a keyboard user could open a post and do nothing else to it: every one of the eight
+              row actions lived inside a block that was `hidden` until a pointer hovered it.
+
+              `aria-multiselectable` because the checkbox column has always been a multi-select —
+              the semantics were the part that was missing, not the behaviour.
+            */}
+            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role */}
+            <div
+              role="listbox"
+              aria-multiselectable="true"
+              aria-label={t("content.browserList")}
+              onKeyDown={onListKeyDown}
+            >
             {!loading && sortedItems.map((item, index) => (
               <div
                 key={item.id}
-                className={`group border-b last:border-b-0 hover:bg-muted/40 transition-colors ${selectedItems.has(item.id) ? "bg-primary/5" : ""}`}
+                // One row is in the tab order at a time (a roving tabindex), so Tab moves past the
+                // list rather than through every row of a hundred-row page.
+                role="option"
+                aria-selected={selectedItems.has(item.id) ? "true" : "false"}
+                tabIndex={index === focusedRow ? 0 : -1}
+                ref={(node) => { rowRefs.current[index] = node }}
+                onFocus={() => setFocusedRow(index)}
+                onClick={(event) => onRowClick(event, index)}
+                className={`group border-b last:border-b-0 hover:bg-muted/40 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${selectedItems.has(item.id) ? "bg-primary/5" : ""}`}
               >
                 <div className="flex items-start gap-3 px-4 py-3">
                   {/* Position badge */}
@@ -798,35 +973,23 @@ export default function ObjectChildrenPage() {
                     </div>
                   </div>
 
-                  {/* Hover actions - wrap in grid like AngularJS */}
-                  <div className="shrink-0 hidden group-hover:flex flex-wrap gap-x-4 gap-y-1 items-start text-xs max-w-70 justify-end">
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); item.objectType === "FOLDER" ? navigate(`${ROUTES.CONTENT_ROOT}/folder/${item.id}/edit`) : navigate(`${ROUTES.CONTENT_ROOT}/post/${item.id}`) }}>
-                      <Pencil className="h-3 w-3" /> {t("common.edit")}
-                    </button>
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); handleClone(item.id) }}>
-                      <ClipboardCopy className="h-3 w-3" /> {t("content.clone")}
-                    </button>
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("copy", [item.id]) }}>
-                      <Copy className="h-3 w-3" /> {t("content.copy")}
-                    </button>
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); setPermsTarget(item); setPermsOpen(true) }}>
-                      <ShieldCheck className="h-3 w-3" /> {t("acl.permissions")}
-                    </button>
-                    <button type="button" className="flex items-center gap-1 text-destructive/70 hover:text-destructive whitespace-nowrap" onClick={(e) => { e.stopPropagation(); setDeleteTarget(item); setDeleteDialogOpen(true) }}>
-                      <Trash2 className="h-3 w-3" /> {t("common.delete")}
-                    </button>
-                    <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); openFolderDialog("move", [item.id]) }}>
-                      <Move className="h-3 w-3" /> {t("content.move")}
-                    </button>
-                    {item.objectType === "POST" && (
-                      <button type="button" className="flex items-center gap-1 text-muted-foreground hover:text-foreground whitespace-nowrap" onClick={(e) => { e.stopPropagation(); handleViewPage(item.id) }}>
-                        <Eye className="h-3 w-3" /> {t("content.viewPage")}
-                      </button>
-                    )}
+                  {/*
+                    SH1020 — the eight actions, in a menu with a focusable trigger. They were
+                    buttons inside `hidden group-hover:flex`, which is unreachable without a
+                    pointer and invisible to a screen reader either way. The site list moved its
+                    four into exactly this component in its own sweep; the browser was not part of
+                    it.
+                  */}
+                  <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
+                    <BentoActionsMenu
+                      triggerLabel={t("content.rowActions", { name: item.name })}
+                      actions={rowActions(item)}
+                    />
                   </div>
                 </div>
               </div>
             ))}
+            </div>
 
             {!loading && sortedItems.length === 0 && (
               <div className="px-4 py-16 text-center">

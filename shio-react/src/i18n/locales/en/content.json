@@ -303,5 +303,7 @@
   "content.relatorDuplicate": "Duplicate this item",
   "content.relatorReorder": "Drag to reorder, or focus and use the arrow keys",
   "content.relatorUndoRemove": "Undo remove",
-  "content.relatorItemNumber": "Item {{number}}"
+  "content.relatorItemNumber": "Item {{number}}",
+  "content.browserList": "Content items",
+  "content.rowActions": "Actions for {{name}}"
 }

@@ -1981,25 +1981,6 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.1 A list you can operate without a mouse (SH1020)
-
-The analysis found no onKeyDown, tabIndex, row role or aria-selected in the browser. Its
-row actions, edit, clone, copy, permissions, delete, move and view, are buttons inside a
-div that is hidden until a pointer hovers the row. The site list fixed exactly this in
-its own sweep, moving four mouse-only actions into a focusable, announced menu; the
-browser was not part of that sweep, and BentoActionsMenu is used in Shio only by the
-vocabulary specimen.
-
-Make the list a real listbox: arrow keys move a roving focus ring, Space toggles
-selection, Shift with an arrow or a click extends a range, Enter opens, Delete trashes
-through the confirm flow, and slash focuses search. Rows gain a role, aria-selected and
-roving tabindex, and the hover block becomes the actions menu, with each item carrying
-the op id AY7's declaration names. The bindings register with the shortcuts dialog.
-
-Range selection is what makes BD2's bulk verbs a gesture rather than hundreds of clicks,
-which is why this lands first. VDS138's data table later absorbs the behaviour for every
-list. The assertions select a range and trash it by keyboard alone.
-
 ### LXIX.2 Bulk verbs that are the agent's verbs (SH1021)
 
 The MCP publish tool declares its address as an array and promises atomicity across

@@ -1768,6 +1768,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BD — Finding, selecting and acting on content
 
+- **SH1020** — The content browser can be operated without a mouse. Its rows carried no role, tabindex, selected state or key handler, and its eight row actions lived inside a block hidden until a pointer hovered — so a keyboard user could open a post and do nothing else to it, and a screen reader was never told the actions existed. It is a listbox now, multi-selectable because the checkbox column always was, each row an option carrying its selected state, with a roving tabindex so Tab moves past the list rather than through a hundred rows: a list that claims the role and does not move on arrows is worse than one claiming nothing. Arrows and Home/End move the ring, Space toggles, Shift with an arrow or a click extends from the anchor — where the selection last started, the rule every file manager uses, and what makes a bulk verb a gesture instead of a hundred clicks — Enter opens, Delete goes through the confirm flow, and slash focuses search, opening the field as well since it sits behind a toggle, and ignoring the key while a field has focus so a slash typed into a name does not jump the cursor out. The actions became data handed to the design system's menu, labelled per row rather than eight identical Actions buttons.
+
 ## Block BE — Media: what the bytes mean
 
 ## Block BF — The visual editor becomes a composer
