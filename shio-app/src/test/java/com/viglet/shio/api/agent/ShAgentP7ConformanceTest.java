@@ -117,9 +117,13 @@ class ShAgentP7ConformanceTest {
         // changes what visitors see, and what a curator wants before it is the list of URLs it
         // moves, which the request does not carry. The row moved because the guard arrived, which
         // is this census doing the job SH142 gave it.
+        // SH1021 moved the second row for the second time, and the reason is the reverse of the
+        // one above it: a bulk verb IS the case a confirm token was built for. Deleting one post
+        // is a gesture a curator makes on the row in front of them; deleting forty is a plan they
+        // read and then carry out, and the token is what binds the second call to the first.
         byPath.put("/api/v2/post-unified", new Guards(
                 yes("ShPostUnifiedAPI.java", "dryRun"),
-                no("ShPostUnifiedAPI.java", "confirm", DELETE_IS_THE_CONSOLE_GESTURE),
+                yes("ShPostUnifiedAPI.java", "confirm"),
                 yes("ShPostUnifiedWriteService.java", "shContentAuditService"),
                 yes("ShReviewService.java", "findAgentEntries")));
         byPath.put("/api/v2/site", new Guards(

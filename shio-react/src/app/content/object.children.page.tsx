@@ -28,6 +28,10 @@ import axios from "axios"
 import { toast } from "@viglet/viglet-design-system"
 import { siteDestination } from "@/lib/site-front-end"
 import { deleteEach, refusalSummary, type DeleteTarget } from "@/lib/batch-delete"
+// SH1021 — the bulk verbs go through the writer the agent's batch runs through.
+import { ShPostUnifiedService, type ShBulkResult }
+  from "@/services/post-unified/post-unified.service"
+import { headlineOf, problemOf } from "@/lib/problem"
 
 const postTypeService = new ShPostTypeService()
 const siteService = new ShSiteService()
@@ -121,6 +125,11 @@ const POST_SORT: Record<string, string> = { order: "title", name: "title", date:
  * keyed on the selection would recompute on every render of a page that renders a lot.
  */
 const EMPTY_SELECTION: Set<string> = new Set<string>()
+
+/** SH1021 — the three verbs a selection can take. */
+type BulkOp = "PUBLISH" | "UNPUBLISH" | "DELETE"
+
+const unifiedService = new ShPostUnifiedService()
 
 export default function ObjectChildrenPage() {
   const { objectId } = useParams() as { objectId: string }
@@ -552,6 +561,56 @@ export default function ObjectChildrenPage() {
     },
   ]
 
+  /**
+   * SH1021 — a bulk verb, planned before it is carried out.
+   *
+   * <p>The plan is the server's own dry run through the same writer the agent's batch uses, so what
+   * the sheet names is exactly what the real run will do — not a second opinion computed here. A
+   * selection where one post is refused publishes the rest and says which one did not, with the fix
+   * its refusal carries.</p>
+   */
+  const [bulkPlan, setBulkPlan] = useState<{ op: BulkOp; result: ShBulkResult } | null>(null)
+  const [bulkRunning, setBulkRunning] = useState(false)
+
+  const planBulk = async (op: BulkOp) => {
+    if (selectedItems.size === 0) return
+    try {
+      const result = await unifiedService.bulk(op, [...selectedItems], { dryRun: true })
+      setBulkPlan({ op, result })
+    } catch (error) {
+      toast.error(headlineOf(problemOf(error), t("common.error")))
+    }
+  }
+
+  const applyBulk = async () => {
+    if (!bulkPlan) return
+    setBulkRunning(true)
+    try {
+      // The confirm token is the one this plan returned, so a destructive run cannot be carried out
+      // against a plan the curator never saw (SH108).
+      const result = await unifiedService.bulk(bulkPlan.op, [...selectedItems], {
+        dryRun: false,
+        confirm: bulkPlan.result.confirm,
+      })
+      const refused = result.results.filter((change) => change.problem)
+      toast.success(t("content.bulkDone", { count: result.changed }))
+      if (refused.length) {
+        // Named rather than counted: "3 refused" sends a curator to find out which three.
+        toast.error(t("content.bulkRefused", {
+          count: refused.length,
+          names: refused.map((change) => change.address ?? change.id).join(", "),
+        }))
+      }
+      setBulkPlan(null)
+      setSelectedItems(new Set())
+      await refreshList()
+    } catch (error) {
+      toast.error(headlineOf(problemOf(error), t("common.error")))
+    } finally {
+      setBulkRunning(false)
+    }
+  }
+
   const handleItemClick = (item: ObjectChild) => {
     if (item.objectType === "FOLDER") {
       navigate(`${ROUTES.CONTENT_ROOT}/object/${item.id}`)
@@ -828,6 +887,14 @@ export default function ObjectChildrenPage() {
               <DropdownMenuItem onClick={() => openFolderDialog("copy", [...selectedItems])}><Copy className="mr-2 h-4 w-4" /> {t("content.copy")}</DropdownMenuItem>
               <DropdownMenuItem onClick={() => openFolderDialog("move", [...selectedItems])}><Move className="mr-2 h-4 w-4" /> {t("content.move")}</DropdownMenuItem>
               <DropdownMenuSeparator />
+              {/*
+                SH1021 — the verbs an agent has had since shio_publish shipped. Every one opens the
+                plan first: a bulk verb is the one shape where a mistake is multiplied by the size
+                of the selection.
+              */}
+              <DropdownMenuItem onClick={() => planBulk("PUBLISH")}><Eye className="mr-2 h-4 w-4" /> {t("content.publish")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => planBulk("UNPUBLISH")}><Download className="mr-2 h-4 w-4" /> {t("content.unpublish")}</DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleBatchAction("delete")} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> {t("common.delete")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1088,6 +1155,50 @@ export default function ObjectChildrenPage() {
       </Dialog>
 
       {/* Delete confirmation dialog */}
+      {/*
+        SH1021 — the plan, as a sheet naming what will change. It is the SERVER's dry run through
+        the same writer the real run uses, so what this names is what will happen — not a second
+        opinion computed in the browser. Refusals are grouped and each carries the fix its problem
+        document came with, because "3 refused" sends a curator to find out which three.
+      */}
+      <Dialog open={bulkPlan !== null} onOpenChange={(open) => !open && setBulkPlan(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t("content.bulkPlanTitle", {
+                op: bulkPlan ? t(`content.bulkOp.${bulkPlan.op}`) : "",
+                count: bulkPlan?.result.changed ?? 0,
+              })}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-80 overflow-auto text-sm">
+            {(bulkPlan?.result.results ?? []).map((change) => (
+              <div key={`${change.op}-${change.address ?? change.id}`}
+                className="flex items-start gap-2">
+                <Badge variant={change.problem ? "destructive" : "secondary"}
+                  className="text-[10px] shrink-0">
+                  {change.problem ? t("content.bulkRefusedBadge") : change.action}
+                </Badge>
+                <div className="min-w-0">
+                  <div className="truncate">{change.address ?? change.id}</div>
+                  {change.problem && (
+                    <p className="text-xs text-muted-foreground">
+                      {change.problem.title}{change.problem.fix ? ` — ${change.problem.fix}` : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setBulkPlan(null)}>{t("common.cancel")}</Button>
+            <Button onClick={applyBulk} disabled={bulkRunning}>
+              {bulkRunning ? t("common.loading") : t("content.bulkApply")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <DialogDelete
         feature={deleteTarget ? (deleteTarget.objectType === "FOLDER" ? t("content.folder") : t("content.postLabel")) : t("content.batchContent")}
         name={deleteTarget?.name || `${selectedItems.size} item(s)`}

@@ -93,6 +93,13 @@ class ShVersionGuardLintTest {
             // the same surprise as any other stale save.
             Map.entry("ShPostUnifiedAPI#restoreRevision", ""),
 
+            // SH1021 — a bulk verb acts on a selection, and `If-Match` is one header carrying one
+            // row's version: there is no spelling of it that means "these forty, each at the
+            // version I last read". The per-op `expect` on the batch vocabulary is where a caller
+            // who cares states it, row by row, which is the only place the question has an answer.
+            Map.entry("ShPostUnifiedAPI#bulk", "it acts on a selection, and one If-Match cannot "
+                    + "carry a version per row; the batch's per-op `expect` is where that is said"),
+
             Map.entry("ShPostUnifiedAPI#create", CREATES),
             Map.entry("ShPostUnifiedAPI#translate", CREATES),
             Map.entry("ShPostUnifiedAPI#unpublish", "it removes the live snapshot and leaves the "

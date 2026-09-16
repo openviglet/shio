@@ -12,6 +12,30 @@ import type {
  * `postTypeId` its id, and the server prefers the id when both are sent. Exactly
  * one is required; neither is a teaching 400 listing the installed types.
  */
+/**
+ * SH1021 — the change set the agent's batch already returns, which is what a bulk verb answers.
+ *
+ * <p>An outcome and a problem per item, never a bare 200 over a partly-failed run: a selection
+ * where one post is refused publishes the rest and says which one did not, with the fix its refusal
+ * carries. That is the shape the console needs and the shape the agent already had.</p>
+ */
+export interface ShBulkChange {
+  op: string
+  address?: string
+  action: string
+  detail?: string | null
+  id?: string
+  problem?: { title?: string; detail?: string; fix?: string }
+}
+
+export interface ShBulkResult {
+  dryRun: boolean
+  ops: number
+  changed: number
+  confirm?: string
+  results: ShBulkChange[]
+}
+
 export interface CreateUnifiedPostRequest {
   folderId: string
   postType?: string
@@ -207,6 +231,25 @@ export class ShPostUnifiedService {
       params: { address: `id:${id}`, include: "impact" },
     })
     return response.data?.[0]?.impact?.routes ?? null
+  }
+
+  /**
+   * SH1021 — a verb over a selection, through the writer the agent's batch runs through.
+   *
+   * <p>The menu offered copy, move and delete, and publishing a selection meant publishing one post
+   * at a time — which is not what an agent does, and not atomic. This is one call to one writer, so
+   * the two surfaces cannot disagree about what publishing means.</p>
+   *
+   * <p>`dryRun` is the caller's, and every path here sends it deliberately: a bulk verb is the one
+   * shape where a mistake is multiplied by the size of the selection.</p>
+   */
+  async bulk(op: "PUBLISH" | "UNPUBLISH" | "DELETE", ids: string[],
+             options: { dryRun: boolean; confirm?: string; when?: string } = { dryRun: true },
+  ): Promise<ShBulkResult> {
+    const response = await axios.post<ShBulkResult>("/v2/post-unified/bulk", {
+      op, ids, dryRun: options.dryRun, confirm: options.confirm, when: options.when,
+    })
+    return response.data
   }
 
   /** Delete the live snapshot, leaving the draft to go on being edited (SH654). */

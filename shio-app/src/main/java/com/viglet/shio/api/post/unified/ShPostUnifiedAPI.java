@@ -71,6 +71,8 @@ public class ShPostUnifiedAPI {
     private final ShPostRevisionService shPostRevisionService;
     /** SH996 — what Publish would do, answered in the agent's own change-set shape. */
     private final ShConsolePublishPlan shConsolePublishPlan;
+    /** SH1021 — the curator's bulk verbs, through the agent's writer. */
+    private final ShPostUnifiedBulkService shPostUnifiedBulkService;
     /** SH997 — what this site says about content before it reaches visitors. */
     private final ShPublishGateService shPublishGateService;
 
@@ -83,7 +85,8 @@ public class ShPostUnifiedAPI {
                             ShConsolePostVersion shConsolePostVersion,
                             ShPostRevisionService shPostRevisionService,
                             ShConsolePublishPlan shConsolePublishPlan,
-                            ShPublishGateService shPublishGateService) {
+                            ShPublishGateService shPublishGateService,
+                            ShPostUnifiedBulkService shPostUnifiedBulkService) {
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shConsolePostReadService = shConsolePostReadService;
         this.shTenantQuotaService = shTenantQuotaService;
@@ -93,6 +96,7 @@ public class ShPostUnifiedAPI {
         this.shConsolePostVersion = shConsolePostVersion;
         this.shPostRevisionService = shPostRevisionService;
         this.shConsolePublishPlan = shConsolePublishPlan;
+        this.shPostUnifiedBulkService = shPostUnifiedBulkService;
         this.shPublishGateService = shPublishGateService;
     }
 
@@ -225,6 +229,42 @@ public class ShPostUnifiedAPI {
             // rows with this curator's day — the leak SH639's sweep had to fix one layer down.
             ShAgentSessionContext.clear();
         }
+    }
+
+    /**
+     * SH1021 — a verb over a selection, through the writer the agent's batch runs through.
+     *
+     * <p>The MCP publish tool has taken an array of addresses and promised atomicity since it
+     * shipped. The console's batch menu was copy, move and delete, and REST had single-id publish,
+     * so a curator could not do what an agent does in one call — and the obvious fix, a publish
+     * loop in a console service, is what lets two surfaces drift about what publishing means.</p>
+     *
+     * <p>So this composes (P10): it builds ops and hands them to {@code ShAgentBatchService}. One
+     * transaction, one vocabulary, one set of gates. The answer is the change set that service
+     * already returns — an outcome and a problem per item — so a bare 200 over a partly-failed run
+     * is not a shape this can return by accident.</p>
+     *
+     * <p>{@code dryRun} defaults to <b>true</b>. A bulk verb is the one shape where a mistake is
+     * multiplied by the size of the selection, so the request a caller sends by accident is a
+     * plan.</p>
+     */
+    @PostMapping("/bulk")
+    public ResponseEntity<Object> bulk(@RequestBody BulkPayload payload, Principal principal) {
+        boolean dryRun = payload.dryRun() == null || payload.dryRun();
+        return ResponseEntity.ok(shPostUnifiedBulkService.run(
+                payload.op(), payload.ids(), dryRun, payload.confirm(), payload.when(),
+                principal != null ? principal.getName() : null));
+    }
+
+    /**
+     * @param op      PUBLISH, UNPUBLISH or DELETE
+     * @param ids     the posts this acts on
+     * @param dryRun  absent means true: a bulk verb multiplies a mistake by the selection
+     * @param confirm the token a destructive op needs, from its own dry run (SH108)
+     * @param when    an ISO-8601 instant, to schedule instead of acting now (SH342)
+     */
+    public record BulkPayload(ShPostUnifiedBulkService.Op op, java.util.List<String> ids,
+                              Boolean dryRun, String confirm, String when) {
     }
 
     @PostMapping("/{id}/unpublish")

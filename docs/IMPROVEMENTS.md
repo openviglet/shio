@@ -1981,26 +1981,6 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.2 Bulk verbs that are the agent's verbs (SH1021)
-
-The MCP publish tool declares its address as an array and promises atomicity across
-everything passed. The browser's batch menu offers copy, move and delete, REST offers
-single-id publish and unpublish, and the only bulk-shaped endpoints in the backend are
-object copy and move. So the agent half shipped and the curator half did not.
-
-Compose rather than fork. A bulk endpoint on post-unified takes an op, ids or addresses,
-dryRun, confirm and when, and delegates to the agent batch service, the same writer, so
-the two surfaces cannot disagree about what publish means. It returns a result per item
-with its outcome and problem, never a bare 200, and a destructive op requires the
-confirm token from its own dry run. Publish goes through SH995's permission. The CLI's
-publish grows a query form.
-
-The browser's batch menu gains Publish, Unpublish, Schedule and a Delete that replaces
-SH953's reporting loop with one call. The dry-run plan renders as a confirmation sheet
-naming what will change, with refusals grouped by problem title and each carrying its
-fix. The assertion: a selection where one item is refused publishes the rest and names
-the refusal.
-
 ### LXIX.3 One query vocabulary, four surfaces (SH1022)
 
 The console listing takes page, size, sort and q. /agent/find is richer and still thin,

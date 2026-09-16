@@ -952,3 +952,34 @@ one unhandled type should render the seven it knows, and falling back wholesale 
 block type to the model blank a page that was working — the failure a fallback exists to prevent,
 arriving by the fallback. An unclaimed block renders a readable default from its own fields rather
 than nothing, because "I wrote no component for `embed`" must not mean "the embed is gone".
+
+## Bulk verbs, which are the agent's verbs (SH1021)
+
+`shio_publish` has taken an array of addresses and promised atomicity since it shipped. The
+console's batch menu was copy, move and delete; REST had single-id publish. So the agent half
+shipped and the curator half did not — and the obvious fix, a publish loop in a console service, is
+exactly what lets two surfaces drift about what publishing means.
+
+`POST /api/v2/post-unified/bulk` takes `{op, ids, dryRun, confirm, when}` and **builds ops for
+`ShAgentBatchService`** — the writer the agent's batch runs through. One transaction, one
+vocabulary, one set of gates. `ShPostUnifiedBulkServiceTest` asserts the delegation rather than the
+behaviour, because a forked loop that happened to publish correctly would pass a behavioural test.
+
+**The answer is the change set, never a bare 200.** An outcome and a problem per item, which is what
+the agent already returned: a selection where one post is refused publishes the rest and says which
+one did not, carrying the fix its refusal came with. A bulk verb that reported one outcome for the
+batch either hides the refusal or throws away the twelve that worked.
+
+**`dryRun` defaults to true.** A bulk verb is the one shape where a mistake is multiplied by the
+size of the selection, so the request a caller sends by accident is a plan. The console opens that
+plan as a sheet and the real run carries the token the plan returned — so a destructive run cannot
+happen against a plan nobody saw (SH108).
+
+**Permission is asked twice, deliberately.** The batch's ops check per row and that is the check
+that makes the surfaces agree; the guard before them is about what the caller *sees* — without it a
+curator with no publish right gets a change set in which every item is refused, and on a dry run a
+plan they could not carry out. PUBLISH for the two verbs that change what a visitor sees, WRITE for
+the one that removes content, matching the single-id endpoints.
+
+**There is no `If-Match`.** One header carries one row's version and a selection has many; the
+batch's per-op `expect` is where a caller who cares says it, row by row.

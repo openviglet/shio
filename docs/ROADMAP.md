@@ -73,7 +73,6 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- 📋 **SH1021** (deps: SH1020 ✅, SH995 ✅) **there is no bulk publish or unpublish on REST or in the console** — The console's batch menu is copy, move and delete, and REST has only single-id publish, so a curator cannot publish a selection that an agent publishes atomically. → §LXIX.2
 - 📋 **SH1022** (deps: SH977 ✅) **no surface can filter content by type, state, locale, date or author, including the agent's own find** — The console listing takes page, size, sort and q, and /agent/find filters in memory after loading matches, so drafts changed this week by one person cannot be asked for. → §LXIX.3
 - 📋 **SH1023** (deps: —) **no list in the console is deep-linkable, so the same address never reproduces the view on screen** — Search, sort, folder filter and view mode are component state on every list page, so there is no URL for a filtered view a curator could share or an agent could hand over. → §LXIX.4
 - 📋 **SH1024** (deps: SH1022, SH1023, DS VDS139) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — BD3 gives four surfaces one query grammar and a person has no control for it, so drafts of one type in one locale is a question only a URL can ask. → §LXIX.5

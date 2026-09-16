@@ -305,5 +305,13 @@
   "content.relatorUndoRemove": "Desfazer remoção",
   "content.relatorItemNumber": "Item {{number}}",
   "content.browserList": "Itens de conteúdo",
-  "content.rowActions": "Ações para {{name}}"
+  "content.rowActions": "Ações para {{name}}",
+  "content.bulkPlanTitle": "{{op}} {{count}} item(ns)?",
+  "content.bulkOp.PUBLISH": "Publicar",
+  "content.bulkOp.UNPUBLISH": "Despublicar",
+  "content.bulkOp.DELETE": "Excluir",
+  "content.bulkApply": "Executar",
+  "content.bulkRefusedBadge": "recusado",
+  "content.bulkDone": "{{count}} item(ns) alterado(s)",
+  "content.bulkRefused": "{{count}} recusado(s): {{names}}"
 }
