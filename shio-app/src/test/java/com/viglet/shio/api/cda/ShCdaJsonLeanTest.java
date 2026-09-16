@@ -80,7 +80,7 @@ class ShCdaJsonLeanTest {
     void aPostOmitsEveryUnsetField() {
         String json = json(new ShCdaPost("p1", null, null, null, null, null, null,
                 false, null, null, null, null, List.of(),
-                objectMapper.createObjectNode()));
+                objectMapper.createObjectNode(), null));
 
         assertThat(json).doesNotContain(":null");
     }
@@ -91,7 +91,7 @@ class ShCdaJsonLeanTest {
         // an absent `published` cannot tell a draft from an old payload shape.
         String json = json(new ShCdaPost("p1", "T", null, "/t", "Article", "s1", "f1",
                 false, Instant.parse("2026-01-01T00:00:00Z"), null, null, "en", List.of(),
-                objectMapper.createObjectNode()));
+                objectMapper.createObjectNode(), null));
 
         assertThat(json).contains("\"published\":false");
     }

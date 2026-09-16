@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -74,7 +75,8 @@ class ShGraphQLSchemaTest {
         ObjectNode node = MAPPER.createObjectNode();
         attrs.forEach(node::put);
         return new ShCdaPost(id, title, null, "/news/hello", postType,
-                "siteA", "folderA", true, null, null, null, "en", java.util.List.of(), node);
+                "siteA", "folderA", true, null, null, null, "en", java.util.List.of(), node,
+                null);
     }
 
     @Test
@@ -121,6 +123,94 @@ class ShGraphQLSchemaTest {
 
         assertThat(gql.getObjectType(ShGraphQLSchema.GENERIC_TYPE)).isNotNull();
         assertThat(gql.getQueryType().getFieldDefinition("posts")).isNotNull();
+    }
+
+    /** SH1016 - a post-type whose one field holds blocks. */
+    private ShPostType blocksPostType(String name) {
+        ShPostType pt = new ShPostType();
+        pt.setName(name);
+        pt.setSystem((byte) 0);
+        ShPostTypeAttr attr = new ShPostTypeAttr();
+        attr.setName("body");
+        attr.setOrdinal(0);
+        com.viglet.shio.persistence.model.widget.ShWidget widget =
+                new com.viglet.shio.persistence.model.widget.ShWidget();
+        widget.setName(com.viglet.shio.widget.ShSystemWidget.BLOCKS);
+        attr.setShWidget(widget);
+        pt.setShPostTypeAttrs(new java.util.HashSet<>(java.util.Set.of(attr)));
+        return pt;
+    }
+
+    private ShCdaPost postWithBlocks(String id, String postType, String blocksJson) {
+        ObjectNode node = MAPPER.createObjectNode();
+        node.set("body", MAPPER.readTree(blocksJson));
+        return new ShCdaPost(id, "Hello", null, "/news/hello", postType,
+                "siteA", "folderA", true, null, null, null, "en", java.util.List.of(), node,
+                java.util.Map.of("body", "<h2>Why</h2>"));
+    }
+
+    @Test
+    @DisplayName("SH1016: a blocks field is a union a client narrows, not a string it parses")
+    void aBlocksFieldResolvesThroughTheUnion() {
+        when(shPostTypeRepository.findAll()).thenReturn(List.of(blocksPostType("Doc")));
+        when(shCdaService.getPost("p1", null)).thenReturn(Optional.of(postWithBlocks("p1", "Doc",
+                "[{\"key\":\"b1\",\"type\":\"heading\",\"level\":2,\"text\":\"Why\"},"
+                        + "{\"key\":\"b2\",\"type\":\"list\",\"ordered\":false,"
+                        + "\"items\":[\"one\"]}]")));
+
+        GraphQL graphQL = GraphQL.newGraphQL(schema().buildSchema()).build();
+        ExecutionResult result = graphQL.execute("""
+                { post(id: "p1") { ... on Doc { body {
+                    __typename
+                    ... on ShBlockHeading { key level text }
+                    ... on ShBlockList { ordered items }
+                } } } }""");
+
+        assertThat(result.getErrors())
+                .as("SH1016: a blocks field typed as String is what made a headless site parse "
+                        + "JSON out of a scalar to find out whether it had a quote or an image")
+                .isEmpty();
+        Map<String, Object> data = result.getData();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> postData = (Map<String, Object>) data.get("post");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> blocks = (List<Map<String, Object>>) postData.get("body");
+
+        assertThat(blocks).hasSize(2);
+        assertThat(blocks.get(0))
+                .as("SH1016: the union narrows on __typename, which is what gives a client the "
+                        + "same switch TypeScript gets from the discriminated union")
+                .containsEntry("__typename", "ShBlockHeading")
+                .containsEntry("key", "b1")
+                .containsEntry("level", 2)
+                .containsEntry("text", "Why");
+        assertThat(blocks.get(1))
+                .containsEntry("__typename", "ShBlockList")
+                .containsEntry("ordered", false)
+                .containsEntry("items", List.of("one"));
+    }
+
+    @Test
+    @DisplayName("SH1016: the block vocabulary is in the schema whatever content exists")
+    void theUnionIsDeclaredEvenWithNoBlocksField() {
+        when(shPostTypeRepository.findAll())
+                .thenReturn(List.of(postType("News", (byte) 0, "headline")));
+
+        graphql.schema.GraphQLSchema built = schema().buildSchema();
+
+        assertThat(built.getType("ShBlock"))
+                .as("""
+                        SH1016: building the vocabulary only when some post-type carries a Blocks \
+                        field would make the published schema depend on what content happens to \
+                        exist, and a schema that changes shape between two instances is not a \
+                        contract a client can be generated from.""")
+                .isNotNull();
+        for (String kind : com.viglet.shio.post.block.ShBlocks.TYPES) {
+            String name = "ShBlock" + Character.toUpperCase(kind.charAt(0)) + kind.substring(1);
+            assertThat(built.getType(name))
+                    .as("SH1016: %s is a registered block type and has no GraphQL type", kind)
+                    .isNotNull();
+        }
     }
 
     @Test

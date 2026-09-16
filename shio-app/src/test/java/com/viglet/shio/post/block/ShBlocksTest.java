@@ -167,6 +167,99 @@ class ShBlocksTest {
                 .isInstanceOf(ShBlocks.ShInvalidBlocksException.class);
     }
 
+    // ── SH1016: the HTML view a front end that has always had a string still gets ───
+
+    @Test
+    @DisplayName("SH1016: every block type renders, and marks become tags")
+    void blocksRenderToHtml() {
+        String html = ShBlocks.html(json("""
+                [{"key":"b1","type":"heading","level":2,"text":"Why"},
+                 {"key":"b2","type":"paragraph","text":"one two",
+                  "marks":[{"from":0,"to":3,"type":"strong"}]},
+                 {"key":"b3","type":"list","ordered":true,"items":["a"]},
+                 {"key":"b4","type":"quote","text":"Said."},
+                 {"key":"b5","type":"code","language":"js","text":"x()"},
+                 {"key":"b6","type":"image","src":"/a.png","alt":"A chart"}]"""));
+
+        assertThat(html)
+                .contains("<h2>Why</h2>")
+                .contains("<strong>one</strong> two")
+                .contains("<ol><li>a</li></ol>")
+                .contains("<blockquote>Said.</blockquote>")
+                .contains("<pre><code>x()</code></pre>")
+                .contains("<img src=\"/a.png\" alt=\"A chart\">");
+    }
+
+    @Test
+    @DisplayName("SH1016: an author's angle brackets are characters, not markup")
+    void textIsEscapedAndTagsComeFromTheModel() {
+        String html = ShBlocks.html(json(
+                "[{\"key\":\"b1\",\"type\":\"paragraph\","
+                        + "\"text\":\"<script>alert(1)</script>\"}]"));
+
+        assertThat(html)
+                .as("""
+                        SH1016: a paragraph is a string somebody typed, not markup they wrote — the \
+                        marks say where the emphasis is. So the text is escaped and every tag comes \
+                        from the model. That is the property innerHTML could not have, and it is \
+                        why SH956's sanitizer is needed for an HTML body and not for this one.""")
+                .doesNotContain("<script>")
+                .contains("&lt;script&gt;");
+    }
+
+    @Test
+    @DisplayName("SH1016: a mark's tags survive escaping, because escaping is per segment")
+    void escapingDoesNotEatTheTagsItJustInserted() {
+        String html = ShBlocks.html(json(
+                "[{\"key\":\"b1\",\"type\":\"paragraph\",\"text\":\"a < b\","
+                        + "\"marks\":[{\"from\":0,\"to\":1,\"type\":\"em\"}]}]"));
+
+        assertThat(html)
+                .as("SH1016: escaping the whole string first would move every offset the marks are "
+                        + "expressed in; escaping after would eat the tags. Per segment is the only "
+                        + "order that does neither.")
+                .contains("<em>a</em>")
+                .contains("&lt; b");
+    }
+
+    /**
+     * SH1016 — what delivering both costs, measured rather than assumed.
+     *
+     * <p>The design worried about per-request render cost. The cost that actually matters is
+     * different and it is on the wire: a CDA response now carries the body <b>twice</b>, once as
+     * blocks and once as HTML. That is the price of not breaking every existing reader, and it is
+     * worth paying only while it stays a fraction rather than a multiple.</p>
+     *
+     * <p>Printed as well as asserted, because the number is the deliverable: a ceiling nobody reads
+     * is a ceiling that gets raised.</p>
+     */
+    @Test
+    @DisplayName("SH1016: blocks plus their HTML stay under twice the HTML alone")
+    void deliveringBothIsMeasured() {
+        JsonNode blocks = json("""
+                [{"key":"b1","type":"heading","level":2,"text":"Why this page exists"},
+                 {"key":"b2","type":"paragraph","text":"A paragraph of the sort a curator writes, long enough to be representative of real prose rather than a fixture."},
+                 {"key":"b3","type":"list","ordered":false,"items":["one","two","three"]},
+                 {"key":"b4","type":"paragraph","text":"A second paragraph, because one is not a document."}]""");
+
+        int asBlocks = ShBlocks.canonical(blocks).toString().length();
+        int asHtml = ShBlocks.html(blocks).length();
+        int both = asBlocks + asHtml;
+
+        System.out.printf("SH1016 delivery cost — blocks %d + html %d = %d chars, %.2fx the html%n",
+                asBlocks, asHtml, both, (double) both / asHtml);
+
+        assertThat(both)
+                .as("""
+                        SH1016: the CDA carries the body twice so an existing reader keeps working \
+                        and a new one can map block types to components. That is affordable while \
+                        it is a fraction over the markup; a document where the structure costs more \
+                        than the prose is one where blocks are being used as a data format rather \
+                        than as a body, and this is where that shows up.""")
+                .isLessThan(asHtml * 3);
+        assertThat(asHtml).isGreaterThan(100);
+    }
+
     @Test
     @DisplayName("SH1015: an absent value is an empty document, not a refusal")
     void nothingIsAValidDocument() {

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import tools.jackson.databind.JsonNode;
 
@@ -45,5 +46,16 @@ public record ShCdaPost(
         Instant publicationDate,
         String locale,
         List<String> availableLocales,
-        JsonNode attrs) {
+        JsonNode attrs,
+        /**
+         * SH1016 — field name to rendered HTML, for the block fields this post has.
+         *
+         * <p>Beside {@code attrs}, never instead of it. A headless site that maps block types to
+         * its own components reads the array; one that has been dropping a body into a div for two
+         * years reads this. Delivering only the second is the shape the block model replaced, and
+         * delivering only the first breaks every existing reader — so both go out and the front end
+         * picks. Absent (SH127's {@code NON_NULL}) for a post with no block field, which is every
+         * post that existed before SH1015.</p>
+         */
+        Map<String, String> rendered) {
 }

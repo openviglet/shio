@@ -33,6 +33,9 @@ import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLList;
+import com.viglet.shio.widget.ShSystemWidget;
+import com.viglet.shio.post.block.ShBlocks;
+import graphql.schema.GraphQLUnionType;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
@@ -65,6 +68,12 @@ import tools.jackson.databind.JsonNode;
 public class ShGraphQLSchema {
 
     static final String CONTENT_INTERFACE = "ShContent";
+    /** SH1016 - the union a Blocks field is typed as. */
+    static final String BLOCK_UNION = "ShBlock";
+    private static final String MARK_TYPE = "ShBlockMark";
+    /** The kinds whose text may carry inline marks. */
+    private static final Set<String> CARRIES_MARKS =
+            Set.of("heading", "paragraph", "quote");
     static final String GENERIC_TYPE = "ShGenericPost";
     static final String QUERY_TYPE = "Query";
 
@@ -127,14 +136,159 @@ public class ShGraphQLSchema {
 
         codeRegistry.typeResolver(CONTENT_INTERFACE, typeResolver(typeNameByPostType));
 
+        // SH1016 - the block vocabulary, always declared. Building it only when some post-type
+        // carries a Blocks field would make the published schema depend on what content happens to
+        // exist, and a schema that changes shape between two instances is not a contract.
+        Set<GraphQLObjectType> blockTypes = buildBlockTypes(codeRegistry);
+        GraphQLUnionType blockUnion = GraphQLUnionType.newUnionType()
+                .name(BLOCK_UNION)
+                .description("One block of a Blocks field. Narrow it with an inline fragment.")
+                .possibleTypes(blockTypes.stream()
+                        .filter(candidate -> !candidate.getName().equals(MARK_TYPE))
+                        .toArray(GraphQLObjectType[]::new))
+                .build();
+        codeRegistry.typeResolver(BLOCK_UNION, env -> {
+            JsonNode block = env.getObject();
+            String kind = block == null ? null : block.path("type").asString("");
+            // A block whose type this build does not know resolves to the paragraph shape rather
+            // than throwing: the server refuses an unknown type on write (SH1015), so reaching here
+            // means the vocabulary grew under stored content, and answering the text beats failing
+            // the whole query.
+            String name = blockTypeName(kind);
+            GraphQLObjectType resolved = env.getSchema().getObjectType(name);
+            return resolved != null ? resolved
+                    : env.getSchema().getObjectType(blockTypeName("paragraph"));
+        });
+
         GraphQLObjectType queryType = buildQueryType(codeRegistry);
 
+        Set<graphql.schema.GraphQLType> allTypes = new HashSet<>(objectTypes);
+        allTypes.addAll(blockTypes);
         return GraphQLSchema.newSchema()
                 .query(queryType)
                 .additionalType(contentInterface)
-                .additionalTypes(new HashSet<>(objectTypes))
+                .additionalType(blockUnion)
+                .additionalTypes(allTypes)
                 .codeRegistry(codeRegistry.build())
                 .build();
+    }
+
+    /**
+     * SH1016 - one GraphQL object type per registered block kind.
+     *
+     * <p>A union rather than a JSON scalar, because a scalar is a string with a promise: a consumer
+     * would still parse it to find out whether it had a quote or an image, which is what the block
+     * model replaced. A union is introspectable, so a client generator produces the same narrowing
+     * TypeScript gets from the discriminated union in {@code @viglet/shio-client}.</p>
+     *
+     * <p>The fields per kind mirror {@link ShBlocks} exactly. Marks are a flat list of ranges
+     * rather than nesting, for the reason the storage format gives: nesting has two spellings for
+     * one content and a range has one.</p>
+     */
+    private Set<GraphQLObjectType> buildBlockTypes(GraphQLCodeRegistry.Builder codeRegistry) {
+        GraphQLObjectType mark = GraphQLObjectType.newObject()
+                .name(MARK_TYPE)
+                .field(f -> f.name("from").type(Scalars.GraphQLInt))
+                .field(f -> f.name("to").type(Scalars.GraphQLInt))
+                .field(f -> f.name("type").type(Scalars.GraphQLString))
+                .field(f -> f.name("href").type(Scalars.GraphQLString))
+                .build();
+        registerJsonFetchers(codeRegistry, mark, List.of("from", "to", "type", "href"));
+
+        Set<GraphQLObjectType> types = new java.util.LinkedHashSet<>();
+        types.add(mark);
+        for (String kind : ShBlocks.TYPES) {
+            GraphQLObjectType.Builder builder = GraphQLObjectType.newObject()
+                    .name(blockTypeName(kind))
+                    .field(f -> f.name("key").type(new GraphQLNonNull(Scalars.GraphQLString)))
+                    .field(f -> f.name("type").type(new GraphQLNonNull(Scalars.GraphQLString)));
+            List<String> fields = new java.util.ArrayList<>(List.of("key", "type"));
+            for (String field : blockFieldsOf(kind)) {
+                fields.add(field);
+                builder.field(f -> f.name(field).type(blockFieldType(field)));
+            }
+            if (CARRIES_MARKS.contains(kind)) {
+                builder.field(f -> f.name("marks")
+                        .type(GraphQLList.list(new GraphQLTypeReference(MARK_TYPE))));
+                fields.add("marks");
+            }
+            GraphQLObjectType built = builder.build();
+            registerJsonFetchers(codeRegistry, built, fields);
+            types.add(built);
+        }
+        return types;
+    }
+
+    private static GraphQLOutputType blockFieldType(String field) {
+        return switch (field) {
+            case "level" -> Scalars.GraphQLInt;
+            case "ordered" -> Scalars.GraphQLBoolean;
+            case "items" -> GraphQLList.list(Scalars.GraphQLString);
+            default -> Scalars.GraphQLString;
+        };
+    }
+
+    /** The fields a kind carries beyond key and type, mirroring {@link ShBlocks}. */
+    private static List<String> blockFieldsOf(String kind) {
+        return switch (kind) {
+            case "heading" -> List.of("level", "text");
+            case "paragraph", "quote" -> List.of("text");
+            case "list" -> List.of("ordered", "items");
+            case "code" -> List.of("language", "text");
+            case "image" -> List.of("src", "alt");
+            case "embed" -> List.of("url");
+            case "reference" -> List.of("address");
+            default -> List.of();
+        };
+    }
+
+    /** ShBlockHeading, and so on - one spelling, shared by the builder and the type resolver. */
+    private static String blockTypeName(String kind) {
+        return "ShBlock" + capitalize(kind == null || kind.isBlank() ? "paragraph" : kind);
+    }
+
+    /**
+     * Every field of a block type reads off the same {@link JsonNode}, so the fetchers are declared
+     * from the field list rather than one at a time - a per-field lambda is where a name and its
+     * fetcher drift apart.
+     */
+    private static void registerJsonFetchers(GraphQLCodeRegistry.Builder codeRegistry,
+                                             GraphQLObjectType type, List<String> fields) {
+        for (String field : fields) {
+            codeRegistry.dataFetcher(FieldCoordinates.coordinates(type.getName(), field),
+                    (DataFetcher<Object>) env -> jsonField(env.getSource(), field));
+        }
+    }
+
+    private static Object jsonField(JsonNode node, String field) {
+        JsonNode value = node == null ? null : node.get(field);
+        if (value == null || value.isNull()) {
+            return null;
+        }
+        if (value.isArray()) {
+            List<Object> out = new java.util.ArrayList<>();
+            value.forEach(item -> out.add(item.isValueNode() ? item.asString() : item));
+            return out;
+        }
+        if (value.isInt()) {
+            return value.asInt();
+        }
+        if (value.isBoolean()) {
+            return value.asBoolean();
+        }
+        return value.isValueNode() ? value.asString() : value;
+    }
+
+    /** A blocks field's value, as the list of nodes the union's fetchers read. */
+    private static Object blockValues(ShCdaPost post, String attrName) {
+        JsonNode attrs = post != null ? post.attrs() : null;
+        JsonNode value = attrs != null ? attrs.get(attrName) : null;
+        if (value == null || !value.isArray()) {
+            return List.of();
+        }
+        List<JsonNode> out = new java.util.ArrayList<>();
+        value.forEach(out::add);
+        return out;
     }
 
     // --- schema pieces ---
@@ -167,9 +321,17 @@ public class ShGraphQLSchema {
         });
 
         for (AttrField attr : attrFields) {
-            builder.field(field -> field.name(attr.fieldName()).type(Scalars.GraphQLString));
+            // SH1016 — a blocks body is a list of typed blocks, not a string. Typing it as a
+            // String is what made a headless site parse JSON out of a scalar to find out whether
+            // it had a quote or an image, which is the shape the block model exists to replace.
+            builder.field(field -> field.name(attr.fieldName())
+                    .type(attr.blocks()
+                            ? GraphQLList.list(new GraphQLTypeReference(BLOCK_UNION))
+                            : Scalars.GraphQLString));
             codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, attr.fieldName()),
-                    (DataFetcher<Object>) env -> attrValue(env.getSource(), attr.attrName()));
+                    (DataFetcher<Object>) env -> attr.blocks()
+                            ? blockValues(env.getSource(), attr.attrName())
+                            : attrValue(env.getSource(), attr.attrName()));
         }
         return builder.build();
     }
@@ -242,7 +404,11 @@ public class ShGraphQLSchema {
                 .map(attr -> {
                     String fieldName = unique(decapitalize(sanitize(attr.getName(), "field")), used);
                     used.add(fieldName);
-                    return new AttrField(fieldName, attr.getName());
+                    // SH1016 — the widget decides, as it does for the file projection: a Blocks
+                    // field is typed as `[Block]` and every other one stays a String.
+                    boolean blocks = attr.getShWidget() != null
+                            && ShSystemWidget.BLOCKS.equals(attr.getShWidget().getName());
+                    return new AttrField(fieldName, attr.getName(), blocks);
                 })
                 .toList();
     }
@@ -325,6 +491,6 @@ public class ShGraphQLSchema {
     }
 
     /** A generated object-type field ({@code fieldName}) backed by an attr ({@code attrName}). */
-    private record AttrField(String fieldName, String attrName) {
+    private record AttrField(String fieldName, String attrName, boolean blocks) {
     }
 }

@@ -909,3 +909,42 @@ between two writes disappears from a page it is still on; longer and the line go
 is here after they have gone, which is what teaches a reader to ignore it. A value an operator can
 tune is a value two instances answer differently, and this one is a claim about what the reader is
 looking at.
+
+## Blocks, delivered (SH1016)
+
+A `Blocks` field reaches every tier a consumer reads, and it reaches them **as blocks**.
+
+**CDA.** `attrs` already carried the array — it passes stored JSON through verbatim — so what was
+missing was the other half: `rendered`, a map of field name to HTML, beside `attrs` and never
+instead of it. A site that maps block types to its own components reads the array; one that has been
+dropping a body into a div for two years reads the HTML. Absent (`NON_NULL`) for a post with no block
+field, so every post written before the widget serializes exactly as it did.
+
+Rendered per request rather than stored at write, which is a departure from the design and was
+argued rather than assumed. Storing derived HTML needs a home and both available ones are wrong: a
+sibling key in `data` is an undeclared field the next write refuses (SH168), and a column is a schema
+change for a pure function of a value already there. The measured cost is in `ShBlocksTest`, printed
+on every run: **blocks + HTML is about 2.5× the HTML alone**, bounded at 3×. That bound is the real
+risk the design was pointing at — the body goes out twice.
+
+**HTML is escaped, and every tag comes from the model.** A paragraph is a string an author typed;
+the marks say where the emphasis is. So a `<script>` pasted into a heading renders as the characters
+typed. That is the property `innerHTML` could not have, and it is why SH956's sanitizer is needed for
+an HTML body and not for this one. Escaping happens **per run between mark boundaries** — escaping
+first moves every offset the marks are expressed in, and escaping last cannot tell the tags just
+inserted from an angle bracket the author typed. A test caught exactly that second bug.
+
+**GraphQL.** A blocks field is typed `[ShBlock]`, a union over the eight registered kinds, narrowed
+with an inline fragment. A JSON scalar was the cheaper option and it is a string with a promise: a
+consumer would still parse it to find out whether it had a quote or an image. The vocabulary is
+declared **whatever content exists** — building it only when some post-type carries a blocks field
+would make the published schema depend on what happens to be stored, and a schema that changes shape
+between two instances is not a contract a client can be generated from.
+
+**`@viglet/shio-client`** exports `ShioBlock` as a discriminated union — `switch (block.type)`
+narrows with no cast — plus `ShioBlockMark`, `SHIO_BLOCK_TYPES` and `shioBlocks(post, field)`, which
+answers `null` for a field that is not blocks rather than making a consumer cast and find out by
+rendering nothing.
+
+The React renderer the design also asked for is **SH1096**: there is no React SDK, and *Don't couple
+the JS SDK to React* is why.

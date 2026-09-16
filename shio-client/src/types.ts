@@ -100,6 +100,64 @@ export interface ShioPost {
   availableLocales: string[];
   /** Post-type attributes as a JSON object, keyed by attribute name. */
   attrs: Record<string, unknown>;
+  /**
+   * SH1016 — field name to rendered HTML, for this post's `Blocks` fields.
+   *
+   * Beside {@link attrs}, never instead of it: a site that maps block types to its own
+   * components reads the array out of `attrs`, and one that has been dropping a body into a
+   * div reads this. Absent for a post with no block field, which is every post written
+   * before the widget existed.
+   */
+  rendered?: Record<string, string>;
+}
+
+/**
+ * SH1016 — one block of a `Blocks` field, discriminated by {@link ShioBlock.type}.
+ *
+ * TypeScript narrows on `type`, so `switch (block.type)` gives each case its own fields with
+ * no cast — which is the whole reason the body is an array of these rather than a string.
+ * A `key` is the block's identity across a reorder, not its position.
+ *
+ * Marks are ranges over the block's own `text`, not nested spans: `<b><i>x</i></b>` and
+ * `<i><b>x</b></i>` are one content with two spellings, and a range has one.
+ */
+export interface ShioBlockMark {
+  from: number;
+  to: number;
+  type: "strong" | "em" | "code" | "link" | "strike";
+  /** Present on a `link` mark. */
+  href?: string;
+}
+
+interface ShioBlockBase {
+  key: string;
+}
+
+export type ShioBlock =
+  | (ShioBlockBase & { type: "heading"; level: number; text?: string; marks?: ShioBlockMark[] })
+  | (ShioBlockBase & { type: "paragraph"; text?: string; marks?: ShioBlockMark[] })
+  | (ShioBlockBase & { type: "quote"; text?: string; marks?: ShioBlockMark[] })
+  | (ShioBlockBase & { type: "list"; ordered?: boolean; items?: string[] })
+  | (ShioBlockBase & { type: "code"; language?: string; text?: string })
+  | (ShioBlockBase & { type: "image"; src?: string; alt?: string })
+  | (ShioBlockBase & { type: "embed"; url?: string })
+  | (ShioBlockBase & { type: "reference"; address?: string });
+
+/** The registered block types, as the server refuses anything outside them. */
+export const SHIO_BLOCK_TYPES = [
+  "heading", "paragraph", "quote", "list", "code", "image", "embed", "reference",
+] as const;
+
+/**
+ * Reads a post's block field as blocks, or `null` when it is not one.
+ *
+ * A helper rather than a cast, because the honest answer for a field that holds a string is
+ * "this is not a blocks field" — and a consumer that casts finds that out by rendering
+ * nothing.
+ */
+export function shioBlocks(post: ShioPost, field: string): ShioBlock[] | null {
+  const value = post.attrs?.[field];
+  return Array.isArray(value) ? (value as ShioBlock[]) : null;
 }
 
 /** Folder children: subfolders plus a paged slice of published posts. */

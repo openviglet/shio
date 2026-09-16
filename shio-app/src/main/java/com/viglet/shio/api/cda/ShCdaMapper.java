@@ -27,6 +27,10 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import com.viglet.shio.post.block.ShBlocks;
+import com.viglet.shio.widget.ShSystemWidget;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -99,6 +103,7 @@ public class ShCdaMapper {
         if (post == null) {
             return null;
         }
+        JsonNode attrs = parseAttrs(post.getData());
         return new ShCdaPost(
                 post.getId(),
                 post.getTitle(),
@@ -113,7 +118,44 @@ public class ShCdaMapper {
                 post.getPublicationDate(),
                 post.getLocale(),
                 availableLocales != null ? availableLocales : java.util.List.of(),
-                parseAttrs(post.getData()));
+                attrs,
+                renderedBlocks(post, attrs));
+    }
+
+    /**
+     * SH1016 — the HTML view of every block field this post declares.
+     *
+     * <h2>Rendered here rather than stored at write</h2>
+     *
+     * <p>The design proposed storing it, so delivery would pay nothing. Storing derived HTML needs
+     * a home, and the two available ones are both wrong: a sibling key in {@code data} is an
+     * undeclared field the next write refuses (SH168), and a column is a schema change for a value
+     * that is a pure function of one already there. What it would buy is a projection over a
+     * document this method has already parsed — cheaper than the {@code readTree} above it, which
+     * nobody has proposed caching. So it is computed, and {@code ShAgentResponseBudgetTest} is
+     * where the claim that this is cheap stops being an argument.</p>
+     *
+     * <p>Empty means <em>no block field</em> and is dropped by {@code NON_NULL}, so a post that
+     * predates the widget serializes exactly as it did.</p>
+     */
+    private Map<String, String> renderedBlocks(ShPostUnified post, JsonNode attrs) {
+        ShPostType postType = post.getShPostType();
+        if (postType == null || postType.getShPostTypeAttrs() == null || !attrs.isObject()) {
+            return null;
+        }
+        Map<String, String> rendered = new LinkedHashMap<>();
+        for (ShPostTypeAttr attr : postType.getShPostTypeAttrs()) {
+            String name = attr.getName();
+            if (name == null || attr.getShWidget() == null
+                    || !ShSystemWidget.BLOCKS.equals(attr.getShWidget().getName())) {
+                continue;
+            }
+            JsonNode value = attrs.get(name);
+            if (value != null && value.isArray()) {
+                rendered.put(name, ShBlocks.html(value));
+            }
+        }
+        return rendered.isEmpty() ? null : rendered;
     }
 
     private String postTypeName(ShPostUnified post) {

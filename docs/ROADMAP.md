@@ -63,7 +63,6 @@
 
 ## Block BC — The authoring surface, field by field
 
-- 📋 **SH1016** (deps: SH1015 ✅) **a front end cannot receive structured blocks, only the rendered HTML of a body** — The CDA, GraphQL and both SDKs return a body as a string, so a headless site cannot render a quote or an image block with its own components. → §LXVIII.8
 - 📋 **SH1017** (deps: SH1015 ✅) **a curator has no editor for block bodies, only the execCommand toolbar over a contentEditable** — Blocks stored and delivered are unusable by a person without a slash menu, drag handles and keyboard moves, so curators would keep choosing the HTML widget. → §LXVIII.9
 - 📋 **SH1018** (deps: SH1010 ✅) **changing a post type leaves existing content violating it, with no report and no migration** — Constraints are checked on write only, and a renamed or removed field leaves every existing post holding data under a key the model no longer declares. → §LXVIII.10
 - 📋 **SH1019** (deps: SH1006, SH1007) **a field cannot ask the connected agent for a suggestion it can apply** — The assistant's reference design offers a suggested title with a button to apply it, and Shio's only route to an answer is a request from the dock. → §LXVIII.11
@@ -73,6 +72,7 @@
 - 📋 **SH1093** (deps: —) **two suite tests fail intermittently on Windows and pass on an unchanged re-run** — A blueprint install moves a directory across temp dirs and a CLI exit test bounds wall-clock at 100ms, so a held handle or a loaded machine reds a gate nothing is wrong with. → §LXVIII.15
 - 📋 **SH1094** (deps: —) **the live preview is a card under the form, so reading it means scrolling away from the fields** — SH1014 left the split view unbuilt because two panes with a remembered ratio change the editor's shape rather than adding to it, which is a design-system question first. → §LXVIII.16
 - 📋 **SH1095** (deps: —) **an author editing content as files cannot see the page before pushing it** — Rendering from proposed values reached MCP, REST and the console, and the files tier — the one P4 calls the agent's cheapest — has no verb for it. → §LXVIII.17
+- 📋 **SH1096** (deps: —) **a React site maps block types to components by hand, there being no SDK helper to do it** — SH1016's renderer belongs in a React SDK that does not exist, and adding one is a published package rather than a side effect of a task about delivery. → §LXVIII.18
 
 ## Block BD — Finding, selecting and acting on content
 

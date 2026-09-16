@@ -28,4 +28,11 @@ export type {
   ShioPageParams,
   ShioFieldSchema,
   ShioPostTypeSchema,
+  // SH1016 — a body is an array of typed blocks, and this is what narrows one.
+  ShioBlock,
+  ShioBlockMark,
 } from "./types";
+
+// SH1016 — values, not types: the registered list and the reader that answers `null` for a
+// field that is not blocks rather than making a consumer cast and find out by rendering nothing.
+export { SHIO_BLOCK_TYPES, shioBlocks } from "./types";

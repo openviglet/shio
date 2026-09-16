@@ -286,6 +286,143 @@ public final class ShBlocks {
         return out.toString();
     }
 
+    /**
+     * SH1016 — the blocks as HTML, so a front end that has always received a string still gets one.
+     *
+     * <h2>Beside the blocks, never instead of them</h2>
+     *
+     * <p>A headless site that maps block types to its own components wants the array; one that has
+     * been rendering {@code post.attrs.BODY} into a div for two years wants markup. Delivering only
+     * the second is the shape this model replaced, and delivering only the first breaks every
+     * existing reader — so the CDA carries both and the front end picks.</p>
+     *
+     * <h2>Escaped, because a block's text is text</h2>
+     *
+     * <p>A paragraph is a string an author typed, not markup they wrote: the marks say where the
+     * emphasis is. So the text is escaped and the tags come from the model, which means a
+     * {@code <script>} an author pasted into a heading renders as the characters they typed. That
+     * is the property {@code innerHTML} could not have, and it is why SH956's sanitizer is needed
+     * for an HTML body and not for this one.</p>
+     */
+    public static String html(JsonNode value) {
+        if (value == null || !value.isArray()) {
+            return "";
+        }
+        StringBuilder out = new StringBuilder();
+        for (JsonNode block : value) {
+            out.append(htmlBlock(block));
+        }
+        return out.toString();
+    }
+
+    private static String htmlBlock(JsonNode block) {
+        String type = text(block, "type");
+        String body = markedHtml(block);
+        if (type == null) {
+            return body == null ? "" : "<p>" + body + "</p>";
+        }
+        return switch (type) {
+            case "heading" -> {
+                int level = Math.min(MAX_HEADING_LEVEL, Math.max(1, block.path("level").asInt(1)));
+                yield "<h" + level + ">" + nullToEmpty(body) + "</h" + level + ">";
+            }
+            case "quote" -> "<blockquote>" + nullToEmpty(body) + "</blockquote>";
+            case "code" -> "<pre><code>" + escape(nullToEmpty(text(block, "text")))
+                    + "</code></pre>";
+            case "image" -> "<img src=\"" + escape(nullToEmpty(text(block, "src")))
+                    + "\" alt=\"" + escape(nullToEmpty(text(block, "alt"))) + "\">";
+            // An embed and a reference are addresses, not markup: what to DO with them is the front
+            // end's decision, and guessing an iframe here would make that decision for everyone.
+            case "embed" -> "<!-- embed " + escape(nullToEmpty(text(block, "url"))) + " -->";
+            case "reference" -> "<!-- reference " + escape(nullToEmpty(text(block, "address")))
+                    + " -->";
+            case "list" -> htmlList(block);
+            default -> "<p>" + nullToEmpty(body) + "</p>";
+        };
+    }
+
+    private static String htmlList(JsonNode block) {
+        String tag = block.path("ordered").asBoolean(false) ? "ol" : "ul";
+        StringBuilder out = new StringBuilder("<").append(tag).append(">");
+        for (JsonNode item : block.path("items")) {
+            out.append("<li>").append(escape(item.asString(""))).append("</li>");
+        }
+        return out.append("</").append(tag).append(">").toString();
+    }
+
+    /**
+     * The block's text with its marks as tags, escaping each run of the author's own characters.
+     *
+     * <h2>Why not escape first, or last</h2>
+     *
+     * <p>Escaping the whole string <b>first</b> moves every offset the marks are expressed in — a
+     * single {@code &} shifts everything after it by four. Escaping <b>last</b> cannot tell the
+     * tags this method just inserted from an angle bracket the author typed, and a test caught
+     * exactly that: {@code a < b} with a mark over the {@code a} left the author's {@code <}
+     * unescaped, because the walk read it as the start of a tag and stopped escaping.</p>
+     *
+     * <p>So the tags are placed by <em>original</em> offset and the text between them is escaped as
+     * it is emitted. Neither the offsets nor the author's characters ever pass through the other's
+     * hands.</p>
+     */
+    private static String markedHtml(JsonNode block) {
+        String text = text(block, "text");
+        if (text == null) {
+            return null;
+        }
+        JsonNode marks = block.get("marks");
+        if (marks == null || !marks.isArray() || marks.isEmpty()) {
+            return escape(text);
+        }
+
+        // position → the tags to emit there. Closes come before opens at a shared boundary, so two
+        // adjacent marks nest as `</em><strong>` rather than crossing.
+        List<int[]> points = new ArrayList<>();
+        List<String> opens = new ArrayList<>();
+        List<String> closes = new ArrayList<>();
+        for (JsonNode mark : marks) {
+            int from = mark.path("from").asInt(-1);
+            int to = mark.path("to").asInt(-1);
+            String type = nullToEmpty(text(mark, "type"));
+            String open = switch (type) {
+                case "strong" -> "<strong>";
+                case "em" -> "<em>";
+                case "code" -> "<code>";
+                case "strike" -> "<s>";
+                case "link" -> "<a href=\"" + escape(nullToEmpty(text(mark, "href"))) + "\">";
+                default -> "";
+            };
+            if (open.isEmpty() || from < 0 || to > text.length() || to < from) {
+                continue;
+            }
+            String close = "link".equals(type) ? "</a>"
+                    : "</" + open.substring(1, open.indexOf('>')) + ">";
+            points.add(new int[] { from, opens.size(), 1 });
+            opens.add(open);
+            points.add(new int[] { to, closes.size(), 0 });
+            closes.add(close);
+        }
+        // By position; at the same position a close (0) precedes an open (1).
+        points.sort((a, b) -> a[0] != b[0] ? Integer.compare(a[0], b[0]) : Integer.compare(a[2], b[2]));
+
+        StringBuilder out = new StringBuilder();
+        int cursor = 0;
+        for (int[] point : points) {
+            if (point[0] > cursor) {
+                out.append(escape(text.substring(cursor, point[0])));
+                cursor = point[0];
+            }
+            out.append(point[2] == 1 ? opens.get(point[1]) : closes.get(point[1]));
+        }
+        out.append(escape(text.substring(cursor)));
+        return out.toString();
+    }
+
+    private static String escape(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;");
+    }
+
     private static String text(JsonNode node, String name) {
         JsonNode value = node == null ? null : node.get(name);
         return value == null || !value.isString() ? null : value.asString();
