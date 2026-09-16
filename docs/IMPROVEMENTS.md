@@ -1792,26 +1792,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.6 Render what would be, before writing it (SH1014)
-
-The editor mints a preview token for a post id and opens it; the preview route renders
-persisted state. Nothing renders from proposed values, and the Universal Editor starts
-from a site URL rather than from the form. So a curator cannot see a change without
-saving it, and an agent cannot either: a dry run proves a write is legal and says
-nothing about how the page will look.
-
-Render-from-proposed-data serves both. shio_digest accepts a data override and returns
-the digest of the page as it would render. A preview render endpoint takes an address
-and data and renders through the existing page render service without persisting,
-guarded by the same ACL as the write so it cannot show content the caller could not
-author. shio preview renders a local Markdown file against the instance's templates, the
-missing half of content as files.
-
-The console gets a split view with a persisted ratio, form on one side and a live frame
-on the other, re-rendered on a debounce, with device-width toggles, keeping the token
-preview for sharing. The assertion is that the overlay path writes nothing: no trash, no
-webhook, no indexing and no revision.
-
 ### LXVIII.7 A block content model, stored and addressable (SH1015)
 
 The rich-text widget stores innerHTML, and on the files side that body is the whole
@@ -2011,6 +1991,53 @@ keep a wall-clock bound scheduling noise cannot trip.
 
 Measure before fixing — fifty runs each, and record the rate, so *fixed* means a number
 moved rather than a run that happened to pass.
+
+### LXVIII.16 A split view is a layout, not a card (SH1094)
+
+SH1014 put the live preview in the editor and left it where every other panel is: a card
+in a vertical stack, under the fields it previews. So looking at the page means
+scrolling away from the form that changes it, which is most of what a split view is for.
+
+The design asked for two panes with a ratio the curator sets and the console remembers.
+That was not built because it is a change to the page's **shape** rather than an
+addition to it. The post editor is a stack of `AdaptiveSectionCard`s inside SH901's
+bento hero, SH907 puts it outside the shell, and the design system has rules about what
+a page may look like — so a two-pane layout is a question for `viglet-ds-pages` before
+it is a question about this editor.
+
+Three things it has to settle. **Which panes**: form and preview is the obvious pair,
+but the insights panel and the note rail are also read while typing, and a split serving
+one and not the others will be argued about again. **Where the ratio lives**: per
+curator, and `localStorage` is honest for a per-viewer convenience that is not content.
+**What happens at phone width**: a split view is not one, and the answer cannot be that
+the preview vanishes silently.
+
+Worth doing after a second page wants the same shape. One page needing a layout is a
+card; two is a layout.
+
+### LXVIII.17 shio preview, the rung files did not get (SH1095)
+
+Block I's claim is that `shio/content/**` is a complete description of a site and that
+files beat APIs for authoring (P4). An agent edits `index.md`, runs `shio push`, and the
+page changes. What it cannot do is see the page **first**.
+
+SH1014 built the half that makes this cheap: `POST /api/v2/agent/render` takes an
+address and a document and renders through the real page render service without
+persisting. `shio preview <file>` is that call with the projection in front of it — read
+the Markdown and its sidecars, turn them into the same `data` map `push` would send,
+post it, and write the markup somewhere the author can open.
+
+Three decisions it should make rather than inherit. **Which address**: the file's own
+front matter names the post it projects, so no flag is needed for the common case, and a
+`--address` override is for the file that has not been pushed anywhere yet. **What it
+prints**: a path to an HTML file by default, because a terminal is not a browser, with
+`--digest` for the structural answer an agent wants and `--open` for a person. **What it
+does with an unpushed file**: refuse, and say that the render needs a page to render
+*at* — a friendly URL, a layout and a site — which is a fact about the instance, not
+about the file.
+
+It is the one rung of P1's ladder this capability is missing: MCP has it, REST has it,
+the console has it, and files do not.
 
 ## LXIX Finding, selecting and acting on content (Block BD)
 

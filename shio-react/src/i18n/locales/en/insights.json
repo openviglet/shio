@@ -14,5 +14,14 @@
   "insights.words": "{{count}} words",
   "insights.readingTime": "{{minutes}} min read",
   "insights.links": "{{count}} links",
-  "insights.images": "{{count}} images"
+  "insights.images": "{{count}} images",
+  "insights.previewSection": "Live preview",
+  "insights.previewRefresh": "Refresh",
+  "insights.previewLive": "Re-render as I type",
+  "insights.previewFrame": "Preview of this page",
+  "insights.previewUnavailable": "This page cannot be rendered — it has no layout, or no URL to render at.",
+  "insights.previewNotSaved": "Rendered from the values on screen. Nothing here is saved.",
+  "insights.widthPhone": "Phone width",
+  "insights.widthTablet": "Tablet width",
+  "insights.widthDesktop": "Full width"
 }

@@ -1939,3 +1939,28 @@ A finding that carries a `field` offers a button that scrolls to it and focuses 
 `fieldAnchorId` is exported from `post-form-fields.tsx` so the two sides cannot spell the anchor
 differently. A rule that knows no field — a broken link belongs to the rendered page, not to one box
 — offers no button rather than one that lands somewhere arbitrary.
+
+## The live preview, and the frame it renders into (SH1014)
+
+`PostLivePreview` posts the form's current values to `/agent/render?format=html` and puts the markup
+in an iframe. There is no URL that serves this page — the document does not exist anywhere, which
+is the point — so it goes in by `srcDoc`.
+
+**`sandbox="allow-scripts"`, and deliberately not `allow-same-origin`.** Scripts run because a page
+whose scripts do not run is not what a visitor gets, which is the question being asked. Without
+`allow-same-origin` the frame is a unique origin and cannot read the console's session, cookies or
+storage — and the markup it shows is composed from content a caller supplied, so the console showing
+it is exactly the thing it must not reach.
+
+**Re-rendering as you type is a switch, and it starts off.** The design called for a debounced
+re-render and it is here, but each one composes a whole page on the server — layout, regions, theme
+— and a curator who opened the editor to fix a typo has not asked for one per pause in their typing.
+P3 is a budget on tokens; this is the same argument about a heavier unit. Off, the frame still
+refreshes on demand and on every save, which is the question being asked most of the time.
+
+The panel says, under the frame, that nothing in it is saved. A preview that looks like the page is
+exactly the thing a curator could mistake for having saved it.
+
+**Not done:** the split view with a persisted ratio. The editor is a vertical stack of section
+cards, and a two-pane layout is a change to the page's shape rather than an addition to it. The
+preview is a card in that stack for now.

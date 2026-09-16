@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
-import { IconFileText, IconHistory, IconMessage, IconSparkles } from "@tabler/icons-react"
+import { IconEye, IconFileText, IconHistory, IconMessage, IconSparkles } from "@tabler/icons-react"
 import { Clock, Eye, EyeOff, History, Loader2, Save, Sparkles, Upload } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -22,6 +22,7 @@ import { ShAclService } from "@/services/acl/acl.service"
 import { NoteRail } from "@/components/note-rail"
 import { PostHistoryPanel } from "@/components/post-history.panel"
 import { PostInsightsPanel } from "@/components/post-insights.panel"
+import { PostLivePreview } from "@/components/post-live-preview"
 import { fieldAnchorId } from "@/components/widgets/post-form-fields"
 import { WorkingLine } from "@/components/working-line"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
@@ -638,6 +639,18 @@ export default function PostUnifiedEditPage() {
           <AdaptiveSectionCard.StaticHeader icon={IconHistory} title={t("activity.section")} />
           <AdaptiveSectionCard.Content>
             <PostHistoryPanel objectId={postId} onCompare={() => setVersionsOpen(true)} />
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
+
+        {/*
+          SH1014 — the page as it would look, from the values on screen. The preview token still
+          mints a shareable URL; this answers the question that had no answer at all, which is what
+          the change looks like BEFORE committing to it.
+        */}
+        <AdaptiveSectionCard>
+          <AdaptiveSectionCard.StaticHeader icon={IconEye} title={t("insights.previewSection")} />
+          <AdaptiveSectionCard.Content>
+            <PostLivePreview address={`id:${postId}`} data={data} revision={insightsAt} />
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
 

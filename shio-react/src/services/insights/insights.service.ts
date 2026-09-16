@@ -76,3 +76,20 @@ export class ShInsightsService {
       .catch(() => null)
   }
 }
+
+/**
+ * SH1014 — the page as it would look, from the values on screen.
+ *
+ * <p>`POST /v2/agent/render` renders through the same service `/preview` uses, over a transient
+ * copy of the post, and persists nothing. `format=html` is what a frame needs; without it the same
+ * call answers the digest, which is what an agent wants and what this would otherwise pay for.</p>
+ */
+export class ShProposedRenderService {
+  async html(address: string, data: Record<string, unknown>): Promise<string> {
+    const response = await axios.post<{ html?: string }>(
+      "/v2/agent/render?format=html",
+      { address, state: "draft", data },
+    )
+    return response.data?.html ?? ""
+  }
+}

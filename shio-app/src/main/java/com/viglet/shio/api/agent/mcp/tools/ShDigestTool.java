@@ -50,9 +50,12 @@ public class ShDigestTool implements ShMcpTool {
         // SH990 trimmed the examples of a shape (a missing hero, an empty section) to pay for
         // `state` here and on shio_verify: they said why a digest is useful, and the list is re-sent
         // every turn to callers who have already decided to call it.
-        return "Structural digest of one page: heading outline, landmarks, every link and image "
-                + "with its alt text, word count. Use it to confirm a page's shape instead of "
-                + "looking at it. Pass address for the authoring view, url for what a visitor gets.";
+        // SH1014 paid for `data` the way SH990 paid for `state`: by cutting the sentence that said
+        // why a digest is useful. `tools/list` had seven tokens of headroom, it is re-sent every
+        // turn, and a caller reading this has already decided to call it.
+        return "Structural digest of one page: outline, landmarks, links and images with alt "
+                + "text, word count. Pass address for the authoring view, url for what a visitor "
+                + "gets.";
     }
 
     @Override
@@ -68,7 +71,10 @@ public class ShDigestTool implements ShMcpTool {
                 "include", ShMcpTool.string(
                         "editable — the fields a curator could edit here."),
                 // SH990 — REST's state=, which a revision renders through like /preview.
-                "state", ShMcpTool.string("published, draft or rev:<n>.")),
+                "state", ShMcpTool.string("published, draft or rev:<n>."),
+                // SH1014 — the digest of a page that does not exist yet, which is what turns a dry
+                // run into an answer about how the page will look.
+                "data", ShMcpTool.string("Field values to render unsaved; needs write.")),
                 List.of());
     }
 
@@ -76,6 +82,17 @@ public class ShDigestTool implements ShMcpTool {
     public String call(JsonNode arguments) {
         String address = ShMcpArgs.string(arguments, "address");
         String state = ShMcpArgs.string(arguments, "state");
+
+        // SH1014 — a parameter and not a thirteenth tool, by the rule this file already states: the
+        // answer's SHAPE is a digest either way, and only the document it is taken of changes. What
+        // does change is the authority — a caller supplying content gets the page composed from it,
+        // so that path is gated by write, which the render service enforces rather than this tool.
+        JsonNode proposed = arguments == null ? null : arguments.get("data");
+        if (proposed != null && !proposed.isNull()) {
+            return ShAgentVerifyTerse.digest(
+                    shAgentRenderService.proposed(address, state, proposed, false).digest());
+        }
+
         String digest = ShAgentVerifyTerse.digest(
                 shAgentRenderService.digest(address, ShMcpArgs.string(arguments, "url"), state));
 

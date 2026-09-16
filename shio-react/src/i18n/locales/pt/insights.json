@@ -14,5 +14,14 @@
   "insights.words": "{{count}} palavras",
   "insights.readingTime": "{{minutes}} min de leitura",
   "insights.links": "{{count}} links",
-  "insights.images": "{{count}} imagens"
+  "insights.images": "{{count}} imagens",
+  "insights.previewSection": "Pré-visualização ao vivo",
+  "insights.previewRefresh": "Atualizar",
+  "insights.previewLive": "Renderizar enquanto eu digito",
+  "insights.previewFrame": "Pré-visualização desta página",
+  "insights.previewUnavailable": "Esta página não pode ser renderizada — não tem layout, ou não tem URL onde renderizar.",
+  "insights.previewNotSaved": "Renderizado a partir dos valores na tela. Nada aqui está salvo.",
+  "insights.widthPhone": "Largura de celular",
+  "insights.widthTablet": "Largura de tablet",
+  "insights.widthDesktop": "Largura total"
 }
