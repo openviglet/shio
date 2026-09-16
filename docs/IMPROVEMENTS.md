@@ -1794,23 +1794,29 @@ than by a model Shio hosts.
 
 ### LXVIII.7 A block content model, stored and addressable (SH1015)
 
-The rich-text widget stores innerHTML, and on the files side that body is the whole
-Markdown document, so P4's promise that Edit and Grep are the agent's cheapest tools
-lands an agent inside a single unstructured string. Four laws argue for structure. P4:
-blocks serialise to Markdown with real headings, so an Edit targets a paragraph. P5: a
-block array has a byte-identical canonical form where innerHTML does not. P9: the
-digest's outline becomes exact rather than parsed. P6: an unknown block is a teaching
-error listing the registered ones.
+The model landed: `ShBlocks` validates on the way in from both batch write paths,
+`canonical` gives P5 its one spelling, `markdown` gives P4 real headings, and an unknown
+type is refused with the registered list. The `Blocks` widget is seeded and a clean
+instance creates it.
 
-This task lands the model on the agent side: a new widget kind storing an ordered array
-of typed blocks with stable keys and inline marks, covering heading, paragraph, list,
-quote, code, image, embed and reference, plus post-type-scoped custom blocks.
-post.upsert accepts blocks, shio_read returns them, and the Markdown projection gains a
-round-trip guard in the existing coverage test. The HTML widget stays for imported
-bodies, since shio convert produces HTML, and SH956's sanitizer already guards that
-path.
+What is left is the files side, and the obstacle is specific. `sidecarsOf` writes `text:
+String(data[field])` and `projectedPost` reads it back as a string — the whole sidecar
+mechanism assumes the value **is** one, deliberately and verbatim, because SH253 showed
+that normalizing a body's bytes makes every later pull report a local change nobody
+made. A blocks value is an array, so it does not fit that contract without a JSON-aware
+branch on both sides, and the base fingerprint the three-way merge compares is taken
+from those bytes.
 
-BC8 delivers blocks, and BC9 gives curators an editor for them.
+The harder half is the body form the design actually asked for. Blocks → Markdown is
+what P4 wants, and Markdown → blocks cannot recover a block's `key`, which is its
+identity across a reorder. Regenerating keys on every push would make each `shio push`
+rewrite every block's identity, which is the reordering defect this model exists to
+prevent.
+
+So the round-trip guard has to say which property it holds. Markdown → blocks → Markdown
+being stable is checkable and useful; blocks → Markdown → blocks is not achievable
+without carrying keys in the file. Decide that before writing the parser, because the
+answer picks the file format.
 
 ### LXVIII.8 Blocks delivered, with a rendered view beside them (SH1016)
 
