@@ -73,3 +73,21 @@ export interface ShHistoryQuery {
   /** One site, by name or id. */
   site?: string
 }
+
+/**
+ * SH1008 — another run that wrote to this page inside the last minute.
+ *
+ * Awareness, not co-editing: it says somebody else is here, and it refuses nothing. A curator who
+ * saves over an agent's work still meets SH985's conflict, on the same terms as before.
+ */
+export interface ShWorking {
+  session: string
+  /** What the run called itself on `initialize`; absent when it never said. */
+  agentName?: string | null
+  /** What it declared it was for (SH1000); absent when it declared nothing. */
+  intent?: string | null
+  /** When it last wrote here. */
+  at: string
+  /** When this stops being true with no further news — what a screen clears itself on. */
+  until: string
+}

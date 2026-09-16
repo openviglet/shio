@@ -69,7 +69,19 @@ public record ShAgentDoc(String address, String type, String state, String folde
                          String previewUrl,
                          java.util.List<ShRevisionRow> revisions,
                          Schedule schedule,
-                         java.util.List<Note> notes) {
+                         java.util.List<Note> notes,
+                         Working working) {
+
+    /** The nineteen-field form, before SH1008 said who else is on this page. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published, String url, String digest, String curatorUrl,
+                      String previewUrl, java.util.List<ShRevisionRow> revisions,
+                      Schedule schedule, java.util.List<Note> notes) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, url, digest, curatorUrl, previewUrl, revisions, schedule, notes, null);
+    }
 
     /** The eighteen-field form, before SH1003 attached the open notes. */
     public ShAgentDoc(String address, String type, String state, String folder,
@@ -79,7 +91,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
                       String previewUrl, java.util.List<ShRevisionRow> revisions,
                       Schedule schedule) {
         this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
-                published, url, digest, curatorUrl, previewUrl, revisions, schedule, null);
+                published, url, digest, curatorUrl, previewUrl, revisions, schedule, null, null);
     }
 
     /**
@@ -104,7 +116,35 @@ public record ShAgentDoc(String address, String type, String state, String folde
     public ShAgentDoc withNotes(java.util.List<Note> attached) {
         return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
                 translationOf, published, url, digest, curatorUrl, previewUrl, revisions, schedule,
-                attached);
+                attached, working);
+    }
+
+    /**
+     * Another run that wrote to this page inside the last minute (SH1008) — only with
+     * {@code include=working}, and only while it is true.
+     *
+     * <p>Absent is the ordinary answer and says the useful thing by saying nothing: a page nobody
+     * else is on reads exactly as it always did. It is a fact about the recent past rather than a
+     * claim about the present, which is why it carries both ends — {@code at} is what happened and
+     * {@code until} is when this stops being worth saying.</p>
+     *
+     * <p><b>It is not a lock.</b> A read that returns one does not mean a write will be refused, and
+     * a write is not refused because one is here: the concurrency contract is SH985's {@code expect}
+     * and this changes nothing about it.</p>
+     *
+     * @param intent what that run declared it was for (SH1000), when it declared one
+     */
+    @com.fasterxml.jackson.annotation.JsonInclude(
+            com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    public record Working(String session, String agentName, String intent, String at,
+                          String until) {
+    }
+
+    /** The same doc, saying who else is on this page (SH1008). */
+    public ShAgentDoc withWorking(Working mark) {
+        return new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact, locale,
+                translationOf, published, url, digest, curatorUrl, previewUrl, revisions, schedule,
+                notes, mark);
     }
 
     /** The seventeen-field form, before SH991 let a read carry the post's schedule. */
@@ -114,7 +154,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
                       Boolean published, String url, String digest, String curatorUrl,
                       String previewUrl, java.util.List<ShRevisionRow> revisions) {
         this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
-                published, url, digest, curatorUrl, previewUrl, revisions, null, null);
+                published, url, digest, curatorUrl, previewUrl, revisions, null, null, null);
     }
 
     /**

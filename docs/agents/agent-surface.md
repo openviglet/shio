@@ -3548,6 +3548,15 @@ did (P3), and resolved one query for the whole read rather than one per address.
 The **terse** form carries a `note` line per open note. A note only the JSON carried would be a note
 this surface does not have: an MCP session reads terse, and the correction has to reach it there.
 
+**`include=working`** (SH1008) is the rider beside it, and the same shape for the opposite reason: a
+note is what somebody asked of this page, and this is who else is on it *now*. A run that wrote to
+the address inside the last minute is reported with its name, its declared intent and an `until`, and
+nothing is reported otherwise. A session about to rewrite a page learns another writer is here
+**before** it plans, where SH985's `expect` tells it afterwards. It is not a lock and cannot become
+one: no write path may read it, and `ShWorkingMarkTest` fails the build naming the file that does.
+Full rationale — why derived rather than declared, and why the window is a constant — is in
+[content-api § Who else is on this page](./content-api.md#who-else-is-on-this-page-awareness-not-co-editing-sh1008).
+
 **`GET /api/v2/note/open`** is the work list, and every row names its page by **address** — a note
 names something somebody has to go and fix, and a uuid names nothing anybody can act on. It is
 scoped by site so a pull can project one site's, and filtered by kind so `request` is askable on its

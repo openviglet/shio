@@ -1,5 +1,5 @@
 import axios from "@/lib/axios"
-import type { ShHistoryPage, ShHistoryQuery } from "@/models/history/history.model"
+import type { ShHistoryPage, ShHistoryQuery, ShWorking } from "@/models/history/history.model"
 
 /** Only the keys that were actually set: an absent parameter is "everything". */
 function params(query: ShHistoryQuery): Record<string, string | number> {
@@ -30,5 +30,16 @@ export class ShHistoryService {
     const response = await axios.get<ShHistoryPage>(`/v2/history/object/${objectId}`,
       { params: params(query) })
     return response.data
+  }
+
+  /**
+   * SH1008 — who else is on this page right now, or null.
+   *
+   * Derived from who wrote recently and expiring on its own, so there is nothing to release. It
+   * refuses nothing: a save while it is showing meets the same SH985 guard it always did.
+   */
+  async working(objectId: string): Promise<ShWorking | null> {
+    const response = await axios.get<ShWorking | "">(`/v2/history/working/${objectId}`)
+    return response.data || null
   }
 }

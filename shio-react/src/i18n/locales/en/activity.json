@@ -29,5 +29,7 @@
   "activity.section": "History",
   "activity.none": "Nothing has been recorded for this page yet.",
   "activity.compare": "Compare this page's versions",
-  "activity.more": "Show older"
+  "activity.more": "Show older",
+  "activity.working": "{{who}} is working on this page right now",
+  "activity.workingFor": "{{who}} is working on this page right now — {{intent}}"
 }

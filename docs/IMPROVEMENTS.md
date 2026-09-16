@@ -1697,26 +1697,6 @@ The agent's side is one field on note.add, the run it answers with, which a sess
 already knows. The assertions answer a request with a run that drafts a change, then
 approve it from the dock's action and read the published result and the decision row.
 
-### LXVII.10 Awareness, not co-editing (SH1008)
-
-AZ1 makes a conflicting save fail loudly instead of silently. That is necessary and it
-arrives late: the curator discovers the collision after writing. The second editor on a
-Shio page is usually a machine, and the requirement is that neither party writes blind,
-not that both type into one document at once, which is why the non-goals rule out a
-shared-document runtime.
-
-A short-lived working mark is derived from writes rather than declared: an agent session
-that wrote to an address within the last minute is working on it, and the mark expires
-on its own, so it can never become a lock that blocks a write. SH967's stream carries
-the mark. The post editor shows a presence line naming the agent and its run's intent,
-and the dock bumps its activity when a mark appears on the page in view. The agent side
-reads the same marks through shio_read on the address, so a session learns another
-writer touched it a moment ago before planning its next write.
-
-The assertions: an agent write shows the presence line within the stream's latency and
-it clears after the window, and a curator's save while the mark is showing still goes
-through AZ1's guard rather than being blocked.
-
 ### LXVII.11 The narrowings that stopped at REST (SH1086)
 
 SH1005 put every narrowing of the audit trail in one query set and exposed the four new

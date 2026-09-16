@@ -878,3 +878,34 @@ build if a second file appears in that package, or if the controller reaches for
 all. It asserts the paging by **tiling** — the pages a reader walks, concatenated, must equal the
 trail exactly — and the narrowing by **page fullness**, because a filter applied after the query
 returns the right kind of row and the wrong number of them.
+
+## Who else is on this page: awareness, not co-editing (SH1008)
+
+SH985 makes a conflicting save fail loudly instead of silently. That is necessary and it arrives
+**late** — the curator finds out after writing the paragraph — and on a Shio page the other writer is
+usually a machine. What both parties need is not to type into one document, which the non-goals rule
+out, but to know the other is here.
+
+A **working mark** is derived from the same audit rows: a run that wrote to an object inside the last
+minute is working on it. `GET /api/v2/history/working/{objectId}` is the console's read of it, and
+`/agent/read?include=working` attaches it to a read — absent unless it is true, so a page nobody else
+is on reads exactly as it always did. It carries `session`, `agentName`, the run's `intent` (SH1000),
+`at` and `until`.
+
+Three properties, and each is a decision rather than a detail:
+
+- **Derived, not declared.** Nothing takes a mark and nothing releases one. A declared presence
+  outlives the session that declared it exactly when the session died badly, which is the case it
+  would have been added for.
+- **`until` is carried.** A mark's end has no event — a run that stops writing sends nothing — so the
+  console clears the line on its own timer. SH967's stream only makes it re-ask.
+- **It is not a lock, and that is held by a test.** No write path may read `ShWorkingService`:
+  `ShWorkingMarkTest` names the three files allowed to, and a save while a mark is showing goes
+  through on exactly SH985's terms. Presence derived from a timestamp and consulted by a write would
+  be a lock held by whoever wrote last and released by nobody.
+
+The window is one minute, as a constant rather than a property: shorter and an agent that thinks
+between two writes disappears from a page it is still on; longer and the line goes on saying somebody
+is here after they have gone, which is what teaches a reader to ignore it. A value an operator can
+tune is a value two instances answer differently, and this one is a claim about what the reader is
+looking at.

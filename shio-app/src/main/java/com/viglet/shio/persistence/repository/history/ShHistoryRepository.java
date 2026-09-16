@@ -119,6 +119,24 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	List<ShHistory> findByShObjectOrderByDateDesc(String shObject, Pageable pageable);
 
 	/**
+	 * Which of these objects a run has written to since {@code since} (SH1008).
+	 *
+	 * <p>Not the duplication SH1005 removed, and the difference is the question rather than the
+	 * table: the two readers walk the trail from a position, and this asks set membership inside a
+	 * short window — no cursor, no scope, no ordering a caller pages through. Expressing it with the
+	 * shared reader would be one query per object on a read of twenty addresses, which is the cost
+	 * the memoized lookups on that path exist to avoid.</p>
+	 *
+	 * <p>The console clause is the attribution filter's, narrowed to its one arm: a console session
+	 * is a curator publishing their own work (SH996), and a presence line saying an agent is here
+	 * because a person pressed Publish is the one thing this mark must not say.</p>
+	 */
+	@Query("select h from ShHistory h where h.date >= :since and h.shObject in :objectIds "
+			+ "and h.agentSessionId is not null and h.agentSessionId not like 'console:%' "
+			+ "order by h.date desc, h.id desc")
+	List<ShHistory> findWorkingMarks(Instant since, Collection<String> objectIds, Pageable pageable);
+
+	/**
 	 * The agent-made entries, newest first (SH109). {@code agent_session_id} is exactly the
 	 * column SH106 added for this: before it, "which changes did that run make" was a
 	 * {@code LIKE} over an actor string.

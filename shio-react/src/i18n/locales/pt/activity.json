@@ -29,5 +29,7 @@
   "activity.section": "Histórico",
   "activity.none": "Nada foi registrado para esta página ainda.",
   "activity.compare": "Comparar as versões desta página",
-  "activity.more": "Mostrar mais antigas"
+  "activity.more": "Mostrar mais antigas",
+  "activity.working": "{{who}} está trabalhando nesta página agora",
+  "activity.workingFor": "{{who}} está trabalhando nesta página agora — {{intent}}"
 }

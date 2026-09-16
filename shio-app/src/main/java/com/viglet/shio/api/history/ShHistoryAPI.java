@@ -60,11 +60,15 @@ public class ShHistoryAPI {
 
     private final ShAgentChangesService shAgentChangesService;
     private final ShAgentRunService shAgentRunService;
+    /** SH1008 — the derived answer to "who else is on this page", over the same rows. */
+    private final ShWorkingService shWorkingService;
 
     public ShHistoryAPI(ShAgentChangesService shAgentChangesService,
-                        ShAgentRunService shAgentRunService) {
+                        ShAgentRunService shAgentRunService,
+                        ShWorkingService shWorkingService) {
         this.shAgentChangesService = shAgentChangesService;
         this.shAgentRunService = shAgentRunService;
+        this.shWorkingService = shWorkingService;
     }
 
     /**
@@ -118,6 +122,24 @@ public class ShHistoryAPI {
                                   @RequestParam(name = "action", required = false) String action) {
         return page(null, new ShHistoryFilter(agent, null, action, actor, null, objectId),
                 before, since, limit);
+    }
+
+    /**
+     * Who else is on this page right now, or nothing (SH1008).
+     *
+     * <p>Here rather than on the post read, because it is a fact about the audit trail and not
+     * about the post: it is derived from who wrote recently, it expires on its own, and it changes
+     * between two reads of a page that has not changed at all. Putting it on the post would make
+     * every editor load carry it and would make a page's own payload vary for a reason that has
+     * nothing to do with the page.</p>
+     *
+     * <p><b>It refuses nothing.</b> A mark showing does not stop a save, delay one, or change what
+     * SH985's {@code expect} guard does. The console draws a line; the write path never reads
+     * this.</p>
+     */
+    @GetMapping("/working/{objectId}")
+    public ShWorkingService.Working working(@PathVariable String objectId) {
+        return shWorkingService.on(objectId).orElse(null);
     }
 
     /** The shared read, named and shaped (SH999, SH1005). */

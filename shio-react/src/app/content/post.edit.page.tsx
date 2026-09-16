@@ -21,6 +21,7 @@ import { ShPreviewTokenService } from "@/services/preview-token/preview-token.se
 import { ShAclService } from "@/services/acl/acl.service"
 import { NoteRail } from "@/components/note-rail"
 import { PostHistoryPanel } from "@/components/post-history.panel"
+import { WorkingLine } from "@/components/working-line"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import { PublishPreviewDialog } from "@/components/publish-preview.dialog"
@@ -410,6 +411,13 @@ export default function PostUnifiedEditPage() {
           }
       />
       <div className="p-6 space-y-6">
+
+        {/*
+          SH1008 — above the fields, because the point of it is to be read BEFORE anyone types.
+          It refuses nothing: the fields, Save and Publish behave exactly as they did, and a save
+          that collides still meets SH985's guard.
+        */}
+        <WorkingLine objectId={postId} />
 
         {/*
           The header is new, and it is not decoration. The adapter's bento branch is entered

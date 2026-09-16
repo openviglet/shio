@@ -187,6 +187,19 @@ public final class ShAgentReadTerse {
                             .build());
                 }
             }
+            if (doc.working() != null) {
+                // SH1008 — said only while it is true, so a page nobody else is on is byte-identical
+                // to what it was. `until` rather than a duration: a session that holds the answer for
+                // a turn can tell whether it has gone stale without asking again.
+                out.append(ShTerse.line("working")
+                        .word(doc.working().agentName() == null
+                                ? doc.working().session() : doc.working().agentName())
+                        .attr("session", doc.working().session())
+                        .attr("at", doc.working().at())
+                        .attr("until", doc.working().until())
+                        .attr("for", doc.working().intent())
+                        .build());
+            }
             out.append("data ").append(doc.data() == null ? "{}" : doc.data().toString()).append('\n');
         }
         return out.toString();

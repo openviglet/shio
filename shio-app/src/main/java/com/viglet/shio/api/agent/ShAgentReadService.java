@@ -105,6 +105,7 @@ public class ShAgentReadService {
     private final ShPostLinks shPostLinks;
     /** SH1003 — what a curator is still asking of a page, for `include=notes`. */
     private final com.viglet.shio.api.note.ShNoteService shNoteService;
+    private final com.viglet.shio.api.history.ShWorkingService shWorkingService;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -118,7 +119,8 @@ public class ShAgentReadService {
                               ShPostRevisionService shPostRevisionService,
                               ShReleaseService shReleaseService,
                               ShPostLinks shPostLinks,
-                              com.viglet.shio.api.note.ShNoteService shNoteService) {
+                              com.viglet.shio.api.note.ShNoteService shNoteService,
+                              com.viglet.shio.api.history.ShWorkingService shWorkingService) {
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -132,6 +134,7 @@ public class ShAgentReadService {
         this.shReleaseService = shReleaseService;
         this.shPostLinks = shPostLinks;
         this.shNoteService = shNoteService;
+        this.shWorkingService = shWorkingService;
     }
 
     /** How many inbound links a routes block counts before it stops counting (SH140's cap). */
@@ -457,12 +460,55 @@ public class ShAgentReadService {
                                  boolean impact, String state, boolean digest,
                                  boolean links, boolean revisions, boolean schedule,
                                  boolean notes) {
+        return read(addresses, fields, ids, impact, state, digest, links, revisions, schedule,
+                notes, false);
+    }
+
+    /**
+     * @param working SH1008 — say when another run wrote to this page inside the last minute, so a
+     *                session about to rewrite it knows somebody else is here before it plans. Opt-in
+     *                like every rider on this read, and absent unless it is true: a page nobody else
+     *                is on reads exactly as it always did
+     */
+    public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
+                                 boolean impact, String state, boolean digest,
+                                 boolean links, boolean revisions, boolean schedule,
+                                 boolean notes, boolean working) {
         List<ShAgentDoc> docs = readWithoutSchedule(addresses, fields, ids, impact, state, digest,
                 links, revisions);
         if (schedule) {
             docs = docs.stream().map(this::withSchedule).toList();
         }
-        return notes ? withNotes(docs) : docs;
+        if (notes) {
+            docs = withNotes(docs);
+        }
+        return working ? withWorking(docs) : docs;
+    }
+
+    /**
+     * Attach who else is on each page, in one query for the whole read (SH1008).
+     *
+     * <p>The same shape as the notes lookup above and for the same reason: twenty addresses is one
+     * question about twenty ids. The mark is derived from the audit trail rather than declared, so
+     * there is nothing to release and nothing to reconcile — see {@link ShWorkingService}.</p>
+     */
+    private List<ShAgentDoc> withWorking(List<ShAgentDoc> docs) {
+        Map<String, String> objectByAddress = new LinkedHashMap<>();
+        for (ShAgentDoc doc : docs) {
+            if (doc.address() != null && doc.error() == null) {
+                objectByAddress.put(doc.address(), shAddressResolver.resolve(doc.address()).id());
+            }
+        }
+        Map<String, com.viglet.shio.api.history.ShWorkingService.Working> marks =
+                shWorkingService.on(new LinkedHashSet<>(objectByAddress.values()));
+        return docs.stream().map(doc -> {
+            com.viglet.shio.api.history.ShWorkingService.Working mark = marks.get(objectByAddress.get(doc.address()));
+            // Absent rather than a null-filled object, for the reason every other rider here is
+            // absent when it has nothing to say: "nobody else is here" is what no key means.
+            return mark == null ? doc : doc.withWorking(new ShAgentDoc.Working(mark.session(),
+                    mark.agentName(), mark.intent(), mark.at().toString(),
+                    mark.until().toString()));
+        }).toList();
     }
 
     /**

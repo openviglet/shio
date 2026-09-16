@@ -390,7 +390,11 @@ public class ShAgentAPI {
                 includes(include, "schedule"),
                 // SH1003 — what a curator is still asking of this page, so a session that is about
                 // to rewrite it reads the correction rather than being told again.
-                includes(include, "notes"));
+                includes(include, "notes"),
+                // SH1008 — and whether another run wrote here in the last minute, so a session
+                // learns somebody else is on the page BEFORE it plans a write rather than after
+                // SH985's guard refuses one. Never a lock: it refuses nothing.
+                includes(include, "working"));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
                 : shAgentBodyEtag.json("read", docs, ifNoneMatch);
