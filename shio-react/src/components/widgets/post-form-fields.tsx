@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { Label } from "@/components/ui/label"
+import { constraintHint } from "@/components/field-constraints"
+import { useTranslation } from "react-i18next"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getWidget } from "@/components/widgets"
 import { getWidgetAccentColor } from "@/lib/widget-colors"
@@ -30,6 +32,9 @@ interface TabGroup {
 }
 
 export function PostFormFields({ schema, data, onDataChange, postId, postTypeName, problem }: Props) {
+  const { t } = useTranslation()
+  /** SH1010 — one sentence per field, built from what the model declares about it. */
+  const hint = (field: ShPostTypeSchemaField) => constraintHint(field, t)
   const sorted = useMemo(
     () => [...schema].sort((a, b) => a.ordinal - b.ordinal),
     [schema]
@@ -98,6 +103,13 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
         */}
         {refused && <p role="alert" className="text-xs text-destructive font-medium">{refused}</p>}
         {field.description && <p className="text-xs text-muted-foreground">{field.description}</p>}
+        {/*
+          SH1010 — what the model will accept, said before the save rather than by it. The whole
+          point of the vocabulary reaching this form is that a rule stops being a discovery: a
+          curator who can read "lower-case letters, digits and hyphens only" under the box does not
+          meet it as a refusal.
+        */}
+        {hint(field) && <p className="text-xs text-muted-foreground">{hint(field)}</p>}
       </div>
     )
   }

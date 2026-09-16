@@ -1792,25 +1792,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.2 A constraint vocabulary, evaluated where required already is (SH1010)
-
-ShPostTypeAttr carries name, label, description, widget, required, isTitle, isSummary,
-ordinal, widget settings, indexed and two Turing fields. There is no min, max, pattern,
-unique, default or enum, so a slug field accepts spaces, a rating accepts eleven and two
-posts can share a supposedly unique code.
-
-Add a constraints object to the field definition: minLength, maxLength, pattern with a
-message, min, max, unique, default, enum, minItems, maxItems, and an advisory
-recommendedLength that never fails a write. It is additive, so an absent block means no
-constraints and the canonical post-type serialisation is unchanged for every existing
-type. BC1's evaluator gains the kinds, so the three writers stay in agreement.
-
-MCP first: a violating publish is refused with at and a fix naming the constraint, and a
-dry run returns violations as findings. shio verify gains constraint-violated and shio
-push --check fails on it, so a content tree is provably valid before it is applied. The
-post-type editor renders a constraints section per field, and the post form shows the
-constraint as help text rather than discovering it on save.
-
 ### LXVIII.3 An editor that does not lose work (SH1011)
 
 The editor holds data in useState and never compares it with the loaded post; the page

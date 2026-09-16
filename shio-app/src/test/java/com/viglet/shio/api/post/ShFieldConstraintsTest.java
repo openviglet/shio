@@ -81,6 +81,8 @@ class ShFieldConstraintsTest {
     private static final String STAGE = "stage";
     private static final String TAGS = "tags";
     private static final String HEADLINE = "headline";
+    private static final String CODE = "code";
+    private static final String LOCALE = "locale";
 
     @Autowired
     private ShPostUnifiedWriteService shPostUnifiedWriteService;
@@ -145,6 +147,9 @@ class ShFieldConstraintsTest {
                     "{\"minItems\":1,\"maxItems\":3}"));
             attrs.add(attr(postType, text, HEADLINE, 6, false, false,
                     "{\"recommendedLength\":10}"));
+            attrs.add(attr(postType, text, CODE, 7, false, false, "{\"unique\":true}"));
+            attrs.add(attr(postType, text, LOCALE, 8, false, false,
+                    "{\"defaultValue\":\"en\"}"));
             postType.setShPostTypeAttrs(attrs);
             entityManager.persist(postType);
             postTypeId = postType.getId();
@@ -192,6 +197,12 @@ class ShFieldConstraintsTest {
                 folderId, postTypeId, data, ShPostState.DRAFT, "admin", null, null, null));
         written.add(created.getId());
         return created.getId();
+    }
+
+    /** What was stored, read back — the only way to see what a default actually wrote. */
+    private tools.jackson.databind.JsonNode dataOf(String postId) {
+        return objectMapper.readTree(shPostUnifiedRepository
+                .findByIdAndState(postId, ShPostState.DRAFT).orElseThrow().getData());
     }
 
     private ShPostType postType() {
@@ -354,6 +365,52 @@ class ShFieldConstraintsTest {
                                     + "makes the block additive")
                             .isNull();
                 });
+    }
+
+    @Test
+    @DisplayName("SH1010: a unique value another post holds is refused, and only at the publish")
+    void uniquenessIsCheckedAgainstOtherPosts() {
+        String first = draft(CODE, "ACME-1");
+        shPostUnifiedWriteService.publish(first, "admin");
+
+        String second = draft(CODE, "acme-1 ");
+
+        assertThat(shPostUnifiedRepository.findByIdAndState(second, ShPostState.DRAFT))
+                .as("SH1010: the draft still saves — a collision is discovered where every other "
+                        + "rule is, at the moment the page becomes what a visitor is served")
+                .isPresent();
+        assertThatThrownBy(() -> shPostUnifiedWriteService.publish(second, "admin"))
+                .isInstanceOf(ShFieldRules.ConstraintViolatedException.class)
+                .as("SH1010: trimmed and folded — ACME-1 and acme-1 being two posts is the failure "
+                        + "a uniqueness rule is added to prevent")
+                .hasMessageContaining(CODE);
+    }
+
+    @Test
+    @DisplayName("SH1010: re-publishing a page is never a collision with itself")
+    void aPageDoesNotCollideWithItself() {
+        String postId = draft(CODE, "SOLO-1");
+        shPostUnifiedWriteService.publish(postId, "admin");
+
+        assertThatCode(() -> shPostUnifiedWriteService.publish(postId, "admin"))
+                .as("SH1010: the row being published is excluded from its own comparison by id")
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("SH1010: a default fills a missing field on create, and never touches a written one")
+    void aDefaultFillsOnlyWhatIsMissing() {
+        String filled = draft(null, null);
+        assertThat(dataOf(filled).path(LOCALE).asString())
+                .as("SH1010: a create is where a page starts, which is the only moment a default "
+                        + "is about")
+                .isEqualTo("en");
+
+        String written = draft(LOCALE, "pt");
+        assertThat(dataOf(written).path(LOCALE).asString())
+                .as("SH1010: a default that overwrote what somebody wrote would be the one way a "
+                        + "convenience becomes a data loss")
+                .isEqualTo("pt");
     }
 
     @Test

@@ -395,10 +395,8 @@ head — enforced by whoever remembered it, on the surface they happened to be w
 the other three.
 
 A field now carries an optional `constraints` block: `minLength`, `maxLength`, `pattern` with a
-`patternMessage`, `min`, `max`, `values`, `minItems`, `maxItems` and an advisory
-`recommendedLength`. `unique` and `default` are deliberately not here — a rule evaluated per value
-and a rule that reads other rows are different mechanisms, and shipping them under one word would
-hide that.
+`patternMessage`, `min`, `max`, `values`, `minItems`, `maxItems`, an advisory `recommendedLength`,
+`unique`, and `defaultValue`.
 
 `ShFieldRules` evaluates them at the same three places `ShRequiredFields` is evaluated: the write
 service every publish passes through, the plans (which report rather than refuse, so a plan of ten
@@ -429,3 +427,38 @@ grows, and a column per kind is a migration per kind on the table every post-typ
 absent block means no constraints, on both sides — the CLI's canonical serialization omits the key
 entirely, the way SH914's `indexed` is omitted, so every `shio/post-types/*.json` written before
 this round-trips byte for byte (P5).
+
+### The two that are not about one value
+
+`unique` and `defaultValue` landed in a second part, and the reason is what they are rather than how
+big they were. Every other kind is decided by looking at the value in front of you, which is what
+lets `ShFieldRules` be a pure function over a document. These two are not.
+
+**`unique` reads other posts.** It lives in `ShFieldUniqueness`, with a repository and a
+transaction, and keeping it out of the cheap evaluator is what stops that evaluator from quietly
+acquiring a database round trip every caller then pays. The scope is the **post-type**: a product
+code and a campaign code are not competing for one namespace because both are called `code`. There
+is no index on a JSON field and no portable way to ask for one, so the check reads the type's
+authoring rows and compares parsed values — **one query per publish of a post whose type declares a
+unique field, and none at all for every other publish in the product**, which is what makes it
+affordable. It runs last in the publish gate, so a page already refused for its own shape does not
+pay for a scan of its siblings. Values are trimmed and folded: `ACME-1` and `acme-1` being two posts
+is the failure the rule is added to prevent.
+
+**`defaultValue` is not a check.** It fills a missing field on **create** only. A default re-applied
+on update would overwrite a value somebody deliberately cleared — the one way a convenience becomes
+a data loss — and one that filled a field already holding something would be a rule about what a
+page says rather than about where it starts. The document is returned unchanged when nothing was
+filled, so a post that needs no default keeps its bytes and its digest.
+
+### Where a curator meets it
+
+The post-type editor has a constraints section under each field's flags, because `required` is one
+rule of twelve now and deciding that a slug may not contain spaces is the same kind of decision. A
+cleared key is deleted rather than written as `null`, and a block with nothing left in it becomes no
+block — a form that materialized `{}` would push a change to every field of every type the first
+time anybody opened one.
+
+The post form shows the rules as one sentence under the input. That is the point of the vocabulary
+reaching the form at all: a rule stops being a discovery on save. It shows the `patternMessage` and
+never the expression, and it includes the recommendation, named as advice.

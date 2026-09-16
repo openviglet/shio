@@ -48,7 +48,42 @@ export type ShPostTypeField = {
   ordinal: number;
   /** Verbatim widget-settings JSON, kept as a string so a round trip is lossless. */
   widgetSettings?: string;
+  /**
+   * SH1010 — what this field will accept beyond being present, or absent for no rules.
+   *
+   * Absent rather than an empty object: the server stores no block when one says nothing, and a
+   * form that materialized `{}` on every field would push a change to every field of every type
+   * the first time anybody opened it.
+   */
+  constraints?: ShFieldConstraints;
   fields?: ShPostTypeField[];
+};
+
+/**
+ * SH1010 — the constraint vocabulary, as the API declares it.
+ *
+ * Every key is optional and absent means the rule is not declared. `recommendedLength` is advisory
+ * — it is shown in the form and reported by `verify`, and it never refuses a publish.
+ */
+export type ShFieldConstraints = {
+  minLength?: number | null;
+  maxLength?: number | null;
+  /** A regular expression the whole value must match. */
+  pattern?: string | null;
+  /** What the refusal says — a pattern quoted at a curator is a refusal only its author can act on. */
+  patternMessage?: string | null;
+  min?: number | null;
+  max?: number | null;
+  /** A closed list of accepted values. */
+  values?: string[] | null;
+  minItems?: number | null;
+  maxItems?: number | null;
+  /** Advisory only: never refuses a write. */
+  recommendedLength?: number | null;
+  /** No other post of this type may hold this value. */
+  unique?: boolean | null;
+  /** What a create fills in when the field is absent. */
+  defaultValue?: string | null;
 };
 
 /**

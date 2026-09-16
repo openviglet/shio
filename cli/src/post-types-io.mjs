@@ -73,11 +73,13 @@ function normalizeField(field) {
 function normalizeConstraints(constraints) {
   if (!constraints || typeof constraints !== "object") return null;
   const keys = ["minLength", "maxLength", "pattern", "patternMessage", "min", "max", "values",
-    "minItems", "maxItems", "recommendedLength"];
+    "minItems", "maxItems", "recommendedLength", "unique", "defaultValue"];
   const normalized = {};
   for (const key of keys) {
     const value = constraints[key];
-    if (value === undefined || value === null) continue;
+    // `false` is absent too, the way SH914's `indexed` is: "not unique" is what no key means, so
+    // writing it would put a key on every field the first time anybody edited one.
+    if (value === undefined || value === null || value === false) continue;
     if (Array.isArray(value)) {
       if (value.length > 0) normalized[key] = value.slice();
       continue;

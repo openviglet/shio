@@ -29,12 +29,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * (P5): the canonical serialization materializes every key a field <em>has</em>, so a key that is
  * absent has to stay absent rather than appear as {@code null}.</p>
  *
- * <h2>What is here, and what is deliberately not</h2>
+ * <h2>Two kinds that are not about one value</h2>
  *
- * <p>These are the kinds that can be decided by looking at <b>one value</b>. {@code unique} needs a
- * query across the site and {@code default} is a write-time fill rather than a check, so both are a
- * slice of their own — a rule evaluated per value and a rule that reads other rows are different
- * mechanisms, and shipping them together would hide that behind one word.</p>
+ * <p>Most of these are decided by looking at the value in front of you. Two are not, and they landed
+ * in a second part for that reason rather than for size: {@code unique} is answered by reading
+ * <em>other posts</em>, and {@code defaultValue} is a write-time fill rather than a check at all. A
+ * vocabulary that presented all three as one word would hide that one of them costs a query and one
+ * of them changes what is stored.</p>
  *
  * @param minLength         shortest accepted text, in characters
  * @param maxLength         longest accepted text, in characters
@@ -50,6 +51,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  *                          never refuses a write. A title over sixty characters is a judgement about
  *                          search results, not an error, and a rule that refused it would teach
  *                          people to raise the number rather than shorten the title
+ * @param unique            no other post of this type may hold this value. The only rule here that
+ *                          reads other rows, so it is the only one that costs a query
+ * @param defaultValue      what a create fills in when the field is absent. Not a check: it changes
+ *                          what is stored, once, and never touches a value somebody wrote
  * @author Alexandre Oliveira
  * @since 2026.3
  */
@@ -64,11 +69,26 @@ public record ShFieldConstraints(
         List<String> values,
         Integer minItems,
         Integer maxItems,
-        Integer recommendedLength) {
+        Integer recommendedLength,
+        Boolean unique,
+        String defaultValue) {
 
     /** Nothing declared — which is what an absent block means, and what most fields have. */
-    public static final ShFieldConstraints NONE =
-            new ShFieldConstraints(null, null, null, null, null, null, null, null, null, null);
+    public static final ShFieldConstraints NONE = new ShFieldConstraints(
+            null, null, null, null, null, null, null, null, null, null, null, null);
+
+    /** The ten-field form: every caller before the second part of SH1010. */
+    public ShFieldConstraints(Integer minLength, Integer maxLength, String pattern,
+                              String patternMessage, Double min, Double max, List<String> values,
+                              Integer minItems, Integer maxItems, Integer recommendedLength) {
+        this(minLength, maxLength, pattern, patternMessage, min, max, values, minItems, maxItems,
+                recommendedLength, null, null);
+    }
+
+    /** Whether this field must hold a value no other post of its type holds. */
+    public boolean declaresUnique() {
+        return Boolean.TRUE.equals(unique);
+    }
 
     /**
      * Whether this block says anything at all.
@@ -80,6 +100,7 @@ public record ShFieldConstraints(
     public boolean declaresNothing() {
         return minLength == null && maxLength == null && pattern == null && patternMessage == null
                 && min == null && max == null && (values == null || values.isEmpty())
-                && minItems == null && maxItems == null && recommendedLength == null;
+                && minItems == null && maxItems == null && recommendedLength == null
+                && !declaresUnique() && defaultValue == null;
     }
 }

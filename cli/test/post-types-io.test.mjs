@@ -253,3 +253,17 @@ test("SH1010: a declared constraint is carried, in the server's own key order", 
   assert.notEqual(serializeDef(slugged), serializeDef(news),
     "SH1010: adding a constraint has to show up as a change, or a pull would hide it");
 });
+
+test("SH1010: unique and a default are carried, and `unique: false` is absent", () => {
+  const coded = structuredClone(news);
+  coded.fields[0].constraints = { unique: true, defaultValue: "en" };
+
+  const field = normalizeDef(coded).fields.find((f) => f.name === news.fields[0].name);
+  assert.deepEqual(field.constraints, { unique: true, defaultValue: "en" });
+
+  const denied = structuredClone(news);
+  denied.fields[0].constraints = { unique: false };
+  assert.equal(serializeDef(denied), serializeDef(news),
+    "SH1010: `unique: false` is what no key means, the way SH914's `indexed` is — writing it would "
+      + "put a key on every field the first time anybody edited one");
+});

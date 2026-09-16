@@ -1,3 +1,5 @@
+import type { ShFieldConstraints } from "@/models/post-type/post-type"
+
 export type ShPostState = "DRAFT" | "PUBLISHED"
 
 /**
@@ -26,6 +28,8 @@ export interface ShPostTypeFieldRef {
   isSummary?: boolean
   ordinal: number
   widgetSettings?: string
+  /** SH1010 — the constraint block, carried through to the form so a rule is shown, not discovered. */
+  constraints?: ShFieldConstraints
   fields?: ShPostTypeFieldRef[]
 }
 
@@ -91,6 +95,8 @@ export interface ShPostTypeSchemaField {
   isSummary: boolean
   widget: string
   widgetSettings?: string
+  /** SH1010 — what the model says this field accepts, so the form can say it before a save does. */
+  constraints?: ShFieldConstraints
   children?: ShPostTypeSchemaField[]
 }
 
@@ -131,6 +137,7 @@ function projectFieldDefs(fields: ShPostTypeFieldRef[]): ShPostTypeSchemaField[]
       isSummary: Boolean(f.isSummary),
       widget: f.widget ?? "Text",
       widgetSettings: f.widgetSettings,
+      constraints: f.constraints,
       children: f.fields ? projectFieldDefs(f.fields) : undefined,
     }))
 }

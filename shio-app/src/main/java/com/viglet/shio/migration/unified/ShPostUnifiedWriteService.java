@@ -31,6 +31,7 @@ import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
 import com.viglet.shio.api.post.ShFieldRules;
+import com.viglet.shio.api.post.ShFieldUniqueness;
 import com.viglet.shio.api.post.ShRequiredFields;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -127,6 +128,8 @@ public class ShPostUnifiedWriteService {
     private final ShHtmlSanitizer shHtmlSanitizer;
     /** SH986 — every state a visitor saw, captured in the transaction that made it visible. */
     private final ShPostRevisionService shPostRevisionService;
+    /** SH1010 — the one field rule that reads other posts, and the write-time default. */
+    private final ShFieldUniqueness shFieldUniqueness;
 
     public ShPostUnifiedWriteService(ShFolderRepository shFolderRepository,
                                      ShSiteRepository shSiteRepository,
@@ -139,7 +142,9 @@ public class ShPostUnifiedWriteService {
                                      ShTemplateTitles shTemplateTitles,
                                      ShFurlNaming shFurlNaming,
                                      ShHtmlSanitizer shHtmlSanitizer,
-                                     ShPostRevisionService shPostRevisionService) {
+                                     ShPostRevisionService shPostRevisionService,
+                                     ShFieldUniqueness shFieldUniqueness) {
+        this.shFieldUniqueness = shFieldUniqueness;
         this.shHtmlSanitizer = shHtmlSanitizer;
         this.shPostRevisionService = shPostRevisionService;
         this.shFolderRepository = shFolderRepository;
@@ -204,7 +209,11 @@ public class ShPostUnifiedWriteService {
 
         // SH956 — cleaned before it is stored, not on the way out. A sanitizer at the render would
         // leave the payload in the database for the next reader that does not have one.
-        JsonNode clean = sanitizedMarkup(req.data(), postType);
+        // SH1010 (second part) — on create only, and only for a field the document does not carry:
+        // a default re-applied on update would overwrite a value somebody deliberately cleared,
+        // which is how a convenience becomes a data loss.
+        JsonNode clean = sanitizedMarkup(shFieldUniqueness.withDefaults(postType, req.data()),
+                postType);
         String dataJson = writeJson(clean != null ? clean : objectMapper.createObjectNode());
         row.setData(dataJson);
 
@@ -1178,6 +1187,12 @@ public class ShPostUnifiedWriteService {
         // reported as the missing title: a caller fixes one thing, publishes again and is told the
         // next, which is better than a refusal listing two unrelated kinds of problem at once.
         ShFieldRules.requireValid(draft.getShPostType(), data, objectMapper, named(draft));
+        // SH1010 (second part) — last, because it is the only rule here that costs a query, and a
+        // page that is already refused for its own shape should not pay for a scan of its siblings.
+        List<ShFieldRules.Violation> clashes = shFieldUniqueness.collisions(draft, data);
+        if (!clashes.isEmpty()) {
+            throw new ShFieldRules.ConstraintViolatedException(clashes, named(draft));
+        }
     }
 
     /**
@@ -1198,6 +1213,8 @@ public class ShPostUnifiedWriteService {
             blockers.add("'" + field + "' is required and empty");
         }
         ShFieldRules.violations(draft.getShPostType(), data, objectMapper)
+                .forEach(violation -> blockers.add(violation.says()));
+        shFieldUniqueness.collisions(draft, data)
                 .forEach(violation -> blockers.add(violation.says()));
         return List.copyOf(blockers);
     }

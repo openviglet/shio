@@ -190,7 +190,11 @@ class ShSilentCatchInventoryTest {
             // because refusing every publish of every post of that type puts the fix furthest
             // from the one person who can make it, and the post-type editor is where it belongs.
             // (The third is reported: the caller turns it into a `not-a-number` finding.)
-            "api", 71,
+            // And 71 to 72 for the second part: `ShFieldUniqueness.valueOf` cannot compare a
+            // sibling whose data will not parse, and calling that a collision would refuse this
+            // publish because of a defect in a different post. Verify reports the unparseable
+            // row where it belongs — on that row.
+            "api", 72,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

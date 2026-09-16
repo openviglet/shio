@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { FieldConstraints } from "@/components/field-constraints"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ROUTES } from "@/app/routes.const"
@@ -485,6 +486,14 @@ function FieldDetailsSettings({ field, widgets, postTypes, onFieldChange }: {
           <span className="text-sm">{t("content.isDescription")}</span>
         </div>
       </div>
+
+      {/*
+        SH1010 — what this field will accept, beside the flag that says it must be filled in. Here
+        rather than in a dialog of its own: `required` is one rule of twelve now, and a curator
+        deciding that a slug may not contain spaces is making the same kind of decision they made
+        one row up.
+      */}
+      <FieldConstraints field={field} onFieldChange={onFieldChange} />
 
       {/* Widget-specific settings */}
       <WidgetSpecificSettings
