@@ -228,6 +228,35 @@ class ShStaticFilePagingTest {
     }
 
     @Test
+    @DisplayName("SH1030: walking the pages reaches every asset, once")
+    void theWalkIsCompleteAndDoesNotRepeatItself() {
+        // The design's own assertion: page through the fixture and compare the totals. A walk that
+        // is complete but repeats a row, or one that is distinct but short, both look like working
+        // paging from inside one page — and both are what a caller resolving asset references
+        // would act on. `push --content --prune` reads a missing reference as "delete this".
+        List<String> walked = new ArrayList<>();
+        for (int index = 0; index < 20; index += 1) {
+            ShStaticFileListing pageOf = page(null, null, index, 4);
+            if (pageOf.items().isEmpty()) {
+                break;
+            }
+            pageOf.items().forEach(item -> walked.add(item.id()));
+            if (walked.size() >= pageOf.totalFiles()) {
+                break;
+            }
+        }
+
+        assertThat(walked)
+                .as("SH1030: every asset, exactly once — the walk is what the CLI and shio_assets "
+                        + "both do, and a duplicate or a gap is invisible from inside one page")
+                .hasSize(IMAGES + DOCUMENTS)
+                .doesNotHaveDuplicates();
+        assertThat(walked)
+                .containsExactlyInAnyOrderElementsOf(
+                        page(null, null, 0, 500).items().stream().map(item -> item.id()).toList());
+    }
+
+    @Test
     @DisplayName("SH1030: the envelope is the console listing's, component for component")
     void theEnvelopeIsTheOneEveryListingUses() {
         List<String> media = names(ShStaticFileListing.class);

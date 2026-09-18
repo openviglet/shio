@@ -486,6 +486,49 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
         return text == null ? null : text.toLowerCase(java.util.Locale.ROOT);
     }
 
+    /**
+     * Assets of one type, narrowed by a <b>conservative superset</b> of the media filters (SH1030).
+     *
+     * <h2>Why a superset rather than the filter itself</h2>
+     *
+     * <p>Both narrowings are approximate on purpose, and the exact decision stays in the service —
+     * which is what makes this safe to add rather than a second definition of "matches".</p>
+     *
+     * <p>{@code like} is matched against the whole {@code data} document, so a term that appears
+     * in an asset's alt text or tags brings its row back even though the media filter matches file
+     * <em>names</em>. That is a row read and discarded, never a row returned.</p>
+     *
+     * <p>{@code contentTypeLike} keeps a row whose stamped type matches <b>or that carries no
+     * stamp at all</b>. SH1030 stamps the content type at upload and keeps the name probe as the
+     * fallback for everything written before it, so a predicate that dropped unstamped rows would
+     * make a whole pre-existing library vanish from every category — silently, and consistently,
+     * with every number on screen agreeing.</p>
+     *
+     * @param like            a lower-cased, {@code %}-wrapped pattern, or {@code null}
+     * @param contentTypeLike a pattern for the stamped content type, or {@code null}
+     */
+    @Query("select p from ShPostUnified p where p.shPostType.id = :typeId and p.state = :state "
+            + "and (:folder is null or p.shFolder = :folder) "
+            + "and (:like is null or lower(cast(p.data as string)) like :like) "
+            + "and (:contentTypeLike is null "
+            + "  or lower(cast(p.data as string)) like :contentTypeLike "
+            + "  or lower(cast(p.data as string)) not like '%\"content_type\"%')")
+    List<ShPostUnified> findAssetsLike(@Param("typeId") String typeId,
+                                       @Param("state") ShPostState state,
+                                       @Param("folder") ShFolder folder,
+                                       @Param("like") String like,
+                                       @Param("contentTypeLike") String contentTypeLike);
+
+    /** {@link #findAssetsLike} with the term normalized once (SH131). */
+    default List<ShPostUnified> findAssets(String typeId, ShPostState state, ShFolder folder,
+                                           String term, String contentTypePrefix) {
+        return findAssetsLike(typeId, state, folder,
+                term == null || term.isBlank() ? null : fullTextPattern(term),
+                contentTypePrefix == null || contentTypePrefix.isBlank() ? null
+                        : "%\"content_type\":\"" + contentTypePrefix.toLowerCase(java.util.Locale.ROOT)
+                                + "%");
+    }
+
     List<ShPostUnified> findByShSite_IdAndStateIn(String siteId, Collection<ShPostState> states);
 
     List<ShPostUnified> findByShSite_IdAndShPostType_IdAndStateIn(String siteId, String postTypeId,

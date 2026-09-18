@@ -220,14 +220,13 @@ class ShMediaListingBenchmarkTest {
                 narrowed.size(), parses);
 
         assertThat(narrowed).isNotEmpty().hasSizeLessThan(ASSETS);
-        // SH375 moved the folder predicate into the query and this is the other half of the same
-        // question: the `q` filter runs over items that have already been built, so the parses
-        // follow the rows READ rather than the rows returned. Stated as a bound on the read, which
-        // is the honest shape — narrowing the parse to the answer means narrowing the query, and
-        // that is BE2's paging rather than this task's.
+        // SH375 moved the folder predicate into the query; SH1030 moved the term. Measured at 400
+        // parses before it and 111 after — the rows the answer holds, because the query now reads
+        // a superset of the answer rather than the folder. The exact filter stays in the service,
+        // which is what makes an approximate predicate safe: it can only ever read more.
         assertThat(parses)
-                .as("SH1029: still one parse per row read, and the read is the folder's")
-                .isLessThanOrEqualTo(ASSETS + 2);
+                .as("SH1029/SH1030: one parse per row READ, and the read is now the term's")
+                .isLessThanOrEqualTo(narrowed.size() + 2);
     }
 
     private List<ShStaticFileItem> listing() {

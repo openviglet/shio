@@ -34,6 +34,7 @@ import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
+import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -287,18 +288,61 @@ public class ShStaticFileService {
      * the whole tenant is how a caller asking about one folder is answered about a site.</p>
      */
     private List<ShPostUnified> rowsFor(String folderId, ShPostType fileType) {
-        if (isBlank(folderId)) {
-            return shPostUnifiedRepository
-                    .findByShPostType_IdAndState(fileType.getId(), ShPostState.PUBLISHED);
+        return rowsFor(folderId, fileType, null, null);
+    }
+
+    /**
+     * The rows a listing has to look at, narrowed by what the database can decide (SH1030).
+     *
+     * <h2>A superset, on purpose</h2>
+     *
+     * <p>Both narrowings are approximate and the exact decision stays in {@link #matches}. That is
+     * what makes this safe rather than a second definition of "matches": the predicate can only
+     * ever return <b>more</b> rows than the answer, so a mistake in it costs a row read and
+     * discarded — never a row missing from what a curator sees.</p>
+     *
+     * <p>The term is matched against the whole {@code data} document while the filter matches file
+     * names, so an asset whose alt text contains the word comes back and is dropped here. The
+     * category is matched against the stamped content type <em>or no stamp at all</em>, because
+     * SH1030 stamps at upload and leaves the probe as the fallback for everything written before
+     * it — a predicate that dropped unstamped rows would make a pre-existing library vanish from
+     * every category, silently, with every number on screen agreeing.</p>
+     *
+     * <p>So the win is real and it is a <b>library that has been uploaded to since this shipped</b>:
+     * there, a category listing reads that category. On a legacy one it reads everything and
+     * answers correctly, which is the right way round for a filter to degrade.</p>
+     */
+    private List<ShPostUnified> rowsFor(String folderId, ShPostType fileType, String q,
+                                        String category) {
+        String contentTypePrefix = contentTypePrefixFor(category);
+        ShFolder folder = isBlank(folderId) ? null
+                : shFolderRepository.findById(folderId).orElse(null);
+        if (!isBlank(folderId) && folder == null) {
+            return List.of();
         }
-        return shFolderRepository.findById(folderId)
-                .map(folder -> shPostUnifiedRepository
-                        .findByShFolderAndState(folder, ShPostState.PUBLISHED)
-                        .stream()
-                        .filter(post -> post.getShPostType() != null
-                                && fileType.getId().equals(post.getShPostType().getId()))
-                        .toList())
-                .orElseGet(List::of);
+        return shPostUnifiedRepository.findAssets(fileType.getId(), ShPostState.PUBLISHED, folder,
+                q, contentTypePrefix);
+    }
+
+    /**
+     * The content-type prefix a category is a filter on, or {@code null} when it is not one.
+     *
+     * <p>Only the four whose types share a prefix. {@code document}, {@code archive} and
+     * {@code other} are lists and exclusions — {@link #categoryOf} spells them out — and a
+     * predicate for those would be the classifier written twice, in two languages, agreeing until
+     * somebody edits one. Those categories read every row and filter here, which is what they did
+     * before.</p>
+     */
+    private static String contentTypePrefixFor(String category) {
+        if (isBlank(category)) {
+            return null;
+        }
+        return switch (category.toLowerCase(Locale.ROOT)) {
+            case "image" -> "image/";
+            case "video" -> "video/";
+            case "audio" -> "audio/";
+            default -> null;
+        };
     }
 
     /**
@@ -677,7 +721,7 @@ public class ShStaticFileService {
         }
         String wantCategory = isBlank(category) ? null : category.toLowerCase(Locale.ROOT);
         String wantQuery = isBlank(q) ? null : q.toLowerCase(Locale.ROOT);
-        return rowsFor(folderId, fileType)
+        return rowsFor(folderId, fileType, q, category)
                 .stream()
                 .map(this::toItem)
                 .filter(item -> matches(item, folderId, siteId, wantCategory, wantQuery))

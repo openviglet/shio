@@ -2060,26 +2060,6 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.2 A paged media library on every surface (SH1030)
-
-After BE1 the listing is cheaper per row and still returns every row. The object listing
-has been paged for many blocks; this one never was, so the console downloads the
-library, filters by query and category client-side, and computes its chip counts over
-the full array.
-
-Page the endpoint with the envelope the object listing already uses, so the two cannot
-disagree about what a page is, and push category and query predicates into the query.
-That needs the content type stamped at upload, the way the hash already is, with the
-name probe kept as the fallback for rows stamped before this change. Facet counts come
-back in the response.
-
-shio_assets gains a cursor beside its limit, so an agent can walk a large library
-instead of stopping at a silent truncation, and the CLI's asset inventory pages rather
-than assuming one response. The console drives the fetch from filter state through BD4's
-URL hook, reads facets from the response, and virtualises the grid. The benchmark is
-re-run and its numbers recorded, and the assertions page through a fixture with each
-surface and compare the totals.
-
 ### LXX.3 Alt text as a publishing fact (SH1031)
 
 Three facts compose the defect. The File post type declares ALT as not required. The

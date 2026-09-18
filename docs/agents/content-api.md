@@ -1142,3 +1142,20 @@ which is a filter; the probe answers what the file *is*, which is what a downloa
 stamp-only reader would classify a whole pre-existing library as `other` and every chip would agree
 with every other while all of them were wrong — which is why `ShStaticFilePagingTest` asserts the
 fallback against a fixture written without stamps.
+
+**The predicates narrow the read, as a conservative superset (SH1030).** `findAssets` takes the
+term and a content-type prefix, and the exact decision stays in the service. That is what makes an
+approximate predicate safe rather than a second definition of "matches": it can only ever return
+*more* rows than the answer, so a mistake costs a row read and discarded, never a row missing from
+what a curator sees. Measured — a `q` listing over 400 assets reads **111 rows** where it read 400.
+
+Two approximations, each with its reason. The term is matched against the whole `data` document
+while the filter matches file *names*, so an asset whose alt text contains the word comes back and
+is dropped. And the category keeps a row whose stamped type matches **or that carries no stamp at
+all** — a predicate that dropped unstamped rows would make a pre-existing library vanish from every
+category, silently, with every number on screen agreeing.
+
+Only `image`, `video` and `audio` are prefixes. `document`, `archive` and `other` are lists and
+exclusions, and a predicate for those would be `categoryOf` written twice in two languages,
+agreeing until somebody edits one. Those read every row and filter in the service, which is what
+they did before.
