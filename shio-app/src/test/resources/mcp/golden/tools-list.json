@@ -80,6 +80,10 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "after" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "folder" : {
             "description" : "#string",
             "type" : "string"

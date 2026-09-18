@@ -4186,3 +4186,16 @@ rows than the run did.
 Printed rather than put behind a flag: one line, no extra request, and no help-budget cost. The
 point of a shared vocabulary (SH1022) is that handing the answer to a person is cheap — which is
 P9 in the smallest form it comes in.
+
+## The asset inventory walks its pages (SH1030)
+
+`listStaticFiles` in the admin client pages to the end rather than asking for one large response.
+Every caller is resolving asset references, and a short answer is not a smaller resolution but one
+with holes: an unresolved reference stays an id in a `File` field, and `push --content --prune`
+reads a hole as "delete this". Same rule as `findAll`, same reason.
+
+Two details it would be easy to get wrong. It stops on the **total**, not on a short page — a page
+shorter than `size` is also what the last page looks like, so stopping on that alone stops one page
+early whenever the library divides evenly. And it still reads a **bare array**, which is what an
+instance older than SH1030 answers with: the conformance suite drives this CLI against instances it
+did not build, and that is where the earlier version of this change went red.

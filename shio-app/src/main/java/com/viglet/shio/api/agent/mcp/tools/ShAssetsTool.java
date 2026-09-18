@@ -60,25 +60,31 @@ public class ShAssetsTool implements ShMcpTool {
 
     @Override
     public String description() {
-        return "List the uploaded files (images, documents) you can reference, with the public "
-                + "URL of each. To reference one from a File field, use the asset's address. "
+        return "List the uploaded files you can reference, with the public URL of each. Use an "
+                + "asset's address from a File field. "
                 // SH951 traded the closing rationale for the two flags, and the budget is why: this
                 // payload is re-sent every turn, so it may carry what a caller DECIDES on and not
                 // why the design is what it is. That base64 through a tool call is the most
                 // expensive way to move bytes is in this class's javadoc, where it costs nothing
                 // per turn; "POST multipart to this URL" is the whole of what an agent acts on.
+                // SH1030 trimmed it again to pay for `after`, on the same rule.
                 + "Uploading is not a tool — POST multipart to /api/v2/staticfile/upload. "
-                + "A row flagged `unsafe` is of a type this instance now refuses; `sanitized` "
-                + "means its stored bytes were cleaned.";
+                + "`unsafe` is a type this instance now refuses; `sanitized` means its bytes "
+                + "were cleaned.";
     }
 
     @Override
     public Map<String, Object> inputSchema() {
         return ShMcpTool.schema(Map.of(
-                "site", ShMcpTool.string("Site name; omit for every site you can read."),
-                "folder", ShMcpTool.string("Folder path to look under, including subfolders."),
+                "site", ShMcpTool.string("Site name; omit for all you can read."),
+                "folder", ShMcpTool.string("Folder path; its subtree too."),
                 "q", ShMcpTool.string("Match against the file name."),
-                "limit", ShMcpTool.integer("Maximum rows (default 25).")),
+                "limit", ShMcpTool.integer("Maximum rows (default 25)."),
+                // SH1030 — worth its schema for the reason `after` on shio_find was (SH146):
+                // without it a library past the cap is a dead end. An agent choosing an asset
+                // from a large media library is exactly the caller that meets one, and a
+                // truncated list it cannot continue reads as "there is no such image".
+                "after", ShMcpTool.string("Cursor from a truncated result: the next page.")),
                 List.of());
     }
 
@@ -103,11 +109,16 @@ public class ShAssetsTool implements ShMcpTool {
                 // Ids are on here, against the SH121 default, because a file's public
                 // URL is /file_source/<postId>/<name> — the id is not decoration, it is
                 // half the answer the tool exists to give.
-                true);
+                true,
+                ShMcpArgs.string(arguments, "after"));
 
         StringBuilder out = new StringBuilder(ShTerse.line("assets")
                 .word(found.count())
                 .flag("truncated", found.truncated())
+                // SH1030 — the cursor beside the flag, the way `find` carries it: `truncated`
+                // alone tells a caller it is missing rows and not how to get them, which is the
+                // dead end SH146 removed one surface over.
+                .attr("cursor", found.cursor())
                 .build());
         if (found.results().isEmpty()) {
             return out.toString();

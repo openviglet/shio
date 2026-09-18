@@ -114,7 +114,7 @@ class ShAssetsToolTest {
         // replaced a bad refusal with a wrong answer, which is the worse of the two (SH263).
         ShAgentReadService reads = mock(ShAgentReadService.class);
         when(reads.hasType(ShSystemPostType.FILE)).thenReturn(true);
-        when(reads.find(any(), eq(ShSystemPostType.FILE), any(), any(), any(), anyBoolean()))
+        when(reads.find(any(), eq(ShSystemPostType.FILE), any(), any(), any(), anyBoolean(), any()))
                 .thenThrow(new IllegalStateException("SH727: find was reached, which is the point"));
 
         try {
@@ -127,6 +127,44 @@ class ShAssetsToolTest {
                 "SH727: the tool answered without asking `find` on an instance that HAS the File "
                         + "type. The empty-listing branch is for an absent type only — widened, it "
                         + "would report zero assets to somebody who has some.");
+    }
+
+    @Test
+    void sh1030ATruncatedListingCarriesTheCursorThatContinuesIt() {
+        // The dead end this removes: `truncated` on its own tells a caller it is missing rows and
+        // not how to get them. An agent choosing an image from a large library is exactly the
+        // caller that meets a cap, and a list it cannot continue reads as "there is no such
+        // image" — which is SH146's finding, one surface over.
+        ShAgentReadService reads = mock(ShAgentReadService.class);
+        when(reads.hasType(ShSystemPostType.FILE)).thenReturn(true);
+        when(reads.find(any(), eq(ShSystemPostType.FILE), any(), any(), any(), anyBoolean(), any()))
+                .thenReturn(new ShAgentFound(0, true, List.of(), List.of(),
+                        "post:Blog/media/last-one", null));
+
+        String answer = tool(reads).call(objectMapper.createObjectNode());
+
+        assertThat(answer)
+                .as("""
+                        SH1030: the cursor beside the flag, spelled the way `find` spells it.                         Without it the tool says "there is more" and nothing says where.""")
+                .contains("truncated")
+                .contains("cursor=post:Blog/media/last-one");
+    }
+
+    @Test
+    void sh1030TheCursorIsPassedBackThroughAsAfter() {
+        ShAgentReadService reads = mock(ShAgentReadService.class);
+        when(reads.hasType(ShSystemPostType.FILE)).thenReturn(true);
+        when(reads.find(any(), eq(ShSystemPostType.FILE), any(), any(), any(), anyBoolean(),
+                eq("post:Blog/media/last-one")))
+                .thenReturn(new ShAgentFound(0, false, List.of(), List.of(), null, null));
+
+        var arguments = objectMapper.createObjectNode();
+        arguments.put("after", "post:Blog/media/last-one");
+
+        assertThat(tool(reads).call(arguments))
+                .as("SH1030: a cursor the tool advertises and does not read is worse than none — "
+                        + "the caller walks and gets page one for ever")
+                .contains("assets");
     }
 
     /**
@@ -184,7 +222,7 @@ class ShAssetsToolTest {
     private String listing(String address, String fileName, Boolean sanitized) {
         ShAgentReadService reads = mock(ShAgentReadService.class);
         when(reads.hasType(ShSystemPostType.FILE)).thenReturn(true);
-        when(reads.find(any(), eq(ShSystemPostType.FILE), any(), any(), any(), anyBoolean()))
+        when(reads.find(any(), eq(ShSystemPostType.FILE), any(), any(), any(), anyBoolean(), any()))
                 .thenReturn(new ShAgentFound(1, false,
                         List.of(new ShAgentFound.Row(address, "File", "PUBLISHED", fileName, "id1"))));
 

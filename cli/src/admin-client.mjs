@@ -102,22 +102,42 @@ export class ShioAdminClient {
    * Each item carries the id, the file name and the containing folder's id, which is
    * exactly what an asset path is built from.
    *
-   * SH1030 — the endpoint answers a page in an envelope now, and this returns the page's items so
-   * every caller keeps the array it had. `size` is asked for explicitly and large: the callers
-   * here are resolving asset references, and a short answer is not a smaller resolution but one
-   * with holes — the same reason `findAll` walks a truncated find to the end.
+   * SH1030 — the endpoint answers a page in an envelope now, and this **walks it to the end**.
+   *
+   * Every caller here is resolving asset references, and a short answer is not a smaller
+   * resolution but one with holes: an unresolved reference stays an id in a `File` field, and
+   * `push --content --prune` reads a hole as "delete this". Same rule as `findAll` on the agent
+   * client, and the same reason.
+   *
+   * It reads a bare array too, which is what an instance older than SH1030 answers with — the
+   * conformance suite drives this CLI against instances it did not build.
    */
-  async listStaticFiles({ siteId, folderId, size = 1000 } = {}) {
+  async listStaticFiles({ siteId, folderId, size = 200, maxPages = 500 } = {}) {
     // SH213 — `folderId` is the server's own filter (SH62), and it is what turns "read the whole
     // media library to resolve one reference" into "read the folder the reference names".
-    const params = new URLSearchParams();
-    if (folderId) params.set("folderId", folderId);
-    else if (siteId) params.set("siteId", siteId);
-    params.set("size", String(size));
-    const answer = await this.#at(`/api/v2/staticfile?${params}`, "GET");
-    // An array is what an instance older than SH1030 answers with; the envelope is what this one
-    // does. Reading both is what lets the CLI keep working against either.
-    return Array.isArray(answer) ? answer : (answer?.items ?? []);
+    const items = [];
+    for (let page = 0; page < maxPages; page += 1) {
+      const params = new URLSearchParams();
+      if (folderId) params.set("folderId", folderId);
+      else if (siteId) params.set("siteId", siteId);
+      params.set("page", String(page));
+      params.set("size", String(size));
+      const answer = await this.#at(`/api/v2/staticfile?${params}`, "GET");
+      if (Array.isArray(answer)) {
+        // An instance with no paging answered everything it has; asking for page 1 would return
+        // the same rows again, so this is the whole answer and the walk is over.
+        return answer;
+      }
+      const batch = answer?.items ?? [];
+      items.push(...batch);
+      // The total is what says whether there is more, rather than a short page: a page shorter
+      // than `size` is also what the LAST page looks like, and stopping on that alone would
+      // stop one page early whenever the library divides evenly.
+      if (!batch.length || items.length >= (answer?.totalFiles ?? items.length)) {
+        break;
+      }
+    }
+    return items;
   }
 
   /** GET /api/v2/staticfile/{id} — the bytes, as a `Uint8Array`. */

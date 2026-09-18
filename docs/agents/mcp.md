@@ -497,3 +497,17 @@ turn anybody ever takes. `ShMcpToolBudgetTest` is what says whether the trim cov
 The tool is a shape over `ShAgentReadService.find(ShContentQuery, …)` — the same call
 `/agent/find` makes, with the same parsing and the same refusals (P10). So there is no MCP-only
 reading of `modifiedSince` to get wrong, and no second place to add the next filter.
+
+## `shio_assets` walks a large library (SH1030)
+
+The tool gained `after`, the cursor `shio_find` has carried since SH146, and the answer carries it
+beside `truncated`. The dead end it removes is the same one: `truncated` on its own tells a caller
+it is missing rows and not how to get them, and an agent choosing an image from a large media
+library is exactly the caller that meets a cap. A list it cannot continue reads as "there is no
+such image".
+
+Paid for **inside the tool**, not out of the ceiling: its description lost the words a caller does
+not act on and it measured 184 either side, which is what the reservation system is for. The two
+assertions are the pair that matters — the cursor is emitted, and it is read back as `after`. A
+cursor a tool advertises and does not read is worse than none: the caller walks and gets page one
+for ever.
