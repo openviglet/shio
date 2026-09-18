@@ -162,6 +162,8 @@ used to key on the iframe `src`, which in-frame navigation cannot change, and th
 ```ts
 type SelectedElement = {
   postId: string | null      // null when the template forgot sh-post
+  widget: string             // SH1037 - the declared widget, "" when the kind is not knowable
+  affordance: string         // SH1037 - what the page allowed inline: plain | rich | panel | attr
   model: string              // the region name, when the field is inside one
   label: string
   type: string               // "text", or "attr" for a field drawn into an attribute (SH503)
@@ -253,6 +255,8 @@ functional test can see.
 | `data-shio-post-type` | `<body>` | `ShRegionComposer` | the page's post-type name; the bridge sends it with each selection so the console can label fields from the model (SH303) |
 | `data-shio-prop` | any element | `ShRegionComposer` | this element renders that field of the nearest `data-shio-post` |
 | `data-shio-prop-attr` | any element | `ShRegionComposer` | `FIELD:ATTRIBUTE` pairs, space-separated: fields this element renders into its **own attributes** rather than as content, so a link's destination can be edited and not only its text (SH503). Copied verbatim — the renderer parses a pair no more than it parses a prop |
+| `data-shio-prop-type` | any element with a prop | `ShRegionComposer` | the **widget the model declares** for that field, verbatim (SH1037) — so the browser knows a `Text` from an `HTML Editor` and stops offering rich editing over a field that cannot hold it. The page's own type only: a listing row declares its post and not its type, so the attribute is **absent** there rather than guessed |
+| `data-shio-affordance` | any annotated element | `shio-editor.js` | what the browser decided the kind allows: `plain`, `rich`, `panel`, or `attr` for an attribute-only field (SH1037). Set beside `data-shio-editable`, which says *whether* — this says *how* |
 | `data-shio-preview` | the banner element | `ShPreviewBanner` | this node is Shio's own preview banner and not the page |
 | `data-shio-editor-origin` | the injected `<script>` | `ShEditorBridge` | the console origin the bridge may talk to (never `"*"`) |
 | `data-shio-preview-paths` | the injected `<script>` | `ShEditorBridge` | this site's own URLs, newline-separated, so a click on a **JS-built** link can be sent into the preview's address space while `/file_source/…` is left alone (SH336). Absent above `ShPreviewLinks.BRIDGE_URL_CAP`, which disables interception rather than shipping an index the page should not carry |

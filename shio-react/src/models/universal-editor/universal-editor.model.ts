@@ -60,6 +60,22 @@ export type SelectedElement = {
   /** SH303 — the page's post-type, so the labels can be looked up in one fetch. */
   postType?: string | null
   /**
+   * SH1037 — the widget the model declares for this field, verbatim, or `""` when unknown.
+   *
+   * The panel renders the field the model describes instead of a bare input. `""` is a real answer
+   * and not a gap: a listing row's type is not knowable at compose time, and a page rendered before
+   * SH1037 or an external front end writing its own `data-shio-*` carries no kind either.
+   */
+  widget?: string
+  /**
+   * SH1037 — what the page allowed inline: `plain`, `rich`, `panel`, or `attr`.
+   *
+   * The browser's decision, not a second copy of `widget`: it is what `contenteditable` was actually
+   * set to, so the panel can say *edit this here* about a field the caret cannot express — a `Date`,
+   * a `Check Box`, a `Content Select` — rather than leaving the curator clicking at it.
+   */
+  affordance?: string
+  /**
    * Every editable field of the same post, so the panel needs no round trip.
    *
    * `type` is `"text"` for a field the page draws as content and `"attr"` for one it draws into an

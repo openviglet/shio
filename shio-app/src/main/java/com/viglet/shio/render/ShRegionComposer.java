@@ -144,6 +144,24 @@ public class ShRegionComposer {
     private static final String ANNOTATION_PROP = "data-shio-prop";
     /** SH503 — the rendered form of {@link #ATTR_FIELD_ATTR}, same pairs, same order. */
     private static final String ANNOTATION_PROP_ATTR = "data-shio-prop-attr";
+
+    /**
+     * SH1037 — the WIDGET the model declares for this field, so the browser knows its kind.
+     *
+     * <p>Edit mode was granted by the presence of {@code data-shio-prop} alone: any annotated
+     * element became {@code contenteditable} and reported {@code innerHTML}, with no reference to
+     * what the field is. So a plain {@code Text} field absorbed the markup of a paste, stored it,
+     * and then displayed the tags as visible text — because the template escapes a text field, which
+     * is correct. The defect is not the escaping; it is an editor that offered rich editing over a
+     * field that cannot hold it.</p>
+     *
+     * <p>The widget name verbatim, not a kind this class invents: the model's vocabulary is the one
+     * the console's widget map, {@code shio pull} and the CDA schema already speak, and a second
+     * classification here would be a third opinion about what a field is. The browser maps the name
+     * to an affordance, which is where that decision belongs — it is the half that knows what a
+     * {@code contenteditable} can do.</p>
+     */
+    public static final String ANNOTATION_PROP_TYPE = "data-shio-prop-type";
     private static final String ANNOTATION_POST_TYPE = "data-shio-post-type";
 
     /**
@@ -227,6 +245,20 @@ public class ShRegionComposer {
     public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions,
                           String pagePostId, String pageType, Set<String> unpublishedSlots,
                           String missingTheme) {
+        return compose(layoutHtml, regions, pagePostId, pageType, unpublishedSlots, missingTheme,
+                Map.of());
+    }
+
+    /**
+     * @param propTypes SH1037 — the page type's field name to declared widget, so an annotated
+     *                  element can say what KIND of field it renders. The page's own type only: a
+     *                  listing row declares its post and not its type, so a row's widget is not
+     *                  knowable here and the attribute is simply absent, which the browser reads as
+     *                  "edit this in the panel" rather than guessing
+     */
+    public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions,
+                          String pagePostId, String pageType, Set<String> unpublishedSlots,
+                          String missingTheme, Map<String, String> propTypes) {
         if (layoutHtml == null || layoutHtml.isBlank()) {
             return "";
         }
@@ -252,7 +284,7 @@ public class ShRegionComposer {
             slot.html(region.html() == null ? "" : region.html());
             filled.add(name);
         }
-        annotateEditable(document, pagePostId, pageType);
+        annotateEditable(document, pagePostId, pageType, propTypes);
         markMissingTheme(document, missingTheme);
         appendRegionScripts(document, regions, filled);
         return document.html();
@@ -314,7 +346,8 @@ public class ShRegionComposer {
      * attributes. Both are copied verbatim into their {@code data-} form and neither is parsed
      * here.</p>
      */
-    private void annotateEditable(Document document, String pagePostId, String pageType) {
+    private void annotateEditable(Document document, String pagePostId, String pageType,
+            Map<String, String> propTypes) {
         if (pagePostId != null && !pagePostId.isBlank()) {
             document.body().attr(ANNOTATION_FIELD_POST, pagePostId);
             if (pageType != null && !pageType.isBlank()) {
@@ -333,6 +366,10 @@ public class ShRegionComposer {
                 continue;
             }
             field.attr(ANNOTATION_PROP, prop);
+            String widget = widgetOf(field, prop, propTypes);
+            if (widget != null) {
+                field.attr(ANNOTATION_PROP_TYPE, widget);
+            }
         }
         // SH503 — the same translation for the fields an element draws into its own attributes.
         // Separate loop rather than a branch inside the one above, because the two declarations are
@@ -345,6 +382,27 @@ public class ShRegionComposer {
             }
             field.attr(ANNOTATION_PROP_ATTR, pairs);
         }
+    }
+
+    /**
+     * The widget this field's model declares, or {@code null} when it is not knowable here.
+     *
+     * <p>Only for a field the <b>page</b> owns. Ownership is nearest-ancestor and a listing row
+     * declares its post id without its type ({@code sh-post="{{id}}"} is all an author can write,
+     * because the row's type is the query's and not the element's), so a row's widget cannot be
+     * resolved at compose time. Absent rather than guessed: a wrong kind is worse than no kind,
+     * since the browser acts on it — it would make a {@code Date} field contenteditable, or refuse
+     * inline editing of a {@code Text} one.</p>
+     *
+     * <p>A collection leaf ({@code COLL.N.LEAF}, SH475) is not in the map either and falls through
+     * the same way.</p>
+     */
+    private static String widgetOf(Element field, String prop, Map<String, String> propTypes) {
+        if (propTypes == null || propTypes.isEmpty()) {
+            return null;
+        }
+        Element owner = field.closest("[" + ANNOTATION_FIELD_POST + "]");
+        return owner != null && "body".equals(owner.tagName()) ? propTypes.get(prop) : null;
     }
 
     /**

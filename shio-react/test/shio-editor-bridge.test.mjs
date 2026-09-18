@@ -389,6 +389,77 @@ test("the affordances are scoped so preview leaves no trace", async () => {
   }
 });
 
+// --- SH1037: a field's declared widget decides what the browser offers ---
+
+/** The same page, with each field declaring the widget its model gave it. */
+const TYPED_PAGE = `
+  <div data-shio-post="page-1" data-shio-region="MAIN">
+    <h1 data-shio-prop="TITLE" data-shio-prop-type="Text">Hello</h1>
+    <div data-shio-prop="BODY" data-shio-prop-type="HTML Editor">Body</div>
+    <time data-shio-prop="WHEN" data-shio-prop-type="Date">2026</time>
+    <span data-shio-prop="LEGACY">no kind</span>
+  </div>
+`;
+
+test("SH1037: a Text field is plaintext-only, so a paste cannot put markup in it", async () => {
+  const { document } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+  const title = document.querySelector('[data-shio-prop="TITLE"]');
+
+  // `plaintext-only` is the BROWSER refusing markup, not this script stripping it afterwards: a
+  // paste handler runs after the DOM the browser already built, and every later read of innerHTML
+  // would carry it. jsdom may not implement the value, in which case the script falls back to
+  // "true" — so the assertion is that it is one of the two, and the affordance is what records
+  // which decision was made.
+  assert.equal(title.getAttribute("data-shio-affordance"), "plain",
+    "a Text field's affordance is plain, whatever contenteditable the engine supports");
+  assert.ok(["plaintext-only", "true"].includes(title.contentEditable),
+    `a Text field must be editable; got ${title.contentEditable}`);
+});
+
+test("SH1037: an HTML Editor field keeps rich editing", async () => {
+  const { document } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+  const body = document.querySelector('[data-shio-prop="BODY"]');
+
+  assert.equal(body.getAttribute("data-shio-affordance"), "rich");
+  assert.equal(body.contentEditable, "true");
+});
+
+test("SH1037: a Date field is not contenteditable, and is still selectable", async () => {
+  const { document } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+  const when = document.querySelector('[data-shio-prop="WHEN"]');
+
+  // Typing into a Date produced a string the widget would refuse, so the caret is the wrong tool.
+  // It keeps `data-shio-editable="true"` because it IS editable — in the panel, which is what the
+  // click still opens. An element the curator cannot click is a field with no way to reach it.
+  assert.equal(when.getAttribute("data-shio-affordance"), "panel");
+  assert.equal(when.contentEditable, "false");
+  assert.equal(when.getAttribute("data-shio-editable"), "true");
+});
+
+test("SH1037: a field with no declared kind stays richly editable", async () => {
+  const { document } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+  const legacy = document.querySelector('[data-shio-prop="LEGACY"]');
+
+  // Compatibility, not a default anybody chose: a page rendered before this shipped, a listing row
+  // (whose type is not knowable at compose time) and an external front end writing its own
+  // `data-shio-*` all carry no kind. Reading that as "panel" would take away editing that works.
+  assert.equal(legacy.getAttribute("data-shio-affordance"), "rich");
+  assert.equal(legacy.contentEditable, "true");
+});
+
+test("SH1037: the selection carries the widget and the affordance", async () => {
+  const { window, document, posted } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+  const title = document.querySelector('[data-shio-prop="TITLE"]');
+
+  title.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+
+  // The console cannot read the framed DOM — it is another origin — so the panel can only render
+  // the declared widget if the selection says what it is.
+  const [selected] = messagesOfType(posted, "sh:element-selected");
+  assert.equal(selected.widget, "Text");
+  assert.equal(selected.affordance, "plain");
+});
+
 // --- SH336: the links the server pass never saw ---
 
 const PREVIEW_URL = "https://shio.example/preview/Demo/about";

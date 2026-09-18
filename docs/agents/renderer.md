@@ -464,6 +464,28 @@ renderer over one body of content at a second address. See the section on it bel
   on every load and a second arrival notification is two mechanisms for one fact; and a `navigate`
   message, because the console already drives the frame by reassigning `src`, which re-keys the
   handshake correctly on its own.
+- **A field says what KIND it is, and the browser offers only that (SH1037)** — edit mode was granted
+  by the presence of `data-shio-prop` alone, so every annotated element became `contenteditable` and
+  reported `innerHTML`. A plain `Text` field therefore absorbed the markup of a paste, stored it, and
+  then showed the tags as visible text — because the template escapes a text field, which is
+  *correct*. The defect was an editor offering rich editing over a field that cannot hold it.
+  `ShRegionComposer` now emits **`data-shio-prop-type`**, the declared widget verbatim — the model's
+  own vocabulary, which the console's widget map, `shio pull` and the CDA schema already speak, so
+  there is no third classification to disagree with. The script maps the name to one of three
+  affordances and records which in **`data-shio-affordance`**: `Text`/`Text Area` →
+  `contenteditable="plaintext-only"` (the *browser* refusing markup — a paste handler runs after the
+  DOM is already built, and every later `innerHTML` read would carry it), `HTML Editor` → rich as
+  before, anything else → **not contenteditable and still selectable**, because a `Date` or a
+  `Content Select` has a shape a caret cannot express but is edited in the panel. `plaintext-only`
+  is assigned in a `try` — an unsupported value *throws* rather than being ignored, and the fallback
+  is rich, which is the old behaviour and not broken.
+  Two absences are deliberate. **A missing kind means rich, not panel**: a listing row's type is not
+  knowable at compose time (`sh-post="{{id}}"` is all an author can write — the row's type is the
+  query's), and a page rendered before this, or an external front end writing its own `data-shio-*`,
+  carries none either; reading that as uneditable would remove editing that works. And **the widget
+  is never guessed** — a wrong kind is worse than none, since the browser acts on it.
+  Sanitising is *not* the bridge's job: SH956 applies the allow-list at the write boundary, the draft
+  merge included. This is about what the curator is offered, not about what is accepted.
 - **The public delivery route, recovered rather than designed (SH451)** — `ShSitesAPI` maps
   `GET /sites/**` and splits it **by position**, which is what branch `0.3.8`'s
   `ShSitesContextURLProcess` did: `/sites/<site-furl>/<format>/<locale>/<content-path…>`, with the

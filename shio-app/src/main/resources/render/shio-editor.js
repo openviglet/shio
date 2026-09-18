@@ -130,6 +130,11 @@
       // type deliberately does not travel — ~31 bytes on every listing row of every page, paid by
       // every visitor, for a case only the editor uses (SH121's trade about ids).
       postType: PAGE_TYPE,
+      // SH1037 — the declared widget, so the panel renders the field the model describes rather
+      // than a bare input, and `affordance` says what this page decided to allow inline. Both
+      // travel because the console cannot read the framed DOM: it is another origin.
+      widget: el.getAttribute("data-shio-prop-type") || "",
+      affordance: el.getAttribute("data-shio-affordance") || "",
       fields: fieldsOf(ownerOf(el))
     };
   }
@@ -210,6 +215,40 @@
     send("sh:element-selected", describe(event.currentTarget));
   }
 
+  /**
+   * What a field's declared widget lets the browser offer (SH1037).
+   *
+   * Edit mode used to be granted by the presence of `data-shio-prop` alone: every annotated element
+   * became `contenteditable` and reported `innerHTML`. So a plain `Text` field absorbed the markup
+   * of a paste, stored it, and then showed the tags as visible text — because the template escapes
+   * a text field, which is correct. The defect was an editor offering rich editing over a field that
+   * cannot hold it.
+   *
+   * Three outcomes, and the third is the one that matters most:
+   *
+   *   "plain" — `contenteditable="plaintext-only"`, so the browser itself refuses markup. Pasting
+   *             rich content yields its text, which is what the field can store.
+   *   "rich"  — `contenteditable="true"`, today's behaviour, for the widget that means HTML.
+   *   "panel" — NOT contenteditable. A `Date`, a `Check Box`, a `Content Select` has a shape a
+   *             caret cannot express, and typing into it produced a string the widget would refuse.
+   *             It stays selectable, so clicking still opens the properties panel.
+   *
+   * An ABSENT attribute is "rich", not "panel", and that is a compatibility decision rather than a
+   * default: a page rendered before this shipped, a listing row (whose type is not knowable at
+   * compose time) and an external front end writing its own `data-shio-*` all carry no kind, and
+   * treating them as uneditable would take away editing that works today.
+   */
+  var PLAIN_WIDGETS = ["Text", "Text Area"];
+  var RICH_WIDGETS = ["HTML Editor"];
+
+  function affordanceOf(el) {
+    var declared = el.getAttribute("data-shio-prop-type");
+    if (!declared) return "rich";
+    if (PLAIN_WIDGETS.indexOf(declared) >= 0) return "plain";
+    if (RICH_WIDGETS.indexOf(declared) >= 0) return "rich";
+    return "panel";
+  }
+
   function setMode(mode) {
     editing = mode === "edit";
     document.documentElement.setAttribute("data-shio-editing", editing ? "true" : "false");
@@ -219,8 +258,28 @@
       // author can see that the annotation is there and incomplete. And only a *text* field: an
       // attribute field's value is in the markup, so there is nothing to type into (SH503).
       var text = !!el.getAttribute("data-shio-prop");
-      el.contentEditable = editing && owned && text ? "true" : "false";
+      var affordance = text ? affordanceOf(el) : "panel";
+      var inline = editing && owned && text && affordance !== "panel";
+      // `plaintext-only` is the browser refusing markup rather than this script stripping it after
+      // the fact — a paste handler runs too late to stop the DOM the browser already built, and
+      // every subsequent read of innerHTML would carry it.
+      // `plaintext-only` is not universal (Firefox got it in 136), and an unsupported value throws
+      // on assignment rather than being ignored — so the fallback is explicit. `true` is the old
+      // behaviour, which is worse for this field and not broken: the console's panel still renders
+      // the declared widget, and SH956 strips at the write boundary either way.
+      if (inline && affordance === "plain") {
+        try {
+          el.contentEditable = "plaintext-only";
+        } catch (unsupported) {
+          el.contentEditable = "true";
+        }
+      } else {
+        el.contentEditable = inline ? "true" : "false";
+      }
       el.setAttribute("data-shio-editable", owned ? "true" : "false");
+      // The kind the browser acted on, so the console can render the same decision in its panel and
+      // the e2e probe can read it. `data-shio-editable` says WHETHER, this says HOW.
+      el.setAttribute("data-shio-affordance", text ? affordance : "attr");
     });
   }
 

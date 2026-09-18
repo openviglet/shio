@@ -32,6 +32,7 @@ import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -398,7 +399,11 @@ public class ShPageRenderService {
         // producing it twice would be a second answer that can differ from the one served.
         String composed = composer.compose(layoutHtml, regions, page.getId(),
                 page.getShPostType() == null ? null : page.getShPostType().getName(),
-                unpublishedSlots, missingTheme);
+                unpublishedSlots, missingTheme,
+                // SH1037 — what KIND each of the page's fields is, so an annotated element can say
+                // so and the browser can offer the right affordance instead of contenteditable HTML
+                // over everything.
+                declaredWidgets(page.getShPostType()));
         return new ShRenderedPage(
                 // SH185: the page's own identity goes onto <body>, so a `sh-field` in a layout
                 // needs no `sh-post` to say what it belongs to.
@@ -904,6 +909,32 @@ public class ShPageRenderService {
         // transaction, and not cached at all anywhere else.
         return SWEEP_CACHE.get(site.getId() + "|" + typeName + "|" + state,
                 () -> loadPostsOfSystemType(site, typeName, state));
+    }
+
+    /**
+     * Field name to declared widget, for one post-type (SH1037).
+     *
+     * <p>Read from the type already in hand rather than re-resolved: {@code page.getShPostType()} is
+     * the association the row was loaded with, so this costs the attribute collection and no query
+     * for the type itself. Read-only — the {@code agents.md} invariant about detaching
+     * {@code ShPostTypeAttr.shWidget} is about <em>mutating</em> a post-type, and a cascade cannot
+     * fire on a walk.</p>
+     *
+     * <p>Empty for a type with no attributes and for no type at all, which the composer reads as
+     * "no kind is known" and leaves the attribute off.</p>
+     */
+    private Map<String, String> declaredWidgets(ShPostType type) {
+        if (type == null || type.getShPostTypeAttrs() == null) {
+            return Map.of();
+        }
+        Map<String, String> widgets = new java.util.LinkedHashMap<>();
+        for (ShPostTypeAttr attr : type.getShPostTypeAttrs()) {
+            if (attr.getName() != null && attr.getShWidget() != null
+                    && attr.getShWidget().getName() != null) {
+                widgets.put(attr.getName(), attr.getShWidget().getName());
+            }
+        }
+        return widgets;
     }
 
     private List<ShPostUnified> loadPostsOfSystemType(ShSite site, String typeName,

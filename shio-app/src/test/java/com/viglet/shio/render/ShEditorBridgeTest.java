@@ -78,6 +78,51 @@ class ShEditorBridgeTest {
         assertThat(rowOwner).isLessThan(rowField);
     }
 
+    // --- SH1037: a field says what KIND it is ---
+
+    @Test
+    @DisplayName("SH1037: a page field carries the widget its model declares")
+    void theDeclaredWidgetTravels() {
+        String html = composer.compose(
+                "<body><h1 sh-field=\"TITLE\">Hi</h1><div sh-field=\"BODY\">b</div>"
+                        + "<time sh-field=\"WHEN\">t</time></body>",
+                Map.of(), "page-1", "Article", java.util.Set.of(), null,
+                Map.of("TITLE", "Text", "BODY", "HTML Editor", "WHEN", "Date"));
+
+        assertThat(html)
+                .as("""
+                        Edit mode used to be granted by the presence of `data-shio-prop` alone, so                         every annotated element became contenteditable HTML — and a plain Text field                         absorbed the markup of a paste, stored it, and then showed the tags as                         visible text, because the template escapes a text field. The defect is the                         editor offering rich editing over a field that cannot hold it, so the kind                         has to reach the browser.""")
+                .contains("data-shio-prop-type=\"Text\"")
+                .contains("data-shio-prop-type=\"HTML Editor\"")
+                .contains("data-shio-prop-type=\"Date\"");
+    }
+
+    @Test
+    @DisplayName("SH1037: a listing row's field carries no kind, because none is knowable")
+    void aRowsWidgetIsNotGuessed() {
+        String html = composer.compose(
+                "<body><ul><li sh-post=\"row-9\"><span sh-field=\"TITLE\">r</span></li></ul></body>",
+                Map.of(), "page-1", "Article", java.util.Set.of(), null,
+                Map.of("TITLE", "Text"));
+
+        assertThat(html)
+                .as("""
+                        A row is a post of some OTHER type — `sh-post="{{id}}"` is all an author can                         write, because the row's type is the query's — so the page type's map does                         not describe it. Absent rather than guessed: the browser ACTS on this, so a                         wrong kind would make a Date contenteditable or refuse a Text field, and                         both are worse than the compatible default.""")
+                .contains("data-shio-post=\"row-9\"")
+                .doesNotContain("data-shio-prop-type");
+    }
+
+    @Test
+    @DisplayName("SH1037: a field the type does not declare carries no kind")
+    void anUndeclaredFieldCarriesNoKind() {
+        String html = composer.compose("<body><h1 sh-field=\"NOPE\">Hi</h1></body>",
+                Map.of(), "page-1", "Article", java.util.Set.of(), null, Map.of("TITLE", "Text"));
+
+        // SH475's collection leaves (`COLL.N.LEAF`) fall through the same way, which is why the
+        // lookup is a plain map read and not a parse.
+        assertThat(html).contains("data-shio-prop=\"NOPE\"").doesNotContain("data-shio-prop-type");
+    }
+
     @Test
     @DisplayName("the authoring attribute survives beside the rendered one")
     void bothFormsSurvive() {
