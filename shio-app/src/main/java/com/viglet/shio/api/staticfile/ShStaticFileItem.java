@@ -43,7 +43,18 @@ public record ShStaticFileItem(
         String alt,
         String caption,
         List<String> tags,
-        String sha256) {
+        String sha256,
+        /*
+         * How many posts reference this asset, or null when nobody asked (SH1034).
+         *
+         * Nullable rather than 0, and the distinction is the one that matters: zero means NOTHING
+         * references this asset — the answer a prune acts on — so a field that said zero because
+         * the caller did not ask would make an unasked listing look like a library of orphans.
+         * Only the rows a listing actually returns carry it, stamped in one indexed query for the
+         * page: counting every row of the library to draw ten of them is the cost SH1033 measured
+         * and SH1034 exists to remove.
+         */
+        Long usageCount) {
 
     /** The pre-SH398 shape, for a caller that has no digest to report. */
     public ShStaticFileItem(String id, String fileName, String contentType, long size, String owner,
@@ -51,6 +62,21 @@ public record ShStaticFileItem(
                             String siteName, Integer width, Integer height, String alt,
                             String caption, List<String> tags) {
         this(id, fileName, contentType, size, owner, date, folderId, folderName, siteId, siteName,
-                width, height, alt, caption, tags, null);
+                width, height, alt, caption, tags, null, null);
+    }
+
+    /** The pre-SH1034 shape: a digest, and no answer about usage. */
+    public ShStaticFileItem(String id, String fileName, String contentType, long size, String owner,
+                            Instant date, String folderId, String folderName, String siteId,
+                            String siteName, Integer width, Integer height, String alt,
+                            String caption, List<String> tags, String sha256) {
+        this(id, fileName, contentType, size, owner, date, folderId, folderName, siteId, siteName,
+                width, height, alt, caption, tags, sha256, null);
+    }
+
+    /** The same row, with the usage count a listing stamped on it. */
+    public ShStaticFileItem withUsageCount(Long count) {
+        return new ShStaticFileItem(id, fileName, contentType, size, owner, date, folderId,
+                folderName, siteId, siteName, width, height, alt, caption, tags, sha256, count);
     }
 }

@@ -4199,3 +4199,31 @@ shorter than `size` is also what the last page looks like, so stopping on that a
 early whenever the library divides evenly. And it still reads a **bare array**, which is what an
 instance older than SH1030 answers with: the conformance suite drives this CLI against instances it
 did not build, and that is where the earlier version of this change went red.
+
+## `shio assets prune` — a sum the report could not give (SH1034)
+
+`verify` reports `asset-unused`, one line per asset, and that is the right home for the finding.
+What it cannot answer is the question a curator actually has, which is arithmetic over the whole
+set — **how much would I get back** — and a checklist ending in "now add up the sizes yourself" is
+a report nobody acts on. So the verb is a sum, and the report stays a report.
+
+**It composes, and there is no `/assets/unused` endpoint.** The count rides on the media listing
+that already exists (SH1034 stamps `usageCount` on the rows of every page, in one indexed query), so
+this is `listStaticFiles` plus a filter. A second server contract for the same fact is how two
+surfaces come to disagree about what "unused" means (P10).
+
+**`--dry-run` is the whole command, not the default of two.** Deleting content because a report
+called it unreferenced is exactly the act P7 says must be typed out in full, so the safe reading is
+what you get and `--dry-run` is accepted as a no-op for a caller who writes it anyway. The number is
+the decision; the deletion is a consequence of having seen it, and it belongs to whichever task
+adds a destructive verb with its own confirmation.
+
+**Absent is not zero, and the refusal is the point.** A row with no `usageCount` is an instance that
+cannot answer, not an asset nothing uses. A `!item.usageCount` test would have reported a healthy
+library as entirely unused and offered to empty it, so an instance that sends no counts at all is
+**refused** with the reason. That is the assertion in `assets-prune.test.mjs` worth keeping: the
+others check arithmetic, this one checks that the destructive reading is unreachable.
+
+It is on `live-coverage`'s `UNEXERCISED` list deliberately. A scripted fetch proves the sum and the
+refusal and cannot prove the *number the server sent was true*; only a live run can — upload,
+reference, assert it is not offered, unreference, assert it is.

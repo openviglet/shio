@@ -79,7 +79,6 @@
 
 ## Block BE — Media: what the bytes mean
 
-- ⏳ **SH1034** (deps: SH1033 ✅) **no surface can list the assets nothing references, so storage is reclaimed by guesswork** — The read surfaces it makes possible: a usage count per row on shio_assets, verify's asset-unused, shio assets prune --dry-run, and the media card's badge. → §LXX.6
 - 📋 **SH1035** (deps: SH1032 ✅) **replacing an asset's bytes exists in the API and not in the console, and the File widget dead-ends when unconfigured** — The console's only route to new bytes is delete and re-upload, which mints a new id and breaks every field pointing at the old one. → §LXX.7
 - 📋 **SH1099** (deps: —) **on PostgreSQL no SQL predicate over post data matches: search finds no body text, each post leaks a large object** — Hibernate writes the @Lob data column through pgjdbc as a large object, so the column holds an OID and only the entity read resolves it. → §LXX.8
 - 📋 **SH1100** (deps: —) **two reference tables nothing writes are still backfilled and asserted, and readers find them first** — ShReference joins ShObject and a post is not one, so no writer can use it, yet it sits in TENANT_TABLES and in two schema ITs. → §LXX.9
@@ -163,14 +162,6 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
-
-## Done when — SH1034
-
-- **Every surface can answer usage, in both directions, without a scan** Four reads,
-  each on the index the part that landed built: `shio_assets` carries a usage count per
-  row, `shio verify` reports `asset-unused`, `shio assets prune --dry-run` names the
-  bytes it would free, and the media card shows the badge. Checked by a conformance run
-  against a live instance, not by unit assertions.
 
 ## Non-goals (do NOT add as tasks)
 

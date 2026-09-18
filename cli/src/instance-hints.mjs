@@ -59,6 +59,10 @@ export const NOTES_COMMANDS = new Set([
   // SH1022 — it is the listing an agent opens a session with, against the instance the notes are
   // about, and "which pages are drafts" is exactly the question a standing note usually qualifies.
   "find",
+  // SH1034 — it reads the same instance with console credentials and its output invites a
+  // DELETION, which is the one place a standing note most needs to be in front of the reader:
+  // "keep the press kit even though nothing links it yet" is exactly what a curator writes down.
+  "assets",
 ]);
 
 /**

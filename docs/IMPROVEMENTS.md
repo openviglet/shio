@@ -2060,33 +2060,6 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.6 Usage in both directions, on the index BE5's numbers chose (SH1034)
-
-`verify` has orphan rules for posts and folders and none for assets, and the projection
-side-steps the question, so it stays open where storage is consumed.
-
-**BE5's numbers chose the index, and not on the read alone.** The read is linear in the
-table and paid twice per dialog — 1,002, 10,002 and 50,002 rows examined per scan. The
-maintenance is flat: one delete plus one insert per reference, identical at fifty
-thousand rows and at zero, bounded by the post's own fields. Two curves, not two
-numbers. A cached count makes one dialog cheap and leaves "which assets does nothing
-reference" at one scan per asset.
-
-So `sh_object_reference`, with from-post, from-state, to-object and field name,
-maintained by the unified write service walking each post's data against its type's File
-and content-select fields — more accurate than a substring, because it knows which field
-holds the reference. Usage becomes an indexed join (4 rows examined against 50,002,
-prototyped) and unused a left join that is null, with the LIKE as the fallback for an
-unbackfilled tenant.
-
-Two findings bind this. That fallback is **broken on PostgreSQL** until SH1099 lands,
-and `pg_trgm` would serve the LIKE there alone — measured, declined: one cheap engine of
-three is not a design.
-
-Either way: `shio_assets` reports a usage count per row, `shio verify` gains
-`asset-unused`, `shio assets prune --dry-run` names what it would free, and the media
-card shows a usage badge. A schema change runs with the ITs and Docker started.
-
 ### LXX.7 Replace, with the diff that makes it safe (SH1035)
 
 The replace endpoint shipped with a CLI caller through push --content, and the console's

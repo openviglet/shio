@@ -547,7 +547,26 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
           <p className="truncate text-xs font-medium" title={item.fileName ?? item.id}>
             {item.fileName ?? item.id}
           </p>
-          <p className="text-[10px] text-muted-foreground">{formatBytes(item.size)}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-[10px] text-muted-foreground">{formatBytes(item.size)}</p>
+            {/*
+              SH1034 — how many posts use this asset, on the card rather than only in the dialog.
+              The dialog's badge has always been there and it answers one asset at a time, which
+              is the wrong shape for "which of these can I clear out". Rendered only when the
+              server sent a count (null means nobody asked), and `0` is the value worth showing:
+              it is what a prune acts on, so it gets the `outline` treatment rather than being
+              hidden as an absence.
+            */}
+            {typeof item.usageCount === "number" && (
+              <Badge variant={item.usageCount === 0 ? "outline" : "secondary"}
+                className="px-1 py-0 text-[10px] leading-4"
+                title={item.usageCount === 0
+                  ? t("staticFile.usageNoneHint")
+                  : t("staticFile.usageHint", { count: item.usageCount })}>
+                {t("staticFile.usageBadge", { count: item.usageCount })}
+              </Badge>
+            )}
+          </div>
         </div>
       </button>
       {/*

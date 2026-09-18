@@ -2177,3 +2177,23 @@ arrival rather than the request aborted.
 product group, so destinations stay where they were and actions and content share a group with
 actions first. The ordering is intact — the component preserves what the product sends. What is
 missing is the headings, and that is a package change.
+
+## The media card says how many pages use the asset (SH1034)
+
+`static-file.list.page.tsx` renders `usageCount` as a badge beside the file size. The detail dialog
+has shown a count since SH62 and it answers one asset at a time, which is the wrong shape for the
+question a curator opens this page with: *which of these can I clear out*. On the card the answer is
+scannable.
+
+Three things about it that are easy to get wrong:
+
+- **`null` and `0` are different answers.** `null` means the response did not carry a count — an
+  older instance, or a call that did not ask — and the badge is not rendered at all. `0` means
+  nothing references the asset, and it *is* rendered, with `outline` rather than `secondary`,
+  because zero is the value a deletion acts on. Hiding it as an absence would make the interesting
+  case the invisible one.
+- **The count comes from the page, not from the card.** The server stamps it on the rows it returns,
+  in one indexed query; a card that fetched its own count would be one request per tile.
+- **The pluralised strings are `usageBadge`/`usageBadge_zero` plus the two `usageHint` forms**, in
+  `en` and `pt`. The zero case has its own word ("unused") rather than "used 0": a badge reading
+  `used 0` is a sentence the eye has to finish before it means anything.

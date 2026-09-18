@@ -75,7 +75,10 @@ class ShAssetsToolTest {
         // branches asserted here never reach it: `usage` is off unless asked for, and the no-type
         // branch returns before any row exists. A mock that is never called is the honest fixture.
         return new ShAssetsTool(reads, new ShUploadPolicy(new ShUploadPolicyProperties()),
-                mock(com.viglet.shio.api.staticfile.ShStaticFileService.class));
+                mock(com.viglet.shio.api.staticfile.ShStaticFileService.class),
+                // SH1034 — the reference index, mocked for the same reason: the counts are read
+                // only when `usage` is asked for, and neither branch here asks.
+                mock(com.viglet.shio.api.reference.ShObjectReferenceService.class));
     }
 
     @Test

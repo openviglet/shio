@@ -55,6 +55,21 @@ public interface ShObjectReferenceRepository extends JpaRepository<ShObjectRefer
     @Query("select distinct r.toObjectId from ShObjectReference r where r.toObjectId in :ids")
     List<String> findReferencedAmong(@Param("ids") Collection<String> ids);
 
+    /**
+     * How many distinct posts point at each of the objects named.
+     *
+     * <p>{@code count(distinct r.fromPostId)} rather than {@code count(*)}: a post that references
+     * one asset from two fields, or from both its draft and its published row, is <b>one</b> place
+     * a curator has to look. Counting rows would report an asset as used three times by one page,
+     * and a badge saying 3 over a list of 1 is the kind of disagreement P9 exists to prevent.</p>
+     *
+     * <p>One query for a whole page of a listing, which is the property that keeps this off
+     * SH1033's curve: a count per row would be N queries where the scan was one.</p>
+     */
+    @Query("select r.toObjectId, count(distinct r.fromPostId) from ShObjectReference r "
+            + "where r.toObjectId in :ids group by r.toObjectId")
+    List<Object[]> countReferrersAmong(@Param("ids") Collection<String> ids);
+
     /** What the maintenance step clears before writing a row's current edges. */
     @Modifying
     void deleteByFromPostIdAndFromState(String fromPostId, ShPostState fromState);

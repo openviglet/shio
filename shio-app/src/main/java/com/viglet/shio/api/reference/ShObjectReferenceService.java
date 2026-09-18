@@ -10,7 +10,9 @@ package com.viglet.shio.api.reference;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -139,6 +141,32 @@ public class ShObjectReferenceService {
         return objectIds == null || objectIds.isEmpty()
                 ? List.of()
                 : shObjectReferenceRepository.findReferencedAmong(objectIds);
+    }
+
+    /**
+     * How many posts point at each of the objects named — <b>zero included</b>.
+     *
+     * <p>Every id asked about appears in the answer, because the caller's question is "how many"
+     * and an absent key would make them write the same {@code getOrDefault} at each call site.
+     * Zero is the interesting value here: it is what a prune and {@code asset-unused} act on.</p>
+     *
+     * <p>One query for the whole set. A count per row would put this back on SH1033's curve with
+     * extra steps — N indexed reads where the point of the index is that the answer costs what the
+     * answer is.</p>
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Long> referrerCounts(Collection<String> objectIds) {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        if (objectIds == null || objectIds.isEmpty()) {
+            return counts;
+        }
+        for (String id : objectIds) {
+            counts.put(id, 0L);
+        }
+        for (Object[] row : shObjectReferenceRepository.countReferrersAmong(objectIds)) {
+            counts.put((String) row[0], ((Number) row[1]).longValue());
+        }
+        return counts;
     }
 
     /**

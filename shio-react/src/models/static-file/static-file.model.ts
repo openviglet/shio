@@ -21,6 +21,13 @@ export type ShStaticFileItem = {
   alt: string | null
   caption: string | null
   tags: string[]
+  /**
+   * How many posts reference this asset (SH1034), or null when the response did not say.
+   *
+   * Null and 0 are different answers and the card renders them differently: 0 means nothing
+   * references it, which is what a prune acts on, while null means this listing did not ask.
+   */
+  usageCount?: number | null
 }
 
 /** Editable metadata payload for `PUT /v2/staticfile/{id}/meta` (SH62). */

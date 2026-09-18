@@ -3620,6 +3620,28 @@ runs before content goes live.
 It reads the stamped content type first (SH1030) and the file extension second, so it costs no
 syscall per asset — the difference between a check that ships on and one nobody turns on.
 
+## `asset-unused` — the orphan rule assets did not have (SH1034)
+
+`verify`'s `content` check warns about a `File` post nothing references. It is late because it was
+unaffordable: "does anything reference this asset" was `data like '%<id>%'` over every post, so
+asking it of a library meant one table scan per asset — SH1033 measured the single form at 50,002
+rows examined on a fifty-thousand-post instance. On `sh_object_reference` it is one indexed query
+for the whole set, which is the only reason the rule exists.
+
+**The count is instance-wide, and a scoped run must not narrow it.** This is SH143's rule in the
+case that would break it worst. A shared logo referenced from another site is the normal case, and
+a count computed inside the scanned site would report it as unused — with "delete it" as the fix.
+The index has no site dimension, so the count always answers for the instance; only *which* assets
+are asked about is scoped.
+
+**A warning, not an error**, and `empty-folder`'s reasoning exactly: nothing is broken, the bytes
+are served, the site renders. What an unreferenced asset costs is storage, and a curator may be
+holding it deliberately — which is why the fix points at `shio assets prune --dry-run` (the sum,
+computed, deleting nothing) before it mentions a `post.delete`.
+
+**One row per logical asset.** A draft and a published row of one upload are one file on disk;
+reporting both would say "two unused assets" about one.
+
 ## Describing an asset, and asking where it is used (SH1032)
 
 Two capabilities lived on `/api/v2/staticfile/**` alone — the metadata a curator types into the

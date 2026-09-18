@@ -138,6 +138,7 @@ const COMMANDS = {
   dev: () => import("./commands/dev.mjs"),
   deploy: () => import("./commands/deploy.mjs"),
   doctor: () => import("./commands/doctor.mjs"),
+  assets: () => import("./commands/assets.mjs"),
 };
 
 const HELP = helpText("shio");

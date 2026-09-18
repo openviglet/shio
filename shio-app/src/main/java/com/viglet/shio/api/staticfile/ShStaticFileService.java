@@ -719,8 +719,26 @@ public class ShStaticFileService {
 
         int from = Math.min(index * length, matched.size());
         int to = Math.min(from + length, matched.size());
-        return new ShStaticFileListing(matched.subList(from, to), index, length, matched.size(),
-                facets);
+        return new ShStaticFileListing(withUsage(matched.subList(from, to)), index, length,
+                matched.size(), facets);
+    }
+
+    /**
+     * Stamps each row with how many posts reference it (SH1034).
+     *
+     * <p><b>On the page's rows, in one query.</b> Before the index this was unanswerable per row at
+     * any acceptable price — SH1033 measured the per-asset form at a table scan each — and the
+     * mistake available now is cheaper but the same shape: a count per row is N indexed reads where
+     * the whole point of the index is that the answer costs what the answer is. So the ids go in
+     * together, once, for the ten rows being drawn rather than the library they came from.</p>
+     */
+    private List<ShStaticFileItem> withUsage(List<ShStaticFileItem> rows) {
+        if (rows.isEmpty()) {
+            return rows;
+        }
+        Map<String, Long> counts = shObjectReferenceService
+                .referrerCounts(rows.stream().map(ShStaticFileItem::id).toList());
+        return rows.stream().map(row -> row.withUsageCount(counts.get(row.id()))).toList();
     }
 
     private List<ShStaticFileItem> matching(String folderId, String siteId, String category,

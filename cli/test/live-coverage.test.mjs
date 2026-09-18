@@ -278,7 +278,14 @@ const UNEXERCISED = {
     // `versions` and `rollback` arrive with SH987. Both are unwritten rather than out of scope:
     // they need a live instance with a published post behind them, which is exactly the fixture a
     // live scenario has and a MockMvc proof invents.
-    "annotations", "apply", "audit", "build", "deploy", "dev", "impact", "import", "judge",
+    // `assets` arrives with SH1034 and is unwritten rather than out of scope, for a reason worth
+    // naming: its whole answer is a count that the instance derives at write time, so a live
+    // scenario is the only place it can be wrong — upload an asset, reference it from a page,
+    // assert it is not offered for pruning, unreference it, assert it is. A scripted fetch proves
+    // the arithmetic and the zero-versus-absent refusal (assets-prune.test.mjs) and cannot prove
+    // that the number the server sent was true.
+    "annotations", "apply", "assets", "audit", "build", "deploy", "dev", "impact", "import",
+    "judge",
     // `schedule` arrives with SH991, and for `versions`' reason: it needs a live instance holding a
     // scheduled post, which a live scenario has and a scripted fetch invents.
     "mcp", "publish", "remember", "report", "rollback", "schedule", "snapshot", "surfaces", "types",

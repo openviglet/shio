@@ -295,6 +295,16 @@ persists without naming `ShObjectReferenceService`. Two rules that are not obvio
   *name*, so taking every `File` field's value indexed each asset as pointing at its own name, and
   broke the write outright on a 38-character name against a 36-character column.
 
+**What the count then reaches (SH1034's second half).** The listing stamps `usageCount` on the rows
+of the page it returns — one indexed query for those rows, never one per row, and never over the
+whole library to draw ten of it. `null` and `0` are different answers and every reader honours the
+difference: `null` means this response did not ask, `0` means nothing references the asset, and `0`
+is the value a deletion acts on. Four surfaces read it: the media card's badge, `verify`'s
+`asset-unused` warning, `shio assets prune` (which sums the bytes and deletes nothing), and
+`shio_assets --usage`, where the counts for a page are batched so an unused asset costs no further
+query. A CLI meeting an instance that sends no `usageCount` **refuses** rather than reporting every
+asset as unused — the reading that would otherwise invite a mass deletion.
+
 The instrument is worth knowing about independently: neither `getEntityLoadCount()` nor SH634's
 `getExecutionRowCount()` can see a scan, because both count rows a query **returns** and a scan's
 whole defect is that its answer is small. The benchmark reads H2's own `EXPLAIN ANALYZE`

@@ -45,6 +45,7 @@ Commands:
   types          Generate a TypeScript .d.ts from the live post-types (CDA token)
   dev            Types, dev server, model watch (--content syncs shio/content/**)
   deploy         push (apply) then types
+  assets         assets prune: the assets nothing references, and what they would free
   doctor         Instance, build stamp, drift, sites, content tree
 
 Post-types as code:

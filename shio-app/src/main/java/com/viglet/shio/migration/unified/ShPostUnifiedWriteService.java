@@ -973,10 +973,21 @@ public class ShPostUnifiedWriteService {
         if (shPostUnifiedRepository.restoreFromTrash(postId, tenantId()) == 0) {
             return false;
         }
-        // SH1034 — restoring is the inverse of the trash's reindex, and it is a bulk UPDATE
-        // rather than a save, so nothing else here would put the edges back. Every row, because
-        // a post is restored in both states at once.
-        shPostUnifiedRepository.findById(postId).forEach(shObjectReferenceService::reindex);
+        // SH1034 — restoring is the inverse of the trash's reindex, and it is a bulk UPDATE rather
+        // than a save, so nothing else here would put the edges back. Every row, because a post is
+        // restored in both states at once.
+        //
+        // `setDeletedDate(null)` before the reindex, and it is not belt-and-braces: the native
+        // UPDATE above bypasses the persistence context, so a row already loaded in this
+        // transaction still reads as trashed — and `reindex` writes no edges for a trashed row, on
+        // purpose. Without this the restore silently left the asset unreferenced, which is the
+        // defect `asset-unused` would then offer to act on. Aligning the entity with what the
+        // database now holds is the honest fix; clearing the whole context would reach every
+        // caller of this method, including the folder restore that drives it in a loop.
+        shPostUnifiedRepository.findById(postId).forEach(row -> {
+            row.setDeletedDate(null);
+            shObjectReferenceService.reindex(row);
+        });
         shPostUnifiedRepository.findById(postId).stream().findFirst().ifPresent(p ->
                 shContentAuditService.record(ShContentAction.RESTORE, postId,
                         siteIdOf(p), p.getTitle(), actor));

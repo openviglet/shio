@@ -39,6 +39,7 @@ import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.api.agent.dto.ShAgentResolved;
 import com.viglet.shio.api.agent.memory.ShAgentMemoryService;
+import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding;
 import com.viglet.shio.api.error.ShProblem;
@@ -187,6 +188,15 @@ public class ShAgentVerifyService {
     private final ShAgentDeliveryProbe deliveryProbe;
     /** SH773 — the shipped model, to compare this instance's copy of it against. */
     private final ShVocabularyPostTypes vocabularyPostTypes;
+
+    /**
+     * SH1034 — the reverse index, which is what makes {@code asset-unused} affordable.
+     *
+     * <p>The question "does anything reference this asset" was a table scan per asset before it
+     * (SH1033 measured 50,002 rows examined at fifty thousand posts), so a rule asking it of a
+     * whole library was one nobody could run. It is now one indexed query for the whole set.</p>
+     */
+    private final ShObjectReferenceService shObjectReferenceService;
     private final ShAgentMemoryService shAgentMemoryService;
     private final ShTemplateFieldLint templateFieldLint;
     private final ShTemplateGraph templateGraph;
@@ -241,7 +251,9 @@ public class ShAgentVerifyService {
                                 ShPageRenderService pageRenderService,
                                 ShSiteAssets siteAssets,
                                 ShVocabularyPostTypes vocabularyPostTypes,
+                                ShObjectReferenceService shObjectReferenceService,
                                 PlatformTransactionManager transactionManager) {
+        this.shObjectReferenceService = shObjectReferenceService;
         RuleBasedTransactionAttribute definition = new RuleBasedTransactionAttribute();
         definition.setReadOnly(true);
         definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
@@ -782,6 +794,7 @@ public class ShAgentVerifyService {
         headConventions(check, scan, findings);
         siteScripts(check, scan, findings);
         vocabularyDrift(check, scan, findings);
+        unusedAssets(check, scan, findings);
     }
 
     /**
@@ -1832,6 +1845,60 @@ public class ShAgentVerifyService {
                                 + "\"looks done but isn't\"."));
             }
         }
+    }
+
+    /**
+     * SH1034 — assets nothing references, which no rule could ask before the index.
+     *
+     * <h2>Why this is here and not in the inventory it belongs beside</h2>
+     *
+     * <p>{@code verify} has had {@code orphan-post} and {@code orphan-folder} since SH99 and
+     * nothing for assets, and that was a cost problem rather than an oversight: "does anything
+     * reference this file" was {@code data like '%id%'} over every post, so asking it of a library
+     * meant one table scan per asset. SH1033 measured the single form at 50,002 rows examined on a
+     * fifty-thousand-post instance; a hundred assets was a hundred of those. It is now one indexed
+     * query for the whole set.</p>
+     *
+     * <h2>The count is instance-wide on purpose, and a scoped run must not narrow it</h2>
+     *
+     * <p>This is SH143's rule in the case that would break it worst. An asset in one site is
+     * routinely referenced from another — a shared logo is the normal case, not the exotic one — so
+     * a count computed inside the scanned site would report a referenced asset as unused, and the
+     * fix offered is <b>delete it</b>. The reference index has no site dimension, so the count
+     * answers for the instance however the run was scoped; only which assets get <em>asked</em>
+     * about is scoped.</p>
+     *
+     * <h2>A warning, not an error</h2>
+     *
+     * <p>Nothing is broken: the bytes are served, the page renders, the site is correct. What an
+     * unreferenced asset costs is storage, and a curator may be holding it on purpose — which is
+     * exactly {@code empty-folder}'s shape, and it is a warning too.</p>
+     */
+    private void unusedAssets(String check, Scan scan, List<Finding> findings) {
+        Map<String, ShPostUnified> assets = new LinkedHashMap<>();
+        for (ShPostUnified post : scan.posts()) {
+            if (post.getShPostType() != null
+                    && ShSystemPostType.FILE.equals(post.getShPostType().getName())) {
+                // One entry per logical asset: the draft and published rows of one upload are one
+                // file on disk, and reporting both would say "two unused assets" about one.
+                assets.putIfAbsent(post.getId(), post);
+            }
+        }
+        if (assets.isEmpty()) {
+            return;
+        }
+        Map<String, Long> counts = shObjectReferenceService.referrerCounts(assets.keySet());
+        assets.forEach((id, asset) -> {
+            if (counts.getOrDefault(id, 0L) > 0) {
+                return;
+            }
+            findings.add(Finding.warning(check, "asset-unused", "id:" + id, null,
+                    "No post references '" + (asset.getTitle() == null ? id : asset.getTitle())
+                            + "', so its bytes are stored and never delivered.",
+                    "Check `shio assets prune --dry-run` for what reclaiming it would free, then "
+                            + "delete it with a post.delete op — or point a File or Content Select "
+                            + "field at it if it was uploaded for a page nobody finished."));
+        });
     }
 
     // --- SH100: routes ------------------------------------------------------

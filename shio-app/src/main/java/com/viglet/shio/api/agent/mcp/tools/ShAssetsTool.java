@@ -18,6 +18,7 @@ import com.viglet.shio.api.agent.ShTerse;
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
+import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.api.staticfile.ShAssetResponseHeaders;
 import com.viglet.shio.api.staticfile.ShStaticFileService;
 import com.viglet.shio.api.staticfile.ShStaticFileUsage;
@@ -51,12 +52,16 @@ public class ShAssetsTool implements ShMcpTool {
     private final ShUploadPolicy shUploadPolicy;
     /** SH1032 — the console's own "used in" service, composed rather than re-queried (P10). */
     private final ShStaticFileService shStaticFileService;
+    /** SH1034 — the reverse index, read once for a whole page rather than once per row. */
+    private final ShObjectReferenceService shObjectReferenceService;
 
     public ShAssetsTool(ShAgentReadService shAgentReadService, ShUploadPolicy shUploadPolicy,
-                        ShStaticFileService shStaticFileService) {
+                        ShStaticFileService shStaticFileService,
+                        ShObjectReferenceService shObjectReferenceService) {
         this.shAgentReadService = shAgentReadService;
         this.shUploadPolicy = shUploadPolicy;
         this.shStaticFileService = shStaticFileService;
+        this.shObjectReferenceService = shObjectReferenceService;
     }
 
     @Override
@@ -97,8 +102,11 @@ public class ShAssetsTool implements ShMcpTool {
                 // caller is already listing. A second tool would be paid by every session on every
                 // turn (P3) for a question this one is already halfway through answering.
                 //
-                // OFF BY DEFAULT because it is a query per row, and the default listing is the
-                // browse. `used=0` is written as a flag's absence, so the common row costs nothing.
+                // OFF BY DEFAULT because it costs tokens on every row, and the default listing is
+                // the browse. SH1034 made it cheap on the SERVER — the counts for a whole page are
+                // one indexed query, and an unused asset needs nothing further — but a `used` line
+                // per row is still payload, which is the reason this stays opt-in rather than
+                // becoming free because the query got faster.
                 "usage", ShMcpTool.bool("Also say where each asset is used.")),
                 List.of());
     }
@@ -144,6 +152,14 @@ public class ShAssetsTool implements ShMcpTool {
                 // uploaded" is a fact about the asset an agent is choosing between others.
                 List.of(ShSystemPostTypeAttr.FILE, ShSystemPostTypeAttr.SANITIZED), true);
         boolean withUsage = ShMcpArgs.bool(arguments, "usage");
+        // SH1034 — the counts for the whole page in ONE indexed query, so the common question
+        // ("which of these is unused") costs one read rather than one per row. Before the index
+        // each row was a table scan; making them indexed reads would have been N-times-cheaper and
+        // still N, which is the shape SH1033 exists to stop.
+        Map<String, Long> usageCounts = withUsage
+                ? shObjectReferenceService.referrerCounts(
+                        docs.stream().map(ShAgentDoc::id).toList())
+                : Map.of();
         for (ShAgentDoc doc : docs) {
             String fileName = fileName(doc);
             boolean sanitized = flagOf(doc, ShSystemPostTypeAttr.SANITIZED);
@@ -157,7 +173,7 @@ public class ShAssetsTool implements ShMcpTool {
                     .flag("unsafe", isUnsafe(fileName, sanitized))
                     .build());
             if (withUsage) {
-                out.append(usageOf(doc.id()));
+                out.append(usageOf(doc.id(), usageCounts.getOrDefault(doc.id(), 0L)));
             }
         }
         return out.toString();
@@ -181,11 +197,14 @@ public class ShAssetsTool implements ShMcpTool {
      * flattening it. An asset used only by a draft is not unused: deleting it breaks a page nobody
      * has published yet, which is the page most likely to be mid-edit.</p>
      */
-    private String usageOf(String assetId) {
-        List<ShStaticFileUsage> usage = shStaticFileService.listUsage(assetId);
-        StringBuilder out = new StringBuilder(
-                ShTerse.line("used").word(usage.size()).build());
-        for (ShStaticFileUsage row : usage) {
+    private String usageOf(String assetId, long count) {
+        StringBuilder out = new StringBuilder(ShTerse.line("used").word(count).build());
+        if (count == 0) {
+            // SH1034 — the count came from the page's one batched query, so an unused asset costs
+            // nothing further. This is the answer the caller most often wants and it is now free.
+            return out.toString();
+        }
+        for (ShStaticFileUsage row : shStaticFileService.listUsage(assetId)) {
             out.append(ShTerse.line("by")
                     .word(row.postId())
                     .attr("title", row.title())
