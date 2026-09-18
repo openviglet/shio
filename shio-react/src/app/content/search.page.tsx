@@ -14,38 +14,47 @@ import { useEffect, useState, type FormEvent } from "react"
 import { useListState } from "@/hooks/use-list-state"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import { ShSearchService } from "@/services/search/search.service"
+import { ShSearchService, type ShConsoleSearchRow } from "@/services/search/search.service"
 import { ShSiteService } from "@/services/site/site.service"
-import type { ShCdaPostSummary } from "@/models/search/search.model"
 import type { ShSite } from "@/models/site/site"
 
 const searchService = new ShSearchService()
 const siteService = new ShSiteService()
 
 const ALL_SITES = "__all__"
+const ANY_STATE = "__any__"
 
 /**
- * SH1023 — what this page's URL says, and the two words it says it in.
+ * SH1023/SH1027 — what this page's URL says, in the words the server says them in.
  *
- * `site` carries the site's **name**, not its id. The id is what the CDA search takes and the name
- * is what every other surface spells — `/agent/find?site=Blog`, `shio find --site Blog` — and the
- * whole value of putting the state in the URL is that the link a curator pastes into a chat is a
- * request an agent can run. A uuid in that position would make the two different questions.
+ * `site` carries the site's **name**, not its id, and every other key here is `ShContentQuery`'s.
+ * That is the whole value of putting the state in the URL: the link a curator pastes into a chat
+ * is a request an agent can run — `/agent/find?site=Blog&state=draft` and
+ * `shio find --site Blog --state draft` are the same question. A uuid in that position would make
+ * them two.
+ *
+ * `state` defaults to empty, which the server reads as **both**. That default is SH1027 in one
+ * word: this page called the delivery API before, which is published-only, so a curator could not
+ * find the drafts an agent had just written.
  */
-const SEARCH_LIST = { q: "", site: "" }
+const SEARCH_LIST = { q: "", site: "", state: "", folder: "", subtree: "" }
 
 export default function SearchPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [sites, setSites] = useState<ShSite[]>([])
-  const [results, setResults] = useState<ShCdaPostSummary[]>([])
+  const [results, setResults] = useState<ShConsoleSearchRow[]>([])
   const [total, setTotal] = useState(0)
+  /** SH1027 — how many matched and were removed because this reader may not open them. */
+  const [withheld, setWithheld] = useState(0)
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
-  const list = useListState(SEARCH_LIST, { text: ["q"] })
+  const list = useListState(SEARCH_LIST, { text: ["q", "folder"] })
   const q = list.value.q
   const siteName = list.value.site
-  const siteId = sites.find((s) => s.name === siteName)?.id ?? ""
+  const scope = list.value.folder
+    ? (list.value.subtree === "true" ? "subtree" : "folder")
+    : "site"
 
   useEffect(() => {
     siteService.query().then(setSites).catch(() => setSites([]))
@@ -54,32 +63,43 @@ export default function SearchPage() {
   /**
    * The search runs from the URL, not from the button.
    *
-   * <p>That inversion is the whole feature: arriving at `/content/search?q=pricing&site=Blog` runs
-   * the search and shows its rows, which is what makes the address reproduce the view. The form's
-   * submit commits the draft — one keystroke's worth early — and the effect below does the rest.
-   * It waits for the sites to load when one is named, because the name has to become an id before
-   * the CDA can be asked and an early run would search every site instead of the one asked for.</p>
+   * <p>That inversion is the whole feature (SH1023): arriving at
+   * `/content/search?q=pricing&site=Blog&state=draft` runs the search and shows its rows, which is
+   * what makes the address reproduce the view. The form's submit commits the draft — one
+   * keystroke's worth early — and this effect does the rest.</p>
+   *
+   * <p>SH1027 — it sends the filters as the server's own words, so nothing is translated on the
+   * way. There is no site-name-to-id step any more either: `site` goes as a name, which is what
+   * `/agent/find` takes.</p>
    */
   useEffect(() => {
     if (!q.trim()) {
       setResults([])
       setTotal(0)
+      setWithheld(0)
       setSearched(false)
       return
     }
-    if (siteName && !sites.length) return
     let current = true
     setLoading(true)
-    searchService.search(q.trim(), siteId || undefined)
-      .then((listing) => {
+    searchService.search({
+      q: q.trim(),
+      site: siteName,
+      state: list.value.state,
+      folder: list.value.folder,
+      subtree: list.value.subtree,
+    })
+      .then((found) => {
         if (!current) return
-        setResults(listing.posts)
-        setTotal(listing.totalPosts)
+        setResults(found.results)
+        setTotal(found.count)
+        setWithheld(found.withheld)
       })
       .catch(() => {
         if (!current) return
         setResults([])
         setTotal(0)
+        setWithheld(0)
       })
       .finally(() => {
         if (!current) return
@@ -87,7 +107,7 @@ export default function SearchPage() {
         setSearched(true)
       })
     return () => { current = false }
-  }, [q, siteName, siteId, sites.length])
+  }, [q, siteName, list.value.state, list.value.folder, list.value.subtree])
 
   const runSearch = (e?: FormEvent) => {
     e?.preventDefault()
@@ -125,11 +145,56 @@ export default function SearchPage() {
               ))}
             </SelectContent>
           </Select>
+          {/*
+            SH1027 — `state` empty means BOTH, and that default is the task in one word: this page
+            called the delivery API before, which is published-only, so a curator could not find
+            the drafts an agent had just written.
+          */}
+          <Select value={list.value.state || ANY_STATE}
+            onValueChange={(value) => list.set("state", value === ANY_STATE ? "" : value)}>
+            <SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY_STATE}>{t("content.searchAnyState")}</SelectItem>
+              <SelectItem value="draft">{t("content.filterDraft")}</SelectItem>
+              <SelectItem value="published">{t("content.filterPublished")}</SelectItem>
+            </SelectContent>
+          </Select>
+          {/*
+            The scope, as the three questions a curator actually asks — spelled in the two words
+            the server takes. "This folder and below" is the agent's own default for `folder`, and
+            it is the one the CDA's filter could not answer at all: its scope was direct children.
+          */}
+          <Select value={scope} onValueChange={(value) => list.patch(
+            value === "site"
+              ? { folder: "", subtree: "" }
+              : { subtree: value === "subtree" ? "true" : "" })}>
+            <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="site">{t("content.scopeSite")}</SelectItem>
+              <SelectItem value="folder" disabled={!list.value.folder}>
+                {t("content.scopeFolder")}
+              </SelectItem>
+              <SelectItem value="subtree" disabled={!list.value.folder}>
+                {t("content.scopeSubtree")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <Button type="submit" disabled={loading || !list.draft.q.trim()}>
             <SearchIcon className="mr-2 h-4 w-4" />
             {t("common.search")}
           </Button>
         </form>
+
+        {/*
+          SH1027 — the folder this search is scoped to, when it is. It arrives in the URL: the
+          content browser links here with its own path already in it, which is what makes the two
+          scoped options reachable at all on a page that has no folder of its own.
+        */}
+        {list.value.folder && (
+          <p className="text-xs text-muted-foreground -mt-4 mb-6 font-mono">
+            {list.value.folder}
+          </p>
+        )}
 
         {/*
           SH903 — three states, not two, and the third is the one the page opens in.
@@ -162,6 +227,15 @@ export default function SearchPage() {
           <Panel contentClassName="p-0">
             <div className="px-4 py-2 text-sm text-muted-foreground border-b">
               {t("content.searchResultCount", { count: total })}
+              {/*
+                SH1027 — the number, not silence. A filtered listing that says nothing is
+                indistinguishable from a search that found less, and the reader's next move is to
+                conclude the content is not there — which sends them to write the page again
+                rather than to ask somebody for access.
+              */}
+              {withheld > 0 && (
+                <span className="ml-2">{t("content.searchWithheld", { count: withheld })}</span>
+              )}
             </div>
             <Table>
               <TableHeader>
@@ -172,14 +246,24 @@ export default function SearchPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.map((post) => (
-                  <TableRow key={post.id} className="cursor-pointer"
-                    onClick={() => navigate(`${ROUTES.CONSOLE}/content/post/${post.id}`)}>
-                    <TableCell className="font-medium">{post.title || "(untitled)"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{post.postType}</Badge>
+                {results.map((row) => (
+                  <TableRow key={row.address} className="cursor-pointer"
+                    onClick={() => row.id && navigate(`${ROUTES.CONSOLE}/content/post/${row.id}`)}>
+                    <TableCell className="font-medium">
+                      {row.title || "(untitled)"}
+                      {/* The state, because a draft and what is live are now both in here. */}
+                      {row.state === "DRAFT" && (
+                        <Badge variant="secondary" className="ml-2 text-[10px]">
+                          {t("content.filterDraft")}
+                        </Badge>
+                      )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-xs">{post.furl}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{row.type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-xs">
+                      {row.address}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

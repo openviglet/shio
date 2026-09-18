@@ -202,7 +202,28 @@ public final class ShControllerScan {
      *                   parser for a value already parsed — which is the defect it exists to
      *                   catch, arrived at from the other side.</p>
      */
-    public record Mapping(String method, String parameters, String body) {
+    public record Mapping(String method, String parameters, String body, List<String> paths) {
+
+        /**
+         * The whole paths this mapping serves, under its controller's own root (SH1027).
+         *
+         * <p>A mapping with no path of its own serves the root itself, which is a path too —
+         * {@code @GetMapping} bare on a controller rooted at {@code /api/v2/site} is the site
+         * list, and a reader that treated "no declared path" as "no path" would lose it.</p>
+         */
+        public List<String> under(String root) {
+            String base = root == null ? "" : root;
+            if (paths.isEmpty()) {
+                return List.of(base);
+            }
+            return paths.stream().map(path -> (base + path).replace("//", "/")).toList();
+        }
+    }
+
+    /** The class-level {@code @RequestMapping} literal of one source, or {@code ""}. */
+    public static String root(String body) {
+        String root = rootOf(body);
+        return root == null ? "" : root;
     }
 
     /** A Java identifier: the last one before a method's parenthesis is its name. */
@@ -224,7 +245,11 @@ public final class ShControllerScan {
      * @param verbs the mapping verbs as an alternation, e.g. {@code "Get"} or {@code "Post|Put"}
      */
     public static List<Mapping> mappings(String body, String verbs) {
-        Matcher mapping = Pattern.compile("@(" + verbs + ")Mapping\\b").matcher(body);
+        // The arguments group carries the declared path (SH1027). Before that this only had to
+        // find the annotation, so it matched the name alone — and the group is optional, because
+        // `@GetMapping` with no arguments is the controller's root and is a path too.
+        Matcher mapping = Pattern.compile("@(" + verbs + ")Mapping\\b\\s*(?:\\(([^)]*)\\))?")
+                .matcher(body);
         List<Mapping> found = new ArrayList<>();
         while (mapping.find()) {
             int at = pastAnnotations(body, mapping.end());
@@ -240,7 +265,8 @@ public final class ShControllerScan {
             int closed = balanced(body, opened);
             found.add(new Mapping(method,
                     closed < 0 ? "" : body.substring(opened + 1, closed - 1),
-                    closed < 0 ? "" : methodBody(body, closed)));
+                    closed < 0 ? "" : methodBody(body, closed),
+                    paths(mapping.group(2), body)));
         }
         return List.copyOf(found);
     }

@@ -2122,3 +2122,20 @@ toolbar is `totalFolders`, not the page, or it says fifty for every folder over 
 
 None of the three fails loudly, which is why `test/folder-paging.test.mjs` asserts them rather
 than trusting anybody to remember.
+
+## The search page finds drafts, and says what it is not showing (SH1027)
+
+`/bento/content/search` calls `/v2/content/search` now, not the delivery API. Three controls, all
+in the URL (SH1023) and all spelled as the server spells them: the site by **name**, `state`
+(empty meaning both — the default that makes a reviewer able to find an agent's drafts), and a
+scope selector that is the two words `folder` and `subtree` wearing three labels — whole site,
+this folder, this folder and below.
+
+The page has no folder of its own, so the scoped options arrive from the content browser: its
+toolbar carries a *Search in this folder* action that hands the search page a `folder:` **address**
+built from the breadcrumb. A path rather than an id, because the vocabulary addresses content by
+path (SH79) and an id there would be a fourth spelling of where something is.
+
+Rows show their state, because a draft and what is live are now both in the answer, and the count
+line carries `withheld` when the reader's ACL removed anything — "and 6 you cannot open" rather
+than a shorter list with no explanation.

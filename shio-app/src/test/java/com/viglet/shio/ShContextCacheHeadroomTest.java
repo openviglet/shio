@@ -192,8 +192,13 @@ class ShContextCacheHeadroomTest {
      * context the entity-load count would include every neighbour's reads, and the ratio the whole
      * task rests on would be a statement about suite order. ShBenchmarkIsolationLintTest refuses a
      * benchmark on the shared datasource for exactly this, and would have caught it.
+     *
+     * SH1027 spent one more, to 71. ShConsoleSearchTest sets a content ACL on two folders and
+     * asserts what one curator may see; an ACL row is instance-wide, so on the shared context it
+     * would govern every other test's reads for the rest of the run — which is not noise but a
+     * different suite.
      */
-    private static final int DECLARED_CONTEXTS = 70;
+    private static final int DECLARED_CONTEXTS = 71;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

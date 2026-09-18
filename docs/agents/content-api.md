@@ -1041,3 +1041,36 @@ contract to satisfy a test; `ShConsoleShapeOverlapTest` asserts the prefix and p
 
 Milliseconds are printed by the benchmark and never asserted: a timing ceiling on a shared machine
 is a flake, and a flake is worse than a break (SH250).
+
+## Console search reads the agent's find, not the delivery API (SH1027)
+
+`GET /api/v2/content/search` is the console's content search: the SH1022 vocabulary, `state`
+absent meaning **both**, and the `trash` flag its REST twin has. It is `ShAgentReadService.find`
+with a per-object permission filter over it — a shape, not a third search (P10) — because a second
+implementation of "what matches" is two that come to disagree, the way the console's own filter
+and the delivery search once did (SH240).
+
+**What it replaced was wrong three ways, and none of them failed loudly.** The search page called
+`GET /api/v2/cda/search`, whose state is `PUBLISHED` unless the caller holds a preview token and
+the console has never sent one — so an agent could find the drafts it had just written and the
+curator reviewing them could not, which is backwards: searching for what a run made is the first
+thing a curator does after it. The CDA enforces a *token's* site allow-list and knows nothing
+about `sh_content_acl`, so on an instance with an ACL set the console listed titles from folders
+the reader could not open, and they found that out by clicking one. And its folder scope was
+direct children while the agent's is recursive, so one word asked two questions.
+
+**The answer carries `withheld`.** A filtered listing that says nothing is indistinguishable from
+a search that found less, and the reader's next move is to conclude the content is not there —
+which sends them to write the page again rather than to ask somebody for access. The filter runs
+after the cap rather than as a predicate, which is why a page can come back short and why the
+count is not optional: the ACL lives in a table keyed by object with inheritance up the folder
+chain, and pushing it into the query would make this file the third thing it is not allowed to be.
+
+**The census landed first (SH322).** `ShConsoleReadAclLintTest` derives every `/v2/…` path the
+React console GETs out of `shio-react/src`, keeps the content ones, and holds each as ACL-checked
+or declared with a reason. It reads **one hop** of delegation — the mapping's own body, or the one
+service it hands off to — because a controller that delegates the whole read is the shape half of
+this codebase has, and a body-only reader would report those as unchecked and teach the wrong fix.
+It prints its counts on every run: 31 console content reads, 13 of which ask the content ACL. The
+other 18 are decisions with reasons beside them, and an entry that stops being true fails the
+build rather than lingering.

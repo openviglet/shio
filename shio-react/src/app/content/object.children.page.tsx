@@ -872,6 +872,27 @@ export default function ObjectChildrenPage() {
   // since SH165 those are two different numbers.
   const postCount = listData.totalPosts
 
+  /**
+   * SH1027 — search this folder, in the console's search rather than in this list.
+   *
+   * The two are different questions and the browser's box is the narrower one: it filters the
+   * folder's own rows. This hands the search page a `folder:` address it can scope by, which is
+   * what makes its "this folder" and "this folder and below" options reachable at all — the page
+   * has no folder of its own to offer.
+   *
+   * A path from the breadcrumb, not an id: the search takes the vocabulary's own addressing
+   * (SH79), and an id in that parameter would be a fourth spelling of where content is.
+   */
+  const searchHereHref = siteName
+    ? `${ROUTES.SEARCH}?${new URLSearchParams({
+      folder: `folder:${siteName}/${breadcrumbPath
+        .filter((crumb) => crumb.type === "FOLDER")
+        .map((crumb) => crumb.name)
+        .join("/")}`,
+      subtree: "true",
+    })}`
+    : null
+
   return (
     <>
       {/*
@@ -1125,6 +1146,18 @@ export default function ObjectChildrenPage() {
               ))}
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              {searchHereHref && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7"
+                      aria-label={t("content.searchHere")}
+                      onClick={() => navigate(searchHereHref)}>
+                      <SlidersHorizontal className="h-4 w-4 rotate-90" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t("content.searchHere")}</TooltipContent>
+                </Tooltip>
+              )}
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSearchOpen(!searchOpen); list.set("q", "") }}>
                 <Search className="h-4 w-4" />
               </Button>

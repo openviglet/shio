@@ -138,6 +138,14 @@ class ShAgentReadReachabilityLintTest {
                 + "(P2). A manifest that declared its own front door would be answering a question "
                 + "its reader has already answered"));
 
+        byRoot.put("/api/v2/content", new Read(Reach.CONSOLE_ONLY, null,
+                "the console's search, which IS GET /api/v2/agent/find with a per-object permission "
+                + "filter "
+                + "over it (SH1027). An agent has no use for the filter — a credential is a site "
+                + "allow-list, not a person with an ACL — so the read it makes instead is the one "
+                + "this composes, and a second declaration would advertise a narrowing as a "
+                + "capability"));
+
         byRoot.put("/api/v2/locale", new Read(Reach.CONSOLE_ONLY, null,
                 "the language picker's catalogue, labelled in two languages. Nothing validates a "
                 + "write against it — post.upsert takes the locale string (SH348) — so an agent "

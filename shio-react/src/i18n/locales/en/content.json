@@ -326,5 +326,11 @@
   "content.filterClear": "Clear",
   "content.filterPublished": "Published",
   "content.filterDraft": "Draft",
-  "content.showingRows": "Showing {{loadedFolders}} of {{totalFolders}} folders and {{loaded}} of {{total}} posts"
+  "content.showingRows": "Showing {{loadedFolders}} of {{totalFolders}} folders and {{loaded}} of {{total}} posts",
+  "content.searchAnyState": "Any state",
+  "content.scopeSite": "Whole site",
+  "content.scopeFolder": "This folder",
+  "content.scopeSubtree": "This folder and below",
+  "content.searchWithheld": "and {{count}} you cannot open",
+  "content.searchHere": "Search in this folder"
 }

@@ -2017,26 +2017,6 @@ The declared table dependency either earns its place here or leaves the manifest
 assertions render each view over BD6's fixture, confirm only the visible window of rows
 is mounted, and edit a scalar cell whose stale ETag is refused.
 
-### LXIX.8 Console search over the agent's find (SH1027)
-
-The search page calls the CDA search endpoint, whose state constant is PUBLISHED; a test
-pins that behaviour by name. The agent's read searches both states. So an agent writing
-drafts can find them and the curator reviewing those drafts cannot, and the first thing
-a curator does after an agent run is search for what it made. Two defects ride along:
-the CDA applies no content-ACL check, so on an instance with an ACL set the console can
-list titles from folders the user cannot open, and the folder browser's search matches
-direct children only while the agent's folder scope is recursive.
-
-One console search service composed over the agent's find, a shape rather than a third
-contract, using BD3's vocabulary with state defaulting to any and the trash flag its
-REST twin has. It applies the content ACL and returns a withheld count, so a curator is
-told results were hidden rather than shown a short list, and a scope selector offers
-this folder, this folder and below, and this site.
-
-The lint that lands first enumerates every console-reachable read that skips the ACL
-check, held as an asserted list. The assertion: a draft is found, and an unreadable
-folder's post is withheld and counted.
-
 ### LXIX.9 A palette of content and actions, compiled from the agent's verbs (SH1028)
 
 Shio passes BentoCommandPalette its seventeen-entry nav declaration, every entry a list
