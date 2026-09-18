@@ -17,7 +17,7 @@ import { ContentBrowserDialog, type ContentBrowserSelection } from "@/components
 import { ROUTES } from "@/app/routes.const"
 import {
   Image as ImageIcon, Download, Trash2, Upload, Loader2, Search, LayoutGrid, List as ListIcon,
-  X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText,
+  X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText, History,
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -26,7 +26,9 @@ import { useListState } from "@/hooks/use-list-state"
 import { toast } from "@viglet/viglet-design-system"
 import { cn } from "@/lib/utils"
 import { ShStaticFileService } from "@/services/static-file/static-file.service"
-import type { ShStaticFileItem, ShStaticFileUsage } from "@/models/static-file/static-file.model"
+import type {
+  ShAssetRendition, ShStaticFileItem, ShStaticFileUsage,
+} from "@/models/static-file/static-file.model"
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
@@ -490,7 +492,9 @@ function CategoryChip({ active, label, count, onClick }: {
 function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
   item: ShStaticFileItem; onOpen: () => void; selected: boolean; onToggleSelect: () => void
   onAltSaved: (alt: string) => void
-  t: (key: string) => string
+  // SH1034 — options, because the usage badge is pluralised. The dialog's own `t` prop has taken
+  // them since SH62; this one had not needed them and a narrower type is not a smaller `t`.
+  t: (key: string, opts?: Record<string, unknown>) => string
 }) {
   const image = isImageType(item.contentType)
   const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
@@ -721,10 +725,53 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
   const [tagDraft, setTagDraft] = useState("")
   const [saving, setSaving] = useState(false)
   const [usage, setUsage] = useState<ShStaticFileUsage[] | null>(null)
+  // SH1035 — the replace control's own state. `renditions` starts empty rather than null: an
+  // instance with the feature off answers an empty list too, so there is nothing for the UI to
+  // distinguish and no configuration for it to special-case.
+  const [renditions, setRenditions] = useState<ShAssetRendition[]>([])
+  const [replacing, setReplacing] = useState(false)
+  const replaceInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     service.usage(item.id).then(setUsage).catch(() => setUsage([]))
+    service.renditions(item.id).then(setRenditions).catch(() => setRenditions([]))
   }, [item.id])
+
+  /** Reloads the history after any write that changes the bytes. */
+  const refreshRenditions = () =>
+    service.renditions(item.id).then(setRenditions).catch(() => setRenditions([]))
+
+  const replaceBytes = async (file: File) => {
+    setReplacing(true)
+    try {
+      const updated = await service.replace(item.id, file)
+      toast.success(t("staticFile.replaced"))
+      // The parent's row has to be told: the size, the dimensions and the digest all moved, and a
+      // listing still showing the old ones is a card that disagrees with the bytes it links to.
+      onSaved(updated)
+      await refreshRenditions()
+    } catch (error) {
+      reportProblem(error, t("common.error"))
+    } finally {
+      setReplacing(false)
+    }
+  }
+
+  const revertTo = async (number: number) => {
+    setReplacing(true)
+    try {
+      const updated = await service.revert(item.id, number)
+      toast.success(t("staticFile.reverted", { number }))
+      onSaved(updated)
+      // Reverting captures the bytes it replaced, so the list GREW: reloading is what shows the
+      // curator that going back is itself undoable.
+      await refreshRenditions()
+    } catch (error) {
+      reportProblem(error, t("common.error"))
+    } finally {
+      setReplacing(false)
+    }
+  }
 
   const dirty = alt !== (item.alt ?? "") || caption !== (item.caption ?? "")
     || tags.join("\u0000") !== (item.tags ?? []).join("\u0000")
@@ -831,6 +878,62 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
                   <span className="truncate flex-1">{u.title || u.postId}</span>
                   {u.postTypeName && <Badge variant="outline" className="text-xs">{u.postTypeName}</Badge>}
                   {u.siteName && <span className="text-xs text-muted-foreground">{u.siteName}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/*
+          SH1035 — Replace, which the API has had since SH210 and the console did not. The route to
+          new bytes was delete-and-re-upload, which mints a new id and breaks every field pointing
+          at the old one; the endpoint's own javadoc calls that unsound.
+
+          What is shown around the control is what makes a curator willing to press it: the count
+          of pages that change (SH1034's usage, already loaded above) BEFORE the picker, and the
+          superseded bytes as numbered renditions with a revert after. Without the second, replace
+          is a one-way door and a curator goes back to the route that breaks references.
+        */}
+        <div className="border-t pt-3">
+          <p className="text-sm font-medium mb-2">{t("staticFile.replaceBytes")}</p>
+          <p className="text-xs text-muted-foreground mb-2">
+            {usage === null
+              ? t("common.loading")
+              : t("staticFile.replaceImpact", { count: usage.length })}
+          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input ref={replaceInput} type="file" className="hidden"
+              onChange={(event) => {
+                const picked = event.target.files?.[0]
+                // Cleared before the await: the same file chosen twice in a row must fire, and an
+                // input that still holds it does not raise `change`.
+                event.target.value = ""
+                if (picked) void replaceBytes(picked)
+              }} />
+            <Button variant="outline" size="sm" disabled={replacing}
+              onClick={() => replaceInput.current?.click()}>
+              {replacing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {t("staticFile.chooseNewBytes")}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {t("staticFile.replaceKeepsName", { name: item.fileName ?? item.id })}
+            </span>
+          </div>
+          {renditions.length > 0 && (
+            <ul className="mt-2 space-y-1 max-h-40 overflow-y-auto">
+              {renditions.map((rendition) => (
+                <li key={rendition.number} className="flex items-center gap-2 text-sm">
+                  <History className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="flex-1 truncate">
+                    {t("staticFile.renditionRow", {
+                      number: rendition.number,
+                      size: formatBytes(rendition.size),
+                    })}
+                  </span>
+                  <Button variant="ghost" size="sm" disabled={replacing}
+                    onClick={() => void revertTo(rendition.number)}>
+                    {t("staticFile.revert")}
+                  </Button>
                 </li>
               ))}
             </ul>

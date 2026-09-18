@@ -271,6 +271,35 @@ disk, **keyed by the file post's id** (not the folder tree), under
   `ShPostLifecycleEvent`). Owner: `com.viglet.shio.api.staticfile` +
   `ShFileSourceProperties`. Per-tenant isolation (SH47) will prefix `tenantId`.
 
+**Replace keeps what it overwrites, outside the served tree (SH1035).** The endpoint has existed
+since SH210 with one CLI caller; the console's route to new bytes was delete-and-re-upload, which
+mints a new id and breaks every field pointing at the old one — what the verb's own javadoc calls
+unsound. What SH1035 adds is the thing that makes replacing safe enough to encourage:
+
+- `POST /api/v2/staticfile/{id}/replace` now **captures the superseded bytes first**, as a numbered
+  rendition. A failed capture is logged and does not fail the replace: the curator asked for new
+  bytes, and refusing them because the safety net could not be written would make this less reliable
+  than the route it removes.
+- `GET /api/v2/staticfile/{id}/renditions` lists them, newest first.
+  `POST /api/v2/staticfile/{id}/renditions/{n}/revert` puts one back — and **captures the current
+  bytes on the way past**, so a revert is itself undoable. Without that, a curator who reverts to the
+  wrong version has destroyed the one they were trying to keep.
+- **They are not under `/file_source/**`, and that is the one decision with a security edge.** That
+  path is mapped at the root of the asset tree, so a rendition kept beside the live bytes would be
+  publicly downloadable by anyone who guessed the path — a superseded document says whatever it was
+  replaced for saying. They live under `shio.asset-renditions.path`, a sibling with no resource
+  handler over it. `ShAssetRenditionTest` asserts that, because nothing about the wrong choice looks
+  wrong in the code that writes it.
+- **Bounded at `keep` (3) per asset, and excluded from the tenant meter.** SH110's rule is that a
+  replace charges the *difference*, so counting a rendition would make replacing a 900 MB video with
+  a 1 MB one *increase* usage and a tenant near its quota could not fix a mistake. The bound is what
+  licenses the exclusion: the cost is a function of the asset's size, not of how often it is
+  replaced. A revert re-stamps the digest and the size (SH398's stale-stamp no-op, reached from the
+  other direction) and records an `UPDATE` in the audit trail.
+- The name is never taken from the rendition. A replace cannot move an asset, so the live name is
+  the asset's own; restoring an old one would change the public URL and break the references this
+  whole feature exists to keep.
+
 **`GET /api/v2/staticfile/{id}/usage` reads an index, and SH1033's numbers are why (SH1034).**
 It used to be `findReferencingFileId` — `data like concat('%', :fileId, '%')`, a *leading* wildcard,
 which no B-tree orders — run once per state, so one detail dialog read every post row in the tenant

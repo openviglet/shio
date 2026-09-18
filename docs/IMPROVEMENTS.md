@@ -2060,26 +2060,6 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.7 Replace, with the diff that makes it safe (SH1035)
-
-The replace endpoint shipped with a CLI caller through push --content, and the console's
-static-file service and page never call it. The detail dialog offers copy URL, download,
-delete and save metadata, and no way to put new bytes behind the same id, so updating a
-logo means delete and re-upload, which breaks every field that referenced it, the
-outcome the replace verb's own javadoc calls unsound. Separately, the File widget
-refuses when its folder setting is missing, with an error toast and no path forward.
-
-A Replace control in the dialog calls the existing endpoint and shows what a curator
-needs to trust it: old and new dimensions and size, and the count of pages that will
-change, from BE4's usage argument. The previous bytes are kept as a numbered rendition
-with a revert, which is what makes replacing safe enough to encourage. When the widget
-has no configured folder it opens the folder picker instead of dead-ending, remembering
-the choice for the session.
-
-Replace stays off MCP tools, since base64 through a tool call is the reasoning the
-assets tool already gives; the manifest names the multipart route beside upload. The
-assertions replace an image, read the new bytes behind the old id, and revert.
-
 ### LXX.8 Data is a large object on PostgreSQL, and nothing that reads it as text works (SH1099)
 
 `ShPostUnified.data` is `@Lob String`. On H2 and MariaDB that is a text column and every

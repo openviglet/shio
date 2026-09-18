@@ -68,7 +68,15 @@ interface ContentBrowserDialogProps {
   onOpenChange: (open: boolean) => void
   onSelect: (selection: ContentBrowserSelection) => void
   startFolderId?: string
-  selectMode?: "content" | "file"
+  /**
+   * What the caller is picking.
+   *
+   * `folder` (SH1035) hides every post: the File widget needs somewhere to PUT an upload, and its
+   * folder setting is optional, so an unconfigured widget used to dead-end on an error toast. A
+   * destination is a folder, and showing pickable posts in that dialog would offer an answer the
+   * caller cannot use.
+   */
+  selectMode?: "content" | "file" | "folder"
 }
 
 export function ContentBrowserDialog({ open, onOpenChange, ...rest }: ContentBrowserDialogProps) {
@@ -235,9 +243,13 @@ function ContentBrowserBody({
   // navigable, but other content types are hidden so the user can't pick a non-file.
   // `postType` is the row's own field since SH120; reading `shPostType.name` here matched
   // nothing, so this filter used to hide every file in the instance.
-  const visiblePosts = selectMode === "file"
-    ? posts.filter((p) => p.postType === "File")
-    : posts
+  const visiblePosts = selectMode === "folder"
+    // SH1035 — none. The caller is choosing a destination, and a row it could select that is not a
+    // folder is a wrong answer the dialog offered.
+    ? []
+    : selectMode === "file"
+      ? posts.filter((p) => p.postType === "File")
+      : posts
 
   // What the folder holds minus what the filter above hides is not something the server told
   // us, so the count is stated in the server's terms and the button offers the next page.
@@ -280,7 +292,9 @@ function ContentBrowserBody({
     <>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {selectMode === "file" ? t("content.selectFile") : t("content.selectContent")}
+            {selectMode === "folder"
+              ? t("content.selectFolder")
+              : selectMode === "file" ? t("content.selectFile") : t("content.selectContent")}
           </DialogTitle>
         </DialogHeader>
 

@@ -1,6 +1,6 @@
 import axios from "@/lib/axios"
 import type {
-  ShStaticFileItem, ShStaticFileFilter, ShStaticFileMeta, ShStaticFileUsage,
+  ShAssetRendition, ShStaticFileItem, ShStaticFileFilter, ShStaticFileMeta, ShStaticFileUsage,
 } from "@/models/static-file/static-file.model"
 
 /** Options for {@link ShStaticFileService.thumbUrl} / transform URLs (SH39–43 pipeline). */
@@ -80,6 +80,39 @@ export class ShStaticFileService {
   /** Update editable metadata (alt/caption/tags) of a File post (SH62). Returns the refreshed item. */
   async updateMeta(id: string, meta: ShStaticFileMeta): Promise<ShStaticFileItem> {
     const response = await axios.put<ShStaticFileItem>(`/v2/staticfile/${id}/meta`, meta)
+    return response.data
+  }
+
+  /**
+   * Put new bytes behind an existing asset id (SH1035).
+   *
+   * The endpoint has existed since SH210 with only a CLI caller; the console's route to new bytes
+   * was delete-and-re-upload, which mints a new id and breaks every field pointing at the old one.
+   * The file name the multipart carries is ignored by the server — the name is half the asset's
+   * address, so a replace cannot move it.
+   */
+  async replace(id: string, file: File, onProgress?: (percent: number) => void): Promise<ShStaticFileItem> {
+    const formData = new FormData()
+    formData.append("file", file)
+    const response = await axios.post<ShStaticFileItem>(`/v2/staticfile/${id}/replace`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
+      },
+    })
+    return response.data
+  }
+
+  /** The bytes this asset used to have, newest first (SH1035). */
+  async renditions(id: string): Promise<ShAssetRendition[]> {
+    const response = await axios.get<ShAssetRendition[]>(`/v2/staticfile/${id}/renditions`)
+    return response.data
+  }
+
+  /** Put a superseded set of bytes back. Reverting captures the current ones first (SH1035). */
+  async revert(id: string, number: number): Promise<ShStaticFileItem> {
+    const response = await axios.post<ShStaticFileItem>(
+      `/v2/staticfile/${id}/renditions/${number}/revert`)
     return response.data
   }
 

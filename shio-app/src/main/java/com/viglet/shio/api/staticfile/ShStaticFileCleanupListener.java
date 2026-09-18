@@ -30,15 +30,24 @@ import com.viglet.shio.webhook.ShPostLifecycleEvent;
 public class ShStaticFileCleanupListener {
 
     private final ShFileStorageService storage;
+    /** SH1035 — the superseded copies go with the asset; nothing else would ever collect them. */
+    private final ShAssetRenditionStore renditions;
 
-    public ShStaticFileCleanupListener(ShFileStorageService storage) {
+    public ShStaticFileCleanupListener(ShFileStorageService storage,
+            ShAssetRenditionStore renditions) {
         this.storage = storage;
+        this.renditions = renditions;
     }
 
     @EventListener
     public void onPostLifecycle(ShPostLifecycleEvent event) {
         if (event.type() == ShWebhookEventType.DELETE) {
             storage.delete(event.postId());
+            // SH1035 — and its history. The renditions live outside `file_source`, so deleting the
+            // asset's directory does not reach them: without this they would be the one thing a
+            // purge leaves on disk, in a directory no surface lists, for an asset that no longer
+            // exists. `asset-unused` and `shio assets prune` would then free less than they said.
+            renditions.forget(event.postId());
         }
     }
 }

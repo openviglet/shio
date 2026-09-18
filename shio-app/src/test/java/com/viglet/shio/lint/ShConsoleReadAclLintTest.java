@@ -139,7 +139,14 @@ class ShConsoleReadAclLintTest {
                     "one type from that same model, keyed by name — the form a post editor loads "
                             + "to know which fields to draw"),
             Map.entry("/api/v2/staticfile/{id}/usage",
-                    "which pages reference an asset, for a reader already in the media library")));
+                    "which pages reference an asset, for a reader already in the media library"),
+            // SH1035 — the same reader, one question further on. It lists sizes and dates of bytes
+            // this asset used to have, and it is the ONE read that must stay off /file_source/**:
+            // that path is public, so the renditions live outside it and this is how they are seen.
+            Map.entry("/api/v2/staticfile/{id}/renditions",
+                    "the bytes an asset used to have, for the curator deciding whether to replace "
+                            + "it — and the only route to them, since they are deliberately not "
+                            + "under the publicly served asset tree")));
 
     /** One console-reachable read, as this lint sees it. */
     private record Read(String path, boolean checked) {

@@ -128,7 +128,15 @@ class ShVersionGuardLintTest {
             Map.entry("ShStaticFileAPI#replace", "the bytes carry their own sha256 and a replace is "
                     + "the deliberate overwrite of them; the guard worth having here is over the "
                     + "bytes a caller last read, which is a different digest from a post's"),
-            Map.entry("ShStaticFileAPI#updateMeta", NOT_THE_CONTENT)));
+            Map.entry("ShStaticFileAPI#updateMeta", NOT_THE_CONTENT),
+            // SH1035 — a revert takes a rendition NUMBER, which is a stronger guard than a version
+            // would be: it names the exact bytes being restored, so two curators reverting at once
+            // cannot each get the other's idea of "the previous one". It is also the undo of a
+            // replace, and the replace's own entry above says why the digest that matters here is
+            // the bytes' rather than the post's.
+            Map.entry("ShStaticFileAPI#revert", "the rendition number IS the precondition: it "
+                    + "addresses one set of bytes, so a concurrent replace cannot silently change "
+                    + "what this call restores")));
 
     /** Every mutating mapping in the content writers, and whether its signature takes a version. */
     private static List<Write> writes() {

@@ -60,3 +60,17 @@ export type ShStaticFileFilter = {
   /** SH1030 — assets per page; absent means the server's default. */
   size?: number
 }
+
+/**
+ * One set of bytes an asset used to have (SH1035).
+ *
+ * Numbered rather than dated: the number is what a revert passes back, and two replaces in the
+ * same second are two renditions. Numbers only increase, so a prune dropping the oldest never
+ * renumbers what is left — a revert the dialog offered restores what it said it would.
+ */
+export type ShAssetRendition = {
+  number: number
+  fileName: string
+  size: number
+  storedAt: string
+}

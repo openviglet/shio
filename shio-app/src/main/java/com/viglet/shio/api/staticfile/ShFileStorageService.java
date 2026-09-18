@@ -179,6 +179,19 @@ public class ShFileStorageService {
         return tenant != null && !tenant.isBlank() ? tenant : ShTenantContext.DEFAULT_TENANT;
     }
 
+    /**
+     * The current tenant as a single safe path segment (SH1035).
+     *
+     * <p>Public so the rendition store scopes its directories the same way this one does. A second
+     * copy of {@code sanitizeTenant(tenantId())} would be SH245's smell in the place it matters
+     * most: the two would agree until a tenant id turned up with a character one of them folded
+     * and the other did not, and the superseded bytes would then be written where nothing looks
+     * for them.</p>
+     */
+    public static String tenantSegment() {
+        return sanitizeTenant(tenantId());
+    }
+
     /** Reduce a tenant id to a safe single path segment for the disk sub-directory. */
     private static String sanitizeTenant(String value) {
         String cleaned = value.replaceAll("[^A-Za-z0-9._-]", "_");

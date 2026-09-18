@@ -143,6 +143,44 @@ public class ShStaticFileAPI {
     }
 
     /**
+     * The bytes this asset used to have (SH1035), newest first.
+     *
+     * <p>What turns the console's Replace control from a thing a curator is afraid of into one they
+     * will use: §LXX.7's argument is that a copy of the superseded bytes is what makes replacing
+     * <em>safe enough to encourage</em>. An instance with the feature off answers an empty list,
+     * which is the same answer as "nothing has been replaced yet" — the dialog shows no history
+     * either way, and no caller has to special-case a configuration it cannot see.</p>
+     *
+     * <p>These bytes are <b>not</b> under {@code /file_source/**}. That path is mapped at the root
+     * of the asset tree, so a rendition kept beside the live file would be publicly downloadable —
+     * a superseded document says whatever it was replaced for saying. They are reached only here.</p>
+     */
+    @GetMapping("/{id}/renditions")
+    public java.util.List<ShAssetRendition> renditions(@PathVariable String id) {
+        return shStaticFileService.listRenditions(id);
+    }
+
+    /**
+     * Put a superseded set of bytes back (SH1035).
+     *
+     * <p>{@code POST} and not {@code PUT}: this is not idempotent in the way a reader would expect,
+     * because reverting captures the <em>current</em> bytes as a new rendition on the way past — so
+     * a second call reverts the revert rather than doing nothing. That is deliberate (a curator who
+     * reverts to the wrong version must be able to come back), and it is exactly why the verb is
+     * the non-idempotent one.</p>
+     *
+     * <p>An unknown number is a teaching 400 rather than a 404: the asset exists, the request is
+     * answerable, and what the caller needs is the list and the instance's own ceiling — both of
+     * which the message names (P6).</p>
+     */
+    @PostMapping("/{id}/renditions/{number}/revert")
+    public ShStaticFileItem revert(@PathVariable String id, @PathVariable int number,
+                                   Principal principal) {
+        return shStaticFileService.revertToRendition(id, number,
+                principal != null ? principal.getName() : null);
+    }
+
+    /**
      * Upload a file into {@code folderId}, creating a {@code File} post for it.
      * Returns the created post (200) so the caller can store its id.
      *

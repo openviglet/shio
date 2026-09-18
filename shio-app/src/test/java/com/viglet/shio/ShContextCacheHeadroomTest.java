@@ -213,13 +213,18 @@ class ShContextCacheHeadroomTest {
      * the growth ratio it asserts — the claim that the cost is linear — would be a statement about
      * suite order. It is also fifty thousand rows nobody else should have to carry.
      *
-     * **One slot left before the ceiling at this count**, which is worth knowing before the next
-     * one is proposed rather than after: the margin is what stops an eviction rebuilding a schema
-     * mid-run, so the next addition is a conversation about raising MAX_SIZE and not a line moved
-     * here. The two cross-database ITs this task adds cost nothing on this budget — Failsafe runs
-     * them, they are opt-in behind -DskipITs=false, and each brings its own container.
+     * The paragraph that used to end here said **one slot left**, and predicted the next addition
+     * would be a conversation about raising MAX_SIZE rather than a line moved here. SH1035 is that
+     * conversation and it had it: 75 contexts with maxSize raised 77 -> 80 beside it.
+     * ShAssetRenditionTest points {@code shio.file-source.path} AND
+     * {@code shio.asset-renditions.path} at temp directories — on a shared context it would write
+     * superseded copies into the repository's own {@code store/} — and its prune assertion needs
+     * {@code keep=2} rather than the shipped 3, which is a property and therefore a context.
+     *
+     * The two cross-database ITs SH1033 added cost nothing on this budget: Failsafe runs them,
+     * they are opt-in behind {@code -DskipITs=false}, and each brings its own container.
      */
-    private static final int DECLARED_CONTEXTS = 74;
+    private static final int DECLARED_CONTEXTS = 75;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

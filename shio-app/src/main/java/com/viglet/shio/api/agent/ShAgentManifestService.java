@@ -582,8 +582,14 @@ public class ShAgentManifestService {
                 new ShAgentEndpoint("PUT", "/post-unified/{id}",
                         "Update a post's data in place.",
                         "console", "PUT /api/v2/post-unified/{id}"),
+                // SH1035 — `replace` rides this row rather than taking one of its own. It is the
+                // same multipart surface and the same reason it is not an MCP tool (base64 through
+                // a tool call), so a caller who found this line has found both; a second row would
+                // cost ~50 tokens on the most-read document here against ~15 for the clause, and
+                // `response.manifest` has been at its wall twice.
                 new ShAgentEndpoint("POST", "/staticfile/upload",
-                        "Upload a binary as a File post (multipart: file, folderId, createPost).",
+                        "Upload a binary as a File post (multipart: file, folderId, createPost); "
+                                + "{id}/replace swaps its bytes, keeping the id.",
                         "console", "POST /api/v2/staticfile/upload"),
                 new ShAgentEndpoint("GET", "/site/{id}/export",
                         "Export a whole site as a portable exchange package (zip).",

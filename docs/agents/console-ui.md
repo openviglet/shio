@@ -2197,3 +2197,39 @@ Three things about it that are easy to get wrong:
 - **The pluralised strings are `usageBadge`/`usageBadge_zero` plus the two `usageHint` forms**, in
   `en` and `pt`. The zero case has its own word ("unused") rather than "used 0": a badge reading
   `used 0` is a sentence the eye has to finish before it means anything.
+
+## Replace, and the widget that used to dead-end (SH1035)
+
+Two console gaps behind one API that already worked.
+
+**The detail dialog has a Replace control.** `static-file.list.page.tsx` calls
+`POST /v2/staticfile/{id}/replace`, which has existed since SH210 with only a CLI caller. What is
+rendered *around* the control is what makes a curator willing to press it: the count of pages that
+will change (SH1034's usage, already loaded for the "Used in" list) **before** the file picker, and
+the superseded bytes as numbered versions with a Restore beside each **after**. Without the second,
+replace is a one-way door and a curator goes back to delete-and-re-upload — which mints a new id and
+breaks every field pointing at the old asset.
+
+Three details worth keeping:
+
+- **The file input is cleared before the upload.** Choosing the same file twice in a row must fire,
+  and an input that still holds it raises no `change`.
+- **`onSaved` is called on both paths.** The size, the dimensions and the digest all moved, so a
+  listing still showing the old ones is a card that disagrees with the bytes it links to.
+- **The rendition list is reloaded after a revert, not filtered.** Reverting *captures* the bytes it
+  replaced, so the list grew — and seeing it grow is how the curator learns that going back is itself
+  undoable.
+
+**The File widget opens a folder picker instead of refusing.** `file.widget.tsx` used to answer an
+upload into an unconfigured field with `toast.error(t("content.noUploadFolder"))` and a return. The
+folder setting is optional by design and is an administrator's job, so that told a curator mid-page
+what was wrong and gave them nothing they could do from where they stood. Now the chosen file is
+**held**, the content browser opens in a new `selectMode="folder"` (posts hidden — a row it could
+select that is not a folder is a wrong answer the dialog offered), and answering finishes the upload
+rather than restarting it.
+
+The choice is remembered in a module-level `Map` keyed by **post-type attribute**, not globally: a
+hero image and a press kit are two questions, and one answer for both files the second in the wrong
+place. It is deliberately **not persisted** — the durable answer is the field's `widgetSettings`,
+which an administrator sets once for everybody, and writing a session's guess to storage would let it
+quietly become the configuration.

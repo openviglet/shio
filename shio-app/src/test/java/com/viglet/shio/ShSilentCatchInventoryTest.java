@@ -211,7 +211,14 @@ class ShSilentCatchInventoryTest {
             // parses once and every key is read off that tree, so the readers had no callers and
             // were deleted rather than kept — a silent catch nobody calls is a number the next
             // task has to explain.
-            "api", 72,
+            // SH1035 RAISES it, 72 to 80, and all eight are ShAssetRenditionStore keeping a replace
+            // working when the disk will not cooperate. The judgement is the same one every time:
+            // the curator asked for new bytes, and failing that write because the SAFETY NET could
+            // not be written would make replace less reliable than the delete-and-re-upload it
+            // exists to remove. Each logs through ShIoFailure.describe (SH756), and the listing is
+            // the observable: a rendition the capture could not write is one the dialog does not
+            // offer, so a revert is never promised over bytes that are not there.
+            "api", 80,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

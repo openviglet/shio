@@ -13,6 +13,22 @@ interface PathSegment {
   name: string
 }
 
+/**
+ * Where an unconfigured File field uploaded to, for the rest of this session (SH1035).
+ *
+ * Module-level, so it outlives the widget unmounting when the form navigates and dies with the
+ * tab — which is what "for the session" means to the person doing it. Keyed by the post-type
+ * attribute, because two File fields on one type are two questions: a hero image and a press kit
+ * do not belong in the same folder, and remembering one answer for both would silently file the
+ * second in the wrong place.
+ *
+ * NOT persisted. The durable answer is the field's own `widgetSettings.folderId`, which an
+ * administrator sets once for everybody; this is the stopgap that stops a curator being unable to
+ * finish a page, and writing it to storage would let a session's guess outlive the session that
+ * made it and quietly become the configuration.
+ */
+const REMEMBERED_UPLOAD_FOLDER = new Map<string, { id: string; name: string }>()
+
 interface ResolvedFile {
   name: string
   path: PathSegment[]
@@ -105,6 +121,10 @@ export function FileWidget({ attr, onChange }: WidgetProps) {
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // SH1035 — the file the curator chose before we knew where to put it. Held rather than dropped:
+  // asking them to pick the folder and then pick the file again is the dead end with extra steps.
+  const [pendingUpload, setPendingUpload] = useState<File | null>(null)
+  const [folderPickerOpen, setFolderPickerOpen] = useState(false)
 
   const settings = useMemo(() => parseSettings(attr.shPostTypeAttr?.widgetSettings), [attr.shPostTypeAttr?.widgetSettings])
 
@@ -146,11 +166,24 @@ export function FileWidget({ attr, onChange }: WidgetProps) {
 
   // --- Upload logic ---
 
-  const uploadFile = useCallback(async (file: File) => {
-    const folderId = settings.folderId
+  /** The attribute this widget is, as a key for the remembered destination. */
+  const fieldKey = attr.shPostTypeAttr?.id ?? attr.shPostTypeAttr?.name ?? "unkeyed-file-field";
+
+  const uploadFile = useCallback(async (file: File, toFolderId?: string) => {
+    const folderId = toFolderId
+      ?? settings.folderId
+      ?? REMEMBERED_UPLOAD_FOLDER.get(fieldKey)?.id;
     if (!folderId) {
-      toast.error(t("content.noUploadFolder"))
-      return
+      // SH1035 — this used to be `toast.error(t("content.noUploadFolder"))` and a return, which is
+      // a dead end: the field is optional by design, so an unconfigured widget told the curator
+      // what was wrong and gave them nothing they could do about it from where they were. The
+      // folder setting is an administrator's job and the curator is mid-page.
+      //
+      // The chosen file is HELD, so answering the question finishes the upload rather than
+      // restarting it.
+      setPendingUpload(file);
+      setFolderPickerOpen(true);
+      return;
     }
 
     setUploading(true)
@@ -175,7 +208,23 @@ export function FileWidget({ attr, onChange }: WidgetProps) {
     } finally {
       setUploading(false)
     }
-  }, [settings.folderId, onChange, attr, t])
+  }, [settings.folderId, fieldKey, onChange, attr, t])
+
+  /**
+   * The destination the curator just picked: remembered, then used for the held file.
+   *
+   * Remembered before the upload rather than after it, so a failed upload does not ask the
+   * question again — the answer was about where things go, and it is still the answer whether or
+   * not these particular bytes landed.
+   */
+  const handleUploadFolderSelect = useCallback((selection: ContentBrowserSelection) => {
+    REMEMBERED_UPLOAD_FOLDER.set(fieldKey, { id: selection.id, name: selection.name });
+    setFolderPickerOpen(false);
+    toast.info(t("content.uploadFolderRemembered", { name: selection.name }));
+    const held = pendingUpload;
+    setPendingUpload(null);
+    if (held) void uploadFile(held, selection.id);
+  }, [fieldKey, pendingUpload, uploadFile, t])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -315,6 +364,24 @@ export function FileWidget({ attr, onChange }: WidgetProps) {
         onSelect={handleBrowserSelect}
         startFolderId={browserStartId}
         selectMode="file"
+      />
+      {/*
+        SH1035 — the destination picker, folders only. Its own dialog rather than a mode on the one
+        above: that one is open when the curator is choosing an existing file, this one when they
+        have chosen new bytes and we do not know where to put them, and the two can be reached from
+        the same click in sequence.
+      */}
+      <ContentBrowserDialog
+        open={folderPickerOpen}
+        onOpenChange={(open) => {
+          setFolderPickerOpen(open)
+          // Dismissed without choosing: drop the held file rather than leaving it to be uploaded
+          // by the next unrelated pick.
+          if (!open) setPendingUpload(null)
+        }}
+        onSelect={handleUploadFolderSelect}
+        startFolderId={settings.folderId}
+        selectMode="folder"
       />
     </div>
   )

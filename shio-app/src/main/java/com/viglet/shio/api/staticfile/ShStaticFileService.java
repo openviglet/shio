@@ -78,6 +78,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ShStaticFileService {
     /** SH1034 — the reverse index, maintained beside this class's own writes. */
     private final ShObjectReferenceService shObjectReferenceService;
+    /** SH1035 — the bytes a replace supersedes, so the replace can be undone. */
+    private final ShAssetRenditionStore shAssetRenditionStore;
 
 
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
@@ -154,7 +156,9 @@ public class ShStaticFileService {
                                ShUploadPolicy shUploadPolicy,
                                ShSvgSanitizer shSvgSanitizer,
                                ObjectProvider<ShStaticFileService> self,
-                               ShObjectReferenceService shObjectReferenceService) {
+                               ShObjectReferenceService shObjectReferenceService,
+                               ShAssetRenditionStore shAssetRenditionStore) {
+        this.shAssetRenditionStore = shAssetRenditionStore;
         this.shObjectReferenceService = shObjectReferenceService;
         this.shUploadPolicy = shUploadPolicy;
         this.shSvgSanitizer = shSvgSanitizer;
@@ -388,10 +392,7 @@ public class ShStaticFileService {
      */
     @Transactional
     public ShStaticFileItem replace(MultipartFile file, String id, String modifier) {
-        ShPostUnified post = shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED)
-                .filter(p -> p.getShPostType() != null
-                        && ShSystemPostType.FILE.equals(p.getShPostType().getName()))
-                .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
+        ShPostUnified post = requireFilePost(id);
 
         String fileName = fileNameOf(post);
         // SH951 — `replace` is an upload path, so the policy applies here too. The name is the
@@ -403,6 +404,13 @@ public class ShStaticFileService {
         // smaller. A negative delta is a no-op in the shared check.
         long incoming = sanitized != null ? sanitized.length : file.getSize();
         shTenantQuotaService.checkCanStore(incoming - storage.storedBytes(post.getId(), fileName));
+        // SH1035 — the bytes about to be overwritten, kept aside BEFORE the write. This is what
+        // makes replace safe enough to encourage: the console's old route was delete-and-re-upload,
+        // which breaks every field pointing at the asset, and a curator who cannot undo a replace
+        // goes back to that. A capture that fails is logged and does not fail the replace — the
+        // caller asked for new bytes, and refusing them because the net could not be written would
+        // make this less reliable than what it replaces.
+        shAssetRenditionStore.capture(post.getId(), fileName);
         try (InputStream bytes = sanitized != null
                 ? new ByteArrayInputStream(sanitized)
                 : file.getInputStream()) {
@@ -424,6 +432,66 @@ public class ShStaticFileService {
         // The change feed and the SH109 queue both read the audit trail, and a replaced asset is
         // a content change like any other — a reviewer told nothing would see the field unchanged
         // (it is: the path did not move) and no reason for the page to look different.
+        shContentAuditService.record(ShContentAction.UPDATE, saved.getId(),
+                saved.getShSite() != null ? saved.getShSite().getId() : null,
+                fileName, modifier);
+        return toItem(saved);
+    }
+
+    /**
+     * The published {@code File} post behind an id, or the absence as an exception.
+     *
+     * <p>Extracted by SH1035 because three verbs now need it — replace, the rendition listing and
+     * the revert — and a fourth spelling of "is this actually an asset" is how one of them comes to
+     * accept something the others refuse.</p>
+     */
+    private ShPostUnified requireFilePost(String id) {
+        return shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED)
+                .filter(p -> p.getShPostType() != null
+                        && ShSystemPostType.FILE.equals(p.getShPostType().getName()))
+                .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
+    }
+
+    /**
+     * The bytes this asset used to have (SH1035), newest first.
+     *
+     * <p>A read, so it is safe to call from the detail dialog every time it opens; it lists a
+     * directory rather than hashing anything.</p>
+     */
+    @Transactional(readOnly = true)
+    public List<ShAssetRendition> listRenditions(String id) {
+        ShPostUnified post = requireFilePost(id);
+        return shAssetRenditionStore.list(post.getId());
+    }
+
+    /**
+     * Puts a superseded set of bytes back, and re-stamps everything derived from them (SH1035).
+     *
+     * <p>Everything {@code replace} does on the way out, this does on the way back: the digest and
+     * the stamped size are re-taken (a stamp that outlived its bytes is SH398's silent no-op), the
+     * dimensions are re-read, and the change reaches the audit trail as an {@code UPDATE} — a
+     * revert is a content change, and a reviewer told nothing would see a page that looks different
+     * for no recorded reason.</p>
+     *
+     * <p>The name is never taken from the rendition. A replace cannot change what an asset is
+     * served as, so the live name is the asset's own and restoring an old one would move the
+     * public URL — breaking exactly the references this whole feature exists to keep.</p>
+     */
+    @Transactional
+    public ShStaticFileItem revertToRendition(String id, int number, String modifier) {
+        ShPostUnified post = requireFilePost(id);
+        String fileName = fileNameOf(post);
+        if (shAssetRenditionStore.revert(post.getId(), fileName, number).isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No rendition " + number + " for asset " + id + ". "
+                            + "GET /api/v2/staticfile/" + id + "/renditions lists what is kept; "
+                            + "this instance keeps " + shAssetRenditionStore.keep() + " per asset.");
+        }
+        post.setModifier(modifier);
+        post.setModifiedDate(Instant.now());
+        stampBytes(post, fileName);
+        ShPostUnified saved = shPostUnifiedRepository.save(post);
+        shObjectReferenceService.reindex(saved);
         shContentAuditService.record(ShContentAction.UPDATE, saved.getId(),
                 saved.getShSite() != null ? saved.getShSite().getId() : null,
                 fileName, modifier);
