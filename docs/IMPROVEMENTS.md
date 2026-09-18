@@ -2017,25 +2017,30 @@ The declared table dependency either earns its place here or leaves the manifest
 assertions render each view over BD6's fixture, confirm only the visible window of rows
 is mounted, and edit a scalar cell whose stale ETag is refused.
 
-### LXIX.9 A palette of content and actions, compiled from the agent's verbs (SH1028)
+### LXIX.10 The shortcuts sheet takes the bound keymap (SH1097)
 
-Shio passes BentoCommandPalette its seventeen-entry nav declaration, every entry a list
-route, and the placeholder is honest about it: search areas. Finding a post is open the
-palette, go to search, type the term again. VDS123 made the palette accept a product's
-own results, so the remaining gap is Shio's.
+BentoShortcutsDialog takes open, onOpenChange and isMac, and renders a fixed sheet
+naming the shortcuts the package believes a bento shell binds. Shio binds Ctrl/Cmd+K
+and, since SH889, a bare slash; it has never bound the question mark the sheet
+advertises as global. The one reference a curator is pointed at is wrong both ways: it
+promises a key that does nothing and hides the key that opens what they are reading
+about.
 
-Three result groups. Actions, compiled from the operation registry AY7's surface
-declaration exposes, so the palette's commands are the MCP verbs in a console shape
-rather than a fourth list: publish this page, create a post here, apply a blueprint, run
-verify, open the review queue, ask the agent. Content, from BD8's search, debounced and
-cancellable, each row carrying address, type and a draft or published marker.
-Destinations, today's array. Matching is fuzzy with aliases and recency, and page
-actions rank first when a page is open.
+The fix is a keymap the product passes as data, which makes the sheet a projection of
+what is bound rather than a second declaration of it — the shape this console already
+uses for its rail and its palette, where the surface declaration is the one list and
+everything else reads it.
 
-Any action that writes opens its dry run or confirm flow rather than firing from the
-palette, enforced by a confirm field on the command type. The shortcuts sheet takes the
-bound keymap as data, which removes the advertised question-mark row nothing binds and
-adds the slash Shio does bind.
+That is a design-system change, not a Shio one: the component takes no such prop, and a
+Shio-local copy would be the fork the package exists to prevent. SH1028 shipped the
+palette half and left this, because a console shipping its own sheet has two the moment
+the package grows one.
+
+What lands here once the prop exists: the shell passes its own bindings — the same array
+its keydown handler reads, so a binding added without a row is impossible rather than
+merely noticed — and a test holds the two against each other. Until then the sheet is
+wrong in a way no reader can see, which is the argument for filing it rather than
+leaving it in a commit message.
 
 ## LXX Media: what the bytes mean (Block BE)
 

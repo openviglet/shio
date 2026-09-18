@@ -2139,3 +2139,41 @@ path (SH79) and an id there would be a fourth spelling of where something is.
 Rows show their state, because a draft and what is live are now both in the answer, and the count
 line carries `withheld` when the reader's ACL removed anything — "and 6 you cannot open" rather
 than a shorter list with no explanation.
+
+## The command palette answers with verbs and content (SH1028)
+
+`⌘K` used to be handed the nav array and nothing else — seventeen destinations, and a placeholder
+honest about it: *search areas*. Finding a post was open the palette, go to search, type the term
+again.
+
+**The verbs are compiled, not listed.** `bento-commands.ts` declares each command against a
+surface id, and imports `console/surfaces.json` the way `bento-nav.ts` does — the backend's file,
+so the palette's verbs cannot become a fourth list beside the rail, the surface declaration and
+the agent's ops. A command naming a surface that is gone throws **at module load**, because a test
+is not a guard.
+
+**Nothing writes from the palette.** Every command carries `confirm`, and a command that writes
+routes to the flow that asks — a publish plan, a form, a dry run. That is P7 at the one surface
+where it is easiest to lose: the whole value of a palette is being quicker than navigating, and
+quicker is exactly what turns a mis-typed Enter into a published page. The rule is a field rather
+than a convention so `test/command-palette.test.mjs` can hold it, and it holds the select handler
+too — a service call there would pass every other assertion.
+
+**The product ranks, because the package will not.** `BentoCommandPalette` does not reorder a
+product group (VDS123), which is right: the content half is ranked by a server that understands the
+query. The actions half has no server, so `command-match.ts` ranks it — contextual first ("publish
+this page" is a different offer on a post than in a folder listing), then match quality (a prefix
+beats a substring beats a subsequence), then recency, worth at most one place so it can break a
+tie and never beat a match. All of it a function of two strings, which is why it is asserted
+without rendering anything.
+
+**The content half is debounced and, more importantly, cancellable.** It calls the console's own
+search (SH1027), so it finds drafts. A slow answer to `pri` arriving after a fast answer to
+`pricing` would replace the right rows with stale ones and the reader would watch the palette go
+backwards as they typed — a correctness problem, not a network one, so the token is checked on
+arrival rather than the request aborted.
+
+**One group, not the three the design asked for.** The package takes the nav array plus *one*
+product group, so destinations stay where they were and actions and content share a group with
+actions first. The ordering is intact — the component preserves what the product sends. What is
+missing is the headings, and that is a package change.

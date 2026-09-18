@@ -34,5 +34,16 @@
   "common.notFoundTitle": "This page does not exist",
   "common.notFoundDescription": "No route matches the path below. Check the link, or go back to the home page.",
   "common.backToHome": "Back to Home",
-  "common.refresh": "Refresh"
+  "common.refresh": "Refresh",
+  "palette.group": "Actions and content",
+  "palette.searchContent": "Search content",
+  "palette.newPost": "Create a post here",
+  "palette.publishPage": "Publish this page",
+  "palette.openReview": "Open the review queue",
+  "palette.openActivity": "Open activity",
+  "palette.openScheduled": "What is scheduled",
+  "palette.openFiles": "Open the media library",
+  "palette.openTrash": "Open the trash",
+  "palette.applyBlueprint": "Apply a blueprint",
+  "palette.newPostType": "Create a post type"
 }

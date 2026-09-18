@@ -1774,6 +1774,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1023** — Every console list holds its search, sort, filters and view in its URL, in the server's own words, so an address reproduces the view and a link is a request (design §LXIX.4 recorded in `docs/agents/console-ui.md`).
 - **SH1025** — The browser asks for a page of folders, and the select-all walk, the move dialog's blocked set and the folder sort were all paid for in the same change (design §LXIX.6 recorded in `docs/agents/console-ui.md`).
 - **SH1027** — Console search composes the agent's find — drafts included, the folder scope recursive, each row checked against the reader's ACL and what was hidden counted (design §LXIX.8 recorded in `docs/agents/content-api.md`).
+- **SH1028** — The palette answers with content and verbs compiled from the surface declaration, ranked by context, match and recency — and every write routes to the flow that asks (design §LXIX.9 recorded in `docs/agents/console-ui.md`).
 
 ## Block BE — Media: what the bytes mean
 

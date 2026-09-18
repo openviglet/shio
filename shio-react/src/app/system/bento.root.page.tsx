@@ -13,9 +13,14 @@ import {
   BentoShortcutsDialog,
   BentoUserMenu,
 } from "@viglet/viglet-design-system/bento"
-import { useEffect, useState } from "react"
-import { Outlet } from "react-router-dom"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { Outlet, useLocation, useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
+// SH1028 — the palette answers with content and verbs, not only with destinations.
+import { commandsFor, contextOf } from "./bento-commands"
+import { rank, remember } from "@/lib/command-match"
+import { ShSearchService } from "@/services/search/search.service"
 import { ReviewPendingProvider } from "@/contexts/review-pending.context"
 import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
@@ -72,6 +77,22 @@ import { BentoTenantSwitcher } from "./bento-tenant-switcher"
  * count there. Waiting for a hub meant waiting for a page nobody had scheduled, while an agent
  * wrote drafts nothing told a curator about.
  */
+/** One row the palette offers, whichever half it came from. */
+interface PaletteRow {
+  id: string
+  label: string
+  description?: string
+  route: string
+  confirm: boolean
+  aliases?: readonly string[]
+  contextual?: boolean
+}
+
+const searchService = new ShSearchService()
+
+/** How long the palette waits before asking the server. A keystroke is not a query. */
+const SEARCH_DEBOUNCE_MS = 200
+
 export default function BentoRootPage() {
   const groups = useBentoNav()
   const items = useBentoNavItems()
@@ -103,6 +124,110 @@ export default function BentoRootPage() {
     globalThis.addEventListener("keydown", onKey)
     return () => globalThis.removeEventListener("keydown", onKey)
   }, [])
+
+  /*
+   * SH1028 — what the palette answers with, and why it is one group and not three.
+   *
+   * The design asked for three — actions, content, destinations. The package takes the nav array
+   * plus **one** product group (VDS123), so destinations stay where they were and the other two
+   * share a group, actions first. That is not a compromise on the ordering: the palette does not
+   * reorder a product group, so "actions above content" is a fact this file decides and the
+   * component preserves. It is a compromise on the *headings*, and a second group is a package
+   * change rather than a Shio one.
+   */
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [query, setQuery] = useState("")
+  const [found, setFound] = useState<PaletteRow[]>([])
+  const [searching, setSearching] = useState(false)
+  const [recent, setRecent] = useState<string[]>([])
+
+  const context = useMemo(() => contextOf(location.pathname), [location.pathname])
+
+  /**
+   * The actions, ranked here because nothing else can (VDS123).
+   *
+   * Contextual ones first — "publish this page" is a different offer on a post than in a folder
+   * listing — then match quality, then what was run last. `command-match.ts` holds the rule, and
+   * holds it as a function of two strings so it can be asserted without rendering anything.
+   */
+  const actions = useMemo(
+    () => rank<PaletteRow>(commandsFor(context).map((command) => ({
+      id: command.id,
+      label: t(command.labelKey),
+      aliases: command.aliases,
+      contextual: command.contextualHere,
+      confirm: command.confirm,
+      route: command.route(context) ?? "",
+    })), query, recent),
+    [context, query, recent, t],
+  )
+
+  /**
+   * The content half, from the console's own search (SH1027) — debounced and cancellable.
+   *
+   * Cancellable matters more than debounced: a slow answer to `pri` arriving after a fast answer
+   * to `pricing` would replace the right rows with stale ones, and the reader would see the
+   * palette go backwards as they typed. The token is checked on arrival rather than the request
+   * aborted, because an abort is a network saving and this is a correctness one.
+   */
+  const queryToken = useRef(0)
+  useEffect(() => {
+    const term = query.trim()
+    if (term.length < 2) {
+      setFound([])
+      setSearching(false)
+      return
+    }
+    const token = queryToken.current + 1
+    queryToken.current = token
+    setSearching(true)
+    const timer = setTimeout(() => {
+      searchService.search({ q: term }, 8)
+        .then((answer) => {
+          if (queryToken.current !== token) return
+          setFound(answer.results.map((row) => ({
+            id: row.address,
+            label: row.title || row.address,
+            description: `${row.type ?? ""} ${row.state === "DRAFT" ? t("content.filterDraft") : ""}`
+              .trim(),
+            route: row.id ? `${ROUTES.CONTENT_ROOT}/post/${row.id}` : "",
+            confirm: false,
+          })))
+        })
+        .catch(() => {
+          if (queryToken.current !== token) return
+          setFound([])
+        })
+        .finally(() => {
+          if (queryToken.current !== token) return
+          setSearching(false)
+        })
+    }, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [query, t])
+
+  const onPaletteQuery = useCallback((next: string) => setQuery(next), [])
+
+  const paletteGroup = useMemo(() => ({
+    label: t("palette.group"),
+    pending: searching,
+    items: [...actions, ...found].map((row) => ({
+      id: row.id,
+      label: row.label,
+      description: row.description,
+    })),
+    onSelect: (chosen: { id: string }) => {
+      const row = [...actions, ...found].find((each) => each.id === chosen.id)
+      if (!row?.route) return
+      setRecent((previous) => remember(previous, row.id))
+      // Every row navigates. A command that writes routes to the flow that ASKS — a plan, a form,
+      // a dry run — because a palette is where people press Enter fast, and fast is exactly what
+      // turns a mis-typed Enter into a published page (P7).
+      navigate(row.route)
+    },
+  }), [actions, found, navigate, searching, t])
 
   return (
     <UserProvider>
@@ -161,7 +286,13 @@ export default function BentoRootPage() {
             palette built from its own list is a second place a surface has to be added, and the
             two disagree within a release rather than at some later reckoning.
           */}
-          <BentoCommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} items={items} />
+          <BentoCommandPalette
+            open={paletteOpen}
+            onOpenChange={setPaletteOpen}
+            items={items}
+            group={paletteGroup}
+            onQueryChange={onPaletteQuery}
+          />
           <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} isMac={isMac} />
 
           <BentoBackToTop />

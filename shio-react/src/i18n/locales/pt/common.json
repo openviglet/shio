@@ -34,5 +34,16 @@
   "common.notFoundTitle": "Esta página não existe",
   "common.notFoundDescription": "Nenhuma rota corresponde ao caminho abaixo. Verifique o link ou volte para a página inicial.",
   "common.backToHome": "Voltar para o Início",
-  "common.refresh": "Atualizar"
+  "common.refresh": "Atualizar",
+  "palette.group": "Acoes e conteudo",
+  "palette.searchContent": "Buscar conteudo",
+  "palette.newPost": "Criar um conteudo aqui",
+  "palette.publishPage": "Publicar esta pagina",
+  "palette.openReview": "Abrir a fila de revisao",
+  "palette.openActivity": "Abrir atividade",
+  "palette.openScheduled": "O que esta agendado",
+  "palette.openFiles": "Abrir a biblioteca de midia",
+  "palette.openTrash": "Abrir a lixeira",
+  "palette.applyBlueprint": "Aplicar um blueprint",
+  "palette.newPostType": "Criar um tipo de conteudo"
 }
