@@ -21,13 +21,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.api.staticfile.ShStaticFileService;
 import com.viglet.shio.api.staticfile.ShStaticFileUsage;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
+import com.viglet.shio.widget.ShSystemWidget;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -81,6 +85,10 @@ abstract class ShAssetUsageScanMeasurement {
     @Autowired
     protected ShStaticFileService shStaticFileService;
     @Autowired
+    protected ShObjectReferenceService shObjectReferenceService;
+    @Autowired
+    private ShWidgetRepository shWidgetRepository;
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @PersistenceContext
@@ -116,6 +124,15 @@ abstract class ShAssetUsageScanMeasurement {
             article.setDate(EPOCH);
             entityManager.persist(article);
             typeId = article.getId();
+            // SH1034 — the index is built from the MODEL, so the fixture's type has to declare the
+            // field its posts reference through. Without this the walk finds nothing and every
+            // number below describes an empty index rather than the query under test.
+            ShPostTypeAttr hero = new ShPostTypeAttr();
+            hero.setName("HERO");
+            hero.setLabel("HERO");
+            hero.setShPostType(article);
+            hero.setShWidget(shWidgetRepository.findFirstByName(ShSystemWidget.FILE));
+            entityManager.persist(hero);
 
             ShPostUnified asset = new ShPostUnified();
             asset.setShFolder(root);
@@ -162,6 +179,9 @@ abstract class ShAssetUsageScanMeasurement {
                     post.setDate(EPOCH);
                     post.setOwner("admin");
                     entityManager.persist(post);
+                    // SH1034 — a fixture persisting behind the write service maintains the derived
+                    // index itself, exactly as production does.
+                    shObjectReferenceService.reindex(post);
                 }
                 entityManager.flush();
                 entityManager.clear();

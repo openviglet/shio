@@ -271,23 +271,38 @@ disk, **keyed by the file post's id** (not the folder tree), under
   `ShPostLifecycleEvent`). Owner: `com.viglet.shio.api.staticfile` +
   `ShFileSourceProperties`. Per-tenant isolation (SH47) will prefix `tenantId`.
 
-**`GET /api/v2/staticfile/{id}/usage` costs the whole table, twice, and SH1033 is the number.**
-`findReferencingFileId` is `data like concat('%', :fileId, '%')` — a *leading* wildcard, which no
-B-tree orders — and `listUsage` loops PUBLISHED then DRAFT, so one detail dialog reads every post
-row in the tenant twice to answer with a handful. `ShAssetUsageBenchmarkTest` measures it at
-1,000 / 10,000 / 50,000 posts: rows examined per scan go 1,002 → 10,002 → 50,002, exactly linear,
-while a prototype reverse index answers the same question by examining **4** and costs a flat
-**3 statements per write** at every size. Two curves, not two numbers — which is why SH1034 builds
-the index rather than caching a count, and why §LXX.5's "retire BE6" branch did not fire.
+**`GET /api/v2/staticfile/{id}/usage` reads an index, and SH1033's numbers are why (SH1034).**
+It used to be `findReferencingFileId` — `data like concat('%', :fileId, '%')`, a *leading* wildcard,
+which no B-tree orders — run once per state, so one detail dialog read every post row in the tenant
+twice to answer with a handful. `ShAssetUsageBenchmarkTest` measured it at 1,000 / 10,000 / 50,000
+posts: rows examined per scan went 1,002 → 10,002 → 50,002, exactly linear, against a reverse index
+that answers by examining **4** at a flat **6 statements per write**. Two curves, not two numbers —
+which is why SH1034 built `sh_object_reference` rather than caching a count, and why §LXX.5's
+"retire BE6" branch did not fire. The predicate is still on the repository and still measured, so
+the saving cannot quietly stop being one.
+
+The index is **derived**, which has one failure mode: a write that does not maintain it. It is
+silent — the index answers with yesterday's edges, so usage is confidently wrong and an
+unused-asset report offers a live asset for deletion. There is no choke point to rely on
+(`ShPostUnifiedWriteService` saves from fifteen places and five other classes bypass it), so
+**`ShReferenceIndexMaintenanceLintTest` fails the build** for a class that writes `setData` and
+persists without naming `ShObjectReferenceService`. Two rules that are not obvious from the code:
+
+- **Edges come from the model, not the bytes.** The walk reads the fields a post-type *declares* as
+  `File` or `Content Select`. An id pasted into an undeclared key is no longer usage — narrower than
+  the substring, and deliberately so: it is what lets a finding name the field to fix.
+- **Only id-shaped values are indexed.** The `File` post type's own `FILE` attribute holds a file
+  *name*, so taking every `File` field's value indexed each asset as pointing at its own name, and
+  broke the write outright on a 38-character name against a 36-character column.
 
 The instrument is worth knowing about independently: neither `getEntityLoadCount()` nor SH634's
-`getExecutionRowCount()` can see this, because both count rows a query **returns** and a scan's
+`getExecutionRowCount()` can see a scan, because both count rows a query **returns** and a scan's
 whole defect is that its answer is small. The benchmark reads H2's own `EXPLAIN ANALYZE`
 `scanCount`, and the two ITs beside it read the plan on PostgreSQL and MariaDB — where the claim
 stops being one fact. Details, including the option `pg_trgm` opens on one engine of three and the
-**SH1099** storage defect that makes this query return nothing at all on PostgreSQL, are in
-[database.md](database.md) and in `token-budgets.properties` under *What "where is this used"
-costs*.
+**SH1099** storage defect that made this query return nothing at all on PostgreSQL until the index
+moved the read off the column, are in [database.md](database.md) and in
+`token-budgets.properties` under *What "where is this used" costs*.
 
 **Every write assigns a friendly URL, and `create` was the one that did not (SH651).** SH396 found
 five posts created through `POST /api/v2/post-unified` all reported at their folder's own address —

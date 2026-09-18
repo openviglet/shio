@@ -20,6 +20,7 @@ import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
@@ -55,6 +56,9 @@ import tools.jackson.databind.node.ObjectNode;
  */
 @Service
 public class ShPostTypeMigrateService {
+    /** SH1034 — the reverse index, maintained beside this class's own writes. */
+    private final ShObjectReferenceService shObjectReferenceService;
+
 
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
@@ -62,7 +66,9 @@ public class ShPostTypeMigrateService {
 
     public ShPostTypeMigrateService(ShPostTypeRepository shPostTypeRepository,
                                     ShPostUnifiedRepository shPostUnifiedRepository,
-                                    ObjectMapper objectMapper) {
+                                    ObjectMapper objectMapper,
+            ShObjectReferenceService shObjectReferenceService) {
+        this.shObjectReferenceService = shObjectReferenceService;
         this.shPostTypeRepository = shPostTypeRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.objectMapper = objectMapper;
@@ -180,7 +186,7 @@ public class ShPostTypeMigrateService {
         // leaves a type half in one shape and half in another.
         for (PlannedWrite write : writes) {
             write.post().setData(write.data());
-            shPostUnifiedRepository.save(write.post());
+            shObjectReferenceService.reindex(shPostUnifiedRepository.save(write.post()));
         }
         return plan;
     }

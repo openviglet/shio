@@ -27,6 +27,7 @@ import com.viglet.shio.object.ShLiveObject;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -50,6 +51,9 @@ import com.viglet.shio.url.ShURLFormatter;
  */
 @Service
 public class ShObjectWriteService {
+    /** SH1034 — the reverse index, maintained beside this class's own writes. */
+    private final ShObjectReferenceService shObjectReferenceService;
+
 
     private static final List<ShPostState> ALL_STATES = List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
 
@@ -67,7 +71,9 @@ public class ShObjectWriteService {
                                 ShPostUnifiedWriteService shPostUnifiedWriteService,
                                 ShFolderWriteService shFolderWriteService,
                                 ShFurlNaming shFurlNaming,
-                                ShFileStorageService shFileStorageService) {
+                                ShFileStorageService shFileStorageService,
+            ShObjectReferenceService shObjectReferenceService) {
+        this.shObjectReferenceService = shObjectReferenceService;
         this.shObjectRepository = shObjectRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -382,7 +388,7 @@ public class ShObjectWriteService {
             copy.setData(source.getData());
             copy.setDate(Instant.now());
             copy.setPublished(false);
-            shPostUnifiedRepository.save(copy);
+            shObjectReferenceService.reindex(shPostUnifiedRepository.save(copy));
         }
         // SH749 — the row is keyed by a fresh UUID and so is the storage, so a copy without this
         // line is a `File` post pointing at a directory nobody wrote: every surface reports

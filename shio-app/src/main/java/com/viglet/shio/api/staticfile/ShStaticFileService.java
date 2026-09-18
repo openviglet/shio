@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,6 +40,8 @@ import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.api.reference.ShObjectReferenceService;
+import com.viglet.shio.persistence.model.reference.ShObjectReference;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -73,6 +76,9 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ShStaticFileService {
+    /** SH1034 — the reverse index, maintained beside this class's own writes. */
+    private final ShObjectReferenceService shObjectReferenceService;
+
 
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
@@ -147,7 +153,9 @@ public class ShStaticFileService {
                                ShTenantQuotaService shTenantQuotaService,
                                ShUploadPolicy shUploadPolicy,
                                ShSvgSanitizer shSvgSanitizer,
-                               ObjectProvider<ShStaticFileService> self) {
+                               ObjectProvider<ShStaticFileService> self,
+                               ShObjectReferenceService shObjectReferenceService) {
+        this.shObjectReferenceService = shObjectReferenceService;
         this.shUploadPolicy = shUploadPolicy;
         this.shSvgSanitizer = shSvgSanitizer;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
@@ -412,6 +420,7 @@ public class ShStaticFileService {
         // unchanged, which is the silent no-op SH210 removed, restored by its own cache.
         stampBytes(post, fileName);
         ShPostUnified saved = shPostUnifiedRepository.save(post);
+        shObjectReferenceService.reindex(saved);
         // The change feed and the SH109 queue both read the audit trail, and a replaced asset is
         // a content change like any other — a reviewer told nothing would see the field unchanged
         // (it is: the path did not move) and no reason for the page to look different.
@@ -945,6 +954,7 @@ public class ShStaticFileService {
             post.setModifier(actor);
         }
         ShPostUnified saved = shPostUnifiedRepository.save(post);
+        shObjectReferenceService.reindex(saved);
         // SH1032 — the feed and the review queue both read this, and describing an image is a
         // content change like any other. Nothing is recorded when nothing moved: a PUT that re-sent
         // the values already stored would otherwise put a row in a curator's feed saying an asset
@@ -966,18 +976,36 @@ public class ShStaticFileService {
      */
     @Transactional(readOnly = true)
     public List<ShStaticFileUsage> listUsage(String id) {
-        java.util.LinkedHashMap<String, ShStaticFileUsage> byId = new java.util.LinkedHashMap<>();
-        for (ShPostState state : List.of(ShPostState.PUBLISHED, ShPostState.DRAFT)) {
-            for (ShPostUnified ref : shPostUnifiedRepository.findReferencingFileId(id, state)) {
-                byId.putIfAbsent(ref.getId(), new ShStaticFileUsage(
+        // SH1034 — ONE indexed read where SH1033 measured two table scans, and only the rows the
+        // answer names are loaded afterwards. The cost is the answer's size: 4 rows examined at
+        // fifty thousand posts, against 50,002 twice.
+        List<ShObjectReference> edges = shObjectReferenceService.referrersOf(id);
+        Map<String, ShPostState> statesById = new LinkedHashMap<>();
+        // PUBLISHED first, so the dedupe below prefers the live row — the same preference the
+        // two-query form got from the order it ran them in.
+        preferState(edges, ShPostState.PUBLISHED, id, statesById);
+        preferState(edges, ShPostState.DRAFT, id, statesById);
+
+        Map<String, ShStaticFileUsage> byId = new LinkedHashMap<>();
+        statesById.forEach((postId, state) -> shPostUnifiedRepository
+                .findByIdAndState(postId, state)
+                .ifPresent(ref -> byId.put(ref.getId(), new ShStaticFileUsage(
                         ref.getId(), ref.getTitle(),
                         ref.getShPostType() != null ? ref.getShPostType().getName() : null,
                         ref.getShFolder() != null ? ref.getShFolder().getName() : null,
                         ref.getShSite() != null ? ref.getShSite().getName() : null,
-                        state == ShPostState.PUBLISHED));
+                        state == ShPostState.PUBLISHED))));
+        return List.copyOf(byId.values());
+    }
+
+    /** Claims each referrer for {@code state} unless an earlier call already claimed it. */
+    private static void preferState(List<ShObjectReference> edges, ShPostState state,
+            String assetId, Map<String, ShPostState> into) {
+        for (ShObjectReference edge : edges) {
+            if (edge.getFromState() == state && !edge.getFromPostId().equals(assetId)) {
+                into.putIfAbsent(edge.getFromPostId(), state);
             }
         }
-        return List.copyOf(byId.values());
     }
 
     /**

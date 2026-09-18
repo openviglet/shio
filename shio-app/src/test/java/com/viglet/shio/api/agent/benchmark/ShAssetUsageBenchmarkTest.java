@@ -39,6 +39,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.api.staticfile.ShStaticFileService;
 import com.viglet.shio.api.staticfile.ShStaticFileUsage;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -47,41 +48,42 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.repository.reference.ShObjectReferenceRepository;
 import com.viglet.shio.widget.ShSystemWidget;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceContext;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * SH1033 — what "where is this used" costs, before anything replaces it.
+ * SH1033/SH1034 — what "where is this used" cost, and what it costs now.
  *
- * <h2>Why the measurement is the deliverable</h2>
+ * <h2>Why the measurement came first</h2>
  *
- * <p>§LXX.6 proposes a reverse-reference table maintained on every write, and that may well be
- * right. But a row maintained on every create, update, publish and delete is a <em>hot-path</em>
- * cost paid to make a dialog fast, and agents.md is explicit that such a change lands as a
- * benchmark first: <em>a cost that is argued rather than measured is the same defect as a premise
- * carried in a comment, and it fails the same way — quietly, and in somebody else's
- * environment.</em> So this class states what the read costs today and what the maintenance would
- * cost, and whatever it says is SH1034's argument rather than the other way round.</p>
+ * <p>§LXX.6 proposed a reverse-reference table maintained on every write. A row maintained on
+ * every create, update, publish and delete is a <em>hot-path</em> cost paid to make a dialog fast,
+ * and agents.md is explicit that such a change lands as a benchmark first: <em>a cost that is
+ * argued rather than measured is the same defect as a premise carried in a comment, and it fails
+ * the same way — quietly, and in somebody else's environment.</em> So SH1033 wrote this class, and
+ * what it said became SH1034's argument rather than the other way round.</p>
  *
- * <h2>What it found</h2>
+ * <h2>What it found, and what changed</h2>
  *
- * <p><b>The read is a full table scan, twice.</b> {@code findReferencingFileId} is
+ * <p><b>The read was a full table scan, twice.</b> {@code findReferencingFileId} is
  * {@code data like concat('%', :fileId, '%')} — a leading wildcard, which no B-tree can serve —
- * and {@code listUsage} runs it once per state, so opening one detail dialog examines every post
- * row in the tenant twice to answer with a handful. The scan count and the elapsed time are both
- * linear in the table, which is the shape that makes the dialog a per-instance rather than a
- * per-asset cost.</p>
+ * and {@code listUsage} ran it once per state, so opening one detail dialog examined every post
+ * row in the tenant twice to answer with a handful: 1,002, 10,002 and 50,002 at the three sizes.
+ * <b>The maintenance is not linear in anything the table controls</b> — one delete plus one insert
+ * per reference, bounded by the post's own declared fields and measured identical at fifty
+ * thousand rows and at zero. Two curves rather than two numbers, which is what chose the index
+ * over a cached count.</p>
  *
- * <p><b>The maintenance is not.</b> A prototype of the index — the table, its two indexes, and the
- * walk that fills it from a post's own declared {@code File} and {@code Content Select} fields —
- * turns the read into a seek bounded by the number of referrers, and costs a fixed handful of
- * statements per write however large the table is. The two numbers are on different curves, and
- * that, rather than either number alone, is what settles BE6.</p>
+ * <p>SH1034 built it, so this class now measures the shipped {@code sh_object_reference} rather
+ * than a prototype: the dialog issues the substring predicate <b>zero</b> times and the indexed
+ * read examines <b>four</b> rows at fifty thousand posts. <b>The scan is still measured</b>, at
+ * every size, because the predicate is still on the repository and because a saving nobody
+ * re-measures is one that quietly stops being a saving.</p>
  *
  * <h2>Rows examined, not milliseconds — and why this class needs a third instrument</h2>
  *
@@ -136,6 +138,10 @@ class ShAssetUsageBenchmarkTest {
     private EntityManagerFactory entityManagerFactory;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private ShObjectReferenceService shObjectReferenceService;
+    @Autowired
+    private ShObjectReferenceRepository shObjectReferenceRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -149,7 +155,9 @@ class ShAssetUsageBenchmarkTest {
 
     private String assetId;
     private ShFolder folder;
+    private String folderId;
     private ShPostType articleType;
+    private String articleTypeId;
     private int rows;
 
     // --- fixture ---
@@ -171,6 +179,7 @@ class ShAssetUsageBenchmarkTest {
             root.setOwner("admin");
             entityManager.persist(root);
             folder = root;
+            folderId = root.getId();
 
             // A type that DECLARES where its references live, which is the walk's whole advantage
             // over a substring: it reads two named fields instead of the whole document.
@@ -180,6 +189,7 @@ class ShAssetUsageBenchmarkTest {
             articleType.setDescription("SH1033 benchmark fixture");
             articleType.setDate(EPOCH);
             entityManager.persist(articleType);
+            articleTypeId = articleType.getId();
             attribute(articleType, "HERO", ShSystemWidget.FILE);
             attribute(articleType, "RELATED", ShSystemWidget.CONTENT_SELECT);
 
@@ -195,7 +205,6 @@ class ShAssetUsageBenchmarkTest {
             assetId = asset.getId();
         });
 
-        createPrototypeTable();
     }
 
     private void attribute(ShPostType type, String name, String widget) {
@@ -233,6 +242,11 @@ class ShAssetUsageBenchmarkTest {
                     post.setDate(EPOCH);
                     post.setOwner("admin");
                     entityManager.persist(post);
+                    // SH1034 — the index is DERIVED, so a fixture that persists rows behind the
+                    // write service has to maintain it exactly as production does. Leaving this
+                    // out made `listUsage` answer with nothing, which is the same defect
+                    // ShReferenceIndexMaintenanceLintTest exists to stop shipping.
+                    shObjectReferenceService.reindex(post);
                 }
             });
             rows = REFERRERS;
@@ -278,8 +292,8 @@ class ShAssetUsageBenchmarkTest {
 
     @Test
     @Order(1)
-    @DisplayName("SH1033: one dialog scans the whole table, once per state, at every size")
-    void theDialogScansTheTableTwice() {
+    @DisplayName("SH1034: the dialog reads the index; the predicate it replaced still scans")
+    void theDialogNoLongerScansTheTable() {
         List<String> report = new ArrayList<>();
         long firstScan = 0;
         long lastScan = 0;
@@ -300,34 +314,32 @@ class ShAssetUsageBenchmarkTest {
             }
             lastScan = examined;
             report.add(String.format(
-                    "  %6d rows: %d scan(s) per dialog, %d row(s) examined per scan, %d ms"
+                    "  %6d rows: %d scan(s) per dialog, the scan would examine %d, %d ms"
                             + "  |  maintenance %d statement(s) per write",
                     rows, scans, examined, millis, maintenance));
 
             assertThat(usage()).as("the answer does not change with the noise").hasSize(REFERRERS);
 
-            // The first half of the symptom, as an assertion. Two states, two scans, one dialog.
-            // Bounded BELOW as well, and that is not belt-and-braces: this class's first run had
-            // no `generate_statistics`, so the counter read 0, the ceiling was satisfied, and the
-            // assertion said nothing. A count that can be vacuously zero needs both ends.
+            // SH1033 asserted this was POSITIVE — two scans per dialog — and its message said the
+            // ceiling would come down with the fix rather than be left where a win can erode under
+            // it. This is that: the dialog issues the substring predicate ZERO times.
             assertThat(scans)
                     .as("""
-                            `listUsage` loops PUBLISHED then DRAFT and runs the same unindexed \
-                            predicate for each, so a dialog pays for the table twice. A single-state \
-                            query is the cheap half of BE6's fix; when it lands, this ceiling comes \
-                            down with it rather than being left where a win can erode under it.""")
-                    .isPositive()
+                            `listUsage` reads the index now, so the unindexed predicate must not \
+                            run at all. Measured %d at %d rows. Above this ceiling means a caller \
+                            went back to `findReferencingFileId`, and took the whole of SH1034 \
+                            with it.""", scans, rows)
                     .isLessThanOrEqualTo(ceiling("usage.dialog.max-scans"));
 
-            // The second half, and the one no instrument in this package could see. A B-tree
-            // cannot serve a leading wildcard, so every row is read whatever the answer is.
+            // The cost AVOIDED, still measured, because a saving nobody re-measures is one that
+            // quietly stops being a saving. The predicate is still on the repository, and it is
+            // still a scan: a B-tree cannot serve a leading wildcard wherever it is called from.
             assertThat(examined)
                     .as("""
                             `data like concat('%%', :fileId, '%%')` has a LEADING wildcard, which no \
-                            index orders — so the plan is a table scan and the rows examined are the \
-                            rows that exist. Measured %d examined to return %d at %d rows. If this \
-                            ever drops below the row count, the predicate stopped being a scan and \
-                            the whole of BE6's premise needs re-reading.""",
+                            index orders. Measured %d examined to answer with %d at %d rows — the \
+                            number SH1034 stopped paying, kept here so the comparison stays \
+                            honest rather than becoming a sentence in a commit.""",
                             examined, REFERRERS, rows)
                     .isGreaterThanOrEqualTo(rows);
         }
@@ -338,7 +350,8 @@ class ShAssetUsageBenchmarkTest {
         MEASURED.put("usage.scan.growth-ratio", growth);
         MEASURED.put("usage.maintenance.statements-per-write", MAINTENANCE.get(0));
 
-        System.out.println("\nSH1033 — where-is-this-used, measured on H2:\n"
+        System.out.println("\nSH1034 — where-is-this-used, measured on H2 "
+                + "(the scan column is the predicate the index replaced, still priced):\n"
                 + String.join("\n", report));
 
         // A FLOOR, which is the unusual direction and deliberate: what it asserts is that the cost
@@ -369,49 +382,47 @@ class ShAssetUsageBenchmarkTest {
                 .isLessThanOrEqualTo(ceiling("usage.maintenance.max-statements-per-write"));
     }
 
-    // --- the write, prototyped ---
+    // --- the index that replaced it ---
 
     /**
-     * What the index would cost on the hot path, built rather than argued.
+     * The same answer, now a seek — measured on the shipped table rather than a prototype.
      *
-     * <p>The prototype is the whole of §LXX.6's proposal minus the schema commitment: the table,
-     * its two indexes, and the maintenance step — parse the post's {@code data} once, read the
-     * fields its post-type declares as {@code File} or {@code Content Select}, replace that post's
-     * rows. It lives in this class's own database because the decision to add a table is
-     * SH1034's, and a changeset shipped to make a measurement is a schema nobody chose.</p>
+     * <p>SH1033 built {@code sh_reference_prototype} in this class's own database, because the
+     * decision to add a table was SH1034's and a changeset shipped to take a measurement is a
+     * schema nobody chose. SH1034 made that decision, so the prototype is gone and this reads
+     * {@code sh_object_reference} itself: the number now describes what runs in production
+     * instead of what one might build.</p>
      */
     @Test
     @Order(2)
-    @DisplayName("SH1033: through the prototype index the same answer is a seek, not a scan")
+    @DisplayName("SH1034: the same answer through the index is a seek, not a scan")
     void theIndexedReadIsASeek() {
         growTo(SIZES[SIZES.length - 1]);
-        backfillPrototype();
 
         long seek = scanCount("explain analyze select from_post_id, from_state "
-                + "from sh_reference_prototype where to_object_id = '" + assetId + "'");
-        long millis = millisOf(this::prototypeUsage);
+                + "from sh_object_reference where to_object_id = '" + assetId + "'");
+        long millis = millisOf(this::usage);
 
         MEASURED.put("usage.indexed.rows-examined", seek);
 
         System.out.printf("""
 
-                SH1033 - a maintained reverse index, prototyped at %d rows:
+                SH1034 - the shipped reverse index at %d rows:
                   read: %d row(s) examined, %d ms, %d referrer(s) found
                   against the LIKE at the same size: %d row(s) examined, twice
-                """, rows, seek, millis, prototypeUsage().size(),
+                """, rows, seek, millis, usage().size(),
                 MEASURED.get("usage.scan.rows-examined-at-50k"));
 
-        assertThat(prototypeUsage())
-                .as("the prototype answers the same question as the scan, or it is not a "
-                        + "comparison")
+        assertThat(usage())
+                .as("the index answers the same question the scan did, or it is not a replacement")
                 .hasSize(REFERRERS);
 
-        // The half that decides BE6. The read stops being linear in the table.
+        // The half that decided BE6, now the half that proves it landed.
         assertThat(seek)
                 .as("""
                         an equality predicate on an indexed column is a seek: %d row(s) examined \
                         against %d in the table, where the LIKE examines all of them. This is the \
-                        number that makes the write-side cost worth paying.""", seek, rows)
+                        number the write-side cost buys.""", seek, rows)
                 .isLessThanOrEqualTo(ceiling("usage.indexed.max-rows-examined"));
     }
 
@@ -485,135 +496,63 @@ class ShAssetUsageBenchmarkTest {
         return (System.nanoTime() - started) / 1_000_000;
     }
 
-    // --- the prototype ---
-
-    private void createPrototypeTable() {
-        execute("""
-                create table if not exists sh_reference_prototype (
-                  from_post_id varchar(36) not null,
-                  from_state varchar(16) not null,
-                  to_object_id varchar(36) not null,
-                  field_name varchar(255) not null
-                )""");
-        execute("create index if not exists ix_reference_prototype_to "
-                + "on sh_reference_prototype(to_object_id)");
-        execute("create index if not exists ix_reference_prototype_from "
-                + "on sh_reference_prototype(from_post_id, from_state)");
-    }
+    // --- the maintenance, as it actually runs ---
 
     /**
-     * The maintenance step one write would pay, counted in statements.
+     * What one write pays to keep the index true, counted in statements.
      *
-     * <p>One parse of the post's own {@code data}, one delete of its rows, one insert per
-     * reference it declares. Nothing here reads another post, which is the property being
-     * measured: the cost belongs to the row being written.</p>
+     * <p>SH1033 measured this against a prototype it built in its own database; this calls
+     * {@link ShObjectReferenceService#reindex} — the production path — so the number describes the
+     * hot path rather than a sketch of it. One delete of the row's edges, one insert per reference
+     * the document declares, and <b>nothing that reads another post</b>: that last property is the
+     * one being measured, because a maintenance step growing with the table would trade a slow
+     * dialog for a slow write.</p>
+     *
+     * <p>The row is created, indexed and removed inside the measurement so the seek in the test
+     * above does not answer with it — SH239's confound, one table over.</p>
      */
     private long maintenanceStatementsFor(int references) {
-        String postId = UUID.randomUUID().toString();
         StringBuilder data = new StringBuilder("{\"HERO\":\"" + assetId + "\",\"RELATED\":[");
         for (int index = 1; index < references; index++) {
             data.append(index > 1 ? "," : "").append('"').append(UUID.randomUUID()).append('"');
         }
         data.append("]}");
 
-        List<String> referenced = walk(data.toString());
-        assertThat(referenced)
-                .as("the walk reads the type's declared File and Content Select fields, so it "
-                        + "must find exactly the references the document carries")
-                .hasSize(references);
-
-        return new TransactionTemplate(transactionManager).execute(status -> {
-            long statements = 1;
-            entityManager.createNativeQuery(
-                    "delete from sh_reference_prototype where from_post_id = ?1 and from_state = ?2")
-                    .setParameter(1, postId)
-                    .setParameter(2, ShPostState.DRAFT.name())
-                    .executeUpdate();
-            for (String target : referenced) {
-                entityManager.createNativeQuery("insert into sh_reference_prototype "
-                        + "(from_post_id, from_state, to_object_id, field_name) "
-                        + "values (?1, ?2, ?3, ?4)")
-                        .setParameter(1, postId)
-                        .setParameter(2, ShPostState.DRAFT.name())
-                        .setParameter(3, target)
-                        .setParameter(4, "HERO")
-                        .executeUpdate();
-                statements++;
-            }
-            // Written and then removed: this measures the WRITE, and leaving the rows behind
-            // would make the seek below answer with them (SH239's confound, one table over).
-            entityManager.createNativeQuery(
-                    "delete from sh_reference_prototype where from_post_id = ?1")
-                    .setParameter(1, postId)
-                    .executeUpdate();
-            return statements;
+        ShPostUnified probe = new ShPostUnified();
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            probe.setShFolder(entityManager.getReference(ShFolder.class, folderId));
+            probe.setShPostType(entityManager.getReference(ShPostType.class, articleTypeId));
+            probe.setState(ShPostState.DRAFT);
+            probe.setTitle("maintenance probe");
+            probe.setFurl("maintenance-probe-" + UUID.randomUUID());
+            probe.setData(data.toString());
+            probe.setDate(EPOCH);
+            probe.setOwner("admin");
+            entityManager.persist(probe);
+            entityManager.flush();
         });
-    }
 
-    /** The references a document declares, read through its post-type rather than guessed. */
-    private List<String> walk(String data) {
-        JsonNode parsed = objectMapper.readTree(data);
-        List<String> found = new ArrayList<>();
-        if (!parsed.isObject()) {
-            return found;
-        }
-        for (ShPostTypeAttr attr : referenceFields()) {
-            JsonNode value = parsed.get(attr.getName());
-            if (value == null) {
-                continue;
-            }
-            if (value.isString() && !value.asString().isBlank()) {
-                found.add(value.asString());
-            } else if (value.isArray()) {
-                value.forEach(entry -> {
-                    if (entry.isString() && !entry.asString().isBlank()) {
-                        found.add(entry.asString());
-                    }
-                });
-            }
-        }
-        return found;
-    }
+        long statements = new TransactionTemplate(transactionManager).execute(status -> {
+            Statistics statistics =
+                    entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+            long before = statistics.getPrepareStatementCount();
+            shObjectReferenceService.reindex(probe);
+            entityManager.flush();
+            return statistics.getPrepareStatementCount() - before;
+        });
 
-    private List<ShPostTypeAttr> referenceFields() {
-        return new TransactionTemplate(transactionManager).execute(status -> entityManager
-                .createQuery("""
-                        select a from ShPostTypeAttr a
-                         where a.shPostType.id = :type
-                           and a.shWidget.name in (:file, :select)""", ShPostTypeAttr.class)
-                .setParameter("type", articleType.getId())
-                .setParameter("file", ShSystemWidget.FILE)
-                .setParameter("select", ShSystemWidget.CONTENT_SELECT)
-                .getResultList());
-    }
+        assertThat(shObjectReferenceRepository.findByToObjectId(assetId))
+                .as("the walk reads the type's declared File and Content Select fields, so the "
+                        + "probe's own edge must be among them before it is removed")
+                .anyMatch(edge -> edge.getFromPostId().equals(probe.getId()));
 
-    /** Fills the prototype from the fixture, the way a backfill would. */
-    private void backfillPrototype() {
-        execute("delete from sh_reference_prototype");
-        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
-                entityManager.createNativeQuery("""
-                        insert into sh_reference_prototype
-                               (from_post_id, from_state, to_object_id, field_name)
-                        select p.id, p.state, ?1, 'HERO'
-                          from sh_post_unified p
-                         where p.data like ?2""")
-                        .setParameter(1, assetId)
-                        .setParameter(2, "%" + assetId + "%")
-                        .executeUpdate());
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Object[]> prototypeUsage() {
-        return new TransactionTemplate(transactionManager).execute(status -> entityManager
-                .createNativeQuery("select from_post_id, from_state from sh_reference_prototype "
-                        + "where to_object_id = ?1")
-                .setParameter(1, assetId)
-                .getResultList());
-    }
-
-    private void execute(String sql) {
-        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
-                entityManager.createNativeQuery(sql).executeUpdate());
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            shObjectReferenceService.forget(probe.getId());
+            entityManager.createNativeQuery("delete from sh_post_unified where id = ?1")
+                    .setParameter(1, probe.getId())
+                    .executeUpdate();
+        });
+        return statements;
     }
 
     // --- budgets ---

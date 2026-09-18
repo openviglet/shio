@@ -38,9 +38,15 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  *
  * <p>That is <b>SH1099</b>, filed rather than fixed here, and it is not confined to the asset
  * dialog: {@code FULLTEXT_PREDICATE} matches {@code lower(cast(p.data as string))}, so console and
- * CDA search find nothing in a page's body on PostgreSQL either. The two assertions below hold
+ * CDA search find nothing in a page's body on PostgreSQL. The two column assertions below hold
  * <em>today's</em> behaviour and are written to fail when SH1099 lands — which is the point of
  * them, and how the loop closes from this end.</p>
+ *
+ * <p><b>SH1034 took the usage half of it away without meaning to, and that is asserted here too.</b>
+ * The reverse index is written from the entity at write time and read by an equality predicate on
+ * its own column, so "where is this used" never touches {@code data} and is correct on this engine
+ * while every SQL predicate over {@code data} still matches nothing. Worth stating plainly: it is a
+ * property of moving the read off the column, not a repair of the column.</p>
  *
  * <h2>The second plan, and why it is measured but not recommended</h2>
  *
@@ -142,14 +148,19 @@ class ShPostgresAssetUsageScanIT extends ShAssetUsageScanMeasurement {
                 .isZero();
         assertThat(oids).as("and every row holds one instead").isEqualTo(rows);
 
-        // The consequence, at the surface the curator uses. Three referrers exist and the dialog
-        // reports none of them — which is worse than slow: it invites deleting a used asset.
+        // And the consequence SH1034 removed, which is worth an assertion of its own because it
+        // is not the fix anyone planned. `listUsage` used to read this column through SQL, so on
+        // this engine it answered "nothing uses this asset" about an asset three posts used —
+        // worse than slow, since it invites deleting a live one. The reverse index is built from
+        // the entity at write time, so the read never touches `data` and is now correct here.
+        // SH1099 is NOT closed by that: `FULLTEXT_PREDICATE` still reads this column, so console
+        // and CDA search still find nothing in a page's body on PostgreSQL.
         assertThat(usage())
                 .as("""
-                        SH1099 at the boundary it crosses: `listUsage` finds %d referrer(s) on H2 \
-                        and MariaDB and none here, because its predicate reads a column that holds \
-                        an OID. Expect %d once SH1099 lands.""", REFERRERS, REFERRERS)
-                .isEmpty();
+                        SH1034 at the boundary SH1099 crosses: the index is written from the entity, \
+                        so `listUsage` answers with all %d referrer(s) on an engine where every SQL \
+                        predicate over `data` still matches zero rows.""", REFERRERS)
+                .hasSize(REFERRERS);
     }
 
     /**

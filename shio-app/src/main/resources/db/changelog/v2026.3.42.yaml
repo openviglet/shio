@@ -1,0 +1,123 @@
+databaseChangeLog:
+  # SH1034 — `sh_object_reference`: which post points at which object, and through which field.
+  #
+  # SH1033 measured the question this answers. `where is this used` is
+  # `data like concat('%', :fileId, '%')` — a LEADING wildcard, which no B-tree orders — run once
+  # per state, so one detail dialog examines every post row in the tenant twice: 1,002, 10,002 and
+  # 50,002 rows at the three sizes it was measured at. The inverse question, which assets nothing
+  # references, is that same scan once per asset. A prototype of this table answered by examining
+  # FOUR rows at fifty thousand, and its maintenance measured three statements per write, identical
+  # at fifty thousand rows and at zero. Two curves rather than two numbers, which is what chose the
+  # index over a cached count: a count makes one dialog cheap and leaves the inverse question where
+  # it was.
+  #
+  # A NEW TABLE, and `ShReference` is why rather than an oversight. That table already stores
+  # object-to-object edges and cannot hold these: it joins `object_from` and `object_to` to
+  # `ShObject`, and a post is not an `ShObject` — the unified model is its own table.
+  # `ShTemplateGraph` reached the same conclusion from the other side and wrote it down ("a
+  # post-to-post edge would need a new table"). Nothing in main writes `ShReference` today.
+  #
+  # `from_state` is a column and not an assumption. A post's key is (id, state), so a draft and a
+  # published row are two documents that may reference different assets — that is the whole point
+  # of a draft — and an index keyed on the id alone would answer "is this used" with the union and
+  # never be able to say which. It also makes the delete-before-insert of the maintenance step
+  # exact: publishing rewrites one state's rows and leaves the other's alone.
+  #
+  # `field_name` is what makes this more accurate than the substring it replaces. The walk reads
+  # the fields a post-type DECLARES as `File` or `Content Select`, so it knows the reference is a
+  # reference rather than a UUID that happens to appear in a body; and a finding can say which
+  # field to fix.
+  #
+  # No foreign keys, deliberately, and for the reason `sh_review_decision` and `sh_note` give: a
+  # post's key is composite, so an FK would have to name a state, and the row it named is the one
+  # publishing deletes. `to_object_id` is looser still — it points at an asset today and at any
+  # addressable object tomorrow.
+  #
+  # snake_case, because this changelog CREATES the table (the PascalCase spelling belongs to the
+  # SH26 baseline's tables). `tenant_id` lowercase as every content table carries (SH22); not in
+  # ShTenantBackfillRunner.TENANT_TABLES, which backfills NULLs on tables that predate SH22 and has
+  # nothing to do on a table with no rows — `sh_note` is absent for the same reason. Types
+  # DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1034-create-sh-object-reference
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_object_reference
+      changes:
+        - createTable:
+            tableName: sh_object_reference
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_object_reference
+              - column:
+                  name: from_post_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: from_state
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: to_object_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+
+  # The read this table exists for: "which posts point at this object". The one SH1033 measured at
+  # 50,002 rows examined and prototyped at 4.
+  - changeSet:
+      id: sh1034-index-sh-object-reference-to
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: IDX_sh_object_reference_to
+      changes:
+        - createIndex:
+            tableName: sh_object_reference
+            indexName: IDX_sh_object_reference_to
+            columns:
+              - column:
+                  name: to_object_id
+              - column:
+                  name: from_state
+
+  # The WRITE's own read: the maintenance step deletes this post's rows before inserting its
+  # current ones, and without this that delete is the scan the table was added to remove.
+  - changeSet:
+      id: sh1034-index-sh-object-reference-from
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: IDX_sh_object_reference_from
+      changes:
+        - createIndex:
+            tableName: sh_object_reference
+            indexName: IDX_sh_object_reference_from
+            columns:
+              - column:
+                  name: from_post_id
+              - column:
+                  name: from_state

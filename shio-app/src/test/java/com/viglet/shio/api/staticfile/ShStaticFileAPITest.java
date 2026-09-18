@@ -91,6 +91,11 @@ class ShStaticFileAPITest {
     private tools.jackson.databind.ObjectMapper objectMapper;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private com.viglet.shio.persistence.repository.post.type.ShPostTypeAttrRepository
+            shPostTypeAttrRepository;
+    @Autowired
+    private com.viglet.shio.persistence.repository.widget.ShWidgetRepository shWidgetRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -522,9 +527,18 @@ class ShStaticFileAPITest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.postId)]").doesNotExist());
 
-        // create a (File-type) post that references the file id in its data, as a
-        // Content Select / File widget would
-        String fileTypeId = shStaticFileService.resolveOrCreateFilePostType().getId();
+        // A post that references the file id through a field its type DECLARES as a reference.
+        //
+        // SH1034 made that distinction load-bearing. This fixture used to put the id under an
+        // arbitrary `REF` key and rely on the substring scan finding it anywhere in `data` — the
+        // comment said "as a Content Select / File widget would" while doing something no widget
+        // does. The index is built from the model, so the field has to exist on the type: an id
+        // sitting in an undeclared key is not a reference, and reporting it as one is the
+        // inaccuracy §LXX.6 gives as the reason for walking the model instead of the bytes.
+        com.viglet.shio.persistence.model.post.type.ShPostType fileType =
+                shStaticFileService.resolveOrCreateFilePostType();
+        String fileTypeId = fileType.getId();
+        declareReferenceField(fileTypeId, "REF");
         var data = objectMapper.createObjectNode();
         data.put("FILE", "referrer.txt");
         data.put("REF", fileId);
@@ -538,6 +552,39 @@ class ShStaticFileAPITest {
         mockMvc.perform(get("/api/v2/staticfile/" + fileId + "/usage").principal(mockPrincipal))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.postId == '" + referrerId + "')]").exists());
+    }
+
+    /**
+     * Gives the post type a {@code Content Select} attribute called {@code name}, if it has none.
+     *
+     * <p>SH1034: a reference is a field the model declares, so a fixture that means "this post
+     * points at that asset" has to say so on the type. Idempotent, because the {@code File} type
+     * is instance-wide and a second call from a re-run would otherwise add a duplicate.</p>
+     *
+     * <p><b>Everything here is a managed reference, and that is the agents.md trap rather than
+     * style.</b> Saving an attribute that holds a <em>detached</em> {@code ShPostType} cascades a
+     * re-insert of the type into {@code ShObject} and fails on its primary key; the widget is
+     * {@code cascade = ALL} for the same reason the invariant warns about mutating one. So the
+     * type and the widget are both re-resolved inside this transaction.</p>
+     */
+    private void declareReferenceField(String typeId, String name) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            var type = entityManager.find(
+                    com.viglet.shio.persistence.model.post.type.ShPostType.class, typeId);
+            if (type == null || shPostTypeAttrRepository.findByShPostTypeAndName(type, name) != null) {
+                return;
+            }
+            var widget = shWidgetRepository.findFirstByName(
+                    com.viglet.shio.widget.ShSystemWidget.CONTENT_SELECT);
+            com.viglet.shio.persistence.model.post.type.ShPostTypeAttr attr =
+                    new com.viglet.shio.persistence.model.post.type.ShPostTypeAttr();
+            attr.setName(name);
+            attr.setLabel(name);
+            attr.setShPostType(type);
+            attr.setShWidget(entityManager.getReference(
+                    com.viglet.shio.persistence.model.widget.ShWidget.class, widget.getId()));
+            entityManager.persist(attr);
+        });
     }
 
     /**

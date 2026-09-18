@@ -37,6 +37,7 @@ import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
@@ -79,6 +80,9 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Service
 public class ShSiteImportService {
+    /** SH1034 — the reverse index, maintained beside this class's own writes. */
+    private final ShObjectReferenceService shObjectReferenceService;
+
 
     private final ShExchangePackageCodec codec;
     private final ShPostTypeAdminService shPostTypeAdminService;
@@ -99,7 +103,9 @@ public class ShSiteImportService {
                                ShPostTypeRepository shPostTypeRepository,
                                ObjectMapper objectMapper,
                                ShAgentMemoryService shAgentMemoryService,
-                               ShSiteFurlNaming shSiteFurlNaming) {
+                               ShSiteFurlNaming shSiteFurlNaming,
+                               ShObjectReferenceService shObjectReferenceService) {
+        this.shObjectReferenceService = shObjectReferenceService;
         this.codec = codec;
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shSiteRepository = shSiteRepository;
@@ -275,7 +281,7 @@ public class ShSiteImportService {
                 row.setPublicationDate(now);
             }
             row.setData(remapData(exPost.data(), idRemap));
-            shPostUnifiedRepository.save(row);
+            shObjectReferenceService.reindex(shPostUnifiedRepository.save(row));
         }
 
         return new CloneResult(firstSite, postTypesCreated);

@@ -60,6 +60,7 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.tenant.ShTenantContext;
+import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.webhook.ShPostLifecycleEvent;
 
 import tools.jackson.core.JacksonException;
@@ -131,6 +132,17 @@ public class ShPostUnifiedWriteService {
     /** SH1010 — the one field rule that reads other posts, and the write-time default. */
     private final ShFieldUniqueness shFieldUniqueness;
 
+    /**
+     * SH1034 — the reverse index, maintained beside every write that touches {@code data}.
+     *
+     * <p>Called after the save rather than before it, because a row that failed to persist must
+     * not leave edges behind, and {@code reindex} is a rewrite so a repeat is free (P5). The
+     * paths that do <b>not</b> touch {@code data} — {@code setFurl}, {@code move},
+     * {@code schedule} — deliberately do not call it: an address change moves no reference, and a
+     * reindex there would be three statements bought for nothing.</p>
+     */
+    private final ShObjectReferenceService shObjectReferenceService;
+
     public ShPostUnifiedWriteService(ShFolderRepository shFolderRepository,
                                      ShSiteRepository shSiteRepository,
                                      ShPostTypeRepository shPostTypeRepository,
@@ -143,7 +155,9 @@ public class ShPostUnifiedWriteService {
                                      ShFurlNaming shFurlNaming,
                                      ShHtmlSanitizer shHtmlSanitizer,
                                      ShPostRevisionService shPostRevisionService,
-                                     ShFieldUniqueness shFieldUniqueness) {
+                                     ShFieldUniqueness shFieldUniqueness,
+                                     ShObjectReferenceService shObjectReferenceService) {
+        this.shObjectReferenceService = shObjectReferenceService;
         this.shFieldUniqueness = shFieldUniqueness;
         this.shHtmlSanitizer = shHtmlSanitizer;
         this.shPostRevisionService = shPostRevisionService;
@@ -251,6 +265,7 @@ public class ShPostUnifiedWriteService {
         }
 
         ShPostUnified saved = shPostUnifiedRepository.save(row);
+        shObjectReferenceService.reindex(saved);
         shContentAuditService.record(ShContentAction.CREATE, saved.getId(),
                 siteIdOf(saved), saved.getTitle(), req.owner());
         reviewRequested(saved);
@@ -285,6 +300,7 @@ public class ShPostUnifiedWriteService {
                 ? ShObjectPublishStatus.PUBLISH : ShObjectPublishStatus.DRAFT);
 
         ShPostUnified saved = shPostUnifiedRepository.save(row);
+        shObjectReferenceService.reindex(saved);
         if (shPostRevisionService.capturesOnSave()) {
             shPostRevisionService.capture(saved, ShPostRevision.Reason.SAVE, req.modifier());
         }
@@ -519,6 +535,9 @@ public class ShPostUnifiedWriteService {
         pub.setLocale(draft.getLocale());
         pub.setTranslationGroupId(draft.getTranslationGroupId());
         ShPostUnified saved = shPostUnifiedRepository.save(pub);
+        // SH1034 — the PUBLISHED row is a second document with its own edges: it has just taken
+        // the draft's data, and until this runs the index describes the page as it was last live.
+        shObjectReferenceService.reindex(saved);
         // SH986 — the state that just went live, captured in the transaction that made it visible.
         // The row this publish deleted already has a revision of its own, from the publish that put
         // it there; capturing the *incoming* row is what makes "every state a visitor saw" true of
@@ -571,6 +590,7 @@ public class ShPostUnifiedWriteService {
         draft.setPublished(false);
         draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
         ShPostUnified saved = shPostUnifiedRepository.save(draft);
+        shObjectReferenceService.reindex(saved);
         shContentAuditService.record(ShContentAction.RESTORE, postId,
                 siteIdOf(saved), saved.getTitle(), modifier, changed);
         return saved;
@@ -627,6 +647,7 @@ public class ShPostUnifiedWriteService {
         draft.setPublished(false);
         draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
         ShPostUnified saved = shPostUnifiedRepository.save(draft);
+        shObjectReferenceService.reindex(saved);
         shContentAuditService.record(ShContentAction.RESTORE, postId,
                 siteIdOf(saved), saved.getTitle(), modifier, changed);
         return saved;
@@ -872,6 +893,10 @@ public class ShPostUnifiedWriteService {
                     shContentAuditService.record(ShContentAction.UNPUBLISH, postId,
                             siteIdOf(published), published.getTitle(), actor, detail, null);
                     shPostUnifiedRepository.delete(published);
+                    // SH1034 — the PUBLISHED row is gone, so its edges are too. Only that state's:
+                    // the draft still references whatever it references, and forgetting both here
+                    // would make an unpublish read as "nothing uses this asset".
+                    shObjectReferenceService.forget(postId, ShPostState.PUBLISHED);
                     eventPublisher.publishEvent(event);
                 });
     }
@@ -891,6 +916,10 @@ public class ShPostUnifiedWriteService {
         rows.forEach(row -> {
             row.setDeletedDate(now);
             shPostUnifiedRepository.save(row);
+            // SH1034 — a trashed post does not keep an asset alive. `reindex` reads the row's own
+            // deletedDate and writes no edges for it, so this is the same call as everywhere else
+            // rather than a second rule; `restoreFromTrash` puts them back by saving again.
+            shObjectReferenceService.reindex(row);
         });
         shContentAuditService.record(ShContentAction.DELETE, postId,
                 siteIdOf(snapshot), snapshot.getTitle(), actor);
@@ -944,6 +973,10 @@ public class ShPostUnifiedWriteService {
         if (shPostUnifiedRepository.restoreFromTrash(postId, tenantId()) == 0) {
             return false;
         }
+        // SH1034 — restoring is the inverse of the trash's reindex, and it is a bulk UPDATE
+        // rather than a save, so nothing else here would put the edges back. Every row, because
+        // a post is restored in both states at once.
+        shPostUnifiedRepository.findById(postId).forEach(shObjectReferenceService::reindex);
         shPostUnifiedRepository.findById(postId).stream().findFirst().ifPresent(p ->
                 shContentAuditService.record(ShContentAction.RESTORE, postId,
                         siteIdOf(p), p.getTitle(), actor));
@@ -1100,6 +1133,7 @@ public class ShPostUnifiedWriteService {
         String siteId = siteIdOf(row);
         ShPostLifecycleEvent event = lifecycleEvent(ShWebhookEventType.DELETE, row);
         shPostUnifiedRepository.purge(postId, tenantId());
+        shObjectReferenceService.forget(postId);
         shContentAuditService.record(ShContentAction.PURGE, postId, siteId, title, actor);
         eventPublisher.publishEvent(event);
         return true;

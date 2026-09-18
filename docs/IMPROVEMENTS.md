@@ -2110,18 +2110,18 @@ assertions replace an image, read the new bytes behind the old id, and revert.
 ### LXX.8 Data is a large object on PostgreSQL, and nothing that reads it as text works (SH1099)
 
 `ShPostUnified.data` is `@Lob String`. On H2 and MariaDB that is a text column and every
-predicate over it behaves. On PostgreSQL the pgjdbc driver reads `@Lob` as a *large
-object*: the `text` column stores an OID, the JSON lives in `pg_largeobject`, and
-Hibernate resolves it on read so the application looks entirely correct. Measured while
-taking BE5's numbers, on a 5,000-post PostgreSQL 16 fixture: 5,001 rows, 5,001 large
-objects, every `data` value matching `^[0-9]+$`, and the entity read returning the right
-document.
+predicate over it behaves. On PostgreSQL pgjdbc reads `@Lob` as a *large object*: the
+`text` column stores an OID, the JSON lives in `pg_largeobject`, and Hibernate resolves
+it on read so the application looks entirely correct. Measured on a 5,000-post
+PostgreSQL 16 fixture: 5,001 rows, 5,001 large objects, every `data` value matching
+`^[0-9]+$`, and the entity read returning the right document.
 
-Two shipped surfaces are wrong rather than slow. `findReferencingFileId` is `data like
-concat('%', :fileId, '%')`, so where-is-this-used answers **empty** on every PostgreSQL
-instance — a curator is told an asset is unreferenced and deletes it.
-`FULLTEXT_PREDICATE` matches `lower(cast(p.data as string))`, so console and CDA search
-find nothing in a page's body, which SH240 added the predicate specifically to fix.
+Two shipped surfaces were wrong rather than slow, and **SH1034 removed one without
+meaning to**: `listUsage` reads `sh_object_reference` now, written from the entity at
+write time, so it never touches this column and is correct here. That is moving the read
+off `data`, not repairing it. What remains is `FULLTEXT_PREDICATE` — `lower(cast(p.data
+as string))` — so console and CDA search find nothing in a page's body, which is what
+SH240 added it to fix.
 
 It is invisible to the whole unit suite because that suite is H2, and the cross-database
 ITs assert schema shape rather than column semantics — the gap agents.md names when it
@@ -2130,8 +2130,33 @@ says a green `clean test` means least on a storage change.
 The fix is a JDBC type, not a changeset: `@JdbcTypeCode(SqlTypes.LONGVARCHAR)` beside
 the `@Lob`, which makes pgjdbc write the text inline. Existing rows need a migration
 that resolves each OID and writes it back, plus `lo_unlink` — until then every post also
-leaks a large object that deleting its row does not reclaim. The assertion in
-`ShPostgresAssetUsageScanIT` holds today's behaviour and flips when this lands.
+leaks a large object that deleting its row does not reclaim.
+`ShPostgresAssetUsageScanIT` asserts both halves.
+
+### LXX.9 The reference tables from the model before this one (SH1100)
+
+`ShReference` and `ShReferenceDraft` are pre-unified tables, and nothing in `src/main`
+writes either. The repository has no callers, and the only mentions of the type are
+three comments saying why it cannot be used: it joins `object_from` and `object_to` to
+`ShObject`, and a post is not an `ShObject`. `ShTemplateGraph` says so from the render
+side, recording a design it had to correct: extracting slot edges into this table was
+proposed and is not available. SH1034 hit the same wall from the asset side.
+
+So the schema carries two tables holding edges nobody can produce, and they are not
+inert: both are in `ShTenantBackfillRunner.TENANT_TABLES`, so every start-up backfill
+issues an UPDATE against them, and the PostgreSQL and MariaDB schema ITs assert they
+exist with a `tenant_id` column: three instruments maintaining something with no writer.
+A reader asking "where do references live" finds them first, which is how that
+render-side design went wrong.
+
+Not a data migration — there is nothing to move, which is the point. Drop both tables,
+remove the entities and the repository, take both names out of `TENANT_TABLES`, and
+settle whether the exchange format mentions them: an import reading a 2018 package is
+the one caller that might, and that question belongs before the drop.
+
+Deliberately not folded into SH1034: a table nobody writes is safe to leave for a task
+that can answer the exchange question on its own evidence, and a removal inside a
+feature commit is the shape that gets reverted wholesale.
 
 ## LXXI The visual editor becomes a composer (Block BF)
 

@@ -588,12 +588,16 @@ blind. Measured on a 5,000-post fixture (`ShPostgresAssetUsageScanIT`): 5,001 ro
 objects, **zero** rows whose `data` is readable as text, and the entity read returning the right
 document.
 
-Two shipped surfaces are **wrong rather than slow** on every PostgreSQL instance:
+Two shipped surfaces were **wrong rather than slow** on every PostgreSQL instance, and SH1034 took
+one of them away without meaning to:
 
-- `findReferencingFileId` — where-is-this-used answers **empty**, so a curator is told an asset is
-  unreferenced and deletes it.
-- `FULLTEXT_PREDICATE`, which matches `lower(cast(p.data as string))` — console and CDA search find
-  nothing in a page's body, which is exactly what SH240 added that predicate to fix.
+- `findReferencingFileId` — where-is-this-used answered **empty**, so a curator was told an asset is
+  unreferenced and deleted it. **Closed by SH1034**, not by a repair here: `listUsage` reads
+  `sh_object_reference`, which is written from the entity at write time, so the read never touches
+  this column. Moving a read off a broken column fixes that read and nothing else.
+- `FULLTEXT_PREDICATE`, which matches `lower(cast(p.data as string))` — console and CDA search still
+  find nothing in a page's body, which is exactly what SH240 added that predicate to fix. **This is
+  what SH1099 is now about.**
 
 It survived because the unit suite is H2 and the cross-DB ITs assert **schema shape** — columns
 exist, changelogs apply — and never column *semantics*. A test that writes a document and then asks
@@ -627,3 +631,34 @@ an index condition"**, not "the plan is a sequential scan". The first draft asse
 PostgreSQL falsified it for the wrong reason: it reaches for `idx_post_unified_type` to satisfy
 `state`, then removes 2,501 rows with the substring — an index scan by node name and a full read of
 the state partition by behaviour.
+
+## `sh_object_reference` — which post points at which object (SH1034)
+
+`v2026.3.42`. A derived index: from-post, from-state, to-object, field name. SH1033 priced both
+sides before it was built — the substring read it replaces examines the whole table twice per dialog
+(1,002 / 10,002 / 50,002 rows at the three measured sizes), and the maintenance is one delete plus
+one insert per reference, measured identical at fifty thousand rows and at zero. **Two curves, not
+two numbers**, which is what chose the index over a cached count: a count makes one dialog cheap and
+leaves "which assets does nothing reference" at one full scan per asset.
+
+Four decisions worth keeping:
+
+- **A new table, and `ShReference` is why rather than an oversight.** That table stores
+  object-to-object edges and cannot hold these: it joins `object_from`/`object_to` to `ShObject`, and
+  a post is not an `ShObject`. `ShTemplateGraph` reached the same conclusion from the other side and
+  wrote it down — "a post-to-post edge would need a new table". Nothing in main writes `ShReference`.
+- **`from_state` is a column, not an assumption.** A post's key is `(id, state)`, so draft and
+  published are two documents that may reference different assets — the point of a draft. An index
+  keyed on the id alone would answer with the union and never be able to say which.
+- **No foreign keys**, for the reason `sh_note` and `sh_review_decision` give: a post's key is
+  composite, so an FK would have to name a state, and the row it named is the one publishing deletes.
+- **The backfill is a startup gate, not a runtime fallback.** §LXX.6 proposed keeping the `LIKE` as
+  the fallback "for a tenant whose backfill has not run", and that cannot work: **an empty answer and
+  an unindexed post are the same observation**, so a read that fell back on finding no rows would
+  fall back on every asset nothing references — the exact query the table exists to stop running.
+  `ShObjectReferenceBackfillRunner` fills it once when it is empty, so the read is unconditional.
+
+Maintenance has no choke point (`ShPostUnifiedWriteService` saves from fifteen places; five other
+classes bypass it), so **`ShReferenceIndexMaintenanceLintTest` is the guard** — a class that writes
+`setData` and persists must name `ShObjectReferenceService`, or the build fails. A stale derived
+index is silent, and that is the whole argument for a lint over a convention.

@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
@@ -57,6 +58,9 @@ import tools.jackson.databind.node.ObjectNode;
 @Service
 @Transactional
 public class ShPostDraftMergeService {
+    /** SH1034 — the reverse index, maintained beside this class's own writes. */
+    private final ShObjectReferenceService shObjectReferenceService;
+
 
     /**
      * The middle segment of an indexed field address (SH475).
@@ -73,7 +77,9 @@ public class ShPostDraftMergeService {
 
     public ShPostDraftMergeService(ShPostUnifiedRepository shPostUnifiedRepository,
                                    ShPostUnifiedWriteService shPostUnifiedWriteService,
-                                   ObjectMapper objectMapper) {
+                                   ObjectMapper objectMapper,
+            ShObjectReferenceService shObjectReferenceService) {
+        this.shObjectReferenceService = shObjectReferenceService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.objectMapper = objectMapper;
@@ -135,7 +141,7 @@ public class ShPostDraftMergeService {
         draft.setOwner(resolved.getOwner());
         draft.setDate(resolved.getDate());
         draft.setData(resolved.getData());
-        return shPostUnifiedRepository.save(draft);
+        return shObjectReferenceService.reindexed(shPostUnifiedRepository.save(draft));
     }
 
     /** The changes over the existing {@code data} object. Unreadable JSON starts a fresh object. */
