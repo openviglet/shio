@@ -99,19 +99,28 @@ class ShConsoleShapeOverlapTest {
         Map<String, Class<?>> console = componentsByName(ShConsoleListing.class);
         Map<String, Class<?>> cda = componentsByName(ShCdaListing.class);
 
-        // SH165: the envelope is now the CDA's, component for component and in order — the
-        // paging the console listing used to omit is a real contract rather than three
-        // constants. Asserted against the CDA record instead of a literal, so adding a field
-        // to one envelope and not the other fails here rather than drifting quietly.
-        assertThat(console.keySet()).containsExactlyElementsOf(cda.keySet());
-        for (String shared : cda.keySet()) {
-            assertThat(console.get(shared)).as("%s", shared).isEqualTo(cda.get(shared));
+        // SH165: the envelope is the CDA's, component for component and in order — the paging
+        // the console listing used to omit is a real contract rather than three constants.
+        // Asserted against the CDA record instead of a literal, so adding a field to one
+        // envelope and not the other fails here rather than drifting quietly.
+        //
+        // SH1025 made it a PREFIX rather than an equality, which is the rule the rows above have
+        // always followed: `totalFolders` is a console-only field because a delivery listing has
+        // no folder paging to count for, and the alternative — adding it to the CDA envelope so
+        // the two stay identical — would put a field in the public contract to satisfy a test.
+        List<String> shared = new ArrayList<>(cda.keySet());
+        assertThat(new ArrayList<>(console.keySet()).subList(0, shared.size()))
+                .as("""
+                        the CDA's components come first, in order: a superset whose shared part is                         not a prefix reads the same in a table and means a different wire shape.""")
+                .containsExactlyElementsOf(shared);
+        for (String name : shared) {
+            assertThat(console.get(name)).as("%s", name).isEqualTo(cda.get(name));
         }
         // Pinned by name too: these are what the pre-SH120 envelope got wrong (it said
-        // shFolders/shPosts and repeated the site and the breadcrumb /path answers) and what
-        // SH165 added.
-        assertThat(console.keySet())
-                .containsExactly("folderId", "folders", "posts", "page", "size", "totalPosts");
+        // shFolders/shPosts and repeated the site and the breadcrumb /path answers), what
+        // SH165 added, and what SH1025 added after them.
+        assertThat(console.keySet()).containsExactly("folderId", "folders", "posts", "page",
+                "size", "totalPosts", "totalFolders");
     }
 
     /**

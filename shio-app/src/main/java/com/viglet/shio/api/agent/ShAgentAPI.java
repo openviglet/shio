@@ -301,8 +301,9 @@ public class ShAgentAPI {
     /** Where the three words this listing cannot serve do work. */
     private static final String FIND_ELSEWHERE =
             "This listing pages with `limit` and `after`, and its cursor is an address — so it "
-                    + "cannot be ordered by anything else. `sort`, `page` and `size` are served by "
-                    + "the console listing, GET /api/v2/object/{id}/list.";
+                    + "cannot be ordered by anything else. `sort`, `page`, `size`, `folderPage` "
+                    + "and `folderSize` are served by the console listing, "
+                    + "GET /api/v2/object/{id}/list.";
 
     /**
      * Find posts — addresses and titles, never bodies (SH83).

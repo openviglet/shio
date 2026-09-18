@@ -65,6 +65,29 @@ public enum ShConsoleListingSort {
         return this == TITLE ? sort : sort.and(Sort.by(Sort.Order.asc("title").ignoreCase()));
     }
 
+    /**
+     * The same three axes, on a folder's own columns (SH1025).
+     *
+     * <p>A folder has no {@code title} — it has a {@code name} — and it has a {@code position}
+     * the curator set by hand, which is what the browser's default order means and what a post
+     * has no equivalent of. So this is a translation rather than a second vocabulary: one word
+     * from the caller, the column each side of the listing actually has.</p>
+     *
+     * <p>Every axis ends in {@code name}, for the reason {@link #sort} ends in {@code title}: a
+     * page is only stable if the order is total, and two folders created in the same millisecond
+     * otherwise change places between page 1 and page 2 — a row duplicated or skipped with
+     * nothing looking wrong (P5). {@code position} is not unique across a parent either, which is
+     * why even the default order carries the tiebreak.</p>
+     */
+    public Sort folderSort() {
+        Sort byName = Sort.by(Sort.Order.asc("name").ignoreCase());
+        return switch (this) {
+            case TITLE -> byName;
+            case DATE -> Sort.by(Sort.Order.desc("date")).and(byName);
+            case MODIFIED -> Sort.by(Sort.Order.desc("date")).and(byName);
+        };
+    }
+
     /** The allowed values, in declaration order — the {@code allowed} set of a teaching 400. */
     public static List<String> keys() {
         return java.util.Arrays.stream(values()).map(ShConsoleListingSort::key).toList();

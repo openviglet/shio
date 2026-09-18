@@ -78,6 +78,40 @@ public class ShObjectNavigationService {
         this.contentQueryResolver = contentQueryResolver;
     }
 
+    /** The folder half of one listing: the rows to send, and how many there are in total. */
+    private record Children(List<ShFolder> rows, long total) {
+    }
+
+    /**
+     * The child folders one listing answers with (SH1025).
+     *
+     * <p>Whole unless a folder page was asked for, which is what keeps the move/copy picker
+     * correct: it reads the folders off a {@code size=1} listing precisely because they have never
+     * been paged, and a listing that started paging them by default would hand it one page of a
+     * site and let it walk into a subtree it could not see.</p>
+     *
+     * <p>When a page <em>is</em> asked for, the <b>order comes from the database</b> on the same
+     * axis the posts use. It has to: the browser applied its three sort options to an array it
+     * held whole, which was correct exactly because it held it whole, and sorting a page
+     * client-side sorts one page — the half-migration SH165 named when it moved the post order to
+     * the server. A {@code q} filter still runs here, on the page: the folder name filter is a
+     * substring over a set this small and pushing it down is SH240's question rather than this
+     * one's.</p>
+     */
+    private Children children(ShFolder folder, ShContentQuery query, ShConsoleListingSort sort,
+                              String text) {
+        if (!query.pagesFolders()) {
+            List<ShFolder> all = shFolderRepository.findByParentFolderOrderByPositionAsc(folder);
+            return new Children(matching(all, text), all.size());
+        }
+        int index = Math.max(query.folderPage() == null ? 0 : query.folderPage(), 0);
+        int size = Math.max(query.folderSize() == null ? DEFAULT_PAGE_SIZE : query.folderSize(), 1);
+        Page<ShFolder> page = shFolderRepository.pageByParentFolder(folder,
+                PageRequest.of(index, size, sort.folderSort()));
+        return new Children(matching(page.getContent(), text),
+                shFolderRepository.countChildren(folder));
+    }
+
     /**
      * The folder ids one listing covers.
      *
@@ -162,17 +196,21 @@ public class ShObjectNavigationService {
                         query.modifiedSince(), query.modifiedBefore(), query.author(),
                         query.modifier(),
                         PageRequest.of(pageIndex, pageSize, sort.sort()));
-                yield mapper.listing(folder.getId(),
-                        matching(shFolderRepository.findByParentFolderOrderByPositionAsc(folder), text),
-                        posts.getContent(), pageIndex, pageSize, posts.getTotalElements());
+                Children children = children(folder, query, sort, text);
+                yield mapper.listing(folder.getId(), children.rows(),
+                        posts.getContent(), pageIndex, pageSize, posts.getTotalElements(),
+                        children.total());
             }
             // A site lists its root folders. It has no posts of its own — content lives in
             // folders — so this is not an empty answer, it is the answer.
-            case ShSite site -> mapper.listing(site.getId(),
-                    matching(sortedByPosition(shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1)),
-                            text),
-                    List.of(), pageIndex, pageSize, 0L);
-            default -> mapper.listing(objectId, List.of(), List.of(), pageIndex, pageSize, 0L);
+            case ShSite site -> {
+                List<ShFolder> roots = matching(
+                        sortedByPosition(shFolderRepository.findByShSiteAndRootFolder(site, (byte) 1)),
+                        text);
+                yield mapper.listing(site.getId(), roots, List.of(), pageIndex, pageSize, 0L,
+                        roots.size());
+            }
+            default -> mapper.listing(objectId, List.of(), List.of(), pageIndex, pageSize, 0L, 0L);
         });
     }
 

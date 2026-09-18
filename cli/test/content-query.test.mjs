@@ -33,22 +33,32 @@ const QUERY_JAVA = join(ROOT, "shio-app", "src", "main", "java", "com", "viglet"
   "api", "query", "ShContentQuery.java");
 
 /**
- * The `KEYS` list, read as the source declares it.
+ * One declared `List<String>` on the record, read as the source declares it.
  *
  * Through the shared stripper, which is what `@scans code` means here and not a formality: the
  * record's javadoc names every one of these words in prose, so a scan over the raw text would
  * find `modifiedSince` in a sentence *about* `modifiedSince` and report a vocabulary that is
  * really a paragraph.
  */
-function vocabulary() {
+function declared(name) {
   const source = code(readFileSync(QUERY_JAVA, "utf8"));
-  const block = /public static final List<String> KEYS = ([\s\S]*?);/u.exec(source)?.[1] ?? "";
-  assert.ok(block, "SH1022: ShContentQuery.KEYS moved and this scan lost its subject");
+  const block = new RegExp(`public static final List<String> ${name} =([\\s\\S]*?);`, "u")
+    .exec(source)?.[1] ?? "";
+  assert.ok(block, `SH1022: ShContentQuery.${name} moved and this scan lost its subject`);
   return [...block.matchAll(/"([a-zA-Z]+)"/gu)].map((match) => match[1]);
 }
 
-/** The three words that are paging and ordering rather than filtering. */
-const PAGING = ["sort", "page", "size"];
+const vocabulary = () => declared("KEYS");
+
+/**
+ * The words that page or order rather than filter — read, not restated.
+ *
+ * SH1025 is why. This was the literal `["sort", "page", "size"]`, and the record gained
+ * `folderPage` and `folderSize` beside them. A list this test keeps a second copy of fails as a
+ * *missing CLI flag*, which sends the next reader to add one for a word no CLI should have —
+ * a census disagreeing with its subject and blaming the wrong side.
+ */
+const PAGING = declared("PAGING");
 
 test("SH1022: `shio find` spells every filter the vocabulary declares", () => {
   const filters = vocabulary().filter((key) => !PAGING.includes(key));

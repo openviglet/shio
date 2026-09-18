@@ -52,11 +52,13 @@ test("SH1022: the console spells the server's words, not its own", () => {
       `SH1022: the console sends \`${key}\` and the server does not serve it — every parameter it `
         + "does not know is a teaching 400, so this would be a listing that cannot load")
   }
-  // The two the path already answers, and the three that are paging rather than filtering.
+  // The two the path already answers, and the five that page or order rather than filter.
   // `q` left this list with SH1023: the search box stopped being component state and became the
-  // same URL word the other filters are, so the console sends it like any other.
+  // same URL word the other filters are, so the console sends it like any other. `folderPage` and
+  // `folderSize` arrived with SH1025 and are the console's own paging, set beside these.
   const missing = declared.filter((key) => !CONTENT_FILTERS.includes(key))
-  assert.deepEqual(missing.sort(), ["folder", "page", "site", "size", "sort"].sort(),
+  assert.deepEqual(missing.sort(),
+    ["folder", "folderPage", "folderSize", "page", "site", "size", "sort"].sort(),
     "SH1022: a filter the server gained and the console did not offer — the curator can no "
       + "longer ask what an agent can")
 })

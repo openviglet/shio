@@ -186,8 +186,14 @@ class ShContextCacheHeadroomTest {
      * fixture built to differ on every axis the vocabulary names; on the shared context both sets
      * would carry every other test's content, so they would agree for a reason that has nothing to
      * do with the predicate agreeing.
+     *
+     * SH1025 spent one more, to 70. ShConsoleListingBenchmarkTest inserts four hundred folders and
+     * six hundred posts into one folder and then counts what listing it costs; on the shared
+     * context the entity-load count would include every neighbour's reads, and the ratio the whole
+     * task rests on would be a statement about suite order. ShBenchmarkIsolationLintTest refuses a
+     * benchmark on the shared datasource for exactly this, and would have caught it.
      */
-    private static final int DECLARED_CONTEXTS = 69;
+    private static final int DECLARED_CONTEXTS = 70;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

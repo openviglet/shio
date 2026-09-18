@@ -30,19 +30,30 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * one render. The envelope is now the CDA's exactly, which is what {@code
  * ShConsoleShapeOverlapTest} asserts.</p>
  *
- * <p><b>Only the posts are paged.</b> Child folders come back whole on every page, which is
- * the CDA's behaviour too: a folder's subfolders are structure rather than content — the
- * console's move/copy picker walks them and the browser sorts them locally — and a page of
- * folders would mean the picker paging as well, for a set that is bounded by how people
- * organise a site rather than by how much they publish. {@code totalPosts} is named for what
- * it counts for the same reason.</p>
+ * <p><b>The posts are paged and the folders are paged on request (SH1025).</b> SH165 left the
+ * folders whole with an argument: subfolders are structure rather than content — the console's
+ * move/copy picker walks them and the browser sorted them locally — for a set "bounded by how
+ * people organise a site rather than by how much they publish". {@code ShConsoleListingBenchmarkTest}
+ * took the number that argument rests on, and it holds for most folders and not for the one that
+ * is a problem: the whole set is re-sent on <em>every page of posts</em>. So folder paging is
+ * offered and not imposed — {@code folderPage}/{@code folderSize} absent still answers whole,
+ * because the picker's read is correct and is not what the finding was about.</p>
  *
- * @param folderId   the folder these children belong to; the site's id when listing a site
- * @param folders    child folders, in manual (position) order — the whole set, every page
- * @param posts      one page of the folder's posts, one row per logical id, DRAFT preferred
- * @param page       the zero-based page index this response answers
- * @param size       the page size it was asked for
- * @param totalPosts how many posts the folder holds in total (after any {@code q} filter)
+ * <p><b>The envelope is a superset of the CDA's, the way the rows already are.</b> The CDA's six
+ * components come first, in order and by type, and {@code totalFolders} follows — a delivery
+ * listing has no folder paging to count for, so this is a console-only field rather than a
+ * divergence. {@code ShConsoleShapeOverlapTest} asserts the prefix rather than equality now, and
+ * pins the console-only tail by name.</p>
+ *
+ * @param folderId     the folder these children belong to; the site's id when listing a site
+ * @param folders      child folders, ordered by the database — the whole set unless a folder page
+ *                     was asked for
+ * @param posts        one page of the folder's posts, one row per logical id, DRAFT preferred
+ * @param page         the zero-based page index this response answers
+ * @param size         the page size it was asked for
+ * @param totalPosts   how many posts the folder holds in total (after any {@code q} filter)
+ * @param totalFolders how many child folders it holds, whether or not they were paged — which is
+ *                     how a caller tells a complete answer from a page without counting the array
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -50,7 +61,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public record ShConsoleListing(String folderId, List<ShConsoleFolderRow> folders,
                                List<ShConsolePostRow> posts, int page, int size,
-                               long totalPosts) {
+                               long totalPosts, long totalFolders) {
     public ShConsoleListing {
         folders = folders == null ? List.of() : List.copyOf(folders);
         posts = posts == null ? List.of() : List.copyOf(posts);

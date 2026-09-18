@@ -1009,3 +1009,35 @@ that row is the draft, so `p.state = :state` would empty it; the predicate is
 selects while still returning the row this listing returns. `ShContentQuerySurfacesTest` compares
 the two address sets filter by filter, which is the only check that catches them drifting — both
 answer `200` with a plausible list when they do.
+
+## The folder half is paged on request, and the number that says why (SH1025)
+
+SH165 paged the posts and left the child folders whole, with an argument written into
+`ShConsoleListing`: subfolders are structure, the move/copy picker walks them, the browser sorted
+them locally, and the set is "bounded by how people organise a site rather than by how much they
+publish". Plausible, and never measured — the number it rests on is what a folder costs against
+what a post costs.
+
+`ShConsoleListingBenchmarkTest` took it. At **400 folders and 600 posts**, one page of the browser:
+
+| | rows fetched | response bytes |
+|---|---|---|
+| folders whole | 454 | 63 108 |
+| folders paged | 104 | 19 758 |
+
+The argument holds for most folders and not for the one that is a problem, and the cost of being
+wrong is the whole set re-sent on **every page of posts**. So `folderPage`/`folderSize` join the
+query vocabulary and `totalFolders` joins the envelope — and absent, the listing still answers
+whole, because the picker's `size=1` read is correct and is not what the finding was about.
+
+Two consequences worth knowing. **A folder page is ordered by the database**
+(`ShConsoleListingSort.folderSort()`, the same axis the posts use, translated onto `name`/`date`/
+`position` and always tie-broken by name): the browser applied its three sort options to an array
+it held whole, which was correct exactly because it held it whole, and sorting a page client-side
+sorts one page. And **the envelope is now a superset of the CDA's rather than equal to it** — the
+CDA's six components first, `totalFolders` after, which is the rule the rows have always followed.
+Adding the field to the CDA envelope to keep them identical would put something in the public
+contract to satisfy a test; `ShConsoleShapeOverlapTest` asserts the prefix and pins the tail.
+
+Milliseconds are printed by the benchmark and never asserted: a timing ceiling on a shared machine
+is a flake, and a flake is worse than a break (SH250).

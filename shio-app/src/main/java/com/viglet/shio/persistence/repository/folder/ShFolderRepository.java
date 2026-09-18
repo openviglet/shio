@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -116,6 +118,27 @@ public interface ShFolderRepository extends JpaRepository<ShFolder, String> {
 
 	@Query("select f from ShFolder f where f.parentFolder = ?1 and f.deletedDate is null order by f.position asc")
 	List<ShFolder> findByParentFolderOrderByPositionAsc(ShFolder parentFolder);
+
+	/**
+	 * One page of a folder's children, ordered by the database (SH1025).
+	 *
+	 * <p>The order is a parameter because the console's is: its browser offers position, name and
+	 * date, and it used to apply all three to an array it held whole. That was correct exactly
+	 * because it held it whole — sorting a page client-side sorts <em>one page</em>, which is the
+	 * half-migration SH165 named when it moved the post order to the server and the reason this
+	 * finder arrives together with the paging rather than after it.</p>
+	 *
+	 * <p>{@code position} is a total order only within one parent, so every {@link Pageable} handed
+	 * here must carry a tiebreak — {@link #countChildren} is what tells a caller whether it has a
+	 * page or the whole set, and a page that reshuffles between requests loses or repeats a row
+	 * without anything looking wrong (P5).</p>
+	 */
+	@Query("select f from ShFolder f where f.parentFolder = ?1 and f.deletedDate is null")
+	Page<ShFolder> pageByParentFolder(ShFolder parentFolder, Pageable pageable);
+
+	/** How many children that folder has — the {@code totalFolders} beside {@code totalPosts}. */
+	@Query("select count(f) from ShFolder f where f.parentFolder = ?1 and f.deletedDate is null")
+	long countChildren(ShFolder parentFolder);
 
 	@Query("select count(f) from ShFolder f where f.shSite = ?1 and f.deletedDate is null")
 	int countByShSite(ShSite shSite);

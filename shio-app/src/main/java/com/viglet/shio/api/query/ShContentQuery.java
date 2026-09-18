@@ -67,26 +67,35 @@ import com.viglet.shio.api.post.ShContentPerspective;
  * @param sort           {@code title}, {@code date} or {@code modifiedDate}
  * @param page           zero-based page index
  * @param size           rows per page
+ * @param folderPage     zero-based page index for the <em>folder</em> half of a listing that has
+ *                       one (SH1025). Absent means the whole set, which is what the console
+ *                       listing has always answered and what its move/copy picker reads
+ * @param folderSize     child folders per page
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 public record ShContentQuery(String site, String folder, Boolean subtree, String type,
         String state, String locale, Instant modifiedSince, Instant modifiedBefore, String author,
-        String modifier, String q, String sort, Integer page, Integer size) {
+        String modifier, String q, String sort, Integer page, Integer size, Integer folderPage,
+        Integer folderSize) {
 
     /** The vocabulary, in the order the design names it — the {@code allowed} set of a refusal. */
     public static final List<String> KEYS = List.of("site", "folder", "subtree", "type", "state",
             "locale", "modifiedSince", "modifiedBefore", "author", "modifier", "q", "sort",
-            "page", "size");
+            "page", "size", "folderPage", "folderSize");
 
-    /** Everything a listing filters by, which is {@link #KEYS} without the three paging words. */
+    /** The words that page or order rather than filter — every listing has its own answer. */
+    public static final List<String> PAGING =
+            List.of("sort", "page", "size", "folderPage", "folderSize");
+
+    /** Everything a listing filters by, which is {@link #KEYS} without the paging words. */
     public static final List<String> FILTERS = KEYS.stream()
-            .filter(key -> !List.of("sort", "page", "size").contains(key)).toList();
+            .filter(key -> !PAGING.contains(key)).toList();
 
     /** No filter at all: every readable row. */
     public static final ShContentQuery ALL = new ShContentQuery(null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null);
 
     /** The most common starting point, and the one a test writes. */
     public static ShContentQuery ofSite(String site) {
@@ -95,68 +104,88 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
 
     public ShContentQuery withSite(String value) {
         return new ShContentQuery(value, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withFolder(String value) {
         return new ShContentQuery(site, value, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withSubtree(Boolean value) {
         return new ShContentQuery(site, folder, value, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withType(String value) {
         return new ShContentQuery(site, folder, subtree, value, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withState(String value) {
         return new ShContentQuery(site, folder, subtree, type, value, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withLocale(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, value, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withModifiedSince(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale,
                 instant("modifiedSince", value), modifiedBefore, author, modifier, q, sort, page,
-                size);
+                size, folderPage, folderSize);
     }
 
     public ShContentQuery withModifiedBefore(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                instant("modifiedBefore", value), author, modifier, q, sort, page, size);
+                instant("modifiedBefore", value), author, modifier, q, sort, page, size,
+                folderPage, folderSize);
     }
 
     public ShContentQuery withAuthor(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, value, modifier, q, sort, page, size);
+                modifiedBefore, value, modifier, q, sort, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withModifier(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, value, q, sort, page, size);
+                modifiedBefore, author, value, q, sort, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withQ(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, value, sort, page, size);
+                modifiedBefore, author, modifier, value, sort, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withSort(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, value, page, size);
+                modifiedBefore, author, modifier, q, value, page, size, folderPage, folderSize);
     }
 
     public ShContentQuery withPaging(Integer pageValue, Integer sizeValue) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, pageValue, sizeValue);
+                modifiedBefore, author, modifier, q, sort, pageValue, sizeValue, folderPage,
+                folderSize);
+    }
+
+    /**
+     * SH1025 — ask for one page of the folder half; absent means the whole set.
+     *
+     * <p>Two words rather than reusing {@code page}/{@code size}, because a listing with two
+     * collections in it has two answers and one pair of words could only give it one. Absent is
+     * the meaning that matters: the move/copy picker reads a listing's folders whole and would be
+     * handed one page of a site by a default that paged them.</p>
+     */
+    public ShContentQuery withFolderPaging(Integer pageValue, Integer sizeValue) {
+        return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
+                modifiedBefore, author, modifier, q, sort, page, size, pageValue, sizeValue);
+    }
+
+    /** Whether the caller asked for a page of folders rather than all of them. */
+    public boolean pagesFolders() {
+        return folderPage != null || folderSize != null;
     }
 
     /**
@@ -213,6 +242,8 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
             case "sort" -> withSort(text(value));
             case "page" -> withPaging(number("page", value, 0), size);
             case "size" -> withPaging(page, number("size", value, 1));
+            case "folderPage" -> withFolderPaging(number("folderPage", value, 0), folderSize);
+            case "folderSize" -> withFolderPaging(folderPage, number("folderSize", value, 1));
             default -> this;
         };
     }
