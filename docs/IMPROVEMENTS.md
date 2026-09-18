@@ -2060,27 +2060,6 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.4 Asset metadata on the agent surface, and a key the census can read (SH1032)
-
-FOCAL POINT IS OFF THE TABLE (SH1032, the agent-surface half). The design asked for it
-beside alt, caption and tags. It does not exist anywhere in the product — not on the
-File post type, not in the SH40 transform pipeline, not in the Media Library dialog — so
-an op key carrying it would be a published contract for a field nothing reads or
-renders. That is a new capability, not reach, and it belongs to whoever builds cropping.
-
-WHAT IS LEFT is the file half, and it is a format decision rather than plumbing. An
-asset projects as bytes under `shio/assets/<site>/<chain>/<name>` and nothing else, so
-there is no file for metadata to land in. A sidecar has to answer: what is it called
-beside the bytes, how does it avoid colliding with SH191's field sidecars, and what does
-`readLocal` do when it is missing — SH374's `sidecars: "report"` split is the precedent.
-Then SH1004's table gains a writer with its merge rule, which is per-key like
-`writeRemoteSidecar` rather than whole-file like `writeAssetBytes`: two curators
-describing two different images in one folder must not conflict.
-
-Do not re-derive the op. `asset.meta` merges through `ShStaticFileService#updateMeta`
-and the push side must use the same writer, or the projection becomes a second path that
-clears a key the console would have kept.
-
 ### LXX.5 What the usage query costs before anything replaces it (SH1033)
 
 The usage query is a LIKE with a leading and trailing wildcard around the file id over

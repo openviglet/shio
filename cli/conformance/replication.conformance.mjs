@@ -47,16 +47,18 @@ import { unpublished } from "@viglet/create-shio-app/published";
 import { ShioAdminClient } from "../src/admin-client.mjs";
 import { ShioAgentClient } from "../src/agent-client.mjs";
 import { INVENTORY_FILE, MARKUP_DIR } from "../src/clone.mjs";
-import { ASSETS_DIR } from "../src/content-assets.mjs";
+import { ASSETS_DIR, ASSET_META_DIR, assetLocationOf } from "../src/content-assets.mjs";
 import { PLAN_FILE } from "../src/propose.mjs";
 import { SECTIONS_FOLDER } from "../src/convert.mjs";
 import * as clone from "../src/commands/clone.mjs";
 import * as contentPull from "../src/commands/content-pull.mjs";
+import * as contentPush from "../src/commands/content-push.mjs";
 import * as convert from "../src/commands/convert.mjs";
 import * as diff from "../src/commands/diff.mjs";
 import * as init from "../src/commands/init.mjs";
 import * as propose from "../src/commands/propose.mjs";
 import * as verify from "../src/commands/verify.mjs";
+import { readLocalAssets } from "../src/content-store.mjs";
 import { ConsoleSession, keepsFixtures, requireInstance, scratchSite } from "./support/instance.mjs";
 import { serveFixture } from "./support/fixture-site.mjs";
 
@@ -389,6 +391,71 @@ describe("SH448 conformance: replication, from a served source to an installable
         return true;
       },
     );
+  });
+
+  /**
+   * SH1032 — an asset's alt text survives a pull and a push, which is the criterion this half of
+   * the task declared.
+   *
+   * <h2>Why here and not in a unit test</h2>
+   *
+   * `asset-meta.test.mjs` proves the format and the merge against an in-memory tree, and neither
+   * of those is what a round trip can lose. What only an instance can falsify is the **pairing**:
+   * that the path the pull writes the file at is the path the push resolves back to an asset id,
+   * on a real folder chain with a real file name. Get that wrong and both sides pass their own
+   * tests while the metadata lands on nothing — the push simply describes no assets, and says so
+   * by printing zero, which reads exactly like a tree that had nothing to say.
+   *
+   * <p>It runs on the site the capture above already built, so it costs no fixture: those assets
+   * were uploaded by `convert`, through the same path a curator's upload takes.</p>
+   */
+  test("SH1032: an asset's description survives the projection and comes back", async () => {
+    const admin = new ShioAdminClient({ ...conn, fetch: globalThis.fetch });
+    await contentPull.run({ site }, [], ctx);
+    // From the TREE, not from the pull's report: the test above already pulled this site, so a
+    // second pull writes nothing and `report.assets` — which lists what it *downloaded* — is
+    // empty. That read the same as "the capture produced no images" and is the opposite claim.
+    const onDisk = await readLocalAssets(ctx, { site });
+    const assets = onDisk.filter((path) => /\.(png|jpe?g|svg|ico)$/i.test(path));
+    assert.ok(assets.length > 0,
+      `SH1032: the capture left no image to describe, so this scenario would assert nothing. `
+        + `On disk: ${onDisk.join(", ")}`);
+    const target = assets.sort((a, b) => a.localeCompare(b))[0];
+
+    // The tree is the author here, which is the half `asset.meta` does not cover: a curator opens
+    // the file, types a sentence, and pushes.
+    const metaFile = join(cwd, ASSET_META_DIR, `${target}.json`);
+    await nodeFs.mkdir(join(metaFile, ".."), { recursive: true });
+    await nodeFs.writeFile(metaFile,
+      `${JSON.stringify({ alt: "Described in the tree", tags: ["conformance"] }, null, 2)}\n`,
+      "utf8");
+
+    await contentPush.run({ site }, [], ctx);
+
+    // Read back through the console's own listing, not through the push's report: a push that
+    // reported success and wrote nothing would agree with itself all day (SH709's rule).
+    const at = assetLocationOf(target);
+    const siteRow = await new ConsoleSession(conn).site(site);
+    assert.ok(siteRow?.id, "SH1032: the site this suite built is not resolvable by name");
+    const listed = await admin.listStaticFiles({ siteId: siteRow.id });
+    const row = listed.find((each) => each.fileName === at.fileName);
+    assert.ok(row, `SH1032: ${at.fileName} is not in the instance's listing after the push`);
+    assert.equal(row.alt, "Described in the tree",
+      "SH1032: the alt a curator typed into the tree did not reach the instance. The failure this "
+        + "catches is the projection and the push disagreeing about an asset's path — both halves "
+        + "pass their own tests, the push describes nothing, and printing zero reads exactly like "
+        + "a tree with nothing to say.");
+    assert.deepEqual(row.tags, ["conformance"]);
+
+    // And back out again, unchanged: the second pull must read it as agreed rather than as a
+    // difference, or every sync after the first would report the same asset for ever.
+    const after = await contentPull.run({ site }, [], ctx);
+    assert.deepEqual(after?.assetMetaConflicts ?? [], [],
+      "SH1032: the pull that follows a push must find nothing in dispute — a base that did not "
+        + "record what the push settled turns a clean tree into a permanent conflict");
+    assert.equal(
+      JSON.parse(await readFile(metaFile, "utf8")).alt, "Described in the tree",
+      "SH1032: and the file still says what the curator wrote");
   });
 
   /**

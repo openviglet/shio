@@ -34,6 +34,8 @@ import {
   pathsToIds,
   reconcileBytes,
   sha256Of,
+  assetMetaOf,
+  serializeAssetMeta,
 } from "../content-assets.mjs";
 import {
   BASE_FILE,
@@ -41,6 +43,8 @@ import {
   FOLDERS_DIR,
   projectRemote,
   readAssetBytes,
+  readLocalAssetMeta,
+  readAssetMetaOrNull,
   readBase,
   readLocal,
   readLocalFolders,
@@ -466,6 +470,9 @@ export async function run(flags, _positionals, ctx) {
         // would stay at "never agreed" for ever, and the first server-side edit would arrive as a
         // conflict instead of a change.
         assets: { ...(base.assets ?? {}), ...declared.agreed },
+        // SH1032 — what this push settled about the words, so the next pull reads them as
+        // agreed rather than as a local edit it has to reconcile all over again.
+        assetMeta: { ...(base.assetMeta ?? {}), ...(declared.assetMetaAgreed ?? {}) },
       },
       flags.baseFile ?? BASE_FILE,
     );
@@ -757,8 +764,21 @@ async function resolveAssets(ctx, {
       if (typeof value === "string" && value && assetLocationOf(value)) needed.add(value);
     }
   }
-  if (!needed.size) {
-    return { posts, uploaded: [], replaced: [], behindAssets: [], assetConflicts: [], agreed: {} };
+  // SH1032 — an asset a curator described is in scope even when no post being pushed references
+  // it: editing `shio/asset-meta/**` on an unreferenced image doing nothing, silently, is the P7
+  // surprise this projection exists to remove.
+  //
+  // A SET OF ITS OWN, not folded into `needed`, and the first draft did fold it: `needed` is what
+  // the BYTES loop walks, and a path in it whose file is absent is a hard refusal ("File
+  // reference(s) name an asset that is not in shio/assets"). A described asset with no local bytes
+  // is ordinary — metadata pulled, bytes never fetched — so merging the two scopes turns a
+  // perfectly good tree into a failed push.
+  const described = new Set(await readLocalAssetMeta(ctx).catch(() => []));
+  if (!needed.size && !described.size) {
+    return {
+      posts, uploaded: [], replaced: [], behindAssets: [], assetConflicts: [], agreed: {},
+      describedAssets: [], assetMetaAgreed: {},
+    };
   }
 
   // SH213 — the inventory is read for the folders these references name, not for the whole site.
@@ -766,7 +786,9 @@ async function resolveAssets(ctx, {
   // has taken a `folderId` since SH62, and the tree says which folders it needs before asking.
   const { byPath, folderIds } = await readRemoteAssets(client, admin, {
     sites,
-    folders: [...needed].map((path) => assetLocationOf(path)).filter(Boolean),
+    // The union: the folders the posts reference plus the folders the tree describes (SH1032).
+    folders: [...new Set([...needed, ...described])]
+      .map((path) => assetLocationOf(path)).filter(Boolean),
     // SH375 — the ceiling is a latency budget, not a server-work one (the benchmark settled that),
     // so it is the caller's to move: an instance with a slow round trip and a small library wants
     // it lower, one on a fast link with a huge library wants it higher.
@@ -779,6 +801,8 @@ async function resolveAssets(ctx, {
   const behindAssets = [];
   const assetConflicts = [];
   const agreed = {};
+  const describedAssets = [];
+  const assetMetaAgreed = {};
 
   for (const path of [...needed].sort((a, b) => a.localeCompare(b))) {
     const known = byPath.get(path);
@@ -870,9 +894,45 @@ async function resolveAssets(ctx, {
     );
   }
 
+  // SH1032 — the words, after the bytes. Ordering is not cosmetic: an asset this push CREATED is
+  // in `byPath` only because the upload above put it there, and describing it before it exists
+  // would silently skip every newly added image on the run that adds it.
+  for (const path of [...described].sort((a, b) => a.localeCompare(b))) {
+    const known = byPath.get(path);
+    if (!known?.id) continue;
+    const local = await readAssetMetaOrNull(ctx, path);
+    if (!local) continue;
+    const settled = assetMetaOf(known);
+    // Nothing to send when the instance already says what the tree says. A push that wrote anyway
+    // would put an audit row (SH1032's other half) in the curator's feed on every run.
+    if (serializeAssetMeta(local) === serializeAssetMeta(settled)) {
+      assetMetaAgreed[path] = local;
+      continue;
+    }
+    if (planOnly) {
+      describedAssets.push(`${path} (would describe)`);
+      continue;
+    }
+    // Through the one writer the console uses, which is what keeps a blank meaning the same thing
+    // on both surfaces — `updateMeta` clears a key on empty, so an absent key is sent as empty
+    // rather than omitted, or a push could never remove a caption.
+    await admin.updateStaticFileMeta(known.id, {
+      alt: local.alt ?? "", caption: local.caption ?? "", tags: local.tags ?? [],
+    });
+    describedAssets.push(path);
+    assetMetaAgreed[path] = local;
+  }
+
   const mapped = [];
   for (const post of posts) {
     mapped.push(pathsToIds(post, fileFieldMap, byPath).doc);
+  }
+  if (describedAssets.length) {
+    const verb = planOnly ? "to describe" : "described";
+    stdout.write(
+      `shio push --content: ${describedAssets.length} asset(s) ${verb}:\n`
+        + describedAssets.map((path) => `  ~ ${path}\n`).join(""),
+    );
   }
   if (uploaded.length) {
     stdout.write(
@@ -897,7 +957,10 @@ async function resolveAssets(ctx, {
         "Run `shio pull --content` to bring them down.\n",
     );
   }
-  return { posts: mapped, uploaded, replaced, behindAssets, assetConflicts, agreed };
+  return {
+    posts: mapped, uploaded, replaced, behindAssets, assetConflicts, agreed,
+    describedAssets, assetMetaAgreed,
+  };
 }
 
 /** Enough of a content type for the server to record; it re-sniffs images itself. */

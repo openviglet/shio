@@ -37,6 +37,8 @@ import {
   idsToPaths,
   reconcileBytes,
   sha256Of,
+  reconcileAssetMeta,
+  assetMetaOf,
 } from "../content-assets.mjs";
 import {
   BASE_FILE,
@@ -59,6 +61,8 @@ import {
   readRemoteAssets,
   readRemoteFolders,
   writeAssetBytes,
+  writeAssetMeta,
+  readAssetMetaOrNull,
   writeBase,
   writeDoc,
   writeFolderMarker,
@@ -169,7 +173,7 @@ export async function run(flags, _positionals, ctx) {
   }
   const assets = await pullAssets(ctx, {
     agent, admin, sites: siteScope.filter((name) => !clashingSites.has(name)),
-    assetsDir, dryRun, base: base.assets ?? {},
+    assetsDir, dryRun, base: base.assets ?? {}, metaBase: base.assetMeta ?? {},
   });
   const unresolvedAssets = new Set();
   for (const [address, doc] of Object.entries(remote)) {
@@ -232,6 +236,10 @@ export async function run(flags, _positionals, ctx) {
     // else does, and a conflict has to be reported rather than resolved.
     assetConflicts: assets.conflicts ?? [],
     assetsKept: assets.kept ?? [],
+    // SH1032 — the words beside the bytes, reported apart because they merge apart: a conflict
+    // here names one KEY of one asset (`<path>#alt`), not the file.
+    assetMeta: assets.metaWritten ?? [],
+    assetMetaConflicts: assets.metaConflicts ?? [],
     notes: { written: [], deleted: [], conflicts: [] },
     // SH231 — how many instance-wide notes were projected; 0 when the instance has none.
     instanceNotes: 0,
@@ -501,6 +509,9 @@ export async function run(flags, _positionals, ctx) {
         // so a path this run did not look at (another site, a scoped run) keeps its agreement
         // instead of being forgotten into "never agreed".
         assets: { ...(base.assets ?? {}), ...assets.agreed },
+        // SH1032 — same rule as `assets` one line up: merged rather than replaced, so a scoped
+        // run does not forget what it did not look at.
+        assetMeta: { ...(base.assetMeta ?? {}), ...(assets.metaAgreed ?? {}) },
       },
       flags.baseFile ?? BASE_FILE,
     );
@@ -639,7 +650,7 @@ export async function run(flags, _positionals, ctx) {
  * listing would remove (SH210 deferred that on purpose; it is still the obvious optimisation).
  */
 async function pullAssets(ctx, {
-  agent, admin, sites = [], assetsDir, dryRun, base = {},
+  agent, admin, sites = [], assetsDir, dryRun, base = {}, metaBase = {},
 }) {
   // SH406 — the scope arrives resolved. It used to be recomputed here from the *tree* alone, which
   // is empty on a first pull, so the walk covered no sites at all.
@@ -652,12 +663,36 @@ async function pullAssets(ctx, {
   // and the byte merge would then compare the survivor against both rows. Neither is written.
   const assetClashes = assetPathCollisions([...assets.byPath.keys()]);
   const assetPairs = new Map();
+  // SH1032 — the words, merged per key beside the bytes' whole-file merge. Both loops walk the
+  // same rows, so this costs no request: `listStaticFiles` already answers alt, caption and tags.
+  const metaWritten = [];
+  const metaConflicts = [];
+  const metaAgreed = {};
   for (const [path, item] of assets.byPath) {
     if (assetClashes.has(path)) {
       const group = assetClashes.get(path);
       if (!assetPairs.has(group.key)) assetPairs.set(group.key, group.addresses);
       continue;
     }
+    const remoteMeta = assetMetaOf(item);
+    const localMeta = await readAssetMetaOrNull(ctx, path).catch(() => null);
+    const { merged, conflicts: keyConflicts } = reconcileAssetMeta({
+      base: metaBase[path] ?? {}, remote: remoteMeta, local: localMeta ?? {},
+    });
+    if (keyConflicts.length) {
+      for (const key of keyConflicts) metaConflicts.push(`${path}#${key}`);
+    }
+    if (!dryRun) {
+      const wrote = await writeAssetMeta(ctx, path, merged);
+      if (wrote) metaWritten.push(path);
+    } else if (Object.keys(merged).length) {
+      metaWritten.push(path);
+    }
+    // Agreed only where nothing is in dispute: recording a conflicted key would make the next
+    // pull read it as settled, which is how a sync forgets it never resolved anything.
+    metaAgreed[path] = Object.fromEntries(
+      Object.entries(merged).filter(([key]) => !keyConflicts.includes(key)));
+
     const localBytes = await readAssetOrNull(ctx, path, assetsDir);
     if (localBytes === null) {
       // Nothing on disk: no comparison can lose anything, and no digest request is needed to know
@@ -697,7 +732,10 @@ async function pullAssets(ctx, {
     // them, which is what makes `push --content` the thing that settles them.
     if (verdict === "local-changed") kept.push(path);
   }
-  return { ...assets, written, conflicts, kept, agreed, pairs: [...assetPairs.values()] };
+  return {
+    ...assets, written, conflicts, kept, agreed, pairs: [...assetPairs.values()],
+    metaWritten, metaConflicts, metaAgreed,
+  };
 }
 
 /** An asset's bytes, or `null` when the tree does not have that path. */
@@ -758,6 +796,18 @@ function render(report, { dir, dryRun, truncated }) {
   ];
   if (report.assets?.length) {
     lines[0] += ` · ${report.assets.length} asset(s) downloaded`;
+  }
+  // SH1032 — its own line rather than the headline's, because it answers a different question:
+  // how much of this library is described. A conflict names the key, since that is what a curator
+  // has to look at — two people editing one image's alt is a sentence to choose between.
+  if (report.assetMeta?.length || report.assetMetaConflicts?.length) {
+    lines.push(
+      `${report.assetMeta?.length ?? 0} asset(s) described`
+        + (report.assetMetaConflicts?.length
+          ? `, ${report.assetMetaConflicts.length} conflicted: `
+            + report.assetMetaConflicts.slice(0, 5).join(", ")
+          : ""),
+    );
   }
   const folders = report.folders ?? { written: [], deleted: [], kept: [] };
   if (folders.written.length || folders.deleted.length || folders.kept.length) {

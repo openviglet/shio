@@ -29,7 +29,10 @@ import {
   sidecarFieldsFor,
   sidecarsOf,
 } from "./content-files.mjs";
-import { ASSETS_DIR, assetPathFor } from "./content-assets.mjs";
+import {
+  ASSETS_DIR, ASSET_META_DIR, assetPathFor, assetPathOfMeta, metaPathFor,
+  parseAssetMeta, serializeAssetMeta,
+} from "./content-assets.mjs";
 import {
   INSTANCE_NOTES_PATH,
   NOTES_FILE,
@@ -94,12 +97,16 @@ export async function readBase(ctx, path = BASE_FILE) {
       // then an addition on whichever side has it, which is the safe reading in both directions —
       // nothing is downloaded over a local edit and nothing is uploaded over a server one.
       assets: parsed.assets && typeof parsed.assets === "object" ? parsed.assets : {},
+      // SH1032 — asset path → key → the value both sides last agreed on. Absent before this,
+      // which reads as "never agreed about any description": every key is then an addition on
+      // whichever side has it, and neither direction loses a word somebody wrote.
+      assetMeta: parsed.assetMeta && typeof parsed.assetMeta === "object" ? parsed.assetMeta : {},
     };
   } catch (error) {
     if (error?.code === "ENOENT") {
       return {
         version: BASE_VERSION, cursor: null, partial: false,
-        posts: {}, folders: [], notes: {}, assets: {},
+        posts: {}, folders: [], notes: {}, assets: {}, assetMeta: {},
       };
     }
     throw error;
@@ -125,6 +132,12 @@ export async function writeBase(ctx, base, path = BASE_FILE) {
     notes: sortedNotes(base.notes),
     // SH373 — sorted by path, so committing the snapshot shows one asset changing and nothing else.
     assets: sortedAssets(base.assets),
+    // SH1032 — per KEY, the shape `notes` has, not per asset. Two writers on one image are the
+    // only conflict this tree can have (each asset owns its own file), and they are usually
+    // writing different keys: an agent describing the image and a curator captioning it. A
+    // whole-file hash would make that pair a conflict, which is the merge reporting a collision
+    // between two edits that do not touch.
+    assetMeta: sortedAssetMeta(base.assetMeta),
   };
   const target = join(ctx.cwd, path);
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
@@ -136,6 +149,18 @@ function sortedAssets(assets) {
   const out = {};
   for (const path of Object.keys(assets ?? {}).sort((a, b) => a.localeCompare(b))) {
     out[path] = assets[path];
+  }
+  return out;
+}
+
+/** Asset path → key → agreed value, both levels sorted (SH1032), the way `notes` is. */
+function sortedAssetMeta(assetMeta) {
+  const out = {};
+  for (const path of Object.keys(assetMeta ?? {}).sort((a, b) => a.localeCompare(b))) {
+    const keys = assetMeta[path] ?? {};
+    const keyed = {};
+    for (const key of Object.keys(keys).sort((a, b) => a.localeCompare(b))) keyed[key] = keys[key];
+    out[path] = keyed;
   }
   return out;
 }
@@ -686,6 +711,61 @@ export async function readLocalAssets(ctx, { dir = ASSETS_DIR, site = null } = {
 /** Reads one asset's bytes. */
 export async function readAssetBytes(ctx, path, { dir = ASSETS_DIR } = {}) {
   return ctx.fs.readFile(join(ctx.cwd, dir, path));
+}
+
+/**
+ * Every asset that has a metadata file, as ASSET paths (SH1032).
+ *
+ * <p>Asset paths rather than file paths, because every caller wants to line them up against the
+ * bytes: `push` asks "does this asset have words", and `verify` asks "is there a file describing
+ * an asset that is gone". A `.json` that names no asset is the second, and it is reported rather
+ * than deleted — the tree is the curator's.</p>
+ */
+export async function readLocalAssetMeta(ctx, { dir = ASSET_META_DIR, site = null } = {}) {
+  const files = await walk(ctx, join(ctx.cwd, dir), "");
+  return files
+    .map((relPath) => assetPathOfMeta(relPath))
+    .filter((assetPath) => assetPath && (!site || assetPath.startsWith(`${site}/`)))
+    .sort((a, b) => a.localeCompare(b));
+}
+
+/** One asset's metadata, or null when nothing describes it. Throws on a file that is not ours. */
+export async function readAssetMetaOrNull(ctx, assetPath, { dir = ASSET_META_DIR } = {}) {
+  const relPath = metaPathFor(assetPath);
+  // SH403 — a path that navigates rather than names has no file, and asking for one would join
+  // outside the tree. Null is "nothing describes it", which is exactly true of a path like this.
+  if (!relPath) return null;
+  let text;
+  try {
+    text = await ctx.fs.readFile(join(ctx.cwd, dir, relPath), "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+  return parseAssetMeta(text, `${dir}/${relPath}`);
+}
+
+/**
+ * Writes one asset's metadata, and REMOVES the file when nothing is left to say (SH1032).
+ *
+ * <p>The removal is the half that is easy to leave out and wrong to. A file kept after its last
+ * key was cleared says "this image is described" to every reader that only checks for the file —
+ * `verify`'s finding, a grep, the next push — and the next push would then send back the words a
+ * curator deleted. An empty document and an absent one have to mean the same thing, so only one
+ * of them is allowed to exist.</p>
+ */
+export async function writeAssetMeta(ctx, assetPath, meta, { dir = ASSET_META_DIR } = {}) {
+  const relPath = metaPathFor(assetPath);
+  if (!relPath) return null;
+  const target = join(ctx.cwd, dir, relPath);
+  const body = serializeAssetMeta(meta);
+  if (body.trim() === "{}") {
+    await ctx.fs.rm?.(target, { force: true });
+    return null;
+  }
+  await ctx.fs.mkdir(dirOf(target), { recursive: true });
+  await ctx.fs.writeFile(target, body, "utf8");
+  return assetPath;
 }
 
 /** Writes one asset's bytes, creating the directories on the way. */

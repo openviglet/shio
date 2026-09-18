@@ -63,6 +63,15 @@ const RULES = {
     wins: "neither: bytes are compared whole, because half an image is not a merge",
     conflict: "`conflicts` on the pull report, by asset path",
   },
+  writeAssetMeta: {
+    base: "per-key",
+    wins:
+      "neither: a key both sides changed keeps the TREE's value and is reported, because the "
+      + "tree is what a person edits and a pull that overwrote it would lose the edit silently",
+    conflict:
+      "`assetMetaConflicts` on the pull report, as `<asset path>#<key>` (SH1032) — the key, not "
+      + "the file, since two writers on one image are usually writing different ones",
+  },
   writeFolderMarker: {
     base: "none",
     wins: "the server: a marker records that a folder exists, which is the server's fact",

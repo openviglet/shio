@@ -748,6 +748,7 @@ log line, so the declaration **is** the instrument (SH338).
 | `writeDoc` | per field | neither — the file is left alone | `conflicts` on the pull report, per field, by address (SH148) |
 | `writeRemoteSidecar` | per field | neither — a sidecar **is** a field (SH191) | the same per-field conflict its post's other fields raise |
 | `writeAssetBytes` | whole | neither — half an image is not a merge | `conflicts` on the pull report, by asset path |
+| `writeAssetMeta` | per key | neither — a key both sides changed keeps the **tree's** value and is reported | `assetMetaConflicts`, as `<asset path>#<key>` (SH1032) |
 | `writeFolderMarker` | no | the server: that a folder exists is the server's fact | none is possible — the file carries no value a person authors |
 | `writeLocalNotes` | per key | neither — neither copy is written | `notes.conflicts`, as `<site>:<key>` (SH161) |
 | `writeLocalInstanceNotes` | no | the server; the tree pushes back only with `--adopt-memory` (SH231) | none is possible: projected, never read back |
@@ -794,3 +795,60 @@ describes. Both sides read `cli/test/fixtures/blocks-parity.json`, the Java expe
 by hand rather than generated, and `ShBlocksParityTest` also asserts the corpus covers **every**
 registered block type: a parity corpus missing two types keeps two implementations in step for the
 six it has and says nothing about where they would actually drift.
+
+## An asset's own words, in the tree (SH1032)
+
+`shio/assets/**` carries the bytes and nothing else, so an image's alt text, caption and tags
+lived only on the instance: a tree was not a complete description of the site it described, and
+the one field the SH1031 accessibility finding is about could not be edited with `Edit` (P4).
+They project to **`shio/asset-meta/<site>/<chain>/<name>.json`** — one file per asset, three
+optional keys, absent when empty.
+
+### Why a root of its own
+
+`shio/assets/<...>/hero.png.meta.json` reads better and costs an invariant. Every walker of the
+assets tree — `readLocalAssets`, `push --content`'s upload loop, `verify`'s `asset-missing` — is
+written on the rule that **every file under `shio/assets` is an asset's bytes**. A sidecar in
+there needs all of them to learn an exception, and the one that does not learn it uploads the
+metadata as an image. Worse, the exception makes an asset a curator genuinely named
+`notes.meta.json` unrepresentable, silently, because nothing can tell it from a sidecar.
+
+Two parallel roots keep both rules whole, the way `shio/folders` is already a root of its own.
+It also makes "which images have no alt" one grep over one tree — the question `verify` reports
+as `asset-no-alt` and the Media Library's chip narrows to.
+
+**And one file per asset, not one per folder.** A folder-level document would put two curators
+describing two different images into the same file, which is a git conflict neither of them
+caused. Per-asset files make that structurally impossible, which leaves the per-key merge to do
+only the job it is actually for: two writers on the *same* image.
+
+### The merge is per key, and a delete is a value
+
+`content-base.json` gains `assetMeta`, keyed by asset path then by key — the shape `notes` has.
+Each key goes through `reconcileBytes`, the same function the bytes use, because "who changed
+this" is one question and a second answer to it is how two code paths start disagreeing.
+
+Two things are easy to get wrong here and both were, in the first draft:
+
+- **`local-deleted` is not "take the remote".** The remote still holds the value, so folding that
+  verdict into the remote-wins arm reads plausibly and hands a curator back the alt text they just
+  deleted, on the very next pull. A delete on *either* side is honoured.
+- **A reordering is not an edit.** `tags` is an array, and the order an instance returns it in is
+  not something a curator authored. The values are normalised — trimmed, de-duplicated, sorted —
+  *inside* `reconcileAssetMeta` rather than by its callers, because three callers would each have
+  had to remember, and the one that forgot would report every tagged asset as changed for ever.
+
+### Push sends them through the one writer
+
+`push --content` calls `PUT /api/v2/staticfile/{id}/meta` — the endpoint the console's dialog
+writes through and the `asset.meta` op merges through — rather than writing the document itself.
+One writer means a blank clears on every surface and the audit row is the same row whichever
+surface did it. All three keys are always sent, absent ones as empty, or a push could never
+remove a caption somebody deleted from the tree.
+
+Its scope is **every asset the tree describes**, not only the ones the pushed posts reference:
+editing the metadata of an unreferenced image and having nothing happen, silently, is exactly the
+surprise P7 forbids. That widens the folder inventory the push reads and nothing else. The two
+scopes stay separate sets on purpose — folding them into `needed` makes the *bytes* loop demand a
+local file for every described asset, and "metadata pulled, bytes never fetched" is an ordinary
+tree, not a broken one.

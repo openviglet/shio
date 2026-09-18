@@ -186,6 +186,19 @@ export class ShioAdminClient {
   }
 
   /**
+   * PUT /api/v2/staticfile/{id}/meta — an asset's own words (SH1032).
+   *
+   * The endpoint the console's Media Library dialog writes through and `asset.meta` merges
+   * through, which is why `push --content` uses it rather than a document write: one writer means
+   * a blank clears on every surface, and the audit row a curator sees is the same row whichever
+   * of the three did it. The three keys are always sent, absent ones as empty, because that is
+   * how a push removes a caption somebody deleted from the tree.
+   */
+  async updateStaticFileMeta(id, { alt = "", caption = "", tags = [] } = {}) {
+    return this.#at(`/api/v2/staticfile/${encodeURIComponent(id)}/meta`, "PUT", { alt, caption, tags });
+  }
+
+  /**
    * POST /api/v2/staticfile/{id}/replace — new bytes for an existing asset (SH210).
    *
    * The one operation `push --content` was missing: an upload always creates a post, so a path

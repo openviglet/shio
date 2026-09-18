@@ -39,7 +39,7 @@ import {
   sidecarsOf,
   siteDir,
 } from "../src/content-files.mjs";
-import { assetPathFor } from "../src/content-assets.mjs";
+import { assetPathFor, metaPathFor } from "../src/content-assets.mjs";
 import { capturedAssetPathFor } from "../src/clone-assets.mjs";
 import { notesPathFor, openNotesPathFor } from "../src/content-notes.mjs";
 import { fileNameFor } from "../src/post-types-io.mjs";
@@ -79,6 +79,21 @@ const DECLARED = {
   assetPathFor: {
     guarded: "SH256 — answers null for a `.` or `..` segment, deliberately rather than throwing",
     probe: () => assetPathFor({ fileName: "..", siteName: "Blog" }, "/"),
+    collides: {
+      values: ["Blog/media/Logo.png", "Blog/media/logo.png"],
+      detector: assetPathCollisions,
+      writtenBy: "commands/content-pull.mjs",
+    },
+  },
+  metaPathFor: {
+    guarded: "SH1032 — answers null for a `.` or `..` segment, the way `assetPathFor` does. Its "
+      + "root sits beside that one, so a segment that navigates rather than names resolves out of "
+      + "the project just as readily; guarded here rather than argued from the caller, because "
+      + "\"every path it receives is already safe\" is a property of today's call graph",
+    probe: () => metaPathFor("Blog/../../etc/passwd"),
+    // One file per asset, named after the asset, so its pairs ARE the asset pairs and
+    // `assetPathFor` above owns the detector. Named rather than exempted, for the reason
+    // `notesPathFor` is: a reader should not have to rediscover that two roots share one cause.
     collides: {
       values: ["Blog/media/Logo.png", "Blog/media/logo.png"],
       detector: assetPathCollisions,

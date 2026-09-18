@@ -43,6 +43,128 @@ const FILE_WIDGET = "File";
 export const ASSETS_DIR = "shio/assets";
 
 /**
+ * Where an asset's own words live — a root of its own, like `shio/folders` (SH1032).
+ *
+ * <h3>Why not beside the bytes</h3>
+ *
+ * `shio/assets/<site>/<chain>/hero.png.meta.json` reads better and costs an invariant. Every
+ * walker of the assets tree — `readLocalAssets`, `push --content`'s upload loop, `verify`'s
+ * `asset-missing` — is written on the rule that **every file under `shio/assets` is an asset's
+ * bytes**, and a sidecar in there needs each of them to learn an exception. Miss one and it
+ * uploads the metadata as an image; and an asset a curator genuinely named `notes.meta.json`
+ * becomes unrepresentable, silently, because the exception cannot tell it from a sidecar.
+ *
+ * A parallel tree keeps both rules whole: every file under `shio/assets` is bytes, every file
+ * under here is one asset's metadata. It also answers "which images have no alt" with one grep
+ * over one tree, which is the question `verify`'s `asset-no-alt` reports and a curator acts on.
+ *
+ * <h3>And not one file per folder</h3>
+ *
+ * A folder-level document would put two curators describing two different images in the same
+ * file, which is a merge conflict git reports and neither of them caused. One file per asset
+ * makes that structurally impossible; the per-key merge below is then only about two writers on
+ * the *same* image.
+ */
+export const ASSET_META_DIR = "shio/asset-meta";
+
+/** The three keys a curator owns. Stamps are the server's and never appear here. */
+export const ASSET_META_KEYS = ["alt", "caption", "tags"];
+
+/**
+ * The metadata file for one asset path — the same relative path, plus `.json` (SH1032).
+ *
+ * <p>Plus, never replacing: `hero.png` and `hero.jpg` are two assets and
+ * `hero.json` would be one file. The extension is part of an asset's identity in this tree
+ * because it is part of its name on the server.</p>
+ *
+ * <h3>It refuses a traversal itself (SH403)</h3>
+ *
+ * `null` for a `.` or `..` segment, which is what {@link assetPathFor} answers and for the same
+ * reason — this root sits beside that one and a segment that navigates rather than names can
+ * resolve outside the project entirely. Guarded here rather than argued from the caller: every
+ * path this receives today does come from `assetPathFor`, and "the input is already safe" is a
+ * property of today's call graph, not of this function.
+ *
+ * @param {string} assetPath tree-relative, e.g. `Blog/img/hero.png`
+ * @returns {string|null} e.g. `Blog/img/hero.png.json`
+ */
+export function metaPathFor(assetPath) {
+  const path = String(assetPath ?? "");
+  if (!path) return null;
+  const segments = path.split("/");
+  if (segments.some((segment) => TRAVERSAL.has(segment) || segment === "")) return null;
+  return `${path}.json`;
+}
+
+/** The asset a metadata path describes, or null when the name is not one of ours. */
+export function assetPathOfMeta(metaPath) {
+  return metaPath.endsWith(".json") ? metaPath.slice(0, -".json".length) : null;
+}
+
+/**
+ * One asset's curator-owned metadata, from whatever the listing handed back.
+ *
+ * <p>Absent rather than empty: a key with no value is left out, so a file that exists says
+ * something about every key it names and nothing about the ones it does not. `tags` is normalised
+ * to a sorted, de-duplicated array of non-blank strings, because the order the server returns is
+ * not a fact a curator authored and a reordering must not read as an edit (P5).</p>
+ */
+export function assetMetaOf(item) {
+  const meta = {};
+  const alt = String(item?.alt ?? "").trim();
+  const caption = String(item?.caption ?? "").trim();
+  const tags = [...new Set((item?.tags ?? [])
+    .map((tag) => String(tag ?? "").trim())
+    .filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  if (alt) meta.alt = alt;
+  if (caption) meta.caption = caption;
+  if (tags.length) meta.tags = tags;
+  return meta;
+}
+
+/**
+ * The file's bytes for one asset's metadata — byte-identical for equal input (P5).
+ *
+ * <p>Key order is `ASSET_META_KEYS`, not insertion order and not the server's: a projection that
+ * reordered keys when the instance changed its serializer would show every asset as edited.</p>
+ */
+export function serializeAssetMeta(meta) {
+  const body = {};
+  for (const key of ASSET_META_KEYS) {
+    if (meta?.[key] !== undefined) body[key] = meta[key];
+  }
+  return `${JSON.stringify(body, null, 2)}\n`;
+}
+
+/**
+ * Read a metadata file back, refusing anything that is not an object of the three keys.
+ *
+ * <p>A refusal rather than a silent `{}`: this file is a **write** on the next push, and a
+ * malformed one read as empty would clear the alt text of every image it names. That is the
+ * shape SH374 gave a missing sidecar — refuse on the write path, report on the read path — and
+ * the reason is the same one.</p>
+ */
+export function parseAssetMeta(text, path = "an asset metadata file") {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (cause) {
+    throw new Error(`shio content: ${path} is not valid JSON, so it cannot be pushed.`, { cause });
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`shio content: ${path} must hold a JSON object of alt, caption and tags.`);
+  }
+  const unknown = Object.keys(parsed).filter((key) => !ASSET_META_KEYS.includes(key));
+  if (unknown.length) {
+    throw new Error(
+      `shio content: ${path} names ${unknown.join(", ")}, which an asset does not carry. `
+        + `Allowed: ${ASSET_META_KEYS.join(", ")}.`,
+    );
+  }
+  return assetMetaOf(parsed);
+}
+
+/**
  * `File`-field names per post-type, from the lossless defs (SH16).
  *
  * Nested fields count: a `Relator` holds sub-fields, and an image inside a repeatable item
@@ -215,6 +337,57 @@ export function reconcileBytes({ base = null, remote = null, local = null }) {
   if (base === local) return "remote-changed";
   if (base === remote) return "local-changed";
   return "conflict";
+}
+
+/**
+ * One asset's metadata reconciled a key at a time (SH1032).
+ *
+ * <p>{@link reconcileBytes} per key rather than a rule of its own, because the question is the
+ * same one and a second answer to it is how two paths to "who changed this" start disagreeing.
+ * The values compare as their serialized form so `tags` — an array — reduces to something an
+ * equality can be taken of, and the normalisation in {@link assetMetaOf} runs first so a
+ * reordering by the server is not an edit.</p>
+ *
+ * @returns {{merged: object, verdicts: Record<string,string>, conflicts: string[]}}
+ *   `merged` is what to write, `verdicts` is per key for a caller that reports, and `conflicts`
+ *   names the keys where both sides moved — those keep the LOCAL value and are reported, which is
+ *   what `writeDoc` does with a field and for the same reason: the tree is what a person edits.
+ */
+export function reconcileAssetMeta({ base = {}, remote = {}, local = {} } = {}) {
+  // Normalised HERE rather than trusted from the caller, because the claim above is only true if
+  // it always happens: measured, a server answering `tags` in a different order than it was sent
+  // read as `local-changed` on every pull, so every asset with tags was permanently "edited" and
+  // the next push sent them all back. Three callers would each have had to remember.
+  const sides = {
+    base: assetMetaOf(base), remote: assetMetaOf(remote), local: assetMetaOf(local),
+  };
+  const merged = {};
+  const verdicts = {};
+  const conflicts = [];
+  for (const key of ASSET_META_KEYS) {
+    const at = (side) => (side?.[key] === undefined ? null : JSON.stringify(side[key]));
+    const verdict = reconcileBytes({
+      base: at(sides.base), remote: at(sides.remote), local: at(sides.local),
+    });
+    verdicts[key] = verdict;
+    if (verdict === "conflict") {
+      conflicts.push(key);
+      if (sides.local[key] !== undefined) merged[key] = sides.local[key];
+      continue;
+    }
+    // A delete on EITHER side is honoured, and naming all three verdicts is the point: the first
+    // draft folded `local-deleted` in with the remote-wins arm, which reads plausibly — the remote
+    // still holds the value — and hands a curator back the alt text they just deleted on the very
+    // next pull. `local-deleted` means the TREE removed it.
+    if (verdict === "remote-deleted" || verdict === "local-deleted" || verdict === "both-deleted") {
+      continue;
+    }
+    const takesRemote = verdict === "remote-changed" || verdict === "remote-added"
+        || verdict === "unchanged";
+    const from = takesRemote ? sides.remote : sides.local;
+    if (from[key] !== undefined) merged[key] = from[key];
+  }
+  return { merged, verdicts, conflicts };
 }
 
 /**
