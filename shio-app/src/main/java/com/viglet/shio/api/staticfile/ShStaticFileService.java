@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -595,6 +596,58 @@ public class ShStaticFileService {
      */
     @Transactional(readOnly = true)
     public List<ShStaticFileItem> listFiles(String folderId, String siteId, String category, String q) {
+        return matching(folderId, siteId, category, q);
+    }
+
+    /** What a caller that says nothing gets — the page size the object listing has used since SH165. */
+    private static final int DEFAULT_PAGE_SIZE = 50;
+
+    /**
+     * One page of the media library, with the counts a filter bar needs (SH1030).
+     *
+     * <h2>What this changes and what it deliberately does not</h2>
+     *
+     * <p>The <b>response</b> is a page. The <b>read</b> is still the folder's rows, narrowed by
+     * the predicate SH375 moved into the query and then filtered here on category and name — the
+     * design's remaining half is to push those two down as well, which needs the content type
+     * stamped at upload, and it is a change to what is <em>written</em> rather than to what is
+     * read. Shipping the envelope first is what lets every surface stop assuming one response
+     * while that lands.</p>
+     *
+     * <p>So this is honest about its own cost: it does not make the server's work smaller, it
+     * makes the answer's size bounded. That is the half the console was paying twice for — it
+     * downloaded the library, filtered it, and counted its chips over the whole array.</p>
+     */
+    @Transactional(readOnly = true)
+    public ShStaticFileListing page(String folderId, String siteId, String category, String q,
+                                    Integer page, Integer size) {
+        int index = Math.max(page == null ? 0 : page, 0);
+        int length = Math.max(size == null ? DEFAULT_PAGE_SIZE : size, 1);
+
+        // Everything the filters admit EXCEPT the category, which is what the facets are counted
+        // over: a chip saying "video 40" while `image` is selected is the answer to "what else is
+        // there", and counting inside the current category answers nobody's question.
+        List<ShStaticFileItem> beforeCategory = matching(folderId, siteId, null, q);
+        Map<String, Long> facets = new java.util.TreeMap<>();
+        for (ShStaticFileItem item : beforeCategory) {
+            facets.merge(categoryOf(item.contentType()), 1L, Long::sum);
+        }
+        facets.put("all", (long) beforeCategory.size());
+
+        String wantCategory = isBlank(category) ? null : category.toLowerCase(Locale.ROOT);
+        List<ShStaticFileItem> matched = wantCategory == null ? beforeCategory
+                : beforeCategory.stream()
+                        .filter(item -> wantCategory.equals(categoryOf(item.contentType())))
+                        .toList();
+
+        int from = Math.min(index * length, matched.size());
+        int to = Math.min(from + length, matched.size());
+        return new ShStaticFileListing(matched.subList(from, to), index, length, matched.size(),
+                facets);
+    }
+
+    private List<ShStaticFileItem> matching(String folderId, String siteId, String category,
+                                            String q) {
         ShPostType fileType = shPostTypeRepository.findByName(ShSystemPostType.FILE);
         if (fileType == null) {
             return List.of(); // no File post type yet => nothing uploaded

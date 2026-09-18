@@ -45,5 +45,7 @@
   "palette.openFiles": "Open the media library",
   "palette.openTrash": "Open the trash",
   "palette.applyBlueprint": "Apply a blueprint",
-  "palette.newPostType": "Create a post type"
+  "palette.newPostType": "Create a post type",
+  "common.previous": "Previous",
+  "common.next": "Next"
 }

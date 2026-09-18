@@ -1106,3 +1106,28 @@ the **digest** against it, deliberately not as the size.
 Five typed readers went with the change, which took `ShSilentCatchInventoryTest`'s `api` count
 **down** from 74 to 72 — each carried its own `catch` around the same parse, and a silent catch
 nobody calls is a number the next task has to explain.
+
+## The media listing is a page, with the counts a filter bar needs (SH1030)
+
+`GET /api/v2/staticfile` answers `{ items, page, size, totalFiles, facets }`. `page` and `size`
+under the object listing's own names and in its own order (SH165), because this was the one content
+read nobody had paged and a third spelling of "which page is this" is the drift SH120 spent a task
+removing.
+
+**The facets are the server's, and that is the point rather than a convenience.** The console drew
+its category chips by counting the array it had, which worked exactly because it had all of it.
+Over a page those counts describe the page — a library of two thousand images reports fifty, the
+chip a curator presses to find the rest is the one telling them there is nothing to find, and every
+number on screen agrees with every other. That is the half nobody notices breaking, which is why
+`ShStaticFilePagingTest` asserts it.
+
+They are counted **over the filtered set minus the category itself**: "document 7" while `image` is
+selected is the answer to "what else is there", and counting inside the selection answers "30, 0".
+A `TreeMap`, not `Map.copyOf` — an immutable map iterates in hash order and this one is serialised,
+which `ShByteStabilityLintTest` refuses (P5).
+
+**What this does not do, stated rather than left to be found.** The *response* is a page; the
+*read* is still the folder's rows, narrowed by the predicate SH375 moved into the query and then
+filtered here on category and name. Pushing those two down needs the content type stamped at
+upload, which is a change to what is written rather than to what is read. Shipping the envelope
+first is what lets every surface stop assuming one response while that lands.

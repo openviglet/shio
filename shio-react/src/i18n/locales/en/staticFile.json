@@ -51,5 +51,6 @@
     "cat_document": "Documents",
     "cat_archive": "Archives",
     "cat_other": "Other"
-  }
+  },
+  "staticFile.showing": "{{from}}–{{to}} of {{total}}"
 }

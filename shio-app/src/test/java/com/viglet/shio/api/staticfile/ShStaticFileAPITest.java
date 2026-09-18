@@ -154,8 +154,8 @@ class ShStaticFileAPITest {
         // carrying its file name, size and content type.
         String listing = mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.fileName == 'hello.txt')]").exists())
-                .andExpect(jsonPath("$[?(@.fileName == 'hello.txt')].size").exists())
+                .andExpect(jsonPath("$.items[?(@.fileName == 'hello.txt')]").exists())
+                .andExpect(jsonPath("$.items[?(@.fileName == 'hello.txt')].size").exists())
                 .andReturn().getResponse().getContentAsString();
 
         // Stated as an assertion rather than a comment, because `andExpect` carries no message and
@@ -456,8 +456,8 @@ class ShStaticFileAPITest {
 
         mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.fileName == 'dimensions.png')].width").value(640))
-                .andExpect(jsonPath("$[?(@.fileName == 'dimensions.png')].height").value(480));
+                .andExpect(jsonPath("$.items[?(@.fileName == 'dimensions.png')].width").value(640))
+                .andExpect(jsonPath("$.items[?(@.fileName == 'dimensions.png')].height").value(480));
     }
 
     @Test
@@ -472,14 +472,14 @@ class ShStaticFileAPITest {
         // category=image excludes the text file
         mockMvc.perform(get("/api/v2/staticfile").param("category", "image").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.fileName == 'report.txt')]").doesNotExist())
-                .andExpect(jsonPath("$[?(@.fileName == 'dimensions.png')]").exists());
+                .andExpect(jsonPath("$.items[?(@.fileName == 'report.txt')]").doesNotExist())
+                .andExpect(jsonPath("$.items[?(@.fileName == 'dimensions.png')]").exists());
 
         // q matches by name (case-insensitive)
         mockMvc.perform(get("/api/v2/staticfile").param("q", "REPORT").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.fileName == 'report.txt')]").exists())
-                .andExpect(jsonPath("$[?(@.fileName == 'dimensions.png')]").doesNotExist());
+                .andExpect(jsonPath("$.items[?(@.fileName == 'report.txt')]").exists())
+                .andExpect(jsonPath("$.items[?(@.fileName == 'dimensions.png')]").doesNotExist());
     }
 
     @Test
@@ -499,7 +499,7 @@ class ShStaticFileAPITest {
         // and it is still readable through the listing
         mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.id == '" + id + "')].alt").value("a logo"));
+                .andExpect(jsonPath("$.items[?(@.id == '" + id + "')].alt").value("a logo"));
     }
 
     @Test
@@ -668,7 +668,7 @@ class ShStaticFileAPITest {
     void stage06eReplacingAnImageWithATextFileClearsTheDimensions() throws Exception {
         String id = uploadImagePost();
         mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
-                .andExpect(jsonPath("$[?(@.id == '" + id + "')].width").value(120));
+                .andExpect(jsonPath("$.items[?(@.id == '" + id + "')].width").value(120));
 
         MockMultipartFile notAnImage = new MockMultipartFile(
                 "file", "pic.png", "text/plain", "not a picture".getBytes(StandardCharsets.UTF_8));
@@ -690,7 +690,7 @@ class ShStaticFileAPITest {
         String expected = sha256Hex("stamped bytes");
 
         mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
-                .andExpect(jsonPath("$[?(@.id == '" + id + "')].sha256").value(expected));
+                .andExpect(jsonPath("$.items[?(@.id == '" + id + "')].sha256").value(expected));
         // And the endpoint agrees, because it prefers the stamp rather than keeping a second
         // opinion: two answers to one question is how a cache starts disagreeing with its source.
         mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
@@ -744,7 +744,7 @@ class ShStaticFileAPITest {
         Files.delete(storage.resolve(id, "vanishing.txt"));
 
         mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
-                .andExpect(jsonPath("$[?(@.id == '" + id + "')].size").value(-1));
+                .andExpect(jsonPath("$.items[?(@.id == '" + id + "')].size").value(-1));
         mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
                 .andExpect(jsonPath("$.size").value(-1))
                 .andExpect(jsonPath("$.sha256").doesNotExist());
@@ -762,7 +762,7 @@ class ShStaticFileAPITest {
         // The listing reports no digest rather than the stale one: a caller that gets none falls
         // back and is right, a caller that gets a stale one is wrong and does not know it.
         mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
-                .andExpect(jsonPath("$[?(@.id == '" + id + "')].sha256")
+                .andExpect(jsonPath("$.items[?(@.id == '" + id + "')].sha256")
                         .value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.nullValue())));
         // And the endpoint recomputes, so the answer is right at the old cost.
         mockMvc.perform(get("/api/v2/staticfile/" + id + "/digest").principal(mockPrincipal))
@@ -775,7 +775,7 @@ class ShStaticFileAPITest {
         String id = uploadTextPost("untouched.txt", "steady");
 
         mockMvc.perform(get("/api/v2/staticfile").principal(mockPrincipal))
-                .andExpect(jsonPath("$[?(@.id == '" + id + "')].sha256").value(sha256Hex("steady")));
+                .andExpect(jsonPath("$.items[?(@.id == '" + id + "')].sha256").value(sha256Hex("steady")));
     }
 
     /**

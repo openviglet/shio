@@ -94,12 +94,16 @@ public class ShStaticFileAPI {
      * and {@code q} is a case-insensitive file-name substring.</p>
      */
     @GetMapping
-    public java.util.List<ShStaticFileItem> list(
+    public ShStaticFileListing list(
             @RequestParam(name = "folderId", required = false) String folderId,
             @RequestParam(name = "siteId", required = false) String siteId,
             @RequestParam(name = "category", required = false) String category,
-            @RequestParam(name = "q", required = false) String q) {
-        return shStaticFileService.listFiles(folderId, siteId, category, q);
+            @RequestParam(name = "q", required = false) String q,
+            // SH1030 — the one content read nobody had paged. `page`/`size` are the object
+            // listing's own words (SH165), so a reader who knows one listing knows this one.
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "size", required = false) Integer size) {
+        return shStaticFileService.page(folderId, siteId, category, q, page, size);
     }
 
     /**

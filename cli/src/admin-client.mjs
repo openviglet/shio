@@ -101,15 +101,23 @@ export class ShioAdminClient {
    *
    * Each item carries the id, the file name and the containing folder's id, which is
    * exactly what an asset path is built from.
+   *
+   * SH1030 — the endpoint answers a page in an envelope now, and this returns the page's items so
+   * every caller keeps the array it had. `size` is asked for explicitly and large: the callers
+   * here are resolving asset references, and a short answer is not a smaller resolution but one
+   * with holes — the same reason `findAll` walks a truncated find to the end.
    */
-  listStaticFiles({ siteId, folderId } = {}) {
+  async listStaticFiles({ siteId, folderId, size = 1000 } = {}) {
     // SH213 — `folderId` is the server's own filter (SH62), and it is what turns "read the whole
     // media library to resolve one reference" into "read the folder the reference names".
     const params = new URLSearchParams();
     if (folderId) params.set("folderId", folderId);
     else if (siteId) params.set("siteId", siteId);
-    const query = params.size ? `?${params}` : "";
-    return this.#at(`/api/v2/staticfile${query}`, "GET");
+    params.set("size", String(size));
+    const answer = await this.#at(`/api/v2/staticfile?${params}`, "GET");
+    // An array is what an instance older than SH1030 answers with; the envelope is what this one
+    // does. Reading both is what lets the CLI keep working against either.
+    return Array.isArray(answer) ? answer : (answer?.items ?? []);
   }
 
   /** GET /api/v2/staticfile/{id} — the bytes, as a `Uint8Array`. */

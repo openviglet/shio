@@ -48,4 +48,8 @@ export type ShStaticFileFilter = {
   category?: string
   /** Case-insensitive file-name substring. */
   q?: string
+  /** SH1030 — zero-based page index; absent means the first. */
+  page?: number
+  /** SH1030 — assets per page; absent means the server's default. */
+  size?: number
 }

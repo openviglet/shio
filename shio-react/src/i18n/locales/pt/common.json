@@ -45,5 +45,7 @@
   "palette.openFiles": "Abrir a biblioteca de midia",
   "palette.openTrash": "Abrir a lixeira",
   "palette.applyBlueprint": "Aplicar um blueprint",
-  "palette.newPostType": "Criar um tipo de conteudo"
+  "palette.newPostType": "Criar um tipo de conteudo",
+  "common.previous": "Anterior",
+  "common.next": "Proximo"
 }

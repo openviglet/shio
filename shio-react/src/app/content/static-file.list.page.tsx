@@ -19,7 +19,7 @@ import {
   Image as ImageIcon, Download, Trash2, Upload, Loader2, Search, LayoutGrid, List as ListIcon,
   X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText,
 } from "lucide-react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 // SH1023 — the search, the category chip and the view mode live in the URL.
 import { useListState } from "@/hooks/use-list-state"
@@ -49,7 +49,10 @@ interface UploadEntry {
 }
 
 /** SH1023 — every key the media library owns, and what each means when the URL says nothing. */
-const FILES_LIST = { q: "", category: "all", view: "grid" }
+const FILES_LIST = { q: "", category: "all", view: "grid", page: "0" }
+
+/** SH1030 — assets per page, the value the object listing has defaulted to since SH165. */
+const PAGE_SIZE = 50
 
 export default function StaticFileListPage() {
   const { t } = useTranslation()
@@ -68,6 +71,10 @@ export default function StaticFileListPage() {
    * is showing, and a link that carried it would hand somebody a destination they did not pick.
    */
   const list = useListState(FILES_LIST, { text: ["q"] })
+  /** SH1030 — one page at a time, and what the whole filtered set holds. */
+  const [totalFiles, setTotalFiles] = useState(0)
+  const [facets, setFacets] = useState<Record<string, number>>({})
+  const page = Number.parseInt(list.value.page || "0", 10) || 0
   const view = list.value.view as "grid" | "list"
   const query = list.value.q
   const category = list.value.category as ShMediaCategory | "all"
@@ -79,9 +86,31 @@ export default function StaticFileListPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragDepth = useRef(0)
 
-  /** The read. It raises no state before the request, which is what lets the mount effect call it. */
-  const fetchList = () =>
-    service.list().then(setItems).catch(() => setItems([])).finally(() => setLoading(false))
+  /**
+   * The read — one page, filtered and counted by the server (SH1030).
+   *
+   * It used to ask for the whole library and then filter it here and count the chips over the
+   * array. That was correct exactly because it had all of it, and a library big enough to need
+   * chips is one where downloading it to draw them is the problem.
+   */
+  const fetchList = useCallback(() =>
+    service.list({
+      q: query || undefined,
+      category: category === "all" ? undefined : category,
+      page,
+      size: PAGE_SIZE,
+    })
+      .then((listing) => {
+        setItems(listing.items ?? [])
+        setTotalFiles(listing.totalFiles ?? 0)
+        setFacets(listing.facets ?? {})
+      })
+      .catch(() => {
+        setItems([])
+        setTotalFiles(0)
+        setFacets({})
+      })
+      .finally(() => setLoading(false)), [category, page, query])
 
   /** The curator asked — upload, delete, move — so the spinner is a response to them (SH701). */
   const load = () => {
@@ -90,31 +119,25 @@ export default function StaticFileListPage() {
   }
 
   useEffect(() => {
+    setLoading(true)
     void fetchList()
+  }, [fetchList])
+
+  useEffect(() => {
     siteService.query().then((s) => {
       setSites(s)
       if (s.length > 0) setTargetSite((prev) => prev || s[0].id)
     }).catch(() => setSites([]))
   }, [t])
 
-  // Counts per category over the full (unfiltered) set, for the filter chips.
-  const counts = useMemo(() => {
-    const map: Record<string, number> = { all: items.length }
-    for (const it of items) {
-      const c = mediaCategory(it.contentType)
-      map[c] = (map[c] ?? 0) + 1
-    }
-    return map
-  }, [items])
+  // SH1030 — the server's counts, over the whole filtered set. Counted here they would describe
+  // the page: a library of two thousand images would report fifty, and the chip a curator presses
+  // to find the rest would be the one telling them there is nothing to find.
+  const counts = facets
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    return items.filter((it) => {
-      if (category !== "all" && mediaCategory(it.contentType) !== category) return false
-      if (q && !(it.fileName ?? "").toLowerCase().includes(q)) return false
-      return true
-    })
-  }, [items, query, category])
+  // The rows this page holds. The filtering is the server's now, so there is no second opinion
+  // here that could disagree with the count above it.
+  const filtered = items
 
   const uploadOne = async (file: File) => {
     const entryId = `${file.name}-${file.size}-${file.lastModified}`
@@ -363,6 +386,34 @@ export default function StaticFileListPage() {
         ) : (
           <FileTable items={filtered} onOpen={setDetail} onDelete={handleDelete} t={t}
             selected={selected} onToggleSelect={toggleSelect} />
+        )}
+
+        {/*
+          SH1030 — the page boundary, stated. A library that just stopped at fifty cards would
+          look complete, which is the failure mode paging introduces and the one the object
+          listing has said out loud since SH165. Numbered rather than "load more": the selection
+          is per page here, and a grid that grew under a curator who had ticked six cards would
+          make "delete selected" a different set than the one on screen.
+        */}
+        {!loading && totalFiles > PAGE_SIZE && (
+          <div className="flex items-center justify-center gap-3 pt-4">
+            <Button variant="outline" size="sm" disabled={page === 0}
+              onClick={() => list.set("page", String(page - 1))}>
+              {t("common.previous")}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {t("staticFile.showing", {
+                from: page * PAGE_SIZE + 1,
+                to: Math.min((page + 1) * PAGE_SIZE, totalFiles),
+                total: totalFiles,
+              })}
+            </span>
+            <Button variant="outline" size="sm"
+              disabled={(page + 1) * PAGE_SIZE >= totalFiles}
+              onClick={() => list.set("page", String(page + 1))}>
+              {t("common.next")}
+            </Button>
+          </div>
         )}
       </div>
 

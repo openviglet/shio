@@ -13,21 +13,47 @@ export interface ShTransformOptions {
 }
 
 /**
+ * One page of the media library, with the counts a filter bar needs (SH1030).
+ *
+ * `page`, `size` and a total under the object listing's own names, so a reader who knows one
+ * listing knows this one. `facets` are the server's because they have to be: counted in the
+ * browser over a page, a library of two thousand images reports fifty, and the chip a curator
+ * presses to find the rest is the one telling them there is nothing to find.
+ */
+export interface ShStaticFileListing {
+  items: ShStaticFileItem[]
+  page: number
+  size: number
+  totalFiles: number
+  /** Per category, plus `all`, counted ignoring the category filter itself. */
+  facets: Record<string, number>
+}
+
+/**
  * Client for the SH38 static-file subsystem, used by the SH62 Media Library
  * page (rebuilt from the SH61 file manager). Listing + upload live here;
  * deletion reuses the unified-post DELETE (deleting the `File` post removes its
  * bytes via `ShStaticFileCleanupListener`).
  */
 export class ShStaticFileService {
-  async list(filter?: ShStaticFileFilter): Promise<ShStaticFileItem[]> {
+  /**
+   * One page of the library (SH1030).
+   *
+   * It used to answer with the whole array, and the page then filtered it and counted its own
+   * category chips. That worked exactly because it had all of it — and a library big enough to
+   * need chips is one where downloading it to draw them is the problem.
+   */
+  async list(filter?: ShStaticFileFilter): Promise<ShStaticFileListing> {
     const params = new URLSearchParams()
     if (filter?.folderId) params.set("folderId", filter.folderId)
     if (filter?.siteId) params.set("siteId", filter.siteId)
     if (filter?.category) params.set("category", filter.category)
     if (filter?.q) params.set("q", filter.q)
+    if (filter?.page !== undefined) params.set("page", String(filter.page))
+    if (filter?.size !== undefined) params.set("size", String(filter.size))
     const qs = params.toString()
     const url = qs ? `/v2/staticfile?${qs}` : "/v2/staticfile"
-    const response = await axios.get<ShStaticFileItem[]>(url)
+    const response = await axios.get<ShStaticFileListing>(url)
     return response.data
   }
 
