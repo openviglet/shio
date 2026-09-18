@@ -210,6 +210,24 @@ class ShStaticFilePagingTest {
     }
 
     @Test
+    @DisplayName("SH1030: a row written before the stamp still classifies, from the probe")
+    void theProbeIsTheFallbackAndNotADeadBranch() {
+        // Every row in this fixture was written by `saveAll`, which does not stamp — so the
+        // categories the facets above assert are proof that the fallback carries them. Stated as
+        // its own assertion because it is the half that would fail silently: a stamp-only reader
+        // would answer `other` for the whole library an instance had before this change, and
+        // every chip would agree with every other while all of them were wrong.
+        ShStaticFileListing listing = page(null, null, 0, 50);
+
+        assertThat(listing.items())
+                .as("SH1030: unstamped rows classify from the probe, which is what keeps a "
+                        + "library written before this change usable")
+                .isNotEmpty()
+                .anySatisfy(item -> assertThat(item.contentType()).isEqualTo("image/png"));
+        assertThat(listing.facets()).containsEntry("image", (long) IMAGES);
+    }
+
+    @Test
     @DisplayName("SH1030: the envelope is the console listing's, component for component")
     void theEnvelopeIsTheOneEveryListingUses() {
         List<String> media = names(ShStaticFileListing.class);

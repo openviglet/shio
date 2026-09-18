@@ -114,6 +114,21 @@ public class ShStaticFileService {
      */
     static final String DATA_SIZE = "SIZE";
     /** {@code data} keys for editable Media Library metadata (SH62). */
+    /**
+     * The content type the bytes had when they were written (SH1030).
+     *
+     * <p>Stamped for the same reason the digest is, and used for a different one: the media
+     * library's category filter is a function of this string, and computing it per row meant
+     * resolving the type from the file name — or from the disk — for every asset in the tenant
+     * before a single one could be excluded. A stamped value is a column a query can read.</p>
+     *
+     * <p><b>The probe stays as the fallback</b>, and not only for old rows: it is what keeps
+     * {@code contentType} honest on an asset whose bytes were replaced underneath the CMS. The
+     * stamp answers the <em>category</em>, which is a filter; the probe answers what the file
+     * <em>is</em>, which is what a download sends.</p>
+     */
+    static final String DATA_CONTENT_TYPE = "CONTENT_TYPE";
+
     static final String DATA_ALT = "ALT";
     static final String DATA_CAPTION = "CAPTION";
     static final String DATA_TAGS = "TAGS";
@@ -445,6 +460,14 @@ public class ShStaticFileService {
             data.put(DATA_SHA256, hex(sha256Of(bytes)));
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read back " + fileName, e);
+        }
+        // SH1030 — the content type, so the category filter is a value the listing already has
+        // rather than a probe per row. Taken from the same file, at the same moment.
+        String probed = storage.probeContentType(path);
+        if (probed != null && !probed.isBlank()) {
+            data.put(DATA_CONTENT_TYPE, probed);
+        } else {
+            data.remove(DATA_CONTENT_TYPE);
         }
         // SH399 — the size the hash was taken over, so a later read can tell whether the hash is
         // still describing these bytes. Written after the digest and from the same file.
@@ -813,7 +836,12 @@ public class ShStaticFileService {
             // check the *digest* against it — see `trustedStamp`.
             attributes = attributesOf(path);
             if (attributes != null) {
-                contentType = storage.probeContentType(path);
+                // SH1030 — the stamp when there is one, the probe for every row written before it
+                // existed. The probe is not expensive by itself (it resolves by name first), but
+                // it is a second answer to "what is this file", and two answers to one question is
+                // what makes the category filter and the download disagree about an asset.
+                String stamped = data.text(DATA_CONTENT_TYPE);
+                contentType = stamped != null ? stamped : storage.probeContentType(path);
                 size = attributes.size();
             }
         }
@@ -983,7 +1011,12 @@ public class ShStaticFileService {
                 new FileField(DATA_HEIGHT, "Height (px)", ShSystemWidget.HIDDEN, 5, false, false),
                 new FileField(DATA_ALT, "Alternative text", ShSystemWidget.TEXT, 6, false, false),
                 new FileField(DATA_CAPTION, "Caption", ShSystemWidget.TEXT_AREA, 7, false, false),
-                new FileField(DATA_TAGS, "Tags", ShSystemWidget.MULTI_SELECT, 8, false, false));
+                new FileField(DATA_TAGS, "Tags", ShSystemWidget.MULTI_SELECT, 8, false, false),
+                // SH1030 — stamped at upload so the category filter reads a value rather than
+                // resolving one per row. Hidden, like the other stamps: it is what the machine
+                // recorded about the bytes, not something a curator sets.
+                new FileField(DATA_CONTENT_TYPE, "Content type", ShSystemWidget.HIDDEN, 9,
+                        false, false));
     }
 
     /**

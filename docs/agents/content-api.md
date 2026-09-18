@@ -1131,3 +1131,14 @@ which `ShByteStabilityLintTest` refuses (P5).
 filtered here on category and name. Pushing those two down needs the content type stamped at
 upload, which is a change to what is written rather than to what is read. Shipping the envelope
 first is what lets every surface stop assuming one response while that lands.
+
+**The content type is stamped at upload (SH1030).** `data.CONTENT_TYPE`, written beside the digest
+and from the same file, and declared by the `File` post type like every other key the uploader
+writes — `ShFilePostTypeSourceTest` fails the build for one that is not, because an undeclared key
+makes SH168 report every asset as a broken document.
+
+**The probe stays as the fallback, and not only for old rows.** The stamp answers the *category*,
+which is a filter; the probe answers what the file *is*, which is what a download sends. A
+stamp-only reader would classify a whole pre-existing library as `other` and every chip would agree
+with every other while all of them were wrong — which is why `ShStaticFilePagingTest` asserts the
+fallback against a fixture written without stamps.

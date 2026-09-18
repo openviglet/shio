@@ -1779,7 +1779,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block BE — Media: what the bytes mean
 
 - **SH1029** — The media listing parses each asset's data once instead of once per key — 2400 parses down to 400 for 400 assets, with the response byte-identical (design §LXX.1 superseded: taking the file size from the stamp instead of the disk, which SH398 had already argued against and SH399 had already decided the stamp is for validating the digest rather than for reporting the size) (design §LXX.1 recorded in `docs/agents/content-api.md`).
-- **SH1030 (the paged envelope and its facets)** — The media listing answers one page in the object listing's own envelope, with the category counts taken over everything the other filters admitted.
+- **SH1030 (the paged envelope and the stamp)** — The media listing answers one page in the object listing's own envelope, with the category counts taken over everything the other filters admitted and the content type stamped at upload.
 
 ## Block BF — The visual editor becomes a composer
 

@@ -79,7 +79,7 @@
 
 ## Block BE — Media: what the bytes mean
 
-- ⏳ **SH1030** (deps: SH1029 ✅) **the media listing has no paging and the console filters and counts the whole tenant in the browser** — The category and name predicates still run after the read, and shio_assets and the CLI inventory still assume one response. → §LXX.2
+- 🛠 **SH1030** (deps: SH1029 ✅) **the media listing has no paging and the console filters and counts the whole tenant in the browser** — The category and name predicates still run after the read, and shio_assets and the CLI inventory still assume one response. → §LXX.2
 - 📋 **SH1031** (deps: —) **alt text is optional and the image helper guarantees the accessibility rule can never fire** — The helper writes an empty alt when ALT is null and the verify rule fires only on a missing attribute, so on a site using the recommended helper image-no-alt is unreachable. → §LXX.3
 - 📋 **SH1032** (deps: —) **asset metadata and usage are reachable only from the console and REST, and the P1 census cannot see them** — No MCP op, no CLI verb and no manifest feature key name them, so the conformance test that exists to catch exactly this has nothing to classify. → §LXX.4
 - 📋 **SH1033** (deps: —) **where-is-this-used runs an unindexed LIKE over every post twice per dialog, and nobody has measured it** — The usage query wraps the file id in wildcards over the whole data column once per state, and the analysis argued a reverse index without a number to justify one. → §LXX.5
