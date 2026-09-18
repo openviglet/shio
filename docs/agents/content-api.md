@@ -1074,3 +1074,35 @@ this codebase has, and a body-only reader would report those as unchecked and te
 It prints its counts on every run: 31 console content reads, 13 of which ask the content ACL. The
 other 18 are decisions with reasons beside them, and an entry that stops being true fails the
 build rather than lingering.
+
+## The media listing parses each asset once (SH1029)
+
+`toItem` read eight keys off a `File` post's `data` — `FILE`, `WIDTH`, `HEIGHT`, `ALT`, `CAPTION`,
+`TAGS`, and `SHA256`/`SIZE` through the digest stamp — and every one of the typed readers began by
+parsing the whole string again. Nothing about that shows up in a stack trace or a profile of one
+request: it is a constant factor on a loop, which is exactly what an argument gets wrong.
+
+`ShMediaListingBenchmarkTest` counted it, with an `ObjectMapper` subclass that reports how often it
+was asked to parse — deterministic, unlike a clock (SH264), and the reason no timing is asserted
+anywhere in that package. At **400 assets: 2400 parses before, 400 after**, and the response
+**138 691 bytes either way**, which is the other half of the claim. A refactor that changed the
+answer would be a different task.
+
+Six per row rather than eight because the benchmark's rows have no bytes on disk, so `trustedStamp`
+returns before its two parses. On a real library it is eight, so the reported ratio is the
+conservative one.
+
+`Data` is a value, not a cache: parsed at the top of the one method that needs the whole row and
+then thrown away. A memo keyed on the post would be a second thing that can be stale, and
+staleness here is invisible — a listing answering from a cache written before a metadata edit shows
+the old alt text and nothing looks wrong.
+
+**The stat per row stays, and that is not an oversight.** The design asked for the size to come
+from the stamp instead of the disk; SH398 already argued the opposite and recorded why. The
+existence check has to happen anyway to keep SH62's `size: -1` honest, so a stamp would remove one
+stat of two and buy a `data` key that can disagree with the disk. SH399 stamps the size to validate
+the **digest** against it, deliberately not as the size.
+
+Five typed readers went with the change, which took `ShSilentCatchInventoryTest`'s `api` count
+**down** from 74 to 72 — each carried its own `catch` around the same parse, and a silent catch
+nobody calls is a number the next task has to explain.

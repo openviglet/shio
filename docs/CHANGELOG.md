@@ -1778,6 +1778,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BE — Media: what the bytes mean
 
+- **SH1029** — The media listing parses each asset's data once instead of once per key — 2400 parses down to 400 for 400 assets, with the response byte-identical (design §LXX.1 superseded: taking the file size from the stamp instead of the disk, which SH398 had already argued against and SH399 had already decided the stamp is for validating the digest rather than for reporting the size) (design §LXX.1 recorded in `docs/agents/content-api.md`).
+
 ## Block BF — The visual editor becomes a composer
 
 ## Block BG — The console as an application: cost, resilience and access

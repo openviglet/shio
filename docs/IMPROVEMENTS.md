@@ -2060,24 +2060,6 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.1 The listing's cost, measured, then parsed once (SH1029)
-
-GET on the static-file listing takes folder, site, category and q, and no page or size.
-The service maps every row through an item mapper and only then filters, and that mapper
-reads the same data string once per key, file name, width, height, alt, caption, tags,
-hash and size, and makes two filesystem calls. So a tenant with thousands of assets pays
-tens of thousands of JSON parses and thousands of syscalls in one request, and the
-console calls it with no filter and then filters and counts in the browser.
-
-The measurement is the first deliverable: a benchmark reporting parses, syscalls and
-response bytes at a hundred, a thousand and five thousand assets, checked in. Then the
-refactor with no contract change: parse the data once per item and read every key off
-that one tree, and take the file size from the stored metadata instead of the disk where
-it is present.
-
-BE2 pages the endpoint. This task's assertion is the benchmark's before-and-after pair
-and an unchanged response body for the seeded sample site, byte for byte.
-
 ### LXX.2 A paged media library on every surface (SH1030)
 
 After BE1 the listing is cheaper per row and still returns every row. The object listing

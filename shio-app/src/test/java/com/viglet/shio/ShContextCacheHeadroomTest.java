@@ -197,8 +197,13 @@ class ShContextCacheHeadroomTest {
      * asserts what one curator may see; an ACL row is instance-wide, so on the shared context it
      * would govern every other test's reads for the rest of the run — which is not noise but a
      * different suite.
+     *
+     * SH1029 spent one more, to 72. ShMediaListingBenchmarkTest replaces the JSON mapper with a
+     * counting subclass, which is the whole instrument: it cannot share a context with tests that
+     * need the real one, and a count over a shared context would include every neighbour's
+     * parsing.
      */
-    private static final int DECLARED_CONTEXTS = 71;
+    private static final int DECLARED_CONTEXTS = 72;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

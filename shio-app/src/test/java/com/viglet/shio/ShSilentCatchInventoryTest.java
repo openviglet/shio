@@ -205,7 +205,13 @@ class ShSilentCatchInventoryTest {
             // a row whose document will not parse is the one row a migration must never
             // rewrite, and `check` already counts it as unreadable on the same content.
             // Recording here would report the same defect twice for one model change.
-            "api", 74,
+            // SH1029 LOWERS it, 74 to 72, which is the direction this number rarely moves: the
+            // media listing parsed each asset's `data` once per key through five typed readers,
+            // and four of them carried their own catch around the same parse. One `Data` value
+            // parses once and every key is read off that tree, so the readers had no callers and
+            // were deleted rather than kept — a silent catch nobody calls is a number the next
+            // task has to explain.
+            "api", 72,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

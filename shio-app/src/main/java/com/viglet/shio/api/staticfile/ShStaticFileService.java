@@ -398,7 +398,7 @@ public class ShStaticFileService {
         if (attributes == null) {
             return new ShStaticFileDigest(post.getId(), fileName, -1L, null);
         }
-        String stamped = trustedStamp(post, attributes);
+        String stamped = trustedStamp(dataOnce(post), attributes);
         if (stamped != null) {
             return new ShStaticFileDigest(post.getId(), fileName, attributes.size(), stamped);
         }
@@ -487,15 +487,15 @@ public class ShStaticFileService {
      * mutates is the surprise P7 is about. The recompute is correct every time; only its cost
      * persists, and only for a file somebody edited behind the CMS's back.</p>
      */
-    private String trustedStamp(ShPostUnified post, Attributes attributes) {
+    private String trustedStamp(Data data, Attributes attributes) {
         if (attributes == null) {
             return null;
         }
-        String stamped = stringFromData(post, DATA_SHA256);
+        String stamped = data.text(DATA_SHA256);
         if (stamped == null || stamped.isBlank()) {
             return null;
         }
-        Long size = longFromData(post, DATA_SIZE);
+        Long size = data.longValue(DATA_SIZE);
         return size != null && size == attributes.size() ? stamped : null;
     }
 
@@ -665,8 +665,87 @@ public class ShStaticFileService {
         return "other";
     }
 
+    /**
+     * One {@code File} post's {@code data}, parsed once (SH1029).
+     *
+     * <h2>What it replaces</h2>
+     *
+     * <p>{@link #toItem} read eight keys — {@code FILE}, {@code WIDTH}, {@code HEIGHT},
+     * {@code ALT}, {@code CAPTION}, {@code TAGS}, and {@code SHA256} and {@code SIZE} through
+     * {@link #trustedStamp} — and each of the typed readers began by parsing the whole
+     * {@code data} string again. Eight parses per row, every row, every listing: a tenant with a
+     * few thousand assets paid tens of thousands of them for one request, and
+     * {@code ShMediaListingBenchmarkTest} is the measurement that says how many.</p>
+     *
+     * <h2>Why a value rather than a cache</h2>
+     *
+     * <p>A memo keyed on the post would be a second thing that can be stale, and staleness here is
+     * invisible: a listing answering from a cache written before a metadata edit shows the old alt
+     * text and nothing looks wrong. This is parsed at the top of the one method that needs the
+     * whole row and then thrown away, which is the smallest thing that can be correct.</p>
+     *
+     * <p>The single-key readers stay for their own callers — {@code fileNameOf} is public and is
+     * called from the download path, where one key really is all that is wanted.</p>
+     */
+    private record Data(tools.jackson.databind.JsonNode tree) {
+
+        String text(String key) {
+            var value = tree == null ? null : tree.get(key);
+            if (value == null || value.isNull()) {
+                return null;
+            }
+            String read = value.asString();
+            return read != null && !read.isBlank() ? read : null;
+        }
+
+        tools.jackson.databind.JsonNode number(String key) {
+            var value = tree == null ? null : tree.get(key);
+            return value != null && value.isNumber() ? value : null;
+        }
+
+        Integer integer(String key) {
+            var value = number(key);
+            return value == null ? null : value.asInt();
+        }
+
+        Long longValue(String key) {
+            var value = number(key);
+            return value == null ? null : value.asLong();
+        }
+
+        List<String> tags() {
+            var value = tree == null ? null : tree.get(DATA_TAGS);
+            if (value == null || !value.isArray()) {
+                return List.of();
+            }
+            List<String> tags = new java.util.ArrayList<>();
+            value.forEach(each -> {
+                if (each != null && !each.isNull()) {
+                    tags.add(each.asString());
+                }
+            });
+            return tags;
+        }
+    }
+
+    /** A post's {@code data} as one tree, or an empty one — the only place a listing parses it. */
+    private Data dataOnce(ShPostUnified post) {
+        if (post == null || post.getData() == null) {
+            return new Data(null);
+        }
+        try {
+            return new Data(objectMapper.readTree(post.getData()));
+        } catch (RuntimeException e) {
+            // The one place that has to know a `data` column can be unparseable, which is what the
+            // eight readers each carried a copy of.
+            log.debug("Could not read data from post {}", post.getId(), e);
+            return new Data(null);
+        }
+    }
+
     private ShStaticFileItem toItem(ShPostUnified post) {
-        String fileName = fileNameOf(post);
+        Data data = dataOnce(post);
+        String fileName = data.text(ShSystemPostTypeAttr.FILE);
         long size = -1;
         String contentType = null;
         Attributes attributes = null;
@@ -685,17 +764,15 @@ public class ShStaticFileService {
                 size = attributes.size();
             }
         }
-        Integer width = intFromData(post, DATA_WIDTH);
-        Integer height = intFromData(post, DATA_HEIGHT);
         return new ShStaticFileItem(
                 post.getId(), fileName, contentType, size, post.getOwner(), post.getDate(),
                 post.getShFolder() != null ? post.getShFolder().getId() : null,
                 post.getShFolder() != null ? post.getShFolder().getName() : null,
                 post.getShSite() != null ? post.getShSite().getId() : null,
                 post.getShSite() != null ? post.getShSite().getName() : null,
-                width, height,
-                stringFromData(post, DATA_ALT), stringFromData(post, DATA_CAPTION),
-                tagsFromData(post), trustedStamp(post, attributes));
+                data.integer(DATA_WIDTH), data.integer(DATA_HEIGHT),
+                data.text(DATA_ALT), data.text(DATA_CAPTION),
+                data.tags(), trustedStamp(data, attributes));
     }
 
     /**
@@ -770,86 +847,16 @@ public class ShStaticFileService {
         }
     }
 
-    /** Read an integer {@code data} key (e.g. SH62 {@code WIDTH}/{@code HEIGHT}); null if absent/non-numeric. */
-    /**
-     * One number out of a post's {@code data}, or {@code null}.
+    /*
+     * SH1029 removed five readers from here: numberFromData, intFromData, longFromData,
+     * stringFromData and tagsFromData. Each began by parsing the whole `data` string, and `toItem`
+     * called them six to eight times per row — 2400 parses for 400 assets, measured. `Data` parses
+     * once and every key is read off that tree, so the typed readers had no callers left.
      *
-     * <p>The two typed readers share this rather than each carrying a parse and a {@code catch}:
-     * `ShSilentCatchInventoryTest` counts a catch that neither records nor rethrows as a declared
-     * population, and a second copy of one that means the same thing is a number to raise for no
-     * new information. It is also the only place that has to know a `data` column can be
-     * unparseable.</p>
+     * Deleted rather than kept for a future caller: each carried its own `catch (RuntimeException)`
+     * around the same parse, which ShSilentCatchInventoryTest counts as a declared population, and
+     * a silent catch nobody calls is a number the next task has to explain.
      */
-    private tools.jackson.databind.JsonNode numberFromData(ShPostUnified post, String key) {
-        if (post == null || post.getData() == null) {
-            return null;
-        }
-        try {
-            var node = objectMapper.readTree(post.getData());
-            var value = node != null ? node.get(key) : null;
-            return value != null && value.isNumber() ? value : null;
-        } catch (RuntimeException e) {
-            log.debug("Could not read {} from post {} data", key, post.getId(), e);
-            return null;
-        }
-    }
-
-    /**
-     * A {@code long} {@code data} key (SH399's {@code SIZE}).
-     *
-     * <p>Separate from {@link #intFromData} because {@code asInt()} truncates: a file over two
-     * gigabytes would have its stamped size read back as some other number, the validator would
-     * never match, and the fast path would be lost for exactly the files whose hash costs the most
-     * to recompute. Safe, and silently degraded — the failure this area keeps producing.</p>
-     */
-    private Long longFromData(ShPostUnified post, String key) {
-        var value = numberFromData(post, key);
-        return value == null ? null : value.asLong();
-    }
-
-    private Integer intFromData(ShPostUnified post, String key) {
-        var value = numberFromData(post, key);
-        return value == null ? null : value.asInt();
-    }
-
-    /** Read a string {@code data} key (e.g. SH62 {@code ALT}/{@code CAPTION}); null if absent/blank. */
-    private String stringFromData(ShPostUnified post, String key) {
-        if (post == null || post.getData() == null) {
-            return null;
-        }
-        try {
-            var node = objectMapper.readTree(post.getData());
-            var value = node != null ? node.get(key) : null;
-            if (value == null || value.isNull()) {
-                return null;
-            }
-            String text = value.asString();
-            return text != null && !text.isBlank() ? text : null;
-        } catch (RuntimeException e) {
-            log.debug("Could not read {} from post {} data", key, post.getId(), e);
-            return null;
-        }
-    }
-
-    /** Read the SH62 {@code TAGS} string array off a {@code File} post's data; empty list if absent. */
-    private List<String> tagsFromData(ShPostUnified post) {
-        if (post == null || post.getData() == null) {
-            return List.of();
-        }
-        try {
-            var node = objectMapper.readTree(post.getData());
-            var value = node != null ? node.get(DATA_TAGS) : null;
-            if (value == null || !value.isArray()) {
-                return List.of();
-            }
-            List<String> tags = new java.util.ArrayList<>();
-            value.forEach(t -> { if (t != null && !t.isNull()) tags.add(t.asString()); });
-            return tags;
-        } catch (RuntimeException e) {
-            log.debug("Could not read TAGS from post {} data", post.getId(), e);
-            return List.of();
-        }
-    }
 
     /** The original file name stored on a {@code File} post's {@code data.FILE}. */
     public String fileNameOf(ShPostUnified post) {
