@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.viglet.shio.api.history.ShChangedFields;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentAuditService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -905,15 +906,29 @@ public class ShStaticFileService {
      * {@code alt}/{@code caption}/{@code tags} merged into its {@code data},
      * leaving {@code FILE}/{@code WIDTH}/{@code HEIGHT} intact. A blank/null value
      * clears the key. 404 if the id is not a published {@code File} post.
+     *
+     * <h2>It writes an audit row now (SH1032)</h2>
+     *
+     * <p>{@link #replace} has recorded one since SH210 and this did not, so describing an image was
+     * the one content write that reached neither the change feed nor the SH109 review queue. That
+     * asymmetry was invisible while the console was the only caller — a curator who typed the alt
+     * text knew they had typed it. {@code asset.meta} makes an agent a caller, and P7 says the
+     * curator is never surprised by what one did: an image that acquired a description overnight
+     * with nothing in the feed is exactly that surprise. The changed keys are named (SH989's
+     * overload), so the row says <em>which</em> of the three moved rather than "metadata".</p>
      */
     @Transactional
-    public ShStaticFileItem updateMeta(String id, String alt, String caption, List<String> tags) {
+    public ShStaticFileItem updateMeta(String id, String alt, String caption, List<String> tags,
+                                       String actor) {
         ShPostUnified post = shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED)
                 .filter(p -> p.getShPostType() != null
                         && ShSystemPostType.FILE.equals(p.getShPostType().getName()))
                 .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
 
         ObjectNode data = dataOf(post);
+        // Read before the merge overwrites it: this row holds both sides, so naming the fields
+        // costs no query — the same shape ShPostUnifiedWriteService#update uses.
+        String before = post.getData();
 
         putOrRemove(data, DATA_ALT, alt);
         putOrRemove(data, DATA_CAPTION, caption);
@@ -926,7 +941,21 @@ public class ShStaticFileService {
 
         post.setData(objectMapper.writeValueAsString(data));
         post.setModifiedDate(Instant.now());
-        return toItem(shPostUnifiedRepository.save(post));
+        if (actor != null) {
+            post.setModifier(actor);
+        }
+        ShPostUnified saved = shPostUnifiedRepository.save(post);
+        // SH1032 — the feed and the review queue both read this, and describing an image is a
+        // content change like any other. Nothing is recorded when nothing moved: a PUT that re-sent
+        // the values already stored would otherwise put a row in a curator's feed saying an asset
+        // changed, which is the inverse of the surprise this closes.
+        List<String> changed = ShChangedFields.between(before, saved.getData());
+        if (!changed.isEmpty()) {
+            shContentAuditService.record(ShContentAction.UPDATE, saved.getId(),
+                    saved.getShSite() != null ? saved.getShSite().getId() : null,
+                    saved.getTitle(), actor, changed);
+        }
+        return toItem(saved);
     }
 
     /**
@@ -1056,6 +1085,18 @@ public class ShStaticFileService {
                 new FileField(DATA_ALT, "Alternative text", ShSystemWidget.TEXT, 6, false, false),
                 new FileField(DATA_CAPTION, "Caption", ShSystemWidget.TEXT_AREA, 7, false, false),
                 new FileField(DATA_TAGS, "Tags", ShSystemWidget.MULTI_SELECT, 8, false, false),
+                // SH1098 — written by SH951's two sanitize paths since the day they shipped, and
+                // declared by nobody. SH168 makes an undeclared field an ERROR, so `shio_assets`,
+                // which reads it beside FILE to answer "were these the uploaded bytes", refused
+                // every listing that returned an asset — the whole tool, on every instance. Four
+                // passes over exactly this question missed it (SH474's four keys, SH478's three,
+                // SH1030's CONTENT_TYPE) because the lint reflected constants named `DATA_*` and
+                // this one is `ShSystemPostTypeAttr.SANITIZED`. The lint reads call sites now.
+                //
+                // HIDDEN for the reason SHA256 and SIZE are: it is a verdict about bytes, and a
+                // curator editing it would be editing a claim about a file rather than the file.
+                new FileField(ShSystemPostTypeAttr.SANITIZED, "Sanitized", ShSystemWidget.HIDDEN,
+                        10, false, false),
                 // SH1030 — stamped at upload so the category filter reads a value rather than
                 // resolving one per row. Hidden, like the other stamps: it is what the machine
                 // recorded about the bytes, not something a curator sets.

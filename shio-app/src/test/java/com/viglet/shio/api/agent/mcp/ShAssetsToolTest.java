@@ -71,7 +71,11 @@ class ShAssetsToolTest {
 
     /** The tool with the instance's shipped upload policy, which is what SH951's flags read. */
     private static ShAssetsTool tool(ShAgentReadService reads) {
-        return new ShAssetsTool(reads, new ShUploadPolicy(new ShUploadPolicyProperties()));
+        // SH1032 — the usage collaborator is a mock rather than a stub with behaviour, because the
+        // branches asserted here never reach it: `usage` is off unless asked for, and the no-type
+        // branch returns before any row exists. A mock that is never called is the honest fixture.
+        return new ShAssetsTool(reads, new ShUploadPolicy(new ShUploadPolicyProperties()),
+                mock(com.viglet.shio.api.staticfile.ShStaticFileService.class));
     }
 
     @Test

@@ -127,8 +127,7 @@ public final class ShAgentOps {
                             + "by `data.limit`/`data.from`. Never replaces a set value."),
             new OpSpec(ShAgentBatchService.SITE_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
-                    "Trash a site and every folder and post in it. Needs `confirm` from its own "
-                    + "dry run."),
+                    "Trash a site and every folder and post in it."),
             new OpSpec(ShAgentBatchService.FOLDER_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Create a folder at that whole name chain, or confirm it."),
@@ -142,8 +141,7 @@ public final class ShAgentOps {
                             + "own name chain; occupied is refused. May cross sites."),
             new OpSpec(ShAgentBatchService.FOLDER_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
-                    "Trash a folder and everything beneath it. Needs `confirm` from its own dry "
-                            + "run; use folder.move to rename."),
+                    "Trash a folder and everything beneath it; use folder.move to rename."),
             new OpSpec(ShAgentBatchService.POST_UPSERT,
                     List.of(ADDRESS), List.of(TYPE, FOLDER), List.of(), List.of(DATA, EXPECT),
                     "Declare a post's whole state at that address. `data` keys the post-type does "
@@ -166,7 +164,7 @@ public final class ShAgentOps {
                             + "for post.publish."),
             new OpSpec(ShAgentBatchService.POST_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(EXPECT, DATA),
-                    "Trash a post. Needs `confirm` from its own dry run."),
+                    "Trash a post."),
             // SH222 — the undo `post.delete` has always promised in its own reply. Addressed by
             // `id:` because a trashed post has no reachable path; the ids come from
             // `find?trash=true`, which is the read half.
@@ -196,7 +194,7 @@ public final class ShAgentOps {
                             + "`data.reconcile:true` also adds the fields an older instance's "
                             + "render types are missing. `data.types` installs SH95 vocabulary "
                             + "types by name (Page, SectionHero). `data.fields` {Type:[name]} "
-                            + "appends missing Text fields to a type that exists. No address."),
+                            + "appends missing Text fields to a type that exists."),
             // SH993 — a release: a named set of posts in one site that goes live as one unit. Read one
             // back with find?site=<site>&release=<name>.
             new OpSpec(ShAgentBatchService.RELEASE_UPSERT,
@@ -210,15 +208,14 @@ public final class ShAgentOps {
                     "Take `data.posts` out again."),
             new OpSpec(ShAgentBatchService.RELEASE_RUN,
                     List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, CANCEL),
-                    "Publish the release, atomically. Needs `confirm` from its own dry run; `when` "
-                            + "schedules it, `cancel` calls that off."),
+                    "Publish the release, atomically. `when` schedules it, `cancel` calls that off."),
             new OpSpec(ShAgentBatchService.RELEASE_ARCHIVE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(CANCEL),
                     "Take it out of the listing; `cancel` puts it back. Not a delete."),
             new OpSpec(ShAgentBatchService.RELEASE_ROLLBACK,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Put a published release back: each page to what it replaced, pages it first "
-                            + "published come down. Needs `confirm`."),
+                            + "published come down."),
             // SH1003 — the channel back. `data.body` is the correction itself; `field` narrows it to
             // one field and `revision` to one version, and `kind` is comment, request or reply.
             new OpSpec(ShAgentBatchService.NOTE_ADD,
@@ -227,7 +224,12 @@ public final class ShAgentOps {
                             + "`parent`, `kind` (comment/request/reply)."),
             new OpSpec(ShAgentBatchService.NOTE_RESOLVE,
                     List.of(ADDRESS, DATA), List.of(), List.of(), List.of(CANCEL),
-                    "Close `data.note`; `cancel` re-opens."));
+                    "Close `data.note`; `cancel` re-opens."),
+            // SH1032 — merges, where post.upsert declares whole state: an upsert carrying only
+            // `alt` would drop `FILE` and leave the asset pointing at nothing.
+            new OpSpec(ShAgentBatchService.ASSET_META,
+                    List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
+                    "Describe an image: `data.alt`, `caption`, `tags`. Merges; blank clears."));
 
     private ShAgentOps() {
         // utility
@@ -285,6 +287,14 @@ public final class ShAgentOps {
         // went 30 tokens over its ceiling, and with this line and none of them it is under.
         text.append("# on any delete, `data.purge:true` removes instead of trashing — frees file "
                 + "bytes, fires the DELETE webhook, no undo\n");
+        // SH1032 — the same move SH733 made for `purge`, applied to the one modifier still spelled
+        // per-op. Five ops carried "Needs `confirm` from its own dry run": the three deletes,
+        // release.run and release.rollback. Five explanations of one BATCH-level key cost 49 tokens
+        // where the key costs none, and the line above already listed `confirm` without ever saying
+        // what it was. This is the trim that paid for asset.meta, and it is also the SH332 rule the
+        // class javadoc cites — a caller learns a key once, in one shape.
+        text.append("# the deletes, release.run and release.rollback need `confirm`: the token "
+                + "their own dry run returned\n");
         for (OpSpec spec : all()) {
             text.append(spec.op());
             spec.required().forEach(key -> text.append(' ').append(key));

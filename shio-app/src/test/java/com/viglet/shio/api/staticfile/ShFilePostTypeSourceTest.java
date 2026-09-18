@@ -11,6 +11,9 @@ package com.viglet.shio.api.staticfile;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -24,6 +27,8 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.post.type.ShSystemPostType;
@@ -64,7 +69,26 @@ import tools.jackson.databind.ObjectMapper;
                 + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true",
         "shio.schedule.enabled=false" })
 @TestInstance(Lifecycle.PER_CLASS)
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShFilePostTypeSourceTest {
+
+    /**
+     * The one writer, read as text (SH1098).
+     *
+     * <p>Through {@link ShSourceText#code} — the javadoc above names {@code data.put} to explain
+     * the scan, and a raw read would count the explanation as a call site.</p>
+     */
+    private static final String SERVICE_SOURCE = readService();
+
+    private static String readService() {
+        Path path = Path.of("src/main/java/com/viglet/shio/api/staticfile/ShStaticFileService.java");
+        try {
+            return Files.readString(path);
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    }
+
 
     private static final String REFERENCE = "/import/post-types.json";
 
@@ -168,17 +192,59 @@ class ShFilePostTypeSourceTest {
      * replication that found it. Reflecting the {@code DATA_*} fields means the <b>next</b> key
      * somebody adds fails this test on the commit that adds it, rather than on somebody's replica
      * (SH322: the grep is the deliverable).</p>
+     *
+     * <h2>That promise was false for five blocks (SH1098)</h2>
+     *
+     * <p>"A key added tomorrow fails on its own commit" held only for a key <b>named</b>
+     * {@code DATA_}. {@code SANITIZED} is written by two call sites here as
+     * {@code ShSystemPostTypeAttr.SANITIZED} — a constant on another class — so the reflection could
+     * not see it, the type never declared it, and {@code shio_assets} (which reads {@code FILE} and
+     * {@code SANITIZED} together) refused <b>every listing that returned an asset</b>, on every
+     * instance. Four passes over this exact question — SH474's four keys, SH478's three, SH1030's
+     * {@code CONTENT_TYPE} — each re-ran a reflection that structurally could not find it.</p>
+     *
+     * <p>So the scan now reads the <b>call sites</b>: every {@code data.put(X, …)} in the service,
+     * resolving {@code X} through whichever class declares it. A naming convention is a belief about
+     * the code, and this file's own lesson (SH478, above) is that a belief cannot check one — it took
+     * the hand-kept list out and put a convention in, which is a smaller version of the same
+     * mistake. What the writer writes is a fact about its statements, and that is what is read.</p>
      */
     private static Set<String> dataKeysTheServiceWrites() {
         Set<String> keys = new TreeSet<>();
-        for (java.lang.reflect.Field field : ShStaticFileService.class.getDeclaredFields()) {
-            if (field.getName().startsWith("DATA_") && field.getType() == String.class) {
+        // The constants, still — they are the common case and resolving them by name is exact.
+        Map<String, String> byConstant = new java.util.HashMap<>();
+        for (Class<?> owner : List.of(ShStaticFileService.class, ShSystemPostTypeAttr.class)) {
+            for (java.lang.reflect.Field field : owner.getDeclaredFields()) {
+                if (field.getType() != String.class
+                        || !java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                    continue;
+                }
                 field.setAccessible(true);
                 try {
-                    keys.add((String) field.get(null));
+                    byConstant.put(owner.getSimpleName() + "." + field.getName(),
+                            (String) field.get(null));
+                    byConstant.put(field.getName(), (String) field.get(null));
                 } catch (IllegalAccessException e) {
                     throw new IllegalStateException("cannot read " + field.getName(), e);
                 }
+            }
+        }
+        // And the call sites, which is what makes this a fact rather than a convention. A `put`
+        // whose key is a literal counts too: spelling one inline is the next way to slip past this.
+        String source = ShSourceText.code(SERVICE_SOURCE);
+        java.util.regex.Matcher put = java.util.regex.Pattern
+                .compile("data\\.(?:put|putArray|remove)\\(\\s*(?:\"([A-Za-z0-9_]+)\""
+                        + "|([A-Za-z]+\\.)?([A-Z][A-Za-z0-9_]*))")
+                .matcher(source);
+        while (put.find()) {
+            if (put.group(1) != null) {
+                keys.add(put.group(1));
+                continue;
+            }
+            String named = (put.group(2) == null ? "" : put.group(2)) + put.group(3);
+            String value = byConstant.get(named);
+            if (value != null) {
+                keys.add(value);
             }
         }
         return keys;
@@ -196,6 +262,16 @@ class ShFilePostTypeSourceTest {
         assertThat(written)
                 .as("a reader of this test must be able to tell an empty reflection from a passing one")
                 .hasSizeGreaterThanOrEqualTo(7);
+        assertThat(written)
+                .as("""
+                        SH1098: the scan finds the key that named this defect. `SANITIZED` is \
+                        written as `ShSystemPostTypeAttr.SANITIZED`, so the `DATA_*` reflection \
+                        this replaced could not see it and `shio_assets` refused every listing \
+                        that returned an asset. Asserted by name rather than left to the size \
+                        check: the widening is the deliverable, and a scan that reads call sites \
+                        but resolves no constant off another class would pass the count and miss \
+                        exactly this again.""")
+                .contains(ShSystemPostTypeAttr.SANITIZED);
 
         assertThat(declared)
                 .as("""

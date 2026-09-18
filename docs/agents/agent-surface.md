@@ -3619,3 +3619,91 @@ runs before content goes live.
 
 It reads the stamped content type first (SH1030) and the file extension second, so it costs no
 syscall per asset — the difference between a check that ships on and one nobody turns on.
+
+## Describing an asset, and asking where it is used (SH1032)
+
+Two capabilities lived on `/api/v2/staticfile/**` alone — the metadata a curator types into the
+Media Library dialog, and the "used in" list that says whether an asset is safe to delete. No op,
+no CLI verb and no `features` key named either, which is the part that makes this a P1 story rather
+than a missing-feature one: **`ShAgentP1ConformanceTest` classifies manifest feature keys**, so a
+capability with no flag is not unclassified — it is invisible. The instrument built to find exactly
+this gap could not see it.
+
+So the flags landed **first**, before any reach existed, and the build went red naming
+`assetMetadata` and `assetUsage` as unclassified. That is the order to copy: declaring the
+capability is what turns "nobody noticed" into "the build says so".
+
+### `asset.meta` — why an op and not an argument on `post.upsert`
+
+`post.upsert` fails twice here, and the first failure is structural. A `File` post has **no friendly
+URL** — the type's design, the reason `find` addresses assets `id:` and the reason SH501 exempts
+them from `url-missing` — and writes take `post:<site>/<url>`, so there is no address an upsert of
+an asset could carry. Then, even reachable, an upsert **declares whole state**:
+`ShPostUnifiedWriteService#update` calls `setData` with exactly what it was sent. A caller sending
+only `alt` would drop `FILE`, `WIDTH`, `HEIGHT`, `SHA256`, `SIZE` and `CONTENT_TYPE` — the file name
+the bytes are served under, the intrinsic size `{{#image}}` needs to stop the layout shifting, the
+digest `pull --content` compares against, and the content type the media library filters on. The
+asset would still list, still resolve, and serve nothing.
+
+`asset.meta` therefore takes `id:` (or `post:`, for an asset a curator gave a URL by hand) and
+**merges** three keys through `ShStaticFileService#updateMeta` — the one writer of a `File` post's
+metadata, which is what keeps the console and the agent meaning the same thing by a blank value.
+Addressed to something that is not an asset it refuses `not-an-asset`, on the **dry run too**: a
+plan that reported "would describe this" about a page is the plan P9 exists to stop being trusted.
+
+### Metadata edits write an audit row
+
+`replace` has recorded one since SH210 and `updateMeta` did not, so describing an image was the one
+content write reaching neither the change feed nor the SH109 review queue. That was invisible while
+the console was the only caller — a curator who typed the alt text knew they had typed it. An agent
+is a caller now, and P7 says the curator is never surprised by what one did. The row names the
+changed keys (SH989's overload) rather than saying "metadata", and **nothing is recorded when
+nothing moved**: a re-send of the stored values would otherwise put a change in somebody's feed.
+
+### `usage` on `shio_assets`, not a thirteenth tool
+
+"Where is this used" is asked in one situation — before replacing or deleting an asset, about assets
+the caller is already listing — so it is a flag on that call. It is **off by default** because it is
+a query per row and the default listing is the browse. `used 0` is written rather than omitted,
+which is the opposite of how `sanitized` and `unsafe` are treated and deliberate: deletion is
+authorised by the *absence* of referrers, so the one reading that ends in data loss must not be
+inferred from a line that might simply be missing. Draft referrers are reported with a `draft` flag
+rather than flattened away — an asset used only by an unpublished page is not unused.
+
+**What this cost, since both ceilings moved.** `asset.meta` is ~4 tokens in `shio_write`'s enum and
+`usage` ~15 on `shio_assets`, which took `tools/list` to 2939 (2920 → 2960) and `shio_write` to 493
+(`max-per-tool` 490 → 520). The two new `features` keys took `manifest.check` to 405 (420 → 450).
+The ops vocabulary went to 952 against 950, paid for by the trim SH733's note predicted: five ops
+each spelled out "Needs `confirm` from its own dry run", and the grammar header now says it once.
+
+**Still on REST only:** the metadata does not yet round-trip through `shio/content/**`. An asset
+projects as bytes and nothing else, so a sidecar carrying `alt`/`caption`/`tags` under SH1004's
+merge rule is a file-format decision of its own and is the open half of SH1032.
+
+### `shio_assets` refused every listing that held an asset (SH1098)
+
+Found by SH1032's live upload, and it had been true since SH951 shipped. `ShStaticFileService`
+writes `SANITIZED` into a `File` post on its two sanitize paths; `fileFields()` never declared it;
+SH168 makes an undeclared field an **error**. `shio_assets` reads `FILE` and `SANITIZED` together,
+so the tool an agent uses to choose an image refused — on every instance — the moment there was an
+image to choose.
+
+Nothing saw it, and each of the two reasons is worth more than the bug:
+
+**The suite could not reach it.** `shio_assets` returns early when the listing is empty, and no
+conformance scenario had ever uploaded an asset. Every green run exercised the one branch that
+cannot fail. A tool with a guard clause is a tool whose fixture has to get past the guard.
+
+**The lint could not see it.** `ShFilePostTypeSourceTest` is the instrument built for exactly this
+question, and its javadoc promised "a key added tomorrow fails on its own commit" — true only for a
+key *named* `DATA_`, because it reflected `ShStaticFileService`'s constants by prefix. `SANITIZED`
+is `ShSystemPostTypeAttr.SANITIZED`, a constant on another class, so four separate passes over this
+same question (SH474's four keys, SH478's three, SH1030's `CONTENT_TYPE`) each re-ran a reflection
+that structurally could not find it.
+
+That file's own history is the lesson repeating one size smaller. SH478 removed a hand-kept list of
+"fields we have not declared yet" because *a declared list records a belief; it cannot check one* —
+and replaced it with a naming convention, which is a belief about the code. The scan now reads the
+**call sites**: every `data.put`/`putArray`/`remove` in the service, resolving the key through
+whichever class declares it, and counting a bare string literal too. What the writer writes is a
+fact about its statements, so that is what is read.

@@ -9,6 +9,7 @@
 package com.viglet.shio.api.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -31,13 +34,16 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch.Op;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.post.type.ShSystemPostType;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -72,6 +78,9 @@ class ShAgentBatchTest {
     private ShPostUnifiedRepository shPostUnifiedRepository;
     @Autowired
     private ShAgentReadService shAgentReadService;
+    /** SH1032 — the trail a metadata write now lands in, read back rather than mocked. */
+    @Autowired
+    private ShHistoryRepository shHistoryRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -1009,5 +1018,175 @@ class ShAgentBatchTest {
     private static Op expecting(Op op, String digest) {
         return new Op(op.op(), op.address(), op.type(), op.folder(), op.to(), op.data(),
                 op.when(), op.locale(), op.translationOf(), op.url(), digest);
+    }
+
+    // --- SH1032: an asset's own metadata, reachable and merged ------------------------------
+
+    /**
+     * An uploaded asset, as the upload path leaves one: a PUBLISHED {@code File} post whose
+     * {@code data} carries the stamps no caller writes and none may drop.
+     */
+    private String anAsset() {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            ShPostType fileType = entityManager
+                    .createQuery("select t from ShPostType t where t.name = :name", ShPostType.class)
+                    .setParameter("name", ShSystemPostType.FILE)
+                    .getResultStream().findFirst().orElseGet(() -> {
+                        ShPostType created = new ShPostType();
+                        created.setName(ShSystemPostType.FILE);
+                        created.setTitle("File");
+                        created.setSystem((byte) 1);
+                        created.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+                        created.setOwner("admin");
+                        entityManager.persist(created);
+                        return created;
+                    });
+            // Two statements, not `f.shSite.name`: navigating past `.id` of an association whose
+            // target is an ShObject subclass emits the @TenantId predicate against a subclass alias
+            // with no such column — valid JPQL, `Column "ss1_1.tenant_id" not found` at prepare
+            // time. This fixture wrote it the short way first and that is exactly what it did.
+            ShSite site = entityManager
+                    .createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                    .setParameter("name", siteName)
+                    .getSingleResult();
+            ShFolder root = entityManager
+                    .createQuery("select f from ShFolder f where f.shSite = :site", ShFolder.class)
+                    .setParameter("site", site)
+                    .getResultStream().findFirst().orElseThrow();
+            ShPostUnified asset = new ShPostUnified();
+            asset.setId(UUID.randomUUID().toString());
+            asset.setState(ShPostState.PUBLISHED);
+            asset.setShFolder(root);
+            // What the upload path writes — ShPostUnifiedWriteService#create sets it from
+            // ShFolderSite.of(folder). Without it the resolver refuses the id ("No id is
+            // addressable there, for this credential"), because the SH2 allow-list is asked about
+            // a site the row does not name. A fixture that omitted it tested a row no upload makes.
+            asset.setShSite(site);
+            asset.setShPostType(fileType);
+            asset.setTitle("hero.jpg");
+            asset.setData(STAMPED_ASSET_DATA);
+            asset.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            asset.setOwner("admin");
+            entityManager.persist(asset);
+            return asset.getId();
+        });
+    }
+
+    /** What an upload stamps and no metadata write may drop. */
+    private static final String STAMPED_ASSET_DATA = """
+            {"FILE":"hero.jpg","WIDTH":1600,"HEIGHT":900,\
+            "SHA256":"deadbeef","SIZE":1234,"CONTENT_TYPE":"image/jpeg"}""";
+
+    private JsonNode assetDataOf(String postId) {
+        return new TransactionTemplate(transactionManager).execute(status -> objectMapper.readTree(
+                shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
+                        .orElseThrow().getData()));
+    }
+
+    private Op assetMeta(String assetId, Map<String, Object> data) {
+        return new Op(ShAgentBatchService.ASSET_META, "id:" + assetId, null, null,
+                objectMapper.valueToTree(data));
+    }
+
+    @Test
+    @DisplayName("SH1032: asset.meta merges, and the stamps the caller never sent survive it")
+    void assetMetaMergesRatherThanDeclaringWholeState() {
+        String assetId = anAsset();
+
+        Change change = only(run(false, assetMeta(assetId,
+                Map.of("alt", "A wide hero", "caption", "Above the fold"))));
+        JsonNode after = assetDataOf(assetId);
+
+        assertThat(change.action()).isEqualTo(Change.UPDATE);
+        assertThat(after.get("ALT").asString()).isEqualTo("A wide hero");
+        assertThat(after.get("CAPTION").asString()).isEqualTo("Above the fold");
+        // THE ASSERTION SH1032 EXISTS FOR, and the reason this is an op rather than an upsert.
+        // `post.upsert` declares whole state — ShPostUnifiedWriteService#update calls setData with
+        // exactly what it was sent — so the shape an agent would reach for first, sending only the
+        // key it wants to change, drops five stamps the server wrote: the file name the bytes are
+        // served under, the intrinsic size {{#image}} needs to stop the layout shifting, the digest
+        // `pull --content` compares against, and the content type the media library filters on.
+        // The asset would still be listed, still be referenced, and point at nothing.
+        assertThat(after.propertyNames())
+                .as("""
+                        SH1032: every stamp the caller did not send is still there. An op that \
+                        merged two keys and lost FILE would leave a library of assets that look \
+                        present and serve 404s — and nothing on this surface would say so, \
+                        because a post with no FILE is a valid post.""")
+                .contains("FILE", "WIDTH", "HEIGHT", "SHA256", "SIZE", "CONTENT_TYPE");
+        assertThat(after.get("FILE").asString()).isEqualTo("hero.jpg");
+    }
+
+    @Test
+    @DisplayName("SH1032: a blank value clears its key, and clears only that one")
+    void assetMetaClearsWithABlank() {
+        String assetId = anAsset();
+        run(false, assetMeta(assetId, Map.of("alt", "A wide hero", "caption", "Above the fold")));
+
+        run(false, assetMeta(assetId, Map.of("alt", "", "caption", "Above the fold")));
+        JsonNode after = assetDataOf(assetId);
+
+        // updateMeta's rule, which is therefore the console's: one writer, one meaning. An op that
+        // merged on the console's rules and cleared on its own would be the two surfaces
+        // disagreeing about what an empty string means, on the same row, silently.
+        assertThat(after.has("ALT")).isFalse();
+        assertThat(after.get("CAPTION").asString()).isEqualTo("Above the fold");
+        assertThat(after.get("FILE").asString()).isEqualTo("hero.jpg");
+    }
+
+    @Test
+    @DisplayName("SH1032: against a page it refuses with the op to use instead, on the dry run too")
+    void assetMetaRefusesWhatIsNotAnAsset() {
+        String base = "/not-an-asset-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/page", base.substring(1), "A page"));
+        String pageId = idOf(base + "/page");
+        Op op = assetMeta(pageId, Map.of("alt", "nope"));
+
+        // Both branches, and the dry run is the one that matters: a plan that reported "would
+        // describe this" about a page would be believed, and the refusal would arrive at apply
+        // time with the rest of the batch already written (P9).
+        for (boolean dryRun : new boolean[] { true, false }) {
+            boolean planning = dryRun;
+            assertThatThrownBy(() -> run(planning, op))
+                    .as("SH1032: dryRun=%s", planning)
+                    .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                    .satisfies(thrown -> {
+                        var problem = ((ShAgentBatchService.BatchOpException) thrown)
+                                .toProblemDetail();
+                        assertThat(problem.getType().toString()).endsWith("not-an-asset");
+                        // P6: a 4xx carries the fix. Without it the refusal is updateMeta's
+                        // NoSuchElementException — "File post not found: <uuid>" about an id the
+                        // caller just read back — which reads as an instance fault, not wrong op.
+                        assertThat(problem.getProperties())
+                                .extractingByKey("fix", as(InstanceOfAssertFactories.STRING))
+                                .contains("post.upsert");
+                    });
+        }
+    }
+
+    @Test
+    @DisplayName("SH1032: describing an image writes an audit row, naming which keys moved")
+    void assetMetaReachesTheChangeFeed() {
+        String assetId = anAsset();
+        run(false, assetMeta(assetId, Map.of("alt", "A wide hero")));
+
+        List<ShHistory> trail = new TransactionTemplate(transactionManager).execute(status ->
+                shHistoryRepository.findByShObjectOrderByDateDesc(assetId, PageRequest.of(0, 5)));
+
+        // `replace` has recorded one since SH210 and this did not, so describing an image was the
+        // one content write reaching neither the change feed nor the SH109 review queue. That was
+        // invisible while the console was the only caller — a curator who typed the alt text knew
+        // they had. An agent is a caller now, and P7 says the curator is never surprised by what
+        // one did: an image that acquired a description overnight with nothing in the feed is
+        // exactly that surprise.
+        assertThat(trail)
+                .as("SH1032: the agent's metadata write is in the trail")
+                .isNotEmpty();
+        assertThat(trail.get(0).getChangedFields())
+                .as("""
+                        SH1032: and it names ALT rather than saying "metadata" — SH989's overload, \
+                        because a reviewer deciding whether to look needs to know which of the \
+                        three keys moved.""")
+                .contains("ALT");
     }
 }

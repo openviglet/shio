@@ -159,6 +159,13 @@ public class ShAgentManifestService {
         features.put("trash", true);
         features.put("exchange", true);
         features.put("imageTransforms", true);
+        // SH1032 — declared so the gap is countable. The meta and usage endpoints have existed
+        // since SH62 with no agent reach at all, and ShAgentP1ConformanceTest classifies FEATURE
+        // KEYS: a capability nothing declares is one the instrument built to find P1 breaks cannot
+        // see. Naming them is what turns an invisible gap into a failing build — which is the only
+        // reason to name a capability before closing it.
+        features.put("assetMetadata", true);
+        features.put("assetUsage", true);
         features.put("postTypesAsCode", true);
         // SH183 — this instance can render a page itself, so a site is visible with no front
         // end and no project. It is the flag an MCP-only caller needs most (SH186): without

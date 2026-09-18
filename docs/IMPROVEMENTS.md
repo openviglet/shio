@@ -2062,23 +2062,24 @@ argued in the analysis and have not yet been measured on this instance.
 
 ### LXX.4 Asset metadata on the agent surface, and a key the census can read (SH1032)
 
-The meta and usage endpoints exist with no agent reach. The assets tool's javadoc says
-it is read-only, the op vocabulary has no op touching an asset, the CLI has no asset
-metadata verb, and the manifest indexes only the upload route from that controller. Most
-importantly, the P1 conformance test classifies manifest feature keys and the only media
-keys are image transforms and signed URLs, so the instrument built for this gap cannot
-see it.
+FOCAL POINT IS OFF THE TABLE (SH1032, the agent-surface half). The design asked for it
+beside alt, caption and tags. It does not exist anywhere in the product — not on the
+File post type, not in the SH40 transform pipeline, not in the Media Library dialog — so
+an op key carrying it would be a published contract for a field nothing reads or
+renders. That is a new capability, not reach, and it belongs to whoever builds cropping.
 
-Close the hole in the instrument first, then the chain. Declare assetMetadata and
-assetUsage as features, which alone turns an invisible gap into a failing build. Then
-give them reach: an asset.meta op taking an id plus alt, caption, tags and focal point,
-going through the file service so the one-writer lint stays satisfied, and a usage
-argument on the assets tool, within its AY5 reservation, so where is this used is a flag
-on a call the agent already makes. Metadata lands in the asset sidecar and round-trips
-through pull and push under SH1004's merge rule.
+WHAT IS LEFT is the file half, and it is a format decision rather than plumbing. An
+asset projects as bytes under `shio/assets/<site>/<chain>/<name>` and nothing else, so
+there is no file for metadata to land in. A sidecar has to answer: what is it called
+beside the bytes, how does it avoid colliding with SH191's field sidecars, and what does
+`readLocal` do when it is missing — SH374's `sidecars: "report"` split is the precedent.
+Then SH1004's table gains a writer with its merge rule, which is per-key like
+`writeRemoteSidecar` rather than whole-file like `writeAssetBytes`: two curators
+describing two different images in one folder must not conflict.
 
-Metadata edits start writing an audit row, which replace already does, so they reach the
-change feed and review.
+Do not re-derive the op. `asset.meta` merges through `ShStaticFileService#updateMeta`
+and the push side must use the same writer, or the projection becomes a second path that
+clears a key the console would have kept.
 
 ### LXX.5 What the usage query costs before anything replaces it (SH1033)
 

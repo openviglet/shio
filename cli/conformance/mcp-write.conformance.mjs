@@ -42,6 +42,18 @@ import { openMcp } from "./support/mcp-stdio.mjs";
 /** Every write-side tool this suite is accountable for — SH707's uncovered write list. */
 const WRITE_TOOLS = ["shio_write", "shio_apply", "shio_publish", "shio_remember"];
 
+/**
+ * A one-pixel PNG, as real bytes (SH1032).
+ *
+ * <p>Real rather than a placeholder because the dimension reader parses the header: a byte string
+ * that is not a PNG uploads fine and stamps no WIDTH, and the merge assertion would then be
+ * comparing undefined with undefined and passing.</p>
+ */
+const ONE_PIXEL_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
 describe("SH709: the four tools that change something, against a store that keeps what they do", () => {
   const conn = connection();
   const site = scratchSite("Write");
@@ -219,6 +231,101 @@ describe("SH709: the four tools that change something, against a store that keep
     } finally {
       await second.close();
     }
+  });
+
+  /**
+   * SH1032 — a real uploaded asset, described through the agent surface.
+   *
+   * ## Why this one is live rather than declared uncovered
+   *
+   * `asset.meta` merges three keys into a document whose other six are written by the server:
+   * `stampBytes` writes SHA256, SIZE and CONTENT_TYPE from bytes on disk, and the dimension reader
+   * writes WIDTH and HEIGHT from the PNG header. An in-memory fixture can be handed a `data`
+   * document that *looks* like that, and then "the stamps survive the merge" is a claim about a
+   * string the test itself wrote. Here it is a claim about what the product produced — which is the
+   * only version of it worth asserting, because the failure being guarded against is an asset that
+   * still lists, still resolves, and serves nothing.
+   *
+   * The upload half is multipart and therefore not a tool (JSON arguments, which is why
+   * `shio_assets` says so out loud), so the console credential does that and the agent does the
+   * rest. That split is not a workaround: it is the workflow the two surfaces actually describe.
+   */
+  test("SH1032: asset.meta describes a real upload without dropping what the upload stamped",
+    async () => {
+      const admin = new ConsoleSession(conn);
+      const folderId = await admin.rootFolderId(site);
+      assert.ok(folderId, "SH1032: no root folder to upload into");
+      const assetId = await admin.uploadAsset(folderId, "hero.png", ONE_PIXEL_PNG);
+
+      const before = await admin.asset(folderId, assetId);
+      assert.ok(before?.sha256,
+        "SH1032: the upload wrote no digest, so this scenario would assert the survival of a stamp "
+        + "that was never there — the vacuous pass this whole suite exists to avoid");
+
+      const answer = await call("shio_write", {
+        ops: [{
+          op: "asset.meta",
+          address: `id:${assetId}`,
+          data: { alt: "A one-pixel hero", caption: "Smallest possible", tags: ["live", "png"] },
+        }],
+      });
+      assert.ok(!answer.error && !answer.result?.isError,
+        `SH1032: asset.meta was refused: ${textOf(answer).slice(0, 300)}`);
+
+      const after = await admin.asset(folderId, assetId);
+      assert.equal(after.alt, "A one-pixel hero",
+        "SH1032: the agent's description did not land on the row the console reads — the two "
+        + "surfaces would then disagree about what an image says about itself");
+      assert.deepEqual(after.tags, ["live", "png"]);
+      // The merge claim, against stamps the server wrote rather than ones this file typed.
+      assert.equal(after.sha256, before.sha256,
+        "SH1032: the digest changed under a metadata write. `pull --content` compares against it to "
+        + "decide whether to download, so a digest that moves when the bytes did not makes every "
+        + "asset look edited — and one that is dropped makes every asset look new.");
+      assert.equal(after.contentType, before.contentType);
+      assert.equal(after.width, before.width);
+      assert.ok(after.size > 0,
+        "SH1032: the file is gone from the listing's point of view. `post.upsert` carrying only "
+        + "`alt` would do exactly this — it declares whole state — and it is the reason this is an "
+        + "op of its own rather than an argument on that one.");
+    });
+
+  test("SH1032: shio_assets says where an asset is used, and says zero out loud", async () => {
+    // `mcp.call`, not `call`: this suite is accountable for the four WRITE tools and
+    // crediting a read here would break the roll-call below. SH707 credits the call SITE
+    // by source scan, so `usage` is covered either way.
+    const answer = await mcp.call("shio_assets", { site, usage: true });
+
+    assert.ok(!answer.error, `shio_assets failed: ${JSON.stringify(answer.error)}`);
+    const text = textOf(answer);
+    assert.match(text, /^asset /m, "SH1032: the upload above is not in the listing");
+    // Written rather than omitted, and that is the assertion: "can I delete this" is answered by
+    // the ABSENCE of referrers, so a missing line and a zero must not read the same. Nothing in
+    // this fixture references the asset, so zero is the true answer and it has to be visible.
+    assert.match(text, /^used 0$/m,
+      "SH1032: an unreferenced asset said nothing about its usage. A caller asking `usage: true` "
+      + "and reading silence cannot tell 'nothing uses this' from 'the flag did nothing', and one "
+      + "of those two readings ends in a deletion.");
+
+    const quiet = await mcp.call("shio_assets", { site });
+    assert.doesNotMatch(textOf(quiet), /^used /m,
+      "SH1032: usage rows arrived without being asked for. It is a query per row, so the default "
+      + "listing — the browse — must not pay for the question it is not asking (P3).");
+  });
+
+  test("SH1032: asset.meta against a page refuses, and names the op that writes a page", async () => {
+    const answer = await call("shio_write", {
+      ops: [{ op: "asset.meta", address: `post:${site}/first`, data: { alt: "not an image" } }],
+    });
+
+    assert.ok(Boolean(answer.error) || answer.result?.isError,
+      "SH1032: asset.meta wrote ALT, CAPTION and TAGS onto a Page. The post-type does not declare "
+      + "them, so nothing would render them and nothing would report them — a silent write into a "
+      + "document the curator's editor cannot show.");
+    const refusal = textOf(answer) || JSON.stringify(answer.error);
+    assert.match(refusal, /post\.upsert/,
+      "SH1032: the refusal does not name what to do instead. P6 — a 4xx carries the fix, and "
+      + "without it this reads as 'assets are not writable' rather than 'wrong op for a page'.");
   });
 
   test("SH709: this run called every write tool it is accountable for", async () => {

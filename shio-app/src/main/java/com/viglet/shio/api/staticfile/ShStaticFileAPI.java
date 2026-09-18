@@ -113,12 +113,17 @@ public class ShStaticFileAPI {
      */
     @PutMapping("/{id}/meta")
     public ShStaticFileItem updateMeta(@PathVariable String id,
-                                       @RequestBody ShStaticFileMetaRequest req) {
+                                       @RequestBody ShStaticFileMetaRequest req,
+                                       Principal principal) {
         try {
             return shStaticFileService.updateMeta(id,
                     req != null ? req.alt() : null,
                     req != null ? req.caption() : null,
-                    req != null ? req.tags() : null);
+                    req != null ? req.tags() : null,
+                    // SH1032 — named on the audit row the merge now writes, exactly as `replace`
+                    // has named it since SH210. A feed entry with no actor is the half-answer that
+                    // makes a curator go looking.
+                    principal != null ? principal.getName() : null);
         } catch (java.util.NoSuchElementException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }

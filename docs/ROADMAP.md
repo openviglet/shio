@@ -79,10 +79,10 @@
 
 ## Block BE — Media: what the bytes mean
 
-- 📋 **SH1032** (deps: —) **asset metadata and usage are reachable only from the console and REST, and the P1 census cannot see them** — No MCP op, no CLI verb and no manifest feature key name them, so the conformance test that exists to catch exactly this has nothing to classify. → §LXX.4
+- ⏳ **SH1032** (deps: —) **asset metadata and usage are reachable only from the console and REST, and the P1 census cannot see them** — An asset projects as bytes only, so carrying alt/caption/tags in a sidecar under SH1004's merge rule is still to design. → §LXX.4
 - 📋 **SH1033** (deps: —) **where-is-this-used runs an unindexed LIKE over every post twice per dialog, and nobody has measured it** — The usage query wraps the file id in wildcards over the whole data column once per state, and the analysis argued a reverse index without a number to justify one. → §LXX.5
 - 📋 **SH1034** (deps: SH1033) **no surface can list the assets nothing references, so storage is reclaimed by guesswork** — Usage is answerable only from an asset toward its posts, so finding unused assets means one full scan per asset, and verify has orphan rules for posts and folders but none for assets. → §LXX.6
-- 📋 **SH1035** (deps: SH1032) **replacing an asset's bytes exists in the API and not in the console, and the File widget dead-ends when unconfigured** — The console's only route to new bytes is delete and re-upload, which mints a new id and breaks every field pointing at the old one. → §LXX.7
+- 📋 **SH1035** (deps: SH1032 ⏳) **replacing an asset's bytes exists in the API and not in the console, and the File widget dead-ends when unconfigured** — The console's only route to new bytes is delete and re-upload, which mints a new id and breaks every field pointing at the old one. → §LXX.7
 
 ## Block BF — The visual editor becomes a composer
 
@@ -163,6 +163,12 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
+
+## Done when — SH1032
+
+- **An asset's alt survives a pull and a push** A described image projected to disk,
+  edited nowhere, and pushed back keeps its alt, caption and tags — and two curators
+  describing two different images in one folder do not conflict.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -77,6 +77,7 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
@@ -322,6 +323,30 @@ public class ShAgentBatchService {
     public static final String NOTE_ID_KEY = "note";
 
     /**
+     * SH1032 — {@code asset.meta}: what an image says about itself.
+     *
+     * <h2>Why not {@code post.upsert}</h2>
+     *
+     * <p>A {@code File} post is a post and its metadata is in {@code data}, so the obvious answer
+     * is that this already works. It does not, and the reason is the contract {@code post.upsert}
+     * keeps: it declares <b>whole state</b>. An upsert carrying only {@code ALT} would drop
+     * {@code FILE} — the name of the bytes — and the asset would still be listed, still be
+     * addressable, and point at nothing. A merge flag on {@code post.upsert} would be worse: the
+     * whole-state promise is what makes a desired-state document mean anything.</p>
+     *
+     * <p>So a narrow op that merges three keys and leaves every stamp alone, through
+     * {@link com.viglet.shio.api.staticfile.ShStaticFileService#updateMeta} — the one writer of a
+     * {@code File} post's metadata, which is what keeps the console and the agent writing the same
+     * way and what the one-writer lint asserts.</p>
+     */
+    public static final String ASSET_META = "asset.meta";
+
+    /** The keys {@code asset.meta} merges. Everything else on the row is a machine's stamp. */
+    public static final String ASSET_ALT_KEY = "alt";
+    public static final String ASSET_CAPTION_KEY = "caption";
+    public static final String ASSET_TAGS_KEY = "tags";
+
+    /**
      * SH413 — reindexing rides {@code site.upsert} rather than being a twelfth op name.
      *
      * <p>It was written as {@code search.reindex} first, and {@code ShAgentOpsReachTest} refused
@@ -343,7 +368,7 @@ public class ShAgentBatchService {
             POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
             POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION, RELEASE_UPSERT,
             RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE, RELEASE_ROLLBACK,
-            NOTE_ADD, NOTE_RESOLVE);
+            NOTE_ADD, NOTE_RESOLVE, ASSET_META);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -405,6 +430,8 @@ public class ShAgentBatchService {
     /** SH997 — what the site says about content before it reaches visitors. */
     private final ShPublishGateService shPublishGateService;
     private final com.viglet.shio.api.note.ShNoteService shNoteService;
+    /** SH1032 — the one writer of a File post's metadata, console and agent alike. */
+    private final com.viglet.shio.api.staticfile.ShStaticFileService shStaticFileService;
     /** SH1003 — a note hangs on the object an address names, resolved the one way this product does. */
     private final ShAddressResolver shAddressResolver;
 
@@ -436,12 +463,14 @@ public class ShAgentBatchService {
                                ShReleaseRunner shReleaseRunner,
                                ShPublishGateService shPublishGateService,
                                com.viglet.shio.api.note.ShNoteService shNoteService,
+                               com.viglet.shio.api.staticfile.ShStaticFileService shStaticFileService,
                                ShAddressResolver shAddressResolver) {
         this.shHtmlSanitizer = shHtmlSanitizer;
         this.shReleaseService = shReleaseService;
         this.shReleaseRunner = shReleaseRunner;
         this.shPublishGateService = shPublishGateService;
         this.shNoteService = shNoteService;
+        this.shStaticFileService = shStaticFileService;
         this.shAddressResolver = shAddressResolver;
         this.shConsoleSurfaces = shConsoleSurfaces;
         this.shPostRevisionService = shPostRevisionService;
@@ -887,6 +916,7 @@ public class ShAgentBatchService {
             case RELEASE_ROLLBACK -> releaseRollback(op, session);
             case NOTE_ADD -> noteAdd(op, session);
             case NOTE_RESOLVE -> noteResolve(op, session);
+            case ASSET_META -> assetMeta(op, session);
             default -> throw new UnknownOpException(op.op());
         };
     }
@@ -1055,6 +1085,107 @@ public class ShAgentBatchService {
         shNoteService.add(objectId, text(data, NOTE_FIELD_KEY), integerOf(data, NOTE_REVISION_KEY),
                 text(data, NOTE_PARENT_KEY), text(data, NOTE_KIND_KEY), body, session.actor);
         return session.change(op, address, Change.UPDATE, "a note", objectId);
+    }
+
+    /**
+     * SH1032 — merge an asset's own metadata, leaving the machine's stamps alone.
+     *
+     * <p>Every key is optional and a blank one clears it, which is {@code updateMeta}'s rule and
+     * therefore the console's: one writer, one meaning. An op that merged on the console's rules
+     * and cleared on its own would be the two surfaces disagreeing about what an empty string
+     * means, which is the failure this composition exists to prevent.</p>
+     */
+    private Change assetMeta(ShAgentBatch.Op op, Session session) {
+        ShAddress address = assetAddress(op);
+        String objectId = shAddressResolver.resolve(address).id();
+        JsonNode data = requireData(op, ASSET_ALT_KEY,
+                "what the image says about itself — `alt`, and optionally `caption` and `tags`");
+        // Before the dry-run branch, not after: a plan that reported "would describe this" about a
+        // page is the plan P9 exists to stop being trusted, and the caller finds out at apply time
+        // when the batch is half-written. Both branches ask the same question of the same row.
+        requireAsset(address, objectId);
+        if (session.dryRun) {
+            return session.change(op, address, Change.UPDATE, "asset metadata", objectId);
+        }
+        // The same question post.upsert asks of a page, asked of the asset (SH696). Caught by
+        // ShAgentOpAclLintTest rather than by review, which is the point of that lint: a MISSING
+        // call has nothing on the screen to look at, so `folder.restore` went without one for as
+        // long as it existed. An asset is content a role can be scoped away from like any other.
+        shContentAclService.requireWrite(objectId);
+        shStaticFileService.updateMeta(objectId, text(data, ASSET_ALT_KEY),
+                text(data, ASSET_CAPTION_KEY), stringList(data, ASSET_TAGS_KEY), session.actor);
+        return session.change(op, address, Change.UPDATE, "asset metadata", objectId);
+    }
+
+    /**
+     * The address {@code asset.meta} takes — {@code id:} or {@code post:} (SH1032).
+     *
+     * <p>{@code id:} is the form that actually reaches an asset, and it is not a convenience: a
+     * {@code File} post has <b>no friendly URL</b> — the type's design, and the reason
+     * {@code find} addresses assets {@code id:} and {@code ShAgentReadService} exempts them from
+     * {@code url-missing}. So {@code writeAddress(POST)}, which every other write uses, could
+     * never name one. {@code post:} is accepted beside it for the case a curator gave the asset a
+     * URL by hand rather than refused as a kind error, which would read as "assets are not
+     * writable" when what is true is "this one has no path".</p>
+     */
+    private ShAddress assetAddress(ShAgentBatch.Op op) {
+        if (op.address() == null || op.address().isBlank()) {
+            throw new MissingOpFieldException("address", op.op(), null, "id:<uuid>",
+                    "An asset is named by the id a find or an upload answered with.");
+        }
+        ShAddress address = ShAddress.parse(op.address());
+        if (address.kind() != ShAddress.Kind.ID && address.kind() != ShAddress.Kind.POST) {
+            throw new WrongAddressKindException(op.op(), address, ShAddress.Kind.ID);
+        }
+        return address;
+    }
+
+    /**
+     * That the address names an asset, refused with what to do instead (SH1032).
+     *
+     * <p>Without this the refusal is {@code updateMeta}'s {@code NoSuchElementException} —
+     * "File post not found: &lt;uuid&gt;" — about an id the caller just read back from a find,
+     * which reads as an instance fault rather than as the wrong op. P6: the 4xx carries the fix.</p>
+     */
+    private void requireAsset(ShAddress address, String objectId) {
+        boolean isAsset = shPostUnifiedRepository.findByIdAndState(objectId, ShPostState.PUBLISHED)
+                .map(row -> row.getShPostType() != null
+                        && ShSystemPostType.FILE.equals(row.getShPostType().getName()))
+                .orElse(false);
+        if (!isAsset) {
+            throw new NotAnAssetException(address);
+        }
+    }
+
+    /** SH1032 — {@code asset.meta} against something that is not an asset. */
+    public static class NotAnAssetException extends ShTeachingException {
+
+        public NotAnAssetException(ShAddress address) {
+            super(ShProblem.badRequest("not-an-asset",
+                            "'" + address + "' is not an uploaded asset")
+                    .withDetail("asset.meta merges the three keys a File post owns — ALT, CAPTION "
+                            + "and TAGS — and only a File post has them. A page's fields belong to "
+                            + "its post-type and are written whole by post.upsert.")
+                    .withFix("Use post.upsert for a page's own fields, or address the asset: "
+                            + "GET /api/v2/agent/find?type=File answers with id: addresses.")
+                    .withExample("{\"op\":\"asset.meta\",\"address\":\"id:0f1e2d3c-4b5a-6789-0abc-"
+                            + "def012345678\",\"data\":{\"alt\":\"A wide hero\"}}"));
+        }
+    }
+
+    /** One JSON array of strings, or {@code null} when the key is absent — never an empty list. */
+    private static List<String> stringList(JsonNode data, String key) {
+        JsonNode value = data == null ? null : data.get(key);
+        if (value == null || !value.isArray()) {
+            return null;
+        }
+        List<String> read = new java.util.ArrayList<>();
+        value.forEach(each -> {
+            if (each != null && !each.isNull()) {
+                read.add(each.asString());
+            }
+        });
+        return read;
     }
 
     /** SH1003 — close a note, or re-open it with {@code cancel}. */

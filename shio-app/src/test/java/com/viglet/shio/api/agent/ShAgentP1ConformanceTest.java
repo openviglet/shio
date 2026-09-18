@@ -251,6 +251,14 @@ class ShAgentP1ConformanceTest {
         // --- Reachable from an MCP-only client -------------------------------------------------
         byFeature.put("search", mcp("shio_find", "?q= on the find tool, SH131's predicate"));
         byFeature.put("imageTransforms", mcp("shio_assets", "the SH25 transform surface"));
+        // SH1032 — the two keys that made this test fail on purpose. They were declared BEFORE the
+        // reach existed, which is the order the design asked for: a capability nothing advertises
+        // is one this census structurally cannot see (SH463's finding), so the flag comes first and
+        // the red build is the gap becoming visible rather than a regression.
+        byFeature.put("assetMetadata", mcp("shio_write", "asset.meta — alt, caption and tags "
+                + "merged through the file service, the console's own one writer"));
+        byFeature.put("assetUsage", mcp("shio_assets", "usage=true — where each asset is "
+                + "referenced, a flag on the call an agent already makes rather than a tool"));
         byFeature.put("agentContext", mcp("shio_context", "the context pack, P2's one call"));
         byFeature.put("contextCapabilities", mcp("shio_context", "include=manifest folds the two "
                 + "opening reads into one (SH157) — the tool takes `include`"));

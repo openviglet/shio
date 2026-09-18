@@ -293,10 +293,45 @@ class ShAgentOpsReachTest {
         // the vocabulary drifting — per-op prose fell again, 32.3 -> 31.0, on five more ops. 950 is
         // set so the NEXT addition is measured against it instead of refused by it, which is what
         // this ceiling is for; the percentage below is still the number that re-opens the question.
+        //
+        // SH1032 raises this from 950 to 1000, measured at 952, and it is the addition that closing
+        // sentence was written for — refused by the number until the trim, then measured against it.
+        //
+        // WHAT BOUGHT THE 20 TOKENS, because the trim came first as it has since SH222. Five ops
+        // carried "Needs `confirm` from its own dry run" — the three deletes, release.run and
+        // release.rollback — and `confirm` is a BATCH-level key the grammar header already listed
+        // without ever saying what it was. That is SH733's finding exactly, one modifier later: five
+        // explanations of one key cost 49 tokens where the key costs none. The header states it once
+        // and the five clauses are gone. What did NOT come out is each op's own remainder —
+        // folder.delete still says "use folder.move to rename", release.run still says what `when`
+        // and `cancel` do — because those are per-op facts that happened to share a sentence.
+        //
+        // WHY AN OP, when SH733's answer was a key. SH413's rule is that a modifier of an existing
+        // op rides it, and the candidate here was `post.upsert` carrying ALT — which fails twice,
+        // and the first failure is structural rather than stylistic. A `File` post has no friendly
+        // URL, which is the type's design and the reason `find` addresses assets `id:`; writes take
+        // `post:<site>/<url>`, so there is no address an upsert of an asset could carry. And an
+        // upsert DECLARES WHOLE STATE — `ShPostUnifiedWriteService#update` calls `setData` with what
+        // it was sent — so even reachable it would drop FILE, WIDTH, HEIGHT, SHA256, SIZE and
+        // CONTENT_TYPE unless the caller re-sent six stamps the server wrote and no agent should be
+        // trusted to reproduce. A merge of three keys is a different subject, not a modifier.
+        //
+        // AND THE DECOMPOSITION SAYS SO, which is why the pair exists. Per-op PROSE fell 31.0 ->
+        // 25.8 while the op count went 24 -> 25: the vocabulary gained an op and got LEANER per op,
+        // which is the one shape SH647 called the surface doing its job. Had 25 tokens arrived as
+        // prose the average would have risen and the answer would have been another trim.
+        //
+        // AND THE SURFACE CHOICE, RE-RUN. 952 against a manifest of 2820 is 33.8% — up from the 28%
+        // SH987 measured, against SH647's 24% and the 19% that made SH346 reject folding this into
+        // the manifest. Still moving in the direction that settled it, so the answer stands and is
+        // better supported than when it was made. But it is now within a rounding error of the 34
+        // asserted below, and that assertion's own text says what crossing it means: not this
+        // ceiling, but asking for the vocabulary BY FAMILY. Filed rather than done here, because it
+        // changes what both of these numbers measure and this task is about an asset's metadata.
         assertThat(tokens)
                 .as("measured %s; a vocabulary that grows past this is a reason to re-open the "
                         + "surface choice, not to raise the number quietly", ESTIMATED_OPS_TOKENS_NOTE)
-                .isLessThan(950);
+                .isLessThan(1000);
     }
 
     @Test

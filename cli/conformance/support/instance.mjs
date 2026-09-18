@@ -483,6 +483,55 @@ export class ConsoleSession {
   }
 
   /**
+   * `POST /api/v2/staticfile/upload` — a real asset, with the stamps only an upload writes (SH1032).
+   *
+   * <p>The one fixture `asset.meta` genuinely needs an instance for. An in-memory `File` post can
+   * be given a `data` document that *looks* like an upload's, and every merge assertion against it
+   * is then a claim about a string the test wrote. Here `stampBytes` writes SHA256, SIZE and
+   * CONTENT_TYPE from bytes on disk and the dimension reader writes WIDTH and HEIGHT from the PNG
+   * header — so "the stamps survive a metadata merge" is asserted about stamps the product
+   * produced, which is the only version of that claim worth making.</p>
+   *
+   * <p>Multipart, and therefore not something MCP can do: tool arguments are JSON, which is exactly
+   * why `shio_assets` says uploading is not a tool. So the console credential does this half and
+   * the agent surface does the rest, which is also the honest shape of the workflow it models.</p>
+   *
+   * @returns the created `File` post's id — the `id:` address `asset.meta` takes
+   */
+  async uploadAsset(folderId, fileName, bytes, contentType = "image/png") {
+    const { value, header } = await this.#csrf();
+    const form = new FormData();
+    form.append("file", new Blob([bytes], { type: contentType }), fileName);
+    form.append("folderId", folderId);
+    const res = await this.#fetch("/api/v2/staticfile/upload", {
+      method: "POST", body: form, headers: { [header]: value },
+    });
+    if (!res.ok) {
+      throw new ShioHttpError(res.status, "/api/v2/staticfile/upload", await res.text());
+    }
+    return (await res.json()).id;
+  }
+
+  /**
+   * One asset's row as the Media Library reads it, found in the folder listing (SH1032).
+   *
+   * <p>Through the listing because there is no single-asset read: `GET /api/v2/staticfile/{id}`
+   * serves the **bytes**, which is what the `<img>` points at. A first draft of this helper called
+   * it and got `Unexpected token '�', "�PNG` out of `res.json()` — the honest failure of
+   * asking a download for a document, and worth the comment because the path reads like a row.</p>
+   */
+  async asset(folderId, id) {
+    const res = await this.#fetch(
+      `/api/v2/staticfile?folderId=${encodeURIComponent(folderId)}`, { method: "GET" });
+    if (!res.ok) throw new ShioHttpError(res.status, "/api/v2/staticfile", await res.text());
+    const body = await res.json();
+    // SH1030 made this an envelope; older instances answered a bare array, and both are accepted
+    // for the reason `convert.mjs` accepts both — this suite runs against an instance it did not
+    // build.
+    return (Array.isArray(body) ? body : body.items ?? []).find((row) => row.id === id) ?? null;
+  }
+
+  /**
    * Delete a site by name, and everything in it.
    *
    * Idempotent: a site that is not there is a clean teardown, not a failure — a test that

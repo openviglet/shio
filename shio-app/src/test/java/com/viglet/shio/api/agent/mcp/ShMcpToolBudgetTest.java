@@ -198,18 +198,16 @@ class ShMcpToolBudgetTest {
      * fact about work nobody has started, and until SH793 printed the headroom it was discoverable
      * only by writing the argument and watching the build refuse it.</p>
      */
-    private static final Map<String, String> AT_THE_WALL = Map.of(
-            // SH993 dropped `shio_apply` from this list, and not by trimming it: raising the per-tool
-            // ceiling to 490 for `shio_write`'s release ops left it 49 free, which is this check
-            // doing its job — an entry that excuses nothing hides the next tool to reach a wall.
-            "shio_write",
-            "SH1073 — the whole write vocabulary in one all-or-nothing call: nineteen ops and eleven "
-                    + "op fields, the last four declared only after SH952 found them read and "
-                    + "undiscoverable. Paid for by cutting its own wording three times over, down to "
-                    + "the decisions; what is left is the contract, and the leaner shape is a "
-                    + "thirteenth tool, which ShMcpServerTest refuses. SH993 had the conversation its "
-                    + "last entry predicted — the ceiling moved for an op family, since an op name is "
-                    + "where this tool carries a capability — and it is at the new one too");
+    // SH1032 drops `shio_write`, the second time this list has emptied the same way: raising the
+    // per-tool ceiling to 520 for `asset.meta` left it 27 free, which is over ROOM_FOR_ONE_ARGUMENT,
+    // and SH993 dropped `shio_apply` for exactly this reason one raise earlier. An entry that
+    // excuses nothing hides the next tool to reach a wall, so it goes rather than being reworded.
+    //
+    // WHAT TO EXPECT NEXT, since an empty list says "nobody has hit one" and not "nobody will":
+    // `shio_write` is still the tool to watch. Its enum IS the write vocabulary, so every future op
+    // lands here at about four tokens and nowhere else — roughly seven before 520 binds again. That
+    // is a prediction, not an excuse, which is why it is a comment and not an entry.
+    private static final Map<String, String> AT_THE_WALL = Map.of();
 
     @Test
     @DisplayName("SH795: a tool with no room for another argument is declared, not discovered")
