@@ -271,6 +271,24 @@ disk, **keyed by the file post's id** (not the folder tree), under
   `ShPostLifecycleEvent`). Owner: `com.viglet.shio.api.staticfile` +
   `ShFileSourceProperties`. Per-tenant isolation (SH47) will prefix `tenantId`.
 
+**`GET /api/v2/staticfile/{id}/usage` costs the whole table, twice, and SH1033 is the number.**
+`findReferencingFileId` is `data like concat('%', :fileId, '%')` — a *leading* wildcard, which no
+B-tree orders — and `listUsage` loops PUBLISHED then DRAFT, so one detail dialog reads every post
+row in the tenant twice to answer with a handful. `ShAssetUsageBenchmarkTest` measures it at
+1,000 / 10,000 / 50,000 posts: rows examined per scan go 1,002 → 10,002 → 50,002, exactly linear,
+while a prototype reverse index answers the same question by examining **4** and costs a flat
+**3 statements per write** at every size. Two curves, not two numbers — which is why SH1034 builds
+the index rather than caching a count, and why §LXX.5's "retire BE6" branch did not fire.
+
+The instrument is worth knowing about independently: neither `getEntityLoadCount()` nor SH634's
+`getExecutionRowCount()` can see this, because both count rows a query **returns** and a scan's
+whole defect is that its answer is small. The benchmark reads H2's own `EXPLAIN ANALYZE`
+`scanCount`, and the two ITs beside it read the plan on PostgreSQL and MariaDB — where the claim
+stops being one fact. Details, including the option `pg_trgm` opens on one engine of three and the
+**SH1099** storage defect that makes this query return nothing at all on PostgreSQL, are in
+[database.md](database.md) and in `token-budgets.properties` under *What "where is this used"
+costs*.
+
 **Every write assigns a friendly URL, and `create` was the one that did not (SH651).** SH396 found
 five posts created through `POST /api/v2/post-unified` all reported at their folder's own address —
 five distinct posts, one address, every delivery URL a 404 — and the write answered `201` throughout.

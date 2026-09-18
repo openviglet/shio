@@ -2060,45 +2060,32 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.5 What the usage query costs before anything replaces it (SH1033)
+### LXX.6 Usage in both directions, on the index BE5's numbers chose (SH1034)
 
-The usage query is a LIKE with a leading and trailing wildcard around the file id over
-the data column of every post in the tenant, which no index can serve, and the service
-runs it once per state, so every detail dialog open pays for it twice. The inverse
-question, which assets nothing references, cannot be answered without running it once
-per asset.
+`verify` has orphan rules for posts and folders and none for assets, and the projection
+side-steps the question, so it stays open where storage is consumed.
 
-The analysis proposed a reverse-reference table maintained on every write. That may be
-right, and it is exactly the kind of change agents.md says lands as a benchmark first: a
-maintained row on every create, update, publish and delete is a hot-path cost paid to
-make a dialog fast, and whether it is worth paying depends on numbers nobody has taken.
+**BE5's numbers chose the index, and not on the read alone.** The read is linear in the
+table and paid twice per dialog — 1,002, 10,002 and 50,002 rows examined per scan. The
+maintenance is flat: one delete plus one insert per reference, identical at fifty
+thousand rows and at zero, bounded by the post's own fields. Two curves, not two
+numbers. A cached count makes one dialog cheap and leaves "which assets does nothing
+reference" at one scan per asset.
 
-Time the usage query at a thousand, ten thousand and fifty thousand posts on each
-supported database, and time, separately, the per-write cost an index would add, using a
-prototype of the maintenance step. Record both beside the other budgets. If the read is
-acceptable at the largest size, the honest change is a single-state query and a cached
-count, and BE6 is retired with that reason. If it is not, the numbers become BE6's
-argument and its changeset's comment.
+So `sh_object_reference`, with from-post, from-state, to-object and field name,
+maintained by the unified write service walking each post's data against its type's File
+and content-select fields — more accurate than a substring, because it knows which field
+holds the reference. Usage becomes an indexed join (4 rows examined against 50,002,
+prototyped) and unused a left join that is null, with the LIKE as the fallback for an
+unbackfilled tenant.
 
-### LXX.6 Usage in both directions, at the cost BE5 measured (SH1034)
+Two findings bind this. That fallback is **broken on PostgreSQL** until SH1099 lands,
+and `pg_trgm` would serve the LIKE there alone — measured, declined: one cheap engine of
+three is not a design.
 
-The verify inventory has orphan rules for posts and folders and nothing for assets, and
-the content-files doc records that the projection side-steps the question, which leaves
-it open on the instance, where storage is actually consumed.
-
-This task builds whichever mechanism BE5's numbers chose. If the measurement argued for
-an index: sh_object_reference with from-post, to-object, field name and state,
-maintained by the unified write service by walking each post's data against its post
-type's File and content-select fields, which is more accurate than a substring because
-it knows which field holds the reference. Usage becomes an indexed join and unused
-becomes a left join that is null, with the LIKE query kept as the fallback for a tenant
-whose backfill has not run. If it argued against, a single-state query with a cached
-per-asset count invalidated on write.
-
-Either way: shio_assets reports a usage count per row, shio verify gains asset-unused,
-shio assets prune --dry-run names what it would free, and the media card shows a usage
-badge so nobody deletes an asset blind. A schema change runs with the ITs and Docker
-started.
+Either way: `shio_assets` reports a usage count per row, `shio verify` gains
+`asset-unused`, `shio assets prune --dry-run` names what it would free, and the media
+card shows a usage badge. A schema change runs with the ITs and Docker started.
 
 ### LXX.7 Replace, with the diff that makes it safe (SH1035)
 
@@ -2119,6 +2106,32 @@ the choice for the session.
 Replace stays off MCP tools, since base64 through a tool call is the reasoning the
 assets tool already gives; the manifest names the multipart route beside upload. The
 assertions replace an image, read the new bytes behind the old id, and revert.
+
+### LXX.8 Data is a large object on PostgreSQL, and nothing that reads it as text works (SH1099)
+
+`ShPostUnified.data` is `@Lob String`. On H2 and MariaDB that is a text column and every
+predicate over it behaves. On PostgreSQL the pgjdbc driver reads `@Lob` as a *large
+object*: the `text` column stores an OID, the JSON lives in `pg_largeobject`, and
+Hibernate resolves it on read so the application looks entirely correct. Measured while
+taking BE5's numbers, on a 5,000-post PostgreSQL 16 fixture: 5,001 rows, 5,001 large
+objects, every `data` value matching `^[0-9]+$`, and the entity read returning the right
+document.
+
+Two shipped surfaces are wrong rather than slow. `findReferencingFileId` is `data like
+concat('%', :fileId, '%')`, so where-is-this-used answers **empty** on every PostgreSQL
+instance — a curator is told an asset is unreferenced and deletes it.
+`FULLTEXT_PREDICATE` matches `lower(cast(p.data as string))`, so console and CDA search
+find nothing in a page's body, which SH240 added the predicate specifically to fix.
+
+It is invisible to the whole unit suite because that suite is H2, and the cross-database
+ITs assert schema shape rather than column semantics — the gap agents.md names when it
+says a green `clean test` means least on a storage change.
+
+The fix is a JDBC type, not a changeset: `@JdbcTypeCode(SqlTypes.LONGVARCHAR)` beside
+the `@Lob`, which makes pgjdbc write the text inline. Existing rows need a migration
+that resolves each OID and writes it back, plus `lo_unlink` — until then every post also
+leaks a large object that deleting its row does not reclaim. The assertion in
+`ShPostgresAssetUsageScanIT` holds today's behaviour and flips when this lands.
 
 ## LXXI The visual editor becomes a composer (Block BF)
 

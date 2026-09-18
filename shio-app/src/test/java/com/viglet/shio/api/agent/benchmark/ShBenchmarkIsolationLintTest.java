@@ -70,6 +70,23 @@ class ShBenchmarkIsolationLintTest {
             Pattern.compile("spring\\.datasource\\.url.{0,40}?jdbc:h2:mem:([a-z0-9-]+)",
                     Pattern.DOTALL);
 
+    /**
+     * The other way a class gets a database nobody else is in: it starts one (SH1033).
+     *
+     * <p>The pattern above only recognises an in-memory H2 with a name of its own, which was every
+     * isolated class in this package until a measurement had to be taken on a real engine. A
+     * Testcontainers class is isolated <em>more</em> strongly than any of them — the database does
+     * not exist until the class starts it and is destroyed with it — so reading one as "shared"
+     * would have this lint teach the one fix that cannot be applied: there is no
+     * {@code jdbc:h2:mem:} URL to add to a class whose subject is PostgreSQL.</p>
+     *
+     * <p>The container declaration and not {@code @Testcontainers}: the annotation can sit on a
+     * class that resolves its URL from somewhere else, and what makes the database private is the
+     * container being this class's.</p>
+     */
+    private static final Pattern OWN_CONTAINER =
+            Pattern.compile("@Container\\s+static\\s+final\\s+\\w*Container");
+
     private static final Path MAIN =
             Path.of("src", "main", "java", "com", "viglet", "shio", "api", "agent");
 
@@ -149,8 +166,7 @@ class ShBenchmarkIsolationLintTest {
     void everyBenchmarkIsolatesItsDatabase() {
         List<String> shared = new ArrayList<>();
         for (Map.Entry<String, String> source : sources("benchmark").entrySet()) {
-            if (source.getValue().contains("@SpringBootTest")
-                    && !DATASOURCE.matcher(source.getValue()).find()) {
+            if (source.getValue().contains("@SpringBootTest") && !isolates(source.getValue())) {
                 shared.add(source.getKey());
             }
         }
@@ -161,8 +177,14 @@ class ShBenchmarkIsolationLintTest {
                         created — which is how SH239 read 26.2× or 11.8× depending on order, and \
                         how SH314's fixture pushed a neighbour's number from 59 to 159. Add a \
                         `spring.datasource.url=jdbc:h2:mem:<name>` of its own, with the other four \
-                        classes' comment explaining why.""")
+                        classes' comment explaining why — or, if the measurement needs a real \
+                        engine, a `@Container` of its own (SH1033).""")
                 .isEmpty();
+    }
+
+    /** Whether this class's database is its own: an H2 it names, or a container it starts. */
+    private static boolean isolates(String body) {
+        return DATASOURCE.matcher(body).find() || OWN_CONTAINER.matcher(body).find();
     }
 
     @Test
@@ -174,7 +196,7 @@ class ShBenchmarkIsolationLintTest {
         for (Map.Entry<String, String> source : sources("").entrySet()) {
             String body = source.getValue();
             boolean reads = instanceWide.stream().anyMatch(body::contains);
-            if (reads && body.contains("@SpringBootTest") && !DATASOURCE.matcher(body).find()
+            if (reads && body.contains("@SpringBootTest") && !isolates(body)
                     && !declared.contains(source.getKey())) {
                 shared.add(source.getKey());
             }

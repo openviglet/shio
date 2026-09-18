@@ -79,9 +79,9 @@
 
 ## Block BE — Media: what the bytes mean
 
-- 📋 **SH1033** (deps: —) **where-is-this-used runs an unindexed LIKE over every post twice per dialog, and nobody has measured it** — The usage query wraps the file id in wildcards over the whole data column once per state, and the analysis argued a reverse index without a number to justify one. → §LXX.5
-- 📋 **SH1034** (deps: SH1033) **no surface can list the assets nothing references, so storage is reclaimed by guesswork** — Usage is answerable only from an asset toward its posts, so finding unused assets means one full scan per asset, and verify has orphan rules for posts and folders but none for assets. → §LXX.6
+- 📋 **SH1034** (deps: SH1033 ✅) **no surface can list the assets nothing references, so storage is reclaimed by guesswork** — Usage is answerable only from an asset toward its posts, so finding unused assets means one full scan per asset, and verify has orphan rules for posts and folders but none for assets. → §LXX.6
 - 📋 **SH1035** (deps: SH1032 ✅) **replacing an asset's bytes exists in the API and not in the console, and the File widget dead-ends when unconfigured** — The console's only route to new bytes is delete and re-upload, which mints a new id and breaks every field pointing at the old one. → §LXX.7
+- 📋 **SH1099** (deps: —) **on PostgreSQL every SQL predicate over a post's data matches nothing, so usage and search answer empty** — Hibernate writes the @Lob data column through pgjdbc as a large object, so the column holds an OID and only the entity read resolves it. → §LXX.8
 
 ## Block BF — The visual editor becomes a composer
 

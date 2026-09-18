@@ -576,3 +576,54 @@ publishing deletes — a note has to outlive exactly that. `parent_id` is self-r
 nullable, because a thread with no second message is by far the common case and a thread table for
 it would be a join answering "no". `body` at 4000 is a paragraph, not a document: a thread on a page
 must not become the page.
+
+## `data` is a large object on PostgreSQL, and no SQL predicate over it works (SH1099)
+
+Found while taking SH1033's numbers, and it is the strongest argument in this file for why a green
+`clean test` means least on a storage change. `ShPostUnified.data` is `@Lob String`. On H2 and
+MariaDB that is a text column and every predicate over it behaves. On PostgreSQL **pgjdbc writes a
+`@Lob` as a large object**: the `text` column stores an OID, the document lives in
+`pg_largeobject`, and Hibernate resolves it on read — so the application is correct and the SQL is
+blind. Measured on a 5,000-post fixture (`ShPostgresAssetUsageScanIT`): 5,001 rows, 5,001 large
+objects, **zero** rows whose `data` is readable as text, and the entity read returning the right
+document.
+
+Two shipped surfaces are **wrong rather than slow** on every PostgreSQL instance:
+
+- `findReferencingFileId` — where-is-this-used answers **empty**, so a curator is told an asset is
+  unreferenced and deletes it.
+- `FULLTEXT_PREDICATE`, which matches `lower(cast(p.data as string))` — console and CDA search find
+  nothing in a page's body, which is exactly what SH240 added that predicate to fix.
+
+It survived because the unit suite is H2 and the cross-DB ITs assert **schema shape** — columns
+exist, changelogs apply — and never column *semantics*. A test that writes a document and then asks
+SQL to find it is the check none of them made.
+
+The fix is a JDBC type and not a changeset: `@JdbcTypeCode(SqlTypes.LONGVARCHAR)` beside the `@Lob`,
+which makes pgjdbc write the text inline. Existing rows need a migration that resolves each OID and
+writes it back, plus `lo_unlink` — until then every post also **leaks** a large object that deleting
+its row does not reclaim. `ShPostgresAssetUsageScanIT` holds today's behaviour as assertions that
+fail when SH1099 lands, which is how that loop closes from this end.
+
+## What a leading wildcard costs, per engine (SH1033)
+
+The same predicate, three answers, which is why §LXX.5 asked for each database rather than one:
+
+| Engine | Plan | Can any index serve `like '%x%'`? |
+|---|---|---|
+| H2 | `scanCount` = the table, 1,002 → 10,002 → 50,002 | No |
+| MariaDB 11.4 | `type = ALL`, `key = null`, 5,001 rows | No — B-trees do not order substrings, and `FULLTEXT` matches *words*, so a hyphenated UUID is neither the stored value nor a term identifying one asset |
+| PostgreSQL 16 | `data` applied as a `Filter:`, never an `Index Cond:` | **Yes** — `pg_trgm` gives a bitmap index scan |
+
+Two cautions on the PostgreSQL row. At 5,003 narrow rows the planner **declines** the trigram index
+on cost (194 against 221); it is proven usable with `enable_seqscan = off`, and the plan then shows
+`Index Cond: (data ~~ '%…%')`. And the option is measured, not recommended: a GIN index over every
+post's whole document is maintained on every write and would put the cheapest path on one engine of
+three. That trade is SH1034's to make — the measurement exists so it is made knowing the branch is
+there.
+
+The claim to state carefully is therefore **"the `data` predicate is applied as a filter, never as
+an index condition"**, not "the plan is a sequential scan". The first draft asserted the second and
+PostgreSQL falsified it for the wrong reason: it reaches for `idx_post_unified_type` to satisfy
+`state`, then removes 2,501 rows with the substring — an index scan by node name and a full read of
+the state partition by behaviour.

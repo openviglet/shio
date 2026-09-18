@@ -206,8 +206,20 @@ class ShContextCacheHeadroomTest {
      * SH1030 spent one more, to 73. ShStaticFilePagingTest writes real bytes into the file store
      * and asserts facet counts over the whole library; on a shared context it would count every
      * other test's uploads, which is the one thing a facet assertion must not do.
+     *
+     * SH1033 spent one more, to 74. ShAssetUsageBenchmarkTest grows one table to fifty thousand
+     * posts and reads H2's own scanCount off it: the measurement IS the table's size, so on the
+     * shared context every number it prints would be "fifty thousand plus whatever else ran", and
+     * the growth ratio it asserts — the claim that the cost is linear — would be a statement about
+     * suite order. It is also fifty thousand rows nobody else should have to carry.
+     *
+     * **One slot left before the ceiling at this count**, which is worth knowing before the next
+     * one is proposed rather than after: the margin is what stops an eviction rebuilding a schema
+     * mid-run, so the next addition is a conversation about raising MAX_SIZE and not a line moved
+     * here. The two cross-database ITs this task adds cost nothing on this budget — Failsafe runs
+     * them, they are opt-in behind -DskipITs=false, and each brings its own container.
      */
-    private static final int DECLARED_CONTEXTS = 73;
+    private static final int DECLARED_CONTEXTS = 74;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY
