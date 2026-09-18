@@ -21,6 +21,8 @@ import {
 } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+// SH1023 — the search, the category chip and the view mode live in the URL.
+import { useListState } from "@/hooks/use-list-state"
 import { toast } from "@viglet/viglet-design-system"
 import { cn } from "@/lib/utils"
 import { ShStaticFileService } from "@/services/static-file/static-file.service"
@@ -46,15 +48,29 @@ interface UploadEntry {
   status: UploadStatus
 }
 
+/** SH1023 — every key the media library owns, and what each means when the URL says nothing. */
+const FILES_LIST = { q: "", category: "all", view: "grid" }
+
 export default function StaticFileListPage() {
   const { t } = useTranslation()
   const [items, setItems] = useState<ShStaticFileItem[]>([])
   const [sites, setSites] = useState<ShSite[]>([])
   const [targetSite, setTargetSite] = useState<string>("")
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<"grid" | "list">("grid")
-  const [query, setQuery] = useState("")
-  const [category, setCategory] = useState<ShMediaCategory | "all">("all")
+  /**
+   * SH1023 — the library's view, in its URL.
+   *
+   * `q` rather than `query`, because that is what the word is called on every other surface. The
+   * other two are the console's own: `category` is derived from a content type in the browser and
+   * has no REST twin, and a grid and a list are the same files.
+   *
+   * `targetSite` stays component state on purpose — it is where an upload GOES, not what the page
+   * is showing, and a link that carried it would hand somebody a destination they did not pick.
+   */
+  const list = useListState(FILES_LIST, { text: ["q"] })
+  const view = list.value.view as "grid" | "list"
+  const query = list.value.q
+  const category = list.value.category as ShMediaCategory | "all"
   const [uploads, setUploads] = useState<UploadEntry[]>([])
   const [dragging, setDragging] = useState(false)
   const [detail, setDetail] = useState<ShStaticFileItem | null>(null)
@@ -260,16 +276,16 @@ export default function StaticFileListPage() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-52 max-w-md">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)}
+              <Input value={list.draft.q} onChange={(e) => list.set("q", e.target.value)}
                 placeholder={t("staticFile.searchPlaceholder")} className="pl-8" />
             </div>
             <div className="flex items-center rounded-md border p-0.5">
               <Button variant={view === "grid" ? "secondary" : "ghost"} size="icon" className="h-7 w-7"
-                aria-label={t("staticFile.viewGrid")} onClick={() => setView("grid")}>
+                aria-label={t("staticFile.viewGrid")} onClick={() => list.set("view", "grid")}>
                 <LayoutGrid className="h-4 w-4" />
               </Button>
               <Button variant={view === "list" ? "secondary" : "ghost"} size="icon" className="h-7 w-7"
-                aria-label={t("staticFile.viewList")} onClick={() => setView("list")}>
+                aria-label={t("staticFile.viewList")} onClick={() => list.set("view", "list")}>
                 <ListIcon className="h-4 w-4" />
               </Button>
             </div>
@@ -278,10 +294,10 @@ export default function StaticFileListPage() {
           {/* Category filter chips (real, derived from content type) */}
           <div className="flex items-center gap-2 flex-wrap">
             <CategoryChip active={category === "all"} label={t("staticFile.catAll")}
-              count={counts.all ?? 0} onClick={() => setCategory("all")} />
+              count={counts.all ?? 0} onClick={() => list.set("category", "all")} />
             {SH_MEDIA_CATEGORIES.filter((c) => (counts[c] ?? 0) > 0).map((c) => (
               <CategoryChip key={c} active={category === c} label={t(`staticFile.cat_${c}`)}
-                count={counts[c] ?? 0} onClick={() => setCategory(c)} />
+                count={counts[c] ?? 0} onClick={() => list.set("category", c)} />
             ))}
           </div>
         </div>

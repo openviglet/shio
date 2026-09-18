@@ -67,11 +67,14 @@ export async function run(flags, positionals, ctx) {
   const { results, truncated } = await client.findAll(query);
 
   if (flags.json) {
-    ctx.stdout.write(`${JSON.stringify({ count: results.length, truncated, results }, null, 2)}\n`);
+    ctx.stdout.write(`${JSON.stringify({
+      count: results.length, truncated, results, console: consoleUrl(baseUrl, query),
+    }, null, 2)}\n`);
     return 0;
   }
 
   ctx.stdout.write(render(results, truncated, query));
+  ctx.stdout.write(`  ${consoleUrl(baseUrl, query)}\n`);
   // Non-zero on none, the way the other read commands report an answer somebody was about to act
   // on: a script that finds nothing should stop rather than go on to publish an empty selection.
   return results.length ? 0 : 1;
@@ -97,4 +100,25 @@ function render(results, truncated, query) {
     lines.push("  (truncated: this instance offered no cursor to continue with)");
   }
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * The console address that shows this same answer (SH1023).
+ *
+ * The search page rather than the content browser, and the reason is the addressing: the browser's
+ * route names a folder by **id**, which this command does not have and would have to resolve; the
+ * search page is scoped by the same words this query is written in. So the URL is exact for every
+ * filter that page serves and a starting point for the rest — the honest shape while the two lists
+ * serve different halves of the vocabulary, rather than a link that silently drops a filter and
+ * shows more rows than the run did.
+ *
+ * Printed rather than put behind a flag: it is one line, it costs no request, and the point of a
+ * shared vocabulary is that handing the answer to a person is cheap (P9).
+ */
+export function consoleUrl(baseUrl, query) {
+  const url = new URL("/bento/content/search", baseUrl);
+  for (const key of ["q", "site"]) {
+    if (query[key]) url.searchParams.set(key, String(query[key]));
+  }
+  return url.toString();
 }

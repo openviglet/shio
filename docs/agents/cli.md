@@ -4172,3 +4172,17 @@ drafts" would act on some of them. And it **exits 1 on none**, like the other re
 script that finds nothing stops rather than going on to publish an empty selection. A flag it does
 not know is not forwarded — the server would refuse it, and its refusal is a worse message than the
 command's own usage text.
+
+## `shio find` prints the console address for its own answer (SH1023)
+
+The last line of a human-readable `find` is a URL, and `--json` carries it as `console`. It is the
+search page rather than the content browser, and the reason is addressing: the browser's route
+names a folder by **id**, which this command does not have and would have to resolve, while the
+search page is scoped by the same words the query is written in. So it is exact for every filter
+that page serves and a starting point for the rest — the honest shape while the two lists serve
+different halves of the vocabulary, rather than a link that quietly drops a filter and shows more
+rows than the run did.
+
+Printed rather than put behind a flag: one line, no extra request, and no help-budget cost. The
+point of a shared vocabulary (SH1022) is that handing the answer to a person is cheap — which is
+P9 in the smallest form it comes in.

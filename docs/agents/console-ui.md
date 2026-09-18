@@ -2063,3 +2063,36 @@ being able to ask what an agent can.
 page 0 and the spinner belongs to that filter's answer rather than to the previous one (SH703). The
 badge on the trigger counts what is set, so a narrowed listing says it is narrowed — a folder that
 looks empty because of a filter left on is the other way this fails quietly.
+
+## Every list's state is in its URL (SH1023)
+
+`useListState` (`src/hooks/use-list-state.ts`, over the pure functions in `src/lib/list-state.ts`)
+holds a list's search, sort, filters and view mode in the query string. It replaces, per page, a
+`useState` per control plus a debounced mirror of the text one plus a hand-joined `queryKey` — and
+none of that was in the address, so the view on screen had no URL and a URL produced no particular
+view. That is P5 broken where a person notices: a curator who narrows a folder to "drafts Ana
+changed this week" had nothing to send anybody.
+
+**The names are the server's** (`ShContentQuery`, SH1022), which is the whole point: the link a
+curator pastes into a chat is the request an agent runs, and `shio find` prints the console URL for
+its own result set. `sort` and `view` are the console's own — `view` because a grid and a list are
+the same rows — and `site` on the search page carries the site's **name**, not its id, for the same
+reason.
+
+Three rules the hook enforces, each of which is a test:
+
+- **A default is absent from the URL.** `?sort=order&view=list&type=` is the unfiltered view
+  wearing a filtered view's address, and nobody can skim it.
+- **A key the list does not own survives every write.** The updater form of `setSearchParams` is
+  what makes that true under a debounce: closing over the params would resurrect whatever the URL
+  held when the key was pressed.
+- **The order is the declaration's**, so two callers that set the same filters in a different order
+  produce one address. "Is this the link I sent you" has to be answerable by looking.
+
+Text keys debounce and **replace**; everything else commits at once and **pushes**. Back walking a
+search term one character at a time is Back being useless for what Back is for.
+
+`test/list-state.test.mjs` is a census over `src/app/**/*.page.tsx`: every list route either drives
+its state from the URL or carries the reason it has none. That is the deliverable rather than the
+round-trip test — a rule like this is applied to four lists and forgotten on the fifth, which is
+exactly how it started (`useSearchParams` was in three console files and one of them was a list).

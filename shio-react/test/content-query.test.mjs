@@ -33,9 +33,11 @@ test("SH1022: every filter is sent to the server, none applied to the page in ha
     "SH1022: the filters go into the request. Narrowing `listData.posts` here would filter one "
       + "page of rows the query never saw — right until the folder outgrows a page")
   // The fetch has to re-run when a filter moves, or the first page shown is the unfiltered one.
-  assert.match(PAGE, /\}, \[objectId, sortBy, appliedQuery, filters\]\)/u,
+  assert.match(PAGE, /\}, \[objectId, sortBy, filters\]\)/u,
     "SH1022: `filters` is in the fetch's dependencies, so changing one re-queries")
-  assert.match(PAGE, /const queryKey = `\$\{objectId\}\|\$\{sortBy\}\|\$\{appliedQuery\}\|\$\{filterKey\}`/u,
+  // SH1023 folded the search term's own debounce into the list state, so the query identity is
+  // the folder plus what the URL says rather than four pieces joined by hand.
+  assert.match(PAGE, /const queryKey = `\$\{objectId\}\|\$\{list\.key\}`/u,
     "SH1022: and it is part of the query identity, so the spinner belongs to this filter's answer")
 })
 
@@ -51,8 +53,10 @@ test("SH1022: the console spells the server's words, not its own", () => {
         + "does not know is a teaching 400, so this would be a listing that cannot load")
   }
   // The two the path already answers, and the three that are paging rather than filtering.
+  // `q` left this list with SH1023: the search box stopped being component state and became the
+  // same URL word the other filters are, so the console sends it like any other.
   const missing = declared.filter((key) => !CONTENT_FILTERS.includes(key))
-  assert.deepEqual(missing.sort(), ["folder", "page", "q", "site", "size", "sort"].sort(),
+  assert.deepEqual(missing.sort(), ["folder", "page", "site", "size", "sort"].sort(),
     "SH1022: a filter the server gained and the console did not offer — the curator can no "
       + "longer ask what an agent can")
 })

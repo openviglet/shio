@@ -1981,24 +1981,6 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.4 Every list's state in its URL (SH1023)
-
-useSearchParams appears in two console files, neither of them a list: one is the visual
-editor and one reads a post-login redirect. The search page keeps its query in state, so
-the search URL is the same whatever was searched, and the browser keeps sort, view and
-search the same way. This breaks P5 where a person notices: the same address does not
-produce the same view, and the view on screen has no address.
-
-A typed hook reads and writes list state through the URL, debouncing text fields and
-replacing rather than pushing on keystrokes so Back does not walk one character at a
-time. It applies to the browser, search, trash, static files, activity and review. The
-URL parameter names match BD3's REST names exactly, which is the point: a link a curator
-pastes into a chat is a request an agent can run, and shio find can print the console
-URL for its own result set.
-
-Saved views then cost a stored URL and a name, not a schema. The assertion is one per
-list route: its state round-trips through the URL and a reload reproduces the rows.
-
 ### LXIX.5 The filter bar over the shared vocabulary (SH1024)
 
 BD3 makes the questions answerable and BD4 makes a view addressable. What a curator

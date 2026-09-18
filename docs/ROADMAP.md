@@ -73,8 +73,7 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- 📋 **SH1023** (deps: —) **no list in the console is deep-linkable, so the same address never reproduces the view on screen** — Search, sort, folder filter and view mode are component state on every list page, so there is no URL for a filtered view a curator could share or an agent could hand over. → §LXIX.4
-- 📋 **SH1024** (deps: SH1022 ✅, SH1023, DS VDS139) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — BD3 gives four surfaces one query grammar and a person has no control for it, so drafts of one type in one locale is a question only a URL can ask. → §LXIX.5
+- 📋 **SH1024** (deps: SH1022 ✅, SH1023 ✅, DS VDS139) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — BD3 gives four surfaces one query grammar and a person has no control for it, so drafts of one type in one locale is a question only a URL can ask. → §LXIX.5
 - 📋 **SH1025** (deps: SH1022 ✅) **the browser loads every child folder on every page and never virtualises, and nothing measures what that costs** — The navigation service fetches all child folders by design and the browser sorts them client-side, so a large folder's cost is argued about rather than known. → §LXIX.6
 - 📋 **SH1026** (deps: SH1025, DS VDS138) **three view-mode buttons highlight when pressed and render the identical list** — viewMode is read only to colour the button that set it, so the grid and table views a curator is offered do not exist, and the list below is one unconditional map. → §LXIX.7
 - 📋 **SH1027** (deps: SH1022 ✅) **console search reads the published-only delivery API, so a reviewer cannot find an agent's drafts** — The search page calls the CDA, whose state is PUBLISHED and whose preview branch reads a token the console never sends, while the agent's own search reads both states. → §LXIX.8

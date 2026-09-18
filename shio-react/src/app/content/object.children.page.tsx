@@ -36,8 +36,9 @@ import { headlineOf, problemOf } from "@/lib/problem"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { filterParams, activeFilterCount, type ShContentFilters }
-  from "@/lib/content-query"
+import { filterParams, type ShContentFilters } from "@/lib/content-query"
+// SH1023 — the view lives in the URL, so the address a curator sends reproduces what they saw.
+import { useListState } from "@/hooks/use-list-state"
 
 const postTypeService = new ShPostTypeService()
 const siteService = new ShSiteService()
@@ -137,13 +138,34 @@ type BulkOp = "PUBLISH" | "UNPUBLISH" | "DELETE"
 
 const unifiedService = new ShPostUnifiedService()
 
+/**
+ * SH1023 — every key this list owns, and what each one means when the URL says nothing.
+ *
+ * The filter names are `ShContentQuery`'s (SH1022), which is the whole point: the address is the
+ * request. `sort` and `view` are the console's own — `sort` because the browser's three options
+ * map onto the listing's axes, `view` because a grid and a list are the same rows.
+ */
+const BROWSER_LIST = {
+  q: "", sort: "order", view: "list",
+  type: "", state: "", locale: "", modifiedSince: "", modifiedBefore: "",
+  author: "", modifier: "", subtree: "",
+}
+
+/** The list state, as the filter shape the request builder and the popover both read. */
+function browserFilters(value: Record<keyof typeof BROWSER_LIST, string>): ShContentFilters {
+  return {
+    q: value.q, type: value.type, state: value.state, locale: value.locale,
+    modifiedSince: value.modifiedSince, modifiedBefore: value.modifiedBefore,
+    author: value.author, modifier: value.modifier, subtree: value.subtree,
+  }
+}
+
 export default function ObjectChildrenPage() {
   const { objectId } = useParams() as { objectId: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [listData, setListData] = useState<ObjectListResponse>({ folders: [], posts: [], page: 0, size: PAGE_SIZE, totalPosts: 0 })
   const [loadingMore, setLoadingMore] = useState(false)
-  const [appliedQuery, setAppliedQuery] = useState("")
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbPathItem[]>([])
   /**
    * SH703 — the selection, tagged with the folder it was made in.
@@ -181,18 +203,20 @@ export default function ObjectChildrenPage() {
    * the paint that showed the stale rows.</p>
    */
   const [loadedQuery, setLoadedQuery] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState("order")
-  const [viewMode, setViewMode] = useState<"list" | "grid" | "spreadsheet">("list")
   const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
   /**
-   * SH1022 — the filters, which are the server's and not a second set computed here.
+   * SH1023 — the browser's whole view, in its URL.
    *
-   * A client-side filter over a paged listing filters one page: the rows it is narrowing
-   * were already chosen by a query that did not know about the filter. So every one of
-   * these goes into the request, and the page that comes back is the answer.
+   * Sort, view mode, the search term and every filter used to be five pieces of component state
+   * and a debounced mirror of one of them. None of it was in the address, so a curator who
+   * narrowed a folder to "drafts Ana changed this week" had nothing to send anybody, and an agent
+   * handed the link opened the unfiltered folder. The names are `ShContentQuery`'s (SH1022), so
+   * the link IS the request: what a curator pastes into a chat is what `shio find` would run.
    */
-  const [filters, setFilters] = useState<ShContentFilters>({})
+  const list = useListState(BROWSER_LIST, { text: ["q", "author", "modifier"] })
+  const sortBy = list.value.sort
+  const viewMode = list.value.view as "list" | "grid" | "spreadsheet"
+  const filters = browserFilters(list.value)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ObjectChild | null>(null)
@@ -217,17 +241,13 @@ export default function ObjectChildrenPage() {
 
 
   /**
-   * The search box talks to the server now, so it is debounced: it used to filter an array
-   * already in the browser, where every keystroke was free.
+   * The identity of the current query — the URL's own list state, plus the folder.
+   *
+   * SH1023 — it used to be four pieces of state joined by hand, and the search term had a
+   * debounced mirror of its own beside it. The hook owns both: `list.key` moves exactly when the
+   * committed state does, which is one debounce after the last keystroke rather than on each one.
    */
-  useEffect(() => {
-    const timer = setTimeout(() => setAppliedQuery(searchQuery.trim()), 300)
-    return () => clearTimeout(timer)
-  }, [searchQuery])
-
-  /** The identity of the current query. `loading` is this against what finished loading. */
-  const filterKey = JSON.stringify(filterParams(filters))
-  const queryKey = `${objectId}|${sortBy}|${appliedQuery}|${filterKey}`
+  const queryKey = `${objectId}|${list.key}`
   const loading = loadedQuery !== queryKey
 
   /** One page of posts, plus the folder's whole subfolder set. */
@@ -237,11 +257,12 @@ export default function ObjectChildrenPage() {
       size: String(PAGE_SIZE),
       sort: POST_SORT[sortBy] ?? "title",
     })
-    if (appliedQuery) params.set("q", appliedQuery)
-    // SH1022 — one vocabulary: these are the words `/agent/find` and `shio find` take.
+    // SH1022 — one vocabulary: these are the words `/agent/find` and `shio find` take, and since
+    // SH1023 they are the URL's own names too, so this loop is the console link turned into a
+    // request without a translation step in between.
     for (const [key, value] of Object.entries(filterParams(filters))) params.set(key, value)
     return axios.get<ObjectListResponse>(`/v2/object/${objectId}/list?${params}`)
-  }, [objectId, sortBy, appliedQuery, filters])
+  }, [objectId, sortBy, filters])
 
   /** The next page, appended. Only the posts accumulate — the folders are already all here. */
   const loadMore = useCallback(async () => {
@@ -887,9 +908,9 @@ export default function ObjectChildrenPage() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" data-testid="sh-filters">
                 <SlidersHorizontal className="mr-2 h-4 w-4" /> {t("content.filters")}
-                {activeFilterCount(filters) > 0 && (
+                {list.narrowed(["sort", "view", "q"]) > 0 && (
                   <Badge variant="secondary" className="ml-2 text-[10px]">
-                    {activeFilterCount(filters)}
+                    {list.narrowed(["sort", "view", "q"])}
                   </Badge>
                 )}
               </Button>
@@ -897,9 +918,8 @@ export default function ObjectChildrenPage() {
             <PopoverContent align="end" className="w-80 space-y-3">
               <div className="space-y-1">
                 <Label className="text-xs">{t("content.filterType")}</Label>
-                <Select value={filters.type ?? "*"}
-                  onValueChange={(value) =>
-                    setFilters((prev) => ({ ...prev, type: value === "*" ? undefined : value }))}>
+                <Select value={list.value.type || "*"}
+                  onValueChange={(value) => list.set("type", value === "*" ? "" : value)}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="*">{t("content.filterAny")}</SelectItem>
@@ -913,9 +933,8 @@ export default function ObjectChildrenPage() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">{t("content.filterState")}</Label>
-                <Select value={filters.state ?? "*"}
-                  onValueChange={(value) =>
-                    setFilters((prev) => ({ ...prev, state: value === "*" ? undefined : value }))}>
+                <Select value={list.value.state || "*"}
+                  onValueChange={(value) => list.set("state", value === "*" ? "" : value)}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="*">{t("content.filterAny")}</SelectItem>
@@ -930,20 +949,16 @@ export default function ObjectChildrenPage() {
                     {t("content.filterModifiedSince")}
                   </Label>
                   <Input id="sh-filter-since" type="date" className="h-8 text-xs"
-                    value={filters.modifiedSince ?? ""}
-                    onChange={(event) => setFilters((prev) => ({
-                      ...prev, modifiedSince: event.target.value || undefined,
-                    }))} />
+                    value={list.value.modifiedSince}
+                    onChange={(event) => list.set("modifiedSince", event.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs" htmlFor="sh-filter-before">
                     {t("content.filterModifiedBefore")}
                   </Label>
                   <Input id="sh-filter-before" type="date" className="h-8 text-xs"
-                    value={filters.modifiedBefore ?? ""}
-                    onChange={(event) => setFilters((prev) => ({
-                      ...prev, modifiedBefore: event.target.value || undefined,
-                    }))} />
+                    value={list.value.modifiedBefore}
+                    onChange={(event) => list.set("modifiedBefore", event.target.value)} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -952,32 +967,26 @@ export default function ObjectChildrenPage() {
                     {t("content.filterAuthor")}
                   </Label>
                   <Input id="sh-filter-author" className="h-8 text-xs"
-                    value={filters.author ?? ""}
-                    onChange={(event) => setFilters((prev) => ({
-                      ...prev, author: event.target.value || undefined,
-                    }))} />
+                    value={list.draft.author}
+                    onChange={(event) => list.set("author", event.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs" htmlFor="sh-filter-modifier">
                     {t("content.filterModifier")}
                   </Label>
                   <Input id="sh-filter-modifier" className="h-8 text-xs"
-                    value={filters.modifier ?? ""}
-                    onChange={(event) => setFilters((prev) => ({
-                      ...prev, modifier: event.target.value || undefined,
-                    }))} />
+                    value={list.draft.modifier}
+                    onChange={(event) => list.set("modifier", event.target.value)} />
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 {/* The subtree word, spelled as the server spells it: unsaid means this folder. */}
                 <label className="flex items-center gap-2 text-xs">
-                  <Checkbox checked={filters.subtree === "true"}
-                    onCheckedChange={(checked) => setFilters((prev) => ({
-                      ...prev, subtree: checked ? "true" : undefined,
-                    }))} />
+                  <Checkbox checked={list.value.subtree === "true"}
+                    onCheckedChange={(checked) => list.set("subtree", checked ? "true" : "")} />
                   {t("content.filterSubtree")}
                 </label>
-                <Button variant="ghost" size="sm" onClick={() => setFilters({})}>
+                <Button variant="ghost" size="sm" onClick={list.clear}>
                   {t("content.filterClear")}
                 </Button>
               </div>
@@ -985,7 +994,7 @@ export default function ObjectChildrenPage() {
           </Popover>
 
           {/* Right: Sort + Select + Batch + Download */}
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={(value) => list.set("sort", value)}>
             <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="order">{t("content.order")}</SelectItem>
@@ -1048,16 +1057,16 @@ export default function ObjectChildrenPage() {
               ))}
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSearchOpen(!searchOpen); setSearchQuery("") }}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSearchOpen(!searchOpen); list.set("q", "") }}>
                 <Search className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "list" ? "bg-muted" : ""}`} onClick={() => setViewMode("list")}>
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "list" ? "bg-muted" : ""}`} onClick={() => list.set("view", "list")}>
                 <List className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "grid" ? "bg-muted" : ""}`} onClick={() => setViewMode("grid")}>
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "grid" ? "bg-muted" : ""}`} onClick={() => list.set("view", "grid")}>
                 <LayoutGrid className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "spreadsheet" ? "bg-muted" : ""}`} onClick={() => setViewMode("spreadsheet")}>
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "spreadsheet" ? "bg-muted" : ""}`} onClick={() => list.set("view", "spreadsheet")}>
                 <Sheet className="h-4 w-4" />
               </Button>
             </div>
@@ -1072,8 +1081,8 @@ export default function ObjectChildrenPage() {
               ref={searchRef}
               className="w-full pl-10 pr-4 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder={t("content.filterItems")}
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              value={list.draft.q}
+              onChange={e => list.set("q", e.target.value)}
               autoFocus
             />
           </div>

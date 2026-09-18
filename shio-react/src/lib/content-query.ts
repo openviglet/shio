@@ -27,6 +27,7 @@
 
 /** One filter each, in the order the popover shows them. */
 export interface ShContentFilters {
+  q?: string
   type?: string
   state?: string
   locale?: string
@@ -42,10 +43,12 @@ export interface ShContentFilters {
  *
  * `site` and `folder` are absent on purpose: this listing's folder is the `{id}` in its path, and
  * the server refuses a second one. `sort`, `page` and `size` are the listing's own paging, set
- * beside these rather than through them.
+ * beside these rather than through them. `q` is here since SH1023, when the search box stopped
+ * being a piece of component state and became the same URL word every other filter is.
  */
 export const CONTENT_FILTERS = [
-  "type", "state", "locale", "modifiedSince", "modifiedBefore", "author", "modifier", "subtree",
+  "q", "type", "state", "locale", "modifiedSince", "modifiedBefore", "author", "modifier",
+  "subtree",
 ] as const
 
 /** The filters that carry a value, as query parameters — blank means "not asked for". */
