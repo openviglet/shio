@@ -59,6 +59,8 @@ interface ObjectListResponse {
   page: number
   size: number
   totalPosts: number
+  /** SH1025 — how many child folders the folder holds, whether or not they were paged. */
+  totalFolders: number
 }
 
 /** A folder row: the CDA's `{id, name, root}` plus the console's ordering axis. */
@@ -164,7 +166,8 @@ export default function ObjectChildrenPage() {
   const { objectId } = useParams() as { objectId: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [listData, setListData] = useState<ObjectListResponse>({ folders: [], posts: [], page: 0, size: PAGE_SIZE, totalPosts: 0 })
+  const [listData, setListData] = useState<ObjectListResponse>(
+    { folders: [], posts: [], page: 0, size: PAGE_SIZE, totalPosts: 0, totalFolders: 0 })
   const [loadingMore, setLoadingMore] = useState(false)
   const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbPathItem[]>([])
   /**
@@ -239,6 +242,20 @@ export default function ObjectChildrenPage() {
    */
   const [folderDialogBlockedIds, setFolderDialogBlockedIds] = useState<Set<string>>(new Set())
 
+  /**
+   * Every folder id this page has seen, across pages and across a select-everything walk.
+   *
+   * SH1025 — the move/copy dialog used to read the folders out of the rows on screen, which was
+   * complete because folders came back whole. They are a page now, and a selection can hold a
+   * folder id that is not on screen: SH237's walk puts it there. Intersecting the selection with
+   * the *loaded* rows would then miss it, and the dialog would offer a folder as a destination
+   * for itself — the recursion SH203 exists to refuse, reintroduced by the paging underneath it.
+   */
+  const knownFolderIds = useRef<Set<string>>(new Set())
+  const rememberFolders = useCallback((rows: ConsoleFolderRow[] | undefined) => {
+    for (const row of rows ?? []) knownFolderIds.current.add(row.id)
+  }, [])
+
 
   /**
    * The identity of the current query — the URL's own list state, plus the folder.
@@ -250,11 +267,21 @@ export default function ObjectChildrenPage() {
   const queryKey = `${objectId}|${list.key}`
   const loading = loadedQuery !== queryKey
 
-  /** One page of posts, plus the folder's whole subfolder set. */
+  /**
+   * One page of posts and one page of folders.
+   *
+   * SH1025 — it used to take the folders whole on every page of posts, which
+   * `ShConsoleListingBenchmarkTest` priced at 454 rows and 63 KB against 104 and 19 KB for a
+   * folder of four hundred. Asking for a page is opt-in on the server precisely so the move/copy
+   * picker's whole-set read stays correct; this list opts in, and everything below that used to
+   * rely on holding them all had to be paid for in the same change.
+   */
   const fetchPage = useCallback((page: number) => {
     const params = new URLSearchParams({
       page: String(page),
       size: String(PAGE_SIZE),
+      folderPage: String(page),
+      folderSize: String(PAGE_SIZE),
       sort: POST_SORT[sortBy] ?? "title",
     })
     // SH1022 — one vocabulary: these are the words `/agent/find` and `shio find` take, and since
@@ -269,9 +296,13 @@ export default function ObjectChildrenPage() {
     setLoadingMore(true)
     try {
       const res = await fetchPage(listData.page + 1)
+      // SH1025 — both halves accumulate now. The folders used to arrive whole on every page, so
+      // taking the new response's array was the same set; a page of them would have replaced the
+      // rows already on screen with the next fifty and read as a list that had lost its start.
+      rememberFolders(res.data.folders)
       setListData((prev) => ({
         ...res.data,
-        folders: res.data.folders ?? prev.folders,
+        folders: [...prev.folders, ...(res.data.folders ?? [])],
         posts: [...prev.posts, ...(res.data.posts ?? [])],
       }))
     } finally {
@@ -284,7 +315,10 @@ export default function ObjectChildrenPage() {
   // because `queryKey` moved, and it goes false when this query is the one that landed.
   useEffect(() => {
     fetchPage(0)
-      .then((res) => setListData(res.data))
+      .then((res) => {
+        rememberFolders(res.data.folders)
+        setListData(res.data)
+      })
       .finally(() => setLoadedQuery(queryKey))
   }, [fetchPage, queryKey])
 
@@ -322,28 +356,25 @@ export default function ObjectChildrenPage() {
    */
 
   /**
-   * Folders first — the whole set, ordered here — then the posts in the order the server
-   * returned them (SH165).
+   * Folders first, then posts — both in the order the server returned them.
    *
-   * The two halves are ordered by different parties on purpose, and that is the honest split
-   * rather than an inconsistency: the folders are all present, so sorting them locally says
-   * something true about the whole set; the posts are a page, so only the server can. Merging
-   * the two into one sorted sequence would interleave complete data with partial data and read
-   * as a single sorted list, which is exactly the half-migration this task had to avoid.
+   * SH165 ordered these two halves by different parties and said why: the folders were all
+   * present, so sorting them here said something true about the whole set, while the posts were
+   * a page and only the server could. **SH1025 paged the folders, which retires the first half
+   * of that.** A local sort over a page sorts one page and reads exactly like a correct answer —
+   * the half-migration SH165 named — so the sort moved to the database with the paging, in the
+   * same change, rather than as a follow-up somebody would have had to notice.
+   *
+   * They are still two sequences rather than one: merging them would interleave the folder page
+   * with the post page and read as a single ordered list of things that were ordered separately.
    */
-  const folderItems: ObjectChild[] = [...listData.folders]
-    .map((folder) => ({
-      id: folder.id,
-      name: folder.name,
-      date: folder.date ?? "",
-      objectType: "FOLDER" as const,
-      position: folder.position,
-    }))
-    .sort((a, b) => {
-      if (sortBy === "name") return a.name.localeCompare(b.name)
-      if (sortBy === "date") return new Date(b.date).getTime() - new Date(a.date).getTime()
-      return (a.position ?? 0) - (b.position ?? 0)
-    })
+  const folderItems: ObjectChild[] = listData.folders.map((folder) => ({
+    id: folder.id,
+    name: folder.name,
+    date: folder.date ?? "",
+    objectType: "FOLDER" as const,
+    position: folder.position,
+  }))
 
   const postItems: ObjectChild[] = listData.posts.map((post) => ({
     id: post.id,
@@ -357,7 +388,9 @@ export default function ObjectChildrenPage() {
   const combinedItems: ObjectChild[] = [...folderItems, ...postItems]
   const sortedItems = combinedItems
   const loadedPosts = listData.posts.length
-  const hasMorePosts = loadedPosts < listData.totalPosts
+  const loadedFolders = listData.folders.length
+  const hasMoreRows = loadedPosts < listData.totalPosts
+    || loadedFolders < listData.totalFolders
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedItems((prev) => {
@@ -402,18 +435,50 @@ export default function ObjectChildrenPage() {
     }
   }, [fetchPage, listData.page, listData.posts, listData.totalPosts, t])
 
+  /**
+   * SH1025 — every id of every child folder, for the same reason SH237 needed it for posts.
+   *
+   * The folder half was exempt from that rule by a fact rather than by an argument: folders came
+   * back whole, so "all of them" was already on screen. Paging them takes the fact away, and
+   * "Select → Folders" on a folder of four hundred would have selected fifty and let the delete
+   * dialog say so — the P7 surprise SH237 removed, reintroduced through the other half.
+   */
+  const allMatchingFolderIds = useCallback(async (): Promise<string[]> => {
+    const ids = listData.folders.map((folder) => folder.id)
+    if (ids.length >= listData.totalFolders) return ids
+    setLoadingMore(true)
+    try {
+      let page = listData.page
+      while (ids.length < Math.min(listData.totalFolders, SELECT_ALL_CAP)) {
+        page += 1
+        const res = await fetchPage(page)
+        const rows = res.data.folders ?? []
+        if (rows.length === 0) break
+        rememberFolders(rows)
+        ids.push(...rows.map((folder) => folder.id))
+      }
+      if (ids.length < listData.totalFolders) {
+        toast.warning(t("content.selectAllCapped",
+          { loaded: ids.length, total: listData.totalFolders }))
+      }
+      return ids
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [fetchPage, listData.page, listData.folders, listData.totalFolders, t])
+
   const handleSelectAction = async (action: string) => {
     switch (action) {
       case "content":
         setSelectedItems(new Set(await allMatchingPostIds()))
         break
       case "folder":
-        // Folders are never paged (SH165), so this one really is all of them.
-        setSelectedItems(new Set(combinedItems.filter(i => i.objectType === "FOLDER").map(i => i.id)))
+        // SH1025 — folders are paged now, so this walks them the way SH237 walks the posts.
+        setSelectedItems(new Set(await allMatchingFolderIds()))
         break
       case "everything":
         setSelectedItems(new Set([
-          ...combinedItems.filter(i => i.objectType === "FOLDER").map(i => i.id),
+          ...await allMatchingFolderIds(),
           ...await allMatchingPostIds(),
         ]))
         break
@@ -715,9 +780,13 @@ export default function ObjectChildrenPage() {
   }
 
   /**
-   * The move/copy picker's folder list. It asks for `size=1` because it renders no posts and
-   * the folders come back whole on any page (SH165) — one row of content instead of fifty, for
-   * a dialog that walks a site folder by folder.
+   * The move/copy picker's folder list. It asks for `size=1` because it renders no posts and the
+   * folders come back whole — one row of content instead of fifty, for a dialog that walks a site
+   * folder by folder.
+   *
+   * SH1025 — it asks for no folder page, which is what keeps that true. Folder paging is opt-in
+   * on the server for this caller: a dialog handed one page of a site would let the walk stop
+   * above a destination that exists, and there is no "load more" in it to notice with.
    */
   const fetchDialogFolders = (id: string) =>
     axios.get<ObjectListResponse>(`/v2/object/${id}/list?size=1`).then((res) => {
@@ -728,13 +797,10 @@ export default function ObjectChildrenPage() {
     setFolderDialogMode(mode)
     setFolderDialogIds(ids)
     // SH203 — both modes, because both refuse this destination: a move would detach the
-    // subtree from the site root (SH137) and a copy would recurse into the copies it is
-    // making. Reading the folders off `combinedItems` is complete even under SH165 paging
-    // and an SH237 select-everything: only *posts* are paged, and child folders come back
-    // whole on every page, so every folder that could be in the selection is on screen.
-    setFolderDialogBlockedIds(new Set(
-      combinedItems.filter(i => i.objectType === "FOLDER" && ids.includes(i.id)).map(i => i.id)
-    ))
+    // subtree from the site root (SH137) and a copy would recurse into the copies it is making.
+    // SH1025 — against every folder id this page has SEEN rather than the rows on screen: the
+    // folders are paged now, and SH237's walk can put an id in the selection that no row shows.
+    setFolderDialogBlockedIds(new Set(ids.filter((id) => knownFolderIds.current.has(id))))
     // Start at site root
     const startId = siteId || objectId
     setFolderDialogCurrentId(startId)
@@ -799,7 +865,9 @@ export default function ObjectChildrenPage() {
   const site = breadcrumbPath.find((crumb) => crumb.type === "SITE")
   const siteId = site?.id ?? null
   const siteName = site?.name ?? null
-  const folderCount = listData.folders.length
+  // SH1025 — the total, not the page: this line is what a curator reads to know how many
+  // subfolders a section has, and it would otherwise say fifty for every folder over fifty.
+  const folderCount = listData.totalFolders
   // The folder's post count, not the loaded one: the stats bar answers "what is in here", and
   // since SH165 those are two different numbers.
   const postCount = listData.totalPosts
@@ -1205,11 +1273,16 @@ export default function ObjectChildrenPage() {
             )}
 
             {/* SH165: the page boundary, stated. A list that just stopped at fifty rows would
-                look complete, which is the failure mode paging introduces. */}
-            {!loading && hasMorePosts && (
+                look complete, which is the failure mode paging introduces. SH1025 — it states
+                both halves now, because the folders are a page too and a curator who cannot see
+                their subfolder is owed the same sentence. */}
+            {!loading && hasMoreRows && (
               <div className="flex flex-col items-center gap-2 border-t px-4 py-4">
                 <span className="text-xs text-muted-foreground">
-                  {t("content.showingPosts", { loaded: loadedPosts, total: listData.totalPosts })}
+                  {t("content.showingRows", {
+                    loadedFolders, totalFolders: listData.totalFolders,
+                    loaded: loadedPosts, total: listData.totalPosts,
+                  })}
                 </span>
                 <Button variant="outline" size="sm" disabled={loadingMore} onClick={loadMore}>
                   {loadingMore ? t("common.loading") : t("content.loadMore")}

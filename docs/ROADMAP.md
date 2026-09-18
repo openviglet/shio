@@ -74,8 +74,7 @@
 ## Block BD — Finding, selecting and acting on content
 
 - 📋 **SH1024** (deps: SH1022 ✅, SH1023 ✅, DS VDS139) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — BD3 gives four surfaces one query grammar and a person has no control for it, so drafts of one type in one locale is a question only a URL can ask. → §LXIX.5
-- ⏳ **SH1025** (deps: SH1022 ✅) **the browser loads every child folder on every page and never virtualises, and nothing measures what that costs** — The browser still takes every child folder: it has to request pages, which the select-all walk and the local folder sort both depend on. → §LXIX.6
-- 📋 **SH1026** (deps: SH1025 ⏳, DS VDS138) **three view-mode buttons highlight when pressed and render the identical list** — viewMode is read only to colour the button that set it, so the grid and table views a curator is offered do not exist, and the list below is one unconditional map. → §LXIX.7
+- 📋 **SH1026** (deps: SH1025 ✅, DS VDS138) **three view-mode buttons highlight when pressed and render the identical list** — viewMode is read only to colour the button that set it, so the grid and table views a curator is offered do not exist, and the list below is one unconditional map. → §LXIX.7
 - 📋 **SH1027** (deps: SH1022 ✅) **console search reads the published-only delivery API, so a reviewer cannot find an agent's drafts** — The search page calls the CDA, whose state is PUBLISHED and whose preview branch reads a token the console never sends, while the agent's own search reads both states. → §LXIX.8
 - 📋 **SH1028** (deps: SH1027, SH979 ✅) **the command palette lists seventeen routes and can neither find a post nor run an action** — Shio supplies only its nav array, so reaching a page takes two searches, while the verbs a curator wants exist as named operations the palette never shows. → §LXIX.9
 

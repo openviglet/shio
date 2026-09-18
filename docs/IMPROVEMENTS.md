@@ -1998,27 +1998,6 @@ A saved view is a named stored URL, per user with an option to share with the te
 listed beside the bar. The assertions build a filter from the bar, read the URL, reload
 it into an identical result set, and confirm the facet counts equal the filtered totals.
 
-### LXIX.6 The browser's cost, measured, then paged at the server (SH1025)
-
-The browser's list accumulates: each page appends to the previous array, and every row
-carries a checkbox, badges and hidden buttons, so ten thousand rows become well over a
-hundred thousand nodes. On the folder half the navigation service returns every child
-folder on every page by documented design, and the browser sorts that whole set
-client-side. @tanstack/react-table is declared and imported nowhere, and no
-virtualisation library is present.
-
-Measure first, as agents.md requires of any cost: a benchmark over a fixture of ten
-thousand posts and five hundred folders records rows fetched, response bytes and time to
-first row for the current path, checked in beside the other budgets. Then the backend
-half: the listing gains optional folder paging and a totalFolders count beside
-totalPosts, with the envelope assertion that keeps it identical to the CDA's extended to
-the new fields. The browser requests pages instead of accumulating, and the numbers are
-re-taken.
-
-BD7 builds the views and virtualisation on top of a listing that no longer returns
-everything. The assertion is the benchmark's before-and-after pair, recorded in the
-commit.
-
 ### LXIX.7 Grid, table and list views, virtualised (SH1026)
 
 A grep of the browser for viewMode returns its declaration and the three buttons' own

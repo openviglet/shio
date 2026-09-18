@@ -325,5 +325,6 @@
   "content.filterSubtree": "Incluir subpastas",
   "content.filterClear": "Limpar",
   "content.filterPublished": "Publicado",
-  "content.filterDraft": "Rascunho"
+  "content.filterDraft": "Rascunho",
+  "content.showingRows": "Mostrando {{loadedFolders}} de {{totalFolders}} pastas e {{loaded}} de {{total}} conteudos"
 }

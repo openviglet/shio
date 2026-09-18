@@ -325,5 +325,6 @@
   "content.filterSubtree": "Include subfolders",
   "content.filterClear": "Clear",
   "content.filterPublished": "Published",
-  "content.filterDraft": "Draft"
+  "content.filterDraft": "Draft",
+  "content.showingRows": "Showing {{loadedFolders}} of {{totalFolders}} folders and {{loaded}} of {{total}} posts"
 }

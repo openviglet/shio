@@ -2096,3 +2096,29 @@ search term one character at a time is Back being useless for what Back is for.
 its state from the URL or carries the reason it has none. That is the deliverable rather than the
 round-trip test — a rule like this is applied to four lists and forgotten on the fifth, which is
 exactly how it started (`useSearchParams` was in three console files and one of them was a list).
+
+## The browser pages its folders, and what that cost to make true (SH1025)
+
+The content browser asks for `folderPage`/`folderSize` beside `page`/`size`. Folder paging is
+opt-in on the server so the move/copy picker's whole-set read stays correct (see
+[content-api](./content-api.md)); this list opts in, and **three behaviours that were correct
+because the folders came back whole had to be paid for in the same change**:
+
+- **Select → Folders** took what was on screen, which was all of them. It walks the pages now,
+  bounded by `SELECT_ALL_CAP` and saying so when it stops short — SH237's rule, arriving at the
+  other half of the listing.
+- **The move/copy dialog's blocked set** was the folders among the rows on screen. A walked
+  select-everything puts ids in the selection that no row shows, so it reads `knownFolderIds`, a
+  ref filled at all three places folders arrive. A missed one is a folder offered as a destination
+  for itself — the recursion SH203 refuses.
+- **The folder sort** ran in the browser, which said something true about a complete set. It is
+  `ShConsoleListingSort.folderSort()` now: a local sort over a page sorts one page and reads
+  exactly like a correct answer, which is the half-migration SH165 named.
+
+`loadMore` accumulates both halves — replacing the folder array would drop the rows already on
+screen — and the page boundary names both, because a curator who cannot see their subfolder is
+owed the sentence a curator who cannot see their post has had since SH165. `folderCount` in the
+toolbar is `totalFolders`, not the page, or it says fifty for every folder over fifty.
+
+None of the three fails loudly, which is why `test/folder-paging.test.mjs` asserts them rather
+than trusting anybody to remember.
