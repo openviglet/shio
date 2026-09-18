@@ -124,6 +124,30 @@ export default function VisualEditorPage() {
   // cannot collide), so selecting a second field of the same post re-fetches nothing.
   const loadedLabelsRef = useRef<string | null>(null)
 
+  /**
+   * SH1036 — what the bridge last said it was live on, and how many times it has said it.
+   *
+   * The frame can navigate on its own now (a curator clicking a link in the preview), and the
+   * console cannot read the frame's URL — it is another origin. What it can see is two things: a
+   * `sh:ready` per bridged load, carrying that page's url, and the iframe's own `load` event per
+   * navigation of any kind.
+   *
+   * `reportedPage` is what re-keys the session: a different url means the selection, the pending
+   * changes and the loaded labels all belong to the page that is no longer on screen. Before this
+   * they survived the navigation and Save still offered to write them — onto the previous page's
+   * posts, from a panel describing an element that is no longer in the document.
+   *
+   * `readyCount` against `readyAtLoad` is how a page with NO bridge is detected: the script sends
+   * `sh:ready` at `DOMContentLoaded`, which precedes the frame's `load`, so a bridged navigation
+   * has always incremented the count by the time the load fires and a bridge-less one has not.
+   * Counting rather than flagging, because the two events interleave per navigation and a boolean
+   * cannot say which navigation it was about.
+   */
+  const reportedPageRef = useRef<string>("")
+  const readyCountRef = useRef(0)
+  const readyAtLoadRef = useRef(0)
+  const loadsRef = useRef(0)
+
   // Resolve the iframe URL: an explicit ?url= (external mode), the site's own front end,
   // or — since SH184 — Shio's own renderer.
   //
@@ -198,8 +222,35 @@ export default function VisualEditorPage() {
       const msg = event.data
       if (!msg || typeof msg.type !== "string" || !msg.type.startsWith("sh:")) return
       switch (msg.type) {
-        case "sh:ready":
+        case "sh:ready": {
           setBridge("ready")
+          readyCountRef.current += 1
+          // SH1036 — the bridge names the page it is live on, and on an in-frame navigation that is
+          // a different page than the one this panel is describing. Re-key rather than reload: the
+          // frame is already showing the new page, and the console's job is to stop talking about
+          // the old one.
+          const reported = (msg.data as { url?: string } | undefined)?.url
+          if (reported && reported !== reportedPageRef.current) {
+            reportedPageRef.current = reported
+            setSelected(null)
+            setChanges(new Map())
+            // The labels belong to the previous page's post-type. Cleared rather than re-fetched
+            // here: the next selection is what says which type is wanted, and fetching now would
+            // be a request for a page nobody has clicked in yet.
+            loadedLabelsRef.current = null
+            setFieldLabels({})
+          }
+          break
+        }
+        // SH1036 — the page is leaving. Stop describing it now rather than when the next one
+        // announces itself: a panel showing a selection, and a Save offering to write pending
+        // changes, both belong to a document that is unloading. `sh:ready` re-keys on arrival; this
+        // closes the window in between, which on a slow page is where a curator would have pressed
+        // Save and written the old page's fields.
+        case "sh:navigating":
+          setBridge("waiting")
+          setSelected(null)
+          setChanges(new Map())
           break
         case "sh:element-selected":
           setSelected(msg.data as SelectedElement)
@@ -395,7 +446,21 @@ export default function VisualEditorPage() {
               ref={iframeRef}
               src={src}
               title={t("universalEditor.title")}
-              onLoad={() => setFrameLoaded(true)}
+              onLoad={() => {
+                setFrameLoaded(true)
+                loadsRef.current += 1
+                // SH1036 — a NAVIGATION that handed back no bridge. The script sends `sh:ready` at
+                // DOMContentLoaded, before this fires, so a bridged page has already incremented the
+                // count and one without a bridge has not. Only from the second load on: the first
+                // handshake keeps the SH333 deadline below, which is what distinguishes "slow" from
+                // "absent" on a page nobody has navigated yet. Before this the badge read
+                // `Connected` over a page with no editor on it, because it keyed on an iframe `src`
+                // that in-frame navigation cannot change.
+                if (loadsRef.current > 1 && readyCountRef.current === readyAtLoadRef.current) {
+                  setBridge("absent")
+                }
+                readyAtLoadRef.current = readyCountRef.current
+              }}
               // A cross-origin error page still fires `load`, so this is the narrow case (the
               // frame could not be navigated at all) rather than the common one. The timeout
               // above is what catches a page that loaded and handed back no bridge.

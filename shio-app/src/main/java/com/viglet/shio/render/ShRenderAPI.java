@@ -9,7 +9,11 @@
 package com.viglet.shio.render;
 
 import org.springframework.http.CacheControl;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -175,8 +179,14 @@ public class ShRenderAPI {
         // SH512 — and the path the reader asked for, which is what a document-relative reference
         // resolves against. The *request's* path rather than the post's furl: they differ by a
         // trailing slash, and that slash is one level of `../`.
-        String walkable = previewLinks.rewrite(rendered.html(), siteKey, rendered,
-                pathWithin(siteKey, request));
+        // SH1036 — and the renderer's own parameters onto every link, so a click does not end edit
+        // mode. `?editor=true` is what injects the bridge, so a link that dropped it landed the
+        // frame on a page with no bridge at all — and the console, which keys its handshake on an
+        // iframe `src` that in-frame navigation cannot change, went on reporting `connected`.
+        String walkable = previewLinks.rewriteInto(rendered.html(),
+                ShSiteFrontEnd.PREVIEW_BASE
+                        + java.net.URLEncoder.encode(siteKey, java.nio.charset.StandardCharsets.UTF_8),
+                rendered, pathWithin(siteKey, request), rendererParams(request));
         ShRenderedPage page = new ShRenderedPage(walkable, rendered.site(), rendered.url(),
                 rendered.layout(), rendered.regions(), rendered.state(), rendered.postId(),
                 rendered.siteId(), rendered.composition(), rendered.revision());
@@ -314,6 +324,29 @@ public class ShRenderAPI {
 
     /** The two the renderer reads itself — see {@link #readerParams}. */
     private static final Set<String> RENDERER_PARAMS = Set.of("state", "editor");
+
+    /**
+     * The inverse of {@link #readerParams}: the reader's mode, as a query fragment (SH1036).
+     *
+     * <p>Derived from {@link #RENDERER_PARAMS} rather than listed again, which is the point of
+     * putting it beside that set: the two methods split one request's query in two, and a third
+     * spelling of "which parameters are the renderer's" is how they come to disagree. Ordered by
+     * that set's iteration, then sorted, so the rewritten HTML is byte-stable across requests (P5)
+     * — a preview is uncacheable but its digest is compared.</p>
+     */
+    static String rendererParams(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        List<String> pairs = new ArrayList<>();
+        for (String name : new java.util.TreeSet<>(RENDERER_PARAMS)) {
+            String value = request.getParameter(name);
+            if (value != null && !value.isBlank()) {
+                pairs.add(name + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8));
+            }
+        }
+        return pairs.isEmpty() ? null : String.join("&", pairs);
+    }
 
     private String pathWithin(String siteKey, HttpServletRequest request) {
         Object attribute = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);

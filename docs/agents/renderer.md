@@ -436,6 +436,34 @@ renderer over one body of content at a second address. See the section on it bel
   never on `target=…`, never outside `/preview/…` (the editor also runs against external front ends).
   **What is not an option is making `{{link}}` preview-aware**: it is content-facing, so one field
   would mean two things in two renders — the coupling SH187 spent a task splitting apart.
+- **And the reader's MODE goes with the link, or edit mode ends on the first click (SH1036)** — both
+  rewriters above returned a prefix plus the site path, so the link's own query survived and the
+  request's `?editor=` and `?state=` did not. `?editor=true` is what injects the bridge at all, so
+  the frame landed on a page with **no editor on it** — and the console, which derived its handshake
+  from the iframe `src` that in-frame navigation cannot change, went on reporting *connected* while
+  the panel described the previous page's element and Save still offered to write its fields. The
+  helper that preserves them (`ShSitesAPI.withQueryOf`) existed and was called on the **redirect**
+  path only.
+  Three parts, and the ones to get right are the exclusions.
+  **(a)** `rewriteInto(…, carry)` threads them onto every **navigation** and no asset: `?editor=true`
+  on a stylesheet means nothing and busts its cache, and a `<link rel="stylesheet">` is an `href`
+  the navigable pass sees — so the SH515 asset/navigation split is what keeps it off one.
+  **(b)** the page script does the same for the links that pass never saw, copying the pair
+  **verbatim** (the server encodes because it builds from a decoded `getParameter`; a script that
+  re-encoded would double-escape). In both, **the link's own query wins** — an author who wrote
+  `?state=published` means it — and the fragment is split off first, because `/a#b?c` is a fragment
+  containing a question mark.
+  **(c)** the console re-keys on what the bridge REPORTS rather than on `src`. `sh:ready` already
+  carried `{postId, url}` on every load and nothing read it; a different `url` now clears the
+  selection, the pending changes and the loaded labels. `sh:navigating` is the new half — departure,
+  posted before leaving — which closes the window where a curator could press Save during a load and
+  write the old page's fields. A navigation with no new `sh:ready` before the iframe's own `load`
+  (which always follows it, since the script sends at `DOMContentLoaded`) is a page with **no
+  bridge**, and the badge says so.
+  **What was NOT added**: a `navigated` message, because `sh:ready` is already posted from `attach`
+  on every load and a second arrival notification is two mechanisms for one fact; and a `navigate`
+  message, because the console already drives the frame by reassigning `src`, which re-keys the
+  handshake correctly on its own.
 - **The public delivery route, recovered rather than designed (SH451)** — `ShSitesAPI` maps
   `GET /sites/**` and splits it **by position**, which is what branch `0.3.8`'s
   `ShSitesContextURLProcess` did: `/sites/<site-furl>/<format>/<locale>/<content-path…>`, with the

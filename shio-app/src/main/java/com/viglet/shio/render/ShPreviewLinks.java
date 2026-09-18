@@ -289,6 +289,17 @@ public class ShPreviewLinks {
      */
     public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page,
                               String basePath) {
+        return rewriteInto(html, prefix, page, basePath, null);
+    }
+
+    /**
+     * The same pass, carrying the renderer's own parameters onto every navigation (SH1036).
+     *
+     * @param carry a query fragment such as {@code editor=true&state=rev:3}, or {@code null} for a
+     *              route that has none — the public {@code /sites/**} delivery, which has no modes
+     */
+    public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page,
+                              String basePath, String carry) {
         if (html == null || html.isBlank() || page == null || page.siteId() == null) {
             return html;
         }
@@ -301,7 +312,7 @@ public class ShPreviewLinks {
         Map<String, Boolean> assets = new HashMap<>();
         walk(document, (reference, asset) -> asset
                 ? rewriteAsset(reference, prefix, page, assets, base)
-                : rewriteOne(reference, prefix, base));
+                : rewriteOne(reference, prefix, base), carry);
         return document.html();
     }
 
@@ -325,7 +336,7 @@ public class ShPreviewLinks {
      * looked for references in its own list would go green on the one attribute the rewriter reads
      * and it does not. Whatever this rebases is exactly what that reports.</p>
      */
-    private static void walk(Document document, Rule rule) {
+    private static void walk(Document document, Rule rule, String carry) {
         for (String attribute : ASSET) {
             eachAttribute(document, attribute, value -> rule.apply(value, true));
         }
@@ -351,12 +362,84 @@ public class ShPreviewLinks {
         }
         for (String attribute : NAVIGABLE) {
             for (Element element : document.select("[" + attribute + "]")) {
-                String rewritten = rule.apply(element.attr(attribute), isAssetLink(element));
+                boolean asset = isAssetLink(element);
+                String rewritten = rule.apply(element.attr(attribute), asset);
                 if (rewritten != null) {
-                    element.attr(attribute, rewritten);
+                    // SH1036 — the renderer's own parameters ride every NAVIGATION and no asset.
+                    // A `?editor=true` on a stylesheet means nothing and busts its cache; on a link
+                    // it is the difference between the next page carrying the editor bridge and the
+                    // curator's edit mode ending on their first click.
+                    element.attr(attribute, asset ? rewritten : withCarried(rewritten, carry));
                 }
             }
         }
+    }
+
+    /**
+     * Threads the current request's renderer parameters onto one rewritten link (SH1036).
+     *
+     * <h2>The defect this closes</h2>
+     *
+     * <p>A preview's mode lives in its query — {@code ?editor=true}, {@code ?state=rev:3} — and this
+     * pass returned a prefix plus the site path, so the link's own query survived and the reader's
+     * did not. The consequence was worse than losing a mode, because it was <b>silent</b>: the next
+     * page shipped no bridge script, the console keyed its handshake on an iframe {@code src} that
+     * in-frame navigation cannot change, and so the badge stayed green over a page with no bridge at
+     * all while Save still offered to write the previous page's pending edits.</p>
+     *
+     * <h2>The link's own query wins</h2>
+     *
+     * <p>A carried parameter is only added when the link does not already name it. An author who
+     * wrote {@code href="/page?state=published"} means that, and a preview parameter overriding a
+     * link's own would make the rewrite change what the page says rather than where it goes.</p>
+     *
+     * <p>The fragment is split off first and re-appended, because {@code /a#b?c} is a fragment
+     * containing a question mark and not a query at all.</p>
+     */
+    static String withCarried(String href, String carry) {
+        if (carry == null || carry.isBlank() || href == null || href.isBlank()) {
+            return href;
+        }
+        int hash = href.indexOf('#');
+        String fragment = hash < 0 ? "" : href.substring(hash);
+        String withoutFragment = hash < 0 ? href : href.substring(0, hash);
+        int question = withoutFragment.indexOf('?');
+        String existing = question < 0 ? "" : withoutFragment.substring(question + 1);
+        StringBuilder added = new StringBuilder();
+        for (String pair : carry.split("&")) {
+            if (pair.isBlank() || declares(existing, name(pair))) {
+                continue;
+            }
+            added.append(added.isEmpty() ? "" : "&").append(pair);
+        }
+        if (added.isEmpty()) {
+            return href;
+        }
+        String separator = existing.isBlank() ? "?" : "&";
+        String base = question < 0 || !existing.isBlank()
+                ? withoutFragment
+                // `/a?` — a question mark with nothing after it. Appending with `&` would produce
+                // `/a?&editor=true`, which parses but reads as a defect to anyone looking at it.
+                : withoutFragment.substring(0, question);
+        return base + separator + added + fragment;
+    }
+
+    /** Whether {@code query} already names {@code parameter}, so the author's value stands. */
+    private static boolean declares(String query, String parameter) {
+        if (query.isBlank()) {
+            return false;
+        }
+        for (String pair : query.split("&")) {
+            if (name(pair).equals(parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String name(String pair) {
+        int equals = pair.indexOf('=');
+        return equals < 0 ? pair : pair.substring(0, equals);
     }
 
     /**
@@ -429,7 +512,9 @@ public class ShPreviewLinks {
             // Never a replacement: this shape reads, and a `referencesIn` that edited its own copy
             // of the document would be a second rewriter nobody asked for.
             return null;
-        });
+        // No carry: this shape reports what the page references, and a parameter the reader's
+        // request happened to hold is not part of any reference (SH1036).
+        }, null);
         return List.copyOf(found);
     }
 

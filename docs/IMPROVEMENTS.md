@@ -2132,27 +2132,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.1 A bridge that survives navigation (SH1036)
-
-Server side, the link rewriter returns a prefix plus the site path: the link's own query
-survives and the current request's editor and state parameters do not, although the
-helper that preserves them exists and is called only on the redirect path. Browser side,
-the click handler assigns base plus href and loses them the same way. Console side,
-bridge state derives from the handshake's src equalling React state, which in-frame
-navigation cannot change. So the next page, which ships no bridge script, leaves the
-badge green while the selection and pending changes still point at the previous page's
-posts, and Save still offers to write them.
-
-The rewriter threads the renderer's parameters onto every href through the existing
-helper, and the page script does the same on intercepted navigation. A navigated message
-is posted from attach on every load, so the console re-keys its handshake, clears the
-selection and re-fetches labels, and a navigate message lets the console drive the
-frame. The badge keys on the page the bridge reports.
-
-The postMessage suite asserts only that the intercepted click was prevented, never where
-it went. It gains a destination assertion, and the live browser probe gains a
-click-through step asserting the navigated message arrives.
-
 ### LXXI.2 Protocol version two, and fields that know their widget (SH1037)
 
 The ready message is a post id and a URL, and the console's state machine past it is

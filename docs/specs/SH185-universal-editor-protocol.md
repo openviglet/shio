@@ -143,9 +143,21 @@ All messages are `{ type, data }` with a `sh:` prefix. Anything else is ignored 
 
 | Type | `data` | When |
 |---|---|---|
-| `sh:ready` | `{ postId, url }` | the bridge attached; the console shows *connected* |
+| `sh:ready` | `{ postId, url }` | the bridge attached — **on every load**, so `url` is how the console learns the frame navigated (SH1036) |
 | `sh:element-selected` | `SelectedElement` | a curator clicked an editable element |
 | `sh:content-changed` | `ContentChange` | an editable element's content changed |
+| `sh:navigating` | `{ to, from }` | a click in the page is leaving for another page of this site (SH1036) |
+
+`sh:ready` and `sh:navigating` are arrival and departure, and both are needed. Arrival re-keys the
+session: a different `url` means the selection, the pending changes and the loaded field labels all
+belong to a page that is no longer on screen. Departure closes the window in between — on a slow
+page that is where a curator would press Save and write the previous page's fields.
+
+The console also watches the iframe's own `load`, which fires for a navigation whether or not the
+page carries a bridge. Because `sh:ready` is sent at `DOMContentLoaded`, it always precedes that
+load, so a navigation with no new `sh:ready` is a page with **no bridge** and the badge says so. It
+used to key on the iframe `src`, which in-frame navigation cannot change, and therefore read
+*connected* over a page with no editor on it.
 
 ```ts
 type SelectedElement = {

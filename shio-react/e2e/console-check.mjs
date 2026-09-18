@@ -799,6 +799,54 @@ async function checkEditorDrive(context, sites) {
         + "not driven on this instance")
     }
 
+    // 3b. A click inside the preview, which is the step SH1036 exists for and the one no
+    //     instrument reached. The unit suites prove the two rewriters compute the right
+    //     destination; only a browser can prove edit mode SURVIVES arriving there — the bridge is
+    //     injected by the server for `?editor=true`, so the question is whether the link carried it.
+    //
+    //     A link to another page of this site is only present on a site that has one, so a fixture
+    //     with a single page warns rather than fails: the claim is about what happens on a click,
+    //     not about the fixture's shape.
+    const internal = frame.locator("a[href^='/preview/']").first()
+    if (await internal.count() === 0) {
+      probe.warnings.push("the framed page links to no other page of its own preview, so the "
+        + "SH1036 click-through was not driven — the fixture needs a second page to click to")
+    } else {
+      const before = frame.url()
+      await internal.click({ timeout: 10_000 })
+      // The frame object survives a navigation in Playwright, so waiting on its url changing is
+      // what says the click landed rather than was swallowed.
+      const moved = await page.waitForFunction(
+        (was) => Array.from(document.querySelectorAll("iframe"))
+          .some((f) => f.contentWindow && f.src !== was),
+        before, { timeout: 15_000 }).then(() => true).catch(() => false)
+      const after = page.frames().find((f) => f.url().includes("/preview/")) ?? null
+      const stillEditor = after ? after.url().includes("editor=true") : false
+      if (!stillEditor) {
+        probe.ok = false
+        probe.errors.push("SH1036: a click inside the preview left for a URL with no `editor=true`, "
+          + `so the next page ships no bridge (${after ? after.url() : "no frame"}). Edit mode ends `
+          + "on the curator's first click and the console goes on reporting 'connected'")
+      } else {
+        // And the bridge actually attached there — the parameter surviving is necessary and the
+        // script running is the thing the curator needs. `data-shio-editing` is set by `attach()`
+        // immediately before `sh:ready`, so it stands for the handshake the console keys on.
+        const editingAfter = await after.locator("[data-shio-editing='true']")
+          .waitFor({ state: "attached", timeout: 15_000 }).then(() => true).catch(() => false)
+        if (!editingAfter) {
+          probe.ok = false
+          probe.errors.push("SH1036: the click carried `editor=true` and the bridge did not attach "
+            + "on the page it landed on, so edit mode is off behind a green badge")
+        } else {
+          probe.clickThrough = true
+        }
+      }
+      if (!moved) {
+        probe.warnings.push("the iframe's src did not change on the click, so the navigation was "
+          + "in-frame only — which is the normal case and is why the url is what is asserted")
+      }
+    }
+
     // 4. Publish — the half SH659 left, and the reason it left it has a boundary now (SH659).
     //
     // The reason was right and still is: *a smoke check must not edit anybody's content*. What

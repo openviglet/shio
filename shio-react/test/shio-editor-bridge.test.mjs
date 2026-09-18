@@ -403,8 +403,20 @@ function click(window, element, init = {}) {
   return event.defaultPrevented;
 }
 
+/**
+ * Where the bridge said it was going, from the `sh:navigating` it posts before leaving.
+ *
+ * Through `messagesOfType`, which crosses the jsdom realm boundary properly — a raw `.data` read
+ * gives an object from the other realm and `deepEqual` against it reports two identical-looking
+ * values as different (the note on that helper has the tell).
+ */
+function destination(posted) {
+  const leaving = messagesOfType(posted, "sh:navigating");
+  return leaving.length ? leaving[leaving.length - 1].to : null;
+}
+
 test("SH336: a JS-built link to a page of this site is redirected into the preview", async () => {
-  const { window, document } = await pageWithBridge(PAGE, {
+  const { window, document, posted } = await pageWithBridge(PAGE, {
     bodyAttrs: BODY_ATTRS, url: PREVIEW_URL, previewPaths: PREVIEW_PATHS,
   });
   // Built after attach(), which is the whole reason this mechanism exists: a region's own
@@ -415,6 +427,67 @@ test("SH336: a JS-built link to a page of this site is redirected into the previ
 
   assert.equal(click(window, nav), true,
     "the reader's click has to be taken over, or it leaves the preview and 404s");
+  // SH1036 — WHERE it went. This test asserted only that the default was prevented, which is how a
+  // rewrite that dropped the editor parameters survived a green suite for as long as it did. jsdom
+  // implements no navigation, so `location` cannot answer; the bridge announces the departure and
+  // that is the fact to read.
+  assert.equal(destination(posted), "/preview/Demo/contato",
+    "the click has to land inside this site's preview, at the page the link named");
+});
+
+test("SH1036: the editor and state parameters survive a click, or edit mode ends on the first one",
+  async () => {
+    const { window, document, posted } = await pageWithBridge(PAGE, {
+      bodyAttrs: BODY_ATTRS,
+      url: "https://shio.example/preview/Demo/about?editor=true&state=rev:3",
+      previewPaths: PREVIEW_PATHS,
+    });
+    const nav = document.createElement("a");
+    nav.setAttribute("href", "/contato");
+    document.body.appendChild(nav);
+
+    assert.equal(click(window, nav), true);
+    // `?editor=true` is what injects this script at all, so a destination without it is a page with
+    // no bridge -- and the console, which keyed its handshake on an iframe `src` that in-frame
+    // navigation cannot change, went on reporting `connected` over it.
+    // Verbatim, not re-encoded: the script copies the pair as the URL already holds it, so whatever
+    // encoding the server sent survives a click unchanged. The Java side encodes because it builds
+    // from a DECODED `request.getParameter` value; the two produce the same parameter either way,
+    // and a script that re-encoded would double-escape a `%` the server had already written.
+    assert.equal(destination(posted), "/preview/Demo/contato?editor=true&state=rev:3");
+  });
+
+test("SH1036: a link's own query wins, and the reader's is added beside it", async () => {
+  const { window, document, posted } = await pageWithBridge(PAGE, {
+    bodyAttrs: BODY_ATTRS,
+    url: "https://shio.example/preview/Demo/about?editor=true&state=rev:3",
+    previewPaths: PREVIEW_PATHS,
+  });
+  const nav = document.createElement("a");
+  // The author wrote `state=published` and means it; a carried parameter that overrode it would
+  // make the rewrite change what the page says rather than where it goes.
+  nav.setAttribute("href", "/contato?state=published&page=2");
+  document.body.appendChild(nav);
+
+  assert.equal(click(window, nav), true);
+  assert.equal(destination(posted),
+    "/preview/Demo/contato?state=published&page=2&editor=true");
+});
+
+test("SH1036: a fragment stays a fragment, and the query goes before it", async () => {
+  const { window, document, posted } = await pageWithBridge(PAGE, {
+    bodyAttrs: BODY_ATTRS,
+    url: "https://shio.example/preview/Demo/about?editor=true",
+    previewPaths: PREVIEW_PATHS,
+  });
+  const nav = document.createElement("a");
+  // `/a#b?c` is a fragment containing a question mark and not a query at all, so the split has to
+  // take the fragment off first or the parameters land inside it and reach no server.
+  nav.setAttribute("href", "/contato#section");
+  document.body.appendChild(nav);
+
+  assert.equal(click(window, nav), true);
+  assert.equal(destination(posted), "/preview/Demo/contato?editor=true#section");
 });
 
 test("SH336: a real server path is left alone, so a file link still works", async () => {

@@ -12,6 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.util.Set;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -311,15 +314,51 @@ class ShEditorBridgeTest {
                 .contains("if (!state.parentOrigin)");
     }
 
+    /**
+     * The two halves speak the same vocabulary — <b>derived, not listed</b> (SH1036).
+     *
+     * <h2>What this used to assert, and why it was not that</h2>
+     *
+     * <p>It was four {@code contains} calls over the script, under a name promising "exactly the
+     * four messages the console implements". Neither half of that was true: it never read the
+     * console at all, and {@code contains} cannot say <em>exactly</em> — a fifth type on either side
+     * passed it. Its own comment said "if either side grows a fifth, this is where the two stop
+     * agreeing silently", which is precisely what would have happened, and SH1036 grew one.</p>
+     *
+     * <p>So the sets are now scraped from both sources and compared. The script's are the strings it
+     * passes to {@code send(...)} and switches on; the console's are the {@code case "sh:…"} labels
+     * it handles and the types it posts. A type either side speaks alone is named in the failure,
+     * which is the whole point — a message nobody listens to and a listener for a message nobody
+     * sends are the same defect wearing two faces, and both are silent.</p>
+     */
     @Test
-    @DisplayName("the script speaks exactly the four messages the console implements")
-    void theProtocolMatchesTheConsole() {
-        // The console switches on these three inbound types and sends the one outbound type.
-        // If either side grows a fifth, this is where the two stop agreeing silently.
-        assertThat(bridge.script())
-                .contains("sh:ready")
-                .contains("sh:element-selected")
-                .contains("sh:content-changed")
-                .contains("sh:mode-change");
+    @DisplayName("SH1036: the script and the console speak the same message vocabulary")
+    void theProtocolMatchesTheConsole() throws IOException {
+        Set<String> inScript = messageTypesIn(bridge.script());
+        Set<String> inConsole = messageTypesIn(Files.readString(
+                Path.of("..", "shio-react", "src", "app", "editor", "visual-editor.page.tsx"),
+                StandardCharsets.UTF_8));
+
+        assertThat(inScript)
+                .as("""
+                        The bridge is a PROTOCOL, so a type one half speaks and the other does not is                         a message into the void or a listener for nothing — and both are silent. This                         used to be four `contains` calls over the script alone, under a name claiming                         it compared the two; SH1036 added a fifth type and the old form passed                         without reading the console. Script: %s  Console: %s. Update both halves,                         the table in docs/specs/SH185-universal-editor-protocol.md, and this test                         will follow on its own.""".formatted(inScript, inConsole))
+                .isEqualTo(inConsole);
+
+        // The floor, so the derivation cannot pass by finding nothing on both sides — a regex that
+        // stopped matching would otherwise make two empty sets equal and the guard vacuous.
+        assertThat(inScript)
+                .as("the vocabulary is not empty, or the scrape above has stopped working")
+                .contains("sh:ready", "sh:element-selected", "sh:content-changed", "sh:mode-change",
+                        "sh:navigating", "sh:field-set");
+    }
+
+    /** Every {@code sh:*} message type a source mentions, however it mentions it. */
+    private static Set<String> messageTypesIn(String source) {
+        Set<String> types = new java.util.TreeSet<>();
+        Matcher matcher = Pattern.compile("\"(sh:[a-z-]+)\"").matcher(source);
+        while (matcher.find()) {
+            types.add(matcher.group(1));
+        }
+        return types;
     }
 }

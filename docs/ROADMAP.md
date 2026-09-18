@@ -84,12 +84,11 @@
 
 ## Block BF — The visual editor becomes a composer
 
-- 📋 **SH1036** (deps: —) **edit mode does not survive a click inside the preview, while the badge still reads connected** — Both link rewriters drop the renderer's editor and state parameters, so the frame lands on a page with no bridge while the console keys its handshake on an unchanged src. → §LXXI.1
-- 📋 **SH1037** (deps: SH1036, SH956 ✅) **the bridge has no protocol version, no capability negotiation and no idea of a field's kind** — Ready carries a post id and a URL, so the console cannot tell what a front end supports, and every field becomes contenteditable HTML whatever widget declared it. → §LXXI.2
+- 📋 **SH1037** (deps: SH1036 ✅, SH956 ✅) **the bridge has no protocol version, no capability negotiation and no idea of a field's kind** — Ready carries a post id and a URL, so the console cannot tell what a front end supports, and every field becomes contenteditable HTML whatever widget declared it. → §LXXI.2
 - 📋 **SH1038** (deps: SH1037) **a section is not a selectable object, so the editor can change a hero's headline and never the hero** — The bridge binds only the two prop attributes and reports text or attr, so a section cannot be selected, moved, duplicated or removed, though the agent can do all four. → §LXXI.3
 - 📋 **SH1039** (deps: SH1038) **nothing tells the editor what may be inserted into a page, or where** — The editable response returns fields and regions and no insertable set, so the section types reach the console only as post-type names in a picker, never as something to place. → §LXXI.4
 - 📋 **SH1040** (deps: SH1039) **a well-built block on one page cannot be captured and reused as a pattern** — Blueprints have a fixed target, no insert mode and no capture, so the section a curator perfected must be rebuilt by hand or by an agent every time it is wanted. → §LXXI.5
-- 📋 **SH1041** (deps: SH1036) **the visual editor has no undo or discard, and a refresh leaves pending changes counted that are no longer visible** — The pending set supports set and clear-all only, refresh reloads the frame without touching it, and leaving the route drops edits without asking. → §LXXI.6
+- 📋 **SH1041** (deps: SH1036 ✅) **the visual editor has no undo or discard, and a refresh leaves pending changes counted that are no longer visible** — The pending set supports set and clear-all only, refresh reloads the frame without touching it, and leaving the route drops edits without asking. → §LXXI.6
 - 📋 **SH1042** (deps: —) **a stakeholder cannot be sent an expiring link to a draft rendered by Shio itself** — The preview route is console-authenticated and the token mint returns a null token for an internal site, so only sites with an external front end can be previewed by anyone else. → §LXXI.7
 
 ## Block BG — The console as an application: cost, resilience and access

@@ -1190,6 +1190,75 @@ class ShPageRenderTest {
                 .contains("href=\"/preview/" + siteName + "/?q=1#top\"");
     }
 
+    // --- SH1036: the renderer's own parameters ride every navigation ---
+
+    /** The preview prefix this fixture's site is served under, as the controller builds it. */
+    private String previewPrefix() {
+        return "/preview/" + java.net.URLEncoder.encode(siteName,
+                java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    @Test
+    @DisplayName("SH1036: editor and state ride every rewritten link, and no asset")
+    void theRenderersParametersRideTheLinks() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+        String html = "<a href=\"/contato\">c</a>"
+                + "<img src=\"/img/hero.png\">"
+                + "<link rel=\"stylesheet\" href=\"/css/site.css\">";
+
+        String rewritten = previewLinks.rewriteInto(html, previewPrefix(), page, "/",
+                "editor=true&state=rev%3A3");
+
+        // The whole defect: `?editor=true` is what injects the bridge, so a link without it lands
+        // the frame on a page with no editor while the console still reports `connected`.
+        //
+        // `&amp;` because this is HTML and Jsoup serializes it correctly — a raw `&` in an href is
+        // the bug this assertion would otherwise have licensed.
+        assertThat(rewritten)
+                .as("a navigation carries the reader's mode")
+                .contains("href=\"" + previewPrefix() + "/contato?editor=true&amp;state=rev%3A3\"");
+        // And nothing else does. `?editor=true` on a stylesheet means nothing and busts its cache;
+        // on an image it makes every variant a separate entry in every cache between here and the
+        // reader. A `<link rel=stylesheet>` is an `href` the NAVIGABLE pass sees, which is exactly
+        // why the asset/navigation split (SH515) has to be honoured here too — it is the one that
+        // would have carried the parameter if this pass had keyed on the attribute name alone.
+        assertThat(rewritten)
+                .as("an asset does not, and a stylesheet is the one that looks like a link")
+                .doesNotContain("hero.png?editor")
+                .doesNotContain("site.css?editor");
+    }
+
+    @Test
+    @DisplayName("SH1036: the link's own query wins, and no carry means no change")
+    void theAuthorsQueryWins() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+
+        // An author who wrote `state=published` means that. A carried parameter overriding it would
+        // make the rewrite change what the page SAYS rather than where it goes.
+        assertThat(previewLinks.rewriteInto("<a href=\"/contato?state=published\">c</a>",
+                previewPrefix(), page, "/", "editor=true&state=rev%3A3"))
+                .contains("/contato?state=published&amp;editor=true\"");
+
+        // The public `/sites/**` delivery has no modes, so it passes no carry — and must render
+        // byte-identically to what it did before this task.
+        assertThat(previewLinks.rewriteInto("<a href=\"/contato\">c</a>", previewPrefix(), page,
+                "/", null))
+                .isEqualTo(previewLinks.rewriteInto("<a href=\"/contato\">c</a>", previewPrefix(),
+                        page, "/"));
+    }
+
+    @Test
+    @DisplayName("SH1036: a fragment stays a fragment, and the query goes before it")
+    void theFragmentStaysLast() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+
+        // `/a#b?c` is a fragment containing a question mark and not a query, so the split has to
+        // take the fragment off first or the parameters land inside it and reach no server.
+        assertThat(previewLinks.rewriteInto("<a href=\"/contato#section\">c</a>",
+                previewPrefix(), page, "/", "editor=true"))
+                .contains("/contato?editor=true#section\"");
+    }
+
     // --- SH516: the gate reads the page it approved ---
 
     /**

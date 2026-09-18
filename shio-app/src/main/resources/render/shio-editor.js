@@ -15,9 +15,13 @@
  * ── The protocol ────────────────────────────────────────────────────────────────────────
  *
  * page → console
- *   sh:ready             { postId, url }            the bridge is live
+ *   sh:ready             { postId, url }            the bridge is live -- ON EVERY LOAD,
+ *                                                     which is how the console learns the frame
+ *                                                     navigated (SH1036): `url` is the page it is
+ *                                                     live on, and the console re-keys on it
  *   sh:element-selected  SelectedElement            a curator clicked an editable element
  *   sh:content-changed   ContentChange              an editable element's text changed
+ *   sh:navigating        { to, from }               a click in the page is leaving for another one
  *
  * console → page
  *   sh:mode-change       { mode: "edit"|"preview" } toggle affordances on and off
@@ -248,6 +252,58 @@
     return parts.length > 2 && parts[1] === "preview" ? "/preview/" + parts[2] : "";
   }
 
+  /**
+   * The renderer's own parameters of the page this script is running in (SH1036).
+   *
+   * A preview's MODE lives in its query -- `?editor=true` is what injects this script at all, and
+   * `?state=rev:3` says which version is being looked at. A click that dropped them landed the
+   * frame on a page with no bridge, and because the console keys its handshake on an iframe `src`
+   * that in-frame navigation cannot change, the badge stayed green over a page that had no editor
+   * on it. The server threads the same two onto every href it rewrites; this is the same rule for
+   * the links that pass never saw.
+   *
+   * Only those two. Copying the whole query would carry a reader's own `?page=2` onto a link that
+   * means something else by it.
+   */
+  var CARRIED = ["editor", "state"];
+
+  function carriedParams() {
+    var search = window.location.search;
+    if (!search || search.length < 2) return "";
+    var kept = [];
+    search.slice(1).split("&").forEach(function (pair) {
+      if (!pair) return;
+      var name = pair.split("=")[0];
+      if (CARRIED.indexOf(name) >= 0) kept.push(pair);
+    });
+    return kept.join("&");
+  }
+
+  /**
+   * `href` with the carried parameters added, the link's own values winning.
+   *
+   * An author who wrote `?state=published` means that, so a carried parameter is only added when
+   * the link does not already name it -- the same rule the server pass follows. The fragment is
+   * split off first, because `/a#b?c` is a fragment containing a question mark and not a query.
+   */
+  function withCarried(href, carry) {
+    if (!carry) return href;
+    var hash = href.indexOf("#");
+    var fragment = hash < 0 ? "" : href.slice(hash);
+    var rest = hash < 0 ? href : href.slice(0, hash);
+    var question = rest.indexOf("?");
+    var existing = question < 0 ? "" : rest.slice(question + 1);
+    var declared = existing ? existing.split("&").map(function (pair) {
+      return pair.split("=")[0];
+    }) : [];
+    var added = carry.split("&").filter(function (pair) {
+      return pair && declared.indexOf(pair.split("=")[0]) < 0;
+    });
+    if (!added.length) return href;
+    var base = existing ? rest : rest.slice(0, question < 0 ? rest.length : question);
+    return base + (existing ? "&" : "?") + added.join("&") + fragment;
+  }
+
   function onDocumentClick(event) {
     // A field click is the editor's own and is handled (and prevented) elsewhere; a modified or
     // non-primary click is the reader asking for a new tab, a download or a menu, and hijacking
@@ -264,7 +320,17 @@
     var base = previewBase();
     if (!base || !PREVIEW_PATHS[path]) return;
     event.preventDefault();
-    window.location.href = base + href;
+    // SH1036 — the mode goes with it. Without this the next page ships no bridge script, so edit
+    // mode ends on the curator's first click and nothing says so.
+    var to = withCarried(base + href, carriedParams());
+    // SH1036 — say where, BEFORE going. Two things fall out of announcing the departure rather than
+    // only the arrival. The console can stop describing this page the moment the curator clicks,
+    // instead of showing a selection and a Save button for a page that is unloading; and the
+    // destination becomes a fact a test can read, which is what the postMessage suite could not do
+    // — it asserted the click was PREVENTED and never where it went, so the dropped parameters this
+    // task fixes survived a green suite.
+    send("sh:navigating", { to: to, from: window.location.pathname });
+    window.location.href = to;
   }
 
   function attach() {

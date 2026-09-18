@@ -1789,6 +1789,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BF — The visual editor becomes a composer
 
+- **SH1036** — Edit mode survives a click, and the badge stops lying when it does not. Both rewriters now thread the request's `editor` and `state` onto every navigation and onto no asset — the SH515 asset split is what keeps `?editor=true` off a stylesheet, which is the `href` that looks like a link — with the link's own query winning and the fragment split off first. The console re-keys on what the bridge reports instead of on an iframe `src` that in-frame navigation cannot change: a different `url` on `sh:ready` clears the selection, the pending changes and the loaded labels, and a navigation with no new `sh:ready` before the iframe's `load` is a page with no bridge, which the badge now says. Two things the design asked for were deliberately not built, because each would have been a second mechanism for something that already works: a `navigated` message, since `sh:ready` is posted from attach on every load and already carries the page, and a `navigate` message, since reassigning `src` already drives the frame and re-keys correctly. What was added instead is `sh:navigating` — departure, which nothing covered — so the panel stops describing a page that is unloading rather than during the load. The postMessage suite has a destination assertion for the first time; asserting only that the click was prevented is how this survived a green suite.
+
 ## Block BG — The console as an application: cost, resilience and access
 
 ## Block BH — One content model, many languages
