@@ -765,6 +765,7 @@ public class ShAgentVerifyService {
             }
             undeclaredFields(check, post, address, data, findings);
             constraintFindings(check, post, address, data, findings);
+            assetAltFindings(check, post, address, data, findings);
         }
         duplicateUrls(check, scan, findings);
         folderFindings(check, scan, findings);
@@ -2052,6 +2053,73 @@ public class ShAgentVerifyService {
                         + "stored value. It was written before SH956 put the sanitizer on the "
                         + "write path, and the renderer emits field HTML unescaped, so it is on "
                         + "the page as it stands."));
+    }
+
+    /**
+     * An image asset nobody has described (SH1031).
+     *
+     * <h2>Why this rule had to exist beside {@code image-no-alt}</h2>
+     *
+     * <p>{@code image-no-alt} reads rendered HTML and fires when the {@code alt} attribute is
+     * <b>absent</b> — deliberately, because an absent attribute and an empty one mean different
+     * things to a screen reader, and {@code alt=""} is how you say "decorative". The recommended
+     * {@code &#123;&#123;#image&#125;&#125;} helper puts an empty string whenever {@code ALT} is
+     * null, so on a site built the recommended way the attribute is always present and the rule is
+     * <b>structurally unreachable</b>. Three correct-looking decisions composing into a check that
+     * can never fire.</p>
+     *
+     * <h2>Why over the asset and not the page</h2>
+     *
+     * <p>Alt text is a property of the image, not of the page it appears on: the same photo used
+     * on twelve pages needs describing once, and a rule that fired per page would report it twelve
+     * times and be fixed in twelve places. It also means the finding needs <b>no render</b> —
+     * which is what makes it cheap enough to be on by default, and what lets it name the asset the
+     * curator has to open.</p>
+     *
+     * <p><b>A publish check, never an upload refusal.</b> Uploading without alt is fine and must
+     * stay fine: every capture and every conversion run uploads in bulk, and refusing there would
+     * break the two paths this product exists to make easy. This fires where the decision is being
+     * made — the gate a site runs before content goes live.</p>
+     */
+    private void assetAltFindings(String check, ShPostUnified post, String address, JsonNode data,
+                                  List<Finding> findings) {
+        if (post.getShPostType() == null
+                || !ShSystemPostType.FILE.equals(post.getShPostType().getName())) {
+            return;
+        }
+        String fileName = text(data, ShSystemPostTypeAttr.FILE);
+        if (!isImageAsset(data, fileName)) {
+            return;
+        }
+        if (!text(data, "ALT").isBlank()) {
+            return;
+        }
+        findings.add(Finding.warning(check, "asset-no-alt", address, "ALT",
+                "Image '" + (fileName.isBlank() ? "?" : fileName) + "' has no alt text, so every "
+                        + "page that uses it is undescribed to a screen reader.",
+                "Set it in the Media Library, or with a post.upsert writing ALT. If the image is "
+                        + "genuinely decorative, that is a decision worth recording rather than "
+                        + "leaving blank — an empty alt and no alt mean different things."));
+    }
+
+    /**
+     * Whether a {@code File} post holds an image, by the stamp first and the name second.
+     *
+     * <p>The stamped content type is what SH1030 writes at upload; the extension is what covers
+     * everything written before it. Asking the disk would make this rule pay a syscall per asset
+     * to answer a question the row already knows, which is the difference between a check that is
+     * on by default and one nobody turns on.</p>
+     */
+    private boolean isImageAsset(JsonNode data, String fileName) {
+        String contentType = text(data, "CONTENT_TYPE");
+        if (!contentType.isBlank()) {
+            return contentType.toLowerCase(java.util.Locale.ROOT).startsWith("image/");
+        }
+        String name = fileName.toLowerCase(java.util.Locale.ROOT);
+        return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")
+                || name.endsWith(".gif") || name.endsWith(".webp") || name.endsWith(".avif")
+                || name.endsWith(".svg") || name.endsWith(".bmp") || name.endsWith(".tif")
+                || name.endsWith(".tiff");
     }
 
     private void imageFindings(String check, String address, String field,

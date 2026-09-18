@@ -164,7 +164,7 @@ public class ShRenderHelpers {
      * {@code srcset} on every {@code {{#query}}} row, which is a promise no listing keeps.</p>
      */
     public static final Set<String> IMAGE_KEYS =
-            Set.of("url", "width", "height", "alt", "widths", "srcset", "sizes");
+            Set.of("url", "width", "height", "alt", "altAttr", "widths", "srcset", "sizes");
 
     /**
      * What a {@code {{#form}}} row carries (SH247) — a <b>field</b>, not a post.
@@ -223,7 +223,7 @@ public class ShRenderHelpers {
         engine.register("translations", ShHelperShape.BLOCK,
                 "{{#translations}}…{{/translations}}", this::translations);
         engine.register("image", ShHelperShape.BLOCK_PATH_ARG,
-                "{{#image FIELD sizes=}}…{{/image}}", this::image);
+                "{{#image FIELD sizes= decorative=}}…{{/image}}", this::image);
     }
 
     /**
@@ -1311,13 +1311,46 @@ public class ShRenderHelpers {
         row.put("url", url);
         row.put("width", width);
         row.put("height", height);
-        row.put("alt", fields.get("ALT") == null ? "" : fields.get("ALT").toString());
+        // SH1031 — `alt` is what the asset says, and nothing more. It used to be an empty string
+        // whenever ALT was null, which reads as `alt=""` on the page: the HTML for "this image is
+        // decorative, skip it". So a site built the recommended way told every screen reader to
+        // skip every undescribed image, and `image-no-alt` — which fires on an ABSENT attribute,
+        // deliberately, because absent and empty mean different things — could never fire.
+        String alt = fields.get("ALT") == null ? "" : fields.get("ALT").toString();
+        // `decorative=true` as the template writes it, which is a string by the time it gets here.
+        boolean decorative = "true".equalsIgnoreCase(hash(options, "decorative", "false"));
+        row.put("alt", alt);
+        // The whole attribute, for the reason `srcset` is whole: a template cannot compose this
+        // one either. `alt="…"` when there is text, `alt=""` when the caller said `decorative=true`
+        // — a recorded decision — and NOTHING at all otherwise, which is what leaves the finding
+        // reachable instead of papering over it.
+        row.put("altAttr", altAttribute(alt, decorative));
         row.put("widths", widths);
         // The whole attribute value, not the parts. A template cannot compose it: each candidate needs
         // an HMAC when signing is on, and that is the one thing only the server can do here.
         row.put("srcset", srcsetFor(id, url, widths));
         row.put("sizes", hash(options, "sizes", "100vw"));
         return options.fn(ShStableMap.copyOf(row));
+    }
+
+    /**
+     * The whole {@code alt} attribute, or nothing (SH1031).
+     *
+     * <p>Three states, and the third is the one that had no spelling: described, deliberately
+     * decorative, and <b>not yet described</b>. HTML has all three — {@code alt="text"},
+     * {@code alt=""} and no attribute — and the helper collapsed the last two into the second,
+     * which is the one assertion an accessibility check has to be able to make.</p>
+     *
+     * <p>Escaped here because it is emitted with {@code &#123;&#123;&#123;altAttr&#125;&#125;&#125;}:
+     * a value that carries a quote would otherwise close the attribute and everything after it
+     * would be markup.</p>
+     */
+    private static String altAttribute(String alt, boolean decorative) {
+        if (alt != null && !alt.isBlank()) {
+            return " alt=\"" + alt.replace("&", "&amp;").replace("\"", "&quot;")
+                    .replace("<", "&lt;").replace(">", "&gt;") + "\"";
+        }
+        return decorative ? " alt=\"\"" : "";
     }
 
     /**

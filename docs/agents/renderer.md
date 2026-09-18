@@ -1816,3 +1816,29 @@ whether they could author it, not whether they may see what is stored. `format=h
 for a console frame; an agent asking for an outline does not pay for it. `state=rev:<n>` is refused
 — a revision is a record, and laying unsaved values over one would render a document that never
 existed under a version number saying it did.
+
+## `{{#image}}` stops fabricating an empty alt (SH1031)
+
+The helper put `alt: ""` whenever the asset's `ALT` was null, and a template writing
+`alt="{{alt}}"` then emitted `alt=""` — which is the HTML for *this image is decorative, skip it*.
+So a site built the recommended way told every screen reader to skip every undescribed image, and
+`verify`'s `image-no-alt`, which fires on an **absent** attribute (deliberately: absent and empty
+mean different things), could never fire on one.
+
+The row now carries **`altAttr`**, the whole attribute, for the reason `srcset` is whole — a
+template cannot express an attribute's own absence. Three states, and the third had no spelling
+before:
+
+| asset | `{{{altAttr}}}` |
+|---|---|
+| `ALT` set | ` alt="A wide hero"` |
+| `decorative="true"` on the helper | ` alt=""` |
+| neither | *(nothing)* |
+
+`alt` is still on the row and still the asset's own text, so no existing template breaks. A
+template that wants the finding to be reachable emits `{{{altAttr}}}` instead of `alt="{{alt}}"`.
+Decoration is an **opt-in** because it is a decision somebody made: inferring it from a blank field
+is what produced the defect.
+
+The value is escaped in the helper, because it is emitted unescaped — a quote in alt text would
+otherwise close the attribute and everything after it would be markup.

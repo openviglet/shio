@@ -2060,26 +2060,6 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.3 Alt text as a publishing fact (SH1031)
-
-Three facts compose the defect. The File post type declares ALT as not required. The
-image helper puts an empty string when ALT is null, so the attribute is always present.
-And the verify rule fires only when alt is absent, a distinction the HTML outline reader
-documents as deliberate, since a missing alt and an explicitly empty one mean different
-things. So on a site built with the recommended helper, image-no-alt is structurally
-unreachable, and nothing looks at a File post's own ALT, because the check runs on
-rendered HTML.
-
-Add asset-no-alt, a rule over File posts whose type is an image and whose ALT is blank,
-provable with no render, which makes it cheap enough to be on by default. The helper
-stops fabricating the empty attribute and takes decorative as an explicit opt-in, so
-decoration is a recorded decision. It is a publish check, not an upload refusal:
-uploading without alt is fine, publishing a page that references such an image raises
-the finding, because refusing uploads would break every capture and conversion run.
-
-The console gets a needs-alt filter chip and an inline alt field on each card, so fixing
-fifty is fifty keystrokes.
-
 ### LXX.4 Asset metadata on the agent surface, and a key the census can read (SH1032)
 
 The meta and usage endpoints exist with no agent reach. The assets tool's javadoc says

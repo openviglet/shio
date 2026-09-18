@@ -50,7 +50,8 @@
     "cat_audio": "Audio",
     "cat_document": "Documents",
     "cat_archive": "Archives",
-    "cat_other": "Other"
-  },
-  "staticFile.showing": "{{from}}–{{to}} of {{total}}"
+    "cat_other": "Other",
+    "showing": "{{from}}–{{to}} of {{total}}",
+    "needsAlt": "Needs alt text"
+  }
 }

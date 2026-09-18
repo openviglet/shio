@@ -49,10 +49,25 @@ interface UploadEntry {
 }
 
 /** SH1023 — every key the media library owns, and what each means when the URL says nothing. */
-const FILES_LIST = { q: "", category: "all", view: "grid", page: "0" }
+const FILES_LIST = { q: "", category: "all", view: "grid", page: "0", needsAlt: "" }
 
 /** SH1030 — assets per page, the value the object listing has defaulted to since SH165. */
 const PAGE_SIZE = 50
+
+/**
+ * SH1031 — an image nobody has described.
+ *
+ * <p>The same question `verify`'s `asset-no-alt` asks, spelled here so the chip and the finding
+ * cannot disagree about which images need work. A non-image has no alt to miss, which is why this
+ * is not simply "alt is blank".</p>
+ *
+ * <p><b>It narrows the page, not the library</b>, and the count says so by being the page's. A
+ * library-wide count would need the server to answer it, and the honest version of that is a facet
+ * beside the category ones rather than a number computed here and presented as if it were one.</p>
+ */
+function undescribed(item: ShStaticFileItem): boolean {
+  return isImageType(item.contentType) && !(item.alt ?? "").trim()
+}
 
 export default function StaticFileListPage() {
   const { t } = useTranslation()
@@ -75,6 +90,9 @@ export default function StaticFileListPage() {
   const [totalFiles, setTotalFiles] = useState(0)
   const [facets, setFacets] = useState<Record<string, number>>({})
   const page = Number.parseInt(list.value.page || "0", 10) || 0
+  /** SH1031 — the images with no alt text, narrowed on the page this reader is looking at. */
+  const needsAlt = list.value.needsAlt === "true"
+  const needsAltCount = items.filter(undescribed).length
   const view = list.value.view as "grid" | "list"
   const query = list.value.q
   const category = list.value.category as ShMediaCategory | "all"
@@ -136,8 +154,9 @@ export default function StaticFileListPage() {
   const counts = facets
 
   // The rows this page holds. The filtering is the server's now, so there is no second opinion
-  // here that could disagree with the count above it.
-  const filtered = items
+  // here that could disagree with the count above it — except `needsAlt`, which is declared below
+  // as what it is: a narrowing of the page, not of the library.
+  const filtered = needsAlt ? items.filter(undescribed) : items
 
   const uploadOne = async (file: File) => {
     const entryId = `${file.name}-${file.size}-${file.lastModified}`
@@ -322,6 +341,15 @@ export default function StaticFileListPage() {
               <CategoryChip key={c} active={category === c} label={t(`staticFile.cat_${c}`)}
                 count={counts[c] ?? 0} onClick={() => list.set("category", c)} />
             ))}
+            {/*
+              SH1031 — the images nobody has described, which `verify` reports as `asset-no-alt`.
+              A chip rather than a page of its own: the fix is typing one line per image, and the
+              thing that makes fifty of them bearable is that the list narrows to exactly those
+              fifty and each card takes its sentence in place.
+            */}
+            <CategoryChip active={needsAlt} label={t("staticFile.needsAlt")}
+              count={needsAltCount}
+              onClick={() => list.set("needsAlt", needsAlt ? "" : "true")} />
           </div>
         </div>
 
@@ -380,7 +408,9 @@ export default function StaticFileListPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
             {filtered.map((item) => (
               <MediaCard key={item.id} item={item} onOpen={() => setDetail(item)}
-                selected={selected.has(item.id)} onToggleSelect={() => toggleSelect(item.id)} />
+                selected={selected.has(item.id)} onToggleSelect={() => toggleSelect(item.id)}
+                onAltSaved={(alt) => setItems((rows) =>
+                  rows.map((row) => (row.id === item.id ? { ...row, alt } : row)))} t={t} />
             ))}
           </div>
         ) : (
@@ -457,11 +487,39 @@ function CategoryChip({ active, label, count, onClick }: {
  * Not `BentoTile` itself: this tile carries a thumbnail, a hover-revealed selection checkbox and
  * an aspect-locked preview, none of which that component's children slot expresses.
  */
-function MediaCard({ item, onOpen, selected, onToggleSelect }: {
+function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
   item: ShStaticFileItem; onOpen: () => void; selected: boolean; onToggleSelect: () => void
+  onAltSaved: (alt: string) => void
+  t: (key: string) => string
 }) {
   const image = isImageType(item.contentType)
   const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
+  /**
+   * SH1031 — alt text, in place.
+   *
+   * The dialog has had an alt field since SH62 and it is three clicks away per image: open, type,
+   * close. That is fine for one and is why nobody fixes fifty. Here it is one line and Enter, and
+   * the card stays where it is — the whole reason the `Needs alt text` chip is worth having.
+   */
+  const [alt, setAlt] = useState(item.alt ?? "")
+  const [saving, setSaving] = useState(false)
+  const needsAlt = image && !(item.alt ?? "").trim()
+
+  const saveAlt = async () => {
+    const next = alt.trim()
+    if (next === (item.alt ?? "").trim()) return
+    setSaving(true)
+    try {
+      await service.updateMeta(item.id, { alt: next })
+      onAltSaved(next)
+    } catch {
+      // Put the field back to what the row still says, so the card never shows a value the
+      // instance did not take. A toast here would fire once per card on a bulk pass.
+      setAlt(item.alt ?? "")
+    } finally {
+      setSaving(false)
+    }
+  }
   return (
     <div
       className={cn(
@@ -492,6 +550,26 @@ function MediaCard({ item, onOpen, selected, onToggleSelect }: {
           <p className="text-[10px] text-muted-foreground">{formatBytes(item.size)}</p>
         </div>
       </button>
+      {/*
+        SH1031 — outside the button, because a click in here must not open the dialog. Only on
+        images: a font has no alt to miss, which is the same question `asset-no-alt` asks.
+      */}
+      {image && (
+        <div className="px-2 pb-2" onClick={(event) => event.stopPropagation()}>
+          <Input
+            value={alt}
+            disabled={saving}
+            aria-label={t("staticFile.altText")}
+            placeholder={t("staticFile.altPlaceholder")}
+            className={cn("h-7 text-[11px]", needsAlt && "border-amber-400")}
+            onChange={(event) => setAlt(event.target.value)}
+            onBlur={saveAlt}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur()
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }

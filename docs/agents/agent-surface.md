@@ -3597,3 +3597,25 @@ things stayed in memory and both are stated in the code: **trash**, whose native
 soft-delete restriction, and **release** membership, which is already bounded by the release. SH545's
 `published` field survived the move — free when both rows are in hand, one id-and-state projection
 when `state` narrowed the query so that they are not, and never a query per row.
+
+## `asset-no-alt` — the accessibility rule that could fire (SH1031)
+
+`verify`'s `content` check reports a `File` post that holds an image whose `ALT` is blank. It
+exists because `image-no-alt` could not: the File type declares `ALT` optional, the recommended
+`{{#image}}` helper wrote an empty alt when it was null, and `image-no-alt` fires only on an absent
+attribute. Three defensible decisions composing into a rule that is structurally unreachable on a
+site built the recommended way — the shape worth recognising, because nothing about it looks wrong
+from inside any one of the three.
+
+**Over the asset, not the page.** Alt text is a property of the image: the same photo on twelve
+pages needs describing once, and a per-page rule would report it twelve times and be fixed in
+twelve places. It also needs **no render**, which is what makes it cheap enough to be on by default
+and what lets it name the asset the curator has to open.
+
+**A publish check, never an upload refusal.** Uploading without alt is fine and must stay fine —
+every capture and every conversion run uploads in bulk, and refusing there would break the two
+paths this product exists to make easy. It fires where the decision is being made: the gate a site
+runs before content goes live.
+
+It reads the stamped content type first (SH1030) and the file extension second, so it costs no
+syscall per asset — the difference between a check that ships on and one nobody turns on.

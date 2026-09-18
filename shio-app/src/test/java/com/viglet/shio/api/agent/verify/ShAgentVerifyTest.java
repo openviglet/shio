@@ -174,6 +174,10 @@ class ShAgentVerifyTest {
                         base, data(Map.of("FILE", "logo.svg"))),
                 new Op(ShAgentBatchService.POST_UPSERT, post("/hero.png"), ShSystemPostType.FILE,
                         base, data(Map.of("FILE", "hero.png"))),
+                // SH1031 — the described image, which is what makes the rule below an assertion
+                // about ALT rather than about being a File post.
+                new Op(ShAgentBatchService.POST_UPSERT, post("/described.png"), ShSystemPostType.FILE,
+                        base, data(Map.of("FILE", "described.png", "ALT", "A described picture"))),
                 new Op(ShAgentBatchService.POST_PUBLISH, post("/needs-target"), null, null, null),
                 new Op(ShAgentBatchService.POST_PUBLISH, post("/broken-links"), null, null, null),
                 new Op(ShAgentBatchService.POST_PUBLISH, post("/fine"), null, null, null)));
@@ -235,6 +239,10 @@ class ShAgentVerifyTest {
         type.setOwner("admin");
         entityManager.persist(type);
         attr(type, ShSystemWidget.FILE, "FILE", 1, (byte) 1);
+        // SH1031 — the key the alt rule reads. Declared here for the reason the batch gave
+        // when it was not: a post.upsert writing a field the type has no place for would
+        // replace the value it was meant for with one nothing can read.
+        attr(type, ShSystemWidget.TEXT, "ALT", 2, (byte) 0);
     }
 
     private void attr(ShPostType postType, String widgetName, String name, int ordinal, byte required) {
@@ -352,6 +360,31 @@ class ShAgentVerifyTest {
                         + "genuinely points at nothing")
                 .extracting(Finding::address)
                 .containsExactly(post("/dangling"));
+    }
+
+    @Test
+    @DisplayName("SH1031: an image asset with no alt text is a finding, and a described one is not")
+    void sh1031AnUndescribedImageIsReported() {
+        // The defect this closes is not "alt is missing" — it is that NOTHING COULD SAY SO. The
+        // File type declares ALT optional, the recommended `{{#image}}` helper writes an empty
+        // alt when ALT is null, and `image-no-alt` fires only on an ABSENT attribute — which is
+        // correct on its own, because an empty alt is how you say "decorative". Three defensible
+        // decisions composing into a rule that cannot fire on a site built the recommended way.
+        assertThat(findings("content", "asset-no-alt"))
+                .as("""
+                        SH1031: the images with no alt, and only those. The font is a File post                         too and has no alt to miss; the described one has one.""")
+                .extracting(Finding::address)
+                .containsExactlyInAnyOrder(post("/logo.svg"), post("/hero.png"));
+    }
+
+    @Test
+    @DisplayName("SH1031: it needs no render, which is what lets it be on by default")
+    void sh1031TheRuleIsAContentCheck() {
+        assertThat(findings("content", "asset-no-alt"))
+                .as("""
+                        SH1031: reported by the CONTENT check, off the row. Alt text is a property                         of the image rather than of a page, so the same photo on twelve pages is                         one finding fixed in one place — and no page has to be rendered to say so,                         which is the difference between a check that ships on and one nobody                         turns on.""")
+                .isNotEmpty()
+                .allSatisfy(finding -> assertThat(finding.field()).isEqualTo("ALT"));
     }
 
     @Test

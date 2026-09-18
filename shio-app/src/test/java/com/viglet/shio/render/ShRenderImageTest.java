@@ -66,8 +66,9 @@ class ShRenderImageTest {
             <html><body>
             {{#image HERO}}<img src="{{url}}" width="{{width}}" height="{{height}}"\
              srcset="{{srcset}}" sizes="{{sizes}}" alt="{{alt}}">{{/image}}
-            {{#image FLAT sizes="50vw"}}<i class="flat" data-w="{{width}}" data-s="{{srcset}}"></i>\
-            {{/image}}
+            {{#image FLAT sizes="50vw"}}<i class="flat" data-w="{{width}}" data-s="{{srcset}}"\
+            {{{altAttr}}}></i>{{/image}}
+            {{#image FLAT decorative="true"}}<i class="deco"{{{altAttr}}}></i>{{/image}}
             {{#image MISSING}}<b>never</b>{{else}}<p class="none">no image</p>{{/image}}
             </body></html>""";
 
@@ -245,5 +246,35 @@ class ShRenderImageTest {
     private static String quote(String value) {
         return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "") + "\"";
+    }
+
+    @Test
+    @DisplayName("SH1031: an undescribed image emits no alt attribute, so the finding stays reachable")
+    void sh1031AnUndescribedImageEmitsNoAttribute() {
+        String html = render();
+
+        // The three states HTML has, and the one the helper had no spelling for: `alt="text"` is
+        // described, `alt=""` is "decorative, skip it", and NO attribute is "nobody has said". The
+        // helper wrote the second whenever ALT was null — so a site built the recommended way told
+        // every screen reader to skip every undescribed image, and `image-no-alt`, which fires on
+        // an ABSENT attribute, could never fire on it.
+        assertThat(html)
+                .as("""
+                        SH1031: FLAT has no ALT and was not declared decorative, so its tag carries                         no alt at all. An empty one would be a claim nobody made.""")
+                .contains("class=\"flat\"")
+                .doesNotContain("data-s=\"\" alt=\"\"");
+        assertThat(html)
+                .as("""
+                        SH1031: and `decorative=true` is the opt-in that writes the empty one.                         Decoration is a decision somebody made, so it is recorded rather than                         inferred from a blank field.""")
+                .contains("class=\"deco\" alt=\"\"");
+    }
+
+    @Test
+    @DisplayName("SH1031: a described image still carries its text, through the whole attribute")
+    void sh1031ADescribedImageCarriesItsText() {
+        assertThat(render())
+                .as("SH1031: `altAttr` is the whole attribute, for the reason `srcset` is — a "
+                        + "template cannot express an attribute's own absence")
+                .contains("alt=\"A wide hero\"");
     }
 }

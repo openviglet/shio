@@ -1780,6 +1780,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 - **SH1029** — The media listing parses each asset's data once instead of once per key — 2400 parses down to 400 for 400 assets, with the response byte-identical (design §LXX.1 superseded: taking the file size from the stamp instead of the disk, which SH398 had already argued against and SH399 had already decided the stamp is for validating the digest rather than for reporting the size) (design §LXX.1 recorded in `docs/agents/content-api.md`).
 - **SH1030** — The media library is paged on every surface, with server-side facets, a stamped content type and predicates that narrow the read — 400 rows down to 111 on a filtered listing (design §LXX.2 superseded: virtualising the grid, which the paging removed the need for: the page is fifty cards and a virtualiser over fifty is a second unused dependency beside the react-table one this task found already declared and imported nowhere) (design §LXX.2 recorded in `docs/agents/content-api.md`).
+- **SH1031** — An image asset with no alt text is a finding the content check can actually raise, the helper stops fabricating an empty attribute, and the library narrows to what needs describing (design §LXX.3 recorded in `docs/agents/agent-surface.md`).
 
 ## Block BF — The visual editor becomes a composer
 
