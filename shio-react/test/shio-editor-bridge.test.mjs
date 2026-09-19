@@ -460,6 +460,45 @@ test("SH1037: the selection carries the widget and the affordance", async () => 
   assert.equal(selected.affordance, "plain");
 });
 
+test("SH1037: ready announces the protocol version and what this bridge can do", async () => {
+  const { posted } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+
+  const [ready] = messagesOfType(posted, "sh:ready");
+  assert.equal(ready.protocol, 2);
+  // Derived from what is true of this page, not hard-coded: `navigate` is absent because no URL
+  // index was shipped, so the click interception is off and claiming it would be a lie the console
+  // acts on — it would stop offering its own navigation.
+  assert.deepEqual(ready.capabilities.sort(),
+    ["edit-inline", "field-kinds", "field-set", "select"]);
+  assert.equal(ready.postType, "Page", "the page's type, so the panel need not wait for a click");
+  assert.equal(ready.postId, "page-1");
+});
+
+test("SH1037: navigate is claimed only when the index that enables it was shipped", async () => {
+  const { posted } = await pageWithBridge(TYPED_PAGE, {
+    bodyAttrs: BODY_ATTRS, url: PREVIEW_URL, previewPaths: ["/", "/contato"],
+  });
+
+  const [ready] = messagesOfType(posted, "sh:ready");
+  assert.ok(ready.capabilities.includes("navigate"),
+    "with an index in hand the bridge handles clicks, and says so");
+});
+
+test("SH1037: the rich-text toolbar exists, is hidden, and offers only what the allow-list keeps",
+  async () => {
+    const { document } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+    const bar = document.getElementById("shio-editor-toolbar");
+
+    assert.ok(bar, "a rich field needs somewhere to format from");
+    assert.ok(bar.hasAttribute("hidden"),
+      "hidden until a rich field has the selection — it must never appear over a plaintext one");
+    // Restricted on purpose: a toolbar offering headings, colours and fonts would be offering
+    // writes SH956's allow-list then strips, so the curator sees the change, saves, and loses it.
+    assert.deepEqual(
+      Array.from(bar.querySelectorAll("button")).map((b) => b.getAttribute("data-shio-command")),
+      ["bold", "italic", "createLink", "removeFormat"]);
+  });
+
 // --- SH336: the links the server pass never saw ---
 
 const PREVIEW_URL = "https://shio.example/preview/Demo/about";

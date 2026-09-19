@@ -143,7 +143,7 @@ All messages are `{ type, data }` with a `sh:` prefix. Anything else is ignored 
 
 | Type | `data` | When |
 |---|---|---|
-| `sh:ready` | `{ postId, url }` | the bridge attached — **on every load**, so `url` is how the console learns the frame navigated (SH1036) |
+| `sh:ready` | `ReadyMessage` | the bridge attached — **on every load**, so `url` is how the console learns the frame navigated (SH1036) |
 | `sh:element-selected` | `SelectedElement` | a curator clicked an editable element |
 | `sh:content-changed` | `ContentChange` | an editable element's content changed |
 | `sh:navigating` | `{ to, from }` | a click in the page is leaving for another page of this site (SH1036) |
@@ -158,6 +158,27 @@ page carries a bridge. Because `sh:ready` is sent at `DOMContentLoaded`, it alwa
 load, so a navigation with no new `sh:ready` is a page with **no bridge** and the badge says so. It
 used to key on the iframe `src`, which in-frame navigation cannot change, and therefore read
 *connected* over a page with no editor on it.
+
+```ts
+type ReadyMessage = {
+  protocol: number           // 2 since SH1037; absent or 1 means a v1 bridge
+  capabilities: string[]     // select | edit-inline | field-set | field-kinds | navigate
+  postId: string | null
+  postType: string | null    // SH1037 - so the panel need not wait for a selection to fetch a schema
+  url: string
+}
+```
+
+**The negotiation is one-sided, and silence means everything.** The page volunteers; the console asks
+nothing. A round trip would have to survive the page navigating under it (SH1036), and there is
+nothing the console could usefully refuse — hiding an affordance is the only action available to it
+either way. A bridge that sends no `capabilities` array at all (protocol 1, or
+`@viglet/shio-editor-cors`) is read as supporting **all** of them: two producers implement this
+protocol and the published one implements less, so treating silence as "supports nothing" would take
+away editing that works today. The same reasoning as a missing `data-shio-prop-type` meaning *rich*.
+
+`navigate` is claimed only when the server shipped a URL index (`data-shio-preview-paths`), because
+without one the click interception is off (SH336) — claiming it would be a lie the console acts on.
 
 ```ts
 type SelectedElement = {
@@ -257,6 +278,7 @@ functional test can see.
 | `data-shio-prop-attr` | any element | `ShRegionComposer` | `FIELD:ATTRIBUTE` pairs, space-separated: fields this element renders into its **own attributes** rather than as content, so a link's destination can be edited and not only its text (SH503). Copied verbatim — the renderer parses a pair no more than it parses a prop |
 | `data-shio-prop-type` | any element with a prop | `ShRegionComposer` | the **widget the model declares** for that field, verbatim (SH1037) — so the browser knows a `Text` from an `HTML Editor` and stops offering rich editing over a field that cannot hold it. The page's own type only: a listing row declares its post and not its type, so the attribute is **absent** there rather than guessed |
 | `data-shio-affordance` | any annotated element | `shio-editor.js` | what the browser decided the kind allows: `plain`, `rich`, `panel`, or `attr` for an attribute-only field (SH1037). Set beside `data-shio-editable`, which says *whether* — this says *how* |
+| `data-shio-command` | a button of `#shio-editor-toolbar` | `shio-editor.js` | which formatting command that button runs (SH1037): `bold`, `italic`, `createLink`, `removeFormat` and no others, because a toolbar offering more would offer writes SH956's allow-list then strips |
 | `data-shio-preview` | the banner element | `ShPreviewBanner` | this node is Shio's own preview banner and not the page |
 | `data-shio-editor-origin` | the injected `<script>` | `ShEditorBridge` | the console origin the bridge may talk to (never `"*"`) |
 | `data-shio-preview-paths` | the injected `<script>` | `ShEditorBridge` | this site's own URLs, newline-separated, so a click on a **JS-built** link can be sent into the preview's address space while `/file_source/…` is left alone (SH336). Absent above `ShPreviewLinks.BRIDGE_URL_CAP`, which disables interception rather than shipping an index the page should not carry |

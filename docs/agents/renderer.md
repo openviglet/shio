@@ -486,6 +486,36 @@ renderer over one body of content at a second address. See the section on it bel
   is never guessed** — a wrong kind is worse than none, since the browser acts on it.
   Sanitising is *not* the bridge's job: SH956 applies the allow-list at the write boundary, the draft
   merge included. This is about what the curator is offered, not about what is accepted.
+- **Protocol v2 is negotiated, and silence means everything (SH1037)** — v1's `sh:ready` was a post id
+  and a URL, so the console's only question was whether *anything* answered. That is the wrong
+  question for a protocol with two producers: this script and `@viglet/shio-editor-cors`, and the
+  published one implements less — so the console offered affordances the other side might not honour,
+  and finding out meant a click that did nothing. Ready now carries `protocol`, `capabilities`,
+  `postId`, `postType` and `url`, and the console hides what the page does not claim: the edit/preview
+  switch is **disabled with the reason on hover** rather than removed, because a control that vanishes
+  reads as a console bug. The capabilities are **derived from what is true of this page** —
+  `navigate` only when the server shipped the URL index, since without it the interception is off
+  (SH336) and claiming it would stop the console offering its own. **A bridge that sends no
+  `capabilities` array is read as supporting all of them**, the same compatibility rule as a missing
+  field kind: two implementations exist and treating silence as "supports nothing" removes editing
+  that works. The negotiation is deliberately one-sided — a round trip would have to survive the page
+  navigating under it, and hiding an affordance is the only action the console has either way.
+- **The rich-text toolbar is restricted to what the allow-list keeps (SH1037)** — bold, italic, link,
+  remove-formatting, and nothing else. A toolbar with headings, colours and fonts would offer writes
+  SH956 then strips, so the curator sees the change, saves, and loses it with no explanation. It
+  appears for `affordance="rich"` only: over a `plaintext-only` field its commands would produce
+  exactly the markup that field cannot store. `mousedown` and not `click`, because a click moves
+  focus out of the `contenteditable` and the selection is gone by the time a handler runs; and its CSS
+  is scoped under `data-shio-editing` like every other rule, so preview falls back to the UA's own
+  `[hidden]` and the page is byte-for-byte what a visitor sees.
+- **The panel draws the field the model declares (SH1037)** — it used to be a bare `<Input>` for an
+  `attr` field and read-only text for everything else, so a `Date` was a string, a `Check Box` was
+  `"1"` and a `Content Select` was a UUID — and `affordance="panel"`, the field a caret cannot
+  express, is precisely the one that lands there. The console already owns a widget per kind
+  (`getWidget`) and already fetches the type to resolve labels, so the declared field is synthesised
+  into an `ShPostAttr` (`attrFromDeclared`) rather than read a third time. A declared `Text` is
+  deliberately left as the plain line: the map's fallback *is* `TextWidget`, so "declared Text" and
+  "nothing declared" would be indistinguishable, and the plain line is the honest render of both.
 - **The public delivery route, recovered rather than designed (SH451)** — `ShSitesAPI` maps
   `GET /sites/**` and splits it **by position**, which is what branch `0.3.8`'s
   `ShSitesContextURLProcess` did: `/sites/<site-furl>/<format>/<locale>/<content-path…>`, with the

@@ -92,3 +92,75 @@ export function labelSourceKey(source: LabelSource): string {
     : source.kind === "post-type" ? `type:${source.postType}`
       : "none";
 }
+
+/**
+ * A declared field, as an `ShPostAttr` the console's widget map can render (SH1037).
+ *
+ * The panel drew every field as a bare `<Input>` for an attribute field and read-only text for the
+ * rest, so a `Date` was a string, a `Check Box` was `"1"` and a `Content Select` was a UUID. The
+ * console already owns a widget per kind — `getWidget(name)` — and already has the declared field in
+ * hand, because it fetches the type to resolve labels. What was missing is the shape those widgets
+ * take.
+ *
+ * Synthesised rather than fetched: the bridge sends a field's VALUE and the type declares its SHAPE,
+ * and asking the server for the post as well would be a third read of something both halves already
+ * know. The ids are the field name, which is what the widgets key on and what makes two renders of
+ * the same field the same element.
+ *
+ * `strValue` carries the value for every kind. A widget that means something else — a date, a
+ * number, an array — reads the string it is given and parses it, which is what the post form's own
+ * widgets already do with a fresh attribute.
+ */
+export function attrFromDeclared(field: DeclaredWidgetField, value: string): SynthesisedAttr {
+  return {
+    id: field.name,
+    strValue: value ?? "",
+    arrayValue: [],
+    dateValue: "",
+    intValue: 0,
+    shPostTypeAttr: {
+      id: field.name,
+      name: field.name,
+      label: field.label ?? field.name,
+      description: field.description ?? "",
+      ordinal: field.ordinal ?? 0,
+      required: field.required ? 1 : 0,
+      isSummary: 0,
+      isTitle: 0,
+      shWidget: { name: field.widget ?? "Text" },
+      widgetSettings: field.widgetSettings,
+    },
+  };
+}
+
+/** The half of a declared field this synthesis reads. */
+export type DeclaredWidgetField = {
+  name: string;
+  label?: string | null;
+  description?: string | null;
+  widget?: string | null;
+  required?: boolean | null;
+  ordinal?: number | null;
+  widgetSettings?: string;
+};
+
+/** What {@link attrFromDeclared} produces — structurally an `ShPostAttr`. */
+export type SynthesisedAttr = {
+  id: string;
+  strValue: string;
+  arrayValue: string[];
+  dateValue: string;
+  intValue: number;
+  shPostTypeAttr: {
+    id: string;
+    name: string;
+    label: string;
+    description: string;
+    ordinal: number;
+    required: number;
+    isSummary: number;
+    isTitle: number;
+    shWidget: { name: string };
+    widgetSettings?: string;
+  };
+};

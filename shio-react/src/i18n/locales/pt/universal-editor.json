@@ -3,6 +3,8 @@
   "universalEditor.description": "Edite o conteúdo do seu site visualmente, diretamente na página renderizada.",
   "universalEditor.edit": "Editar",
   "universalEditor.preview": "Visualizar",
+  "universalEditor.noInlineEditing": "A ponte deste editor não permite edição na página; use o painel de propriedades.",
+  "universalEditor.previewOnly": "Somente visualização",
   "universalEditor.editMode": "Modo Edição",
   "universalEditor.previewMode": "Modo Visualização",
   "universalEditor.desktop": "Desktop",

@@ -20,7 +20,10 @@ import { toast } from "@viglet/viglet-design-system"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
-import { labelSource, labelSourceKey, labelsFrom } from "./field-labels"
+import {
+  attrFromDeclared, labelSource, labelSourceKey, labelsFrom, type DeclaredWidgetField,
+} from "./field-labels"
+import { getWidget } from "@/components/widgets"
 import type { ContentChange, SelectedElement } from "@/models/universal-editor/universal-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
 
@@ -101,8 +104,19 @@ export default function VisualEditorPage() {
    * destination simply is not this destination's — it reads as `waiting` with no frame loaded,
    * without anybody clearing it afterwards, and the stale `Connected` window closes entirely.</p>
    */
-  const [handshake, setHandshake] = useState<{ src: string; bridge: BridgeState; frameLoaded: boolean }>(
-    () => ({ src: "", bridge: "waiting", frameLoaded: false }),
+  const [handshake, setHandshake] = useState<{
+    src: string; bridge: BridgeState; frameLoaded: boolean
+    /**
+     * SH1037 — what the bridge on the other side said it is and what it can do.
+     *
+     * `capabilities: null` is the answer from a v1 bridge and from `@viglet/shio-editor-cors`, and
+     * it means **assume everything**: two producers implement this protocol and the published one
+     * implements less, so a console that treated silence as "supports nothing" would take away
+     * editing that works today. An explicit list is the only thing that narrows what is offered.
+     */
+    protocol: number; capabilities: string[] | null
+  }>(
+    () => ({ src: "", bridge: "waiting", frameLoaded: false, protocol: 1, capabilities: null }),
   )
   const [editMode, setEditMode] = useState(true)
   const [mobile, setMobile] = useState(false)
@@ -118,6 +132,14 @@ export default function VisualEditorPage() {
   // would be a second place for it to be wrong. Until SH303 the bridge read a `data-shio-label`
   // nothing emitted, so every field in this panel was labelled `TEXT` or `HTML`.
   const [fieldLabels, setFieldLabels] = useState<Record<string, string>>({})
+  /**
+   * SH1037 — the declared field per name, so the panel can draw the widget the model names.
+   *
+   * Beside `fieldLabels` rather than replacing it: a label is resolved for every field the panel
+   * lists and is cheap to look up, while this is only read for the field being edited. Both come
+   * from the same fetch, so they cannot describe different versions of the type.
+   */
+  const [declaredFields, setDeclaredFields] = useState<Record<string, DeclaredWidgetField>>({})
 
   const postTypeService = useMemo(() => new ShPostTypeService(), [])
   // Which label source is loaded (SH305 - a post id or a type name, so a row and the page
@@ -165,12 +187,24 @@ export default function VisualEditorPage() {
   // belonged to that same destination. Without the stamp a frame's `onLoad` would land under the
   // previous `src` and the derived value would never see it.
   const setBridge = useCallback((next: BridgeState) => setHandshake((prev) => ({
-    src, bridge: next, frameLoaded: prev.src === src && prev.frameLoaded,
+    ...prev, src, bridge: next, frameLoaded: prev.src === src && prev.frameLoaded,
   })), [src])
   const setFrameLoaded = useCallback((next: boolean) => setHandshake((prev) => ({
-    src, frameLoaded: next, bridge: prev.src === src ? prev.bridge : "waiting",
+    ...prev, src, frameLoaded: next, bridge: prev.src === src ? prev.bridge : "waiting",
   })), [src])
   const ready = bridge === "ready"
+  /**
+   * SH1037 — whether the page claims a capability, with silence meaning yes.
+   *
+   * The negotiation is one-sided on purpose: the console asks nothing and the page volunteers. A
+   * handshake with a round trip would have to survive the page navigating under it (SH1036), and
+   * there is nothing the console could usefully refuse — an affordance it hides is the only action
+   * available to it either way.
+   */
+  const claims = useCallback((capability: string) => {
+    const declared = handshake.src === src ? handshake.capabilities : null
+    return declared === null || declared.includes(capability)
+  }, [handshake, src])
 
   useEffect(() => {
     if (externalSrc) return
@@ -223,7 +257,18 @@ export default function VisualEditorPage() {
       if (!msg || typeof msg.type !== "string" || !msg.type.startsWith("sh:")) return
       switch (msg.type) {
         case "sh:ready": {
-          setBridge("ready")
+          const announced = msg.data as
+            { protocol?: number; capabilities?: string[]; postType?: string } | undefined
+          setHandshake((prev) => ({
+            ...prev,
+            src,
+            bridge: "ready",
+            frameLoaded: prev.src === src && prev.frameLoaded,
+            protocol: announced?.protocol ?? 1,
+            // Only an ARRAY narrows anything. A v1 bridge sends no `capabilities` key at all, and
+            // `null` here is what makes `claims` answer yes to everything.
+            capabilities: Array.isArray(announced?.capabilities) ? announced.capabilities : null,
+          }))
           readyCountRef.current += 1
           // SH1036 — the bridge names the page it is live on, and on an in-frame navigation that is
           // a different page than the one this panel is describing. Re-key rather than reload: the
@@ -315,13 +360,40 @@ export default function VisualEditorPage() {
 
     typeName
       .then((name) => (name ? postTypeService.get(name).then((def) => def.fields) : null))
-      .then((declared) => setFieldLabels(labelsFrom(declared)))
-      .catch(() => setFieldLabels({}))
+      .then((declared) => {
+        setFieldLabels(labelsFrom(declared))
+        // SH1037 — the declared field itself, not only its label. The panel needs the widget and
+        // its settings to draw the field the model describes; the fetch that resolves labels
+        // already answers with both, and a second read for the same document would be a second
+        // chance for the two to disagree.
+        const byName: Record<string, DeclaredWidgetField> = {}
+        for (const field of declared ?? []) {
+          if (field?.name) byName[field.name] = field as DeclaredWidgetField
+        }
+        setDeclaredFields(byName)
+      })
+      .catch(() => {
+        setFieldLabels({})
+        setDeclaredFields({})
+      })
   }, [selected, postTypeService])
 
   // The declared label for a field name, or "" when the schema has not arrived (or has no
   // label for it) — the caller falls back to the name the bridge sent.
   const labelFor = (prop?: string | null) => (prop ? fieldLabels[prop] ?? "" : "")
+
+  /**
+   * The declared field for a prop, when the type has arrived and names a widget (SH1037).
+   *
+   * A `Text` widget is deliberately excluded: it renders as the same box the read-only line already
+   * is, so drawing it through the map buys nothing and costs a component per field. The map's
+   * fallback is `TextWidget`, so "no widget declared" and "declared Text" would be
+   * indistinguishable here — which is exactly the case where the plain line is the honest render.
+   */
+  const declaredWidgetFor = (prop?: string | null): DeclaredWidgetField | null => {
+    const declared = prop ? declaredFields[prop] : null
+    return declared && declared.widget && declared.widget !== "Text" ? declared : null
+  }
 
   /**
    * SH503 — an edit to a field the page draws into an attribute.
@@ -394,10 +466,21 @@ export default function VisualEditorPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="font-semibold">{t("universalEditor.title")}</span>
+          {/*
+            SH1037 — the toggle is an affordance the PAGE has to honour: it turns into a
+            `sh:mode-change`, and a bridge that does not implement inline editing answers it with
+            nothing. Shown disabled rather than hidden, with the reason on hover: a control that
+            vanishes reads as a console bug, and a curator looking for edit mode needs to be told
+            the page is what cannot do it.
+          */}
           <div className="flex items-center gap-2">
-            <Switch id="edit-mode" checked={editMode} onCheckedChange={setEditMode} />
-            <Label htmlFor="edit-mode" className="text-sm">
-              {editMode ? t("universalEditor.editMode") : t("universalEditor.previewMode")}
+            <Switch id="edit-mode" checked={editMode && claims("edit-inline")}
+              disabled={!claims("edit-inline")} onCheckedChange={setEditMode} />
+            <Label htmlFor="edit-mode" className="text-sm"
+              title={claims("edit-inline") ? undefined : t("universalEditor.noInlineEditing")}>
+              {!claims("edit-inline")
+                ? t("universalEditor.previewOnly")
+                : editMode ? t("universalEditor.editMode") : t("universalEditor.previewMode")}
             </Label>
           </div>
           {changes.size > 0 && (
@@ -512,7 +595,7 @@ export default function VisualEditorPage() {
                     <div className="text-xs font-medium text-muted-foreground">
                       {labelFor(f.prop) || f.label || f.prop}
                     </div>
-                    {f.type === "attr" ? (
+                    {f.type === "attr" && claims("field-set") ? (
                       <Input
                         // SH503 — the one field kind that has to be edited here. A text field is
                         // typed into on the page; a value drawn into an attribute has no text node
@@ -526,6 +609,24 @@ export default function VisualEditorPage() {
                         className="mt-1 h-8 text-sm"
                         onChange={(event) => editAttrField(f, event.target.value)}
                       />
+                    ) : declaredWidgetFor(f.prop) ? (
+                      /*
+                        SH1037 — the field the MODEL describes, through the console's own widget map.
+                        The panel used to draw read-only text for everything that is not an `attr`,
+                        so a Date was a string, a Check Box was "1" and a Content Select was a UUID
+                        — and the field whose caret cannot express its shape (`affordance: "panel"`)
+                        is precisely the one that ends up here. Read-only still, because writing back
+                        from the panel for every kind is the remainder of this task: what changes is
+                        that the curator sees a date as a date.
+                      */
+                      <div className="mt-1 pointer-events-none opacity-90">
+                        {(() => {
+                          const declared = declaredWidgetFor(f.prop)!
+                          const Widget = getWidget(declared.widget ?? "Text")
+                          return <Widget attr={attrFromDeclared(declared, f.value) as never}
+                            onChange={() => undefined} postId={selected.postId ?? undefined} />
+                        })()}
+                      </div>
                     ) : (
                       <div className="text-sm break-words">{f.value || <span className="italic text-muted-foreground">—</span>}</div>
                     )}

@@ -15,7 +15,7 @@
  * ── The protocol ────────────────────────────────────────────────────────────────────────
  *
  * page → console
- *   sh:ready             { postId, url }            the bridge is live -- ON EVERY LOAD,
+ *   sh:ready             ReadyMessage               the bridge is live -- ON EVERY LOAD,
  *                                                     which is how the console learns the frame
  *                                                     navigated (SH1036): `url` is the page it is
  *                                                     live on, and the console re-keys on it
@@ -392,6 +392,46 @@
     window.location.href = to;
   }
 
+  /**
+   * Protocol version two: what this bridge IS, and what it can do (SH1037).
+   *
+   * v1's ready was a post id and a URL, so the console's only question was whether anything
+   * answered. That is the wrong question for a protocol with more than one implementation: this
+   * script and `@viglet/shio-editor-cors` are two producers (one for the markup the renderer emits,
+   * one for a front end writing its own `data-sh-*`), and the published one implements less. The
+   * console was therefore offering affordances the page on the other side might not honour, and
+   * finding out meant a click that did nothing.
+   *
+   * So the capabilities are ANNOUNCED, and derived from what is actually true of this page rather
+   * than hard-coded: `navigate` only when the server handed over a URL index, because without one
+   * the click interception is off (SH336). A console that reads no `capabilities` at all — a v1
+   * bridge, or an external one — must assume ALL of them, for the same reason a missing field kind
+   * means rich: taking away what works today is worse than offering something that turns out to be
+   * a no-op.
+   */
+  var PROTOCOL = 2;
+
+  function capabilities() {
+    var caps = ["select", "edit-inline", "field-set", "field-kinds"];
+    // SH336's interception is off without the index, so claiming it would be a lie the console acts
+    // on: it would stop offering its own navigation on the belief that the page handles clicks.
+    if (PREVIEW_PATHS) caps.push("navigate");
+    return caps;
+  }
+
+  function ready() {
+    return {
+      protocol: PROTOCOL,
+      capabilities: capabilities(),
+      postId: PAGE_POST,
+      // SH1037 — the page's type on ready as well as on every selection. The console needs it to
+      // fetch a field schema, and waiting for a click to learn it meant the panel could not draw a
+      // declared widget until the curator had already selected something.
+      postType: PAGE_TYPE,
+      url: window.location.pathname
+    };
+  }
+
   function attach() {
     document.querySelectorAll(FIELD + "," + ATTR_FIELD).forEach(function (el) {
       el.addEventListener("input", onFieldInput);
@@ -400,8 +440,99 @@
     // Delegated, and on the document: the whole point is links that do not exist yet.
     document.addEventListener("click", onDocumentClick);
     injectStyles();
+    injectToolbar();
     setMode("edit");
-    send("sh:ready", { postId: PAGE_POST, url: window.location.pathname });
+    send("sh:ready", ready());
+  }
+
+  /**
+   * The inline toolbar for a rich-text field, and only for one (SH1037).
+   *
+   * A `plaintext-only` field must not have it — the commands it offers produce exactly the markup
+   * that field cannot store, which is the defect this task is about, wearing a button. A `panel`
+   * field has no caret at all. So it appears for `affordance="rich"` and nothing else.
+   *
+   * RESTRICTED, and the restriction is the point rather than a first cut: bold, italic, link and
+   * "remove formatting" are what a curator reaches for in a page's prose, and they are also what
+   * SH956's allow-list keeps. A toolbar offering headings, colours and fonts would be offering
+   * writes the write boundary then strips, which is worse than not offering them — the curator sees
+   * the change, saves, and the change is gone with no explanation.
+   *
+   * `document.execCommand` is deprecated and is what a `contenteditable` still has: the modern
+   * replacement for styling a selection does not exist. It is used for exactly the four commands
+   * above and no more, which is the scope where its behaviour is consistent across engines.
+   */
+  var TOOLBAR_ID = "shio-editor-toolbar";
+
+  function injectToolbar() {
+    if (document.getElementById(TOOLBAR_ID)) return;
+    var bar = document.createElement("div");
+    bar.id = TOOLBAR_ID;
+    bar.setAttribute("data-shio-editor", "true");
+    bar.setAttribute("role", "toolbar");
+    bar.setAttribute("aria-label", "Formatting");
+    bar.setAttribute("hidden", "hidden");
+    [
+      ["bold", "B"],
+      ["italic", "I"],
+      ["createLink", "link"],
+      ["removeFormat", "clear"]
+    ].forEach(function (pair) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("data-shio-command", pair[0]);
+      button.textContent = pair[1];
+      // `mousedown` and not `click`: a click moves focus out of the contenteditable first, and the
+      // selection the command acts on is gone by the time the handler runs.
+      button.addEventListener("mousedown", function (event) {
+        event.preventDefault();
+        runCommand(pair[0]);
+      });
+      bar.appendChild(button);
+    });
+    document.body.appendChild(bar);
+    // Shown against the field being edited, so it is never over a plain or panel one.
+    document.addEventListener("selectionchange", positionToolbar);
+  }
+
+  function richFieldOfSelection() {
+    var selection = window.getSelection ? window.getSelection() : null;
+    if (!selection || !selection.rangeCount) return null;
+    var node = selection.getRangeAt(0).startContainer;
+    var element = node && node.nodeType === 1 ? node : node && node.parentElement;
+    if (!element || !element.closest) return null;
+    var field = element.closest("[data-shio-prop]");
+    return field && field.getAttribute("data-shio-affordance") === "rich"
+      && field.isContentEditable ? field : null;
+  }
+
+  function positionToolbar() {
+    var bar = document.getElementById(TOOLBAR_ID);
+    if (!bar) return;
+    var field = editing ? richFieldOfSelection() : null;
+    if (!field) {
+      bar.setAttribute("hidden", "hidden");
+      return;
+    }
+    var box = field.getBoundingClientRect();
+    bar.removeAttribute("hidden");
+    bar.style.top = (box.top + (window.scrollY || 0) - 34) + "px";
+    bar.style.left = (box.left + (window.scrollX || 0)) + "px";
+  }
+
+  function runCommand(command) {
+    var field = richFieldOfSelection();
+    if (!field) return;
+    if (command === "createLink") {
+      var href = window.prompt("Link URL");
+      if (!href) return;
+      document.execCommand("createLink", false, href);
+    } else {
+      document.execCommand(command, false, null);
+    }
+    // The command edited the DOM without an `input` event on every engine, so the change is
+    // reported here too — a formatting change nobody sent is one the curator saves and loses.
+    onFieldInput({ currentTarget: field });
   }
 
   /**
@@ -416,6 +547,22 @@
       '[data-shio-editing="true"] [data-shio-prop]{outline:1px dashed #ea580c;outline-offset:2px;cursor:text}' +
       '[data-shio-editing="true"] [data-shio-prop]:hover{outline-style:solid;background:rgba(234,88,12,.06)}' +
       '[data-shio-editing="true"] [data-shio-prop][data-shio-editable="false"]{outline-color:#9ca3af;cursor:not-allowed}' +
+      // SH1037 — a field the caret cannot express: outlined like the others so the curator can see
+      // it is a field, with a pointer rather than a caret, because it is edited in the panel.
+      '[data-shio-editing="true"] [data-shio-prop][data-shio-affordance="panel"]{cursor:pointer}' +
+      // SH1037 — the rich-text toolbar. Absolutely positioned against the document so it cannot be
+      // clipped by a field's own overflow, and above the page's own stacking: a formatting bar
+      // behind a sticky header is one nobody can press.
+      // Scoped like everything else, which is what keeps preview byte-for-byte the page a visitor
+      // sees: in preview mode none of these apply and the toolbar falls back to the UA's own
+      // `[hidden]` rule, so it contributes nothing rather than being hidden by a rule of ours.
+      '[data-shio-editing="true"] #shio-editor-toolbar{position:absolute;z-index:2147483000;' +
+      'display:flex;gap:2px;background:#111827;border-radius:4px;padding:2px;' +
+      'font:12px/1 system-ui,sans-serif}' +
+      '[data-shio-editing="true"] #shio-editor-toolbar[hidden]{display:none}' +
+      '[data-shio-editing="true"] #shio-editor-toolbar button{background:transparent;border:0;' +
+      'color:#f9fafb;cursor:pointer;padding:4px 7px;border-radius:3px;font:inherit}' +
+      '[data-shio-editing="true"] #shio-editor-toolbar button:hover{background:#374151}' +
       // SH503 — an element that declares only attribute fields is outlined too, and with a
       // pointer rather than a caret: it is selectable and it is not typed into.
       '[data-shio-editing="true"] [data-shio-prop-attr]:not([data-shio-prop])' +

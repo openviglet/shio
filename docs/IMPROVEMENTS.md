@@ -2132,26 +2132,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.2 Protocol version two, and fields that know their widget (SH1037)
-
-The ready message is a post id and a URL, and the console's state machine past it is
-waiting, ready or absent. Edit mode is granted by the presence of a prop attribute
-alone: any element carrying one becomes contenteditable and reports innerHTML, with no
-reference to the declared widget. So a plain Text field absorbs markup from a paste and
-then shows the tags as visible text, because the template escapes it.
-
-Protocol v2, negotiated. Ready carries a protocol version, a capability list, the post
-id, the post type and the URL, and the console renders only the affordances the page
-claims, so an external front end can implement part of the protocol and still work. The
-renderer emits data-shio-prop-type from the declared widget, which is resolved at
-compose time: a text field becomes plaintext-only and strips formatting on paste, a
-rich-text field gets a restricted inline toolbar, and anything else edits in the panel
-only. The attribute joins the asserted DOM contract table.
-
-Sanitising is not the bridge's job: SH956 already applies the allow-list at the write
-boundary, the draft merge included. The console panel renders the declared widget from
-the existing widget map instead of a bare input.
-
 ### LXXI.3 Sections as objects on the page (SH1038)
 
 The bridge listens on two prop attributes and reports an item type of text or attr. The
