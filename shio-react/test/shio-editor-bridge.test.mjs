@@ -499,6 +499,75 @@ test("SH1037: the rich-text toolbar exists, is hidden, and offers only what the 
       ["bold", "italic", "createLink", "removeFormat"]);
   });
 
+// --- SH1038: a section is an object, not a field ---
+
+/** A page of two sections, annotated the way the composer leaves them. */
+const SECTION_PAGE = `
+  <main data-shio-sections="2">
+    <section data-shio-section="SectionHero" data-shio-post="hero-1" data-shio-section-index="0">
+      <h1 data-shio-prop="TITLE" data-shio-prop-type="Text">Hello</h1>
+      <p class="filler">around the field</p>
+    </section>
+    <section data-shio-section="SectionFaq" data-shio-post="faq-1" data-shio-section-index="1">
+      <p class="filler">second</p>
+    </section>
+  </main>
+`;
+
+test("SH1038: clicking the space around a field selects the section that holds it", async () => {
+  const { window, document, posted } = await pageWithBridge(SECTION_PAGE, { bodyAttrs: BODY_ATTRS });
+
+  document.querySelector("section[data-shio-section='SectionFaq'] .filler")
+    .dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+
+  const [section] = messagesOfType(posted, "sh:component-selected");
+  assert.equal(section.section, "SectionFaq");
+  assert.equal(section.postId, "faq-1");
+  // A position is only meaningful against a length, and the position AFTER the last section is a
+  // real destination with no element on it — which is what makes a move expressible at all.
+  assert.equal(section.index, 1);
+  assert.equal(section.of, 2);
+  // The Page is what a reorder rewrites: moving a hero replaces the Page's array and the hero
+  // itself does not change. One deterministic write, so no new write path is needed.
+  assert.equal(section.pagePostId, "page-1");
+});
+
+test("SH1038: clicking a field selects the field, not the section around it", async () => {
+  const { window, document, posted } = await pageWithBridge(SECTION_PAGE, { bodyAttrs: BODY_ATTRS });
+
+  document.querySelector('[data-shio-prop="TITLE"]')
+    .dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+
+  // The field handler stops propagation and the section handler runs after it, which is the whole
+  // interaction: the headline is the headline and the space around it is the hero.
+  assert.equal(messagesOfType(posted, "sh:element-selected").length, 1);
+  assert.equal(messagesOfType(posted, "sh:component-selected").length, 0);
+});
+
+test("SH1038: a link inside a section navigates rather than selecting it", async () => {
+  const { window, document, posted } = await pageWithBridge(SECTION_PAGE, {
+    bodyAttrs: BODY_ATTRS, url: PREVIEW_URL, previewPaths: PREVIEW_PATHS,
+  });
+  const link = document.createElement("a");
+  link.setAttribute("href", "/contato");
+  document.querySelector("section[data-shio-section='SectionFaq']").appendChild(link);
+
+  link.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 }));
+
+  assert.equal(messagesOfType(posted, "sh:component-selected").length, 0,
+    "a navigation is not a selection, whatever it happens to be inside");
+  assert.equal(destination(posted), "/preview/Demo/contato");
+});
+
+test("SH1038: sections is claimed only when the page has one", async () => {
+  const withSections = await pageWithBridge(SECTION_PAGE, { bodyAttrs: BODY_ATTRS });
+  const without = await pageWithBridge(PAGE, { bodyAttrs: BODY_ATTRS });
+
+  assert.ok(messagesOfType(withSections.posted, "sh:ready")[0].capabilities.includes("sections"));
+  // A console told otherwise would offer a component panel over a page with no component in it.
+  assert.ok(!messagesOfType(without.posted, "sh:ready")[0].capabilities.includes("sections"));
+});
+
 // --- SH336: the links the server pass never saw ---
 
 const PREVIEW_URL = "https://shio.example/preview/Demo/about";

@@ -78,6 +78,59 @@ class ShEditorBridgeTest {
         assertThat(rowOwner).isLessThan(rowField);
     }
 
+    // --- SH1038: a section records its position beside its identity ---
+
+    @Test
+    @DisplayName("SH1038: each section carries its index, and its container the count")
+    void sectionsCarryTheirPosition() {
+        String html = composer.compose("""
+                <body><main>
+                  <section data-shio-section="SectionHero" sh-post="a1"></section>
+                  <section data-shio-section="SectionFeatures" sh-post="b2"></section>
+                  <section data-shio-section="SectionFaq" sh-post="c3"></section>
+                </main></body>""", Map.of(), "page-1", "Page");
+
+        assertThat(html)
+                .as("""
+                        The handle existed, the server's region walk read it, and the browser bridge                         did not — so a section was something the editor could change the headline of                         and never the section. Position is what a MOVE needs and neither the element                         nor the container can state alone, so it is derived from document order:                         `getRelation` renders the Page's references in the order the field names                         them, which makes document order that order.""")
+                .contains("data-shio-section=\"SectionHero\" sh-post=\"a1\" "
+                        + "data-shio-post=\"a1\" data-shio-section-index=\"0\"")
+                .contains("data-shio-section-index=\"1\"")
+                .contains("data-shio-section-index=\"2\"")
+                // On the container, because the position AFTER the last section is a real
+                // destination and there is no element there to read a length off.
+                .contains("data-shio-sections=\"3\"");
+    }
+
+    @Test
+    @DisplayName("SH1038: two composed lists are two arrays, counted separately")
+    void eachContainerCountsItsOwn() {
+        String html = composer.compose("""
+                <body>
+                  <main><section data-shio-section="A"></section>
+                        <section data-shio-section="B"></section></main>
+                  <aside><section data-shio-section="C"></section></aside>
+                </body>""", Map.of(), "page-1", "Page");
+
+        // One running count would make the aside's only section read as position three of an array
+        // that does not exist, and a move against it would rewrite the wrong field.
+        assertThat(html)
+                .contains("<aside data-shio-sections=\"1\"")
+                .contains("data-shio-section=\"C\" data-shio-section-index=\"0\"");
+    }
+
+    @Test
+    @DisplayName("SH1038: a page with no sections is untouched")
+    void aPageWithNoSectionsIsUnchanged() {
+        String layout = "<body><main><h1 sh-field=\"TITLE\">Hi</h1></main></body>";
+
+        // The pass writes nothing where there is nothing to describe, so an ordinary layout renders
+        // byte-identically to what it did before this shipped.
+        assertThat(composer.compose(layout, Map.of(), "page-1", "Page"))
+                .doesNotContain("data-shio-sections")
+                .doesNotContain("data-shio-section-index");
+    }
+
     // --- SH1037: a field says what KIND it is ---
 
     @Test

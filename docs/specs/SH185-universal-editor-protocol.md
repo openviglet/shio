@@ -147,6 +147,7 @@ All messages are `{ type, data }` with a `sh:` prefix. Anything else is ignored 
 | `sh:element-selected` | `SelectedElement` | a curator clicked an editable element |
 | `sh:content-changed` | `ContentChange` | an editable element's content changed |
 | `sh:navigating` | `{ to, from }` | a click in the page is leaving for another page of this site (SH1036) |
+| `sh:component-selected` | `SelectedSection` | a curator clicked a **section** rather than one of its fields (SH1038) |
 
 `sh:ready` and `sh:navigating` are arrival and departure, and both are needed. Arrival re-keys the
 session: a different `url` means the selection, the pending changes and the loaded field labels all
@@ -179,6 +180,21 @@ away editing that works today. The same reasoning as a missing `data-shio-prop-t
 
 `navigate` is claimed only when the server shipped a URL index (`data-shio-preview-paths`), because
 without one the click interception is off (SH336) — claiming it would be a lie the console acts on.
+
+```ts
+type SelectedSection = {
+  postId: string | null      // the section post's own id - what its fields belong to
+  section: string            // the declared type, e.g. SectionHero
+  index: number              // position within its container
+  of: number                 // how many that container holds
+  pagePostId: string | null  // the Page whose ordered array a reorder rewrites
+}
+```
+
+A click on a field selects the field; a click on the space around it selects the section. The section
+handler runs after the per-field one, which stops propagation, and after the link handler, so a
+navigation is never turned into a selection. `sections` is claimed as a capability only when the page
+actually has one.
 
 ```ts
 type SelectedElement = {
@@ -276,6 +292,9 @@ functional test can see.
 | `data-shio-post-type` | `<body>` | `ShRegionComposer` | the page's post-type name; the bridge sends it with each selection so the console can label fields from the model (SH303) |
 | `data-shio-prop` | any element | `ShRegionComposer` | this element renders that field of the nearest `data-shio-post` |
 | `data-shio-prop-attr` | any element | `ShRegionComposer` | `FIELD:ATTRIBUTE` pairs, space-separated: fields this element renders into its **own attributes** rather than as content, so a link's destination can be edited and not only its text (SH503). Copied verbatim — the renderer parses a pair no more than it parses a prop |
+| `data-shio-section` | the element that IS one section | the conversion's generated layout (SH556) | the declared section type, e.g. `SectionHero`. **Read** by `ShHtmlRegions` to tell authored content from markup a conversion kept, and by the bridge as the handle a section is selected by (SH1038); the composer never writes it, because only the template knows which element is the section |
+| `data-shio-section-index` | the same element | `ShRegionComposer` | its position among the sections of its own container (SH1038), derived from document order — which *is* the order the owning Page's reference field names them in, since `{{#getRelation}}` renders that field in order. Per container, not per page: a layout may compose two ordered lists |
+| `data-shio-sections` | the element composing an ordered list of sections | `ShRegionComposer` | how many it holds (SH1038). A position is only meaningful against a length, and the position *after* the last section is a real destination with no element on it |
 | `data-shio-prop-type` | any element with a prop | `ShRegionComposer` | the **widget the model declares** for that field, verbatim (SH1037) — so the browser knows a `Text` from an `HTML Editor` and stops offering rich editing over a field that cannot hold it. The page's own type only: a listing row declares its post and not its type, so the attribute is **absent** there rather than guessed |
 | `data-shio-affordance` | any annotated element | `shio-editor.js` | what the browser decided the kind allows: `plain`, `rich`, `panel`, or `attr` for an attribute-only field (SH1037). Set beside `data-shio-editable`, which says *whether* — this says *how* |
 | `data-shio-command` | a button of `#shio-editor-toolbar` | `shio-editor.js` | which formatting command that button runs (SH1037): `bold`, `italic`, `createLink`, `removeFormat` and no others, because a toolbar offering more would offer writes SH956's allow-list then strips |

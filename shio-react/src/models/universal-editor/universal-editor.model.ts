@@ -86,3 +86,31 @@ export type SelectedElement = {
    */
   fields?: Array<{ prop: string; type: string; label: string; value: string; attr?: string }>
 }
+
+/**
+ * A section a curator selected — an object on the page rather than a field of one (SH1038).
+ *
+ * The bridge bound two prop attributes and reported `text` or `attr`, so the editor could change a
+ * hero's headline and never the hero. Everything needed was already in the DOM: the generated layout
+ * writes the type, the server's region walk reads it, and SH1038's composer pass adds the position.
+ *
+ * `index` and `of` travel together because a position is only meaningful against a length — and the
+ * position *after* the last section is a real destination with no element on it, which is what makes
+ * a move expressible at all.
+ */
+export type SelectedSection = {
+  /** The section post's own id — what its fields belong to. */
+  postId: string | null
+  /** The declared section type, e.g. `SectionHero`. */
+  section: string
+  index: number
+  of: number
+  /**
+   * The Page whose ordered reference array holds this section.
+   *
+   * What a reorder writes: moving a hero rewrites the Page's array and the hero itself does not
+   * change. One deterministic write, which is why no new write path is needed — `post.upsert`
+   * already replaces that field and the file projection carries it as a diffable line.
+   */
+  pagePostId: string | null
+}

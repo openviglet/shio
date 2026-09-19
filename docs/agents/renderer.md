@@ -508,6 +508,31 @@ renderer over one body of content at a second address. See the section on it bel
   focus out of the `contenteditable` and the selection is gone by the time a handler runs; and its CSS
   is scoped under `data-shio-editing` like every other rule, so preview falls back to the UA's own
   `[hidden]` and the page is byte-for-byte what a visitor sees.
+- **A section is an object on the page, not a field of one (SH1038)** — the bridge bound two prop
+  attributes and reported `text` or `attr`, so the editor could change a hero's headline and never the
+  hero: a section could not be selected, moved, duplicated or removed, although `post.upsert` can do
+  all four by rewriting the owning Page's ordered reference array. Everything needed was already
+  there — the conversion's generated layout writes `data-shio-section` naming the type (SH556) and
+  `ShHtmlRegions` reads it to tell authored content from kept markup — and only the browser half was
+  missing. **The composer adds POSITION**: `data-shio-section-index` on each section and
+  `data-shio-sections` on the element composing them. Derived from document order, which *is* the
+  Page's order because `{{#getRelation}}` renders the field in the order it names — a template could
+  write `{{@index}}` (the frame has published it since SH772) and then every template would have to
+  remember to, and one that forgot would leave a page whose sections cannot be moved with nothing to
+  say so. **Per container, not per page**: a layout may compose two ordered lists, and one running
+  count would make the second list's first section read as position three of an array that does not
+  exist. The count is on the container because *a position is only meaningful against a length*, and
+  the position after the last section is a real destination with no element on it.
+  The bridge sends `sh:component-selected` carrying the section's type, its post, `index`, `of` and
+  the **Page** whose array a reorder rewrites. Its click handler runs after the per-field one (which
+  stops propagation) and after the link handler, so **a click on a headline is the headline, the space
+  around it is the hero, and a link is a navigation** — no extra chrome needed to tell them apart.
+  `sections` is claimed as a capability only when the page has one. A page with no sections is
+  byte-identical to what it was.
+  Still to come: move, remove and duplicate — each one deterministic (replace the Page's array) — and
+  the console-drawn overlay a stylesheet cannot provide, since it cannot draw a toolbar or an
+  insertion caret. The panel shows a section's identity and position and no controls, deliberately: a
+  button that does nothing is worse than a header that tells the truth.
 - **The panel draws the field the model declares (SH1037)** — it used to be a bare `<Input>` for an
   `attr` field and read-only text for everything else, so a `Date` was a string, a `Check Box` was
   `"1"` and a `Content Select` was a UUID — and `affordance="panel"`, the field a caret cannot

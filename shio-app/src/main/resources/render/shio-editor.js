@@ -22,6 +22,7 @@
  *   sh:element-selected  SelectedElement            a curator clicked an editable element
  *   sh:content-changed   ContentChange              an editable element's text changed
  *   sh:navigating        { to, from }               a click in the page is leaving for another one
+ *   sh:component-selected SelectedSection            a curator clicked a section, not a field of it
  *
  * console → page
  *   sh:mode-change       { mode: "edit"|"preview" } toggle affordances on and off
@@ -61,6 +62,18 @@
    * reading the attribute off the element anyway.
    */
   var ATTR_FIELD = "[data-shio-prop-attr]";
+
+  /**
+   * SH1038 — a section, which is an OBJECT on the page rather than a field of one.
+   *
+   * The bridge bound two attributes and reported an item type of `text` or `attr`, so the editor
+   * could change a hero's headline and never the hero: a section could not be selected, moved,
+   * duplicated or removed, although `post.upsert` can do all four by rewriting the owning Page's
+   * ordered reference array. Everything needed was already in the DOM — the generated layout writes
+   * `data-shio-section` naming the type, the server's region walk reads it, and SH1038's composer
+   * pass adds the position beside it — and only this half was missing.
+   */
+  var SECTION = "[data-shio-section]";
   var editing = false;
 
   function send(type, data) {
@@ -107,6 +120,30 @@
       }
     });
     return pairs;
+  }
+
+  /**
+   * The section an element is inside, as the object a curator selects (SH1038).
+   *
+   * `index` and `of` are what make a MOVE expressible: a position is only meaningful against a
+   * length, and the position after the last section is a real destination with no element on it.
+   * Both are read off the DOM rather than counted here — the server derived them from document
+   * order, which is the order the Page's field names its sections in, and a second count in the
+   * browser would be a second opinion about that.
+   */
+  function describeSection(el) {
+    var section = el && el.closest ? el.closest(SECTION) : null;
+    if (!section) return null;
+    var container = section.parentElement;
+    return {
+      postId: ownerOf(section),
+      section: section.getAttribute("data-shio-section") || "",
+      index: Number(section.getAttribute("data-shio-section-index") || "0"),
+      of: Number((container && container.getAttribute("data-shio-sections")) || "0"),
+      // The owning Page, which is what a reorder writes. It is the page's own post and not the
+      // section's: moving a hero rewrites the Page's array, and the hero itself does not change.
+      pagePostId: PAGE_POST
+    };
   }
 
   function describe(el) {
@@ -213,6 +250,25 @@
     event.preventDefault();
     event.stopPropagation();
     send("sh:element-selected", describe(event.currentTarget));
+  }
+
+  /**
+   * A click on a section but not on one of its fields (SH1038).
+   *
+   * Delegated on the document and running AFTER the field handler, which stops propagation: so a
+   * click on a headline selects the headline and a click on the space around it selects the hero.
+   * That ordering is the whole interaction — a curator reaches for the section by clicking the part
+   * of it that is not a field, which is how every visual editor behaves and needs no extra chrome.
+   */
+  function onSectionClick(event) {
+    if (!editing || event.defaultPrevented) return;
+    // A link the click interception owns is a navigation, not a selection (SH336/SH1036).
+    var anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+    if (anchor) return;
+    var described = describeSection(event.target);
+    if (!described) return;
+    event.preventDefault();
+    send("sh:component-selected", described);
   }
 
   /**
@@ -413,6 +469,10 @@
 
   function capabilities() {
     var caps = ["select", "edit-inline", "field-set", "field-kinds"];
+    // SH1038 — claimed only when the page HAS sections. A layout that composes none is not a page
+    // where a curator can select one, and a console told otherwise would offer a component panel
+    // over a page that has no component to put in it.
+    if (document.querySelector(SECTION)) caps.push("sections");
     // SH336's interception is off without the index, so claiming it would be a lie the console acts
     // on: it would stop offering its own navigation on the belief that the page handles clicks.
     if (PREVIEW_PATHS) caps.push("navigate");
@@ -439,6 +499,10 @@
     });
     // Delegated, and on the document: the whole point is links that do not exist yet.
     document.addEventListener("click", onDocumentClick);
+    // SH1038 — after the link handler, so a navigation is never turned into a selection, and after
+    // the per-field one, which stops propagation: clicking a headline selects the headline and
+    // clicking the space around it selects the section that holds it.
+    document.addEventListener("click", onSectionClick);
     injectStyles();
     injectToolbar();
     setMode("edit");

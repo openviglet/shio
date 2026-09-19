@@ -84,8 +84,8 @@
 
 ## Block BF — The visual editor becomes a composer
 
-- 📋 **SH1038** (deps: SH1037 ✅) **a section is not a selectable object, so the editor can change a hero's headline and never the hero** — The bridge binds only the two prop attributes and reports text or attr, so a section cannot be selected, moved, duplicated or removed, though the agent can do all four. → §LXXI.3
-- 📋 **SH1039** (deps: SH1038) **nothing tells the editor what may be inserted into a page, or where** — The editable response returns fields and regions and no insertable set, so the section types reach the console only as post-type names in a picker, never as something to place. → §LXXI.4
+- ⏳ **SH1038** (deps: SH1037 ✅) **a section is not a selectable object, so the editor can change a hero's headline and never the hero** — Move, remove and duplicate, each resolving to one replacement of the Page's section array, and the console-drawn overlay a stylesheet cannot provide. → §LXXI.3
+- 📋 **SH1039** (deps: SH1038 ⏳) **nothing tells the editor what may be inserted into a page, or where** — The editable response returns fields and regions and no insertable set, so the section types reach the console only as post-type names in a picker, never as something to place. → §LXXI.4
 - 📋 **SH1040** (deps: SH1039) **a well-built block on one page cannot be captured and reused as a pattern** — Blueprints have a fixed target, no insert mode and no capture, so the section a curator perfected must be rebuilt by hand or by an agent every time it is wanted. → §LXXI.5
 - 📋 **SH1041** (deps: SH1036 ✅) **the visual editor has no undo or discard, and a refresh leaves pending changes counted that are no longer visible** — The pending set supports set and clear-all only, refresh reloads the frame without touching it, and leaving the route drops edits without asking. → §LXXI.6
 - 📋 **SH1042** (deps: —) **a stakeholder cannot be sent an expiring link to a draft rendered by Shio itself** — The preview route is console-authenticated and the token mint returns a null token for an internal site, so only sites with an external front end can be previewed by anyone else. → §LXXI.7
@@ -159,6 +159,14 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
+
+## Done when — SH1038
+
+- **A curator can move, duplicate and remove a section from the page** The bridge
+  accepts move, remove and duplicate for an optimistic reorder, each confirmed by a
+  write, and every one resolves to a single replacement of the owning Page's section
+  array — no new write path. The overlay is console-drawn rather than an injected
+  stylesheet, which cannot draw a toolbar or an insertion caret.
 
 ## Non-goals (do NOT add as tasks)
 

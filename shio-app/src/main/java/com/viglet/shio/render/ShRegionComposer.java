@@ -9,6 +9,7 @@
 package com.viglet.shio.render;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -162,6 +163,43 @@ public class ShRegionComposer {
      * {@code contenteditable} can do.</p>
      */
     public static final String ANNOTATION_PROP_TYPE = "data-shio-prop-type";
+
+    /**
+     * The section handle a conversion's generated layout writes, READ here and never written.
+     *
+     * <p>SH556 established it: a class is a role, a per-type handle is a {@code data-*} attribute, so
+     * {@code data-shio-section="SectionHero"} is what addresses one type. {@code ShHtmlRegions}
+     * already reads it to tell authored content from markup a conversion kept. This class does not
+     * emit it — the template does, because only the template knows which element IS the section —
+     * and adds the two facts below, which the template cannot know.</p>
+     */
+    public static final String ANNOTATION_SECTION = "data-shio-section";
+
+    /**
+     * SH1038 — a section's position among its siblings, so the DOM records ORDER and not only
+     * identity.
+     *
+     * <p>Derived from document order rather than taken from the template, and that is what makes it
+     * trustworthy: {@code {{#getRelation SECTIONS}}} renders the Page's reference field in the order
+     * the field names, so document order <em>is</em> that order. A template could write
+     * {@code {{@index}}} — the data frame has published it since SH772 — and then every template
+     * would have to remember to, and one that forgot would leave a page whose sections cannot be
+     * moved with nothing to say so.</p>
+     *
+     * <p>It is also why the index is <b>per container</b> rather than per page: a layout may compose
+     * two ordered lists, and a single running count would make the second list's first section read
+     * as position three of one array that does not exist.</p>
+     */
+    public static final String ANNOTATION_SECTION_INDEX = "data-shio-section-index";
+
+    /**
+     * SH1038 — on the element that composes an ordered list of sections: how many it holds.
+     *
+     * <p>The container is what a reorder acts on, and it has to be addressable for the editor to
+     * know where a section may move TO — the position after the last one is a real destination and
+     * there is no element there to select. The count says where that is.</p>
+     */
+    public static final String ANNOTATION_SECTIONS = "data-shio-sections";
     private static final String ANNOTATION_POST_TYPE = "data-shio-post-type";
 
     /**
@@ -285,6 +323,7 @@ public class ShRegionComposer {
             filled.add(name);
         }
         annotateEditable(document, pagePostId, pageType, propTypes);
+        annotateSections(document);
         markMissingTheme(document, missingTheme);
         appendRegionScripts(document, regions, filled);
         return document.html();
@@ -403,6 +442,42 @@ public class ShRegionComposer {
         }
         Element owner = field.closest("[" + ANNOTATION_FIELD_POST + "]");
         return owner != null && "body".equals(owner.tagName()) ? propTypes.get(prop) : null;
+    }
+
+    /**
+     * SH1038 — records each section's POSITION beside the identity it already carried.
+     *
+     * <h3>The gap this closes</h3>
+     *
+     * <p>A Page names its sections by address in order, every section's fields are annotated, and the
+     * per-section handle is emitted by the generated layout and read by the server's region walk. So
+     * the handle existed, the server read it, and the browser bridge did not — which made a section
+     * something an editor could change the headline of and never the section: not selectable, not
+     * movable, not removable, though {@code post.upsert} can do all four by rewriting the array.</p>
+     *
+     * <h3>Derived from the DOM, which is the only place both facts are true at once</h3>
+     *
+     * <p>Position is not knowable to the element itself and identity is not knowable to the
+     * container, so neither the template nor the field can state the pair. Document order is the
+     * field's order — {@code getRelation} renders the references in the order they are named — so a
+     * pass over the composed page is where the two meet. It writes nothing when a page has no
+     * sections, so an ordinary layout is byte-identical to what it was.</p>
+     */
+    private void annotateSections(Document document) {
+        Map<Element, Integer> held = new LinkedHashMap<>();
+        for (Element section : document.select("[" + ANNOTATION_SECTION + "]")) {
+            Element container = section.parent();
+            if (container == null) {
+                continue;
+            }
+            // Position among the sections of THIS container, not among the page's. A layout may
+            // compose two ordered lists, and one running count would make the second list's first
+            // section read as position three of an array that does not exist.
+            int index = held.merge(container, 1, Integer::sum) - 1;
+            section.attr(ANNOTATION_SECTION_INDEX, String.valueOf(index));
+        }
+        held.forEach((container, count) ->
+                container.attr(ANNOTATION_SECTIONS, String.valueOf(count)));
     }
 
     /**

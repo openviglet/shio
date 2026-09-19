@@ -24,7 +24,9 @@ import {
   attrFromDeclared, labelSource, labelSourceKey, labelsFrom, type DeclaredWidgetField,
 } from "./field-labels"
 import { getWidget } from "@/components/widgets"
-import type { ContentChange, SelectedElement } from "@/models/universal-editor/universal-editor.model"
+import type {
+  ContentChange, SelectedElement, SelectedSection,
+} from "@/models/universal-editor/universal-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
 
 const siteService = new ShSiteService()
@@ -122,6 +124,14 @@ export default function VisualEditorPage() {
   const [mobile, setMobile] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selected, setSelected] = useState<SelectedElement | null>(null)
+  /**
+   * SH1038 — the section selected, when it is a section rather than one of its fields.
+   *
+   * Its own state and not a variant of `selected`: the two carry different shapes and drive
+   * different controls, and the union would have every read branching on a discriminator before it
+   * could use either. They are kept mutually exclusive where they are set.
+   */
+  const [selectedSection, setSelectedSection] = useState<SelectedSection | null>(null)
   // Why the site failed to resolve, if it did (SH181): a page that spins forever instead of
   // saying so is what let `GET /api/v2/site/{furl}` 404 twice and look like slow loading.
   const [siteError, setSiteError] = useState<string | null>(null)
@@ -278,6 +288,7 @@ export default function VisualEditorPage() {
           if (reported && reported !== reportedPageRef.current) {
             reportedPageRef.current = reported
             setSelected(null)
+            setSelectedSection(null)
             setChanges(new Map())
             // The labels belong to the previous page's post-type. Cleared rather than re-fetched
             // here: the next selection is what says which type is wanted, and fetching now would
@@ -299,6 +310,14 @@ export default function VisualEditorPage() {
           break
         case "sh:element-selected":
           setSelected(msg.data as SelectedElement)
+          // SH1038 — one selection at a time. A field and the section holding it are two different
+          // objects, and a panel showing both would leave the curator guessing which one Save and
+          // the move controls act on.
+          setSelectedSection(null)
+          break
+        case "sh:component-selected":
+          setSelectedSection(msg.data as SelectedSection)
+          setSelected(null)
           break
         case "sh:content-changed": {
           const c = msg.data as ContentChange
@@ -581,7 +600,28 @@ export default function VisualEditorPage() {
         </div>
 
         <aside className="w-80 border-l bg-background overflow-auto p-4">
-          {selected ? (
+          {/*
+            SH1038 — a section's own header. The move, duplicate and remove controls are the
+            remainder of this task: what lands here is that a section IS a selectable object with an
+            identity and a position the console can state, which is what the symptom asks for. A
+            panel that offered the controls before the writes existed would be a button that does
+            nothing, which is worse than a header that tells the truth.
+          */}
+          {selectedSection ? (
+            <div className="space-y-3">
+              <div>
+                <div className="font-semibold">{selectedSection.section || t("universalEditor.section")}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t("universalEditor.sectionPosition", {
+                    position: selectedSection.index + 1, of: selectedSection.of,
+                  })}
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {t("universalEditor.sectionSelected")}
+              </p>
+            </div>
+          ) : selected ? (
             <div className="space-y-3">
               <div>
                 <div className="font-semibold">
