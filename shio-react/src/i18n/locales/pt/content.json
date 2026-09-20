@@ -336,5 +336,7 @@
   "content.scopeFolder": "Esta pasta",
   "content.scopeSubtree": "Esta pasta e abaixo",
   "content.searchWithheld": "e {{count}} que voce nao pode abrir",
-  "content.searchHere": "Buscar nesta pasta"
+  "content.searchHere": "Buscar nesta pasta",
+  "content.fieldRequired": "obrigatório",
+  "content.removeValue": "Remover {{value}}"
 }

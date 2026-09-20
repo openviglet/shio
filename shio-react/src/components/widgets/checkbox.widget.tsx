@@ -20,7 +20,7 @@ function parseChoices(shPostTypeAttr?: WidgetProps["attr"]["shPostTypeAttr"]): C
   } catch { return [] }
 }
 
-export function CheckBoxWidget({ attr, onChange }: WidgetProps) {
+export function CheckBoxWidget({ attr, onChange, labelledBy, describedBy, required }: WidgetProps) {
   const { t } = useTranslation()
   const choices = useMemo(() => parseChoices(attr.shPostTypeAttr), [attr.shPostTypeAttr])
   const selected = new Set(attr.arrayValue || [])
@@ -33,7 +33,16 @@ export function CheckBoxWidget({ attr, onChange }: WidgetProps) {
   }
 
   return (
-    <div className="space-y-2">
+    // A group, not a control: there is no single box for the field's label to own, so the set
+    // names itself by that label instead. `fieldId` is deliberately unused here — putting it on
+    // one of the checkboxes would make the label focus an arbitrary choice.
+    <div
+      role="group"
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
+      aria-required={required ? "true" : "false"}
+      className="space-y-2"
+    >
       {choices.map(choice => (
         <div key={choice.id} className="flex items-center gap-2">
           <Checkbox

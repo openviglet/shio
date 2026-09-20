@@ -100,7 +100,7 @@ async function resolveFullPath(fileId: string): Promise<ResolvedFile | null> {
   return null
 }
 
-export function FileWidget({ attr, onChange }: WidgetProps) {
+export function FileWidget({ attr, onChange, labelledBy, describedBy, required }: WidgetProps) {
   const { t } = useTranslation()
   const [browserOpen, setBrowserOpen] = useState(false)
   const [browserStartId, setBrowserStartId] = useState<string | undefined>(undefined)
@@ -250,7 +250,15 @@ export function FileWidget({ attr, onChange }: WidgetProps) {
   }, [uploadFile])
 
   return (
-    <div className="space-y-2">
+    // SH1052 — a group, not a control: this widget renders several, so the field's `htmlFor` has
+    // nothing single to own and the set names itself by the visible label instead.
+    <div
+      role="group"
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
+      aria-required={required ? "true" : "false"}
+      className="space-y-2"
+    >
       {attr.strValue ? (
         <div className="rounded-lg border bg-muted/30 overflow-hidden">
           {/* Clickable breadcrumb path */}
@@ -312,9 +320,22 @@ export function FileWidget({ attr, onChange }: WidgetProps) {
         </div>
       ) : (
         <div className="space-y-2">
-          {/* Drop zone */}
-          <div
-            className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 transition-colors cursor-pointer ${
+          {/*
+            SH1052 — the drop zone is a button now, and that is the whole of the fix.
+
+            It was a `div` with an `onClick` over an `<input type="file" className="hidden">`, so a
+            keyboard reader had no way to attach a file at all: the div was not focusable, and
+            `display: none` — which is what Tailwind's `hidden` is — takes the input out of the
+            accessibility tree along with the focus order. Dragging is a pointer gesture and stays
+            one; what was missing was the other path, and a native button is it. The label the field
+            already has names it through `aria-labelledby`.
+          */}
+          <button
+            type="button"
+            aria-labelledby={labelledBy}
+            aria-describedby={describedBy}
+            disabled={uploading}
+            className={`relative flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-6 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${
               dragOver
                 ? "border-primary bg-primary/5"
                 : "border-muted-foreground/25 hover:border-muted-foreground/50"
@@ -336,14 +357,19 @@ export function FileWidget({ attr, onChange }: WidgetProps) {
                 <p className="text-xs text-muted-foreground/60 mt-1">{t("content.orClickToUpload")}</p>
               </>
             )}
+            {/*
+              `sr-only` rather than `hidden`: Tailwind's `hidden` is `display: none`, which removes
+              the input from the accessibility tree AND from the focus order. This keeps it
+              reachable and out of sight, which is what was wanted all along.
+            */}
             <input
               ref={fileInputRef}
               type="file"
-              className="hidden"
+              className="sr-only"
               aria-label={t("content.selectFile")}
               onChange={handleFileInput}
             />
-          </div>
+          </button>
 
           {/* Or select existing */}
           <Button

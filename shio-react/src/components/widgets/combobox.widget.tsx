@@ -20,7 +20,7 @@ function parseChoices(shPostTypeAttr?: WidgetProps["attr"]["shPostTypeAttr"]): {
   } catch { return { choices: [], allowNull: true } }
 }
 
-export function ComboBoxWidget({ attr, onChange }: WidgetProps) {
+export function ComboBoxWidget({ attr, onChange, fieldId, describedBy, required, invalid }: WidgetProps) {
   const { t } = useTranslation()
   const { choices, allowNull } = useMemo(() => parseChoices(attr.shPostTypeAttr), [attr.shPostTypeAttr])
 
@@ -29,7 +29,14 @@ export function ComboBoxWidget({ attr, onChange }: WidgetProps) {
       value={attr.strValue ?? ""}
       onValueChange={(value) => onChange({ ...attr, strValue: value === "__null__" ? "" : value })}
     >
-      <SelectTrigger><SelectValue placeholder={t("content.selectPlaceholder")} /></SelectTrigger>
+      <SelectTrigger
+        id={fieldId}
+        aria-describedby={describedBy}
+        aria-required={required ? "true" : "false"}
+        aria-invalid={invalid ? "true" : "false"}
+      >
+        <SelectValue placeholder={t("content.selectPlaceholder")} />
+      </SelectTrigger>
       <SelectContent>
         {allowNull && <SelectItem value="__null__">-- None --</SelectItem>}
         {choices.map(choice => (

@@ -84,11 +84,15 @@ test("SH1013: a finding that knows its field offers a route to it", () => {
   const panel = read("src", "components", "post-insights.panel.tsx")
   const form = read("src", "components", "widgets", "post-form-fields.tsx")
   const page = read("src", "app", "content", "post.edit.page.tsx")
+  const ids = read("src", "lib", "field-ids.ts")
 
   assert.match(panel, /\{finding\.field && \(/u,
     "SH1013: a rule that knows no field — a broken link belongs to the rendered page, not to one "
       + "box — offers no button rather than one that lands somewhere arbitrary")
-  assert.match(form, /export function fieldAnchorId/u)
+  // SH1052 moved the scheme into `lib/field-ids.ts`: three readers need it — the form that mints
+  // it, this panel that scrolls to it, and every widget that puts one on its own control — and a
+  // scheme written twice drifts silently, as a button that scrolls nowhere.
+  assert.match(ids, /export function fieldAnchorId/u)
   assert.match(form, /id=\{fieldAnchorId\(field\.name\)\}/u)
   assert.match(page, /document\.getElementById\(fieldAnchorId\(name\)\)/u,
     "SH1013: one spelling of the anchor, shared — written twice it drifts, and the failure is "

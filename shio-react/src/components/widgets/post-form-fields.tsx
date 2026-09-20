@@ -3,6 +3,7 @@ import { BadgeColorful } from "@/components/badge-colorful"
 import { Label } from "@/components/ui/label"
 import { constraintHint } from "@/components/field-constraints"
 import { useTranslation } from "react-i18next"
+import { fieldAnchorId, fieldIds } from "@/lib/field-ids"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getWidget } from "@/components/widgets"
 import { getWidgetAccentColor } from "@/lib/widget-colors"
@@ -76,6 +77,17 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
     // left to a toast the curator has already dismissed by the time they look for the input.
     const refused = problem?.field === field.name ? problem.message : undefined
 
+    const ids = fieldIds(field.name)
+    // A description id only when there is prose to point at: `aria-describedby` naming an element
+    // that is not there is announced as nothing, which is the defect this replaces wearing a
+    // different hat. The refusal comes first because after a failed save it is the most important
+    // sentence attached to the control.
+    const described = [
+      refused ? `${ids.description}-error` : null,
+      field.description ? ids.description : null,
+      hint(field) ? `${ids.description}-hint` : null,
+    ].filter(Boolean).join(" ") || undefined
+
     return (
       <div
         key={field.name}
@@ -85,9 +97,24 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
         className={`rounded-lg border border-l-4 ${refused ? "border-destructive" : accent} bg-background p-4 space-y-3 transition-shadow hover:shadow-sm`}
       >
         <div className="flex items-center gap-2 flex-wrap">
-          <Label className="text-sm font-semibold flex items-center gap-1.5">
+          <Label
+            id={ids.label}
+            htmlFor={ids.control}
+            className="text-sm font-semibold flex items-center gap-1.5"
+          >
             {field.label || field.name}
-            {field.required && <span className="text-destructive">*</span>}
+            {/*
+              SH1052 — the asterisk is punctuation and a screen reader says nothing for it, so the
+              word goes beside it and the glyph is hidden. `aria-required` on the control is the
+              other half: this is what a sighted reader sees, that is what an assistive one hears,
+              and a field that carried only the glyph told one of them nothing.
+            */}
+            {field.required && (
+              <>
+                <span aria-hidden="true" className="text-destructive">*</span>
+                <span className="sr-only">{t("content.fieldRequired")}</span>
+              </>
+            )}
           </Label>
           <div className="flex items-center gap-1.5 ml-auto">
             {field.isTitle && <BadgeColorful text="Title" className="text-[10px] px-1.5 py-0 h-5" />}
@@ -96,7 +123,16 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
           </div>
         </div>
 
-        <Widget attr={attr} onChange={handleChange} postId={postId} />
+        <Widget
+          attr={attr}
+          onChange={handleChange}
+          postId={postId}
+          fieldId={ids.control}
+          labelledBy={ids.label}
+          describedBy={described}
+          required={Boolean(field.required)}
+          invalid={Boolean(refused)}
+        />
 
         {/*
           `role="alert"` rather than `aria-invalid` on the wrapper: this div is not a form control,
@@ -104,15 +140,23 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
           An alert is announced when it appears, which is the behaviour wanted — the message shows
           up after a failed save, not while the curator is typing.
         */}
-        {refused && <p role="alert" className="text-xs text-destructive font-medium">{refused}</p>}
-        {field.description && <p className="text-xs text-muted-foreground">{field.description}</p>}
+        {refused && (
+          <p id={`${ids.description}-error`} role="alert" className="text-xs text-destructive font-medium">
+            {refused}
+          </p>
+        )}
+        {field.description && (
+          <p id={ids.description} className="text-xs text-muted-foreground">{field.description}</p>
+        )}
         {/*
           SH1010 — what the model will accept, said before the save rather than by it. The whole
           point of the vocabulary reaching this form is that a rule stops being a discovery: a
           curator who can read "lower-case letters, digits and hyphens only" under the box does not
           meet it as a refusal.
         */}
-        {hint(field) && <p className="text-xs text-muted-foreground">{hint(field)}</p>}
+        {hint(field) && (
+          <p id={`${ids.description}-hint`} className="text-xs text-muted-foreground">{hint(field)}</p>
+        )}
       </div>
     )
   }
@@ -140,16 +184,6 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
       ))}
     </Tabs>
   )
-}
-
-/**
- * SH1013 — the id a finding's "go to field" resolves against.
- *
- * Exported so the panel and the form cannot disagree about the spelling: an anchor scheme written
- * twice is one that drifts, and the failure is silent — the button scrolls nowhere.
- */
-export function fieldAnchorId(name: string): string {
-  return `sh-field-${name}`
 }
 
 function buildAttrFromValue(field: ShPostTypeSchemaField, value: unknown): ShPostAttr {

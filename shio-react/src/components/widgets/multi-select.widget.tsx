@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { WidgetProps } from "./index"
 
-export function MultiSelectWidget({ attr, onChange }: WidgetProps) {
+export function MultiSelectWidget({ attr, onChange, fieldId, describedBy, required, invalid }: WidgetProps) {
   const { t } = useTranslation()
   const [inputValue, setInputValue] = useState("")
   const values = attr.arrayValue || []
@@ -28,14 +28,23 @@ export function MultiSelectWidget({ attr, onChange }: WidgetProps) {
         {values.map(val => (
           <Badge key={val} variant="secondary" className="gap-1 pr-1">
             {val}
-            <button type="button" onClick={() => removeValue(val)} className="hover:text-destructive">
-              <X className="h-3 w-3" />
+            <button
+              type="button"
+              onClick={() => removeValue(val)}
+              aria-label={t("content.removeValue", { value: val })}
+              className="hover:text-destructive"
+            >
+              <X aria-hidden="true" className="h-3 w-3" />
             </button>
           </Badge>
         ))}
       </div>
       <div className="flex gap-2">
         <Input
+          id={fieldId}
+          aria-describedby={describedBy}
+          aria-required={required ? "true" : "false"}
+          aria-invalid={invalid ? "true" : "false"}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addValue() } }}

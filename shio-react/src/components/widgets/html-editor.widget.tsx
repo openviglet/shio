@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Bold, Italic, Underline, List, ListOrdered, Link, Code } from "lucide-react"
 import type { WidgetProps } from "./index"
 
-export function HtmlEditorWidget({ attr, onChange }: WidgetProps) {
+export function HtmlEditorWidget({ attr, onChange, fieldId, describedBy, required, invalid }: WidgetProps) {
   const { t } = useTranslation()
   const editorRef = useRef<HTMLDivElement>(null)
   const isInitialized = useRef(false)
@@ -55,11 +55,26 @@ export function HtmlEditorWidget({ attr, onChange }: WidgetProps) {
           <Code className="h-3.5 w-3.5" />
         </Button>
       </div>
+      {/*
+        SH1052 — `role="textbox"` and the id, because this IS the control: it takes focus, it takes
+        typing, and a label pointing at the wrapper would focus nothing.
+
+        The focus ring is back. `focus:outline-none` with nothing in its place is the browser's own
+        "you are here" removed and not replaced, which for a keyboard reader is the difference
+        between an editor they can find and one they cannot.
+      */}
       <div
         ref={editorRef}
+        id={fieldId}
+        role="textbox"
+        aria-multiline="true"
+        aria-describedby={describedBy}
+        aria-required={required ? "true" : "false"}
+        aria-invalid={invalid ? "true" : "false"}
+        tabIndex={0}
         contentEditable
         suppressContentEditableWarning
-        className="min-h-[200px] p-3 text-sm focus:outline-none prose prose-sm dark:prose-invert max-w-none"
+        className="min-h-[200px] p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 prose prose-sm dark:prose-invert max-w-none"
         onInput={handleInput}
         onBlur={handleInput}
       />

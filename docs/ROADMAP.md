@@ -42,6 +42,7 @@
 - 📋 **SH1089** (deps: —) **a changelog can name a table that does not exist, and only a clean instance ever finds out** — The unit suite builds H2 from entity metadata with Liquibase off, so an addColumn on a misspelled table compiles, passes 2233 tests, and refuses to start a fresh store. → §LXIV.17
 - 📋 **SH1115** (deps: —) **the coverage mirror marks ids named from a working copy nobody checked was committed** — It reads COVERAGE.md from a directory rather than a revision, so an uncommitted edit names ids here forever while the published matrix never gains the sentence. → §LXIV.18
 - 📋 **SH1118** (deps: SH1049 ✅) **the shared comment stripper silently deletes half a file, and every scan over it passes** — A slash and two stars in any string opens a block comment to it, so one Playwright pattern cut 43,389 characters out of what thirty-one suites read. → §LXIV.19
+- 📋 **SH1119** (deps: SH1052 ✅) **two committed regexes hold a literal backspace where a word boundary was meant, so both assert nothing** — A heredoc expanded the escape before the file was written, and the check that internal task ids do not ship has matched nothing since. → §LXIV.20
 
 ## Block AZ — What the content said before
 
@@ -97,9 +98,8 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
-- 📋 **SH1052** (deps: —) **every post-editor field is a label with no htmlFor over a widget that cannot take an id** — The widget contract is attr, onChange and postId, so a screen reader meets each field of every post type as an unnamed edit box and a label click focuses nothing. → §LXXII.10
 - 📋 **SH1053** (deps: DS VDS141, SH964) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
-- 📋 **SH1054** (deps: SH1052, SH1053) **no accessibility check runs against a rendered console page** — The existing rules scan source for four patterns, there is no axe run, no jsx-a11y plugin and one viewport, so a violation composed across components ships unseen. → §LXXII.12
+- 📋 **SH1054** (deps: SH1052 ✅, SH1053) **no accessibility check runs against a rendered console page** — The existing rules scan source for four patterns, there is no axe run, no jsx-a11y plugin and one viewport, so a violation composed across components ships unseen. → §LXXII.12
 - 📋 **SH1055** (deps: SH1031 ✅) **the content Shio delivers is checked for one accessibility rule, image-no-alt, and nothing else** — Verify has dozens of rules and one about accessibility, although the render path already builds the heading outline, landmarks and link inventory the rest would need. → §LXXII.13
 - 📋 **SH1075** (deps: —) **the console lint fails in CI on an error the suppressions file does not hold, and no local gate runs it** — Re-measured at twenty errors over seventeen files, red in CI for weeks while pnpm test and the baseline test stay green, and red-suites.json has never held an entry for it. → §LXXII.14
 - 📋 **SH1077** (deps: SH967 ✅) **an open change stream re-walks each entry's folder chain for every stream, so its cost grows as entries × streams** — SH967 measured 7.05 statements per entry per stream, and canRead's chain and principals do not change in a pass, so a per-pass memo can answer them once. → §LXXII.15

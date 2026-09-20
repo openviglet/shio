@@ -34,13 +34,15 @@ import {
   type ShBlock,
   type ShBlockType,
 } from "@/lib/blocks"
-import type { ShPostAttr } from "@/models/post/post"
+import type { WidgetProps } from "./index"
 
-interface Props {
-  attr: ShPostAttr
-  onChange: (attr: ShPostAttr) => void
-  postId?: string
-}
+/*
+ * SH1052 — this file used to declare its own `Props` with the three fields `WidgetProps` had, and
+ * that copy is why these two widgets were the only ones the new accessibility props did not reach:
+ * widening the contract widened everything except the components that had restated it. The alias
+ * keeps every `Props` below reading as it did, and there is now one definition.
+ */
+type Props = WidgetProps
 
 /**
  * SH1017 — an editor for a block body.
@@ -64,7 +66,7 @@ interface Props {
  * thing. That is a worse WYSIWYG and a better document, and the document is what a front end,
  * an agent and a diff all read.</p>
  */
-export function BlocksWidget({ attr, onChange }: Props) {
+export function BlocksWidget({ attr, onChange, labelledBy, describedBy, required }: Props) {
   const { t } = useTranslation()
   const blocks = useMemo(
     () => (attr.blocksValue ?? []) as ShBlock[],
@@ -119,7 +121,15 @@ export function BlocksWidget({ attr, onChange }: Props) {
   }
 
   return (
-    <div className="space-y-2">
+    // SH1052 — a group, not a control: this widget renders several, so the field's `htmlFor` has
+    // nothing single to own and the set names itself by the visible label instead.
+    <div
+      role="group"
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
+      aria-required={required ? "true" : "false"}
+      className="space-y-2"
+    >
       {/* Announcements for moves, inserts and removals — polite, so typing is not interrupted. */}
       <output aria-live="polite" className="sr-only">{announcement}</output>
 

@@ -336,5 +336,7 @@
   "content.scopeFolder": "This folder",
   "content.scopeSubtree": "This folder and below",
   "content.searchWithheld": "and {{count}} you cannot open",
-  "content.searchHere": "Search in this folder"
+  "content.searchHere": "Search in this folder",
+  "content.fieldRequired": "required",
+  "content.removeValue": "Remove {{value}}"
 }

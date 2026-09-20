@@ -2385,3 +2385,52 @@ The length guard did not catch it: half a large file is still large. It happened
 hour** — once in the pattern, and once in the comment written to explain the pattern. Both probes
 use a `(url) => url.pathname…` predicate now, and the shape test anchors on the script's final
 statement, so a cut view fails instead of going quiet.
+
+## A field with a name, a state, and a way in from the keyboard (SH1052)
+
+The post editor drew a `<Label>` with no `htmlFor` and then a widget whose props were `attr`,
+`onChange` and `postId`. Nothing in that contract could carry an id, so clicking a label focused
+nothing and a screen reader met each field as an **unlabelled edit box** — not one form and not one
+post type: every field of every post, because this is the component every post is edited through.
+
+Three smaller things went with it. The required marker was a bare `*`, which is punctuation and is
+announced as nothing. The description was an orphan paragraph no control pointed at. And the File
+widget's drop zone was a `div` with an `onClick` over an `<input type="file" className="hidden">` —
+Tailwind's `hidden` is `display: none`, which removes an element from the accessibility tree *and*
+from the focus order, so there was no keyboard path to attach a file at all.
+
+**The fix is on the contract, because that is the only place the form can reach.** A widget cannot
+invent an id the label already used, so `WidgetProps` gained `fieldId`, `describedBy`, `required`,
+`invalid` and `labelledBy`, and `post-form-fields.tsx` mints them and hands them down.
+
+**`fieldIds` is deterministic, and that is not a nicety.** `useId()` is React's answer and it mints
+a value that differs between renders of different trees, so two renders of the same post would
+differ in their markup — and a render digest (SH687) compares markup. A field name is already unique
+within a post type, so the whole scheme is one function of it, in `lib/field-ids.ts` beside
+`fieldAnchorId`. Three readers need it: the form that mints it, the insights panel that scrolls to
+it (SH1013), and every widget.
+
+**Two shapes, and the second is the contract's other half.** A widget with one control takes
+`fieldId` and puts it on that control. A widget that renders several — a checkbox group, a code
+editor with its own focusable surface, a set of relator rows — has no single element for `htmlFor`
+to point at, so it takes `labelledBy` and puts it on a `role="group"`. Pointing a label at one of
+several controls would focus an arbitrary one.
+
+**The finding this turned up rather than the one it was filed for:** `blocks.widget.tsx` and
+`relator.widget.tsx` declared their own `Props` with the three fields `WidgetProps` had. Widening
+the contract widened everything except the two components that had restated it — the two most
+complex widgets in the console. Both are `type Props = WidgetProps` now, and the lint holds it.
+
+`test/field-accessibility.test.mjs` walks the widget map: every widget threads the id or names
+itself, every widget with a control points at its own description, and **no form control is hidden
+with `display: none`**. Each rule is a pure function of a widget's source and is driven against a
+planted widget written the old way — every one of them passed on its first run, which is exactly
+when a check has not been shown to check anything. What the scan does that a browser probe cannot
+(SH1054 is that task) is fail on the widget nobody has written yet: the map takes a component, a new
+one arrives with the old three props, and the defect returns for one post type with everything green.
+
+Two existing rules had opinions and both were right. SH893 refuses `aria-required={required ||
+undefined}` — a state attribute renders or vanishes depending on the framework's mood — so all of
+them are `{x ? "true" : "false"}`, and `aria-required="false"` is a real statement rather than a
+missing one. SH1010 held the hint paragraph's exact markup; the hint now carries an id the control
+names, so the assertion holds the two halves instead of one line.

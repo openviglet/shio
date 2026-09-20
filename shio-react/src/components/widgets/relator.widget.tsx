@@ -22,14 +22,16 @@ import { ChevronDown, ChevronRight, Copy, GripVertical, Plus, Trash2, Undo2 } fr
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { getWidget } from "@/components/widgets"
+import { getWidget, type WidgetProps } from "@/components/widgets"
 import type { ShPostAttr, ShRelatorItem } from "@/models/post/post"
 
-interface Props {
-  attr: ShPostAttr
-  onChange: (attr: ShPostAttr) => void
-  postId?: string
-}
+/*
+ * SH1052 — this file used to declare its own `Props` with the three fields `WidgetProps` had, and
+ * that copy is why these two widgets were the only ones the new accessibility props did not reach:
+ * widening the contract widened everything except the components that had restated it. The alias
+ * keeps every `Props` below reading as it did, and there is now one definition.
+ */
+type Props = WidgetProps
 
 /**
  * SH1012 — the one repeatable field, editable again.
@@ -56,7 +58,7 @@ interface Props {
  * The removed row is kept until another edit replaces it, so the mistake costs a click rather than
  * a retype.</p>
  */
-export function RelatorWidget({ attr, onChange, postId }: Props) {
+export function RelatorWidget({ attr, onChange, postId, labelledBy, describedBy, required }: Props) {
   const { t } = useTranslation()
   const items = attr.shChildrenRelatorItems ?? []
   const declared = attr.shPostTypeAttr?.shPostTypeAttrs ?? []
@@ -156,7 +158,15 @@ export function RelatorWidget({ attr, onChange, postId }: Props) {
   }
 
   return (
-    <div className="space-y-2">
+    // SH1052 — a group, not a control: this widget renders several, so the field's `htmlFor` has
+    // nothing single to own and the set names itself by the visible label instead.
+    <div
+      role="group"
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
+      aria-required={required ? "true" : "false"}
+      className="space-y-2"
+    >
       {items.length === 0 && (
         <p className="text-xs text-muted-foreground">
           {t("content.noRelatorItems", "No relator items.")}

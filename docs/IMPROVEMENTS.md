@@ -1527,6 +1527,34 @@ them apart on purpose, and a bug in both is what that decision quietly costs.
 The assertion is a planted opener in a string failing the strip by name, and the
 thirty-one suites green after.
 
+### LXIV.20 A control character where an escape was meant (SH1119)
+
+Two committed regexes contain a literal backspace, U+0008, where `\b` was meant. Found
+by `grep -P '\x08'` over the tree after SH1052 made the same mistake and caught it in
+review.
+
+`claude-plugin/test/plugin.test.mjs:196` reads `text.match(/<BS>SH\d{2,}<BS>/g)` and
+asserts the result is empty — it always is, since no source file contains a backspace.
+That check exists because five internal task ids once shipped in the published README,
+package description, fragment and a skill, and it has been asserting nothing since.
+`shio-react/test/unsaved-work.test.mjs:80` is a `doesNotMatch` for `useBlocker(` and
+`usePrompt(`, so it also always passes; SH1090 says calling either throws against this
+console's router.
+
+Both repair to green, checked before filing: the plugin's published files carry no
+`SH<n>` today, and the guard names both hooks only inside backticks, with no call. The
+fix is two characters; the value is that the gates start working — and it is a task
+because the repair is what finds out whether anything drifted while they were blind.
+
+The cause belongs with them: a shell heredoc expands `\b` before the file is written, so
+a scripted edit inserting a regex corrupts it silently where an editor tool would not.
+Same family as the stripper in the sibling line — an instrument that reads as working
+and checks nothing — reached by another route.
+
+The assertion is a repo-wide scan: no tracked source file contains a control character
+in the C0 range other than tab and newline. Three files named on the first run; a fourth
+is the finding.
+
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key
@@ -2388,25 +2416,6 @@ fills, or give the button a foreground the pair guarantees.
 Claim primary through the four base inputs, never by setting the compiled token, and
 turn the accent gate into a census of claimable families driven by the preset, so a new
 family fails Shio's build instead of silently rendering grey.
-
-### LXXII.10 Fields with names, state and a keyboard path (SH1052)
-
-The form renders a label with no htmlFor and then the widget, whose props carry no id,
-no labelledBy, no describedBy, no required and no invalid. So clicking a label focuses
-nothing, and every field on every post is announced as an unlabelled edit box. The
-required marker is a bare asterisk with no aria-required and no text alternative, and
-the description is an orphan paragraph with no aria-describedby.
-
-Widen the widget contract to carry a field id, a described-by id, required and invalid.
-Mint one stable, deterministic id per field in the form, so a render digest does not
-move, render the required marker as hidden plus an sr-only word from the bundles, and
-have each of the fifteen widgets forward the id and state to its own control, with
-composite widgets taking labelledBy. The File widget's drop zone is a div with onClick
-over an input hidden with display:none, which gives no keyboard path to attach a file,
-and the rich-text widget removes its focus ring with nothing in its place.
-
-The instruments: a source rule over the widget map asserting each component threads the
-id, and a rule that a form control hidden with display:none rather than sr-only fails.
 
 ### LXXII.11 A shell that owns the landmark, the skip link and focus (SH1053)
 

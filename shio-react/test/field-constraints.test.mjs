@@ -47,9 +47,15 @@ test("SH1010: the form says the rule before a save does, and never quotes the ex
   const form = read("src", "components", "widgets", "post-form-fields.tsx")
   const editor = read("src", "components", "field-constraints.tsx")
 
-  assert.match(form, /\{hint\(field\) && <p className="text-xs text-muted-foreground">/,
+  // SH1052 gave the paragraph an id so the control can point at it — the hint was prose nobody
+  // using a screen reader was told about. The claim is unchanged and the spelling moved, so this
+  // asserts the two halves rather than one line of markup.
+  assert.match(form, /\{hint\(field\) && \(/u,
     "SH1010: the whole point of the vocabulary reaching this form is that a rule stops being a "
       + "discovery on save")
+  assert.match(form, /id=\{`\$\{ids\.description\}-hint`\}/u,
+    "SH1052: and the hint carries an id the field's control names in `aria-describedby`, or the "
+      + "rule is shown to a sighted reader and to nobody else")
   assert.match(editor, /if \(rules\.patternMessage\) parts\.push\(rules\.patternMessage\)/)
   assert.doesNotMatch(editor, /parts\.push\([^)]*rules\.pattern\b[^M]/,
     "SH1010: the hint shows the message, never the expression")

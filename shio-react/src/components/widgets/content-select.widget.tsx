@@ -94,7 +94,7 @@ async function resolveFullPath(contentId: string): Promise<ResolvedContent | nul
   return null
 }
 
-export function ContentSelectWidget({ attr, onChange }: WidgetProps) {
+export function ContentSelectWidget({ attr, onChange, labelledBy, describedBy, required }: WidgetProps) {
   const { t } = useTranslation()
   const [browserOpen, setBrowserOpen] = useState(false)
   const [browserStartId, setBrowserStartId] = useState<string | undefined>(undefined)
@@ -147,7 +147,15 @@ export function ContentSelectWidget({ attr, onChange }: WidgetProps) {
   }
 
   return (
-    <div className="space-y-2">
+    // SH1052 — a group, not a control: this widget renders several, so the field's `htmlFor` has
+    // nothing single to own and the set names itself by the visible label instead.
+    <div
+      role="group"
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
+      aria-required={required ? "true" : "false"}
+      className="space-y-2"
+    >
       {attr.strValue ? (
         <div className="rounded-lg border bg-muted/30 overflow-hidden">
           {/* Clickable breadcrumb path — each segment opens browser at that folder */}
