@@ -11,6 +11,7 @@ import {
   Copy,
   Loader2,
   Monitor,
+  Plus,
   RefreshCw,
   Save,
   Smartphone,
@@ -29,7 +30,8 @@ import {
 } from "./field-labels"
 import { getWidget } from "@/components/widgets"
 import type {
-  ContentChange, FrameRect, SectionOp, SelectedElement, SelectedSection,
+  ContentChange, FrameRect, InsertableContainer, InsertableType, SectionOp, SelectedElement,
+  SelectedSection,
 } from "@/models/universal-editor/universal-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
 
@@ -69,6 +71,79 @@ type SectionArray =
  * div over the page would otherwise eat the next click, which is the click that selects the next
  * section. Only the toolbar takes the pointer back.
  */
+/**
+ * The catalogue, as something to place (SH1039).
+ *
+ * The rail is the whole of the answer's point: the section types used to reach the console as
+ * post-type names in a picker — a list of names — and what a curator needs is a thing they can put
+ * on the page. So each entry is the type's own title and description, and pressing it writes.
+ *
+ * `above` / `below` rather than a drag caret: the caret is what a drag needs, and the capability it
+ * expresses is *where*, which two buttons say exactly. With nothing selected there is no `where`
+ * to be relative to, and the section goes last — which on the empty page this exists for is also
+ * first.
+ */
+function SectionInserter({ container, relative, busy, t, onInsert }: {
+  container: InsertableContainer
+  /** Whether a section is selected, and the placement is relative to it. */
+  relative: boolean
+  busy: boolean
+  t: (key: string, options?: Record<string, unknown>) => string
+  onInsert: (type: InsertableType, after: boolean) => void
+}) {
+  if (!container.accepts.length) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        {/*
+          P6 inside an ordinary panel: an empty catalogue is the shape of both "nothing fits here"
+          and "nobody said", and the server distinguishes them. `fix` is present only for the
+          second, and it is the line that would give this page a catalogue.
+        */}
+        {container.fix ?? t("universalEditor.nothingFits")}
+      </p>
+    )
+  }
+  return (
+    <div className="space-y-2">
+      <div className="text-xs font-medium text-muted-foreground">
+        {t("universalEditor.addSection")}
+      </div>
+      {container.accepts.map((type) => (
+        <div key={type.type} className="rounded-md border p-2">
+          <div className="text-sm font-medium">{type.title || type.type}</div>
+          {type.description && (
+            <p className="text-xs text-muted-foreground mt-0.5">{type.description}</p>
+          )}
+          {type.provisioned ? (
+            <div className="flex gap-1 mt-2">
+              {relative && (
+                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={busy}
+                  onClick={() => onInsert(type, false)}>
+                  <Plus className="h-3 w-3 mr-1" />{t("universalEditor.insertAbove")}
+                </Button>
+              )}
+              <Button variant="outline" size="sm" className="h-7 text-xs" disabled={busy}
+                onClick={() => onInsert(type, true)}>
+                <Plus className="h-3 w-3 mr-1" />
+                {relative ? t("universalEditor.insertBelow") : t("universalEditor.insertAtEnd")}
+              </Button>
+            </div>
+          ) : (
+            /*
+              The template names it and this instance has not got it. Shown rather than hidden, for
+              the reason the server reports it rather than dropping it: the page declares the type,
+              so a shorter list would be a quieter lie than an honest gap.
+            */
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+              {t("universalEditor.typeNotProvisioned", { type: type.type })}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function SectionOverlay({ rect, label, position, index, of, writable, t, onOp }: {
   rect: FrameRect
   label: string
@@ -212,8 +287,19 @@ export default function VisualEditorPage() {
      * editing that works today. An explicit list is the only thing that narrows what is offered.
      */
     protocol: number; capabilities: string[] | null
+    /**
+     * SH1039 — the page the bridge says it is live on, as a post id.
+     *
+     * Kept because the catalogue is asked of the *page* and not of a selection: the case insertion
+     * exists for is a page that composes no sections yet, where there is nothing to click and
+     * therefore nothing that would otherwise name the page.
+     */
+    pagePostId: string | null
   }>(
-    () => ({ src: "", bridge: "waiting", frameLoaded: false, protocol: 1, capabilities: null }),
+    () => ({
+      src: "", bridge: "waiting", frameLoaded: false, protocol: 1, capabilities: null,
+      pagePostId: null,
+    }),
   )
   const [editMode, setEditMode] = useState(true)
   const [mobile, setMobile] = useState(false)
@@ -251,6 +337,17 @@ export default function VisualEditorPage() {
     entries: unknown[] | null
   }>({ key: "", entries: null })
   const [reordering, setReordering] = useState(false)
+  /**
+   * SH1039 — what may be added to this page, and where, as the server answers it.
+   *
+   * Keyed by the page the bridge reported rather than by the selection, because the case insertion
+   * exists for is a page that composes no sections: there is nothing to click, so a catalogue that
+   * arrived with a selection would never arrive at all on the emptiest page.
+   */
+  const [catalogue, setCatalogue] = useState<{ key: string; containers: InsertableContainer[] }>(
+    { key: "", containers: [] },
+  )
+  const [inserting, setInserting] = useState(false)
   // Why the site failed to resolve, if it did (SH181): a page that spins forever instead of
   // saying so is what let `GET /api/v2/site/{furl}` 404 twice and look like slow loading.
   const [siteError, setSiteError] = useState<string | null>(null)
@@ -387,13 +484,16 @@ export default function VisualEditorPage() {
       switch (msg.type) {
         case "sh:ready": {
           const announced = msg.data as
-            { protocol?: number; capabilities?: string[]; postType?: string } | undefined
+            { protocol?: number; capabilities?: string[]; postType?: string; postId?: string }
+            | undefined
           setHandshake((prev) => ({
             ...prev,
             src,
             bridge: "ready",
             frameLoaded: prev.src === src && prev.frameLoaded,
             protocol: announced?.protocol ?? 1,
+            // SH1039 — which page, so the catalogue can be asked without waiting for a click.
+            pagePostId: announced?.postId ?? null,
             // Only an ARRAY narrows anything. A v1 bridge sends no `capabilities` key at all, and
             // `null` here is what makes `claims` answer yes to everything.
             capabilities: Array.isArray(announced?.capabilities) ? announced.capabilities : null,
@@ -548,9 +648,46 @@ export default function VisualEditorPage() {
    * this replaces — it wrote state the render could have derived, and left one paint in which a
    * previous page's array was offered as this one's.
    */
-  const pageOfSection = selectedSection?.pagePostId ?? null
-  const sectionCount = selectedSection?.of ?? 0
-  const sectionKey = pageOfSection ? `${pageOfSection}|${sectionCount}` : ""
+  /**
+   * SH1039 — the catalogue, asked once per page the bridge reports.
+   *
+   * Tagged with the page it belongs to, like every other read on this screen, so a frame that
+   * navigated is simply not describing this one. Fetched on the handshake rather than on a
+   * selection: the page with nothing on it is the page most in need of an answer.
+   */
+  const pageOfFrame = handshake.src === src ? handshake.pagePostId : null
+  useEffect(() => {
+    if (!pageOfFrame || catalogue.key === pageOfFrame) return
+    let current = true
+    editorService.insertable(pageOfFrame).then((containers) => {
+      if (current) setCatalogue({ key: pageOfFrame, containers })
+    })
+    return () => { current = false }
+  }, [pageOfFrame, catalogue.key])
+
+  /**
+   * The one container this page composes, or `null` where it composes none — or more than one.
+   *
+   * **More than one is deliberately `null`.** `sh:component-selected` says a section's index and
+   * how many its container holds; it does not say *which* container, because the handle both halves
+   * can compute is document order and a selection carries only its own. So on a page with two
+   * ordered lists the console cannot tell which one an insert belongs to, and a rail offered there
+   * would write into whichever list it guessed. That is the rule the rest of this screen follows —
+   * a control that would write the wrong thing is worse than none — and it costs nothing today: a
+   * conversion and both blueprints compose exactly one.
+   */
+  const soleContainer: InsertableContainer | null =
+    catalogue.key && catalogue.key === pageOfFrame && catalogue.containers.length === 1
+      ? catalogue.containers[0]
+      : null
+
+  // SH1039 — the page the array belongs to is the selection's when there is one and the frame's
+  // otherwise, because an empty page has nothing to select and is exactly where an insert is
+  // wanted. `of` and the container's `holds` are the same number wherever both exist.
+  const pageOfSection = selectedSection?.pagePostId ?? pageOfFrame
+  const sectionCount = selectedSection?.of ?? soleContainer?.holds ?? null
+  const sectionKey = pageOfSection && sectionCount !== null
+    ? `${pageOfSection}|${sectionCount}` : ""
   const sectionArray: SectionArray = (() => {
     if (!sectionKey || loadedSections.key !== sectionKey) return { state: "loading" }
     return loadedSections.entries
@@ -623,6 +760,69 @@ export default function VisualEditorPage() {
     } finally {
       setReordering(false)
     }
+  }
+
+  /**
+   * SH1039 — place a new section of `type`, before or after the selected one.
+   *
+   * Two writes and not one, which is what an insert is: a section is a post, and the Page names it
+   * by reference. They are ordered so a failure leaves the smaller mess — the new post exists and
+   * the page does not name it, which a curator sees in the content browser, rather than the page
+   * naming a post that was never created, which is a dangling reference on a live page.
+   *
+   * The reference is spelled the way the array already spells its entries: a friendly URL where the
+   * neighbours are paths, the id where they are ids. Mixing the two resolves (SH181's order tries
+   * the id first) and would leave the file projection carrying one line unlike its siblings.
+   *
+   * The frame reloads afterwards, and that is not laziness: a new section's markup comes from the
+   * template, so there is nothing the bridge could have drawn optimistically the way it does for a
+   * move. `/preview` is draft-preferred, so the reload shows what was just written.
+   */
+  const insertSection = async (type: InsertableType, after: boolean) => {
+    const pageId = selectedSection?.pagePostId ?? pageOfFrame
+    if (!pageId || sectionArray.state !== "ready" || inserting || !type.provisioned) return
+    setInserting(true)
+    try {
+      // The type's own definition, for the field that carries a title. The catalogue does not say
+      // which one it is — that flag decides nothing about placing a section and would ride on every
+      // row of every catalogue (P3) — and this is one fetch on the one action that needs it.
+      const declared = await postTypeService.get(type.type).then((def) => def.fields).catch(() => [])
+      const titleField = declared?.find((field) => field.isTitle)?.name
+      const created = await editorService.create({
+        folderId: await folderForSection(pageId),
+        postType: type.type,
+        data: titleField
+          ? { [titleField]: t("universalEditor.newSection", { type: type.title ?? type.type }) }
+          : {},
+      })
+      const entries = [...sectionArray.entries]
+      const spellsPaths = entries.some((entry) => typeof entry === "string" && entry.startsWith("/"))
+      const reference = spellsPaths && created.furl ? created.furl : created.id
+      const at = selectedSection ? selectedSection.index + (after ? 1 : 0) : entries.length
+      entries.splice(at, 0, reference)
+      await editorService.patch(pageId, { [SECTIONS_FIELD]: entries })
+      toast.success(t("universalEditor.sectionInserted"))
+      refresh()
+    } catch {
+      toast.error(t("universalEditor.sectionInsertError"))
+    } finally {
+      setInserting(false)
+    }
+  }
+
+  /**
+   * Where a new section post goes: beside the sections this page already has, else beside the page.
+   *
+   * A conversion writes every section into one folder and names it by address, so the neighbour is
+   * the right answer whenever there is one. The fallback is the honest case of the first section on
+   * a page nobody has composed yet — there is no neighbour to be beside, and the page's own folder
+   * is the only place the curator is already looking.
+   */
+  const folderForSection = async (pageId: string): Promise<string> => {
+    const neighbour = selectedSection?.postId
+    const source = neighbour ?? pageId
+    const post = await editorService.editable(source)
+    return post.shFolder?.id ?? ""
   }
 
   // The declared label for a field name, or "" when the schema has not arrived (or has no
@@ -883,6 +1083,10 @@ export default function VisualEditorPage() {
                   {t("universalEditor.duplicateHint")}
                 </p>
               )}
+              {soleContainer && sectionArray.state === "ready" && (
+                <SectionInserter container={soleContainer} relative busy={inserting}
+                  t={t} onInsert={insertSection} />
+              )}
             </div>
           ) : selected ? (
             <div className="space-y-3">
@@ -938,9 +1142,20 @@ export default function VisualEditorPage() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <h3 className="font-semibold mb-1">{t("universalEditor.noSelection")}</h3>
-              <p className="text-sm text-muted-foreground">{t("universalEditor.noSelectionDescription")}</p>
+            <div className="space-y-4">
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <h3 className="font-semibold mb-1">{t("universalEditor.noSelection")}</h3>
+                <p className="text-sm text-muted-foreground">{t("universalEditor.noSelectionDescription")}</p>
+              </div>
+              {/*
+                SH1039 — and the rail is here too, with nothing selected. That is the case insertion
+                exists for: a page composing no sections has nothing to click, so a rail that only
+                appeared beside a selection would never appear on the emptiest page.
+              */}
+              {soleContainer && sectionArray.state === "ready" && (
+                <SectionInserter container={soleContainer} relative={false} busy={inserting}
+                  t={t} onInsert={insertSection} />
+              )}
             </div>
           )}
         </aside>

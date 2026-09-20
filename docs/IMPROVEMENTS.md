@@ -2132,26 +2132,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.4 A server-owned catalogue of what fits where (SH1039)
-
-The editable endpoint returns the fields drawn and the regions declared, with no
-insertable set, no per-container allow-list and no catalogue. The shared section types
-reach the console as post-type names in a picker. So an editor that BF3 lets select and
-move a section still cannot add one, which leaves that task half a feature.
-
-A Handlebars renderer is the right owner for the catalogue, because only the template
-knows what a container accepts. An insertable endpoint returns, per container on the
-page, the section types it accepts, with title, description, the fields the properties
-panel will draw and a thumbnail reference. Restriction rides on the container as an
-accepts attribute the template declares. Insert is a batch of two operations, upsert the
-new section and upsert the Page's array, which is already atomic.
-
-The console gets an inserter rail showing the catalogue for the selected container, with
-thumbnails rendered by the preview route against a fixture so no browser runs in the
-JVM, and an insertion caret between sections. MCP gains the catalogue as an include on
-the editable read. The assertions insert a section into a container that accepts it, and
-are refused, with the allowed list, for one that does not.
-
 ### LXXI.5 Patterns: a good block becomes a file (SH1040)
 
 Every blueprint today is whole-site or whole-page, with a fixed target and no mode that
@@ -2232,6 +2212,55 @@ duplicates a section as two writes: copy the section post into its own folder, t
 replace the Page's array with the new address beside the old one. The address is the
 copy's own, which keeps the entry in the format the rest of the array uses. The
 assertion is that two placements of one section share a heading and two copies do not.
+
+### LXXI.9 A rail you can see, and something to drop onto (SH1105)
+
+The rail names each accepted type and describes it, which is already the difference
+between a list of post-type names and something to place. It is still the wrong medium
+for the choice being made: a curator picking between a hero and a rich-text block is
+picking a shape, and a sentence is the worst way to show one.
+
+SH1039's design named the answer and the constraint together. A thumbnail is the preview
+route rendering that type against a fixture of placeholder values — **HTML, not a
+raster**, which keeps it inside the non-goal that the instance does not run a browser.
+Same render path a page takes, so it cannot show a section the site would not draw, and
+cacheable by type and theme.
+
+The caret is the other half and belongs with it. Placement today is two buttons, above
+and below the selection, which states *where* and needs no drag at all. What a drag
+needs is a drop target between sections, and the console can draw one from the geometry
+the bridge already sends for the overlay. They are one piece of work because the caret
+exists to receive something a visual rail can be dragged from; buttons over a text rail
+need neither.
+
+The assertions are that a thumbnail renders through the preview path rather than a
+second one, and that a drop between two sections writes the same array a Below button
+writes.
+
+### LXXI.10 The allow-list read by something that is not a screen (SH1106)
+
+`sh-accepts` is read by the console, which offers only the types it names, and by
+nothing else. An agent writes a Page's sections array through `post.upsert` and no check
+consults the layout, so a page can name a section of a type its own template says does
+not belong there — and the page still renders, because the template draws whatever the
+array resolves to.
+
+SH1039's design proposed refusing that write, with the allowed list. **That is the wrong
+instrument**, and the reason is what a narrowing costs: the allow-list lives in a
+layout, and layouts are edited. Refusing on write would make an existing page unwritable
+the moment somebody narrowed its template — a content change refused because of an edit
+nobody connected to it. It also misreads the declaration: it is a *template's statement
+about composition*, not an authorization boundary, and nothing about the agent path is
+less trusted than the console's.
+
+So it is a finding rather than a 400, beside `dangling-reference`, which is the same
+shape one field over: content that resolves and should not have been pointed at. `shio
+verify` already walks a site's pages and already resolves their references; what it does
+not do is read the layout the page renders through, which is a static resolve through
+`site.postTypeLayout` and needs no render.
+
+The assertion is a page naming a section of an undeclared type, reported once, with the
+accepted list in the finding.
 
 ## LXXII The console as an application: cost, resilience and access (Block BG)
 

@@ -574,6 +574,24 @@ renderer over one body of content at a second address. See the section on it bel
   is provisioned would be a second place for it to be wrong. The CLI's generated layout declares what
   the conversion provisions — on `<body>`, since `{{#getRelation sections}}` is a block and not an
   element, so `<body>` *is* the container — and both blueprints declare their eight.
+- **And a curator places one (SH1039)** — the console reads that catalogue through
+  `ShUniversalEditorService.insertable`, on the session and by `id:` address, the way SH996's
+  publish routes already read `/agent/read`. The rail shows each accepted type by *its own title and
+  description* rather than as a post-type name, which is the whole difference between a list and
+  something to place. **An insert is two writes in that order**: create the section as a DRAFT, then
+  replace the Page's array — the order decides what a failure leaves, since a new post the page does
+  not name is something a curator finds in the browser, while a page naming a post that was never
+  created is a dangling reference on a live page. The reference is spelled the way the array already
+  spells its entries, a furl where the neighbours are paths and the id where they are ids. The frame
+  **reloads** afterwards, which is not laziness: a new section's markup comes from the template, so
+  there is nothing the bridge could draw optimistically the way it does for a move, and `/preview`
+  is draft-preferred so the reload shows what was written. `above`/`below` rather than a drag caret —
+  the caret is what a *drag* needs and the capability it expresses is *where*, which two buttons say.
+  Two limits, both deliberate: the rail appears only where the page composes **exactly one**
+  container, because `sh:component-selected` says how many a container holds and not *which* one it
+  is, so a second list would be written into by a guess; and a declared type this instance has not
+  provisioned is **shown and not offered**, for the same reason the server reports it rather than
+  dropping it.
 - **The panel draws the field the model declares (SH1037)** — it used to be a bare `<Input>` for an
   `attr` field and read-only text for everything else, so a `Date` was a string, a `Check Box` was
   `"1"` and a `Content Select` was a UUID — and `affordance="panel"`, the field a caret cannot

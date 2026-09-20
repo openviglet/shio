@@ -153,3 +153,49 @@ export type SelectedSection = {
  * finds it out by editing one of them has been surprised, which is the thing P7 forbids.
  */
 export type SectionOp = "move" | "remove" | "duplicate"
+
+/**
+ * One field of an insertable type, as the catalogue states it (SH1039).
+ *
+ * `required` is the one flag that changes what an insert has to supply, which is why the terse form
+ * of the catalogue carries only those: SH582 is the measured case of deriving fields and never
+ * comparing them with the required set, which left a replica failing `verify` with content complete.
+ */
+export type InsertableField = {
+  name: string
+  label: string
+  widget: string
+  required: boolean
+}
+
+/**
+ * One type a container accepts, resolved against this instance (SH1039).
+ *
+ * `provisioned: false` is a real answer: the template names the type, so dropping it would report a
+ * shorter catalogue than the page declares. The console shows it and does not offer it, because
+ * placing one would create a post of a type that does not exist.
+ */
+export type InsertableType = {
+  type: string
+  title: string | null
+  description: string | null
+  provisioned: boolean
+  fields: InsertableField[]
+}
+
+/**
+ * One place on the page that composes an ordered list of sections (SH1039).
+ *
+ * `index` is document order, which is the one handle both halves can compute — `{{#getRelation}}`
+ * takes the field's *value*, so the field's name is gone by the time markup exists. `fix` is present
+ * exactly when `accepts` is empty **because nobody declared anything**, which is a different
+ * situation from a container that genuinely holds nothing.
+ */
+export type InsertableContainer = {
+  index: number
+  region: string | null
+  holds: number
+  sections: string[]
+  accepts: InsertableType[]
+  fix: string | null
+}

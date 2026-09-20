@@ -1,5 +1,6 @@
 import axios from "@/lib/axios"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
+import type { InsertableContainer } from "@/models/universal-editor/universal-editor.model"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 
 /**
@@ -38,6 +39,31 @@ export class ShUniversalEditorService {
   }
 
   /**
+   * SH1039 — what may be added to this page, and where, asked of the one thing that knows.
+   *
+   * The agent surface on the curator's own session, not a second implementation of the question.
+   * The catalogue is read off the *rendered* page — which container composes sections, what its
+   * template declares it accepts, and each of those types resolved against this instance — and the
+   * console cannot read the framed document, because it is another origin. `ShPostUnifiedService`
+   * already reads `/v2/agent/read` this way for SH996's publish routes, so the precedent and the
+   * `id:` address are both established (SH172's escape hatch: the console holds an id and the agent
+   * surface is addressed).
+   *
+   * A failure answers an empty list rather than throwing: the catalogue is what the console offers
+   * on top of an editor that works without it, and an insert rail that cannot load must not take
+   * the rest of the panel with it.
+   */
+  async insertable(pageId: string): Promise<InsertableContainer[]> {
+    try {
+      const response = await axios.get<{ containers?: InsertableContainer[] }>("/v2/agent/editable",
+        { params: { address: `id:${pageId}`, include: "insertable" } })
+      return response.data?.containers ?? []
+    } catch {
+      return []
+    }
+  }
+
+  /**
    * The row a write would be composed against: the draft, or the live one where there is no draft.
    *
    * SH1038 needs the Page's own ordered section array before it can replace it, and the preview in
@@ -53,6 +79,20 @@ export class ShUniversalEditorService {
     } catch {
       return await this.posts.get(postId, "PUBLISHED")
     }
+  }
+
+  /**
+   * SH1039 — create the section an insert places, as a draft.
+   *
+   * Through the console's own post service, so there is one caller of that endpoint (SH985) and one
+   * idea of what creating a post means. A draft rather than published: a section nobody has written
+   * a word into is not something to put in front of visitors, and the curator publishes the page
+   * when it says what they meant.
+   */
+  async create(
+    req: { folderId: string; postType: string; data: Record<string, unknown> },
+  ): Promise<ShPostUnified> {
+    return this.posts.create({ ...req, state: "DRAFT" })
   }
 
   /**
