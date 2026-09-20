@@ -556,6 +556,26 @@ renderer over one body of content at a second address. See the section on it bel
   it. The console writes `sections` — the one name the generated layout uses — and offers the
   controls only when the Page's own row holds an array as long as the list on screen; a page composing
   from another field gets the header and the position with no buttons.
+- **An edit can be taken back, and a refresh stops lying about what is pending (SH1041)** — the
+  pending map had two operations, set and clear-on-success: no per-field revert, no discard, and a
+  refresh that reloaded the frame while deliberately keeping the changes, so the badge counted edits
+  that were no longer on screen and Save still wrote them. **Nothing recorded the value that was
+  there before an edit**, and only the page could: `sh:content-changed` fires *after* the change.
+  So the bridge takes a baseline when a field gains focus and sends `was` on every message; the
+  console keeps the **first**, which is what makes an undo mean *before I started on this field*
+  rather than *before the last keystroke*. Reverting needed the other half too — `sh:field-set` was
+  the panel's write-back for an `attr` field and could not reach a **text** one, so clearing an
+  entry would have left the frame showing text the editor was no longer going to save, which is a
+  worse lie than having no revert. It now writes both, a `plain` field as text and a `rich` one as
+  markup (SH1037's decision about what each can hold), and moves the page's baseline with it. A
+  refresh **replays** the pending edits into the reloaded frame rather than asking: asking makes a
+  reload cost a decision, and replaying makes the page and the count agree without one. Discard is
+  confirmed because it is the one control here that destroys work rather than writing it, and both
+  exits ask — `useUnsavedGuard` for the three the router never sees, and the screen's own buttons
+  for themselves, since this console mounts a `BrowserRouter` and `useBlocker` needs a data router.
+  **No Ctrl+Z**: a `contenteditable` already has the browser's own undo, which fires `input` and so
+  is reported like any other edit, and a console-level shortcut competing with it inside a focused
+  field would be two undos for one keystroke.
 - **What fits in a container is declared, not derived (SH1039)** — an editor that can select and move
   a section still could not add one, because nothing said which types fit where: `/agent/editable`
   answered fields and regions with no catalogue, and the shared section types reached the console as

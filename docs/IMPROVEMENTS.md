@@ -2132,26 +2132,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.6 An edit log with undo, and a refresh that tells the truth (SH1041)
-
-The pending map has two operations, set and clear on success. There is no per-field
-revert, no discard-all and no keyboard undo. Refresh reloads the iframe and resets the
-handshake and deliberately keeps the changes, so the badge counts edits no longer
-visible and Save still writes them. Leaving the route is unguarded. Nothing records the
-value that was there before an edit, so nothing can undo one.
-
-The pending map becomes an ordered change log. Capturing the prior value on the first
-content-changed message for a key is enough, since the message already exists and only
-the record is missing. A control on each row reverts one field by posting the original
-value into the frame, Discard all reverts everything, and Ctrl+Z walks the log. Refresh
-replays pending changes into the reloaded frame or asks, and never silently diverges.
-Leaving with pending changes asks.
-
-The log serialises into the change-set shape the agent path already uses, and a save
-closes its loop by returning the structural and appearance digest pair with a one-line
-delta, measured first, reported through SH972's dock. The assertions edit, undo, refresh
-and save, and read the digest delta.
-
 ### LXXI.7 A share link that unlocks Shio's own renderer (SH1042)
 
 The preview path sits under the authenticated rule and was deliberately removed from
@@ -2266,6 +2246,28 @@ out.
 
 The assertion is a pattern captured, pushed and then placed from the rail, with the
 resulting section array matching the one the CLI writes for the same pattern.
+
+### LXXI.12 A save that says what moved (SH1109)
+
+A save in the visual editor returns a toast. Every other surface closes its loop with
+cheap textual proof — P9 is the law — and the one where a person just changed content by
+hand ends with the word *saved* and a page they have to look at to believe.
+
+The parts are built and unjoined. `/agent/render` answers a structural and an appearance
+digest for any address, SH1041's change log holds an ordered set of edits keyed by post
+and field, and SH972's dock is where a console surface reports. What nothing does is
+take a digest pair before the write and another after it, and say what moved.
+
+The delta is the deliverable, not the digests. Two hashes side by side tell a reader
+only that something differs, which they knew — they pressed Save. One line naming what
+changed, and whether the appearance moved when only text was edited, catches the defect
+this editor is most likely to produce: an inline edit that reflows a layout nobody meant
+to touch. Measured first, because two extra renders on a large page is a save a curator
+waits for, and that number decides whether the pair is taken always or on request.
+
+The log also serialises into the change-set shape the agent path answers with, so what a
+curator did reads like what an agent did. The assertion is a save whose delta names the
+field that moved, and a text-only edit reported as leaving the appearance alone.
 
 ## LXXII The console as an application: cost, resilience and access (Block BG)
 

@@ -20,7 +20,9 @@
  *                                                     navigated (SH1036): `url` is the page it is
  *                                                     live on, and the console re-keys on it
  *   sh:element-selected  SelectedElement            a curator clicked an editable element
- *   sh:content-changed   ContentChange              an editable element's text changed
+ *   sh:content-changed   ContentChange              an editable element's text changed; `was` is
+ *                                                     what it held before this round of typing,
+ *                                                     which only the page can know (SH1041)
  *   sh:navigating        { to, from }               a click in the page is leaving for another one
  *   sh:component-selected SelectedSection            a curator clicked a section, not a field of it
  *   sh:section-geometry  { rect }                   where the selected section is NOW, so the
@@ -29,7 +31,10 @@
  *
  * console → page
  *   sh:mode-change       { mode: "edit"|"preview" } toggle affordances on and off
- *   sh:field-set         { postId, prop, value }    write an attribute field the panel edited
+ *   sh:field-set         { postId, prop, value }    write a field the console decided: an
+ *                                                     attribute one the panel edited (SH503), or
+ *                                                     a text one being reverted or replayed into
+ *                                                     a reloaded frame (SH1041)
  *   sh:section-op        { op, index, to }          move, remove or duplicate the selected
  *                                                     section, applied optimistically here while
  *                                                     the console writes the Page's array
@@ -402,6 +407,40 @@
         if (pair.prop === data.prop) el.setAttribute(pair.attr, value);
       });
     });
+    // SH1041 — and a TEXT field, which this message could not reach. Reverting an edit and
+    // replaying one into a reloaded frame are the same act as SH503's write-back — put this value
+    // where that field is drawn — and there was no way to say it for the kind of field a curator
+    // edits most. Without it a revert clears the console's count and leaves the page showing the
+    // text it is no longer going to save, which is worse than having no revert at all.
+    document.querySelectorAll(FIELD).forEach(function (el) {
+      if (ownerOf(el) !== data.postId || el.getAttribute("data-shio-prop") !== data.prop) return;
+      // `plaintext-only` refuses markup on the way IN from a paste, and nothing refuses it on the
+      // way in from here — so a plain field is written as text, which is the same decision SH1037
+      // made about what that field can hold.
+      if (el.getAttribute("data-shio-affordance") === "plain") el.textContent = value;
+      else el.innerHTML = value;
+      // The baseline moves with it: after a revert, what was there is what is there now, so a
+      // second edit of the same field reports the value the curator just went back to.
+      el.shioWas = value;
+    });
+  }
+
+  /**
+   * What a field held before this round of typing (SH1041).
+   *
+   * **Only the page can answer it.** `sh:content-changed` fires after the change, so the console
+   * sees the new value and never the old one — it had no way to offer a revert, which is why the
+   * pending set could only be cleared all at once. The baseline is taken when a field gains focus
+   * and at the moment edit mode is turned on, so the first edit of a session reports the value the
+   * page was serving.
+   */
+  function baselineOf(el) {
+    return el.shioWas === undefined ? el.innerHTML : el.shioWas;
+  }
+
+  function onFieldFocus(event) {
+    var el = event.currentTarget;
+    if (el.getAttribute("data-shio-prop")) el.shioWas = el.innerHTML;
   }
 
   function onFieldInput(event) {
@@ -419,6 +458,9 @@
       prop: el.getAttribute("data-shio-prop"),
       type: "text",
       value: el.innerHTML,
+      // SH1041 — what to put back. It travels on every message and the console keeps the first,
+      // which is what makes an undo mean "before I started" rather than "before the last keystroke".
+      was: baselineOf(el),
       label: labelOf(el.getAttribute("data-shio-prop"))
     });
   }
@@ -690,6 +732,8 @@
       el.shioBound = true;
       el.addEventListener("input", onFieldInput);
       el.addEventListener("click", onFieldClick);
+      // SH1041 — the baseline a revert goes back to, taken before the typing rather than after it.
+      el.addEventListener("focus", onFieldFocus);
     });
   }
 

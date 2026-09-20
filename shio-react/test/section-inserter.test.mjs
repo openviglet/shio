@@ -92,3 +92,47 @@ test("SH1039: a type the instance has not got is shown and not offered", () => {
     + "that: it says so, and does not offer a button that would create a post of a type that does "
     + "not exist")
 })
+
+// --- SH1041: undo, discard, and a refresh that tells the truth ---
+
+test("SH1041: the first `was` for a field is the one the log keeps", () => {
+  // Every `sh:content-changed` carries a baseline; the first carries what the field held before the
+  // curator started on it and each one after it carries what it held a keystroke ago. Keeping the
+  // first is what makes Revert mean "undo this edit" rather than "undo the last character".
+  assert.match(PAGE, /first \? \{ \.\.\.c, was: first\.was \} : c/,
+    "if this becomes a plain set, the log still counts and undoes one keystroke")
+})
+
+test("SH1041: a revert writes the page as well as the log", () => {
+  const post = PAGE.indexOf('postToIframe("sh:field-set", {\n      postId: change.postId')
+  const forget = PAGE.indexOf("next.delete(`${change.postId}:${change.prop}`)")
+  assert.ok(post > 0 && forget > 0 && post < forget,
+    "clearing the entry alone leaves the frame showing text the editor is no longer going to save, "
+    + "which is a worse lie than having no revert at all")
+  assert.match(PAGE, /if \(change\.was === undefined\) return/,
+    "and an entry from a bridge that sends no baseline has nothing to go back to, so it is not "
+    + "offered a control that would write `undefined` into the page")
+})
+
+test("SH1041: a refresh replays the pending edits instead of diverging from them", () => {
+  // Refresh reloaded the iframe and kept the changes deliberately, so the badge counted edits that
+  // were no longer on screen and Save still wrote them - the page and the count saying different
+  // things, which is the shape of every defect on this screen.
+  assert.match(PAGE, /replayRef\.current = true/)
+  assert.match(PAGE, /if \(!ready \|\| !replayRef\.current\) return/,
+    "replayed from an effect and not from the message handler: the handler runs against the "
+    + "`changes` its closure captured, and the replay has to send the set as it is now")
+})
+
+test("SH1041: throwing work away is confirmed, and leaving with it pending asks", () => {
+  assert.match(PAGE, /universalEditor\.discardConfirm/,
+    "Discard is the one control here that destroys work rather than writing it (P7)")
+  assert.match(PAGE, /universalEditor\.leaveConfirm/)
+  assert.match(PAGE, /useUnsavedGuard\(changes\.size > 0\)/,
+    "SH1011's guard covers the three exits the router never sees - the tab closes, the page "
+    + "reloads, a link leaves the console - and registers only while something is pending, "
+    + "because a handler that always fires is a dialog everybody clicks through")
+  assert.equal(PAGE.includes("onClick={() => navigate(ROUTES.UNIVERSAL_EDITOR)}"), false,
+    "every one of this screen's own exits goes through the guard, or the one that does not is "
+    + "the one a curator will find")
+})

@@ -16,6 +16,7 @@ import {
   Save,
   Smartphone,
   Trash2,
+  Undo2,
   Upload,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -34,6 +35,7 @@ import type {
   SelectedSection,
 } from "@/models/universal-editor/universal-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
+import { useUnsavedGuard } from "@/hooks/use-unsaved-guard"
 
 const siteService = new ShSiteService()
 const editorService = new ShUniversalEditorService()
@@ -392,6 +394,15 @@ export default function VisualEditorPage() {
    * cannot say which navigation it was about.
    */
   const reportedPageRef = useRef<string>("")
+  /**
+   * SH1041 — a reloaded frame is owed the edits it no longer shows.
+   *
+   * A ref and then an effect, rather than posting from inside the message handler: the handler runs
+   * while `changes` is whatever the closure captured, and the replay has to send the set as it is
+   * now. The effect reads current state, which is the difference between replaying the edits and
+   * replaying the ones that existed when the listener was registered.
+   */
+  const replayRef = useRef(false)
   const readyCountRef = useRef(0)
   const readyAtLoadRef = useRef(0)
   const loadsRef = useRef(0)
@@ -515,6 +526,13 @@ export default function VisualEditorPage() {
             // be a request for a page nobody has clicked in yet.
             loadedLabelsRef.current = null
             setFieldLabels({})
+          } else if (reported) {
+            // SH1041 — the SAME page came back, which is a refresh. The changes are still pending
+            // and the frame no longer shows them, so the badge counted edits that were not on
+            // screen and Save would have written them anyway. Replaying is the honest repair and
+            // the better one: asking would make a reload cost a decision, while this makes the page
+            // and the count agree again without one.
+            replayRef.current = true
           }
           break
         }
@@ -559,7 +577,14 @@ export default function VisualEditorPage() {
           if (!c.postId || !c.prop) break
           setChanges((prev) => {
             const next = new Map(prev)
-            next.set(`${c.postId}:${c.prop}`, c)
+            // SH1041 — the pending set becomes an ordered change LOG, and the one thing that must
+            // not move is `was`: the first message for a key carries what the field held before the
+            // curator started on it, and every message after it carries what it held a keystroke
+            // ago. Keeping the first is what makes Revert mean "undo this edit" rather than "undo
+            // the last character". Map preserves insertion order, so the log is the order the edits
+            // were made in and Discard all can walk it.
+            const first = prev.get(`${c.postId}:${c.prop}`)
+            next.set(`${c.postId}:${c.prop}`, first ? { ...c, was: first.was } : c)
             return next
           })
           break
@@ -591,6 +616,33 @@ export default function VisualEditorPage() {
   useEffect(() => {
     if (ready) postToIframe("sh:mode-change", { mode: editMode ? "edit" : "preview" })
   }, [ready, editMode, postToIframe])
+
+  /**
+   * SH1041 — put the pending edits back into a frame that reloaded without them.
+   *
+   * Refresh used to reload the iframe and keep the changes deliberately, which left the badge
+   * counting edits that were no longer on screen and Save still writing them — the page and the
+   * count saying different things, which is the shape of every defect on this screen.
+   */
+  useEffect(() => {
+    if (!ready || !replayRef.current) return
+    replayRef.current = false
+    for (const change of changes.values()) {
+      postToIframe("sh:field-set", {
+        postId: change.postId, prop: change.prop, value: change.value,
+      })
+    }
+  }, [ready, changes, postToIframe])
+
+  /**
+   * SH1011's guard, on this screen at last.
+   *
+   * It covers the three exits the router never sees — the tab closes, the page reloads, a link
+   * leaves the console — and it registers only while something is pending, because a handler that
+   * always fires is a dialog everybody clicks through. The editor's own exits ask for themselves
+   * below, since this console mounts a `BrowserRouter` and `useBlocker` needs a data router.
+   */
+  useUnsavedGuard(changes.size > 0)
 
   // SH303 — resolve the declared field labels rather than reading them off the page: one place
   // declares a label, and it is the post-type. SH305 — and it is the *selected post's* type, not
@@ -829,6 +881,10 @@ export default function VisualEditorPage() {
   // label for it) — the caller falls back to the name the bridge sent.
   const labelFor = (prop?: string | null) => (prop ? fieldLabels[prop] ?? "" : "")
 
+  /** The pending edit for one field of the selected post, if there is one (SH1041). */
+  const pendingFor = (prop?: string | null): ContentChange | undefined =>
+    (prop && selected?.postId ? changes.get(`${selected.postId}:${prop}`) : undefined)
+
   /**
    * The declared field for a prop, when the type has arrived and names a widget (SH1037).
    *
@@ -899,6 +955,56 @@ export default function VisualEditorPage() {
     if (iframeRef.current) iframeRef.current.src = src
   }
 
+  /**
+   * SH1041 — put one field back to what it was, in the page and in the log.
+   *
+   * Both halves, and the second is what was missing: clearing the entry alone would leave the frame
+   * showing text the editor is no longer going to save, which is a worse lie than having no revert.
+   * An entry with no `was` — a v1 bridge, or `@viglet/shio-editor-cors` — has nothing to go back to
+   * and is not offered one.
+   */
+  const revert = (change: ContentChange) => {
+    if (change.was === undefined) return
+    postToIframe("sh:field-set", {
+      postId: change.postId, prop: change.prop, value: change.was,
+    })
+    setChanges((prev) => {
+      const next = new Map(prev)
+      next.delete(`${change.postId}:${change.prop}`)
+      return next
+    })
+  }
+
+  /**
+   * Discard every pending edit, newest first.
+   *
+   * Newest first because two edits to one field collapse into one entry carrying the oldest `was`,
+   * so order only matters for the page's own sake — and reverting in reverse is what a reader
+   * expects of an undo-everything. Confirmed, because it is the one control here that throws work
+   * away rather than writing it (P7).
+   */
+  const discardAll = () => {
+    if (!changes.size) return
+    if (!globalThis.confirm(t("universalEditor.discardConfirm", { count: changes.size }))) return
+    for (const change of [...changes.values()].reverse()) {
+      if (change.was !== undefined) {
+        postToIframe("sh:field-set", {
+          postId: change.postId, prop: change.prop, value: change.was,
+        })
+      }
+    }
+    setChanges(new Map())
+    toast.success(t("universalEditor.discarded"))
+  }
+
+  /** Leaving the editor with work pending asks, because the router cannot (SH1011's note). */
+  const leave = (to: string) => {
+    if (changes.size && !globalThis.confirm(t("universalEditor.leaveConfirm", {
+      count: changes.size,
+    }))) return
+    navigate(to)
+  }
+
   // A new destination is a new handshake. SH703 — that is now a property of the state rather than
   // an effect that repairs it: the handshake carries the `src` it belongs to, so navigating from a
   // page that answered to one that does not reads as `waiting` on the first render instead of
@@ -909,7 +1015,7 @@ export default function VisualEditorPage() {
       {/* Sticky save bar */}
       <div className="sticky top-0 z-10 flex items-center justify-between bg-orange-50 dark:bg-orange-950/30 px-4 py-3 border-b">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.UNIVERSAL_EDITOR)}>
+          <Button variant="ghost" size="sm" onClick={() => leave(ROUTES.UNIVERSAL_EDITOR)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="font-semibold">{t("universalEditor.title")}</span>
@@ -931,7 +1037,17 @@ export default function VisualEditorPage() {
             </Label>
           </div>
           {changes.size > 0 && (
-            <Badge variant="secondary">{changes.size} {t("universalEditor.changes")}</Badge>
+            <>
+              <Badge variant="secondary">{changes.size} {t("universalEditor.changes")}</Badge>
+              {/*
+                SH1041 — the pending set could be cleared only by a successful save, so the only way
+                out of an edit somebody regretted was to make it again backwards. This walks the log
+                and puts every field back where it was, in the page as well as in the count.
+              */}
+              <Button variant="ghost" size="sm" onClick={discardAll}>
+                <Undo2 className="h-4 w-4 mr-1" /> {t("universalEditor.discardAll")}
+              </Button>
+            </>
           )}
           <Badge variant="outline" className={BRIDGE_BADGE[bridge]}>
             {t(BRIDGE_LABEL[bridge])}
@@ -966,7 +1082,7 @@ export default function VisualEditorPage() {
           {siteError && (
             <div className="flex flex-col items-center justify-center gap-3 text-center">
               <p className="max-w-md text-sm text-muted-foreground">{siteError}</p>
-              <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.UNIVERSAL_EDITOR)}>
+              <Button variant="outline" size="sm" onClick={() => leave(ROUTES.UNIVERSAL_EDITOR)}>
                 {t("universalEditor.selectSite")}
               </Button>
             </div>
@@ -1045,7 +1161,7 @@ export default function VisualEditorPage() {
                 <Button variant="outline" size="sm" onClick={refresh}>
                   <RefreshCw className="h-4 w-4 mr-1" /> {t("universalEditor.refresh")}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.UNIVERSAL_EDITOR)}>
+                <Button variant="ghost" size="sm" onClick={() => leave(ROUTES.UNIVERSAL_EDITOR)}>
                   {t("universalEditor.selectSite")}
                 </Button>
               </div>
@@ -1099,8 +1215,24 @@ export default function VisualEditorPage() {
               <div className="space-y-2">
                 {(selected.fields ?? []).map((f) => (
                   <div key={f.prop} className="rounded-md border p-2">
-                    <div className="text-xs font-medium text-muted-foreground">
-                      {labelFor(f.prop) || f.label || f.prop}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        {labelFor(f.prop) || f.label || f.prop}
+                      </div>
+                      {/*
+                        SH1041 — per field, and only where there is somewhere to go back to. A v1
+                        bridge and `@viglet/shio-editor-cors` send no `was`, so that entry has no
+                        original and is not offered a control that would write `undefined` into the
+                        page — the same rule the rest of this screen follows about a button that
+                        would do the wrong thing.
+                      */}
+                      {pendingFor(f.prop)?.was !== undefined && (
+                        <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs"
+                          title={t("universalEditor.revertField")}
+                          onClick={() => revert(pendingFor(f.prop)!)}>
+                          <Undo2 className="h-3 w-3 mr-1" /> {t("universalEditor.revert")}
+                        </Button>
+                      )}
                     </div>
                     {f.type === "attr" && claims("field-set") ? (
                       <Input

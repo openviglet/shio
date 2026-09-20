@@ -272,6 +272,11 @@ test("an edit to an owned field carries the post, the prop and the value", async
     prop: "TITLE",
     type: "text",
     value: "Edited",
+    // SH1041 — and what it held before, which only the page can know: the message fires after the
+    // change, so without this the console saw the new value and never the old one and had nothing
+    // to revert to. Here it is the edited text itself, because the harness dispatched no focus
+    // event and the element's own content is the fallback.
+    was: "Edited",
     label: "TITLE",
   }]);
 });
@@ -387,6 +392,97 @@ test("the affordances are scoped so preview leaves no trace", async () => {
     assert.ok(rule.includes('[data-shio-editing="true"]'),
       `every rule is scoped under the editing flag, or preview would not restore the page: ${rule}`);
   }
+});
+
+// --- SH1041: what a field held before the typing, and putting it back ---
+
+test("SH1041: an edit carries what the field held before it, which only the page knows", async () => {
+  const { window, document, posted } = await pageWithBridge(PAGE, { bodyAttrs: BODY_ATTRS });
+  const title = document.querySelector('[data-shio-post="page-1"] [data-shio-prop="TITLE"]');
+
+  title.dispatchEvent(new window.FocusEvent("focus"));
+  title.innerHTML = "Edited";
+  title.dispatchEvent(new window.Event("input", { bubbles: true }));
+
+  // `sh:content-changed` fires AFTER the change, so the console sees the new value and never the
+  // old one — which is why the pending set could only ever be cleared all at once.
+  assert.equal(messagesOfType(posted, "sh:content-changed").at(-1).was, "Hello");
+});
+
+test("SH1041: the baseline is what the field held before this round, not a keystroke ago", async () => {
+  const { window, document, posted } = await pageWithBridge(PAGE, { bodyAttrs: BODY_ATTRS });
+  const title = document.querySelector('[data-shio-post="page-1"] [data-shio-prop="TITLE"]');
+
+  title.dispatchEvent(new window.FocusEvent("focus"));
+  for (const text of ["H", "He", "Hey"]) {
+    title.innerHTML = text;
+    title.dispatchEvent(new window.Event("input", { bubbles: true }));
+  }
+
+  // Every message carries the same original. The console keeps the first either way, and the two
+  // halves agreeing is what makes an undo mean "before I started on this field".
+  assert.deepEqual(
+    messagesOfType(posted, "sh:content-changed").map((change) => change.was),
+    ["Hello", "Hello", "Hello"]);
+});
+
+test("SH1041: an edit with no focus event still reports a baseline", async () => {
+  const { window, document, posted } = await pageWithBridge(PAGE, { bodyAttrs: BODY_ATTRS });
+  const title = document.querySelector('[data-shio-post="page-1"] [data-shio-prop="TITLE"]');
+
+  // A field reached by keyboard, or a page whose focus event the harness does not reproduce. The
+  // element's own content is the honest fallback and is right for the first edit of a session.
+  title.innerHTML = "Edited";
+  title.dispatchEvent(new window.Event("input", { bubbles: true }));
+
+  assert.equal(messagesOfType(posted, "sh:content-changed").at(-1).was, "Edited",
+    "the fallback is the element as it is now: wrong by one edit, and never undefined, which is "
+    + "what the console checks before offering a revert at all");
+});
+
+test("SH1041: the console can write a TEXT field back, which is what a revert is", async () => {
+  const { window, document } = await pageWithBridge(PAGE, { bodyAttrs: BODY_ATTRS });
+  const title = document.querySelector('[data-shio-post="page-1"] [data-shio-prop="TITLE"]');
+  title.innerHTML = "Edited";
+
+  sendFromParent(window, {
+    type: "sh:field-set",
+    data: { postId: "page-1", prop: "TITLE", value: "Hello" },
+  });
+
+  // Clearing the console's count alone would leave the frame showing text the editor is no longer
+  // going to save — a worse lie than having no revert at all.
+  assert.equal(title.innerHTML, "Hello");
+});
+
+test("SH1041: a plain field is written as text, because that is what it can hold", async () => {
+  const { window, document } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+
+  sendFromParent(window, {
+    type: "sh:field-set",
+    data: { postId: "page-1", prop: "TITLE", value: "<b>bold</b>" },
+  });
+
+  // SH1037 made `plaintext-only` refuse markup on the way in from a paste, and nothing refused it
+  // on the way in from here. The same decision about what the field can hold applies to both.
+  const title = document.querySelector('[data-shio-prop="TITLE"]');
+  assert.equal(title.textContent, "<b>bold</b>");
+  assert.equal(title.querySelector("b"), null);
+});
+
+test("SH1041: after a revert the baseline moves with it", async () => {
+  const { window, document, posted } = await pageWithBridge(PAGE, { bodyAttrs: BODY_ATTRS });
+  const title = document.querySelector('[data-shio-post="page-1"] [data-shio-prop="TITLE"]');
+
+  sendFromParent(window, {
+    type: "sh:field-set", data: { postId: "page-1", prop: "TITLE", value: "Reverted" },
+  });
+  title.innerHTML = "Edited again";
+  title.dispatchEvent(new window.Event("input", { bubbles: true }));
+
+  assert.equal(messagesOfType(posted, "sh:content-changed").at(-1).was, "Reverted",
+    "what was there is what is there now, so a second edit reports the value the curator just "
+    + "went back to rather than the one they had already undone");
 });
 
 // --- SH1037: a field's declared widget decides what the browser offers ---

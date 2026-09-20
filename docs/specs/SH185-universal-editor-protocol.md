@@ -223,8 +223,20 @@ type SelectedElement = {
   fields?: Array<{ prop: string; type: string; label: string; value: string; attr?: string }>
 }
 
-type ContentChange = { postId: string; prop: string; type: string; value: string; label: string }
+type ContentChange = {
+  postId: string; prop: string; type: string; value: string; label: string
+  was: string   // SH1041 - what the field held before this round of typing
+}
 ```
+
+**`was` is on every message and only the page can supply it (SH1041).** `sh:content-changed` fires
+*after* the change, so the console sees the new value and never the old one — which is why its
+pending set could be cleared all at once and never one entry at a time. The bridge takes the
+baseline when a field gains focus, so the first edit of a session reports what the page was serving;
+every later message for that field carries the same value, and the console keeps the **first**,
+which is what makes an undo mean *before I started on this field* rather than *before the last
+keystroke*. A bridge that sends none leaves the entry with nothing to revert to, and the console
+offers no control rather than writing `undefined` into the page.
 
 `sh:element-selected` carries **every** editable field of the same post, not only the one
 clicked, so the properties panel can show the whole set without a round trip.
@@ -234,8 +246,15 @@ clicked, so the properties panel can show the whole set without a round trip.
 | Type | `data` | When |
 |---|---|---|
 | `sh:mode-change` | `{ mode: "edit" \| "preview" }` | the curator toggles the switch |
-| `sh:field-set` | `{ postId, prop, value }` | the panel edited an `attr` field, so the page can show it (SH503) |
+| `sh:field-set` | `{ postId, prop, value }` | the console decided a field's value: the panel edited an `attr` one (SH503), or a text one is being reverted or replayed into a reloaded frame (SH1041) |
 | `sh:section-op` | `{ op: "move" \| "remove" \| "duplicate", index, to? }` | reorder the **selected** section, optimistically, while the console writes the Page's array (SH1038) |
+
+`sh:field-set` reaches **both kinds** of field since SH1041. It was the panel's write-back for an
+`attr` field, and a text field — the kind a curator edits most — could not be written at all, so the
+console could clear a pending edit and not undo it. A `plain` field is written as `textContent` and
+a `rich` one as `innerHTML`, which is the same decision SH1037 made about what each can hold; the
+page's baseline moves with the write, so a second edit reports the value the curator just went back
+to rather than one they had already undone.
 
 Preview mode restores the page exactly: the affordances are scoped under a
 `data-shio-editing` flag on `<html>`, because a curator switching to preview is asking to see

@@ -41,6 +41,19 @@ export type ContentChange = {
   value: string
   label: string
   selector?: string
+  /**
+   * SH1041 — what the field held before this round of typing, so the edit can be undone.
+   *
+   * **Only the page can answer it.** `sh:content-changed` fires after the change, so the console
+   * sees the new value and never the old one — which is why the pending set could be cleared all at
+   * once and never one entry at a time. The console keeps the **first** `was` it sees for a key, so
+   * an undo means *before I started on this field* rather than *before the last keystroke*.
+   *
+   * Absent from a v1 bridge and from `@viglet/shio-editor-cors`, where the entry simply has nothing
+   * to revert to — which the panel says, rather than offering a control that would write `undefined`
+   * into the page.
+   */
+  was?: string
 }
 
 // The element the bridge reports as selected (sh:element-selected).
