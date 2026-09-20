@@ -2342,26 +2342,6 @@ code, so their additions are visible as raises rather than folded into a baselin
 Resilience and access follow, and the assistant dock from Block AX already carries the
 announcements this block would otherwise have to build.
 
-### LXXII.6 Validators on the console's reads (SH1048)
-
-The CDA cache configuration registers the shallow ETag filter and a cache-control filter
-for the CDA pattern; the agent web configuration registers its own for the agent and CDA
-patterns. The other filter registrations are the tenant filter and an error recorder. So
-the object listing, post-unified, post types, sites, static files and widgets, every
-endpoint the console actually calls, carry no validator and no freshness hint.
-
-The measurement lands first, in the shape of the agent's response-budget test: the bytes
-each console read returns for the seeded sample site, checked in, so a payload
-regression fails the build. Then extend the registration to the console namespace, minus
-mutating and streaming paths, reusing the shallow ETag filter and a cache-control of
-no-cache, which means revalidate rather than refetch. It sits below authentication and
-rate limiting, so a 401, 403 or 429 never receives a validator, the rule the CDA
-configuration already states.
-
-MCP and the CLI benefit for free, since they call the same REST. With BG4 in place a
-stale-while-revalidate becomes a 304. The assertion: a repeated read with its ETag
-answers 304 with no body.
-
 ### LXXII.7 Failures that stay in their panel and say what to do (SH1049)
 
 The app mounts one boundary around everything, and the codebase's own prose records
@@ -2697,6 +2677,32 @@ Worth doing in slices, since each screen's failure path is its own.
 
 The assertion is the list shrinking with every slice, and the browser probe green after
 each.
+
+### LXXII.22 Conditional reads from the CLI, where they are not free (SH1117)
+
+SH1048's design said MCP and the CLI benefit for free, since they call the same REST.
+Half of that is true, and the false half is the half worth having.
+
+A browser gets it free: `no-cache` plus an `ETag` means it keeps the body and
+revalidates, and axios goes through that cache. Node has none. `cli/src` sends
+`If-None-Match` in one place — `clone` probing *external* assets it is copying — and
+never to Shio's own API, so every `shio pull`, `verify`, `digest` and `context` pays the
+full body against an unchanged instance — the case a CLI is in most of the time.
+
+The shape exists next door. `clone.mjs` keeps `etag`/`lastModified` per row, sends the
+conditional `GET` and counts the unconditional ones, which is the accounting this wants:
+without a count, a store that stopped matching reads as a server that never answers 304.
+
+What needs deciding is where the validators live. A per-invocation store is useless —
+the CLI exits — so it is a file, and files are state the CLI has been careful about:
+`shio/` is content, not cache. Somewhere ignored, keyed by instance and address,
+invalidated by nothing, since the validator *is* the invalidation.
+
+MCP is a separate answer: it reaches the agent surface, which carries semantic
+validators of its own, so the question there is whether a long-lived session keeps one.
+
+The assertion is a second identical read costing no body, counted rather than claimed,
+and a stale store failing loudly rather than re-fetching everything.
 
 ## LXXIII One content model, many languages (Block BH)
 

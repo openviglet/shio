@@ -223,8 +223,15 @@ class ShContextCacheHeadroomTest {
      *
      * The two cross-database ITs SH1033 added cost nothing on this budget: Failsafe runs them,
      * they are opt-in behind {@code -DskipITs=false}, and each brings its own container.
+     *
+     * SH1048 spent one more, to 76. ShConsoleCacheFilterTest prices the bytes of eight console
+     * reads, and three of them — the site list, the post-type list, the widget catalogue — describe
+     * the <em>whole instance</em>: on the shared context their size is whatever every other class
+     * happened to create, so the budget would fail on suite order rather than on a payload growing.
+     * That is SH315's rule by name, and it is the same argument ShAgentResponseBudgetTest makes for
+     * the context it already holds beside this one.
      */
-    private static final int DECLARED_CONTEXTS = 75;
+    private static final int DECLARED_CONTEXTS = 76;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

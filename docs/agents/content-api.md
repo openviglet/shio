@@ -1231,3 +1231,41 @@ Only `image`, `video` and `audio` are prefixes. `document`, `archive` and `other
 exclusions, and a predicate for those would be `categoryOf` written twice in two languages,
 agreeing until somebody edits one. Those read every row and filter in the service, which is what
 they did before.
+
+## A validator on the console's own reads (SH1048)
+
+SH3 gave the delivery API a body-hash `ETag` and a `Cache-Control`; SH116 gave the agent surface
+conditional reads of its own. Everything the **console** calls — `/api/v2/object/…/list`,
+`/api/v2/post-unified`, `/api/v2/post-type`, `/api/v2/site`, `/api/v2/staticfile`, `/api/v2/widget`
+— answered a full `200` with no validator and no freshness hint. A curator walking a tree and
+coming back paid for every byte again, and so did the CLI and MCP, which call the same REST.
+
+`ShConsoleCacheFilter` is one `ShallowEtagHeaderFilter` over `/api/v2/*`, and it is one class rather
+than two because the `Cache-Control` has to be stamped *before* the body is written to survive the
+`304` the same filter produces — two registrations with two patterns is two chances to exclude the
+streaming endpoint from one of them.
+
+**`no-cache` is not `no-store`.** It means revalidate: the browser may keep the body and must ask
+before reusing it. That is the whole saving — the second read is a conditional request that comes
+back empty, not a request nobody makes. It is `private`, because a console read depends on the
+caller's rights and their tenant and a shared proxy must not hold it at all.
+
+**Four exclusions, and the first two are correctness rather than economy.** The filter buffers the
+whole response in memory to hash it, so `/api/v2/events` would become Server-Sent Events that never
+reach the browser, and `…/export` would put however many megabytes the zip weighs on the heap for a
+validator nobody asks about twice. The other two are `/api/v2/cda/` and `/api/v2/agent/`, which
+already have their own — hashing a delivery body twice is the cost, and a *shallow* body hash
+landing over SH116's **semantic** validator is the defect.
+
+It is registered at `LOWEST_PRECEDENCE - 20`, which is two claims held by an assertion rather than a
+comment: **after** the Spring Security chain (`-100`), so a `401`, `403` or `429` never receives an
+`ETag` — a validator on a refusal is a client that caches the refusal — and **inside** SH124's cost
+header (`-30`), which has to see a conditional `304` as the zero-byte response it really is.
+
+**The measurement landed with the fix, not after it**, and it is the part worth keeping. A 304 saves
+whatever the body costs, and nothing here knew what a console body costs. P3 makes a token
+regression a build failure on the agent's half; `console-response-budgets.properties` is the same
+rule on the half a *person* waits for, in the unit a person pays. Eight reads against a fixed
+fixture, so a breach means the shape got bigger rather than the database did, with a headroom check
+for SH736's reason — a ceiling at its measurement refuses the next field instead of pricing it. The
+widget catalogue is the largest at 2,165 bytes and the only one a new widget legitimately grows.

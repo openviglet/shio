@@ -95,9 +95,8 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1048** (deps: SH1046 ✅) **the console API sends no ETag and no Cache-Control, so an unchanged read costs its full body every time** — Both cache filters are registered for the delivery and agent paths only, so every endpoint the console calls answers a full 200 with no validator. → §LXXII.6
 - 📋 **SH1049** (deps: SH1046 ✅, SH955 ✅) **one error boundary guards the whole console, and a failed fetch leaves a spinner that never ends** — A render throw blanks the application, an unhandled load settles into a permanent spinner, and the design system's load provider and skeleton are used by nothing. → §LXXII.7
-- 📋 **SH1050** (deps: SH1048, SH991 ✅, SH1003 ✅) **the dashboard downloads two whole collections to show two numbers** — Home fetches every site and every post type to use their length, and in an agent-first CMS its question should be what the agent did that nobody has looked at. → §LXXII.8
+- 📋 **SH1050** (deps: SH1048 ✅, SH991 ✅, SH1003 ✅) **the dashboard downloads two whole collections to show two numbers** — Home fetches every site and every post type to use their length, and in an agent-first CMS its question should be what the agent did that nobody has looked at. → §LXXII.8
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
 - 📋 **SH1052** (deps: —) **every post-editor field is a label with no htmlFor over a widget that cannot take an id** — The widget contract is attr, onChange and postId, so a screen reader meets each field of every post type as an unnamed edit box and a label click focuses nothing. → §LXXII.10
 - 📋 **SH1053** (deps: DS VDS141, SH964) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
@@ -111,6 +110,7 @@
 - 📋 **SH1113** (deps: SH1043 ✅) **nothing measures what one console route costs, so a screen's own fetches hide inside a total** — SH1043 counts the bytes every route pays before the first row, which is blind to a page that then fetches three collections to draw two figures. → §LXXII.19
 - 📋 **SH1114** (deps: SH1045 ✅) **the reachability walk reads one manifest of eleven, and four of the ten it skips are published** — SH1045 found eighteen dead declarations in the console and nothing asks the same question of the CLI, the SDKs or the starter, where a consumer pays for the answer. → §LXXII.20
 - 📋 **SH1116** (deps: SH1046 ✅, SH1047 ✅) **thirty-five console screens still read inside an effect and cancel nothing** — SH1047 migrated the five its symptom named and declared the rest, so the same race is recorded rather than fixed on every other screen that fetches. → §LXXII.21
+- 📋 **SH1117** (deps: SH1048 ✅) **the CLI never sends If-None-Match to Shio, so every run pays the full body of an unchanged read** — SH1048 made the console's reads answer 304, which a browser takes for free and Node does not — the CLI sends a conditional GET only to external assets it clones. → §LXXII.22
 
 ## Block BH — One content model, many languages
 
