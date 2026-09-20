@@ -84,7 +84,7 @@
 
 ## Block BF — The visual editor becomes a composer
 
-- 📋 **SH1040** (deps: SH1039 ✅) **a well-built block on one page cannot be captured and reused as a pattern** — Blueprints have a fixed target, no insert mode and no capture, so the section a curator perfected must be rebuilt by hand or by an agent every time it is wanted. → §LXXI.5
+- ⏳ **SH1040** (deps: SH1039 ✅) **a well-built block on one page cannot be captured and reused as a pattern** — The console's own half — a Patterns tab beside the section types in the inserter rail, and Save as pattern over a selection, both writing through the same capture path. → §LXXI.5
 - 📋 **SH1041** (deps: SH1036 ✅) **the visual editor has no undo or discard, and a refresh leaves pending changes counted that are no longer visible** — The pending set supports set and clear-all only, refresh reloads the frame without touching it, and leaving the route drops edits without asking. → §LXXI.6
 - 📋 **SH1042** (deps: —) **a stakeholder cannot be sent an expiring link to a draft rendered by Shio itself** — The preview route is console-authenticated and the token mint returns a null token for an internal site, so only sites with an external front end can be previewed by anyone else. → §LXXI.7
 - 📋 **SH1101** (deps: SH1038 ✅) **a copied post comes back with no id, so duplicating a section can only place the same one twice** — `copyto` returns only the folders it made, so nothing can address a post it just copied, and the editor's Duplicate repeats the reference instead. → §LXXI.8
@@ -163,6 +163,13 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
+
+## Done when — SH1040
+
+- **A curator saves and places a pattern without leaving the editor** The capture and
+  the placement are a CLI verb, which is the agent's half; a curator who composed the
+  block is the person most likely to know it is worth keeping, and the rail is where
+  they already are.
 
 ## Non-goals (do NOT add as tasks)
 

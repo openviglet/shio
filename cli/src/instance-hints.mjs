@@ -63,6 +63,11 @@ export const NOTES_COMMANDS = new Set([
   // DELETION, which is the one place a standing note most needs to be in front of the reader:
   // "keep the press kit even though nothing links it yet" is exactly what a curator writes down.
   "assets",
+  // SH1040 — it reads the same instance with console credentials and it WRITES sections onto a
+  // page somebody else composed, which is where a standing note is most likely to be about the
+  // thing being done: "the pricing block on /about is deliberate" is exactly what a curator
+  // writes down and exactly what a pattern apply would otherwise walk over.
+  "patterns",
 ]);
 
 /**

@@ -124,6 +124,10 @@ const DECLARED = new Map(Object.entries({
   "docs/agents/cli.md | is not part of | SH477,SH658":
     "An archetype's mark whose aria-label repeats its visible text. False if the archetype set "
     + "grows one, which is a change in this repository's own corpus.",
+  "docs/agents/blueprints.md | is not here":
+    "`shio_apply --at --mode insert`, which SH1040's design named and which needs the SERVER to "
+    + "hold the pattern. False the day a project file can reach the registry without the "
+    + "marketplace's upload — a change to how `shio.blueprint.path` is filled, not to a doc.",
   "docs/agents/renderer.md | are not here":
     "Rebasing a reference `snapshot --against` can still measure. False if the snapshot "
     + "comparison stops depending on the original's own paths.",

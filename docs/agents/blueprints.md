@@ -852,3 +852,49 @@ rule because that is where the rule is owned, it reaches across modules the way
 `scripts/marketplace.mjs` already does, and it refuses to pass on an empty sweep — a moved
 blueprints tree would otherwise report a clean result. Verified by restoring one dash: the rule
 fires and names the file.
+
+## Patterns: a block that works becomes a file (SH1040)
+
+Every blueprint is whole-site or whole-page, with a fixed target and no mode that inserts into an
+existing page, and nothing captured an arrangement that already existed. So a curator who got a
+pricing block right could only reuse it by rebuilding it — or by asking an agent to, which is the
+same work moved. `shio patterns save|list|apply` closes that: a pattern is
+`shio/patterns/<name>.json`, the types and field values of a page's sections in order.
+
+**A file in the tree, not a package in the registry, and that reverses the design's own
+sentence.** SH1040 said patterns join the blueprint registry. They do not, because of where each
+thing lives: the registry scans the *server's* classpath and one operator directory, while the tree
+is the *project*, which the server cannot see and has no business writing into. Putting a captured
+pattern in the registry therefore means uploading it, which is the marketplace's job and a different
+task. A pattern is content an agent authors, and P4 is explicit that files beat APIs for authoring —
+`Edit`, `Write` and `Grep` are what make a captured block reviewable in a pull request, which is the
+property the design was after when it cited Gutenberg's file-registered patterns.
+
+**Apply composes; it does not write.** A pattern application is a desired-state document — the
+sections it creates, plus the target Page re-declared — handed to the same `plan`/`applyConfirmed`
+engine every other document goes through, so it is one batch, one transaction and the same teaching
+errors. The Page is re-declared **whole** because SH168 says an upsert declares whole state: sending
+`sections` alone would clear its title. Reading it first is also what makes `--after` mean anything,
+since it counts the array the page actually has.
+
+Three properties worth keeping. **Names are derived, so a re-apply is idempotent** — the same
+pattern into the same page writes the same posts rather than a second copy, and `--as` is how a
+caller asks for two. **The sections land beside the page's own**, in the folder its first section is
+in (`/sections` when it has none), because a conversion and both blueprints already follow that
+convention and a pattern must not invent a second. **An unfilled `{{placeholder}}` is refused before
+anything is written**, with the pattern's declared parameters in the refusal: leaving it in writes
+literal braces onto a live page, which reads as a rendering bug three steps from its cause.
+
+A capture writes **literal** values and says so on stdout — a pattern only becomes reusable once
+somebody decides which of those values are the pattern and which were that page's, and that decision
+is a hand edit replacing a value with `{{name}}` and declaring it under `params`. That is the
+smallest thing that could work, and it is the one a diff shows.
+
+**Why no MCP tool arrives with this.** A pattern application *is* a desired-state document, and
+`shio_apply` and `shio_write` already take documents — so an agent holding the file and the target
+page can compose and send exactly what `patterns apply` sends, without a thirteenth tool that
+`ShMcpServerTest` would refuse anyway. What the verb adds is the composition: reading the page,
+deriving idempotent urls, splicing at a position. That is convenience over a surface that is already
+reachable, which is the one case P1's order does not oblige, and it is also why the design's
+`shio_apply --at --mode insert` is not here: that would need the *server* to hold the pattern, which
+means uploading a project file, which is the marketplace's job.

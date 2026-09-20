@@ -95,7 +95,9 @@ const BOOLEANS = [
 // apply a package with defaults the caller believed they had overridden (SH93). `address` is a
 // set for the same reason (SH640): `diff --against published --address a --address b` asks about
 // both, and last-one-wins would quietly answer about one of them.
-const REPEATABLE = ["param", "address"];
+// SH1040 — `section` joins them for the same reason: `patterns save --section 0 --section 2`
+// asks for both, and last-one-wins would capture one of them without saying which.
+const REPEATABLE = ["param", "address", "section"];
 
 const COMMANDS = {
   init: () => import("./commands/init.mjs"),
@@ -139,6 +141,7 @@ const COMMANDS = {
   deploy: () => import("./commands/deploy.mjs"),
   doctor: () => import("./commands/doctor.mjs"),
   assets: () => import("./commands/assets.mjs"),
+  patterns: () => import("./commands/patterns.mjs"),
 };
 
 const HELP = helpText("shio");

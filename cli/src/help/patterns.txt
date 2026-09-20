@@ -1,0 +1,22 @@
+shio patterns — capture a block that works, place it somewhere else
+
+A pattern is `shio/patterns/<name>.json`: the types and field values of a page's sections, in
+order. Captured values are literal; replace the ones that should vary with {{name}} and declare
+them under `params`. Applying places new section posts beside the target page's own and extends
+its array, as one document through the ordinary apply engine.
+
+  save <name> --from <address>   Capture a page's sections
+    --section <n>                Only this position, repeatable; omit for all
+    --title <text>               A human name for the pattern
+  list                           Every pattern in the tree
+  apply <name> --at <address>    Place it in a page
+    --after <n>                  After n sections; 0 first, omit for last
+    --as <name>                  Name this placement, so one page can hold two
+    --param name=value           Fill a {{name}}, repeatable
+    --dry-run                    Plan it and write nothing
+
+Names are derived from --as, so applying twice writes the same posts rather than a copy.
+
+Examples:
+  shio patterns save pricing --from post:Acme/pricing --section 1
+  shio patterns apply pricing --at post:Acme/about --after 0 --param headline=Plans

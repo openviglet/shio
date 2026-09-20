@@ -284,8 +284,13 @@ const UNEXERCISED = {
     // assert it is not offered for pruning, unreference it, assert it is. A scripted fetch proves
     // the arithmetic and the zero-versus-absent refusal (assets-prune.test.mjs) and cannot prove
     // that the number the server sent was true.
+    // `patterns` arrives with SH1040 and is unwritten rather than out of scope, for the reason
+    // `assets` gives one entry up: what a scripted fetch proves is the DOCUMENT this verb composes,
+    // and what only a live run can prove is that applying it leaves the page it names holding the
+    // sections in the order it asked for — capture from one page, place into another, read the
+    // second back. The composition is asserted in `patterns.test.mjs`; the outcome is not.
     "annotations", "apply", "assets", "audit", "build", "deploy", "dev", "impact", "import",
-    "judge",
+    "judge", "patterns",
     // `schedule` arrives with SH991, and for `versions`' reason: it needs a live instance holding a
     // scheduled post, which a live scenario has and a scripted fetch invents.
     "mcp", "publish", "remember", "report", "rollback", "schedule", "snapshot", "surfaces", "types",
