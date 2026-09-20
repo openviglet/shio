@@ -84,11 +84,11 @@
 
 ## Block BF — The visual editor becomes a composer
 
-- ⏳ **SH1038** (deps: SH1037 ✅) **a section is not a selectable object, so the editor can change a hero's headline and never the hero** — Move, remove and duplicate, each resolving to one replacement of the Page's section array, and the console-drawn overlay a stylesheet cannot provide. → §LXXI.3
-- 📋 **SH1039** (deps: SH1038 ⏳) **nothing tells the editor what may be inserted into a page, or where** — The editable response returns fields and regions and no insertable set, so the section types reach the console only as post-type names in a picker, never as something to place. → §LXXI.4
+- 📋 **SH1039** (deps: SH1038 ✅) **nothing tells the editor what may be inserted into a page, or where** — The editable response returns fields and regions and no insertable set, so the section types reach the console only as post-type names in a picker, never as something to place. → §LXXI.4
 - 📋 **SH1040** (deps: SH1039) **a well-built block on one page cannot be captured and reused as a pattern** — Blueprints have a fixed target, no insert mode and no capture, so the section a curator perfected must be rebuilt by hand or by an agent every time it is wanted. → §LXXI.5
 - 📋 **SH1041** (deps: SH1036 ✅) **the visual editor has no undo or discard, and a refresh leaves pending changes counted that are no longer visible** — The pending set supports set and clear-all only, refresh reloads the frame without touching it, and leaving the route drops edits without asking. → §LXXI.6
 - 📋 **SH1042** (deps: —) **a stakeholder cannot be sent an expiring link to a draft rendered by Shio itself** — The preview route is console-authenticated and the token mint returns a null token for an internal site, so only sites with an external front end can be previewed by anyone else. → §LXXI.7
+- 📋 **SH1101** (deps: SH1038 ✅) **a copied post comes back with no id, so duplicating a section can only place the same one twice** — `copyto` returns only the folders it made, so nothing can address a post it just copied, and the editor's Duplicate repeats the reference instead. → §LXXI.8
 
 ## Block BG — The console as an application: cost, resilience and access
 
@@ -129,6 +129,7 @@
 - 📋 **SH1067** (deps: —) **replication lives only in the CLI, with no manifest feature key the P1 census could classify** — shio clone, convert and propose are a differentiator with no MCP reach and no console entry, and without a key ShAgentP1ConformanceTest cannot see the gap at all. → §LXXIV.5
 - 📋 **SH1068** (deps: —) **the conformance gate knows none of the vocabulary this round adds, so its docs checks stay green over new names** — pnpm conformance pins documented tools, ops, properties and verbs against the code, and the round adds dozens with no line updating its vocabulary sources. → §LXXIV.6
 - 📋 **SH1069** (deps: —) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — The block-completion sweep of docs-shio, the coverage matrix and the public site is required when a block's last task ships, and no block here declares one. → §LXXIV.7
+- 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads `document.referrer` and `schema.graphqls` as symbols this repository should define, so six correct ledger entries keep the gate permanently red. → §LXXIV.8
 
 ## Priority
 
@@ -159,14 +160,6 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
-
-## Done when — SH1038
-
-- **A curator can move, duplicate and remove a section from the page** The bridge
-  accepts move, remove and duplicate for an optimistic reorder, each confirmed by a
-  write, and every one resolves to a single replacement of the owning Page's section
-  array — no new write path. The overlay is console-drawn rather than an injected
-  stylesheet, which cannot draw a toolbar or an insertion caret.
 
 ## Non-goals (do NOT add as tasks)
 

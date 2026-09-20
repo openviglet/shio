@@ -2132,27 +2132,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.3 Sections as objects on the page (SH1038)
-
-The bridge listens on two prop attributes and reports an item type of text or attr. The
-model is already there: a Page names its sections by address in order, every section
-field is annotated, and a per-section handle is emitted in converted markup and read by
-the server's region walk, so the handle exists, the server reads it and the browser
-bridge does not. The properties panel has no component header, no move control and no
-delete.
-
-Add a component item type. The region composer emits the section type, its index in the
-owning Page's ordered list, and a container attribute on the element composing them, so
-the DOM records position as well as identity. The bridge gains a component-selected
-message and accepts move, remove and duplicate for optimistic reorder, each confirmed by
-a write, and every one resolves to a single deterministic write: replace the owning
-Page's section array.
-
-The agent can already do this, since post.upsert writes that array and the file
-projection carries it as a diffable line, so no new write path is needed. The overlay
-becomes a console-drawn layer instead of a stylesheet the page injects, because a
-stylesheet cannot draw a toolbar or an insertion caret.
-
 ### LXXI.4 A server-owned catalogue of what fits where (SH1039)
 
 The editable endpoint returns the fields drawn and the regions declared, with no
@@ -2232,6 +2211,27 @@ no-store and noindex access, never the editor bridge, with the preview banner ke
 A list-and-revoke endpoint makes active links visible and killable. shio share prints
 the URL, the most useful thing an agent can hand a person at the end of a run. The
 assertion: an anonymous request with no credential is still refused.
+
+### LXXI.8 A copy that can be addressed (SH1101)
+
+Duplicate in the visual editor repeats the reference rather than the post, because the
+array holds addresses and one replacement of it can only say "place this again". The
+console names that in the control's own title, so nobody is surprised by it, and it is
+still not what a curator means: they want a second hero they can edit without touching
+the first.
+
+An independent copy needs a post copy whose id the caller can read, and no surface
+answers one. `PUT /api/v2/object/copyto/{dest}` builds the copy correctly, bytes and a
+free title and furl included, and then returns only the folders it made: `copyPost` adds
+nothing to that list, so the endpoint answers `[]` for a post. Anything that copies one
+and then has to write about it is blocked the same way, which is why this is filed
+against the write path rather than against the panel.
+
+So the copy verb answers with what it made, in the shape a create does, and the editor
+duplicates a section as two writes: copy the section post into its own folder, then
+replace the Page's array with the new address beside the old one. The address is the
+copy's own, which keeps the entry in the format the rest of the array uses. The
+assertion is that two placements of one section share a heading and two copies do not.
 
 ## LXXII The console as an application: cost, resilience and access (Block BG)
 
@@ -2911,3 +2911,25 @@ of that block's new keys and surfaces has a documented row.
 The honest reason this is not housekeeping is the round's own thesis that discovery is a
 product feature, which applies to a person reading shio.viglet.org as much as to an
 agent reading the manifest.
+
+### LXXIV.8 A docs gate that can come back clean (SH1102)
+
+`roadkeep lint` reports six `code.renamed` findings on ledger entries that were correct
+when they were written, and has done so across many commits. Three symbols between them:
+`document.fonts` and `document.referrer`, which are the browser's and not this
+package's, and `schema.graphqls`, which is a filename. The rule reads a dotted name in
+backticks as a member of a symbol this repository ought to define, finds no `document`
+and no `schema`, and calls it drift.
+
+The cost is not those six. It is that the gate cannot come back clean, so the next
+finding — a class that really was renamed, a pointer into code that moved — arrives at
+the bottom of a list nobody reads to the bottom of. That is SH579's rule about a red
+suite one file along: a check that always fails has stopped being a check.
+
+Two ways out, and choosing is the task. Reword the six, which this project's own
+configuration argues against: `[rules.changelog]` already declares that those entries
+are paragraphs written before the tool existed and that no edit short of deleting them
+satisfies its prose rules. Or declare what the rule must not read as a symbol — the
+browser globals, and a dotted name whose tail is a file extension — which is a roadkeep
+change and belongs upstream. The assertion is that `lint` exits clean here and still
+fails on a symbol this repository really has renamed.

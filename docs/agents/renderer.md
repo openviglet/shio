@@ -529,10 +529,33 @@ renderer over one body of content at a second address. See the section on it bel
   around it is the hero, and a link is a navigation** — no extra chrome needed to tell them apart.
   `sections` is claimed as a capability only when the page has one. A page with no sections is
   byte-identical to what it was.
-  Still to come: move, remove and duplicate — each one deterministic (replace the Page's array) — and
-  the console-drawn overlay a stylesheet cannot provide, since it cannot draw a toolbar or an
-  insertion caret. The panel shows a section's identity and position and no controls, deliberately: a
-  button that does nothing is worse than a header that tells the truth.
+  **And then the three verbs, each one replacement of that array.** `sh:section-op`
+  (`move`/`remove`/`duplicate`) acts on **what the curator selected** and on nothing the message
+  names — with two composed lists there are two sections at index 0, so `{op, index}` identifies two
+  elements and a move would rewrite whichever the selector reached first. It is applied
+  **optimistically**, because the write is a draft merge and the frame renders the *published* row:
+  nothing about the write makes that document change, so a curator would press Move and watch the
+  page sit still. The bridge then re-derives every position (document order changed, so the recorded
+  order has to) and rebinds fields, since `cloneNode` copies children and no listeners — a duplicate's
+  copy would otherwise be outlined, editable-looking and inert. The console reloads the frame when its
+  write is refused, which is the only case the two can disagree.
+  **The overlay is the console's, and that is the point**: every other affordance is an injected
+  stylesheet, which is right for a field — an outline and a caret are things CSS can express — but a
+  section needs a toolbar, and the buttons have to live where the writes are. So the page sends
+  `rect` with the selection and `sh:section-geometry` on every scroll and resize, in the framed
+  **viewport's** coordinates: the iframe occupies one box in the console's layout and the framed
+  viewport *is* that box, so the console wraps the frame in an element of exactly that size and
+  positions the overlay with no measurement of its own. (The border moved off the iframe onto that
+  wrapper — `absolute` is relative to the padding box, so a border on the iframe puts every overlay
+  one pixel out.)
+  **Duplicate places the same section twice**, because the array holds references: editing either
+  heading edits both. That is what one replacement of the array can mean, and the toolbar's title
+  says so rather than letting a curator find out by editing one of them; a copy is a different object
+  and a different write (SH1101). **Which field is checked, not assumed**: `{{#getRelation sections}}`
+  takes the field's *value*, so the name is gone by the time markup exists and no attribute can carry
+  it. The console writes `sections` — the one name the generated layout uses — and offers the
+  controls only when the Page's own row holds an array as long as the list on screen; a page composing
+  from another field gets the header and the position with no buttons.
 - **The panel draws the field the model declares (SH1037)** — it used to be a bare `<Input>` for an
   `attr` field and read-only text for everything else, so a `Date` was a string, a `Check Box` was
   `"1"` and a `Content Select` was a UUID — and `affordance="panel"`, the field a caret cannot

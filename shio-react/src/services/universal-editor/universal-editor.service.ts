@@ -38,6 +38,24 @@ export class ShUniversalEditorService {
   }
 
   /**
+   * The row a write would be composed against: the draft, or the live one where there is no draft.
+   *
+   * SH1038 needs the Page's own ordered section array before it can replace it, and the preview in
+   * the frame is a render of the *published* row — so reading that one would compose a reorder
+   * against a list an agent may already have changed in the draft, and the patch would put the
+   * stale order back. The draft is the subject of every write on this surface (`patch` merges into
+   * it), so it is the honest thing to read. The fallback is the ordinary case of a page that has
+   * never been edited since it was published, where the two rows say the same thing anyway.
+   */
+  async editable(postId: string): Promise<ShPostUnified> {
+    try {
+      return await this.posts.get(postId, "DRAFT")
+    } catch {
+      return await this.posts.get(postId, "PUBLISHED")
+    }
+  }
+
+  /**
    * Merge attribute changes into the post's draft (optionally publishing).
    *
    * **SH335 — the console's own verb, on the session.** This used to be the CDA's `PATCH` behind a

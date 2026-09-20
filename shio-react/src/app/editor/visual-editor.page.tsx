@@ -5,12 +5,16 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { ROUTES } from "@/app/routes.const"
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
+  Copy,
   Loader2,
   Monitor,
   RefreshCw,
   Save,
   Smartphone,
+  Trash2,
   Upload,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -25,12 +29,103 @@ import {
 } from "./field-labels"
 import { getWidget } from "@/components/widgets"
 import type {
-  ContentChange, SelectedElement, SelectedSection,
+  ContentChange, FrameRect, SectionOp, SelectedElement, SelectedSection,
 } from "@/models/universal-editor/universal-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
 
 const siteService = new ShSiteService()
 const editorService = new ShUniversalEditorService()
+
+/**
+ * The Page field that holds an ordered list of sections (SH1038).
+ *
+ * One name, and it is the one the generated layout renders — `{{#getRelation sections}}`, written by
+ * the CLI's conversion and by every blueprint that composes a page. The helper takes the field's
+ * *value* and not its name, so the name is gone by the time the markup exists and nothing in the
+ * rendered DOM could carry it.
+ *
+ * Which is why the write is **checked rather than assumed**: the console reads the Page and offers
+ * the controls only when this field holds an array as long as the list on screen. A page whose
+ * sections live somewhere else gets the header and the position with no buttons — the same rule the
+ * first half of this task followed, that a button which does nothing is worse than none.
+ */
+const SECTIONS_FIELD = "sections"
+
+/** The array the Page holds today, or why this page's sections cannot be reordered. */
+type SectionArray =
+  | { state: "loading" }
+  | { state: "ready"; entries: unknown[] }
+  | { state: "unavailable" }
+
+/**
+ * The selected section's outline and its toolbar, drawn HERE and not by the page (SH1038).
+ *
+ * The page's own affordances are an injected stylesheet, which is right for a field: an outline and
+ * a caret are things CSS can express. A section needs a **toolbar**, and a stylesheet cannot draw
+ * one — nor could the page own the buttons if it did, because the writes are the console's and the
+ * page has no session. So the page sends a box and this draws over it.
+ *
+ * `pointer-events-none` on the outline is what keeps the frame clickable through it: a transparent
+ * div over the page would otherwise eat the next click, which is the click that selects the next
+ * section. Only the toolbar takes the pointer back.
+ */
+function SectionOverlay({ rect, label, position, index, of, writable, t, onOp }: {
+  rect: FrameRect
+  label: string
+  position: string
+  index: number
+  of: number
+  writable: boolean
+  t: (key: string) => string
+  onOp: (op: SectionOp, to?: number) => void
+}) {
+  // Above the section, or inside its top edge when it starts at the top of the viewport — a bar
+  // drawn at a negative offset from the first section is a bar nobody can press.
+  const barAbove = rect.top >= 30
+  return (
+    <>
+      <div
+        // The accent as the token and not as a hue (SH890): a re-key reaches
+        // `--vg-accent-from` and reaches nothing spelled as a utility class.
+        className="absolute pointer-events-none border-2 border-[var(--vg-accent-from)] rounded-sm"
+        style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
+        data-testid="section-outline"
+      />
+      <div
+        className="absolute z-10 flex items-center gap-1 rounded bg-gray-900 text-gray-50 px-1.5 py-1 text-xs shadow"
+        style={{ top: barAbove ? rect.top - 30 : rect.top + 4, left: rect.left }}
+      >
+        <span className="px-1 font-medium">{label}</span>
+        <span className="px-1 text-gray-400">{position}</span>
+        <button type="button" className="rounded px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
+          title={t("universalEditor.moveUp")} disabled={!writable || index === 0}
+          onClick={() => onOp("move", index - 1)}>
+          <ArrowUp className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" className="rounded px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
+          title={t("universalEditor.moveDown")} disabled={!writable || index >= of - 1}
+          onClick={() => onOp("move", index + 1)}>
+          <ArrowDown className="h-3.5 w-3.5" />
+        </button>
+        {/*
+          The title says what it does rather than what it is called: the array holds references, so
+          a duplicated entry places the SAME section twice and editing either heading edits both.
+          A curator who finds that out by editing one of them has been surprised (P7).
+        */}
+        <button type="button" className="rounded px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
+          title={t("universalEditor.duplicateHint")} disabled={!writable}
+          onClick={() => onOp("duplicate")}>
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" className="rounded px-1.5 py-0.5 hover:bg-red-700 disabled:opacity-40"
+          title={t("universalEditor.removeSection")} disabled={!writable}
+          onClick={() => onOp("remove")}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </>
+  )
+}
 
 /**
  * Ask the page for the SH185 bridge.
@@ -132,6 +227,30 @@ export default function VisualEditorPage() {
    * could use either. They are kept mutually exclusive where they are set.
    */
   const [selectedSection, setSelectedSection] = useState<SelectedSection | null>(null)
+  /**
+   * SH1038 — where the selected section is in the frame, kept current by `sh:section-geometry`.
+   *
+   * Beside `selectedSection` and not inside it, because the two change at different rates: a
+   * selection happens when a curator clicks and a box moves on every scroll of the framed page, and
+   * folding the second into the first would re-run every effect keyed on the selection once a frame.
+   */
+  const [sectionRect, setSectionRect] = useState<FrameRect | null>(null)
+  /**
+   * SH1038 — the Page's own ordered array, which is what every one of the three verbs replaces.
+   *
+   * Read rather than derived: the page on screen says how many sections there are and in what
+   * order, and it does not say what the *entries* are — they are references, which may be ids or
+   * friendly URLs, and a reorder has to write back the same tokens it read. `unavailable` is a real
+   * answer, not an error: a page whose sections live in a field other than {@link SECTIONS_FIELD}
+   * is one this console cannot write, and saying so beats offering a button that would.
+   */
+  const [loadedSections, setLoadedSections] = useState<{
+    /** Which selection this answer is about — `<page>|<length>`, empty before the first read. */
+    key: string
+    /** The array as read, or `null` for "this page does not carry one this panel could write". */
+    entries: unknown[] | null
+  }>({ key: "", entries: null })
+  const [reordering, setReordering] = useState(false)
   // Why the site failed to resolve, if it did (SH181): a page that spins forever instead of
   // saying so is what let `GET /api/v2/site/{furl}` 404 twice and look like slow loading.
   const [siteError, setSiteError] = useState<string | null>(null)
@@ -289,6 +408,7 @@ export default function VisualEditorPage() {
             reportedPageRef.current = reported
             setSelected(null)
             setSelectedSection(null)
+            setSectionRect(null)
             setChanges(new Map())
             // The labels belong to the previous page's post-type. Cleared rather than re-fetched
             // here: the next selection is what says which type is wanted, and fetching now would
@@ -306,6 +426,8 @@ export default function VisualEditorPage() {
         case "sh:navigating":
           setBridge("waiting")
           setSelected(null)
+          setSelectedSection(null)
+          setSectionRect(null)
           setChanges(new Map())
           break
         case "sh:element-selected":
@@ -314,11 +436,24 @@ export default function VisualEditorPage() {
           // objects, and a panel showing both would leave the curator guessing which one Save and
           // the move controls act on.
           setSelectedSection(null)
+          setSectionRect(null)
           break
-        case "sh:component-selected":
-          setSelectedSection(msg.data as SelectedSection)
+        case "sh:component-selected": {
+          const section = msg.data as SelectedSection
+          setSelectedSection(section)
+          setSectionRect(section.rect ?? null)
           setSelected(null)
           break
+        }
+        // SH1038 — the box moved (a scroll, a resize, or the page re-laid out after an op), or it
+        // is gone. `rect: null` is a removal: the overlay comes down rather than staying over
+        // whatever moved into that space.
+        case "sh:section-geometry": {
+          const moved = (msg.data as { rect?: FrameRect | null } | undefined)?.rect ?? null
+          setSectionRect(moved)
+          if (!moved) setSelectedSection(null)
+          break
+        }
         case "sh:content-changed": {
           const c = msg.data as ContentChange
           if (!c.postId || !c.prop) break
@@ -396,6 +531,99 @@ export default function VisualEditorPage() {
         setDeclaredFields({})
       })
   }, [selected, postTypeService])
+
+  /**
+   * SH1038 — the Page's ordered array, read when a section is selected, checked before it is used.
+   *
+   * The check is the whole mechanism and it is one comparison: the array has to be as long as the
+   * list the page says it drew. `{{#getRelation sections}}` renders the references in the order the
+   * field names them, so if the lengths agree then index *i* on screen is entry *i* here — and if
+   * they do not, this is not the field that page is drawing and no write from this panel could be
+   * right. Keyed on the length as well as on the page, so a reorder an agent made behind this
+   * screen is re-read the next time a curator selects something.
+   *
+   * The read is **tagged with the selection it belongs to**, which is SH703's shape on this page
+   * one more time: an answer for another section simply is not this one's, so it reads as `loading`
+   * with nothing to clear afterwards. The effect that reset a flag before fetching is the version
+   * this replaces — it wrote state the render could have derived, and left one paint in which a
+   * previous page's array was offered as this one's.
+   */
+  const pageOfSection = selectedSection?.pagePostId ?? null
+  const sectionCount = selectedSection?.of ?? 0
+  const sectionKey = pageOfSection ? `${pageOfSection}|${sectionCount}` : ""
+  const sectionArray: SectionArray = (() => {
+    if (!sectionKey || loadedSections.key !== sectionKey) return { state: "loading" }
+    return loadedSections.entries
+      ? { state: "ready", entries: loadedSections.entries }
+      : { state: "unavailable" }
+  })()
+
+  useEffect(() => {
+    // Once per key, and never while a write of this page's array is in flight. Both matter: the
+    // bridge echoes the new position *before* the patch resolves, so a read started on that echo
+    // can land after the write and put the array back as it was a moment ago — which reads as "this
+    // page cannot be reordered" and stays that way until the curator selects something else. What
+    // makes a stale read safe to skip is that the write is conditional: `editable` stores the
+    // version it saw and `patch` sends it, so a change behind this screen is refused rather than
+    // overwritten (SH985).
+    if (!sectionKey || !pageOfSection || reordering || loadedSections.key === sectionKey) return
+    let current = true
+    editorService.editable(pageOfSection)
+      .then((post) => {
+        if (!current) return
+        const entries = (post.data ?? {})[SECTIONS_FIELD]
+        setLoadedSections({
+          key: sectionKey,
+          entries: Array.isArray(entries) && entries.length === sectionCount ? entries : null,
+        })
+      })
+      .catch(() => { if (current) setLoadedSections({ key: sectionKey, entries: null }) })
+    return () => { current = false }
+  }, [sectionKey, pageOfSection, sectionCount, reordering, loadedSections.key])
+
+  /**
+   * One of the three verbs, as one replacement of the Page's array (SH1038).
+   *
+   * The page is told **first** and the write follows, which is the optimistic half: the write is a
+   * draft merge and the frame is showing a render of the published row, so nothing about the write
+   * makes that document change — a curator would press Move and watch the page sit still. The two
+   * can only disagree when the write is refused, and that case reloads the frame rather than
+   * leaving a page that shows an order the content does not have.
+   *
+   * `to` is the destination index **after the section has been taken out**, which is the same
+   * arithmetic the bridge does, so moving down by one means `index + 1` on both sides.
+   */
+  const runSectionOp = async (op: SectionOp, to?: number) => {
+    if (!selectedSection?.pagePostId || sectionArray.state !== "ready" || reordering) return
+    const index = selectedSection.index
+    const next = [...sectionArray.entries]
+    if (op === "remove") {
+      next.splice(index, 1)
+    } else if (op === "duplicate") {
+      next.splice(index + 1, 0, next[index])
+    } else {
+      const target = Math.max(0, Math.min(to ?? index, next.length - 1))
+      const [moved] = next.splice(index, 1)
+      next.splice(target, 0, moved)
+    }
+    postToIframe("sh:section-op", { op, index, to })
+    setReordering(true)
+    try {
+      await editorService.patch(selectedSection.pagePostId, { [SECTIONS_FIELD]: next })
+      // Under the key the echoed selection will carry: a remove and a duplicate change the length,
+      // and re-reading the page to learn what this call just wrote would be a round trip for an
+      // answer already in hand.
+      setLoadedSections({ key: `${selectedSection.pagePostId}|${next.length}`, entries: next })
+      toast.success(t("universalEditor.sectionSaved"))
+    } catch {
+      toast.error(t("universalEditor.sectionSaveError"))
+      // The page now shows an order the content does not have, and there is no way to put one
+      // element back without knowing what else changed. A reload is the honest repair.
+      refresh()
+    } finally {
+      setReordering(false)
+    }
+  }
 
   // The declared label for a field name, or "" when the schema has not arrived (or has no
   // label for it) — the caller falls back to the name the bridge sent.
@@ -543,7 +771,18 @@ export default function VisualEditorPage() {
               </Button>
             </div>
           )}
+          {/*
+            SH1038 — the frame gets a wrapper whose box IS the framed viewport, and the overlay is
+            positioned inside it. That is the whole coordinate system: the page reports a box in its
+            own viewport's coordinates, the iframe fills this wrapper exactly, so `rect.top` is a
+            `top` here and nothing has to be measured on this side — which matters because the
+            wrapper scrolls and the iframe is centred in mobile mode, so a measured offset would be
+            two more things to keep current. The border moved off the iframe and onto the wrapper
+            for the same reason: `absolute` is relative to the padding box, so a border on the
+            iframe would put every overlay one pixel out.
+          */}
           {!siteError && src && (
+            <div className={`relative bg-white shadow-sm border h-full ${mobile ? "w-[390px]" : "w-full"}`}>
             <iframe
               ref={iframeRef}
               src={src}
@@ -567,8 +806,23 @@ export default function VisualEditorPage() {
               // frame could not be navigated at all) rather than the common one. The timeout
               // above is what catches a page that loaded and handed back no bridge.
               onError={() => { setFrameLoaded(true); setBridge("absent") }}
-              className={`bg-white shadow-sm border ${mobile ? "w-[390px]" : "w-full"} h-full`}
+              className="w-full h-full"
             />
+            {editMode && selectedSection && sectionRect && (
+              <SectionOverlay
+                rect={sectionRect}
+                label={selectedSection.section || t("universalEditor.section")}
+                position={t("universalEditor.sectionPosition", {
+                  position: selectedSection.index + 1, of: selectedSection.of,
+                })}
+                index={selectedSection.index}
+                of={selectedSection.of}
+                writable={sectionArray.state === "ready" && !reordering}
+                t={t}
+                onOp={runSectionOp}
+              />
+            )}
+            </div>
           )}
           {!siteError && !src && (
             <div className="flex items-center justify-center text-muted-foreground">
@@ -601,11 +855,10 @@ export default function VisualEditorPage() {
 
         <aside className="w-80 border-l bg-background overflow-auto p-4">
           {/*
-            SH1038 — a section's own header. The move, duplicate and remove controls are the
-            remainder of this task: what lands here is that a section IS a selectable object with an
-            identity and a position the console can state, which is what the symptom asks for. A
-            panel that offered the controls before the writes existed would be a button that does
-            nothing, which is worse than a header that tells the truth.
+            SH1038 — a section's own header. The controls are on the overlay, over the section they
+            act on, which is where a curator is already looking; what stays here is the identity,
+            the position, and the one thing a toolbar button cannot say — whether this page's
+            sections can be written at all, and what Duplicate actually does.
           */}
           {selectedSection ? (
             <div className="space-y-3">
@@ -620,6 +873,16 @@ export default function VisualEditorPage() {
               <p className="text-sm text-muted-foreground">
                 {t("universalEditor.sectionSelected")}
               </p>
+              {sectionArray.state === "unavailable" && (
+                <p className="text-sm text-amber-600 dark:text-amber-500">
+                  {t("universalEditor.sectionsNotWritable")}
+                </p>
+              )}
+              {sectionArray.state === "ready" && (
+                <p className="text-xs text-muted-foreground">
+                  {t("universalEditor.duplicateHint")}
+                </p>
+              )}
             </div>
           ) : selected ? (
             <div className="space-y-3">

@@ -148,6 +148,7 @@ All messages are `{ type, data }` with a `sh:` prefix. Anything else is ignored 
 | `sh:content-changed` | `ContentChange` | an editable element's content changed |
 | `sh:navigating` | `{ to, from }` | a click in the page is leaving for another page of this site (SH1036) |
 | `sh:component-selected` | `SelectedSection` | a curator clicked a **section** rather than one of its fields (SH1038) |
+| `sh:section-geometry` | `{ rect: FrameRect \| null }` | the selected section's box moved (a scroll, a resize, a reorder), or `null` — there is no longer one (SH1038) |
 
 `sh:ready` and `sh:navigating` are arrival and departure, and both are needed. Arrival re-keys the
 session: a different `url` means the selection, the pending changes and the loaded field labels all
@@ -182,19 +183,32 @@ away editing that works today. The same reasoning as a missing `data-shio-prop-t
 without one the click interception is off (SH336) — claiming it would be a lie the console acts on.
 
 ```ts
+type FrameRect = { top: number; left: number; width: number; height: number }
+
 type SelectedSection = {
   postId: string | null      // the section post's own id - what its fields belong to
   section: string            // the declared type, e.g. SectionHero
   index: number              // position within its container
   of: number                 // how many that container holds
   pagePostId: string | null  // the Page whose ordered array a reorder rewrites
+  rect: FrameRect            // SH1038 - where it is, so the console can draw the overlay itself
 }
 ```
 
 A click on a field selects the field; a click on the space around it selects the section. The section
 handler runs after the per-field one, which stops propagation, and after the link handler, so a
 navigation is never turned into a selection. `sections` is claimed as a capability only when the page
-actually has one.
+actually has one, and it covers both halves: the selection and the optimistic ops below.
+
+**The overlay is the console's, not the page's (SH1038).** Every other affordance is an injected
+stylesheet scoped under `data-shio-editing`, which is right for a field — an outline and a caret are
+things CSS can express. A section needs a **toolbar**, and a stylesheet cannot draw one; nor could
+the page own the buttons if it could, because the writes are the console's and the page has no
+session. So the page sends a box and the console draws over it. The box is in the framed
+**viewport's** coordinates, which is the space the console can map: the iframe occupies exactly one
+box in the console's layout and the framed viewport *is* that box, so `rect.top` is an offset from
+the iframe's own top edge and neither side has to know how far the page inside has been scrolled.
+The price of that choice is that a scroll moves it, which is what `sh:section-geometry` reports.
 
 ```ts
 type SelectedElement = {
@@ -220,10 +234,41 @@ clicked, so the properties panel can show the whole set without a round trip.
 |---|---|---|
 | `sh:mode-change` | `{ mode: "edit" \| "preview" }` | the curator toggles the switch |
 | `sh:field-set` | `{ postId, prop, value }` | the panel edited an `attr` field, so the page can show it (SH503) |
+| `sh:section-op` | `{ op: "move" \| "remove" \| "duplicate", index, to? }` | reorder the **selected** section, optimistically, while the console writes the Page's array (SH1038) |
 
 Preview mode restores the page exactly: the affordances are scoped under a
 `data-shio-editing` flag on `<html>`, because a curator switching to preview is asking to see
 what a visitor sees.
+
+`sh:section-op` acts on **what the curator selected** and on nothing the sender names. With two
+composed lists on one page there are two sections at index 0, so `{op, index}` identifies two
+elements and a move would rewrite whichever the selector reached first; the `index` in the message is
+the console's statement of which entry of the array it is writing, not a way to address an element.
+It is the one inbound message that changes the *shape* of the page rather than a value in it, which
+is what makes the origin check on that listener load-bearing.
+
+Applied **optimistically**. The write is a draft merge on the console's session and the frame is
+showing a render of the published row, so nothing about the write makes that document change — a
+curator would press Move and watch the page sit still. The two sides can only disagree when the write
+is refused, and the console reloads the frame in that case rather than leaving a page that shows an
+order the content does not have. After an op the page re-derives every position (`getRelation` renders
+the references in the order the field names them, so document order *is* the array's order) and
+echoes `sh:component-selected` with the new one, or `sh:section-geometry: { rect: null }` for a
+removal.
+
+**Duplicate places the same section twice.** The array holds references, so a repeated entry is a
+second placement of one post and not a copy of it: editing either heading edits both. That is what a
+single replacement of the array can mean, and the console says it in the toolbar's own title rather
+than letting a curator find out by editing one of them. A copy would be a different object and a
+different write.
+
+**Which field.** `{{#getRelation sections}}` takes the field's *value*, not its name, so the name is
+gone by the time the markup exists and nothing in the rendered DOM can carry it. The console
+therefore writes the one field the generated layout uses — `sections` — and **checks** rather than
+assumes: it reads the Page and offers the controls only when that field holds an array as long as the
+list on screen. A page composing its sections from some other field gets the header and the position
+with no buttons, which is the same rule the rest of this protocol follows — a control that does
+nothing is worse than none.
 
 ---
 

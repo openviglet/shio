@@ -98,6 +98,16 @@ export type SelectedElement = {
  * position *after* the last section is a real destination with no element on it, which is what makes
  * a move expressible at all.
  */
+/**
+ * Where something is inside the framed page, in that page's VIEWPORT coordinates (SH1038).
+ *
+ * Viewport and not document, because that is the space the console can map: the iframe occupies
+ * exactly one box in this layout and the framed viewport *is* that box, so `top` is an offset from
+ * the iframe's own top edge and the console needs to know nothing about how far the page inside has
+ * been scrolled. The price is that a scroll moves it, which `sh:section-geometry` reports.
+ */
+export type FrameRect = { top: number; left: number; width: number; height: number }
+
 export type SelectedSection = {
   /** The section post's own id — what its fields belong to. */
   postId: string | null
@@ -105,6 +115,15 @@ export type SelectedSection = {
   section: string
   index: number
   of: number
+  /**
+   * Where it is on screen, so the console can draw the overlay itself (SH1038).
+   *
+   * The overlay is the console's and not a stylesheet the page injects, because a stylesheet can
+   * outline a section and cannot draw a toolbar over it — and the buttons have to live where the
+   * writes are. The console cannot measure the framed document, which is another origin, so the
+   * page sends the box.
+   */
+  rect?: FrameRect
   /**
    * The Page whose ordered reference array holds this section.
    *
@@ -114,3 +133,13 @@ export type SelectedSection = {
    */
   pagePostId: string | null
 }
+
+/**
+ * The three verbs a section supports, each one replacement of the owning Page's array (SH1038).
+ *
+ * `duplicate` places the **same** section twice rather than copying it: the array holds references,
+ * so a repeated entry is a second placement of one post and editing either heading edits both. That
+ * is what a single deterministic write can mean here, and the panel says it out loud — a curator who
+ * finds it out by editing one of them has been surprised, which is the thing P7 forbids.
+ */
+export type SectionOp = "move" | "remove" | "duplicate"

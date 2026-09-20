@@ -559,6 +559,174 @@ test("SH1038: a link inside a section navigates rather than selecting it", async
   assert.equal(destination(posted), "/preview/Demo/contato");
 });
 
+/** Three sections, which is the fewest that can tell "moved up" from "moved to the front". */
+const THREE_SECTIONS = `
+  <main data-shio-sections="3">
+    <section data-shio-section="SectionHero" data-shio-post="hero-1" data-shio-section-index="0">
+      <h1 data-shio-prop="TITLE" data-shio-prop-type="Text">Hello</h1>
+    </section>
+    <section data-shio-section="SectionFeatures" data-shio-post="feat-1" data-shio-section-index="1">
+      <p class="filler">second</p>
+    </section>
+    <section data-shio-section="SectionFaq" data-shio-post="faq-1" data-shio-section-index="2">
+      <p class="filler">third</p>
+    </section>
+  </main>
+`;
+
+/** The section types on the page, in document order — what a move is supposed to change. */
+function sectionOrder(document) {
+  return Array.from(document.querySelectorAll("[data-shio-section]"))
+    .map((section) => section.getAttribute("data-shio-section"));
+}
+
+/** Every section's recorded index, which has to agree with document order after an op. */
+function sectionIndexes(document) {
+  return Array.from(document.querySelectorAll("[data-shio-section]"))
+    .map((section) => Number(section.getAttribute("data-shio-section-index")));
+}
+
+/** Selects a section the way a curator does: a click on the part of it that is not a field. */
+function selectSection(window, document, type) {
+  document.querySelector(`section[data-shio-section='${type}']`)
+    .dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+}
+
+test("SH1038: the selection carries the box the console draws its overlay over", async () => {
+  const { window, document, posted } = await pageWithBridge(SECTION_PAGE, { bodyAttrs: BODY_ATTRS });
+
+  selectSection(window, document, "SectionFaq");
+
+  // The overlay is the CONSOLE's — a stylesheet the page injects can outline a section and cannot
+  // draw a toolbar over it, and the buttons have to live where the writes are. The console cannot
+  // measure this document (another origin), so the box travels with the selection.
+  const [section] = messagesOfType(posted, "sh:component-selected");
+  assert.deepEqual(Object.keys(section.rect).sort(), ["height", "left", "top", "width"]);
+});
+
+test("SH1038: a move from the console reorders the page and renumbers what is left", async () => {
+  const { window, document, posted } = await pageWithBridge(THREE_SECTIONS, { bodyAttrs: BODY_ATTRS });
+  selectSection(window, document, "SectionFaq");
+
+  sendFromParent(window, { type: "sh:section-op", data: { op: "move", index: 2, to: 0 } });
+
+  assert.deepEqual(sectionOrder(document),
+    ["SectionFaq", "SectionHero", "SectionFeatures"],
+    "optimistic: the write is a draft merge and the frame renders the published row, so nothing "
+    + "about the write would make this document change — the curator would watch the page sit still");
+  assert.deepEqual(sectionIndexes(document), [0, 1, 2],
+    "and every position is re-derived, or the next selection reports where the section used to be "
+    + "and the write after that is against the wrong entry");
+  const echoed = messagesOfType(posted, "sh:component-selected").at(-1);
+  assert.equal(echoed.section, "SectionFaq");
+  assert.equal(echoed.index, 0, "the page confirms the new position rather than the console "
+    + "assuming the op landed");
+});
+
+test("SH1038: a move past the last position lands at the end", async () => {
+  const { window, document } = await pageWithBridge(THREE_SECTIONS, { bodyAttrs: BODY_ATTRS });
+  selectSection(window, document, "SectionHero");
+
+  // The position AFTER the last section is a real destination with no element on it, which is the
+  // reason `of` travels beside `index` at all.
+  sendFromParent(window, { type: "sh:section-op", data: { op: "move", index: 0, to: 2 } });
+
+  assert.deepEqual(sectionOrder(document),
+    ["SectionFeatures", "SectionFaq", "SectionHero"]);
+});
+
+test("SH1038: remove takes the section out and reports that the selection is gone", async () => {
+  const { window, document, posted } = await pageWithBridge(THREE_SECTIONS, { bodyAttrs: BODY_ATTRS });
+  selectSection(window, document, "SectionFeatures");
+
+  sendFromParent(window, { type: "sh:section-op", data: { op: "remove", index: 1 } });
+
+  assert.deepEqual(sectionOrder(document), ["SectionHero", "SectionFaq"]);
+  assert.equal(document.querySelector("main").getAttribute("data-shio-sections"), "2",
+    "the container's count is what says where a section may move TO, so it moves with the list");
+  assert.deepEqual(messagesOfType(posted, "sh:section-geometry").at(-1), { rect: null },
+    "a null box takes the overlay down rather than leaving it over whatever moved into that space");
+});
+
+test("SH1038: duplicate places the section twice, and the copy's fields are live", async () => {
+  const { window, document, posted } = await pageWithBridge(THREE_SECTIONS, { bodyAttrs: BODY_ATTRS });
+  selectSection(window, document, "SectionHero");
+
+  sendFromParent(window, { type: "sh:section-op", data: { op: "duplicate", index: 0 } });
+
+  assert.deepEqual(sectionOrder(document),
+    ["SectionHero", "SectionHero", "SectionFeatures", "SectionFaq"],
+    "the array holds references, so a duplicated entry is a second PLACEMENT of one post and not a "
+    + "copy of it — which the console says out loud rather than letting a curator find out");
+  const copy = document.querySelectorAll("[data-shio-section='SectionHero']")[1];
+  copy.querySelector('[data-shio-prop="TITLE"]').innerHTML = "Edited";
+  copy.querySelector('[data-shio-prop="TITLE"]')
+    .dispatchEvent(new window.Event("input", { bubbles: true }));
+
+  // `cloneNode` copies attributes and children and nothing that was added with `addEventListener`,
+  // so without rebinding the copy would be outlined, editable-looking and inert.
+  assert.equal(messagesOfType(posted, "sh:content-changed").at(-1).value, "Edited");
+});
+
+test("SH1038: a section op from another origin changes nothing", async () => {
+  const { window, document } = await pageWithBridge(THREE_SECTIONS, { bodyAttrs: BODY_ATTRS });
+  selectSection(window, document, "SectionHero");
+
+  sendFromParent(window, { type: "sh:section-op", data: { op: "remove", index: 0 } },
+    "https://attacker.example");
+
+  assert.deepEqual(sectionOrder(document),
+    ["SectionHero", "SectionFeatures", "SectionFaq"],
+    "this is the one inbound message that changes the SHAPE of the page, so the origin check on "
+    + "that listener is the whole reason it can exist");
+});
+
+test("SH1038: an op with nothing selected changes nothing", async () => {
+  const { window, document } = await pageWithBridge(THREE_SECTIONS, { bodyAttrs: BODY_ATTRS });
+
+  // The op acts on the curator's own selection and on nothing the sender names: with two composed
+  // lists there are two sections at index 0, so `{op, index}` names two elements and a move would
+  // rewrite whichever the selector reached first.
+  sendFromParent(window, { type: "sh:section-op", data: { op: "remove", index: 0 } });
+
+  assert.deepEqual(sectionOrder(document), ["SectionHero", "SectionFeatures", "SectionFaq"]);
+});
+
+test("SH1038: selecting a field drops the section, so the overlay does not outlive it", async () => {
+  const { window, document } = await pageWithBridge(THREE_SECTIONS, { bodyAttrs: BODY_ATTRS });
+  selectSection(window, document, "SectionHero");
+
+  document.querySelector('[data-shio-prop="TITLE"]')
+    .dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+  sendFromParent(window, { type: "sh:section-op", data: { op: "remove", index: 0 } });
+
+  assert.deepEqual(sectionOrder(document), ["SectionHero", "SectionFeatures", "SectionFaq"],
+    "a field and the section holding it are two objects, and a section left selected here would "
+    + "keep the move controls over something the curator has stopped talking about");
+});
+
+test("SH1038: a scroll re-reports where the selected section now is", async () => {
+  const { window, document, posted } = await pageWithBridge(THREE_SECTIONS, { bodyAttrs: BODY_ATTRS });
+  selectSection(window, document, "SectionFaq");
+
+  window.dispatchEvent(new window.Event("scroll"));
+
+  // The box is in the framed VIEWPORT's coordinates, which is the space the console can map: the
+  // iframe occupies one box in its layout and the framed viewport is that box. The price of that
+  // choice is that a scroll moves it, which is what this message is for.
+  const geometry = messagesOfType(posted, "sh:section-geometry").at(-1);
+  assert.deepEqual(Object.keys(geometry.rect).sort(), ["height", "left", "top", "width"]);
+});
+
+test("SH1038: a scroll with nothing selected says nothing at all", async () => {
+  const { window, posted } = await pageWithBridge(THREE_SECTIONS, { bodyAttrs: BODY_ATTRS });
+
+  window.dispatchEvent(new window.Event("scroll"));
+
+  assert.deepEqual(messagesOfType(posted, "sh:section-geometry"), [],
+    "a message per scroll event is a message per pixel, and there is nothing to draw");
+});
+
 test("SH1038: sections is claimed only when the page has one", async () => {
   const withSections = await pageWithBridge(SECTION_PAGE, { bodyAttrs: BODY_ATTRS });
   const without = await pageWithBridge(PAGE, { bodyAttrs: BODY_ATTRS });

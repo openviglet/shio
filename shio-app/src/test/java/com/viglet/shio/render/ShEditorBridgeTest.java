@@ -450,6 +450,47 @@ class ShEditorBridgeTest {
                         "sh:navigating", "sh:field-set");
     }
 
+    /**
+     * SH1038 — and the <b>document</b> is the third speaker, held to the same set.
+     *
+     * <h2>Why the pair above was not enough</h2>
+     *
+     * <p>{@code theProtocolMatchesTheConsole} makes the two implementations agree with each other,
+     * which is what stops a message going into the void. It says nothing about whether the protocol
+     * that both halves now speak is the one anybody wrote down — and the spec is the artefact an
+     * external producer implements from ({@code @viglet/shio-editor-cors} is the second producer
+     * SH304 established, and it is written against this document, not against this repository). So
+     * two consenting halves could grow a verb the only other implementer could not know existed.</p>
+     *
+     * <p><b>The contract is the table</b>, which is {@link ShRenderedDomContractTest}'s rule one
+     * layer along, and for its reason: prose is free to discuss a type that no longer exists, and
+     * most of what makes a document worth reading is exactly that. SH1038 added two types and this
+     * is the check that the tables gained both rows.</p>
+     */
+    @Test
+    @DisplayName("SH1038: the spec's message tables name every type the bridge speaks")
+    void theSpecNamesEveryMessage() throws IOException {
+        Set<String> spelled = new java.util.TreeSet<>();
+        Matcher matcher = Pattern.compile("`(sh:[a-z-]+)`").matcher(
+                Files.readString(Path.of("..", "docs", "specs",
+                        "SH185-universal-editor-protocol.md"), StandardCharsets.UTF_8).lines()
+                        .filter(line -> line.startsWith("|"))
+                        .reduce("", (all, line) -> all + "\n" + line));
+        while (matcher.find()) {
+            spelled.add(matcher.group(1));
+        }
+
+        assertThat(spelled)
+                .as("""
+                        A type both halves speak and the document does not is a protocol term the \
+                        one implementation written from the document - @viglet/shio-editor-cors, \
+                        the external producer SH304 established - cannot know exists. Add a row to \
+                        the page-to-console or console-to-page table in \
+                        docs/specs/SH185-universal-editor-protocol.md. Prose about a type is not \
+                        enough: the contract is the table.""")
+                .isEqualTo(messageTypesIn(bridge.script()));
+    }
+
     /** Every {@code sh:*} message type a source mentions, however it mentions it. */
     private static Set<String> messageTypesIn(String source) {
         Set<String> types = new java.util.TreeSet<>();

@@ -23,10 +23,16 @@
  *   sh:content-changed   ContentChange              an editable element's text changed
  *   sh:navigating        { to, from }               a click in the page is leaving for another one
  *   sh:component-selected SelectedSection            a curator clicked a section, not a field of it
+ *   sh:section-geometry  { rect }                   where the selected section is NOW, so the
+ *                                                     console can keep its overlay on it -- and
+ *                                                     `rect: null` when there is no longer one
  *
  * console → page
  *   sh:mode-change       { mode: "edit"|"preview" } toggle affordances on and off
  *   sh:field-set         { postId, prop, value }    write an attribute field the panel edited
+ *   sh:section-op        { op, index, to }          move, remove or duplicate the selected
+ *                                                     section, applied optimistically here while
+ *                                                     the console writes the Page's array
  *
  * ── Origins ─────────────────────────────────────────────────────────────────────────────
  *
@@ -74,7 +80,18 @@
    * pass adds the position beside it — and only this half was missing.
    */
   var SECTION = "[data-shio-section]";
+  var CONTAINER = "[data-shio-sections]";
   var editing = false;
+
+  /**
+   * The section element a curator selected, which is what an op acts on (SH1038).
+   *
+   * Held here rather than addressed by the incoming message, and that is the point: with two
+   * composed lists on one page there are two sections at index 0, so `{op, index}` names two
+   * elements and a move would rewrite whichever the selector reached first. What a curator
+   * selected is one element and the console is answering about that one.
+   */
+  var selectedSection = null;
 
   function send(type, data) {
     window.parent.postMessage({ type: type, data: data || {} }, PARENT_ORIGIN);
@@ -142,8 +159,151 @@
       of: Number((container && container.getAttribute("data-shio-sections")) || "0"),
       // The owning Page, which is what a reorder writes. It is the page's own post and not the
       // section's: moving a hero rewrites the Page's array, and the hero itself does not change.
-      pagePostId: PAGE_POST
+      pagePostId: PAGE_POST,
+      // SH1038 — where it is on screen, because the overlay is DRAWN BY THE CONSOLE. A stylesheet
+      // injected here can outline a section and cannot draw a toolbar over it: the buttons belong
+      // to the console's own tree, which is where the writes are, and the console cannot measure
+      // the framed document because it is another origin.
+      rect: rectOf(section)
     };
+  }
+
+  /**
+   * A box in the FRAMED viewport's coordinates (SH1038).
+   *
+   * Viewport and not document, because that is the space the console can map: the iframe occupies
+   * exactly one box in the console's layout and the framed viewport <em>is</em> that box, so
+   * {@code rect.top} is an offset from the iframe's own top edge and needs no knowledge of how far
+   * the page inside has been scrolled. The price is that a scroll moves it, which is what
+   * `sh:section-geometry` exists to say.
+   */
+  function rectOf(el) {
+    var box = el.getBoundingClientRect();
+    return { top: box.top, left: box.left, width: box.width, height: box.height };
+  }
+
+  /**
+   * The sections of one container, in document order (SH1038).
+   *
+   * Direct children only, which is the same rule the server's pass follows — it takes a section's
+   * `parentElement` as its container — so the two agree about what an ordered list is without
+   * either having to describe it to the other.
+   */
+  function sectionsIn(container) {
+    var found = [];
+    if (!container) return found;
+    for (var i = 0; i < container.children.length; i++) {
+      if (container.children[i].hasAttribute("data-shio-section")) {
+        found.push(container.children[i]);
+      }
+    }
+    return found;
+  }
+
+  /**
+   * Re-derives every position after an optimistic edit — the browser half of the server's pass.
+   *
+   * Two counts of one thing, and that is not a duplicate implementation for the same reason the
+   * server's own is not a copy of the template's: the fact is *document order*, and after a move
+   * the document has a new one. Not re-deriving it would leave the next selection reporting the
+   * position the section had before the curator moved it, and the write after that would be
+   * against an array index that is no longer the one on screen.
+   */
+  function reindexSections() {
+    document.querySelectorAll(CONTAINER).forEach(function (container) {
+      var sections = sectionsIn(container);
+      sections.forEach(function (section, index) {
+        section.setAttribute("data-shio-section-index", String(index));
+      });
+      container.setAttribute("data-shio-sections", String(sections.length));
+    });
+  }
+
+  /**
+   * Move, remove or duplicate, applied HERE while the console writes the Page's array (SH1038).
+   *
+   * Optimistic, and the reason is what the alternative costs: the write is a draft merge on the
+   * console's session, and the page in the frame is a rendered preview of the published row — so
+   * nothing about the write makes this document change, and a curator would press Move and watch
+   * the page sit still until they reloaded it. The console reloads the frame when its write is
+   * refused, which is the only case where these two can disagree.
+   *
+   * **Duplicate places the same section twice.** The array holds references, so a duplicated entry
+   * is a second placement of one post and not a copy of it: editing either heading edits both.
+   * That is what a single replacement of the array can mean, and the console says so rather than
+   * letting a curator find out by editing one of them.
+   */
+  function applySectionOp(data) {
+    if (!editing || !data || !selectedSection || !selectedSection.parentElement) return;
+    var element = selectedSection;
+    var container = element.parentElement;
+    var op = data.op;
+    if (op === "remove") {
+      element.remove();
+      selectedSection = null;
+    } else if (op === "duplicate") {
+      var clone = element.cloneNode(true);
+      element.after(clone);
+    } else if (op === "move") {
+      var others = sectionsIn(container).filter(function (section) {
+        return section !== element;
+      });
+      var to = Math.max(0, Math.min(Number(data.to), others.length));
+      element.remove();
+      if (to >= others.length) {
+        if (others.length) others[others.length - 1].after(element);
+        else container.appendChild(element);
+      } else {
+        container.insertBefore(element, others[to]);
+      }
+    } else {
+      return;
+    }
+    reindexSections();
+    // A clone carries no listeners — `cloneNode` copies attributes and children and nothing that
+    // was added with `addEventListener` — so its fields would be outlined and inert.
+    attachFields();
+    setMode(editing ? "edit" : "preview");
+    if (selectedSection) {
+      send("sh:component-selected", describeSection(selectedSection));
+    } else {
+      send("sh:section-geometry", { rect: null });
+    }
+  }
+
+  /**
+   * Where the selected section is now, so the console's overlay follows it (SH1038).
+   *
+   * Sent on scroll and resize, coalesced onto a frame: a message per scroll event is a message per
+   * pixel, and the console can only draw once per frame anyway. `rect: null` says the selection is
+   * gone — after a remove, or after the element left the document — and the console takes the
+   * overlay down rather than leaving it over whatever moved into that box.
+   */
+  function sendGeometry() {
+    if (!selectedSection || !selectedSection.isConnected) {
+      selectedSection = null;
+      send("sh:section-geometry", { rect: null });
+      return;
+    }
+    send("sh:section-geometry", { rect: rectOf(selectedSection) });
+  }
+
+  var geometryPending = false;
+
+  function scheduleGeometry() {
+    if (!selectedSection || geometryPending) return;
+    // No rAF — an engine without it, or a test harness that does not pretend to paint — means the
+    // message goes out immediately. Coalescing is an economy, not a correctness rule, and silently
+    // dropping the update would leave the overlay behind the page it is drawn over.
+    if (typeof window.requestAnimationFrame !== "function") {
+      sendGeometry();
+      return;
+    }
+    geometryPending = true;
+    window.requestAnimationFrame(function () {
+      geometryPending = false;
+      sendGeometry();
+    });
   }
 
   function describe(el) {
@@ -249,6 +409,10 @@
     if (!editing) return;
     event.preventDefault();
     event.stopPropagation();
+    // SH1038 — one selection at a time. A field and the section holding it are two objects, and a
+    // section left selected here would keep the console's overlay and its move controls over a
+    // section the curator has stopped talking about.
+    selectedSection = null;
     send("sh:element-selected", describe(event.currentTarget));
   }
 
@@ -265,10 +429,11 @@
     // A link the click interception owns is a navigation, not a selection (SH336/SH1036).
     var anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;
     if (anchor) return;
-    var described = describeSection(event.target);
-    if (!described) return;
+    var section = event.target.closest(SECTION);
+    if (!section) return;
     event.preventDefault();
-    send("sh:component-selected", described);
+    selectedSection = section;
+    send("sh:component-selected", describeSection(section));
   }
 
   /**
@@ -492,17 +657,36 @@
     };
   }
 
-  function attach() {
+  /**
+   * Binds every annotated element, and binds each one once (SH1038).
+   *
+   * Re-run after a duplicate, because `cloneNode` copies attributes and children and nothing that
+   * was added with `addEventListener` — so the copy's fields would be outlined, editable-looking
+   * and inert. The mark is a property rather than an attribute on purpose: an attribute would be a
+   * term of the SH300 rendered-DOM contract, and this is not something a reader of the page has
+   * any business knowing.
+   */
+  function attachFields() {
     document.querySelectorAll(FIELD + "," + ATTR_FIELD).forEach(function (el) {
+      if (el.shioBound) return;
+      el.shioBound = true;
       el.addEventListener("input", onFieldInput);
       el.addEventListener("click", onFieldClick);
     });
+  }
+
+  function attach() {
+    attachFields();
     // Delegated, and on the document: the whole point is links that do not exist yet.
     document.addEventListener("click", onDocumentClick);
     // SH1038 — after the link handler, so a navigation is never turned into a selection, and after
     // the per-field one, which stops propagation: clicking a headline selects the headline and
     // clicking the space around it selects the section that holds it.
     document.addEventListener("click", onSectionClick);
+    // SH1038 — the overlay is the console's, so it has to be told when the box it is drawn over
+    // moves. `capture` on scroll, because a scroll inside an element does not bubble.
+    window.addEventListener("scroll", scheduleGeometry, true);
+    window.addEventListener("resize", scheduleGeometry);
     injectStyles();
     injectToolbar();
     setMode("edit");
@@ -645,6 +829,11 @@
     }
     if (msg.type === "sh:field-set") {
       setField(msg.data);
+    }
+    // SH1038 — the only inbound message that changes the SHAPE of the page rather than a value in
+    // it, which is why it acts on the curator's own selection and on nothing the sender names.
+    if (msg.type === "sh:section-op") {
+      applySectionOp(msg.data);
     }
   });
 
