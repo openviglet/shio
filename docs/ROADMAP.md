@@ -41,6 +41,7 @@
 - 📋 **SH1076** (deps: viglet-core 2026.3.11 published) **every CI suite fails before it starts, because the viglet-core BOM version is not in Maven Central** — pom.xml imports viglet-core-bom 2026.3.11, which only a local ~/.m2 holds, so Maven cannot read the POM in CI while every local gate passes. → §LXIV.16
 - 📋 **SH1089** (deps: —) **a changelog can name a table that does not exist, and only a clean instance ever finds out** — The unit suite builds H2 from entity metadata with Liquibase off, so an addColumn on a misspelled table compiles, passes 2233 tests, and refuses to start a fresh store. → §LXIV.17
 - 📋 **SH1115** (deps: —) **the coverage mirror marks ids named from a working copy nobody checked was committed** — It reads COVERAGE.md from a directory rather than a revision, so an uncommitted edit names ids here forever while the published matrix never gains the sentence. → §LXIV.18
+- 📋 **SH1118** (deps: SH1049 ✅) **the shared comment stripper silently deletes half a file, and every scan over it passes** — A slash and two stars in any string opens a block comment to it, so one Playwright pattern cut 43,389 characters out of what thirty-one suites read. → §LXIV.19
 
 ## Block AZ — What the content said before
 
@@ -95,7 +96,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1049** (deps: SH1046 ✅, SH955 ✅) **one error boundary guards the whole console, and a failed fetch leaves a spinner that never ends** — A render throw blanks the application, an unhandled load settles into a permanent spinner, and the design system's load provider and skeleton are used by nothing. → §LXXII.7
 - 📋 **SH1050** (deps: SH1048 ✅, SH991 ✅, SH1003 ✅) **the dashboard downloads two whole collections to show two numbers** — Home fetches every site and every post type to use their length, and in an agent-first CMS its question should be what the agent did that nobody has looked at. → §LXXII.8
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
 - 📋 **SH1052** (deps: —) **every post-editor field is a label with no htmlFor over a widget that cannot take an id** — The widget contract is attr, onChange and postId, so a screen reader meets each field of every post type as an unnamed edit box and a label click focuses nothing. → §LXXII.10

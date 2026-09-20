@@ -12,6 +12,7 @@
   "content.editSite": "Editar Site",
   "content.siteSettings": "Configurações do site",
   "content.editFolder": "Editar Pasta",
+  "content.postLoadFailed": "Não foi possível carregar este conteúdo.",
   "content.editPost": "Editar Post",
   "content.editPostType": "Editar Tipo de Post",
   "content.newPostType": "Novo Tipo de Post",

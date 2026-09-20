@@ -155,6 +155,24 @@ test("SH897: the reader is not vacuous — it reads the real script", () => {
   assert.match(source, /chromium/,
     "SH897: the script no longer launches a browser, so whatever this is checking, it is not the"
       + " one thing in this repository that opens a real page")
+
+  /*
+   * SH1049 — and it reads the script to the END, which is the failure that cost this file an hour.
+   *
+   * `stripComments` is not a parser, and it says so: a slash followed by two stars opens a block
+   * comment to it wherever it appears, including inside a template literal. A Playwright wildcard
+   * pattern is spelled exactly that way, so adding one silently truncated the stripped view here
+   * and every assertion below the truncation began matching an empty string — green, and about
+   * nothing. The length check above did not catch it, because half a large file is still large.
+   *
+   * The last thing the script does is what this anchors on. It is cheaper than a real parser and
+   * it fails on the only shape that has ever caused this.
+   */
+  assert.match(source, /main\(\)\.catch\(/,
+    "SH1049: the stripped view of console-check.mjs no longer reaches its final statement, so it "
+      + "was cut short — almost certainly by a slash-star-star somewhere above, which the shared "
+      + "stripper reads as a comment opener. Every assertion past the cut is now matching an "
+      + "empty string and passing for it.")
 })
 
 /**
@@ -238,12 +256,39 @@ test("SH1046: no child folder is a skip that says so, and --strict makes it fail
  * these hold the two things that would make that probe report success without having raced.</p>
  */
 test("SH1047: the race is held open, and a route that stopped matching is a skip not a pass", () => {
-  assert.match(source, /await page\.route\(`\*\*\/api\/v2\/object\/\$\{site\.id\}\/list\*`/,
+  assert.match(source, /await page\.route\(\(url\) => url\.pathname === listing/,
     "SH1047: the first folder's listing is no longer held, so the second navigation is not racing"
       + " anything and the probe passes on a console with no cancellation at all.")
+  // A URL predicate rather than a Playwright glob, and this assertion is where that is kept: the
+  // obvious `**/api/v2/...` pattern contains `/**`, which the shared stripper above reads as the
+  // start of a block comment — it swallows the rest of the file and every assertion after it
+  // matches nothing. Found by writing the SH1049 probe and watching this one go quiet (SH740).
+  assert.doesNotMatch(source, /page\.route\(`\*\*\//u,
+    "SH1049: a Playwright glob starting `**/` ends this file's view of the script at that line, so"
+      + " the assertions below it pass over an empty string. Use a `(url) => …` predicate.")
   assert.match(source, /if \(!probe\.held\)/,
     "SH1047: a route pattern that stopped matching must be a skip that says so. Held zero requests"
       + " and passing is the report-zero shape — indistinguishable from a console that is fine.")
   assert.match(source, /release\(\)/,
     "SH1047: the held request must be released, or the probe measures a timeout rather than a race")
+})
+
+/**
+ * SH1049 — the failed-read probe's shape, since `pnpm test` cannot fail a read in a browser.
+ *
+ * <p>`loading-state.test.mjs` refuses a page that models no loading state, which is what a source
+ * scan can do. Whether a page that *has* one shows anything useful when the read actually fails is
+ * a statement about a browser, and these hold the two things that would make that probe pass
+ * without having failed anything.</p>
+ */
+test("SH1049: the failed-read probe actually fails the reads, and only the reads", () => {
+  assert.match(source, /status: 500, contentType: "application\/json", body: FAILED_BODY/,
+    "SH1049: the probe no longer answers anything with 500, so it drives three healthy pages and"
+      + " reports that a broken instance looks fine.")
+  assert.match(source, /target\.request\(\)\.method\(\) === "GET"/,
+    "SH1049: failing the writes too would make the page's own save paths the subject, which is"
+      + " SH955's question and not this one")
+  assert.match(source, /probe\.skipped = "none of the sampled routes/,
+    "SH1049: the sampled routes are named, so a rename must be a skip that says so rather than a"
+      + " loop over an empty list reporting success — the report-zero shape again.")
 })

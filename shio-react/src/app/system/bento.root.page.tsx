@@ -15,6 +15,7 @@ import {
 } from "@viglet/viglet-design-system/bento"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
+import { RouteBoundary } from "@/components/route-boundary"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
 // SH1028 — the palette answers with content and verbs, not only with destinations.
@@ -278,7 +279,16 @@ export default function BentoRootPage() {
               silent case for everyone except the reader who needs telling.
             */}
             <BentoTenantLinkNotice />
-            <Outlet />
+            {/*
+              SH1049 — one screen's failure stays inside that screen. `main.tsx` still mounts the
+              design system's boundary around the whole application, and it is now the last resort
+              rather than the only one: a throw under this one leaves the rail, the header and the
+              palette alive, so a curator can go somewhere else instead of reloading and losing
+              what they were doing.
+            */}
+            <RouteBoundary>
+              <Outlet />
+            </RouteBoundary>
           </div>
 
           {/*

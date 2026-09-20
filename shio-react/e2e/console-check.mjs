@@ -814,7 +814,14 @@ async function checkSupersededNavigation(context, site) {
   // is the whole experiment: a slow earlier response racing a fast later one.
   let release = null
   const held = new Promise((resolve) => { release = resolve })
-  await page.route(`**/api/v2/object/${site.id}/list*`, async (route) => {
+  // A URL predicate rather than a Playwright glob, and deliberately. The shared comment stripper
+  // the shape test reads this file through is not a parser: a slash followed by two stars, inside
+  // a string or anywhere else, opens a block comment to it and it swallows everything to the next
+  // close — so a wildcard pattern written the obvious way silently ends the file, and every
+  // assertion after it matches an empty string. Found twice while writing SH1049: once in the
+  // pattern, and once in the comment that was explaining the pattern.
+  const listing = `/api/v2/object/${site.id}/list`
+  await page.route((url) => url.pathname === listing, async (route) => {
     probe.held += 1
     await held
     await route.continue()
@@ -861,6 +868,72 @@ async function checkSupersededNavigation(context, site) {
   } finally {
     release?.()
     await page.close()
+  }
+  return probe
+}
+
+/**
+ * SH1049 — what a curator sees when the read fails, which only a browser can answer.
+ *
+ * <p>`test/loading-state.test.mjs` refuses the <em>absence</em> of a loading state, which is what a
+ * source scan can do. It cannot tell a good failure from a bad one, and the failure this task is
+ * about was invisible to every scan: the post editor settled every promise, so a 500 left its value
+ * null and the render gate spun for ever — no error, no retry, nothing to press.</p>
+ *
+ * <p>So this fails the read on purpose. Every {@code /api/v2/} request the page makes is answered
+ * {@code 500}, and the page must then show something a person can act on: the word for a failure,
+ * or a way to try again. A page that only shows a spinner is the defect, by name.</p>
+ *
+ * <p>The spinner is what it looks for rather than a specific string, because the console is
+ * translated and the strings are not this probe's business. What it refuses is a screen that is
+ * still <em>loading</em> long after every request it made has been answered.</p>
+ */
+const FAILED_BODY = JSON.stringify({ title: "planted by the failed-read probe" })
+
+async function checkFailedReads(context, routes) {
+  const probe = { name: "failed-reads", ok: true, errors: [], checked: [], silent: [] }
+
+  // Three of them: a list, an editor and the dashboard, which is the spread of shapes rather than
+  // every route. A 500 per route is a browser launch per route, and this is a smoke check.
+  const wanted = ["sites", "site-children", "post-type-list"]
+  const chosen = routes.filter((route) => wanted.includes(route.name))
+  if (!chosen.length) {
+    probe.skipped = "none of the sampled routes are in the walk any more, so this probe would "
+      + "report success over nothing — update `wanted` with the routes that replaced them"
+    return probe
+  }
+
+  for (const route of chosen) {
+    const page = await context.newPage()
+    // Only the reads. A 500 on the console's own chunks would be a broken page rather than a
+    // broken instance, and the two must not report the same.
+    await page.route((url) => url.pathname.startsWith("/api/v2/"),
+      (target) => (target.request().method() === "GET"
+        ? target.fulfill({ status: 500, contentType: "application/json", body: FAILED_BODY })
+        : target.continue()))
+    try {
+      await page.goto(BASE + route.path, { waitUntil: "domcontentloaded", timeout: 20_000 })
+      await page.waitForSelector("main, [role=main], nav", { timeout: 10_000 }).catch(() => {})
+      await page.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => {})
+      await page.waitForTimeout(1_200)
+
+      const body = await page.evaluate(() => document.body.innerText)
+      const spinning = await page.locator(".animate-spin").count()
+      const says = /erro|error|falh|fail|tente|try again|indispon|unavailable/i.test(body)
+      probe.checked.push(route.name)
+      if (!says) {
+        probe.ok = false
+        probe.silent.push(route.name)
+        probe.errors.push(`SH1049: ${route.name} answered every read with 500 and said nothing a `
+          + `curator could act on${spinning ? ` (${spinning} spinner(s) still turning)` : ""} — a `
+          + "broken instance and a slow one are the same screen there.")
+      }
+    } catch (problem) {
+      probe.ok = false
+      probe.errors.push(`${route.name}: ${problem}`)
+    } finally {
+      await page.close()
+    }
   }
   return probe
 }
@@ -1417,6 +1490,15 @@ async function main() {
       ? `skipped: ${raceProbe.skipped}`
       : `${raceProbe.held} listing(s) held, the later folder won`))
   for (const e of raceProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
+
+  // SH1049 — every read answered 500, and what a curator is left looking at.
+  const failedProbe = await checkFailedReads(context, routes)
+  report.probes.push(failedProbe)
+  console.log(`${failedProbe.ok ? "ok  " : "FAIL"} ${failedProbe.name.padEnd(30)} `
+    + (failedProbe.skipped
+      ? `skipped: ${failedProbe.skipped}`
+      : `${failedProbe.checked.length} route(s) driven with every read failing`))
+  for (const e of failedProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   report.probes.push(driveProbe)
   console.log(`${driveProbe.ok ? "ok  " : "FAIL"} ${driveProbe.name.padEnd(30)} `

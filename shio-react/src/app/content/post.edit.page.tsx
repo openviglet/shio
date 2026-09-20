@@ -11,7 +11,7 @@ import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconEye, IconFileText, IconHistory, IconMessage, IconSparkles } from "@tabler/icons-react"
-import { Clock, Eye, EyeOff, History, Loader2, Save, Sparkles, Upload } from "lucide-react"
+import { Clock, Eye, EyeOff, History, Save, Sparkles, Upload } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -33,6 +33,7 @@ import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unif
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
 import { fieldOf, headlineOf, problemOf, reportProblem } from "@/lib/problem"
+import { LoadProvider } from "@viglet/viglet-design-system/router"
 import { changedAttrs, isDirty } from "@/lib/dirty"
 import { bufferDraft, clearBuffer, readBuffer } from "@/lib/draft-buffer"
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard"
@@ -97,6 +98,15 @@ export default function PostUnifiedEditPage() {
   const [conflict, setConflict] = useState<
     { fields: PostConflictField[]; theirs: Record<string, unknown>; detail?: string } | undefined
   >(undefined)
+  /**
+   * SH1049 — why the post is not here, when it is not.
+   *
+   * <p>Without it, `post` stays `null` on a failed read and the render below spins for ever: a 500,
+   * a deleted post and a slow server are the same screen, and there is nothing to press. The load
+   * settles every promise on purpose (SH654 needs to know which rows exist), so a failure has no
+   * other way to reach the page.</p>
+   */
+  const [loadFailure, setLoadFailure] = useState<unknown>(null)
 
   useEffect(() => {
     async function load() {
@@ -110,7 +120,13 @@ export default function PostUnifiedEditPage() {
       const editable = draft.status === "fulfilled" ? draft.value : null
       const live = published.status === "fulfilled" ? published.value : null
       const unified: ShPostUnified | null = editable ?? live
-      if (!unified) return
+      if (!unified) {
+        // Both reads failed, or the post is gone. Either way this page has nothing to draw, and
+        // the rejection the DRAFT read carries is the one that says which.
+        setLoadFailure(draft.status === "rejected" ? draft.reason : new Error("not found"))
+        return
+      }
+      setLoadFailure(null)
       const resolvedState: ShPostState = editable ? "DRAFT" : "PUBLISHED"
 
       aclService
@@ -374,9 +390,23 @@ export default function PostUnifiedEditPage() {
     return (
       <>
         <PageHero icon={IconFileText} title={t("content.editPost")} urlBase={ROUTES.CONTENT_ROOT} />
-        <div className="p-6 flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>{t("common.loading")}</span>
+        {/*
+          SH1049 — three states, not two. `LoadProvider` shows the skeleton while
+          `checkIsNotUndefined` is undefined and the blank slate with "try again" once `error` is
+          set, so a failed read stops being indistinguishable from a slow one. The spinner this
+          replaced ran for ever on a 500, because the load settles every promise and had nowhere
+          to put the rejection.
+        */}
+        <div className="p-6">
+          <LoadProvider
+            checkIsNotUndefined={loadFailure ? null : undefined}
+            error={loadFailure
+              ? headlineOf(problemOf(loadFailure), t("content.postLoadFailed"))
+              : null}
+            tryAgainUrl={`${ROUTES.CONTENT_ROOT}/folder/${parentFolderId ?? ""}`}
+          >
+            <span>{t("common.loading")}</span>
+          </LoadProvider>
         </div>
       </>
     )

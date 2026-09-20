@@ -2338,3 +2338,50 @@ there and only a browser can say the superseded answer loses. It **holds the fir
 open**, navigates past it, releases it, and reads the rows. A route pattern that stops matching is a
 skip that says so rather than a pass: held zero requests and green is indistinguishable from a
 console that is fine.
+
+## A failure that stays in the screen it happened in (SH1049)
+
+`main.tsx` mounted the design system's `ErrorBoundary` around the whole application, so a render
+throw anywhere blanked the console — and this codebase's own prose records the bento shell coming
+up blank behind exactly that, twice, with the compiler saying nothing. A blank page names nothing,
+offers nothing, and leaves a reload as the only move.
+
+Two sizes now, because a failure has a size. `RouteBoundary` wraps the shell's outlet: one screen
+fails, the rail and the header and the palette stay, and a curator can go somewhere else. It is
+**keyed on the pathname**, which is not decoration — a class boundary holds `hasError` until
+something resets it, so without the key somebody who navigated away from a broken screen would
+carry its error to every screen after, and the fix would look exactly like the defect.
+`PanelBoundary` is the smaller one, for a section inside a form.
+
+**Try again means re-run the reads.** Resetting the boundary alone re-renders the same components
+against the same cached, failed queries, so the throw happens again and the button reads as broken.
+SH1046's client is what makes the honest version possible: `resetQueries()` drops what the route
+read, and the re-render asks again.
+
+**The post editor was the worst case and is the named one.** It loads with `Promise.allSettled` on
+purpose — SH654 needs to know which of DRAFT and PUBLISHED exist — so a 500 left `post` at `null`,
+and `if (!post)` rendered a spinner with no end: no error, no retry, nothing to press. A slow
+server, a deleted post and a broken instance were one screen. It records the rejection now and
+hands it to `LoadProvider`, which is the package's own three-state gate — skeleton while the value
+is undefined, blank slate with a way out once `error` is set.
+
+Three instruments, and the split is the usual one. `test/loading-state.test.mjs` refuses the
+*absence*: forty-two pages read from the server, thirty-eight model a pending or failed read, and
+**four are a declared list** that shrinks by deletion. It follows a page that imports another
+*page* one hop, because eight admin lists are three lines handing a fetcher to `AdminListPage` —
+and only page to page, since the first draft credited `post-type.list.page.tsx` for importing a
+header component that happens to have a `loading` prop. A hop that reaches any component reaches
+something gated from almost anywhere, which is a scan that says yes to everything.
+
+`e2e/console-check.mjs` answers **every** `/api/v2/` GET with a 500 on three routes and reads what
+is on the page: a screen that says nothing a person can act on is the failure, by name. And
+`console-check-shape.test.mjs` holds both, plus one thing worth more than either.
+
+**The stripper is not a parser, and this is where that bit.** `stripComments` treats a slash
+followed by two stars as a block-comment opener wherever it appears, including inside a template
+literal — so the obvious Playwright pattern `` `**/api/v2/**` `` silently truncated the stripped
+view of the script, and every assertion below it began matching an empty string and passing for it.
+The length guard did not catch it: half a large file is still large. It happened **twice in one
+hour** — once in the pattern, and once in the comment written to explain the pattern. Both probes
+use a `(url) => url.pathname…` predicate now, and the shape test anchors on the script's final
+statement, so a cut view fails instead of going quiet.

@@ -1500,6 +1500,33 @@ a state the mirror can express rather than one it forgets.
 The assertion is a refresh from a dirty docs checkout refused or marked, and a clean one
 unchanged.
 
+### LXIV.19 A stripper that says when it could not read (SH1118)
+
+`stripComments` opens a block comment on a slash and two stars wherever it finds them,
+string literals included, and closes on the next star-slash — hundreds of lines later,
+or never. Everything between is deleted from the scanned text, and every assertion over
+that region then matches an empty string and passes.
+
+Measured during SH1049: adding a Playwright wildcard route to `console-check.mjs` cut
+the stripped view from 79,612 characters to 36,223 and turned four assertions green over
+nothing. The comment written to explain the hazard quoted the pattern and caused it a
+second time, an hour later.
+
+The file says it is not a parser, which is honest about the *stripping* and silent about
+the consequence. Thirty-one suites across two packages read source through it, and any
+one can be silenced by a string in a file it does not own.
+
+The narrow fix is an invariant the helper enforces itself: a strip that removes too
+large a fraction, or leaves an opener unclosed, throws rather than returning. A reader
+that cannot see the file should say so rather than agree with everything. SH1049's shape
+test anchors on its script's last statement — the same idea, by hand, once.
+
+The wider question is whether the two copies should have stayed separate. SH823 kept
+them apart on purpose, and a bug in both is what that decision quietly costs.
+
+The assertion is a planted opener in a string failing the strip by name, and the
+thirty-one suites green after.
+
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key
@@ -2341,26 +2368,6 @@ number argues for. The bundle gate's seed is taken before the feature blocks add
 code, so their additions are visible as raises rather than folded into a baseline.
 Resilience and access follow, and the assistant dock from Block AX already carries the
 announcements this block would otherwise have to build.
-
-### LXXII.7 Failures that stay in their panel and say what to do (SH1049)
-
-The app mounts one boundary around everything, and the codebase's own prose records
-twice that the bento shell once came up blank behind it with the compiler saying
-nothing. Fetch failures never reach it: the post editor's load settles every promise and
-shows a spinner while the post is null, so a 500 leaves a spinner forever with no error
-and no retry. The design system exports a load provider that shows a skeleton while
-loading and a blank slate with Try again on error, and a skeleton primitive, and the
-console uses neither.
-
-A per-route boundary inside the shell outlet retries by re-running the route's queries,
-and a per-panel boundary wraps each section panel so one dead widget does not take the
-page. Every unconditioned spinner becomes the load provider with a skeleton shaped like
-its content, rows for a list and tiles for a dashboard, and the error panel renders the
-server's fix through SH955's reader.
-
-The instrument comes first: the live browser probe injects a 500 on each route's primary
-read and records what a curator sees. A lint holds the routes with no loading state,
-shrinking only by deletion.
 
 ### LXXII.8 Home as the attention queue (SH1050)
 
