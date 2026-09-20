@@ -2132,26 +2132,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.5 Patterns: a good block becomes a file (SH1040)
-
-Every blueprint today is whole-site or whole-page, with a fixed target and no mode that
-inserts into an existing page, and nothing captures an existing arrangement as a
-blueprint. So when a curator gets a pricing block right, the only way to reuse it is to
-rebuild it.
-
-shio_apply gains at and mode insert, applying a blueprint's sections into a named
-container of an existing page through BF4's insert batch. shio capture with an
-as-pattern name writes shio/patterns/<name>.json from a selected set of sections, with
-their field values made parameters where the author marks them, diffable and reviewable
-in a pull request, the shape Gutenberg reached by registering patterns as files.
-Patterns join the blueprint registry, so an agent lists and applies them the way it does
-blueprints.
-
-The console's inserter rail from BF4 gains a Patterns tab beside section types, and a
-selected set of sections gains Save as pattern, which writes through the same capture
-path. The assertions capture a two-section pattern from one page, apply it into another
-page's container through MCP, and compare the resulting section arrays.
-
 ### LXXI.6 An edit log with undo, and a refresh that tells the truth (SH1041)
 
 The pending map has two operations, set and clear on success. There is no per-field
@@ -2261,6 +2241,31 @@ not do is read the layout the page renders through, which is a static resolve th
 
 The assertion is a page naming a section of an undeclared type, reported once, with the
 accepted list in the finding.
+
+### LXXI.11 A pattern the console can see (SH1108)
+
+A pattern is `shio/patterns/<name>.json` in the project, and the console is a browser
+talking to an instance. It cannot read that file, so the Patterns tab SH1040's design
+put beside the section types has nothing to list and Save as pattern has nowhere to
+write. Capture and placement are a CLI verb, while the person most likely to know a
+block is worth keeping is the curator who just composed it.
+
+The way through is already built and was mistaken for a blocker. The marketplace
+installer expands an uploaded zip into `shio.blueprint.path` — an operator directory the
+registry loads beside the classpath — and reloads, rolling back a package that will not
+load. So a pattern reaches the server the way every third-party package does: `shio
+patterns push <name>` packages the file as a minimal blueprint and installs it. Nothing
+new stores anything.
+
+Two decisions the build makes rather than inherits. A package is **named**, so a pushed
+pattern needs a prefix keeping it out of the catalogue a curator scrolls, and the
+console needs a way to ask for patterns rather than for every package. And a pushed
+pattern is a **copy**: the file stays the authority, and one edited on disk and not
+pushed is stale on the instance, which the tab says rather than letting a curator find
+out.
+
+The assertion is a pattern captured, pushed and then placed from the rail, with the
+resulting section array matching the one the CLI writes for the same pattern.
 
 ## LXXII The console as an application: cost, resilience and access (Block BG)
 

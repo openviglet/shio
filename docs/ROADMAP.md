@@ -84,12 +84,12 @@
 
 ## Block BF — The visual editor becomes a composer
 
-- ⏳ **SH1040** (deps: SH1039 ✅) **a well-built block on one page cannot be captured and reused as a pattern** — The console's own half — a Patterns tab beside the section types in the inserter rail, and Save as pattern over a selection, both writing through the same capture path. → §LXXI.5
 - 📋 **SH1041** (deps: SH1036 ✅) **the visual editor has no undo or discard, and a refresh leaves pending changes counted that are no longer visible** — The pending set supports set and clear-all only, refresh reloads the frame without touching it, and leaving the route drops edits without asking. → §LXXI.6
 - 📋 **SH1042** (deps: —) **a stakeholder cannot be sent an expiring link to a draft rendered by Shio itself** — The preview route is console-authenticated and the token mint returns a null token for an internal site, so only sites with an external front end can be previewed by anyone else. → §LXXI.7
 - 📋 **SH1101** (deps: SH1038 ✅) **a copied post comes back with no id, so duplicating a section can only place the same one twice** — `copyto` returns only the folders it made, so nothing can address a post it just copied, and the editor's Duplicate repeats the reference instead. → §LXXI.8
 - 📋 **SH1105** (deps: SH1039 ✅) **the inserter rail describes a section in a sentence, which is the worst way to show a shape** — A curator picks between a hero and a rich-text block by looking, and the rail has no thumbnail and no drop target — so placement is two buttons and nothing can be dragged. → §LXXI.9
 - 📋 **SH1106** (deps: SH1039 ✅) **a page can name a section of a type its own template says does not belong there, and nothing says so** — `sh-accepts` is read by the console and by nothing else, so any write past that screen composes a page against a list no instrument consults. → §LXXI.10
+- 📋 **SH1108** (deps: SH1040 ✅) **the console cannot offer patterns, because it cannot read the project file they live in** — A pattern is a file in the tree and the console is a browser, so the inserter rail's Patterns tab has nothing to list and Save as pattern has nowhere to write. → §LXXI.11
 
 ## Block BG — The console as an application: cost, resilience and access
 
@@ -163,13 +163,6 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
-
-## Done when — SH1040
-
-- **A curator saves and places a pattern without leaving the editor** The capture and
-  the placement are a CLI verb, which is the agent's half; a curator who composed the
-  block is the person most likely to know it is worth keeping, and the rail is where
-  they already are.
 
 ## Non-goals (do NOT add as tasks)
 

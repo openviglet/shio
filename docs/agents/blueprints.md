@@ -898,3 +898,10 @@ deriving idempotent urls, splicing at a position. That is convenience over a sur
 reachable, which is the one case P1's order does not oblige, and it is also why the design's
 `shio_apply --at --mode insert` is not here: that would need the *server* to hold the pattern, which
 means uploading a project file, which is the marketplace's job.
+
+**The console's half is SH1108, and finding out why is what closed SH1040.** A Patterns tab in the
+inserter rail has nothing to list, because the console is a browser and a pattern is a project file.
+The way through is already built and was mistaken for a blocker in the paragraphs above: the
+marketplace installer expands an uploaded zip into `shio.blueprint.path` and reloads the registry,
+rolling back a package that will not load — so a pattern reaches the server the way every
+third-party package does, packaged as a minimal blueprint, and nothing new has to store anything.
