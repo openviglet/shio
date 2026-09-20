@@ -1,4 +1,5 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 
 /**
  * One row of a console search — the agent's `find` row, unchanged (SH1027).
@@ -44,13 +45,14 @@ export interface ShConsoleSearchResult {
  * `shio find` asks with the same words.
  */
 export class ShSearchService {
-  async search(params: Record<string, string>, limit = 50): Promise<ShConsoleSearchResult> {
+  async search(params: Record<string, string>, limit = 50, read: ShRead = {}): Promise<ShConsoleSearchResult> {
     const query = new URLSearchParams()
     for (const [key, value] of Object.entries(params)) {
       if (value) query.set(key, value)
     }
     query.set("limit", String(limit))
-    const response = await axios.get<ShConsoleSearchResult>(`/v2/content/search?${query}`)
+    const response = await axios.get<ShConsoleSearchResult>(`/v2/content/search?${query}`,
+      { signal: read.signal })
     return response.data
   }
 }

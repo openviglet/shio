@@ -13,6 +13,22 @@ import { toast } from "@viglet/viglet-design-system"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShFolderService } from "@/services/folder/folder.service"
 import { ShSiteService } from "@/services/site/site.service"
+import { isCancelled } from "@/lib/read-options"
+import type { ShPostUnified } from "@/models/post-unified/post-unified"
+import type { ShFolder } from "@/models/folder/folder"
+import type { ShSite } from "@/models/site/site"
+
+/**
+ * One read failing must not hide the other two, and a cancellation must not read as a failure.
+ *
+ * SH1047 — the bare `catch(() => [])` this replaced was right about the first and blind to the
+ * second: an aborted read would have become an empty list beside two real ones, so leaving the
+ * page mid-load emptied the trash it was drawing.
+ */
+function rethrowCancel(reason: unknown): never[] {
+  if (isCancelled(reason)) throw reason
+  return []
+}
 
 const postService = new ShPostUnifiedService()
 const folderService = new ShFolderService()
@@ -36,13 +52,13 @@ export default function TrashPage() {
   const [loading, setLoading] = useState(true)
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
-  const fetchTrash = useCallback(() => {
+  const fetchTrash = useCallback((signal?: AbortSignal) => {
     // All three in one list. A read that fails must not hide the others' rows, so each falls
     // back to empty instead of rejecting the set.
     return Promise.all([
-      postService.trash().catch(() => []),
-      folderService.trash().catch(() => []),
-      siteService.trash().catch(() => []),
+      postService.trash({ signal }).catch<ShPostUnified[]>(rethrowCancel),
+      folderService.trash({ signal }).catch<ShFolder[]>(rethrowCancel),
+      siteService.trash({ signal }).catch<ShSite[]>(rethrowCancel),
     ])
       .then(([posts, folders, sites]) =>
         setItems([
@@ -69,13 +85,22 @@ export default function TrashPage() {
           })),
         ]),
       )
+      // SH1047 — a cancellation is not one of the three reads failing, so it must not reach the
+      // per-read fallback above and land as an empty trash. It rejects out of the whole set, and
+      // the only handling it needs is none.
+      .catch((reason: unknown) => { if (!isCancelled(reason)) setItems([]) })
       .finally(() => setLoading(false))
   }, [t])
 
   // No `load` wrapper here: this page has no refresh control, so the mount read is the only one
   // and a `setLoading(true)` nobody triggers would be the cascading render itself (SH701).
   useEffect(() => {
-    void fetchTrash()
+    // SH1047 — nothing here changes key while mounted, so this is the unmount case: a curator who
+    // leaves before the three reads land must not have `setItems` run against a gone component,
+    // and the server must not finish three queries for a page nobody is on.
+    const abort = new AbortController()
+    void fetchTrash(abort.signal)
+    return () => abort.abort()
   }, [t, fetchTrash])
 
   const drop = (row: TrashRow) =>

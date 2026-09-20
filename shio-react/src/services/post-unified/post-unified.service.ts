@@ -5,6 +5,7 @@ import type {
   ShPublishPlan,
   ShPublishRoutes,
 } from "@/models/post-unified/post-unified"
+import type { ShRead } from "@/lib/read-options"
 
 /**
  * The create body. The post-type is named either way: `postType` is its API name
@@ -285,8 +286,9 @@ export class ShPostUnifiedService {
   }
 
   /** Posts currently in the trash for the active tenant (SH55). */
-  async trash(): Promise<ShPostUnified[]> {
-    const response = await axios.get<ShPostUnified[]>("/v2/post-unified/trash")
+  async trash(read: ShRead = {}): Promise<ShPostUnified[]> {
+    const response = await axios.get<ShPostUnified[]>("/v2/post-unified/trash",
+      { signal: read.signal })
     return response.data
   }
 

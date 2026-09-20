@@ -229,3 +229,21 @@ test("SH1046: no child folder is a skip that says so, and --strict makes it fail
   assert.match(source, /STRICT && navProbe\.skipped/,
     "SH1046: and in CI, where the fixture is provisioned one step earlier, the skip is the failure")
 })
+
+/**
+ * SH1047 — the race probe's shape, since `pnpm test` cannot run the race.
+ *
+ * <p>`test/fetch-cancellation.test.mjs` asserts every screen passes a signal, which is a statement
+ * about source. Whether the superseded answer actually loses is a statement about a browser, and
+ * these hold the two things that would make that probe report success without having raced.</p>
+ */
+test("SH1047: the race is held open, and a route that stopped matching is a skip not a pass", () => {
+  assert.match(source, /await page\.route\(`\*\*\/api\/v2\/object\/\$\{site\.id\}\/list\*`/,
+    "SH1047: the first folder's listing is no longer held, so the second navigation is not racing"
+      + " anything and the probe passes on a console with no cancellation at all.")
+  assert.match(source, /if \(!probe\.held\)/,
+    "SH1047: a route pattern that stopped matching must be a skip that says so. Held zero requests"
+      + " and passing is the report-zero shape — indistinguishable from a console that is fine.")
+  assert.match(source, /release\(\)/,
+    "SH1047: the held request must be released, or the probe measures a timeout rather than a race")
+})

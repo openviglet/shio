@@ -95,7 +95,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1047** (deps: SH1046 ✅) **no console fetch can be cancelled, so a fast navigation renders whichever response arrives last** — AbortController appears nowhere, and the browser's page fetch is recreated on each folder, sort or query change with nothing cancelling the request before it. → §LXXII.5
 - 📋 **SH1048** (deps: SH1046 ✅) **the console API sends no ETag and no Cache-Control, so an unchanged read costs its full body every time** — Both cache filters are registered for the delivery and agent paths only, so every endpoint the console calls answers a full 200 with no validator. → §LXXII.6
 - 📋 **SH1049** (deps: SH1046 ✅, SH955 ✅) **one error boundary guards the whole console, and a failed fetch leaves a spinner that never ends** — A render throw blanks the application, an unhandled load settles into a permanent spinner, and the design system's load provider and skeleton are used by nothing. → §LXXII.7
 - 📋 **SH1050** (deps: SH1048, SH991 ✅, SH1003 ✅) **the dashboard downloads two whole collections to show two numbers** — Home fetches every site and every post type to use their length, and in an agent-first CMS its question should be what the agent did that nobody has looked at. → §LXXII.8
@@ -111,6 +110,7 @@
 - 📋 **SH1112** (deps: SH1043 ✅) **an agent cannot ask a running instance what its console costs to load** — The budget's two readers are a pnpm script and a build gate, so checking a console change needs this checkout, its toolchain and a build — which is P1 on the surface P1 is about. → §LXXII.18
 - 📋 **SH1113** (deps: SH1043 ✅) **nothing measures what one console route costs, so a screen's own fetches hide inside a total** — SH1043 counts the bytes every route pays before the first row, which is blind to a page that then fetches three collections to draw two figures. → §LXXII.19
 - 📋 **SH1114** (deps: SH1045 ✅) **the reachability walk reads one manifest of eleven, and four of the ten it skips are published** — SH1045 found eighteen dead declarations in the console and nothing asks the same question of the CLI, the SDKs or the starter, where a consumer pays for the answer. → §LXXII.20
+- 📋 **SH1116** (deps: SH1046 ✅, SH1047 ✅) **thirty-five console screens still read inside an effect and cancel nothing** — SH1047 migrated the five its symptom named and declared the rest, so the same race is recorded rather than fixed on every other screen that fetches. → §LXXII.21
 
 ## Block BH — One content model, many languages
 

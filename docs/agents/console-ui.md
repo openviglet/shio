@@ -2294,3 +2294,47 @@ the API requests of a second folder navigation in a browser, which is the only p
 own behaviour can be observed, with its shape held by `console-check-shape.test.mjs`. And
 `test/eslint-suppressions.test.mjs` fails on a suppression for a file that does not exist — four
 had survived two rounds of deletions, which is what a ledger nobody reads looks like.
+
+## A read the console can hang up on (SH1047)
+
+`AbortController` appeared nowhere in the console. The content browser rebuilds its page fetch on
+every change of folder, sort or filter and left the request it replaced running, so a curator
+clicking quickly down a tree could be shown a **slow earlier response over a fast later one**: the
+rows of a folder they already left, under a breadcrumb saying otherwise. Nothing errors, nothing
+spins, and there is no way to tell by looking — which is why the deliverable is an instrument and
+not only a fix.
+
+`lib/read-options.ts` holds both halves. `ShRead` is the one option every read takes, so sixty-two
+reads across twenty-seven service classes cannot each invent their own spelling, and the lint can
+ask one question. **Writes do not take it**, and that is a rule rather than an omission: aborting a
+POST does not undo it, so a cancelled write is a write whose *answer* was discarded, which is worse
+than waiting.
+
+The other half is `isCancelled`, and without it this change would be a regression. An aborted
+request **rejects**, so every `catch(() => setItems([]))` in the console would read a navigation as
+a failed load and empty the list the curator is walking into. Three screens needed the guard
+literally: the trash's three reads each fall back to `[]` so one failure cannot hide the other two —
+a cancellation had to be rethrown past that fallback, or leaving the page mid-load emptied the trash
+it was drawing.
+
+Five screens were migrated, the ones the symptom names: the content browser, search, trash, the
+media library and the activity trail. Each takes an `AbortController` in its effect and aborts on
+cleanup. They did **not** move onto SH1046's query layer, and the reason is worth keeping: their
+state is a cursor or an accumulating page, so caching them is a behaviour change (a curator
+returning to the trash would meet yesterday's rows) that belongs to `useInfiniteQuery` and its own
+task. Search gained the most from the move — its `let current = true` flag ignored the superseded
+answer, where the signal stops the server being asked for it.
+
+`test/fetch-cancellation.test.mjs` is the gate. Forty screens fetch inside an effect; five pass a
+signal and **thirty-five are a declared list**, not a ceiling — a ceiling lets this task pay the
+debt and the next spend it. The entries share one reason, written once rather than invented
+thirty-five times, and the list's job is that a thirty-sixth cannot arrive quietly. It strips
+comments first, which is load-bearing and not tidiness: every migrated file carries a paragraph
+about cancellation, and `bento.root.page.tsx` says "an ambient signal" in its own prose — a raw scan
+passed it for talking about the thing.
+
+And `e2e/console-check.mjs` reproduces the race, because source can say an `AbortController` is
+there and only a browser can say the superseded answer loses. It **holds the first folder's listing
+open**, navigates past it, releases it, and reads the rows. A route pattern that stops matching is a
+skip that says so rather than a pass: held zero requests and green is indistinguishable from a
+console that is fine.

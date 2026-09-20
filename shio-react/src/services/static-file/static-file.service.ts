@@ -2,6 +2,7 @@ import axios from "@/lib/axios"
 import type {
   ShAssetRendition, ShStaticFileItem, ShStaticFileFilter, ShStaticFileMeta, ShStaticFileUsage,
 } from "@/models/static-file/static-file.model"
+import type { ShRead } from "@/lib/read-options"
 
 /** Options for {@link ShStaticFileService.thumbUrl} / transform URLs (SH39–43 pipeline). */
 export interface ShTransformOptions {
@@ -43,7 +44,7 @@ export class ShStaticFileService {
    * category chips. That worked exactly because it had all of it — and a library big enough to
    * need chips is one where downloading it to draw them is the problem.
    */
-  async list(filter?: ShStaticFileFilter): Promise<ShStaticFileListing> {
+  async list(filter?: ShStaticFileFilter, read: ShRead = {}): Promise<ShStaticFileListing> {
     const params = new URLSearchParams()
     if (filter?.folderId) params.set("folderId", filter.folderId)
     if (filter?.siteId) params.set("siteId", filter.siteId)
@@ -53,7 +54,7 @@ export class ShStaticFileService {
     if (filter?.size !== undefined) params.set("size", String(filter.size))
     const qs = params.toString()
     const url = qs ? `/v2/staticfile?${qs}` : "/v2/staticfile"
-    const response = await axios.get<ShStaticFileListing>(url)
+    const response = await axios.get<ShStaticFileListing>(url, { signal: read.signal })
     return response.data
   }
 

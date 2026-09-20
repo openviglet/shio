@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next"
 import { useChangeStream } from "@/hooks/use-change-stream"
 import { ShHistoryService } from "@/services/history/history.service"
 import type { ShHistory } from "@/models/history/history.model"
+import { isCancelled } from "@/lib/read-options"
 
 const service = new ShHistoryService()
 
@@ -70,25 +71,29 @@ export default function ActivityListPage() {
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
   const fetchPage = useCallback(
-    () => service.recent({
+    (signal?: AbortSignal) => service.recent({
       limit: PAGE_SIZE,
       before: before || undefined,
       agent: who || undefined,
       action: action || undefined,
       actor: actor || undefined,
-    })
+    }, { signal })
       .then((page) => {
         setItems(page.rows)
         setCursor(page.cursor)
         setMore(page.more)
         setArrived(false)
+        setLoading(false)
       })
-      .catch(() => {
+      .catch((reason: unknown) => {
+        // SH1047 — every filter on this page rebuilds the callback, so a narrowing that overtakes
+        // its own request must not land as an empty trail with the old cursor cleared.
+        if (isCancelled(reason)) return
         setItems([])
         setCursor(null)
         setMore(false)
-      })
-      .finally(() => setLoading(false)),
+        setLoading(false)
+      }),
     [before, who, action, actor],
   )
 
@@ -99,7 +104,9 @@ export default function ActivityListPage() {
   }, [fetchPage])
 
   useEffect(() => {
-    void fetchPage()
+    const abort = new AbortController()
+    void fetchPage(abort.signal)
+    return () => abort.abort()
   }, [t, fetchPage])
 
   useChangeStream(useCallback(() => setArrived(true), []))

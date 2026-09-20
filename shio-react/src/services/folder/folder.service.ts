@@ -1,5 +1,6 @@
 import type { ShFolder } from "@/models/folder/folder";
 import axios from "axios";
+import type { ShRead } from "@/lib/read-options"
 
 /** The CDA breadcrumb shape, shared by the console navigation reads (SH120). */
 export interface ShCdaPath {
@@ -33,8 +34,8 @@ export class ShFolderService {
   }
 
   /** SH200 — deleted folder sections in the trash, one row per section. */
-  async trash(): Promise<ShFolder[]> {
-    const response = await axios.get<ShFolder[]>("/v2/folder/trash");
+  async trash(read: ShRead = {}): Promise<ShFolder[]> {
+    const response = await axios.get<ShFolder[]>("/v2/folder/trash", { signal: read.signal });
     return response.data;
   }
 

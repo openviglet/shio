@@ -1,9 +1,10 @@
 import type { ShSite } from "@/models/site/site";
 import axios from "axios";
+import type { ShRead } from "@/lib/read-options"
 
 export class ShSiteService {
-  async query(): Promise<ShSite[]> {
-    const response = await axios.get<ShSite[]>("/v2/site");
+  async query(read: ShRead = {}): Promise<ShSite[]> {
+    const response = await axios.get<ShSite[]>("/v2/site", { signal: read.signal });
     return response.data;
   }
 
@@ -34,8 +35,8 @@ export class ShSiteService {
   }
 
   /** SH648 — sites currently in the trash, newest deletion first. */
-  async trash(): Promise<ShSite[]> {
-    const response = await axios.get<ShSite[]>("/v2/site/trash");
+  async trash(read: ShRead = {}): Promise<ShSite[]> {
+    const response = await axios.get<ShSite[]>("/v2/site/trash", { signal: read.signal });
     return response.data;
   }
 

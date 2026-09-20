@@ -775,6 +775,96 @@ async function checkFolderNavigation(context, site) {
   return probe
 }
 
+/**
+ * SH1047 — the race itself, reproduced rather than reasoned about.
+ *
+ * <p>The content browser rebuilds its page fetch on every change of folder, sort or filter, and
+ * before this task the request it replaced kept running. A curator clicking quickly down a tree
+ * could be shown the <b>earlier</b> folder's rows under the <b>later</b> folder's breadcrumb, with
+ * nothing to notice by — no error, no spinner, just the wrong list.</p>
+ *
+ * <p>Source can say an `AbortController` is there; only a browser can say the superseded answer
+ * does not land. So this holds the first folder's listing response back, navigates past it, releases
+ * it, and reads what is on screen. Without cancellation the delayed body arrives second and wins.</p>
+ *
+ * <p>A instance with no child folder is a <b>skip</b>, as above: a fixture fact, red under
+ * `--strict` where the fixture is provisioned.</p>
+ */
+async function checkSupersededNavigation(context, site) {
+  const probe = { name: "superseded-navigation", ok: true, errors: [], held: 0 }
+
+  let children
+  try {
+    children = await api(`/object/${site.id}/list?page=0`)
+  } catch (problem) {
+    probe.skipped = `the site's own listing did not answer: ${problem}`
+    return probe
+  }
+  const child = (children.folders ?? [])[0]
+  if (!child) {
+    probe.skipped = "this site has no child folder, so there is no navigation to supersede"
+    return probe
+  }
+  probe.from = site.id
+  probe.to = child.id
+
+  const page = await context.newPage()
+  page.on("pageerror", (e) => probe.errors.push(String(e)))
+  // The first folder's listing is held until after the second navigation has been asked for, which
+  // is the whole experiment: a slow earlier response racing a fast later one.
+  let release = null
+  const held = new Promise((resolve) => { release = resolve })
+  await page.route(`**/api/v2/object/${site.id}/list*`, async (route) => {
+    probe.held += 1
+    await held
+    await route.continue()
+  })
+
+  try {
+    await page.goto(`${BASE}/console/content/object/${site.id}`,
+      { waitUntil: "domcontentloaded", timeout: 20_000 })
+    // Long enough for the listing to have been asked for and short enough that nothing settles.
+    await page.waitForTimeout(1_000)
+    await page.goto(`${BASE}/console/content/object/${child.id}`,
+      { waitUntil: "domcontentloaded", timeout: 20_000 })
+    release()
+    await page.waitForSelector("main, [role=main], nav", { timeout: 10_000 }).catch(() => {})
+    await page.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => {})
+    await page.waitForTimeout(800)
+
+    if (!probe.held) {
+      probe.skipped = "the held route never matched, so nothing was raced — the listing endpoint "
+        + "moved and this probe is measuring nothing"
+      return probe
+    }
+    // What is on screen has to be the second folder's. Read from the URL the app settled on and
+    // the rows it drew: a stale render keeps the first folder's listing under the second's address.
+    const landed = new URL(page.url()).pathname
+    if (!landed.endsWith(child.id)) {
+      probe.ok = false
+      probe.errors.push(`the browser left ${landed} instead of the child folder`)
+      return probe
+    }
+    const rows = await page.evaluate(() => document.body.innerText)
+    const strays = (children.folders ?? []).concat(children.posts ?? [])
+      .map((one) => one.title || one.name)
+      .filter((name) => name && name !== child.name && rows.includes(name))
+    if (strays.length) {
+      probe.ok = false
+      probe.errors.push("SH1047: the superseded folder's rows are on screen under the folder the "
+        + `curator navigated to — ${strays.slice(0, 4).join(", ")}. The earlier listing was not `
+        + "cancelled, so its delayed answer landed second and won.")
+    }
+  } catch (problem) {
+    probe.ok = false
+    probe.errors.push(String(problem))
+  } finally {
+    release?.()
+    await page.close()
+  }
+  return probe
+}
+
 async function checkEditorDrive(context, sites) {
   const probe = { name: "universal-editor-drive", path: "/console/universal-editor/{site}", ok: true,
     errors: [], warnings: [], failedRequests: [] }
@@ -1314,6 +1404,19 @@ async function main() {
       : `${navProbe.requests} API request(s) on the second navigation`
         + (navProbe.repeated.length ? `, repeated: ${navProbe.repeated.join(", ")}` : "")))
   for (const e of navProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
+
+  // SH1047 — the race itself, held open and released after the navigation past it.
+  const raceProbe = await checkSupersededNavigation(context, site)
+  if (STRICT && raceProbe.skipped) {
+    raceProbe.ok = false
+    raceProbe.errors.push(`--strict: the race must be run, and it skipped — ${raceProbe.skipped}`)
+  }
+  report.probes.push(raceProbe)
+  console.log(`${raceProbe.ok ? "ok  " : "FAIL"} ${raceProbe.name.padEnd(30)} `
+    + (raceProbe.skipped
+      ? `skipped: ${raceProbe.skipped}`
+      : `${raceProbe.held} listing(s) held, the later folder won`))
+  for (const e of raceProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   report.probes.push(driveProbe)
   console.log(`${driveProbe.ok ? "ok  " : "FAIL"} ${driveProbe.name.padEnd(30)} `

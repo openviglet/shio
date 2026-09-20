@@ -2342,24 +2342,6 @@ code, so their additions are visible as raises rather than folded into a baselin
 Resilience and access follow, and the assistant dock from Block AX already carries the
 announcements this block would otherwise have to build.
 
-### LXXII.5 Cancellation, and a lint that keeps it (SH1047)
-
-The analysis found no AbortController in the console. The browser's page fetch is
-recreated on every change of folder, sort or query with nothing cancelling the previous
-request, so a quick sequence of navigations can render a slow earlier response over a
-fast later one: the list on screen belongs to a folder the curator already left.
-
-BG4's query layer passes an abort signal to every request it makes, so migrating the
-page reads onto it brings cancellation with it. This task migrates the remaining page
-reads, the browser listing, search, trash, static files and activity, and lands the
-guard independently of the library: a lint that every fetching effect or service call
-passes a signal or carries a documented exception, held as a named list rather than a
-ceiling.
-
-The assertion reproduces the race in a test: navigate to folder A, then B before A's
-delayed response arrives, and the rendered rows are B's. A planted fetch with no signal
-fails the lint by name.
-
 ### LXXII.6 Validators on the console's reads (SH1048)
 
 The CDA cache configuration registers the shallow ETag filter and a cache-control filter
@@ -2689,6 +2671,32 @@ binary is what it ships.
 The assertion is a dead dependency planted in a workspace package other than the console
 failing by name, and the published packages' own runs coming back clean or naming what
 they owe.
+
+### LXXII.21 The rest of the uncancelled reads, in slices (SH1116)
+
+SH1047 migrated the five screens its symptom named and left thirty-five in
+`fetch-cancellation.test.mjs`'s declared list. The list does its job — a thirty-sixth
+cannot arrive quietly — but the gate that records a debt is not the thing that pays it.
+
+Two shapes, and the split is what makes this schedulable. Most are one read keyed on a
+route parameter — a post editor, a folder editor, a provider form — and those are
+`useQuery` with the signal its `queryFn` is handed, which brings caching with it. Three
+are not: the content browser, the activity trail and the media library each keep a
+cursor or accumulate pages by hand, which is why SH1047 gave them an `AbortController`
+instead. Those want `useInfiniteQuery`, and moving them changes behaviour a curator can
+see — a cached trail shows rows that were true a minute ago, which has to be decided
+rather than inherited.
+
+The hazard to carry into every one of them is the one SH1047 met: **an aborted request
+rejects**, so a `catch(() => setItems([]))` turns a navigation into an empty list.
+`isCancelled` in `lib/read-options.ts` exists for that, and the trash needed it rethrown
+past a per-read fallback that was there for a different reason. A migration that forgets
+it trades a rare race for a reliable blank screen.
+
+Worth doing in slices, since each screen's failure path is its own.
+
+The assertion is the list shrinking with every slice, and the browser probe green after
+each.
 
 ## LXXIII One content model, many languages (Block BH)
 

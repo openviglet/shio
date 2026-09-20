@@ -39,6 +39,7 @@ import { filterParams, type ShContentFilters } from "@/lib/content-query"
 // SH1023 — the view lives in the URL, so the address a curator sends reproduces what they saw.
 import { useListState } from "@/hooks/use-list-state"
 import { usePostTypes } from "@/hooks/use-catalogue"
+import { isCancelled } from "@/lib/read-options"
 
 const siteService = new ShSiteService()
 const previewService = new ShPreviewTokenService()
@@ -294,7 +295,7 @@ export default function ObjectChildrenPage() {
    * picker's whole-set read stays correct; this list opts in, and everything below that used to
    * rely on holding them all had to be paid for in the same change.
    */
-  const fetchPage = useCallback((page: number) => {
+  const fetchPage = useCallback((page: number, signal?: AbortSignal) => {
     const params = new URLSearchParams({
       page: String(page),
       size: String(PAGE_SIZE),
@@ -306,7 +307,7 @@ export default function ObjectChildrenPage() {
     // SH1023 they are the URL's own names too, so this loop is the console link turned into a
     // request without a translation step in between.
     for (const [key, value] of Object.entries(filterParams(filters))) params.set(key, value)
-    return axios.get<ObjectListResponse>(`/v2/object/${objectId}/list?${params}`)
+    return axios.get<ObjectListResponse>(`/v2/object/${objectId}/list?${params}`, { signal })
   }, [objectId, sortBy, filters])
 
   /** The next page, appended. Only the posts accumulate — the folders are already all here. */
@@ -332,12 +333,27 @@ export default function ObjectChildrenPage() {
   // which rows the first page holds. SH703 — nothing is raised here; `loading` is already true
   // because `queryKey` moved, and it goes false when this query is the one that landed.
   useEffect(() => {
-    fetchPage(0)
+    /*
+     * SH1047 — the previous listing is cancelled, and this is the page the race was about.
+     *
+     * `fetchPage` is rebuilt whenever the folder, the sort or a filter moves, and the request it
+     * replaced used to keep running. A curator clicking quickly down a tree could be shown a slow
+     * earlier response over a fast later one: the rows belong to a folder they already left, under
+     * a breadcrumb that says otherwise, with nothing to notice by. Aborting on cleanup means the
+     * superseded request rejects instead of resolving, so `then` never runs for it.
+     */
+    const abort = new AbortController()
+    fetchPage(0, abort.signal)
       .then((res) => {
         rememberFolders(res.data.folders)
         setListData(res.data)
+        setLoadedQuery(queryKey)
       })
-      .finally(() => setLoadedQuery(queryKey))
+      // A cancelled read has no answer and needs none: the effect that cancelled it is the one
+      // that stopped wanting it, and marking the query "loaded" here would clear the spinner over
+      // the rows of a folder nobody is looking at any more.
+      .catch((reason: unknown) => { if (!isCancelled(reason)) setLoadedQuery(queryKey) })
+    return () => abort.abort()
   }, [fetchPage, queryKey])
 
   useEffect(() => {

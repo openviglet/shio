@@ -1,5 +1,6 @@
 import axios from "@/lib/axios"
 import type { ShHistoryPage, ShHistoryQuery, ShWorking } from "@/models/history/history.model"
+import type { ShRead } from "@/lib/read-options"
 
 /** Only the keys that were actually set: an absent parameter is "everything". */
 function params(query: ShHistoryQuery): Record<string, string | number> {
@@ -20,8 +21,9 @@ function params(query: ShHistoryQuery): Record<string, string | number> {
  */
 export class ShHistoryService {
   /** Recent activity across all content in the current tenant, newest first. */
-  async recent(query: ShHistoryQuery = {}): Promise<ShHistoryPage> {
-    const response = await axios.get<ShHistoryPage>("/v2/history", { params: params(query) })
+  async recent(query: ShHistoryQuery = {}, read: ShRead = {}): Promise<ShHistoryPage> {
+    const response = await axios.get<ShHistoryPage>("/v2/history",
+      { params: params(query), signal: read.signal })
     return response.data
   }
 

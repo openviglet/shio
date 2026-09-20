@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { ShSearchService, type ShConsoleSearchRow } from "@/services/search/search.service"
 import { useSites } from "@/hooks/use-catalogue"
+import { isCancelled } from "@/lib/read-options"
 
 const searchService = new ShSearchService()
 
@@ -75,7 +76,12 @@ export default function SearchPage() {
       setSearched(false)
       return
     }
-    let current = true
+    /*
+     * SH1047 — the `current` flag this replaced ignored a superseded answer; the signal stops it
+     * being sent for. Both keep the wrong rows off the screen, and only one stops the server doing
+     * work for a search the curator has already typed past.
+     */
+    const abort = new AbortController()
     setLoading(true)
     searchService.search({
       q: q.trim(),
@@ -83,25 +89,25 @@ export default function SearchPage() {
       state: list.value.state,
       folder: list.value.folder,
       subtree: list.value.subtree,
-    })
+    }, 50, { signal: abort.signal })
       .then((found) => {
-        if (!current) return
         setResults(found.results)
         setTotal(found.count)
         setWithheld(found.withheld)
-      })
-      .catch(() => {
-        if (!current) return
-        setResults([])
-        setTotal(0)
-        setWithheld(0)
-      })
-      .finally(() => {
-        if (!current) return
         setLoading(false)
         setSearched(true)
       })
-    return () => { current = false }
+      .catch((reason: unknown) => {
+        // A cancelled search leaves the previous rows alone: the next one is already running, and
+        // blanking the list between keystrokes is the flicker the debounce exists to avoid.
+        if (isCancelled(reason)) return
+        setResults([])
+        setTotal(0)
+        setWithheld(0)
+        setLoading(false)
+        setSearched(true)
+      })
+    return () => abort.abort()
   }, [q, siteName, list.value.state, list.value.folder, list.value.subtree])
 
   const runSearch = (e?: FormEvent) => {

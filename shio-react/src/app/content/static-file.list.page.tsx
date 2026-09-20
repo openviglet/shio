@@ -30,6 +30,7 @@ import type {
   ShAssetRendition, ShStaticFileItem, ShStaticFileUsage,
 } from "@/models/static-file/static-file.model"
 import { useSites } from "@/hooks/use-catalogue"
+import { isCancelled } from "@/lib/read-options"
 import type { ShSite } from "@/models/site/site"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { reportProblem } from "@/lib/problem"
@@ -125,24 +126,29 @@ export default function StaticFileListPage() {
    * array. That was correct exactly because it had all of it, and a library big enough to need
    * chips is one where downloading it to draw them is the problem.
    */
-  const fetchList = useCallback(() =>
+  const fetchList = useCallback((signal?: AbortSignal) =>
     service.list({
       q: query || undefined,
       category: category === "all" ? undefined : category,
       page,
       size: PAGE_SIZE,
-    })
+    }, { signal })
       .then((listing) => {
         setItems(listing.items ?? [])
         setTotalFiles(listing.totalFiles ?? 0)
         setFacets(listing.facets ?? {})
+        setLoading(false)
       })
-      .catch(() => {
+      .catch((reason: unknown) => {
+        // SH1047 — a superseded listing is not an empty library. The search box and the category
+        // chips both rebuild this callback, so without the guard typing a query would blank the
+        // grid on every keystroke that overtook its own request.
+        if (isCancelled(reason)) return
         setItems([])
         setTotalFiles(0)
         setFacets({})
-      })
-      .finally(() => setLoading(false)), [category, page, query])
+        setLoading(false)
+      }), [category, page, query])
 
   /** The curator asked — upload, delete, move — so the spinner is a response to them (SH701). */
   const load = () => {
@@ -152,7 +158,9 @@ export default function StaticFileListPage() {
 
   useEffect(() => {
     setLoading(true)
-    void fetchList()
+    const abort = new AbortController()
+    void fetchList(abort.signal)
+    return () => abort.abort()
   }, [fetchList])
 
   // SH1030 — the server's counts, over the whole filtered set. Counted here they would describe
