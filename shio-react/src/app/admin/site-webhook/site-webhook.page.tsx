@@ -17,12 +17,10 @@ import { toast } from "@viglet/viglet-design-system"
 import { ShSiteWebhookService } from "@/services/webhook/site-webhook.service"
 import type { ShSiteWebhook, ShWebhookEventType } from "@/models/webhook/site-webhook.model"
 import { SH_WEBHOOK_EVENT_TYPES } from "@/models/webhook/site-webhook.model"
-import { ShSiteService } from "@/services/site/site.service"
-import type { ShSite } from "@/models/site/site"
+import { useSites } from "@/hooks/use-catalogue"
 import { reportProblem } from "@/lib/problem"
 
 const service = new ShSiteWebhookService()
-const siteService = new ShSiteService()
 
 const ALL_SITES = "__all__"
 
@@ -36,7 +34,8 @@ export default function SiteWebhookPage() {
     id: "", name: "", siteId: null, url: "", secret: "", events: [], enabled: true,
     owner: "", createdDate: "",
   })
-  const [sites, setSites] = useState<ShSite[]>([])
+  // SH1046 — one cached read of the site list, shared with every other picker in the console.
+  const sites = useSites().data ?? []
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -45,10 +44,6 @@ export default function SiteWebhookPage() {
       service.get(webhookId).then((wh) => setItem({ ...wh, events: wh.events ?? [] }))
     }
   }, [t, webhookId, isNew, item.name])
-
-  useEffect(() => {
-    siteService.query().then(setSites).catch(() => setSites([]))
-  }, [])
 
   const allEvents = (item.events?.length ?? 0) === 0
   const toggleEvent = (event: ShWebhookEventType, checked: boolean) => {

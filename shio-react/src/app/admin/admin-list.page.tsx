@@ -7,9 +7,12 @@
  * (at your option) any later version.
  */
 import type { Icon as TablerIcon } from "@tabler/icons-react"
+import { useQuery } from "@tanstack/react-query"
 import { BentoEntityTile, BentoListPage, type BentoTone } from "@viglet/viglet-design-system/bento"
 import type { ReactNode } from "react"
-import { useEffect, useState } from "react"
+
+import { headlineOf, problemOf } from "@/lib/problem"
+import { addressKey } from "@/lib/query-keys"
 
 /** What one row becomes on the mosaic. Every field the package's tile takes, and no more. */
 export interface AdminTile {
@@ -24,6 +27,15 @@ export interface AdminTile {
 }
 
 export interface AdminListPageProps<T> {
+  /**
+   * What this list is, in the address grammar (SH1046) — `"group:"`, `"role:"`, `"user:"`.
+   *
+   * <p>The cache key, so the eight lists built from this component share one entry each rather than
+   * refetching on every visit. It is a required prop and not derived from `listRoute`: a route is a
+   * place in the console and an address is a thing in the instance, and two lists of one thing
+   * under two routes must not be two cache entries.</p>
+   */
+  address: string
   query: () => Promise<T[]>
   listRoute: string
   newRoute: string
@@ -72,6 +84,7 @@ export interface AdminListPageProps<T> {
  *   list translated for itself.
  */
 export function AdminListPage<T>({
+  address,
   query,
   listRoute,
   newRoute,
@@ -87,22 +100,28 @@ export function AdminListPage<T>({
   tileOf,
   headerAction,
 }: Readonly<AdminListPageProps<T>>) {
-  const [items, setItems] = useState<T[] | undefined>(undefined)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    query()
-      .then(setItems)
-      .catch((reason: unknown) => {
-        setItems([])
-        setError(reason instanceof Error ? reason.message : String(reason))
-      })
-  }, [query])
+  /*
+   * SH1046 — one read per address, shared by every screen that asks for it.
+   *
+   * The three states the package needs are `useQuery`'s own: `undefined` while pending is what
+   * `BentoListPage` reads as loading, `[]` is genuinely empty, and `error` is the server not
+   * answering. The effect this replaced collapsed the last two — `catch(() => setItems([]))` with
+   * a message beside it — and the collapse is why this component's own doc comment has a paragraph
+   * about a load failure rendering the empty state.
+   */
+  const { data, error } = useQuery<T[]>({
+    queryKey: addressKey(address),
+    queryFn: query,
+  })
+  // `undefined` means "still loading" to the package's gate, so a failure has to become an empty
+  // array *and* an error — otherwise a failed load spins for ever. That was true of the effect
+  // this replaced and it is still true: `useQuery` leaves `data` undefined on a failed first read.
+  const items = data ?? (error ? [] : undefined)
 
   return (
     <BentoListPage
       items={items}
-      error={error}
+      error={error ? headlineOf(problemOf(error), error.message) : null}
       tryAgainUrl={listRoute}
       eyebrow={eyebrow}
       heroIcon={icon}

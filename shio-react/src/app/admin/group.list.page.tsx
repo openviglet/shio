@@ -21,6 +21,7 @@ export default function BentoGroupListPage() {
   const query = useCallback(() => service.query(), [])
   return (
     <AdminListPage
+      address="group:"
       query={query}
       listRoute={ROUTES.BENTO_GROUPS}
       newRoute={ROUTES.BENTO_GROUP_NEW}

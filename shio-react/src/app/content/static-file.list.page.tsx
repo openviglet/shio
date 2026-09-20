@@ -29,7 +29,7 @@ import { ShStaticFileService } from "@/services/static-file/static-file.service"
 import type {
   ShAssetRendition, ShStaticFileItem, ShStaticFileUsage,
 } from "@/models/static-file/static-file.model"
-import { ShSiteService } from "@/services/site/site.service"
+import { useSites } from "@/hooks/use-catalogue"
 import type { ShSite } from "@/models/site/site"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { reportProblem } from "@/lib/problem"
@@ -38,8 +38,10 @@ import {
   SH_MEDIA_CATEGORIES, type ShMediaCategory,
 } from "@/lib/media-type"
 
+/** SH1046 — one identity while the cached list loads, not one per render. */
+const EMPTY_SITES: ShSite[] = []
+
 const service = new ShStaticFileService()
-const siteService = new ShSiteService()
 const postService = new ShPostUnifiedService()
 
 type UploadStatus = "uploading" | "done" | "error"
@@ -74,8 +76,18 @@ function undescribed(item: ShStaticFileItem): boolean {
 export default function StaticFileListPage() {
   const { t } = useTranslation()
   const [items, setItems] = useState<ShStaticFileItem[]>([])
-  const [sites, setSites] = useState<ShSite[]>([])
-  const [targetSite, setTargetSite] = useState<string>("")
+  // SH1046 — one cached read under `site:`, shared with every other picker in the console.
+  const sites = useSites().data ?? EMPTY_SITES
+  /*
+   * SH1046 — the chosen destination, or the first site once the cached list lands.
+   *
+   * Derived rather than synced. Seeding a `useState` from an effect that watches `sites` is the
+   * shape SH703 removed one screen over: it renders once with an empty picker, then again with the
+   * default, and the effect has to remember not to overwrite a choice the curator has since made.
+   * The empty string means "nothing picked yet", so `chosen || sites[0]` is the whole rule.
+   */
+  const [chosenSite, setTargetSite] = useState<string>("")
+  const targetSite = chosenSite || sites[0]?.id || ""
   const [loading, setLoading] = useState(true)
   /**
    * SH1023 — the library's view, in its URL.
@@ -142,13 +154,6 @@ export default function StaticFileListPage() {
     setLoading(true)
     void fetchList()
   }, [fetchList])
-
-  useEffect(() => {
-    siteService.query().then((s) => {
-      setSites(s)
-      if (s.length > 0) setTargetSite((prev) => prev || s[0].id)
-    }).catch(() => setSites([]))
-  }, [t])
 
   // SH1030 — the server's counts, over the whole filtered set. Counted here they would describe
   // the page: a library of two thousand images would report fifty, and the chip a curator presses

@@ -91,13 +91,21 @@ test("SH904/SH905: a load failure is not the empty state, on the one list every 
    * exists to leave, not to arrive at — so there is one, and this assertion covers all eight
    * lists at once because they are all the same component now.
    */
-  assert.match(LIST, /\.catch\(/,
-    "SH904: the shared admin list has no catch, so a failed request leaves the array empty and"
-      + " every one of the eight lists renders 'no results'. The console lists all did this:"
-      + " 'no groups' and 'the server did not answer' were the same screen.")
-  assert.match(LIST, /setError/,
-    "SH904: the shared admin list swallows the failure instead of reporting it — and"
-      + " `items: undefined` means 'still loading' to the package's gate, so it would spin.")
+  /*
+   * SH1046 changed the spelling and not the claim: the effect with a `.catch` became a `useQuery`,
+   * so a failure is `error` rather than a caught rejection. Both halves still have to be there,
+   * and both are asserted on the answers rather than on the mechanism that produced them — the
+   * first draft of this update matched `useQuery` and proved nothing about what a failure renders.
+   */
+  assert.match(LIST, /const items = data \?\? \(error \? \[\] : undefined\)/,
+    "SH904: a failed request leaves `data` undefined, which means 'still loading' to the package's"
+      + " gate — so the list spins for ever instead of reporting the failure. It has to become an"
+      + " empty array AND an error. SH1046 kept this line for exactly the reason the effect it"
+      + " replaced had it.")
+  assert.match(LIST, /error=\{error \? headlineOf\(problemOf\(error\), error\.message\) : null\}/,
+    "SH904: the shared admin list swallows the failure instead of reporting it, so 'no groups' and"
+      + " 'the server did not answer' are the same screen on all eight lists. SH955's reader is"
+      + " what turns the rejection into the server's own words rather than into 'Error'.")
 })
 
 test("SH904: the user editor is not on the entity shell, and the reason is in the model", () => {

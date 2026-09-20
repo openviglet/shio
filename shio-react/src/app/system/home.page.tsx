@@ -31,12 +31,9 @@ import { Link } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import type { ShHistory } from "@/models/history/history.model"
 import { ShHistoryService } from "@/services/history/history.service"
-import { ShPostTypeService } from "@/services/post-type/post-type.service"
-import { ShSiteService } from "@/services/site/site.service"
+import { usePostTypes, useSites } from "@/hooks/use-catalogue"
 import { ShSystemInfoService } from "@/services/system/system-info.service"
 
-const siteService = new ShSiteService()
-const postTypeService = new ShPostTypeService()
 const systemInfoService = new ShSystemInfoService()
 const historyService = new ShHistoryService()
 
@@ -80,14 +77,21 @@ const ACTION_TONE: Record<string, BentoTone> = {
 
 export default function BentoHomePage() {
   const { t } = useTranslation()
-  const [siteCount, setSiteCount] = useState<number | null>(null)
-  const [postTypeCount, setPostTypeCount] = useState<number | null>(null)
+  /*
+   * SH1046 — the two counts are the two cached catalogues, counted.
+   *
+   * `null` while the read is pending is the whole point of the comment above about not showing
+   * "0 Sites" to somebody who has just logged in: zero is a real answer to that question and a
+   * wrong one. A failure counts as zero, which is what the `.catch` this replaced did.
+   */
+  const sites = useSites()
+  const postTypes = usePostTypes()
+  const siteCount = sites.isPending ? null : (sites.data?.length ?? 0)
+  const postTypeCount = postTypes.isPending ? null : (postTypes.data?.length ?? 0)
   const [appVersion, setAppVersion] = useState<string>("")
   const [activity, setActivity] = useState<ShHistory[]>([])
 
   useEffect(() => {
-    siteService.query().then((s) => setSiteCount(s.length)).catch(() => setSiteCount(0))
-    postTypeService.query().then((p) => setPostTypeCount(p.length)).catch(() => setPostTypeCount(0))
     systemInfoService.getInfo().then((i) => setAppVersion(i.appVersion)).catch(() => setAppVersion(""))
     historyService.recent({ limit: 8 }).then((page) => setActivity(page.rows))
       .catch(() => setActivity([]))

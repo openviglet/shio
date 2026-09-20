@@ -8,14 +8,11 @@
  */
 import { IconFileText, IconFolderPlus, IconForms } from "@tabler/icons-react"
 import { BentoHero, BentoSection, BentoTile } from "@viglet/viglet-design-system/bento"
-import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
+import { usePostTypes } from "@/hooks/use-catalogue"
 import type { ShPostType } from "@/models/post-type/post-type"
-import { ShPostTypeService } from "@/services/post-type/post-type.service"
-
-const service = new ShPostTypeService()
 
 /**
  * SH901 — choosing what to post, as tiles.
@@ -28,15 +25,10 @@ export default function BentoPostTypeSelectPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { folderId = "" } = useParams()
-  const [postTypes, setPostTypes] = useState<ShPostType[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    service.query()
-      .then(setPostTypes)
-      .catch(() => setPostTypes([]))
-      .finally(() => setLoading(false))
-  }, [])
+  // SH1046 — one cached read of the catalogue. `isPending` is the state the `finally` above was
+  // maintaining by hand, and it is false on a failure too, which is what the `.catch()` meant.
+  const { data, isPending: loading } = usePostTypes()
+  const postTypes: ShPostType[] = data ?? []
 
   const systemTypes = postTypes.filter((pt) => pt.system)
   const customTypes = postTypes.filter((pt) => !pt.system)

@@ -6,28 +6,28 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ROUTES } from "@/app/routes.const"
 import { IconFileText } from "@tabler/icons-react"
 import { Pencil, Plus, Trash2 } from "lucide-react"
-import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
-import type { ShPostType } from "@/models/post-type/post-type"
 import { toast } from "@viglet/viglet-design-system"
+import { usePostTypes, useInvalidate } from "@/hooks/use-catalogue"
 
 const service = new ShPostTypeService()
 
 export default function PostTypeListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [items, setItems] = useState<ShPostType[]>([])
-
-  useEffect(() => {
-    service.query().then(setItems)
-  }, [t])
+  // SH1046 — the catalogue, cached under `postType:` and shared with every other screen.
+  const items = usePostTypes().data ?? []
+  const invalidate = useInvalidate()
 
   const handleDelete = async (name: string) => {
     if (confirm(t("dialog.deleteMessage"))) {
       await service.delete(name)
-      setItems((prev) => prev.filter((i) => i.name !== name))
+      // The write half of the cache, and the half it is wrong without: dropping the scheme drops
+      // the catalogue AND every single type under it, so no other screen keeps the deleted row.
+      // Filtering local state instead would leave this page right and the next one wrong.
+      await invalidate("postType:")
       toast.success(t("common.delete"))
     }
   }

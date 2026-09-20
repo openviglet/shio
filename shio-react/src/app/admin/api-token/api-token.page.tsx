@@ -17,12 +17,10 @@ import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { ShApiTokenService } from "@/services/token/api-token.service"
 import type { ShApiToken, ShApiTokenScope, ShApiTokenEnv } from "@/models/token/api-token.model"
-import { ShSiteService } from "@/services/site/site.service"
-import type { ShSite } from "@/models/site/site"
+import { useSites } from "@/hooks/use-catalogue"
 import { reportProblem } from "@/lib/problem"
 
 const service = new ShApiTokenService()
-const siteService = new ShSiteService()
 
 const SCOPES: ShApiTokenScope[] = ["READ", "PREVIEW", "WRITE", "AGENT"]
 const ENVS: ShApiTokenEnv[] = ["PROD", "PREVIEW"]
@@ -37,7 +35,9 @@ export default function ApiTokenPage() {
     id: "", title: "", description: "", token: "", owner: "", createdDate: "", enabled: true,
     scope: "READ", siteIds: [], env: "PROD", mayPublish: false,
   })
-  const [sites, setSites] = useState<ShSite[]>([])
+  // SH1046 — the site list is one cached read, shared with every other screen that fills a picker
+  // from it. An empty array while it loads is what this form drew before and still draws.
+  const sites = useSites().data ?? []
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -47,10 +47,6 @@ export default function ApiTokenPage() {
         setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [], env: token.env ?? "PROD", mayPublish: token.mayPublish ?? false }))
     }
   }, [t, tokenId, isNew, item.title])
-
-  useEffect(() => {
-    siteService.query().then(setSites).catch(() => setSites([]))
-  }, [])
 
   const allSites = (item.siteIds?.length ?? 0) === 0
   const toggleSite = (siteId: string, checked: boolean) => {

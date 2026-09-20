@@ -37,6 +37,7 @@
  * The counts are **printed on every run**, because a gate that checks nothing passes quietly.
  */
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
@@ -81,10 +82,13 @@ const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.met
  *
  * <h2>What stays, and why the rest is not the same kind of debt</h2>
  *
- * <p>`react-refresh/only-export-components` is 14 files and is not a defect at all: every one is a
+ * <p>`react-refresh/only-export-components` is 9 files and is not a defect at all: every one is a
  * context or a `ui/` primitive that exports a hook or a variants object beside its component. The
  * rule is about hot-reload granularity in dev, the export is the API, and "fixing" it means
- * splitting 14 files to please a dev-server heuristic.</p>
+ * splitting those files to please a dev-server heuristic. It was 14 until SH1046: four of the
+ * five it lost had been deleted from the tree rounds earlier, and the fifth was
+ * `ShioServiceContext.tsx`, the dead provider that task replaced — which is the finding the last
+ * test in this file now gates.</p>
  *
  * <p>The other three are single instances in two files, and each is a real smell that is cheaper to
  * leave visible here than to fix blind: they sit in the two largest pages in the console.</p>
@@ -95,9 +99,10 @@ const DECLARED = {
   // reintroduction is a *change to a declared zero* that a diff shows, rather than a new rule
   // quietly appearing in a file somebody regenerated.
   "react-hooks/set-state-in-effect": {},
-  "@typescript-eslint/no-unused-expressions": {
-    "src/app/content/object.children.page.tsx": 1,
-  },
+  // Also empty, and also left declared: SH1046 took the last one off. The content browser's
+  // `postTypeService.query().then(...)` was an expression statement, and it went with the effect
+  // that read the whole post-type catalogue once per folder.
+  "@typescript-eslint/no-unused-expressions": {},
   "no-useless-assignment": {
     "src/app/content/post-type.edit.page.tsx": 1,
   },
@@ -111,13 +116,8 @@ const DECLARED = {
     "src/components/ui/badge.tsx": 1,
     "src/components/ui/button.tsx": 1,
     "src/components/ui/form.tsx": 1,
-    "src/components/ui/gradient-button.tsx": 1,
-    "src/components/ui/sidebar.tsx": 1,
     "src/components/ui/sonner.tsx": 1,
-    "src/contexts/ShioServiceContext.tsx": 1,
-    "src/contexts/breadcrumb.context.tsx": 1,
     "src/contexts/review-pending.context.tsx": 1,
-    "src/contexts/tenant.context.tsx": 1,
     "src/contexts/user.context.tsx": 1,
   },
 };
@@ -255,4 +255,46 @@ test("SH701: the reader is not vacuous — it reads the real file and a drifted 
   bumped[victim][rule].count += 1;
   assert.notDeepEqual(triples(byRule(bumped)), triples(DECLARED),
     "SH701: a count growing by one must not compare equal to the declared list");
+});
+
+/**
+ * SH1046 — an excuse for a file that is not there any more.
+ *
+ * <p>SH701's table above compares the baseline against a declared list, which catches drift in
+ * either direction and is the right gate for a debt. It cannot catch this, because the four
+ * entries in question were <b>in the declared list too</b>: `components/ui/gradient-button.tsx`,
+ * `components/ui/sidebar.tsx`, `contexts/breadcrumb.context.tsx` and `contexts/tenant.context.tsx`
+ * were deleted in earlier rounds and their suppressions were not, so the list and the file agreed
+ * about four files that did not exist and the gate stayed green for both.</p>
+ *
+ * <p>Harmless in itself; the reason it is worth a gate is what it means. This file is the ledger of
+ * accepted findings, and nothing was reading it as a statement about the tree. `eslint
+ * --prune-suppressions` would have removed them — but pruning is something somebody chooses to
+ * run, and it also removes suppressions for rules that merely stopped firing, which is a different
+ * fact and sometimes a regression's disguise. This asks the one question with no legitimate
+ * answer.</p>
+ */
+test("SH1046: every suppressed path is a file that still exists", async () => {
+  const document = JSON.parse(await readFile(BASELINE, "utf8"));
+  const paths = Object.keys(document);
+  assert.ok(paths.length >= 5,
+    `SH1046: the baseline names ${paths.length} path(s), so this reader is looking at a shape it `
+    + "no longer parses and would report every tree as clean");
+
+  const gone = paths.filter((path) => !existsSync(new URL(`../../shio-react/${path}`, import.meta.url)));
+
+  assert.deepEqual(gone, [],
+    "SH1046: the baseline excuses findings in files that no longer exist. Run "
+    + "`pnpm --filter shio-react exec eslint . --prune-suppressions`, commit the result, and take "
+    + "the same lines out of DECLARED above — an accepted finding whose file is gone is a ledger "
+    + "entry nobody is reading, which is how four of these survived two rounds of deletions.");
+
+  // And the declared list is held to the same standard, since it is the half a person reads.
+  const declaredGone = triples(DECLARED)
+    .map((one) => one.split(" ")[1])
+    .filter((path) => !existsSync(new URL(`../../shio-react/${path}`, import.meta.url)));
+  assert.deepEqual(declaredGone, [],
+    "SH1046: DECLARED names files that are not in the tree. The table above compares it to the "
+    + "baseline, so two lists agreeing about a file neither of them checks is exactly the state "
+    + "this found.");
 });

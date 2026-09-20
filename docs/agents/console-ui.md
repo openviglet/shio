@@ -2233,3 +2233,64 @@ hero image and a press kit are two questions, and one answer for both files the 
 place. It is deliberately **not persisted** — the durable answer is the field's `widgetSettings`,
 which an administrator sets once for everybody, and writing a session's guess to storage would let it
 quietly become the configuration.
+
+## One query layer, keyed on the address every other surface uses (SH1046)
+
+The console had no query cache. Seventeen call sites fetched a whole collection with the same six
+lines — a service at module scope, a `useState`, and an effect calling
+`.query().then(setState).catch(() => setState([]))` — and the content browser's copy of it sat
+**inside an effect keyed on the folder id**, so walking a tree cost one full post-type catalogue per
+folder, for a list that decides a default and fills a filter and does not change while somebody
+navigates.
+
+`@tanstack/react-query` is the layer, mounted by `contexts/query.provider.tsx` in the place
+`ShioServiceProvider` used to occupy. That provider is the story in miniature: a service-injection
+context built for exactly this problem, wrapping the whole route tree, with **no call sites** —
+every page constructed its own service anyway. The right instinct one layer too low. The services
+are stateless wrappers over axios, so sharing the *instance* saves nothing; what every page was
+re-doing was the request.
+
+**A cache key is an address (P10).** `lib/query-keys.ts` turns SH79's grammar into the key:
+`postType:` is the catalogue, `postType:Page` is one type, `folder:Cafeteria/Menu` is a folder. The
+scheme is its own array segment, which is what makes `invalidateQueries(["postType:"])` reach the
+catalogue *and* every single type under it — the whole invalidation story, with no second list of
+what-else-to-drop to go stale. An address with no known scheme **throws where it is written**: a key
+built from a typo would cache and never be invalidated, because every invalidation names a scheme,
+and that is a screen showing yesterday's content with no error anywhere.
+
+Three decisions live in `lib/query-client.ts`, which is a `.ts` file with no JSX so they can be
+driven under plain Node — a behaviour reachable only through a rendered provider is one nothing
+asserts:
+
+- **30 s stale.** Long enough that a folder-to-folder walk costs one request rather than one per
+  folder; short enough that a curator who edits a post type in another tab sees it on the next
+  screen. A write invalidates its own scheme, so the window bounds staleness caused by *somebody
+  else*, never by this session.
+- **Retry once, never on a 4xx.** P6 says an error is an instruction, so a refusal is delivered,
+  not repeated. A missing status is a request that never arrived, which is the case a retry is for.
+- **The error handler is the cache's.** TanStack v5 removed `onError` from `useQuery` because a
+  per-component handler fires once per observer — three screens sharing one failed read toasted
+  three times. It goes through `reportProblem`, so a refusal arrives in the server's words (SH955).
+
+**The error state was the quieter half of the win.** `catch(() => setState([]))` makes "the server
+did not answer" and "there is nothing here" the same screen. Two pages had already worked around it
+by hand, with a separate `error` state and a comment explaining that `undefined` means loading; the
+other ten had not. `useQuery` answers the three apart by default.
+
+`AdminListPage` takes an `address` prop and caches inside itself, which reached eight configuration
+lists rather than the two on the task's list. `hooks/use-catalogue.ts` holds `usePostTypes`,
+`useSites`, `useWidgets` and `useInvalidate`.
+
+**What it cost, and where that is recorded.** 32,894 bytes raw / 10,054 gzip, measured by SH1043's
+gate before and after; the ceilings in `console-size-budget.json` are raised with that sentence
+beside them. Nothing else in the eager load moved.
+
+Three instruments, because the claim has three parts and only one of them is checkable in the same
+place. `test/query-cache.test.mjs` drives the real client with the real defaults in-process — two
+reads issue one request, three concurrent callers issue one, invalidating a scheme drops its items
+— **and sweeps `src/app` for a catalogue read whose answer is consumed inline**, so a page going
+back to the old shape fails by name rather than by nobody noticing. `e2e/console-check.mjs` counts
+the API requests of a second folder navigation in a browser, which is the only place the console's
+own behaviour can be observed, with its shape held by `console-check-shape.test.mjs`. And
+`test/eslint-suppressions.test.mjs` fails on a suppression for a file that does not exist — four
+had survived two rounds of deletions, which is what a ledger nobody reads looks like.

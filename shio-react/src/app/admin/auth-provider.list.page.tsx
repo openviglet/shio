@@ -23,6 +23,7 @@ export default function BentoAuthProviderListPage() {
 
   return (
     <AdminListPage
+      address="authProvider:"
       query={query}
       listRoute={ROUTES.BENTO_AUTH_PROVIDERS}
       newRoute={`${ROUTES.BENTO_AUTH_PROVIDERS}/new`}

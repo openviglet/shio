@@ -18,13 +18,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { siteDestination } from "@/lib/site-front-end"
-import type { ShPostType } from "@/models/post-type/post-type"
 import type { ShSite } from "@/models/site/site"
-import { ShPostTypeService } from "@/services/post-type/post-type.service"
+import { usePostTypes } from "@/hooks/use-catalogue"
 import { ShSiteService } from "@/services/site/site.service"
 
 const service = new ShSiteService()
-const postTypeService = new ShPostTypeService()
 
 /**
  * SH899 — the site editor, and the first entity shell in this console.
@@ -55,7 +53,8 @@ export default function BentoSiteEditPage() {
   const navigate = useNavigate()
   const { siteId = "" } = useParams()
   const [site, setSite] = useState<ShSite | null>(null)
-  const [postTypes, setPostTypes] = useState<ShPostType[]>([])
+  // SH1046 — the catalogue, cached under `postType:` rather than refetched per site opened.
+  const postTypes = usePostTypes().data ?? []
   const [searchableTypes, setSearchableTypes] = useState<string[]>([])
   const [url, setUrl] = useState("")
 
@@ -73,7 +72,6 @@ export default function BentoSiteEditPage() {
         setSearchableTypes([])
       }
     })
-    postTypeService.query().then(setPostTypes).catch(() => setPostTypes([]))
   }, [siteId])
 
   const toggle = (name: string, checked: boolean) =>

@@ -51,7 +51,7 @@ import { SectionCardChromeProvider } from "@viglet/viglet-design-system/bento"
 import { ThemeProvider } from "./components/theme-provider"
 import { SHIO_DEFAULT_THEME, SHIO_THEME_STORAGE_KEY } from "./theme"
 import { Toaster } from "./components/ui/sonner"
-import { ShioServiceProvider } from "./contexts/ShioServiceContext"
+import { ShioQueryProvider } from "./contexts/query.provider"
 
 function App() {
   return (
@@ -59,7 +59,7 @@ function App() {
       {/* SH918 — the same two constants the boot-loader seed reads, so the splash and the app
           cannot disagree about the theme. Spelling them here again is what caused the defect. */}
       <ThemeProvider defaultTheme={SHIO_DEFAULT_THEME} storageKey={SHIO_THEME_STORAGE_KEY}>
-          <ShioServiceProvider>
+          <ShioQueryProvider>
             <Toaster />
             {/*
               SH958 — the section chrome, once, above the router. The design system's context
@@ -264,7 +264,7 @@ function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
             </SectionCardChromeProvider>
-          </ShioServiceProvider>
+          </ShioQueryProvider>
       </ThemeProvider>
     </div>
   )

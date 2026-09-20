@@ -2342,26 +2342,6 @@ code, so their additions are visible as raises rather than folded into a baselin
 Resilience and access follow, and the assistant dock from Block AX already carries the
 announcements this block would otherwise have to build.
 
-### LXXII.4 One query layer, keyed on the addresses every surface uses (SH1046)
-
-There is no query library in the manifest. The analysis counted seventeen call sites
-fetching whole collections, and the browser refetches every post type on each folder
-navigation to choose a default. The pattern that fixes this is applied to one endpoint
-only: a hand-rolled single-flight store whose comment says components mounting together
-share one request. Nothing generalised it. A service-injection provider built for this
-exists with no call sites against dozens of module-scope service constructions, and it
-is still mounted around the route tree.
-
-Adopt one query layer keyed on the address grammar the MCP tools, the CLI and REST
-already use, post:, folder:, site: and postType:, so a cache key is the string every
-other surface addresses by, which is P10 applied to the cache. Migrate the seventeen
-catalogue reads first. Repurpose the dead provider as the client provider, owning stale
-time, retry and the error handler, or delete it, and prune the suppression entries
-naming files that no longer exist.
-
-BG1 records the byte cost of the library. The assertions count requests for a
-folder-to-folder navigation before and after, from the live probe.
-
 ### LXXII.5 Cancellation, and a lint that keeps it (SH1047)
 
 The analysis found no AbortController in the console. The browser's page fetch is
@@ -2540,24 +2520,30 @@ with its address.
 ### LXXII.14 The console lint is red and only CI runs it (SH1075)
 
 Found running `pnpm lint` in shio-react while moving files for SH961, not by reading
-code. It exits 1 on one error, `react-hooks/set-state-in-effect` at line 73 of
+code. It exits 1 on `react-hooks/set-state-in-effect` at line 73 of
 `src/app/system/bento-tenant-link-notice.tsx`, and the same error is on the file's
 previous path at the commit before the move, so the move did not introduce it.
-`eslint-suppressions.json` holds every other finding by path and count, and does not
-hold this one. `.github/workflows/suites.yml` runs `pnpm lint` as "The console lint (new
-findings only)", so the rule SH665 set up, that a new finding fails CI, has been failing
-on this file since SH931's tenant link notice arrived.
+`.github/workflows/suites.yml` runs `pnpm lint` as "The console lint (new findings
+only)", so the rule SH665 set up — a new finding fails CI — has been failing since
+SH931.
 
-Nothing local noticed. `pnpm test` does not run ESLint, and `lint-baseline.test.mjs`
-compares the suppressions file with its declared list, not with a live run. Both halves
-are green while the lint is red.
+**Measured again on 2026-09-20, during SH1046: it is 20 errors over 17 files, not one.**
+`react-hooks/set-state-in-effect` accounts for nine of them, `react-hooks/refs` four
+(`hooks/use-autosave.ts`, `hooks/use-change-stream.ts`,
+`components/post-live-preview.tsx`, `admin/activity/activity.list.page.tsx`),
+`react-refresh/only-export-components` four in files the suppressions file does not
+name, plus one `react-hooks/immutability` and one `jsx-a11y` role. Ten warnings beside
+them. So CI's lint step has been red for weeks on a growing list, and `red-suites.json`
+has never carried an entry for it — SH579's third state, reached by a gate nobody
+counted as one because `agents.md` names three and this is a fourth.
 
-Two fixes, each small. The effect sets state from the location on every change, and a
-derived value or a keyed reset removes the synchronous setState. Suppressing it instead
-would take a reason in the diff, since the rule describes a cascading render. The
-instrument half matters more: something in `pnpm test` should run the console lint, or
-state that it does not and name the gate that does. A suppressions baseline nobody
-compares against a run is a list, not a gate.
+Nothing local notices. `pnpm test` does not run ESLint, and `lint-baseline.test.mjs`
+compares the suppressions file with its declared list, not with a live run — both green
+while the lint is red.
+
+The instrument half is what matters: something in `pnpm test` runs the lint, or
+`agents.md` names it as a gate and `red-suites.json` carries it while the twenty are
+paid off. A suppressions baseline nobody compares against a run is a list, not a gate.
 
 ### LXXII.15 What one change costs every open stream (SH1077)
 

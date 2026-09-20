@@ -23,6 +23,7 @@ export default function BentoExchangeProviderListPage() {
 
   return (
     <AdminListPage
+      address="exchangeProvider:"
       query={query}
       listRoute={ROUTES.BENTO_EXCHANGE_PROVIDERS}
       newRoute={`${ROUTES.BENTO_EXCHANGE_PROVIDERS}/new`}

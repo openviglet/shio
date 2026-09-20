@@ -203,3 +203,29 @@ test("SH927: the exemption expires by failing, rather than by being remembered",
     "SH927: the expiry fires without saying what to do about it, so whoever meets it has to"
       + " rediscover the whole task to act on one line.")
 })
+
+/**
+ * SH1046 — the navigation count is in the one file `pnpm test` cannot run, so its shape is held.
+ *
+ * <p>The cache's own behaviour is asserted in-process by `test/query-cache.test.mjs`. What only a
+ * browser can say is what the *console* then does, and that probe lives here — which puts it
+ * exactly where SH897's deliverable was when it shipped with no assertion carrying its id. These
+ * hold the two things that would make it vacuous.</p>
+ */
+test("SH1046: the navigation count compares a second navigation, not a first", () => {
+  assert.match(source, /seen\.length = 0/,
+    "SH1046: the recorded requests are not reset between the two navigations. Counting both makes"
+      + " the total include the first load, which has to read each catalogue once — so the number"
+      + " the probe reports would never fall however well the cache works.")
+  assert.match(source, /hits > 1/,
+    "SH1046: the finding is a catalogue read MORE THAN ONCE inside one navigation. Failing on any"
+      + " read at all would fail a cold load, which is not a defect and is not avoidable.")
+})
+
+test("SH1046: no child folder is a skip that says so, and --strict makes it fail", () => {
+  assert.match(source, /probe\.skipped = "this site has no child folder/,
+    "SH1046: a missing fixture must report itself. A probe that silently found nothing to measure"
+      + " keeps `ok: true` and reads as coverage — SH238/SH659's lesson, one probe over.")
+  assert.match(source, /STRICT && navProbe\.skipped/,
+    "SH1046: and in CI, where the fixture is provisioned one step earlier, the skip is the failure")
+})

@@ -15,11 +15,9 @@ import { useListState } from "@/hooks/use-list-state"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { ShSearchService, type ShConsoleSearchRow } from "@/services/search/search.service"
-import { ShSiteService } from "@/services/site/site.service"
-import type { ShSite } from "@/models/site/site"
+import { useSites } from "@/hooks/use-catalogue"
 
 const searchService = new ShSearchService()
-const siteService = new ShSiteService()
 
 const ALL_SITES = "__all__"
 const ANY_STATE = "__any__"
@@ -42,7 +40,8 @@ const SEARCH_LIST = { q: "", site: "", state: "", folder: "", subtree: "" }
 export default function SearchPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [sites, setSites] = useState<ShSite[]>([])
+  // SH1046 — one cached read of the site list, shared with every other picker.
+  const sites = useSites().data ?? []
   const [results, setResults] = useState<ShConsoleSearchRow[]>([])
   const [total, setTotal] = useState(0)
   /** SH1027 — how many matched and were removed because this reader may not open them. */
@@ -55,10 +54,6 @@ export default function SearchPage() {
   const scope = list.value.folder
     ? (list.value.subtree === "true" ? "subtree" : "folder")
     : "site"
-
-  useEffect(() => {
-    siteService.query().then(setSites).catch(() => setSites([]))
-  }, [t])
 
   /**
    * The search runs from the URL, not from the button.

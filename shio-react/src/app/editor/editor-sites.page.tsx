@@ -8,23 +8,18 @@ import { Label } from "@/components/ui/label"
 import { ROUTES } from "@/app/routes.const"
 import { IconLayersIntersect } from "@tabler/icons-react"
 import { ExternalLink, Pencil } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import { ShSiteService } from "@/services/site/site.service"
-import type { ShSite } from "@/models/site/site"
+import { useSites } from "@/hooks/use-catalogue"
 
-const siteService = new ShSiteService()
 
 export default function EditorSitesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [sites, setSites] = useState<ShSite[]>([])
+  // SH1046 — one cached read of the site list, shared with every other picker.
+  const sites = useSites().data ?? []
   const [externalUrl, setExternalUrl] = useState("")
-
-  useEffect(() => {
-    siteService.query().then(setSites)
-  }, [t])
 
   const openExternal = () => {
     if (!externalUrl.trim()) return

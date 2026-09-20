@@ -23,6 +23,7 @@ export default function BentoSiteWebhookListPage() {
 
   return (
     <AdminListPage
+      address="webhook:"
       query={query}
       listRoute={ROUTES.BENTO_WEBHOOKS}
       newRoute={`${ROUTES.BENTO_WEBHOOKS}/new`}

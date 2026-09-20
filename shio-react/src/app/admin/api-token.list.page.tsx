@@ -23,6 +23,7 @@ export default function BentoApiTokenListPage() {
 
   return (
     <AdminListPage
+      address="token:"
       query={query}
       listRoute={ROUTES.BENTO_TOKENS}
       newRoute={`${ROUTES.BENTO_TOKENS}/new`}

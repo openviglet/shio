@@ -46,7 +46,6 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import axios from "axios"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
-import { ShWidgetService } from "@/services/widget/widget.service"
 import type { ShPostType, ShPostTypeField } from "@/models/post-type/post-type"
 import type { ShWidget } from "@/models/widget/widget"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
@@ -68,9 +67,13 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { WIDGET_BADGE_COLORS, WIDGET_ACCENT_COLORS } from "@/lib/widget-colors"
+import { usePostTypes, useWidgets } from "@/hooks/use-catalogue"
 
 const postTypeService = new ShPostTypeService()
-const widgetService = new ShWidgetService()
+
+/** SH1046 — one identity each while the cached catalogues load, not one per render. */
+const EMPTY_WIDGETS: ShWidget[] = []
+const EMPTY_POST_TYPES: ShPostType[] = []
 
 const SEARCH_ASSOCIATIONS = [
   "", "title", "text", "abstract", "type", "image", "publication_date", "url"
@@ -769,23 +772,24 @@ export default function PostTypeEditPage() {
   const form = useForm<ShPostType>()
   const [isLoading, setIsLoading] = useState(false)
   const [fields, setFields] = useState<FieldRow[]>([])
-  const [widgets, setWidgets] = useState<ShWidget[]>([])
-  const [postTypes, setPostTypes] = useState<ShPostType[]>([])
+  /*
+   * SH1046 — the two catalogues are cached reads and the post being edited is not.
+   *
+   * The widget catalogue and the post-type list are the same for every editor a curator opens;
+   * `postTypeService.get(name)` is this one type, and it is deliberately left as a fetch so a save
+   * followed by a reopen shows what was saved rather than what the cache remembers.
+   */
+  const widgets = useWidgets().data ?? EMPTY_WIDGETS
+  const postTypes = usePostTypes().data ?? EMPTY_POST_TYPES
   const [renameOpen, setRenameOpen] = useState(false)
   const [renameTo, setRenameTo] = useState("")
   const [renaming, setRenaming] = useState(false)
 
   useEffect(() => {
 
-    Promise.all([
-      postTypeService.get(postTypeName),
-      widgetService.query(),
-      postTypeService.query(),
-    ]).then(([data, widgetList, ptList]) => {
+    postTypeService.get(postTypeName).then((data) => {
       form.reset(data)
       setFields(withKeys(data.fields))
-      setWidgets(widgetList)
-      setPostTypes(ptList)
     })
   }, [postTypeName, t, form])
 

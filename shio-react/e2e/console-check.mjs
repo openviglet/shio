@@ -687,6 +687,94 @@ async function checkEditorSaveBack(context, postId) {
  * not serve, or whose home is a 404, gives an iframe with nothing in it. The site is therefore
  * chosen by asking the renderer, not by taking the first one.
  */
+/**
+ * SH1046 — what a second folder costs, counted in requests rather than argued about.
+ *
+ * <p>The defect this closes was measurable and nothing measured it: the content browser read the
+ * whole post-type catalogue inside an effect keyed on the folder id, so walking a tree cost one
+ * full catalogue per folder for a list that decides a default and fills a filter. Sixteen other
+ * call sites did the same on mount.</p>
+ *
+ * <p>`test/query-cache.test.mjs` drives the client's defaults in-process, which is the claim about
+ * the cache. This is the claim about the <b>console</b>, and only a browser can make it: navigate
+ * from a site's root folder into a child and count the requests the second navigation issues. A
+ * catalogue read that appears twice is the regression, by name.</p>
+ *
+ * <p>No child folder is a <b>skip</b> and not a failure: it is a fixture fact about the instance,
+ * the same reading `checkEditorDrive` takes, and `--strict` turns it red where the fixture is
+ * provisioned.</p>
+ */
+async function checkFolderNavigation(context, site) {
+  const probe = { name: "folder-navigation", ok: true, errors: [], repeated: [], requests: 0 }
+
+  let children
+  try {
+    children = await api(`/object/${site.id}/list?page=0`)
+  } catch (problem) {
+    probe.skipped = `the site's own listing did not answer: ${problem}`
+    return probe
+  }
+  const child = (children.folders ?? [])[0]
+  if (!child) {
+    probe.skipped = "this site has no child folder, so there is no second navigation to count — "
+      + "a fixture gap rather than a defect"
+    return probe
+  }
+
+  const page = await context.newPage()
+  page.on("pageerror", (e) => probe.errors.push(String(e)))
+  // Same-origin API reads only. The console's own chunks are SH1043's subject and not this one's.
+  const seen = []
+  page.on("request", (r) => {
+    const url = r.url()
+    if (url.startsWith(API) && url.includes("/api/v2/")) seen.push(new URL(url).pathname)
+  })
+
+  const settle = async () => {
+    await page.waitForSelector("main, [role=main], nav", { timeout: 10_000 }).catch(() => {})
+    await page.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => {})
+    await page.waitForTimeout(400)
+  }
+
+  try {
+    await page.goto(`${BASE}/console/content/object/${site.id}`,
+      { waitUntil: "domcontentloaded", timeout: 20_000 })
+    await settle()
+
+    // Everything from here is the *second* navigation, which is the one that has to be cheap.
+    seen.length = 0
+    await page.goto(`${BASE}/console/content/object/${child.id}`,
+      { waitUntil: "domcontentloaded", timeout: 20_000 })
+    await settle()
+    probe.requests = seen.length
+
+    /*
+     * A full-page load rather than a click, so this measures the cache and not the router: the
+     * client is rebuilt, and a catalogue still has to be read once. What must NOT appear is a
+     * catalogue being read again *within* the second navigation — the shape of the effect that was
+     * keyed on the folder id, which fired once per folder in a single session.
+     */
+    const CATALOGUES = ["/api/v2/post-type", "/api/v2/site", "/api/v2/widget"]
+    for (const path of CATALOGUES) {
+      const hits = seen.filter((one) => one === path).length
+      if (hits > 1) probe.repeated.push(`${path} × ${hits}`)
+    }
+    if (probe.repeated.length) {
+      probe.ok = false
+      probe.errors.push("SH1046: a catalogue was read more than once inside one navigation — "
+        + `${probe.repeated.join(", ")}. Every screen reads these through the cached hooks in `
+        + "`hooks/use-catalogue.ts`, so a second read means a page went back to calling the "
+        + "service directly, or to an effect keyed on something that changes per folder.")
+    }
+  } catch (problem) {
+    probe.ok = false
+    probe.errors.push(String(problem))
+  } finally {
+    await page.close()
+  }
+  return probe
+}
+
 async function checkEditorDrive(context, sites) {
   const probe = { name: "universal-editor-drive", path: "/console/universal-editor/{site}", ok: true,
     errors: [], warnings: [], failedRequests: [] }
@@ -1213,6 +1301,20 @@ async function main() {
     driveProbe.errors.push(
       `--strict: the drive reached the editor and did not publish — ${driveProbe.publishSkipped}`)
   }
+  // SH1046 — what a second folder costs, which is the one claim only a browser can check.
+  const navProbe = await checkFolderNavigation(context, site)
+  if (STRICT && navProbe.skipped) {
+    navProbe.ok = false
+    navProbe.errors.push(`--strict: the navigation count must run, and it skipped — ${navProbe.skipped}`)
+  }
+  report.probes.push(navProbe)
+  console.log(`${navProbe.ok ? "ok  " : "FAIL"} ${navProbe.name.padEnd(30)} `
+    + (navProbe.skipped
+      ? `skipped: ${navProbe.skipped}`
+      : `${navProbe.requests} API request(s) on the second navigation`
+        + (navProbe.repeated.length ? `, repeated: ${navProbe.repeated.join(", ")}` : "")))
+  for (const e of navProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
+
   report.probes.push(driveProbe)
   console.log(`${driveProbe.ok ? "ok  " : "FAIL"} ${driveProbe.name.padEnd(30)} `
     + (driveProbe.skipped

@@ -1,9 +1,4 @@
 {
-  "src/app/content/object.children.page.tsx": {
-    "@typescript-eslint/no-unused-expressions": {
-      "count": 1
-    }
-  },
   "src/app/content/post-type.edit.page.tsx": {
     "no-useless-assignment": {
       "count": 1
@@ -44,37 +39,12 @@
       "count": 1
     }
   },
-  "src/components/ui/gradient-button.tsx": {
-    "react-refresh/only-export-components": {
-      "count": 1
-    }
-  },
-  "src/components/ui/sidebar.tsx": {
-    "react-refresh/only-export-components": {
-      "count": 1
-    }
-  },
   "src/components/ui/sonner.tsx": {
     "react-refresh/only-export-components": {
       "count": 1
     }
   },
-  "src/contexts/ShioServiceContext.tsx": {
-    "react-refresh/only-export-components": {
-      "count": 1
-    }
-  },
-  "src/contexts/breadcrumb.context.tsx": {
-    "react-refresh/only-export-components": {
-      "count": 1
-    }
-  },
   "src/contexts/review-pending.context.tsx": {
-    "react-refresh/only-export-components": {
-      "count": 1
-    }
-  },
-  "src/contexts/tenant.context.tsx": {
     "react-refresh/only-export-components": {
       "count": 1
     }

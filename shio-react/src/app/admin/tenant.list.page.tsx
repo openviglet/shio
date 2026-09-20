@@ -23,6 +23,7 @@ export default function BentoTenantListPage() {
 
   return (
     <AdminListPage
+      address="tenant:"
       query={query}
       listRoute={ROUTES.BENTO_TENANTS}
       newRoute={`${ROUTES.BENTO_TENANTS}/new`}

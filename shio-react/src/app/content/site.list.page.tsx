@@ -10,15 +10,15 @@ import { IconUpload, IconWorld } from "@tabler/icons-react"
 import { BentoEntityTile, BentoListPage } from "@viglet/viglet-design-system/bento"
 import { formatDistanceToNow } from "date-fns"
 import { Search } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { Input } from "@/components/ui/input"
 import type { ShSite } from "@/models/site/site"
-import { ShSiteService } from "@/services/site/site.service"
+import { useSites } from "@/hooks/use-catalogue"
+import { headlineOf, problemOf } from "@/lib/problem"
 
-const siteService = new ShSiteService()
 
 /**
  * SH899 — the site list, and the shape roughly ten more list screens will copy.
@@ -54,20 +54,13 @@ const siteService = new ShSiteService()
  */
 export default function BentoSiteListPage() {
   const { t } = useTranslation()
-  const [sites, setSites] = useState<ShSite[] | undefined>(undefined)
-  const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState("")
-
-  useEffect(() => {
-    siteService.query()
-      .then(setSites)
-      // `undefined` means "still loading" to the package's gate, so a failure has to become an
-      // empty array *and* an error — otherwise a failed load spins for ever.
-      .catch((reason: unknown) => {
-        setSites([])
-        setError(String(reason))
-      })
-  }, [])
+  // SH1046 — one cached read under `site:`, shared with the nine other screens that ask.
+  const { data, error: failure } = useSites()
+  // `undefined` means "still loading" to the package's gate, so a failure has to become an empty
+  // array *and* an error — otherwise a failed load spins for ever.
+  const sites = data ?? (failure ? [] : undefined)
+  const error = failure ? headlineOf(problemOf(failure), failure.message) : null
 
   const visible = useMemo(
     () => sites?.filter((s) => s.name.toLowerCase().includes(filter.toLowerCase().trim())),

@@ -16,11 +16,10 @@ import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, Ch
 // SH1020 — the row actions live in the design system's menu, which is where the site list put
 // its four in its own sweep.
 import { BentoActionsMenu } from "@viglet/viglet-design-system/bento"
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
-import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
 import type { ShPostType } from "@/models/post-type/post-type"
@@ -39,8 +38,8 @@ import { Label } from "@/components/ui/label"
 import { filterParams, type ShContentFilters } from "@/lib/content-query"
 // SH1023 — the view lives in the URL, so the address a curator sends reproduces what they saw.
 import { useListState } from "@/hooks/use-list-state"
+import { usePostTypes } from "@/hooks/use-catalogue"
 
-const postTypeService = new ShPostTypeService()
 const siteService = new ShSiteService()
 const previewService = new ShPreviewTokenService()
 
@@ -135,6 +134,9 @@ const POST_SORT: Record<string, string> = { order: "title", name: "title", date:
  */
 const EMPTY_SELECTION: Set<string> = new Set<string>()
 
+/** SH1046 — the same argument for the catalogue while it loads: one identity, not one per render. */
+const EMPTY_POST_TYPES: ShPostType[] = []
+
 /** SH1021 — the three verbs a selection can take. */
 type BulkOp = "PUBLISH" | "UNPUBLISH" | "DELETE"
 
@@ -194,8 +196,24 @@ export default function ObjectChildrenPage() {
       }),
     [objectId],
   )
-  const [lastPostType, setLastPostType] = useState<ShPostType | null>(null)
-  const [postTypes, setPostTypes] = useState<ShPostType[]>([])
+  /*
+   * SH1046 — the post-type catalogue, read once instead of once per folder.
+   *
+   * This was a `.query()` inside the effect below, which is keyed on `objectId`: walking a tree
+   * cost one full catalogue per folder, for a list that decides a default and fills a filter and
+   * does not change while somebody navigates. It is now one cached read under `postType:`, and the
+   * default is DERIVED from it rather than pushed into a second state — the saved name is in
+   * `localStorage` and the list is in the cache, so there is nothing left for an effect to keep in
+   * step (SH703's shape, one screen over).
+   */
+  const postTypes = usePostTypes().data ?? EMPTY_POST_TYPES
+  const lastPostType = useMemo(() => {
+    const savedName = localStorage.getItem("sh-last-post-type")
+    return postTypes.find((p) => p.name === savedName)
+      ?? postTypes.find((p) => !p.system)
+      ?? postTypes[0]
+      ?? null
+  }, [postTypes])
   /**
    * SH703 — which query's rows are on screen. `loading` is **computed** from it rather than set.
    *
@@ -336,15 +354,6 @@ export default function ObjectChildrenPage() {
       setBreadcrumbPath(items)
     }).catch(() => {
       setBreadcrumbPath([])
-    })
-
-    postTypeService.query().then((pts) => {
-      const savedName = localStorage.getItem("sh-last-post-type")
-      const saved = pts.find(p => p.name === savedName)
-      setLastPostType(saved || pts.find(p => !p.system) || pts[0] || null)
-      // SH1022 — the names the `type` filter offers, so a curator picks one rather than typing
-      // a name the server would refuse.
-      setPostTypes(pts)
     })
   }, [objectId])
 

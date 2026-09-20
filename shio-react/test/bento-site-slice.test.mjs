@@ -114,7 +114,9 @@ test("SH899: the list uses the package's list page, and keeps the filter the con
 
   // A failed load must not read as an empty list. `undefined` means "loading" to the package's
   // gate, so a rejected query has to become an empty array AND an error, or the page spins.
-  assert.match(LIST, /setSites\(\[\]\)/,
+  // SH1046 replaced the effect's `.catch(() => setSites([]))` with the same rule over `useQuery`:
+  // the spelling moved, the claim did not.
+  assert.match(LIST, /const sites = data \?\? \(failure \? \[\] : undefined\)/,
     "SH899: a failed site query no longer resolves the items, so the list spins for ever")
   assert.match(LIST, /error=\{error\}/,
     "SH899: the list no longer passes its error, so a failed load renders the empty state — 'no"

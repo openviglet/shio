@@ -21,6 +21,7 @@ export default function BentoRoleListPage() {
   const query = useCallback(() => service.query(), [])
   return (
     <AdminListPage
+      address="role:"
       query={query}
       listRoute={ROUTES.BENTO_ROLES}
       newRoute={ROUTES.BENTO_ROLE_NEW}

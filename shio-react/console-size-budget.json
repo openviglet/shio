@@ -2,15 +2,16 @@
   "note": "SH1043 — what the console costs to load, before the first row of content. Read by test/console-size-budget.test.mjs against a built ../shio-app/src/main/resources/public, and printed by `pnpm --filter shio-react run size`. Raise a ceiling deliberately and say why in the commit, the way token-budgets.properties has governed the agent's cost since SH113: this is the same rule for the half of the product a person waits for.",
   "measured": "2026-09-20",
   "seed": "SH1043 seeded this at 7473483 raw / 2200187 gzip, and SH1044 spent that number the same day: deleting vite.config.ts's `manualChunks` took it to 1542579 raw / 413169 gzip, because the rule written to keep GraphiQL out of the eager bundle was what put it there. Four entries went with it — vendor-graphiql.js, vendor-graphiql.css, vendor-codemirror.js and vendor-lib.js are no longer eager, and this gate fails on a ceiling that outlives its chunk, which is how they came to be deleted here rather than left as numbers nobody was measuring. The ceilings carry ~5% of room for the reason SH736 gives one gate over: a ceiling set to the measurement refuses the next change instead of measuring it.",
+  "raised": "SH1046 raised the eager ceilings and index.js's, and the reason is the whole of what this file is for: adopting `@tanstack/react-query` cost 32894 raw / 10054 gzip, measured here before and after, against seventeen catalogue reads that each refetched a whole collection on every mount. That is the trade this gate exists to make visible — 2.4% of the gzipped load for a folder-to-folder walk that stops refetching the post-type catalogue per folder. Nothing else moved: index.css, breadcrumb.context.js and rolldown-runtime.js are byte-identical across the change.",
   "eager": {
-    "raw": 1620000,
-    "gzip": 435000
+    "raw": 1655000,
+    "gzip": 445000
   },
   "chunks": {
     "index.js": {
-      "raw": 1160000,
-      "gzip": 333000,
-      "why": "the console itself plus the shared vendor code the bundler folded in once `manualChunks` stopped hand-placing it: React, the router and the libraries every route needs"
+      "raw": 1190000,
+      "gzip": 343000,
+      "why": "the console itself plus the shared vendor code the bundler folded in once `manualChunks` stopped hand-placing it: React, the router, the query layer (SH1046) and the libraries every route needs"
     },
     "index.css": {
       "raw": 272000,

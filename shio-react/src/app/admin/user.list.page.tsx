@@ -35,6 +35,7 @@ export default function BentoUserListPage() {
 
   return (
     <AdminListPage
+      address="user:"
       query={query}
       listRoute={ROUTES.BENTO_USERS}
       newRoute={ROUTES.BENTO_USER_NEW}
