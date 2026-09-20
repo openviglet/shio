@@ -2916,10 +2916,11 @@ agent reading the manifest.
 
 `roadkeep lint` reports six `code.renamed` findings on ledger entries that were correct
 when they were written, and has done so across many commits. Three symbols between them:
-`document.fonts` and `document.referrer`, which are the browser's and not this
-package's, and `schema.graphqls`, which is a filename. The rule reads a dotted name in
-backticks as a member of a symbol this repository ought to define, finds no `document`
-and no `schema`, and calls it drift.
+document.fonts and document.referrer, which are the browser's and not this package's,
+and schema.graphqls, which is a filename. The rule reads a dotted name **in backticks**
+as a member of a symbol this repository ought to define, finds no document and no
+schema, and calls it drift. They are spelled bare here for that reason: backticking them
+in this very section fired it three more times.
 
 The cost is not those six. It is that the gate cannot come back clean, so the next
 finding — a class that really was renamed, a pointer into code that moved — arrives at
@@ -2927,9 +2928,53 @@ the bottom of a list nobody reads to the bottom of. That is SH579's rule about a
 suite one file along: a check that always fails has stopped being a check.
 
 Two ways out, and choosing is the task. Reword the six, which this project's own
-configuration argues against: `[rules.changelog]` already declares that those entries
-are paragraphs written before the tool existed and that no edit short of deleting them
-satisfies its prose rules. Or declare what the rule must not read as a symbol — the
-browser globals, and a dotted name whose tail is a file extension — which is a roadkeep
-change and belongs upstream. The assertion is that `lint` exits clean here and still
-fails on a symbol this repository really has renamed.
+configuration argues against: `[rules.changelog]` already declares those entries are
+paragraphs written before the tool existed. Or declare what the rule must not read as a
+symbol — the browser globals, and a dotted name whose tail is a file extension — which
+is a roadkeep change and belongs upstream. The assertion is that `lint` exits clean here
+and still fails on a symbol this repository really has renamed.
+
+### LXXIV.9 A stamp that knows what it ran against (SH1103)
+
+A gate stamp records the HEAD it ran at, and staleness is that sha against the current
+one. That catches the run somebody skipped. It cannot catch the run that is no longer
+about this tree, because `ship` writes ROADMAP.md, CHANGELOG.md and IMPROVEMENTS.md at
+the same HEAD the green run was taken at — so the stamp stays fresh while the thing it
+certified has changed underneath it.
+
+That is not a corner. The documented order is implement, run the gates, ship, commit,
+and the JS suite reads the ledger: `coverage-obligation.test.mjs` counts shipped ids
+against the mirror and `red-suites.test.mjs` reads the roadmap. So a ship can turn `pnpm
+test` red after the last green run of it, every time, by construction. It happened on
+SH1038: the suite was green, the ship made the sixth unnamed id against SH799's ceiling
+of five, and the commit landed over a red nobody could have seen.
+
+Either the stamp carries what it ran against rather than only where — a digest of the
+inputs the gates read, so a write between the run and the commit reads as stale — or the
+gates run after the ship, which costs a second full run on every task. The first is
+cheaper and says more: a stale stamp already prints the run somebody owes, and this
+makes it print for the case it misses. The assertion is that a ship between a green
+stamp and a read of it leaves it stale.
+
+### LXXIV.10 A ceiling on the catalogue (SH1104)
+
+`ShAgentResponseBudgetTest` measures sixteen responses and treats a measured one with no
+declared ceiling as a breach in itself. `/agent/editable` is not among them. It never
+was: SH809 shipped it and the only trace in `token-budgets.properties` is a note raising
+the *manifest* ceiling because the endpoint index grew by a line.
+
+That mattered less while the answer was a field list. SH1039 gave it
+`include=insertable`, whose size is the declared catalogue — every accepted type with
+the fields a properties panel would draw — so the response now scales with what a layout
+declares rather than with what the page has. The precedent for exactly this shape is
+already in that file twice, SH987's `read.terse.revisions` and SH989's
+`changes.terse.fields`, both given their own key on the same argument: a shared ceiling
+lets the default grow into the room the option was given.
+
+The obstacle is the fixture rather than the rule. That test's pages have no layout
+binding, so `editable` there answers the `source: content` fallback and a measurement of
+it would be thirty tokens of envelope — a number that passes forever and says nothing.
+So the budget needs a page that renders: a layout, a container declaring what it
+accepts, and a couple of section types provisioned. The assertion is two keys, one for
+the plain read and one for the catalogue, each measured against a page that actually
+composes.

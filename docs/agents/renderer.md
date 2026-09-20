@@ -556,6 +556,24 @@ renderer over one body of content at a second address. See the section on it bel
   it. The console writes `sections` — the one name the generated layout uses — and offers the
   controls only when the Page's own row holds an array as long as the list on screen; a page composing
   from another field gets the header and the position with no buttons.
+- **What fits in a container is declared, not derived (SH1039)** — an editor that can select and move
+  a section still could not add one, because nothing said which types fit where: `/agent/editable`
+  answered fields and regions with no catalogue, and the shared section types reached the console as
+  post-type names in a picker. **Only the template knows what a container accepts**, which is
+  `sh-field`'s argument one level out, so the allow-list is `sh-accepts="SectionHero SectionCta"` on
+  the element composing the sections, rendered as `data-shio-accepts`. An **absent** declaration is
+  *nothing is known to fit* and carries the line that would fix it — never *anything*, since that
+  would need a server-side list of which post-types are sections and `ShVocabularyPostTypes` bans a
+  third copy of the vocabulary. The pass also stamps `data-shio-sections="0"` on a declaring
+  container that holds none, because **the empty container is the case insertion exists for** and the
+  section pass can only find a container by the sections in it. The declaration is the template's and
+  the **resolution is the instance's**: `GET /agent/editable?include=insertable` answers, per
+  container, each accepted type with its title, description and fields, and a type the layout names
+  and the instance has not got comes back `provisioned: false` rather than dropped (SH169). The
+  bridge sends the names with the selection; the catalogue stays the server's, because a copy of what
+  is provisioned would be a second place for it to be wrong. The CLI's generated layout declares what
+  the conversion provisions — on `<body>`, since `{{#getRelation sections}}` is a block and not an
+  element, so `<body>` *is* the container — and both blueprints declare their eight.
 - **The panel draws the field the model declares (SH1037)** — it used to be a bare `<Input>` for an
   `attr` field and read-only text for everything else, so a `Date` was a string, a `Check Box` was
   `"1"` and a `Content Select` was a UUID — and `affordance="panel"`, the field a caret cannot

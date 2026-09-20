@@ -1819,6 +1819,38 @@ test("SH508: the layout carries a structural contract, named by role and owned b
   );
 });
 
+test("SH1039: the generated layout declares what may be added to the page", () => {
+  // SH1038 made a section selectable, movable and removable, and an editor that can do all three
+  // still cannot ADD one because nothing says which types fit where. The catalogue has to be the
+  // template's — only the template knows what a container accepts — and `{{#getRelation sections}}`
+  // is a BLOCK, not an element, so the element composing the sections is `<body>` itself. That is
+  // where the server's pass finds the container and therefore where the declaration belongs.
+  const { document } = buildConversion({
+    proposal: {
+      candidates: [
+        candidate("b1a2"),
+        candidate("c3d4", { type: "SectionCta", fields: { heading: "Start", ctaLabel: "Go" } }),
+      ],
+      pages: [{ path: "/", title: "Home", blocks: ["b1a2", "c3d4"] }],
+    },
+    plan: {
+      accepted: [{ block: "b1a2", type: "SectionHero" }, { block: "c3d4", type: "SectionCta" }],
+    },
+    site: "Acme",
+  });
+  const html = document.posts.find((post) => post.type === "PageLayout").data.HTML;
+  const body = layoutElements(html).find((element) => element.tag === "body");
+
+  const accepts = /\bsh-accepts="([^"]*)"/.exec(body.attrs);
+  assert.ok(accepts, "without this the console is told nothing fits, which is what an absent "
+    + "declaration honestly means - so a converted site would compose sections nobody can add to");
+  assert.deepEqual(accepts[1].split(" "), ["SectionCta", "SectionHero"],
+    "what this conversion provisions and nothing else: naming a type the document does not create "
+      + "would offer a curator something the instance would refuse, and the list is derived from "
+      + "the same table the fields are, because a third copy of the vocabulary is the drift "
+      + "SH245 bans");
+});
+
 test("SH556: the layout draws no class the vocabulary does not declare", () => {
   // The instrument, and the direction nobody was checking. SH509's test asserts every *role* is
   // styled; nothing asserted the converse, so the templates grew sixteen names the theme never had

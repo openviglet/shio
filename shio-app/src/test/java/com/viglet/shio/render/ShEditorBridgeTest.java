@@ -131,6 +131,47 @@ class ShEditorBridgeTest {
                 .doesNotContain("data-shio-section-index");
     }
 
+    // --- SH1039: what fits where, declared by the template ---
+
+    @Test
+    @DisplayName("SH1039: a container declares what it accepts, and an empty one is still a container")
+    void anEmptyContainerThatDeclaresIsStillOne() {
+        String html = composer.compose(
+                "<body><main sh-accepts=\"SectionHero SectionCta\"></main></body>",
+                Map.of(), "page-1", "Page");
+
+        assertThat(html)
+                .as("""
+                        An editor that can select and move a section still cannot add one, because                         nothing says which types fit where. The EMPTY container is the case                         insertion exists for — a page with no sections yet is where nothing can be                         copied from what is already there — and the section pass can only find a                         container by the sections in it, so this one would be invisible.""")
+                .contains("data-shio-accepts=\"SectionHero SectionCta\"")
+                .contains("data-shio-sections=\"0\"");
+    }
+
+    @Test
+    @DisplayName("SH1039: a container that holds sections keeps its own count")
+    void aDeclaringContainerKeepsItsCount() {
+        String html = composer.compose("""
+                <body><main sh-accepts="SectionHero">
+                  <section data-shio-section="SectionHero" sh-post="a1"></section>
+                  <section data-shio-section="SectionCta" sh-post="b2"></section>
+                </main></body>""", Map.of(), "page-1", "Page");
+
+        // The declaration never overwrites the derived count: a container holding two sections and
+        // accepting one type is an ordinary page whose layout was narrowed after it was composed.
+        assertThat(html).contains("data-shio-sections=\"2\"").contains("data-shio-accepts=\"SectionHero\"");
+    }
+
+    @Test
+    @DisplayName("SH1039: a blank declaration is skipped, like an empty sh-field")
+    void aBlankAcceptsDeclarationIsSkipped() {
+        String html = composer.compose("<body><main sh-accepts=\"   \"></main></body>",
+                Map.of(), "page-1", "Page");
+
+        // An author mid-edit, not a statement that nothing fits. Annotating it would turn a typo
+        // into a fact the console acts on, and the fact it would state is the most restrictive one.
+        assertThat(html).doesNotContain("data-shio-accepts").doesNotContain("data-shio-sections");
+    }
+
     // --- SH1037: a field says what KIND it is ---
 
     @Test

@@ -734,12 +734,22 @@ public class ShAgentAPI {
      * can actually click, and the annotations are already there for the browser to use.</p>
      *
      * @param state SH990 — which version of the page to read the annotations off
+     * @param include SH1039 — {@code insertable} attaches, per container, the section types the
+     *                template says fit there, each resolved against this instance's post-types.
+     *                An editor that can select and move a section could not add one, because
+     *                nothing said which types fit where. A rider rather than a route of its own:
+     *                the caller already holds the address this read takes, so a second endpoint
+     *                would resolve the same page again for the half the first one left out (P2),
+     *                and it is opt-in because the fields of every accepted type are what a caller
+     *                asking <em>which fields can I edit</em> did not ask for (P3)
      */
     @GetMapping("/editable")
     @Operation(summary = "Which fields on a page a curator could edit, and the regions it declares")
     public ResponseEntity<Object> editable(@RequestParam(name = "address") String address,
-                                           @RequestParam(name = "state", required = false) String state) {
-        return ResponseEntity.ok(shAgentRenderService.editable(address, state));
+                                           @RequestParam(name = "state", required = false) String state,
+                                           @RequestParam(name = "include", required = false) String include) {
+        return ResponseEntity.ok(
+                shAgentRenderService.editable(address, state, includes(include, "insertable")));
     }
 
     /**

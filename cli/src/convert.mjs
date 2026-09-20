@@ -311,7 +311,8 @@ export function buildConversion({
     // captured one, and emitting it twice would put a megabyte on the page twice.
     const capturedFor = theme === vocabularyThemeTitle(site)
       && extras.includes("Theme") && held.length > 0;
-    posts.push(pageLayout(markup, site, theme, capturedFor, sectionFieldsOf(vocabulary)));
+    posts.push(pageLayout(markup, site, theme, capturedFor, sectionFieldsOf(vocabulary),
+      sectionTypesOf(vocabulary)));
     extras.push("PageLayout");
   }
   // SH878 — after the layout that names the menu, which is the order every other pair here uses.
@@ -868,6 +869,23 @@ const BODY_ATTRIBUTE_FIELDS = Object.freeze(["align", "variant", "columns"]);
  * `repeats` names, because `{{#each features}}{{icon}}` is a reference like any other. `html` comes
  * from `SectionMarkup`, which is in no table for SH763's reason: no block maps into it.</p>
  */
+/**
+ * The types of `vocabulary` that a Page's `sections` array can hold (SH1039).
+ *
+ * <p>What the generated layout declares as `sh-accepts` on the element composing the sections, and
+ * therefore what the editor is told may be added to a converted page. Derived from the same table
+ * `sectionFieldsOf` reads rather than listed again: a third copy of the vocabulary is the drift
+ * SH245 bans, and this one would be the copy that decides what a curator is offered.</p>
+ *
+ * <p>`Page` is excluded because a page is not a section of another page, and `Menu`/`MenuItem`
+ * because the layout renders those through `{{#menu}}` and not through the array. `SectionMarkup`
+ * is in — it is in no table for SH763's reason, and a curator placing a block of kept markup is the
+ * case it exists for.</p>
+ */
+export function sectionTypesOf(vocabulary) {
+  return vocabulary.filter((type) => type in SECTION_TYPES || type === MARKUP_TYPE);
+}
+
 export function sectionFieldsOf(vocabulary) {
   const names = new Set();
   for (const type of vocabulary) {
@@ -1138,11 +1156,17 @@ function layoutTheme({ site, captured, authorable }) {
  * the same way adding a row does. `ShConvertedLayoutRenderTest` holds that exemption and asserts its
  * premise: a presentation field that becomes free text fails there rather than staying exempt.</p>
  */
-function pageLayout(markup, site, theme, capturedFor = false, fields = null) {
+function pageLayout(markup, site, theme, capturedFor = false, fields = null, accepts = null) {
   const lang = langOf(markup);
   // SH830 — every branch when the caller names no vocabulary, which is what the older callers and
   // the fixtures expect; filtered to what the conversion's own types declare when it does.
   const body = fields ? pageBodyFor(fields) : PAGE_BODY_HTML;
+  // SH1039 — what may be added here. `{{#getRelation sections}}` is a block and not an element, so
+  // the element composing the sections is `<body>` itself, which is where the server's pass finds
+  // the container and therefore where the declaration belongs. Written only when the caller named a
+  // vocabulary: an older caller's layout is the bytes it was (P5), and an absent declaration is
+  // "nothing is known to fit", never "anything".
+  const declares = accepts && accepts.length ? ` sh-accepts="${accepts.join(" ")}"` : "";
   return {
     url: FIDELITY_LAYOUT_URL,
     type: "PageLayout",
@@ -1161,7 +1185,7 @@ function pageLayout(markup, site, theme, capturedFor = false, fields = null) {
 ${HEAD_CONVENTIONS_HTML}
 <style data-shio-theme="{{theme.title}}">{{theme.css}}</style>
 ${capturedFor ? `${CAPTURED_STYLE_HTML}\n` : ""}</head>
-<body class="shio-page">
+<body class="shio-page"${declares}>
 ${body}
 </body>
 </html>

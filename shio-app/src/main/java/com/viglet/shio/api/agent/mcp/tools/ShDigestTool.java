@@ -68,8 +68,13 @@ public class ShDigestTool implements ShMcpTool {
                 // tools sum to 2499 against a 2500 ceiling, so `tools/list` has ONE token of
                 // headroom, and a new tool the size of this one costs 146. This costs a fraction of
                 // that and answers from the render already being taken.
+                // SH1039 — `insertable` rides on `editable` for the same reason `editable` rides
+                // here: it is one more section of an answer already being composed, and MCP is a
+                // plugin user's only surface, so a catalogue reachable over REST alone would be P1
+                // broken on the surface P1 is about.
                 "include", ShMcpTool.string(
-                        "editable — the fields a curator could edit here."),
+                        "editable — fields a curator could edit; insertable — what fits in each "
+                                + "section slot."),
                 // SH990 — REST's state=, which a revision renders through like /preview.
                 "state", ShMcpTool.string("published, draft or rev:<n>."),
                 // SH1014 — the digest of a page that does not exist yet, which is what turns a dry
@@ -100,8 +105,14 @@ public class ShDigestTool implements ShMcpTool {
         // a claim about content this instance holds. Asking for it there would answer about a page
         // Shio does not own, which is worse than refusing (P6's rule about a silent default).
         String include = ShMcpArgs.string(arguments, "include");
-        if (include != null && include.contains("editable") && address != null) {
-            return digest + ShAgentVerifyTerse.editable(shAgentRenderService.editable(address, state));
+        // SH1039 — `insertable` implies `editable`: the catalogue is per container of one page, and
+        // the containers are on the answer `editable` composes. Asking for it alone would either
+        // return a second shape or silently give the first, and implying it costs the caller the
+        // fields they were going to ask for next (P2).
+        boolean insertable = include != null && include.contains("insertable");
+        if (include != null && (insertable || include.contains("editable")) && address != null) {
+            return digest + ShAgentVerifyTerse.editable(
+                    shAgentRenderService.editable(address, state, insertable));
         }
         return digest;
     }

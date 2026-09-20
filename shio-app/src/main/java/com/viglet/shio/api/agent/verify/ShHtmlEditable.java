@@ -103,6 +103,71 @@ public final class ShHtmlEditable {
         return List.copyOf(seen);
     }
 
+    /** SH1038/SH1039 — the container half: an ordered list of sections, and what it accepts. */
+    private static final String SECTIONS = "data-shio-sections";
+    private static final String SECTION = "data-shio-section";
+    private static final String ACCEPTS = "data-shio-accepts";
+
+    /**
+     * One place on the page that composes an ordered list of sections (SH1039).
+     *
+     * @param index    its position among this page's containers, in document order — the one handle
+     *                 both halves can compute, since the field name is gone by the time markup
+     *                 exists ({@code getRelation} takes the field's value, not its name)
+     * @param region   the region it renders through, or {@code null} where the layout composes it
+     * @param holds    how many sections are in it now; {@code 0} is a real answer and the case
+     *                 insertion exists for
+     * @param sections the types in it, in order, so a caller sees the composition without parsing
+     * @param accepts  the post-type names the template says fit here — <b>empty when the container
+     *                 declares none</b>, which is "nothing is known to fit" and not "anything"
+     */
+    public record Container(int index, String region, int holds, List<String> sections,
+            List<String> accepts) {
+    }
+
+    /**
+     * Every container on a rendered page, in document order (SH1039).
+     *
+     * <p>Selected by <em>either</em> annotation, which is the whole reach of this: a container with
+     * sections in it is found by the count the composer derived, and an <b>empty</b> one only by
+     * its own declaration — and the empty one is the case an editor most needs, since a page with
+     * no sections yet is where nothing can be dragged from what is already there.</p>
+     */
+    public static List<Container> containers(String html) {
+        if (html == null || html.isBlank()) {
+            return List.of();
+        }
+        List<Container> found = new ArrayList<>();
+        for (Element element : Jsoup.parse(html).select("[" + SECTIONS + "],[" + ACCEPTS + "]")) {
+            Element region = element.closest("[" + REGION + "]");
+            List<String> sections = new ArrayList<>();
+            for (Element child : element.children()) {
+                String type = child.attr(SECTION);
+                if (!type.isBlank()) {
+                    sections.add(type);
+                }
+            }
+            found.add(new Container(found.size(),
+                    region == null ? null : blankToNull(region.attr(REGION)),
+                    sections.size(), List.copyOf(sections), words(element.attr(ACCEPTS))));
+        }
+        return List.copyOf(found);
+    }
+
+    /** A space-separated declaration, split and de-duplicated, in the order it was written. */
+    private static List<String> words(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        Set<String> names = new LinkedHashSet<>();
+        for (String word : raw.trim().split("\\s+")) {
+            if (!word.isBlank()) {
+                names.add(word);
+            }
+        }
+        return List.copyOf(names);
+    }
+
     /** Every region the page declares, whether or not a field inside it is editable. */
     public static List<String> regions(String html) {
         if (html == null || html.isBlank()) {

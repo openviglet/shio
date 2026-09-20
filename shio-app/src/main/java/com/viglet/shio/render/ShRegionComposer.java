@@ -200,6 +200,25 @@ public class ShRegionComposer {
      * there is no element there to select. The count says where that is.</p>
      */
     public static final String ANNOTATION_SECTIONS = "data-shio-sections";
+
+    /**
+     * SH1039 — what a container <b>accepts</b>, declared by the template that composes it.
+     *
+     * <p>An editor that can select and move a section still cannot add one, because nothing says
+     * which types fit where: the shared section types reach the console as post-type names in a
+     * picker, never as something to place. The catalogue has to be the template's, since
+     * <em>only the template knows what a container accepts</em> — the same argument that makes
+     * {@link #FIELD_ATTR} the author's job rather than the engine's.</p>
+     *
+     * <p>Space-separated post-type names, copied verbatim like every other declaration here. An
+     * <b>absent</b> attribute is not "everything": it is "nothing is known to fit", and the
+     * catalogue says so with the declaration to add. Reading it as "every section type this
+     * instance has" would need a server-side list of which types are sections, and
+     * {@code ShVocabularyPostTypes} is explicit that a third hand-written copy of the vocabulary is
+     * the drift SH245 bans.</p>
+     */
+    public static final String ACCEPTS_ATTR = "sh-accepts";
+    public static final String ANNOTATION_ACCEPTS = "data-shio-accepts";
     private static final String ANNOTATION_POST_TYPE = "data-shio-post-type";
 
     /**
@@ -478,6 +497,22 @@ public class ShRegionComposer {
         }
         held.forEach((container, count) ->
                 container.attr(ANNOTATION_SECTIONS, String.valueOf(count)));
+        // SH1039 — a container that declares what it accepts is a container even when it holds
+        // nothing, and the EMPTY one is the case insertion exists for: a page with no sections yet
+        // is where an editor most needs to be told what fits. Without this it would be invisible to
+        // every reader, since the pass above can only see a container by the sections in it.
+        for (Element container : document.select("[" + ACCEPTS_ATTR + "]")) {
+            String accepts = container.attr(ACCEPTS_ATTR).trim();
+            // Blank is skipped like an empty `sh-field`: a declaration naming nothing is an author
+            // mid-edit, and annotating it would say "this container accepts nothing" as a fact.
+            if (accepts.isEmpty()) {
+                continue;
+            }
+            container.attr(ANNOTATION_ACCEPTS, accepts);
+            if (!container.hasAttr(ANNOTATION_SECTIONS)) {
+                container.attr(ANNOTATION_SECTIONS, "0");
+            }
+        }
     }
 
     /**

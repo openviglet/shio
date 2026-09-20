@@ -164,8 +164,26 @@
       // injected here can outline a section and cannot draw a toolbar over it: the buttons belong
       // to the console's own tree, which is where the writes are, and the console cannot measure
       // the framed document because it is another origin.
-      rect: rectOf(section)
+      rect: rectOf(section),
+      // SH1039 — the post-type names this container says fit in it, so the console knows what may
+      // be placed beside the selection. An empty list is "nothing is known to fit here", which is
+      // what an absent declaration means; it is never read as "anything". The catalogue itself —
+      // each type's title, description and fields — is the server's, on
+      // `GET /agent/editable?include=insertable`, because only it knows what this instance has
+      // provisioned and a copy of that in the markup would be a second place for it to be wrong.
+      accepts: acceptedBy(container)
     };
+  }
+
+  /** The types a container declares, split and de-duplicated in the order written (SH1039). */
+  function acceptedBy(container) {
+    var raw = container ? container.getAttribute("data-shio-accepts") : null;
+    if (!raw) return [];
+    var names = [];
+    raw.trim().split(/\s+/).forEach(function (name) {
+      if (name && names.indexOf(name) < 0) names.push(name);
+    });
+    return names;
   }
 
   /**

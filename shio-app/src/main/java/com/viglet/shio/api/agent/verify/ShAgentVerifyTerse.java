@@ -146,7 +146,48 @@ public final class ShAgentVerifyTerse {
         for (String region : editable.regions()) {
             out.append(ShTerse.line("region").word(region).build());
         }
+        // SH1039 — the container half, present only when the caller asked for it. A `slot` line per
+        // container and a `fits` line per accepted type, so an insert is one call away from a
+        // digest: the slot says where and how many, the fits line says what and what it needs.
+        for (ShAgentInsertable.Container container
+                : editable.containers() == null ? List.<ShAgentInsertable.Container>of()
+                        : editable.containers()) {
+            out.append(ShTerse.line("slot")
+                    .word(container.index())
+                    .attr("region", container.region())
+                    .count("holds", container.holds())
+                    .attr("has", String.join(",", container.sections()))
+                    .build());
+            for (ShAgentInsertable.Type type : container.accepts()) {
+                out.append(ShTerse.line("fits")
+                        .word(type.type())
+                        .attr("title", type.title())
+                        // Absent for a type this instance has: a flag on every row of a working
+                        // catalogue is tokens spent to say nothing happened (the `markers` rule
+                        // above, one answer along).
+                        .flag("unprovisioned", !type.provisioned())
+                        .attr("required", String.join(",", required(type)))
+                        .build());
+            }
+            if (container.fix() != null) {
+                out.append("fix ").append(container.fix()).append('\n');
+            }
+        }
         return out.toString();
+    }
+
+    /**
+     * The fields an insert of this type has to supply (SH1039).
+     *
+     * <p>Only the required ones in the terse form, and that is the whole trade: the JSON carries
+     * every field because a properties panel draws them all, and a caller reading lines is deciding
+     * what to place — the required set is what decides whether a placement can be completed, which
+     * SH582 is the measured case of (a proposal derived fields, never compared them with the
+     * required set, and left a replica failing {@code verify} with its content complete).</p>
+     */
+    private static List<String> required(ShAgentInsertable.Type type) {
+        return type.fields().stream().filter(ShAgentInsertable.Field::required)
+                .map(ShAgentInsertable.Field::name).toList();
     }
 
     public static String diagnostics(ShAgentDiagnostics diagnostics) {

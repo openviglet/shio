@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -114,20 +115,30 @@ class ShAgentRenderedDigestTest {
             // The layout contributes an <h1> and a <nav> landmark that exist in *neither* the
             // page's own fields nor any section — so seeing them proves the digest read the
             // rendered page rather than the content.
+            // SH1039 — `<main>` declares what may be placed in it: one type this fixture has and
+            // one it has not, so the catalogue's two answers are both observable. It changes no
+            // digest: the digest hashes headings, landmarks, links and images, and an attribute is
+            // none of those.
             post(site, root, layoutType, LAYOUT, "/layout", json("HTML",
                     "<html><head><style>.hero{display:block}.lede{font-size:1.2em}</style></head>"
                             + "<body><h1>{{post.title}}</h1>"
                             + "<div sh-region=\"" + REGION + "\"></div>"
-                            + "<main>{{{TEXT}}}</main></body></html>"), when);
+                            + "<main sh-accepts=\"" + boundType + " Sh1039Absent\">"
+                            + "{{{TEXT}}}</main></body></html>"), when);
             post(site, root, regionType, REGION, "/region", json("HTML",
                     "<nav><a href=\"/docs\">Docs</a></nav>"), when);
 
             // SH299's subject: a layout with an unfillable slot and a theme that is not there, so
             // the page renders and carries two markers saying it is broken.
             ShPostType broken = postType(brokenType, (byte) 0, when, "TEXT");
+            // SH1039 — and it composes a section in a container that declares nothing, which is the
+            // other half of the catalogue: an empty `accepts` is the shape of both "nothing fits
+            // here" and "nobody said", and only the second carries the declaration to add.
             post(site, root, layoutType, "SH299_LAYOUT", "/layout-broken", json(
                     "HTML", "<html><body><h1>{{post.title}}</h1>"
-                            + "<div sh-region=\"SH299_ABSENT\"></div></body></html>",
+                            + "<div sh-region=\"SH299_ABSENT\"></div>"
+                            + "<div><section data-shio-section=\"Sh1039Kept\"></section></div>"
+                            + "</body></html>",
                     "THEME", "SH299_NO_THEME"), when);
             post(site, root, broken, "Broken page", "/broken", json("TEXT", "<p>x</p>"), when);
 
@@ -290,6 +301,72 @@ class ShAgentRenderedDigestTest {
         assertThatThrownBy(() -> renderService.digest(null, "https://example.test/", "published"))
                 .as("SH990: `url` digests what a visitor is served, which has one version")
                 .isInstanceOf(ShAgentRenderService.StateWithUrlException.class);
+    }
+
+    // --- SH1039: what may be inserted, and where ---
+
+    @Test
+    @DisplayName("SH1039: the catalogue is absent until it is asked for, and empty is a real answer")
+    void theCatalogueIsOptIn() {
+        // Absent rather than empty when nobody asked, because an empty list is a page that composes
+        // no sections — a different answer, and the one a caller would act on. P3 makes it opt-in:
+        // the fields of every accepted type are what a properties panel needs and what a caller
+        // asking "which fields can I edit" did not ask for.
+        assertThat(renderService.editable("post:" + siteName + "/bound").containers()).isNull();
+        assertThat(renderService.editable("post:" + siteName + "/loose", null, true).containers())
+                .as("a page that does not render yet has no containers, and that is not a refusal")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH1039: a container reports what it holds, and the types it accepts, resolved")
+    void theCatalogueResolvesWhatTheTemplateDeclares() {
+        List<ShAgentInsertable.Container> containers =
+                renderService.editable("post:" + siteName + "/bound", null, true).containers();
+
+        assertThat(containers)
+                .as("""
+                        SH1038 made a section selectable, movable and removable, and an editor that \
+                        can do all three still cannot ADD one: the editable read answered fields and \
+                        regions, with no insertable set and no catalogue, so the section types \
+                        reached the console as post-type names in a picker.""")
+                .hasSize(1);
+        ShAgentInsertable.Container container = containers.getFirst();
+        assertThat(container.index()).isZero();
+        assertThat(container.holds()).isZero();
+        assertThat(container.fix())
+                .as("a declared container needs no teaching sentence; the empty one is what gets it")
+                .isNull();
+        assertThat(container.accepts()).extracting(ShAgentInsertable.Type::type)
+                .containsExactly(boundType, "Sh1039Absent");
+        assertThat(container.accepts().getFirst().provisioned()).isTrue();
+        assertThat(container.accepts().getFirst().fields())
+                .as("what a properties panel would draw, from the one definition the console reads")
+                .extracting(ShAgentInsertable.Field::name).containsExactly("TEXT");
+        assertThat(container.accepts().get(1).provisioned())
+                .as("""
+                        The template names it, so dropping it would report a shorter catalogue than \
+                        the page declares — a quieter lie than an honest gap (SH169). The caller \
+                        provisions the type; nothing here invents one.""")
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("SH1039: a container that declares nothing carries the declaration to add")
+    void anUndeclaredContainerTeaches() {
+        List<ShAgentInsertable.Container> containers =
+                renderService.editable("post:" + siteName + "/broken", null, true).containers();
+
+        assertThat(containers).hasSize(1);
+        assertThat(containers.getFirst().holds()).isOne();
+        assertThat(containers.getFirst().accepts()).isEmpty();
+        // P6 inside an ordinary 200: an empty catalogue is the shape of both "nothing fits here" and
+        // "nobody said", and those need different actions. This layout composes a section and
+        // declares no `sh-accepts`, so the container exists and has nothing to offer — which is
+        // only useful if it says what would give it something.
+        assertThat(containers.getFirst().fix())
+                .as("an absent declaration is never read as \"anything\", so it has to be sayable")
+                .contains("sh-accepts");
     }
 
     @Test

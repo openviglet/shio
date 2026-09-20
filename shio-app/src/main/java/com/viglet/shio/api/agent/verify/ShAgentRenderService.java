@@ -14,6 +14,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +33,7 @@ import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.agent.ShAgentReadService;
 import com.viglet.shio.api.post.ShContentPerspective;
+import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
@@ -106,6 +108,11 @@ public class ShAgentRenderService {
     private final ShPostRevisionService shPostRevisionService;
     /** SH1014 — a preview of unsaved values shows content, so it is gated like authoring it. */
     private final ShContentAclService shContentAclService;
+    /**
+     * SH1039 — the one reader of what a post-type declares, so the catalogue and the console's
+     * properties panel answer from the same definition rather than from two ideas of it.
+     */
+    private final ShPostTypeAdminService shPostTypeAdminService;
 
     public ShAgentRenderService(ShAddressResolver shAddressResolver,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -113,7 +120,9 @@ public class ShAgentRenderService {
                                 ShAgentDeliveryProbe deliveryProbe,
                                 ShPageRenderService pageRenderService,
                                 ShPostRevisionService shPostRevisionService,
-                                ShContentAclService shContentAclService) {
+                                ShContentAclService shContentAclService,
+                                ShPostTypeAdminService shPostTypeAdminService) {
+        this.shPostTypeAdminService = shPostTypeAdminService;
         this.shContentAclService = shContentAclService;
         this.shPostRevisionService = shPostRevisionService;
         this.shAddressResolver = shAddressResolver;
@@ -172,11 +181,24 @@ public class ShAgentRenderService {
      * @return the fields and regions, or a page that renders to nothing reported as empty
      */
     public ShAgentEditable editable(String rawAddress) {
-        return editable(rawAddress, null);
+        return editable(rawAddress, null, false);
     }
 
     /** As {@link #editable(String)}, for the version of the page {@code state} names (SH990). */
     public ShAgentEditable editable(String rawAddress, String state) {
+        return editable(rawAddress, state, false);
+    }
+
+    /**
+     * As {@link #editable(String, String)}, with the insertable catalogue attached (SH1039).
+     *
+     * @param insertable {@code include=insertable} — per container, the section types the template
+     *                   says fit there, each resolved against this instance's post-types. Opt-in
+     *                   because it is the expensive half, and absent rather than empty when nobody
+     *                   asked: an empty list is a page that composes no sections, which is a
+     *                   different answer (P3, and SH169's rule about two failures looking alike)
+     */
+    public ShAgentEditable editable(String rawAddress, String state, boolean insertable) {
         ShContentPerspective perspective = ShContentPerspective.parse(state)
                 .requireVersion("/agent/editable", "GET /api/v2/agent/read?address=<address>&state=release:<name>");
         ShPostUnified post = postFor(rawAddress, perspective);
@@ -188,11 +210,72 @@ public class ShAgentRenderService {
             // friendly URL, which is the normal state of a site mid-build. An empty list here would
             // read as "nothing is editable" rather than "this page does not render yet", so the
             // source says which question was answered (SH169's argument, one endpoint over).
-            return new ShAgentEditable(address, SOURCE_CONTENT, List.of(), List.of());
+            return new ShAgentEditable(address, SOURCE_CONTENT, List.of(), List.of(),
+                    insertable ? List.of() : null);
         }
         return new ShAgentEditable(address, SOURCE_RENDERED,
-                ShHtmlEditable.of(html.get()), ShHtmlEditable.regions(html.get()));
+                ShHtmlEditable.of(html.get()), ShHtmlEditable.regions(html.get()),
+                insertable ? catalogue(html.get()) : null);
     }
+
+    /**
+     * SH1039 — the catalogue for each container the page composes.
+     *
+     * <p>The declaration is the template's and the resolution is this instance's, which is the
+     * split that makes the answer useful: a type the layout names and the instance has not got is
+     * reported {@code provisioned: false} with the op that creates it, rather than dropped — the
+     * page declares it, so a shorter catalogue would be a quieter lie than an honest gap
+     * (SH169).</p>
+     *
+     * <p>One post-type read per distinct name across the page, not per container: two containers
+     * accepting the same type are one lookup, and a page with four containers over eight types was
+     * otherwise thirty-two reads for eight answers.</p>
+     */
+    private List<ShAgentInsertable.Container> catalogue(String html) {
+        Map<String, ShAgentInsertable.Type> resolved = new LinkedHashMap<>();
+        List<ShAgentInsertable.Container> out = new ArrayList<>();
+        for (ShHtmlEditable.Container container : ShHtmlEditable.containers(html)) {
+            List<ShAgentInsertable.Type> accepts = container.accepts().stream()
+                    .map(name -> resolved.computeIfAbsent(name, this::typeFor))
+                    .toList();
+            out.add(new ShAgentInsertable.Container(container.index(), container.region(),
+                    container.holds(), container.sections(), accepts,
+                    accepts.isEmpty() ? UNDECLARED_FIX : null));
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * What an insert would need to know about one declared type.
+     *
+     * <p>Trimmed from {@code ShPostTypeDef} rather than returned whole: the definition carries
+     * widget settings, constraints, index hints and the Turing mapping, none of which decides what
+     * to place or what a properties panel draws, and this rides on a read a caller may make for
+     * every page of a site (P3).</p>
+     */
+    private ShAgentInsertable.Type typeFor(String name) {
+        return shPostTypeAdminService.get(name)
+                .map(def -> new ShAgentInsertable.Type(def.name(), def.title(), def.description(),
+                        true, def.fields() == null ? List.of() : def.fields().stream()
+                                .map(field -> new ShAgentInsertable.Field(field.name(),
+                                        field.label(), field.widget(),
+                                        Boolean.TRUE.equals(field.required())))
+                                .toList()))
+                .orElseGet(() -> new ShAgentInsertable.Type(name, null, null, false, List.of()));
+    }
+
+    /**
+     * What to do about a container that declares nothing (SH1039) — P6 inside an ordinary 200.
+     *
+     * <p>An empty catalogue is the shape of two different situations: the template says nothing
+     * fits here, and nobody has said anything. They need different actions, so the one that is a
+     * missing declaration carries the declaration to add.</p>
+     */
+    private static final String UNDECLARED_FIX =
+            "This container declares no sh-accepts, so nothing is known to fit it. Add "
+                    + "sh-accepts=\"SectionHero SectionCta\" to the element composing the sections "
+                    + "in this page's PageLayout; an absent declaration is never read as "
+                    + "\"anything\".";
 
     // --- content ------------------------------------------------------------
 

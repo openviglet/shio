@@ -106,4 +106,59 @@ class ShHtmlEditableTest {
         assertThat(ShHtmlEditable.of(page))
                 .containsExactly(new ShHtmlEditable.Field("post:Blog/x", "title", null));
     }
+
+    // --- SH1039: what may be inserted, and where ---
+
+    /** A page composing two ordered lists: one declaring what fits, one holding sections. */
+    private static final String COMPOSED = """
+            <html><body>
+              <main data-shio-region="main" data-shio-region-post="post:Site/" data-shio-sections="2">
+                <section data-shio-section="SectionHero" data-shio-post="post:Site/sections/a"></section>
+                <section data-shio-section="SectionCta" data-shio-post="post:Site/sections/b"></section>
+              </main>
+              <aside data-shio-accepts="SectionRichText  SectionRichText SectionFaq"
+                     data-shio-sections="0"></aside>
+            </body></html>
+            """;
+
+    @Test
+    @DisplayName("SH1039: each container reports where it is, what it holds and what fits")
+    void containersAreReported() {
+        assertThat(ShHtmlEditable.containers(COMPOSED))
+                .as("""
+                        SH1038 made a section selectable, movable and removable, and an editor that \
+                        can do all three still cannot ADD one: nothing said which types fit where. \
+                        The index is the handle both halves can compute — `getRelation` takes the \
+                        field's VALUE, so the field's name is gone by the time markup exists.""")
+                .containsExactly(
+                        new ShHtmlEditable.Container(0, "main", 2,
+                                java.util.List.of("SectionHero", "SectionCta"), java.util.List.of()),
+                        // De-duplicated in the order written: a declaration naming a type twice is
+                        // one offer, and two would be two identical rows in a catalogue.
+                        new ShHtmlEditable.Container(1, null, 0, java.util.List.of(),
+                                java.util.List.of("SectionRichText", "SectionFaq")));
+    }
+
+    @Test
+    @DisplayName("SH1039: an empty container is found by its own declaration alone")
+    void anEmptyDeclaredContainerIsFound() {
+        // The case insertion exists for. A page with no sections yet has nothing to copy from what
+        // is already there, and a reader that could only see a container by the sections in it
+        // would report the emptiest page as having nowhere to put anything.
+        assertThat(ShHtmlEditable.containers(
+                "<body><main data-shio-accepts=\"SectionHero\"></main></body>"))
+                .containsExactly(new ShHtmlEditable.Container(0, null, 0, java.util.List.of(),
+                        java.util.List.of("SectionHero")));
+    }
+
+    @Test
+    @DisplayName("SH1039: a container that declares nothing accepts nothing, not everything")
+    void anUndeclaredContainerAcceptsNothing() {
+        // Never read as "anything": that would need a server-side list of which post-types are
+        // sections, and ShVocabularyPostTypes is explicit that a third copy of the vocabulary is
+        // the drift SH245 bans. The catalogue carries the declaration to add instead.
+        assertThat(ShHtmlEditable.containers(COMPOSED).getFirst().accepts()).isEmpty();
+        assertThat(ShHtmlEditable.containers(null)).isEmpty();
+        assertThat(ShHtmlEditable.containers(PAGE)).isEmpty();
+    }
 }

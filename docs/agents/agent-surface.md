@@ -1287,6 +1287,40 @@ says it is.
 state of a site mid-build and **not** the same as nothing being editable (SH169's argument, one
 endpoint over).
 
+### And what may be *added*, on `include=insertable` (SH1039)
+
+SH1038 made a section a selectable object a curator can move, duplicate and remove — and an editor
+that can do all three still could not **add** one, because this read answered fields and regions with
+no insertable set, no per-container allow-list and no catalogue. The shared section types reached the
+console as post-type names in a picker: a list of names, never something to place.
+
+**The catalogue is the template's, and only the template's.** Only a template knows what a container
+accepts — the same argument that makes `sh-field` the author's job rather than the engine's — so the
+allow-list is `sh-accepts="SectionHero SectionCta"` on the element composing the sections, rendered
+as `data-shio-accepts`. An **absent** declaration means *nothing is known to fit here* and the
+container carries the line that would fix it; it is never read as *anything*, because reading it that
+way would need a server-side list of which post-types are sections, and `ShVocabularyPostTypes` is
+explicit that a third hand-written copy of the vocabulary is the drift SH245 bans. The CLI's generated
+layout declares what the conversion provisions, derived from the same table the field filter reads,
+and both first-party blueprints declare their eight.
+
+The declaration is the template's and the **resolution is the instance's**: a type the layout names
+and this instance has not got comes back `provisioned: false` with its name, rather than dropped —
+the page declares it, so a shorter catalogue would be a quieter lie than an honest gap (SH169). One
+post-type read per distinct name across the page, not per container.
+
+A rider rather than a route: the caller already holds the address this read takes, so a second
+endpoint would resolve the same page again for the half the first one left out (P2), and it would be
+one more GET root for `ShAgentReadReachabilityLintTest` to classify. Opt-in because it is the
+expensive half — the fields of every accepted type are what a properties panel needs and what a
+caller asking *which fields can I edit* did not ask for (P3) — so `containers` is **absent** when
+nobody asked and **empty** for a page that composes no sections. MCP reaches it the way it reaches
+`editable`, as `shio_digest include=insertable`, which implies `editable`: the catalogue is per
+container of one page, and the containers are on the answer `editable` composes. In terse form it is
+a `slot` line per container and a `fits` line per type, whose `required=` is the set an insert has to
+supply — SH582 is the measured case of deriving fields and never comparing them with the required
+set, which left a replica failing `verify` with its content complete.
+
 **And the rows call an address `address` (SH810).** The first version answered
 `{ post, field, region }`, which was the only place in the agent packages spelling an address
 `post` — inherited from the attribute it is read from, `data-shio-post`, which is right for the HTML

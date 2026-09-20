@@ -727,6 +727,37 @@ test("SH1038: a scroll with nothing selected says nothing at all", async () => {
     "a message per scroll event is a message per pixel, and there is nothing to draw");
 });
 
+// --- SH1039: what may be inserted, and where ---
+
+test("SH1039: the selection carries the types this container says fit in it", async () => {
+  const { window, document, posted } = await pageWithBridge(`
+    <main data-shio-sections="1" data-shio-accepts="SectionHero  SectionHero SectionCta">
+      <section data-shio-section="SectionFaq" data-shio-post="faq-1" data-shio-section-index="0">
+        <p class="filler">x</p>
+      </section>
+    </main>
+  `, { bodyAttrs: BODY_ATTRS });
+
+  selectSection(window, document, "SectionFaq");
+
+  // De-duplicated in the order written. The catalogue itself — each type's title, description and
+  // fields — is the server's, because only it knows what this instance has provisioned; a copy of
+  // that in the markup would be a second place for it to be wrong.
+  const [section] = messagesOfType(posted, "sh:component-selected");
+  assert.deepEqual(section.accepts, ["SectionHero", "SectionCta"]);
+});
+
+test("SH1039: a container that declares nothing accepts nothing, not everything", async () => {
+  const { window, document, posted } = await pageWithBridge(SECTION_PAGE, { bodyAttrs: BODY_ATTRS });
+
+  selectSection(window, document, "SectionHero");
+
+  // Never read as "anything": that would need a list of which post-types are sections, and the
+  // server bans a third copy of the vocabulary. An empty list is "nothing is known to fit here",
+  // and the server's catalogue carries the declaration that would change it.
+  assert.deepEqual(messagesOfType(posted, "sh:component-selected")[0].accepts, []);
+});
+
 test("SH1038: sections is claimed only when the page has one", async () => {
   const withSections = await pageWithBridge(SECTION_PAGE, { bodyAttrs: BODY_ATTRS });
   const without = await pageWithBridge(PAGE, { bodyAttrs: BODY_ATTRS });

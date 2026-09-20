@@ -125,6 +125,16 @@ export type SelectedSection = {
    */
   rect?: FrameRect
   /**
+   * SH1039 — the post-type names this section's container says fit in it.
+   *
+   * Empty is "nothing is known to fit here", which is what an absent `sh-accepts` means; it is
+   * never read as "anything". The catalogue itself — each type's title, description and fields —
+   * is the server's, on `GET /api/v2/agent/editable?include=insertable`, because only it knows what
+   * this instance has provisioned, and a copy of that in the markup would be a second place for it
+   * to be wrong.
+   */
+  accepts?: string[]
+  /**
    * The Page whose ordered reference array holds this section.
    *
    * What a reorder writes: moving a hero rewrites the Page's array and the hero itself does not

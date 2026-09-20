@@ -84,8 +84,8 @@
 
 ## Block BF — The visual editor becomes a composer
 
-- 📋 **SH1039** (deps: SH1038 ✅) **nothing tells the editor what may be inserted into a page, or where** — The editable response returns fields and regions and no insertable set, so the section types reach the console only as post-type names in a picker, never as something to place. → §LXXI.4
-- 📋 **SH1040** (deps: SH1039) **a well-built block on one page cannot be captured and reused as a pattern** — Blueprints have a fixed target, no insert mode and no capture, so the section a curator perfected must be rebuilt by hand or by an agent every time it is wanted. → §LXXI.5
+- ⏳ **SH1039** (deps: SH1038 ✅) **nothing tells the editor what may be inserted into a page, or where** — The console's inserter rail and its thumbnails, the insertion caret, and the insert write itself — two upserts, refused with the allowed list for a type the container does not accept. → §LXXI.4
+- 📋 **SH1040** (deps: SH1039 ⏳) **a well-built block on one page cannot be captured and reused as a pattern** — Blueprints have a fixed target, no insert mode and no capture, so the section a curator perfected must be rebuilt by hand or by an agent every time it is wanted. → §LXXI.5
 - 📋 **SH1041** (deps: SH1036 ✅) **the visual editor has no undo or discard, and a refresh leaves pending changes counted that are no longer visible** — The pending set supports set and clear-all only, refresh reloads the frame without touching it, and leaving the route drops edits without asking. → §LXXI.6
 - 📋 **SH1042** (deps: —) **a stakeholder cannot be sent an expiring link to a draft rendered by Shio itself** — The preview route is console-authenticated and the token mint returns a null token for an internal site, so only sites with an external front end can be previewed by anyone else. → §LXXI.7
 - 📋 **SH1101** (deps: SH1038 ✅) **a copied post comes back with no id, so duplicating a section can only place the same one twice** — `copyto` returns only the folders it made, so nothing can address a post it just copied, and the editor's Duplicate repeats the reference instead. → §LXXI.8
@@ -129,7 +129,9 @@
 - 📋 **SH1067** (deps: —) **replication lives only in the CLI, with no manifest feature key the P1 census could classify** — shio clone, convert and propose are a differentiator with no MCP reach and no console entry, and without a key ShAgentP1ConformanceTest cannot see the gap at all. → §LXXIV.5
 - 📋 **SH1068** (deps: —) **the conformance gate knows none of the vocabulary this round adds, so its docs checks stay green over new names** — pnpm conformance pins documented tools, ops, properties and verbs against the code, and the round adds dozens with no line updating its vocabulary sources. → §LXXIV.6
 - 📋 **SH1069** (deps: —) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — The block-completion sweep of docs-shio, the coverage matrix and the public site is required when a block's last task ships, and no block here declares one. → §LXXIV.7
-- 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads `document.referrer` and `schema.graphqls` as symbols this repository should define, so six correct ledger entries keep the gate permanently red. → §LXXIV.8
+- 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads a browser global and a filename as symbols this repository should define, so six ledger entries that were correct when written keep the gate permanently red. → §LXXIV.8
+- 📋 **SH1103** (deps: —) **a gate stamp stays fresh across the ship that changes what it certified, so a red commit lands unseen** — Staleness is the HEAD sha and `ship` writes the governed docs at that same HEAD — which the JS suite reads, so a ship turns `pnpm test` red after its last green run. → §LXXIV.9
+- 📋 **SH1104** (deps: SH1039 ⏳) **the editable read is on no response budget, and it just grew a section that scales with the catalogue** — Sixteen responses are measured and `/agent/editable` is not one, so `include=insertable` has no ceiling and the budget fixture renders no page to measure it against. → §LXXIV.10
 
 ## Priority
 
@@ -160,6 +162,13 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
+
+## Done when — SH1039
+
+- **A curator can add a section to a page, from the page** The catalogue says what fits
+  where and nothing places one yet: the rail, the caret and the two-upsert insert are
+  what turn an answer into an action, and the refusal is what proves the allow-list
+  binds.
 
 ## Non-goals (do NOT add as tasks)
 
