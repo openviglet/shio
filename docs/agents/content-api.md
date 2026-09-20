@@ -1269,3 +1269,46 @@ rule on the half a *person* waits for, in the unit a person pays. Eight reads ag
 fixture, so a breach means the shape got bigger rather than the database did, with a headroom check
 for SH736's reason — a ceiling at its measurement refuses the next field instead of pricing it. The
 widget catalogue is the largest at 2,165 bytes and the only one a new widget legitimately grows.
+
+## What is going on here, in one call (SH1050)
+
+The console's home fired four requests on mount and used one property of two of them: every site and
+every post type, transferred whole, for their **length**. There was no count endpoint, so the only
+way to ask "how many" was to fetch everything and measure it — on the first screen a curator sees
+after logging in, with the tiles blank until both collections landed. An instance with four hundred
+sites paid four hundred rows to draw the number 400.
+
+`GET /api/v2/console/summary` answers it with count queries: `count()` on the repositories, the
+review queue's own `pending()`, and two new counts — open notes, and the publishes and unpublishes
+falling due in the next seven days. It carries the recent trail rows too, so home makes **one**
+request instead of four. It composes services that already exist and adds no new way to ask
+anything, which is P10 and is what lets a second reader exist without a second implementation.
+
+It sits under `/api/v2`, so SH1048's filter gives it an `ETag` and a `no-cache`: a dashboard left
+open on a second screen revalidates into a 304. The endpoint was written after that filter for
+exactly that reason.
+
+**The window counts things, not moments.** A post scheduled to go up *and* come down inside the week
+counts once — the honest answer to "how many things happen this week" for a tile, and the one a
+naive `count(publishAt) + count(unpublishAt)` gets wrong. The agenda page splits them into two
+moments because that is what an agenda is for; this is not the agenda. Trashed posts never count.
+Both edges are driven in `ShConsoleSummaryAPITest`, including a window entirely in the past, which
+is what shows the bound is being applied at all.
+
+**Home is an attention queue now.** "How much content exists" is a number nobody acts on; what a
+curator opens the console to find out is what needs *them*. Three tiles — a review queue waiting on
+a decision, publishes due this week, notes left open — each linking to the page that acts on it, and
+**a tile with nothing in it is not drawn**. A row of zeroes trains its reader to stop looking, and
+the point of that section is that a number on it means something is owed.
+
+**`shio status` prints the same rows off the same endpoint**, which is the claim worth keeping. An
+agent arriving mid-project and a curator opening the dashboard are asking the same question, and two
+implementations of it drift within a release — the one nobody looks at drifting first. `shio
+context` says what you *can* do here; this says what is *going on*.
+
+That difference is also why the read is declared in the manifest's endpoint index rather than
+classified console-only. Classifying it that way would have been false: an agent orienting itself
+wants exactly this, and composing it from the review surface, the scheduled listing, the note list
+and the change feed is four calls for one question — P2 by name. It cost 68 tokens on a document
+read every session, `response.manifest` was raised with that argument, and `indexIsCuratedNotTheWholeApi`
+went from 29 to 30 rows having first asked what it supersedes: not another row, a *sequence*.

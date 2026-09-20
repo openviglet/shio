@@ -131,6 +131,10 @@ class ShAnonymousRouteAccessTest {
 			// it and the reason this row matters more than most: the delivery search it replaced
 			// was published-only, so an anonymous reader reaching this one would see unreleased
 			// work rather than a page somebody chose to put on the internet.
+			// SH1050. Counts, what is waiting for a person, and the most recent trail rows — an
+			// anonymous read would say how much content exists, what is scheduled this week and
+			// what somebody just published, on an instance a stranger has no account on.
+			new Route("/api/v2/console/**", "/api/v2/console/summary", Access.AUTHENTICATED),
 			new Route("/api/v2/content/**", "/api/v2/content/search", Access.AUTHENTICATED),
 			// SH967. The stream reads the change feed as a console read, which no site allow-list
 			// narrows, so this row is what keeps an anonymous reader out of every site's history.

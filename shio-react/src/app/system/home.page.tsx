@@ -7,10 +7,13 @@
  * (at your option) any later version.
  */
 import {
+  IconCalendarClock,
+  IconChecklist,
   IconFileText,
   IconForms,
   IconHistory,
   IconHome,
+  IconMessage,
   IconPlus,
   IconSearch,
   IconWebhook,
@@ -25,17 +28,15 @@ import {
   bentoChipClass,
   type BentoTone,
 } from "@viglet/viglet-design-system/bento"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import type { ShHistory } from "@/models/history/history.model"
-import { ShHistoryService } from "@/services/history/history.service"
-import { usePostTypes, useSites } from "@/hooks/use-catalogue"
-import { ShSystemInfoService } from "@/services/system/system-info.service"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import { ShConsoleSummaryService } from "@/services/console/summary.service"
 
-const systemInfoService = new ShSystemInfoService()
-const historyService = new ShHistoryService()
 
 /**
  * SH898 — the console home, on the bento shell.
@@ -65,6 +66,11 @@ const historyService = new ShHistoryService()
  * that question and a wrong one. The tiles render when the counts arrive.
  */
 
+const summaryService = new ShConsoleSummaryService()
+
+/** SH1050 — one identity while the summary loads, not one per render. */
+const EMPTY_ACTIVITY: ShHistory[] = []
+
 /** Tone per activity action. Replaces six hardcoded colour-class strings on the console page. */
 const ACTION_TONE: Record<string, BentoTone> = {
   CREATE: "blue",
@@ -78,29 +84,68 @@ const ACTION_TONE: Record<string, BentoTone> = {
 export default function BentoHomePage() {
   const { t } = useTranslation()
   /*
-   * SH1046 — the two counts are the two cached catalogues, counted.
+   * SH1050 — one read for the whole screen.
    *
-   * `null` while the read is pending is the whole point of the comment above about not showing
-   * "0 Sites" to somebody who has just logged in: zero is a real answer to that question and a
-   * wrong one. A failure counts as zero, which is what the `.catch` this replaced did.
+   * SH1046 had already made these cached, and cached is not the same as cheap: `useSites()` still
+   * transfers every site so that `.length` can be taken, which is what this page did with the post
+   * types too. `/v2/console/summary` answers with count queries and carries the activity rows, so
+   * four requests became one and an instance with four hundred sites costs what one with four does.
+   *
+   * `null` while it is pending, deliberately: zero is a real answer to "how many sites" and a wrong
+   * one, and "0 Sites" is a poor first thing to show somebody who has just logged in.
    */
-  const sites = useSites()
-  const postTypes = usePostTypes()
-  const siteCount = sites.isPending ? null : (sites.data?.length ?? 0)
-  const postTypeCount = postTypes.isPending ? null : (postTypes.data?.length ?? 0)
-  const [appVersion, setAppVersion] = useState<string>("")
-  const [activity, setActivity] = useState<ShHistory[]>([])
-
-  useEffect(() => {
-    systemInfoService.getInfo().then((i) => setAppVersion(i.appVersion)).catch(() => setAppVersion(""))
-    historyService.recent({ limit: 8 }).then((page) => setActivity(page.rows))
-      .catch(() => setActivity([]))
-  }, [])
+  const { data: summary, isPending } = useQuery({
+    queryKey: addressKey("summary:"),
+    queryFn: ({ signal }) => summaryService.get({ signal }),
+  })
+  const siteCount = isPending ? null : (summary?.sites ?? 0)
+  const postTypeCount = isPending ? null : (summary?.postTypes ?? 0)
+  const appVersion = summary?.version ?? ""
+  const activity = summary?.activity ?? EMPTY_ACTIVITY
+  const attention = summary?.attention
 
   const stats = useMemo(() => [
     { label: t("home.statSites"), value: siteCount, icon: IconFileText, url: `${ROUTES.CONSOLE}/content`, tone: "blue" as BentoTone },
     { label: t("home.statPostTypes"), value: postTypeCount, icon: IconForms, url: ROUTES.POST_TYPE_ROOT, tone: "indigo" as BentoTone },
   ], [t, siteCount, postTypeCount])
+
+  /*
+   * SH1050 — what is waiting for a person, which is the dashboard's real question here.
+   *
+   * "How much content exists" is a number nobody acts on. In a CMS an agent drives, the thing a
+   * curator opens the console to find out is what needs *them*: a review queue somebody has to
+   * decide on, a publish that happens this week whether or not anybody remembers, a note left open
+   * on a page. Each tile links to the screen that acts on it, which is the difference between a
+   * dashboard and a report.
+   *
+   * A tile with nothing in it is not drawn. A row of zeroes is a screen that trains its reader to
+   * stop looking, and the point of this section is that a number on it means something is owed.
+   */
+  const waiting = useMemo(() => (attention ? [
+    {
+      // The count is sessions and the label carries the changes inside them, because a reviewer
+      // deciding on two sessions of ninety writes is not doing the same work as two of three.
+      label: t("home.attentionReview", { count: attention.reviewChanges }),
+      value: attention.reviewSessions,
+      icon: IconChecklist,
+      url: ROUTES.ADMIN_REVIEW,
+      tone: "amber" as BentoTone,
+    },
+    {
+      label: t("home.attentionScheduled"),
+      value: attention.scheduledSoon,
+      icon: IconCalendarClock,
+      url: ROUTES.SCHEDULED,
+      tone: "violet" as BentoTone,
+    },
+    {
+      label: t("home.attentionNotes"),
+      value: attention.openNotes,
+      icon: IconMessage,
+      url: `${ROUTES.CONSOLE}/content`,
+      tone: "rose" as BentoTone,
+    },
+  ].filter((tile) => tile.value > 0) : []), [t, attention])
 
   /*
    * `BentoTile` requires an eyebrow, so it carries the **area** each action leads into rather
@@ -148,6 +193,23 @@ export default function BentoHomePage() {
               tone={stat.tone}
               label={stat.label}
               count={stat.value ?? 0}
+              span="col-span-2"
+            />
+          ))}
+        </BentoSection>
+      )}
+
+      {waiting.length > 0 && (
+        /* First, above the counts: what is owed outranks what exists. */
+        <BentoSection title={t("home.attention")} description={t("home.attentionDesc")}>
+          {waiting.map((tile) => (
+            <BentoCountTile
+              key={tile.label}
+              to={tile.url}
+              icon={tile.icon}
+              tone={tile.tone}
+              label={tile.label}
+              count={tile.value}
               span="col-span-2"
             />
           ))}

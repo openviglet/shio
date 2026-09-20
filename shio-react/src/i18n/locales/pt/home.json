@@ -19,5 +19,10 @@
     "actionWebhooks": "Webhooks",
     "actionActivity": "Atividade",
     "version": "Viglet Shio CMS · versão {{version}}"
-  }
+  },
+  "home.attention": "Esperando por você",
+  "home.attentionDesc": "O que precisa de uma pessoa, não o que existe.",
+  "home.attentionReview": "Fila de revisão · {{count}} alterações",
+  "home.attentionScheduled": "Publicando nesta semana",
+  "home.attentionNotes": "Notas abertas"
 }

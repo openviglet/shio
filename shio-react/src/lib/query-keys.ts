@@ -46,7 +46,7 @@
 export const SCHEMES = [
   "post:", "folder:", "site:", "postType:", "id:",
   "widget:", "group:", "role:", "user:", "token:", "webhook:", "staticFile:",
-  "authProvider:", "exchangeProvider:", "tenant:",
+  "authProvider:", "exchangeProvider:", "tenant:", "summary:",
 ] as const;
 
 export type ShScheme = (typeof SCHEMES)[number];

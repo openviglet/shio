@@ -593,7 +593,18 @@ public class ShAgentManifestService {
                         "console", "POST /api/v2/staticfile/upload"),
                 new ShAgentEndpoint("GET", "/site/{id}/export",
                         "Export a whole site as a portable exchange package (zip).",
-                        "console", "GET /api/v2/site/{id}/export"));
+                        "console", "GET /api/v2/site/{id}/export"),
+                // SH1050 — declared rather than classified console-only, and the difference is the
+                // point. The context pack says what you CAN do here; this says what is going on:
+                // how much exists, what is waiting for a person, what just happened. An agent
+                // arriving mid-project wants the second, and composing it from the review surface,
+                // the scheduled listing, the note list and the change feed is four calls for one
+                // question — P2 by name. `shio status` is this read with a printer on it.
+                new ShAgentEndpoint("GET", "/console/summary",
+                        "What is going on here: counts, what is waiting for a person (review "
+                                + "sessions, publishes due this week, open notes) and the most "
+                                + "recent trail rows, in one call.",
+                        "console", "GET /api/v2/console/summary"));
     }
 
     /**

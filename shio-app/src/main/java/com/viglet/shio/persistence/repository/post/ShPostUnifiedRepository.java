@@ -850,4 +850,26 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      */
     @Query("select distinct p.shFolder.id from ShPostUnified p where p.shFolder is not null")
     Set<String> findFolderIdsWithPosts();
+
+    /**
+     * SH1050 — how many publishes and unpublishes fall due in a window.
+     *
+     * <p>A count rather than the rows, which is the whole of SH1050: the console's home wants the
+     * number, and reading every scheduled post to measure the list is the shape that made home
+     * fetch two whole collections to draw two figures.</p>
+     *
+     * <p>A post scheduled to go up <em>and</em> come down inside the window counts once. That is
+     * the honest answer to "how many things happen this week" for a dashboard tile — the agenda
+     * page splits them into two moments, and this is not the agenda.</p>
+     *
+     * <p>Scalar columns only, deliberately: navigating past the id of an association whose target
+     * is an {@code ShObject} subclass emits a tenant predicate against an alias that has no such
+     * column, and the failure arrives at query-prepare time rather than here.</p>
+     */
+    @Query("select count(p) from ShPostUnified p where p.deletedDate is null and ("
+            + "(p.publishScheduledDate is not null "
+            + "and p.publishScheduledDate >= :from and p.publishScheduledDate < :until) "
+            + "or (p.unpublishScheduledDate is not null "
+            + "and p.unpublishScheduledDate >= :from and p.unpublishScheduledDate < :until))")
+    long countScheduledBetween(@Param("from") Instant from, @Param("until") Instant until);
 }

@@ -47,6 +47,7 @@ Commands:
   deploy         push (apply) then types
   assets         assets prune: the assets nothing references, and what they would free
   patterns       Capture a page's sections as a file, and place them in another page
+  status         Counts, what is waiting for a person, and what just happened
   doctor         Instance, build stamp, drift, sites, content tree
 
 Post-types as code:

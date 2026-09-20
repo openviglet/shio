@@ -37,10 +37,10 @@ import { stripComments } from "./support/source-text.mjs";
  * ## One shared reason, said once
  *
  * `UNCANCELLED` is a list and not a ceiling — a ceiling lets this task pay the debt and the next
- * one spend it. Every entry carries the same reason, written here instead of thirty-five times:
+ * one spend it. Every entry carries the same reason, written here instead of thirty-four times:
  * *its fetching effect passes no signal, and SH1047 migrated the five screens its symptom named.*
  * Inventing a distinct sentence per file would be inventing, and a reason that is not true is worse
- * than a shared one that is. What the list is for is that a **thirty-sixth** cannot arrive quietly.
+ * than a shared one that is. What the list is for is that a **thirty-fifth** cannot arrive quietly.
  */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ROOTS = ["src/app", "src/components", "src/hooks"];
@@ -51,9 +51,13 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
 /**
  * The screens that read inside an effect and pass no signal.
  *
- * <p>Thirty-five, measured on 2026-09-20. See the class comment for the one reason they share.
+ * <p>Thirty-four, measured on 2026-09-20. See the class comment for the one reason they share.
  * Deleting an entry is the fix; adding one needs the diff to say why the screen cannot take a
  * signal, because "not yet" is what this list already means.</p>
+ *
+ * <p>It lost `home.page.tsx` the same day: SH1050 replaced that page's four mount reads with one
+ * `useQuery` against `/v2/console/summary`, and a query hands its `queryFn` a signal. That is the
+ * list working — a debt paid off has to leave it, or the next reader counts it twice.</p>
  */
 const UNCANCELLED = new Set([
   "src/app/admin/admin.user.page.tsx",
@@ -80,7 +84,6 @@ const UNCANCELLED = new Set([
   // The one the stripper caught on a real file rather than a planted one: this page's prose says
   // "an ambient signal", and a raw scan read that as cancellation and passed it.
   "src/app/system/bento.root.page.tsx",
-  "src/app/system/home.page.tsx",
   "src/components/note-rail.tsx",
   "src/components/permissions.dialog.tsx",
   "src/components/post-history.panel.tsx",

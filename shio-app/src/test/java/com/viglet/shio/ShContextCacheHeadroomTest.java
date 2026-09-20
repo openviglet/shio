@@ -230,8 +230,15 @@ class ShContextCacheHeadroomTest {
      * happened to create, so the budget would fail on suite order rather than on a payload growing.
      * That is SH315's rule by name, and it is the same argument ShAgentResponseBudgetTest makes for
      * the context it already holds beside this one.
+     *
+     * SH1050 spent one more, to 77, and could not share the one above it. ShConsoleSummaryAPITest
+     * drives a window query — how many publishes and unpublishes fall due in the next seven days —
+     * against four posts it schedules itself. On any shared context the answer includes whatever
+     * else happens to be scheduled, so the assertion would be about suite order; and on the budget
+     * context above, its four posts would move the byte figures that class exists to hold still.
+     * Two tests in one package, two contexts, and the reason is the same one twice.
      */
-    private static final int DECLARED_CONTEXTS = 76;
+    private static final int DECLARED_CONTEXTS = 77;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY

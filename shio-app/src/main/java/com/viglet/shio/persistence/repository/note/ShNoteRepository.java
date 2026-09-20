@@ -53,4 +53,13 @@ public interface ShNoteRepository extends JpaRepository<ShNote, String> {
             + "and (:kind is null or n.kind = :kind) "
             + "order by n.createdAt desc")
     List<ShNote> findOpen(String kind, Pageable pageable);
+
+    /**
+     * SH1050 — how many notes are still asking for something.
+     *
+     * <p>A count, for the reason {@link #findOpen} is bounded: the console's home wants the number
+     * and nothing else, and reading the work list to measure it would make the dashboard's cost
+     * grow with an instance's history.</p>
+     */
+    long countByResolvedFalse();
 }

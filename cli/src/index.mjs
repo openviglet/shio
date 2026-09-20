@@ -142,6 +142,7 @@ const COMMANDS = {
   doctor: () => import("./commands/doctor.mjs"),
   assets: () => import("./commands/assets.mjs"),
   patterns: () => import("./commands/patterns.mjs"),
+  status: () => import("./commands/status.mjs"),
 };
 
 const HELP = helpText("shio");

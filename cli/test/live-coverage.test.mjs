@@ -293,8 +293,12 @@ const UNEXERCISED = {
     "judge", "patterns",
     // `schedule` arrives with SH991, and for `versions`' reason: it needs a live instance holding a
     // scheduled post, which a live scenario has and a scripted fetch invents.
-    "mcp", "publish", "remember", "report", "rollback", "schedule", "snapshot", "surfaces", "types",
-    "versions",
+    // `status` arrives with SH1050 and is unwritten rather than out of scope. Its numbers are
+    // asserted against a seeded instance in `ShConsoleSummaryAPITest`, which is a proof about the
+    // counts; what only a live run can prove is that the rows a curator sees on the dashboard and
+    // the rows this prints are the same rows — the claim the one endpoint was built to make.
+    "mcp", "publish", "remember", "report", "rollback", "schedule", "snapshot", "status",
+    "surfaces", "types", "versions",
   ],
 };
 

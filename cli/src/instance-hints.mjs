@@ -87,6 +87,10 @@ export const NOTES_EXEMPT = new Map([
   ["clone", "runs against an external site, not against a Shio instance"],
   ["doctor", "its whole output is the state of the instance; a notice about one more fact would "
     + "compete with the four it just listed, and an unreachable instance has no notes to count"],
+  // SH1050 — the same reason as `doctor`, and one more: this command already PRINTS the open-note
+  // count as one of its own rows, so the notice would announce a number two lines above itself.
+  ["status", "it reports the open notes as one of its own rows; the notice would be the same "
+    + "count, twice, on one screen"],
 ]);
 
 /**

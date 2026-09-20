@@ -140,6 +140,18 @@ export class ShioAdminClient {
     return items;
   }
 
+  /**
+   * GET /api/v2/console/summary — the instance in one answer (SH1050).
+   *
+   * Counts, what is waiting for a person, and the most recent trail rows. `shio status` prints the
+   * same rows the console's home draws, off the same endpoint: an agent orienting itself and a
+   * curator opening the dashboard are asking the same question, and two implementations of it
+   * would drift within a release.
+   */
+  async consoleSummary() {
+    return this.#at("/api/v2/console/summary", "GET");
+  }
+
   /** GET /api/v2/staticfile/{id} — the bytes, as a `Uint8Array`. */
   async downloadStaticFile(id) {
     const url = `${this.baseUrl}/api/v2/staticfile/${encodeURIComponent(id)}`;

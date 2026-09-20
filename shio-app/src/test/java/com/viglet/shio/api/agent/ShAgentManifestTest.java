@@ -207,7 +207,14 @@ class ShAgentManifestTest {
         // — by pruning the two the agent surface fully supersedes. 29 endpoints now, and the token
         // budget went back to 2500 as well. If this trips again, ask the same question before
         // reaching for the number: the count is a proxy and `response.manifest` is the cost.
-        assertThat(shAgentManifestService.manifest().endpoints()).hasSizeLessThan(30);
+        //
+        // SH1050 raises it to 31, and asked that question first. Nothing here is superseded by
+        // `GET /console/summary`; what it supersedes is a SEQUENCE nobody had written down — the
+        // review surface, the scheduled listing, the note list and the change feed, four calls an
+        // agent makes to find out what is going on before it does anything. A row that replaces
+        // four calls is the opposite of an API dump, which is what this count guards against, and
+        // the cost of it went through `response.manifest` in the same commit with its own argument.
+        assertThat(shAgentManifestService.manifest().endpoints()).hasSizeLessThan(31);
     }
 
     @Test

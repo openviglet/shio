@@ -145,6 +145,12 @@ class ShAgentCapabilityJoinTest {
         byEntry.put("route:/staticfile/upload", BYTES);
         byEntry.put("route:/site/{id}/export", BYTES);
 
+        // SH1050 — the instance's own state: counts, what is waiting for a person, what just
+        // happened. Not a flag for PROTOCOL's reason and one more: a `features` boolean answers
+        // "does this instance do X", and every instance has a number of sites and a review queue.
+        // What this read reports is not a capability, it is a fact about right now.
+        byEntry.put("route:/console/summary", PROTOCOL);
+
         byEntry.put("route:/agent/context", PROTOCOL);
         byEntry.put("route:/agent/read", PROTOCOL);
         byEntry.put("route:/agent/find", PROTOCOL);

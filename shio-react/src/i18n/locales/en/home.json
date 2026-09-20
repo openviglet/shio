@@ -19,5 +19,10 @@
     "actionWebhooks": "Webhooks",
     "actionActivity": "Activity",
     "version": "Viglet Shio CMS · version {{version}}"
-  }
+  },
+  "home.attention": "Waiting for you",
+  "home.attentionDesc": "What needs a person, not what exists.",
+  "home.attentionReview": "Review queue · {{count}} changes",
+  "home.attentionScheduled": "Publishing this week",
+  "home.attentionNotes": "Open notes"
 }
