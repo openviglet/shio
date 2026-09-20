@@ -1473,6 +1473,33 @@ table, and the failure is identical for each. The lint should enumerate the kind
 understands and fail on one it does not, so a change type nobody taught it is a red
 build rather than a silent gap.
 
+### LXIV.18 A mirror taken from a directory, not a revision (SH1115)
+
+`coverage-mirror.mjs` reads `COVERAGE.md` from a checkout directory — `SHIO_DOCS_DIR`,
+defaulting to a path on one machine — and writes the ids it finds into
+`docs/coverage-named.json`. Committing that file here marks those ids named forever:
+SH758's reader subtracts them and SH747's ratchet counts them as covered. Nothing
+anywhere asks whether the edit that put them in the matrix was ever committed in the
+repository the matrix belongs to.
+
+Observed, not reasoned: clearing SH799's queue twice in one session left
+`vigletdocs/docs-shio/COVERAGE.md` modified and uncommitted both times, and the mirror
+was refreshed from that working tree and committed here each pass. The conformance check
+reads the same working copy, so an uncommitted edit makes mirror and matrix agree
+permanently.
+
+This is the shape the mirror's own header warns about: a copy of a fact whose home is
+elsewhere, held honest by being generated and by being checked against the authority.
+The authority it is checked against is a directory, and a directory is not a revision.
+
+The narrow fix records beside the ids what the matrix's repository was at — its HEAD,
+and whether that tree was clean — and refuses a refresh taken from a dirty one, or marks
+it provisional so the next run asks again. An id named from an uncommitted file is then
+a state the mirror can express rather than one it forgets.
+
+The assertion is a refresh from a dirty docs checkout refused or marked, and a clean one
+unchanged.
+
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key
@@ -2315,25 +2342,6 @@ code, so their additions are visible as raises rather than folded into a baselin
 Resilience and access follow, and the assistant dock from Block AX already carries the
 announcements this block would otherwise have to build.
 
-### LXXII.3 Declared dependencies that are reachable, or named as peers (SH1045)
-
-A grep over shio-react/src finds no import of @tanstack/react-table, next-themes,
-sonner, class-variance-authority, tailwind-merge, clsx or @radix-ui/react-dialog, each
-declared in package.json. Some are genuinely dead. Some may be required as peers by the
-design system, whose Toaster and assistant read sonner and whose theme provider may read
-next-themes, and deleting a peer breaks the package at runtime rather than at build.
-
-A reachability lint walks the declared dependencies and classifies each as imported by
-product source, required as a peer by an installed dependency, read by build tooling, or
-unreachable, with an asserted exemption list carrying a reason per entry. Its first run
-is the deletion list: every unreachable dependency is removed in the same commit, and
-the lockfile shrinks with it.
-
-The lint then keeps the class from returning, which is the argument BG1 makes about
-bytes applied to declarations. The assertions: the build and the JS suite stay green
-after the removals, BG1's gate records any change, and a planted unused dependency fails
-the lint by name.
-
 ### LXXII.4 One query layer, keyed on the addresses every surface uses (SH1046)
 
 There is no query library in the manifest. The analysis counted seventeen call sites
@@ -2669,6 +2677,32 @@ against a baseline route rather than a millisecond ceiling nobody can reproduce.
 
 The assertion is a planted extra fetch on one route failing that route's entry and no
 other.
+
+### LXXII.20 One walk over every workspace manifest, not the console's alone (SH1114)
+
+SH1045 found eighteen dead declarations in one manifest and left ten unread. The
+workspace has eleven packages — `cli`, `shio-client`, `shio-model`, `shio-sections`,
+`shio-react-sdk`, `shio-js-sdk`, `create-shio-app`, `claude-plugin`, `shio-site`,
+`shio-examples/*` and the console — and four of them are published to npm, where a dead
+dependency is not just installed on every CI run here but on every consumer's install.
+
+The reader is written to be lifted. `reachability` is pure over the manifest and three
+lookups, and `classify` is the only part that knows this console: `WALK` names `src`,
+`test`, `e2e`, `scripts` and `ROOT_FILES` names two configs. Another package's layout is
+a different list, so the work is turning those constants into a per-package declaration
+rather than writing a second walk.
+
+Two things the console's run does not exercise. Nothing here is published, so nothing
+tested what a published package owes: a `dependencies` entry imported only from `test/`
+is a consumer's download for a file they never load, and a runtime import from a
+`devDependency` breaks on install and passes every gate here. The classifier already
+reports which list an entry came from and asserts nothing on it. And `bin` reachability
+is read from this `package.json`'s scripts, which is the wrong file for a package whose
+binary is what it ships.
+
+The assertion is a dead dependency planted in a workspace package other than the console
+failing by name, and the published packages' own runs coming back clean or naming what
+they owe.
 
 ## LXXIII One content model, many languages (Block BH)
 

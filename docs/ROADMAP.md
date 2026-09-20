@@ -40,6 +40,7 @@
 - 📋 **SH1074** (deps: —) **the ARIA-state lint rejects the exact form its own failure message tells you to write** — Its regex refuses any expression not starting with a quote, so the ternary BENTO-AUTHORING gives as correct fails, and nobody saw it because the console had none. → §LXIV.15
 - 📋 **SH1076** (deps: viglet-core 2026.3.11 published) **every CI suite fails before it starts, because the viglet-core BOM version is not in Maven Central** — pom.xml imports viglet-core-bom 2026.3.11, which only a local ~/.m2 holds, so Maven cannot read the POM in CI while every local gate passes. → §LXIV.16
 - 📋 **SH1089** (deps: —) **a changelog can name a table that does not exist, and only a clean instance ever finds out** — The unit suite builds H2 from entity metadata with Liquibase off, so an addColumn on a misspelled table compiles, passes 2233 tests, and refuses to start a fresh store. → §LXIV.17
+- 📋 **SH1115** (deps: —) **the coverage mirror marks ids named from a working copy nobody checked was committed** — It reads COVERAGE.md from a directory rather than a revision, so an uncommitted edit names ids here forever while the published matrix never gains the sentence. → §LXIV.18
 
 ## Block AZ — What the content said before
 
@@ -94,7 +95,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1045** (deps: SH1043 ✅) **the console declares dependencies that nothing imports, and nothing would notice another** — The table library, class utilities, a Radix package and others appear in the manifest and in no import, and no lint checks that a declared dependency is reachable. → §LXXII.3
 - 📋 **SH1046** (deps: SH1043 ✅) **the console has no query cache, so every mount refetches whole collections from scratch** — Seventeen call sites fetch whole collections and the browser refetches the entire post-type catalogue on every folder navigation, while one hand-rolled store shows the fix. → §LXXII.4
 - 📋 **SH1047** (deps: SH1046) **no console fetch can be cancelled, so a fast navigation renders whichever response arrives last** — AbortController appears nowhere, and the browser's page fetch is recreated on each folder, sort or query change with nothing cancelling the request before it. → §LXXII.5
 - 📋 **SH1048** (deps: SH1046) **the console API sends no ETag and no Cache-Control, so an unchanged read costs its full body every time** — Both cache filters are registered for the delivery and agent paths only, so every endpoint the console calls answers a full 200 with no validator. → §LXXII.6
@@ -111,6 +111,7 @@
 - 📋 **SH1079** (deps: —) **an import creates a whole site and answers with the site alone, so what arrived is only knowable by re-reading** — POST /api/v2/import returns ShSite and no tally of what landed, so the write whose effect a caller can least predict carries the least proof. → §LXXII.17
 - 📋 **SH1112** (deps: SH1043 ✅) **an agent cannot ask a running instance what its console costs to load** — The budget's two readers are a pnpm script and a build gate, so checking a console change needs this checkout, its toolchain and a build — which is P1 on the surface P1 is about. → §LXXII.18
 - 📋 **SH1113** (deps: SH1043 ✅) **nothing measures what one console route costs, so a screen's own fetches hide inside a total** — SH1043 counts the bytes every route pays before the first row, which is blind to a page that then fetches three collections to draw two figures. → §LXXII.19
+- 📋 **SH1114** (deps: SH1045 ✅) **the reachability walk reads one manifest of eleven, and four of the ten it skips are published** — SH1045 found eighteen dead declarations in the console and nothing asks the same question of the CLI, the SDKs or the starter, where a consumer pays for the answer. → §LXXII.20
 
 ## Block BH — One content model, many languages
 

@@ -2025,3 +2025,42 @@ SH1043's gate is what made this checkable, and it did two jobs here: it priced t
 and it **refused the stale entries** — a ceiling for a chunk that is no longer eager fails, which is
 why `vendor-graphiql.js`, `vendor-graphiql.css`, `vendor-codemirror.js` and `vendor-lib.js` are
 deleted from the budget in the same commit rather than left as numbers nobody was measuring.
+
+## Eighteen declarations nothing reached, and the walk that found them (SH1045)
+
+SH1043 priced what the console *loads* and SH1044 spent that price. This is the same argument one
+level earlier, about what it **declares**: `shio-react/package.json` listed sixty dependencies and
+eighteen of them were reached by nothing. A package nobody imports ships no bytes and costs anyway —
+installed on every CI run, pinned in the lockfile, audited, renovated, and read by the next person
+as evidence that the console uses it.
+
+They were not random. The shadcn layer under `src/components/ui/` is now a **re-export of the design
+system** (`export { Dialog, ... } from "@viglet/viglet-design-system"`, and `lib/utils.ts` re-exports
+`cn` the same way), so the twelve `@radix-ui/react-*` packages, `radix-ui`, `clsx`, `tailwind-merge`,
+`class-variance-authority`, `@tanstack/react-table` and `@tailwindcss/typography` are the previous
+implementation's dependencies outliving it. The design system declares them itself, so pnpm installs
+them under its own tree and nothing breaks; SH1043's gate measured the eager load at **1506.4 KB raw
+/ 403.5 KB gzip before and after**, which is the right record for a removal that touches no import.
+
+**Four ways to be reachable, and only one is an import.** `scripts/dependency-reachability.mjs`
+classifies each declaration as imported by the console's own files, required as a **peer** by
+something already reachable, run as a **binary** by a `package.json` script, or the `@types` of
+something reachable. The three that are not imports are why this can be trusted to delete: a grep
+for the name would have taken `sonner` and `next-themes` (peers of the design system, imported
+nowhere here), `typescript` (reached as `tsc`), and `tailwindcss` itself (reached from CSS by
+`@import`, which a JavaScript-only scan does not read).
+
+Two details the reader is wrong without:
+
+- **The peer pass runs to a fixed point over the *reachable* set**, never over everything declared.
+  A package that is only the peer of an unreachable package is unreachable too — otherwise one dead
+  entry keeps the next one alive and the list can never shrink.
+- **The CSS at-rules are scanned** (`@import`, `@plugin`, `@config`, `@source`). Tailwind v4
+  registers a theme and a plugin from CSS, so a package can decide what the console looks like and
+  appear in no `.ts` file at all. `@tailwindcss/typography` was deleted precisely because no
+  `@plugin` line ever registered it, which means it was not loaded either.
+
+`test/dependency-reachability.test.mjs` is the gate and `pnpm --filter shio-react run deps` prints
+the inventory. Exemptions live in the script's `KEPT` map with a sentence each, and it is **empty**:
+everything unreachable was deleted rather than excused. A stale exemption fails too — for the reason
+SH1043's budget fails on a ceiling that outlives its chunk.
