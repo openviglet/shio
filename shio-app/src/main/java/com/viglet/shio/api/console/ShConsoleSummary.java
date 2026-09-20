@@ -39,6 +39,8 @@ import com.viglet.shio.api.history.ShHistoryAPI.ShHistoryResponse;
  * @param postTypes how many post types the model declares
  * @param version the instance's own version, as the footer reads it
  * @param attention what is waiting for a person
+ * @param runs what the agent did recently, and what it said it was doing
+ * @param diagnostics whether this instance is failing at anything
  * @param activity the most recent trail rows, so home needs no second request
  *
  * @author Alexandre Oliveira
@@ -48,7 +50,18 @@ public record ShConsoleSummary(long sites,
                                long postTypes,
                                String version,
                                Attention attention,
+                               List<Run> runs,
+                               Diagnostics diagnostics,
                                List<ShHistoryResponse> activity) {
+
+    /**
+     * How far ahead "soon" looks — a week, the horizon somebody plans a publish inside.
+     *
+     * <p>On the record rather than on the controller so the context pack can use the same window
+     * without depending on a controller. Two definitions of "soon" is a tile and a pack disagreeing
+     * about what is due, which is the kind of thing nobody notices and nobody can explain.</p>
+     */
+    public static final java.time.Duration SOON = java.time.Duration.ofDays(7);
 
     /**
      * The four things that are waiting for somebody, each with a page that acts on it.
@@ -62,5 +75,35 @@ public record ShConsoleSummary(long sites,
                             int reviewChanges,
                             long scheduledSoon,
                             long openNotes) {
+    }
+
+    /**
+     * One agent run, as a dashboard names it.
+     *
+     * <p>The <b>intent</b> is the field that makes this a row worth drawing: a session id says an
+     * agent was here, and the sentence it declared says what it was trying to do — which is what a
+     * curator needs before deciding whether to read the diff. `pending` is how much of it is still
+     * waiting on them, so a run with nothing pending is a run they have already dealt with.</p>
+     *
+     * @param session the session id, which is what the review queue addresses by
+     * @param intent what the run said it was doing (SH1000), or null
+     * @param agent the client that ran it (SH999), or null
+     * @param changes how many writes it made
+     * @param pending how many of them nobody has decided on
+     * @param at when it was last seen, ISO-8601
+     */
+    public record Run(String session, String intent, String agent, int changes, int pending,
+                      String at) {
+    }
+
+    /**
+     * Whether this instance is failing at anything, from the in-memory window.
+     *
+     * <p>A window and not a total, and the difference has to survive into the tile: the incident
+     * log is bounded and starts empty at boot, so `0` means "nothing since this process started"
+     * rather than "nothing ever". `unpersisted` is the honest qualifier on a quiet feed — if the
+     * database was the thing failing, the record of the failure is what could not be written.</p>
+     */
+    public record Diagnostics(int incidents, long unpersisted) {
     }
 }

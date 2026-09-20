@@ -2369,26 +2369,6 @@ code, so their additions are visible as raises rather than folded into a baselin
 Resilience and access follow, and the assistant dock from Block AX already carries the
 announcements this block would otherwise have to build.
 
-### LXXII.8 Home as the attention queue (SH1050)
-
-The home page fires four requests on mount: every site, every post type, system info and
-recent activity. The first two transfer full collections and use one property of each,
-the length, and there is no count endpoint. The tiles start as null and render nothing
-until both collections land.
-
-One summary endpoint composes the existing services with count queries rather than
-loaded rows: counts, the instance version, recent activity and the pending review count,
-in one ETag'd response. The same numbers join the context pack, so an agent's first call
-knows the shape of the instance, which is P2, measured against the pack's budget and
-dropped if it regresses the cheapest read.
-
-Then home becomes the attention queue, because the dashboard's question in this product
-is not how much content exists but what needs a person: pending review sessions and
-changes, content scheduled in the next seven days from SH991, recent agent runs with
-their intent and a review action, open notes from SH1003, and instance diagnostics.
-Every tile links to the page that acts on it, and shio status prints the same rows for
-an agent orienting itself.
-
 ### LXXII.9 The accent measured, re-keyed and claimed through the inputs (SH1051)
 
 Shio's accent gate asserts four tokens are present. Measured with the design system's

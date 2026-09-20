@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.api.agent;
 
+import java.time.Instant;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -39,7 +40,10 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.api.console.ShConsoleSummary;
+import com.viglet.shio.api.review.ShReviewService;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
+import com.viglet.shio.persistence.repository.note.ShNoteRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.render.ShTemplateEngine;
 import com.viglet.shio.render.ShRenderConventions;
@@ -88,6 +92,10 @@ public class ShAgentContextService {
     private final ShAgentUsageService shAgentUsageService;
     /** SH993 — the site's releases, for `include=releases`. */
     private final ShReleaseService shReleaseService;
+    /** SH1050 — the review queue's own count, for `include=status`. */
+    private final ShReviewService shReviewService;
+    /** SH1050 — the open-note count, for `include=status`. */
+    private final ShNoteRepository shNoteRepository;
 
     public ShAgentContextService(ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -99,9 +107,13 @@ public class ShAgentContextService {
                                 ShAgentManifestService shAgentManifestService,
                                 ShTemplateEngine shTemplateEngine,
                                 ShAgentUsageService shAgentUsageService,
-                                ShReleaseService shReleaseService) {
+                                ShReleaseService shReleaseService,
+                                ShReviewService shReviewService,
+                                ShNoteRepository shNoteRepository) {
         this.shAgentUsageService = shAgentUsageService;
         this.shReleaseService = shReleaseService;
+        this.shReviewService = shReviewService;
+        this.shNoteRepository = shNoteRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -215,10 +227,40 @@ public class ShAgentContextService {
         ShAgentContext withReleases = sections.contains(ShAgentContextSection.RELEASES)
                 ? withUsage.withReleases(releases(sites))
                 : withUsage;
+        // SH1050 — what is going on here, on the same terms and for `usage`'s reason rather than
+        // `releases`': a review queue moves when anybody decides anything, so a pack carrying it by
+        // default would put a number that changes on every publish inside the document SH116's
+        // conditional read exists to keep matching.
+        ShAgentContext withStatus = sections.contains(ShAgentContextSection.STATUS)
+                ? withReleases.withStatus(status(sites))
+                : withReleases;
         // SH608 — attached last, and after the digest, for the reason `budget` is: this describes
         // the REQUEST, not the content, so a caller narrowing the pack must not get a different
         // entity tag for the same instance state.
-        return withReleases.withOmitted(omitted(sections));
+        return withStatus.withOmitted(omitted(sections));
+    }
+
+    /**
+     * SH1050 — the instance's state, the same numbers `/api/v2/console/summary` answers with.
+     *
+     * <p>Counts and the attention half only. The trail rows that endpoint carries are for a
+     * dashboard drawing a list; what an agent does with this is decide whether to look somewhere
+     * before it writes, and the trail itself is `/agent/changes` with a cursor on it.</p>
+     */
+    private ShAgentContext.Status status(List<ShSite> readable) {
+        Instant now = Instant.now();
+        var pending = shReviewService.pending();
+        // The sites this credential may read, not every site on the instance: a pack is always the
+        // caller's view, and a count they cannot act on would be the one number here that is not
+        // about them. `/api/v2/console/summary` answers with the instance total, because a console
+        // session is a person with an ACL rather than a token with an allow-list.
+        return new ShAgentContext.Status(
+                readable.size(),
+                shPostTypeRepository.count(),
+                pending.sessions(),
+                pending.changes(),
+                shPostUnifiedRepository.countScheduledBetween(now, now.plus(ShConsoleSummary.SOON)),
+                shNoteRepository.countByResolvedFalse());
     }
 
     /**

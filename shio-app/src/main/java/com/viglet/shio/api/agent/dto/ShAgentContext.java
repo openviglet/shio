@@ -90,7 +90,31 @@ public record ShAgentContext(
          * them. Attached after the digest like the other opt-in sections: a caller asking for them
          * must not invalidate a pack somebody else has cached.
          */
-        List<Release> releases) {
+        List<Release> releases,
+        /**
+         * SH1050 — what is going on here, absent unless {@code include=status} names it.
+         *
+         * <p>The pack says what a caller CAN do; this says what is happening. An agent arriving
+         * mid-project wants both, and composing the second from the review surface, the scheduled
+         * listing, the note list and the change feed is four calls for one question.</p>
+         *
+         * <p>Opt-in for `usage`'s reason rather than `releases`': <b>it changes constantly</b>, so
+         * letting it into the default pack would put a number that moves on every publish inside a
+         * document SH116's conditional read exists to keep matching. A caller who wants the state
+         * of the instance asks for it, and pays for it then.</p>
+         */
+        Status status) {
+
+    /**
+     * The instance's own state, the same numbers `GET /api/v2/console/summary` answers with.
+     *
+     * <p>Counts rather than rows, and the attention half rather than the trail: what an agent does
+     * with this is decide whether to look somewhere before it writes. The trail itself is
+     * `/agent/changes`, which is a different question with a cursor on it.</p>
+     */
+    public record Status(long sites, long postTypes, int reviewSessions, int reviewChanges,
+                         long scheduledSoon, long openNotes) {
+    }
 
     /** One release, as the pack lists it: what it is called, where it is, and how big. */
     @JsonInclude(Include.NON_NULL)
@@ -127,7 +151,7 @@ public record ShAgentContext(
                           ShAgentManifest capabilities, String ops, String digest, Budget budget,
                           List<String> omitted, String usage) {
         this(protocol, manifest, instance, sites, model, sitemap, conventions, capabilities, ops,
-                digest, budget, omitted, usage, null);
+                digest, budget, omitted, usage, null, null);
     }
 
     /** Every caller from before SH608, which is every one that cannot be projected. */
@@ -141,7 +165,13 @@ public record ShAgentContext(
     /** The same pack carrying the site's releases (SH993). */
     public ShAgentContext withReleases(List<Release> value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, capabilities, ops, digest, budget, omitted, usage, value);
+                conventions, capabilities, ops, digest, budget, omitted, usage, value, status);
+    }
+
+    /** SH1050 — the instance's state, attached after the digest like every other opt-in section. */
+    public ShAgentContext withStatus(Status value) {
+        return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
+                conventions, capabilities, ops, digest, budget, omitted, usage, releases, value);
     }
 
     /** Every caller from before SH157, which is every one that does not ask for capabilities. */
@@ -155,25 +185,25 @@ public record ShAgentContext(
     /** The same pack carrying capabilities — the one thing SH157 adds to this shape. */
     public ShAgentContext withCapabilities(ShAgentManifest value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, value, ops, digest, budget, omitted, usage, releases);
+                conventions, value, ops, digest, budget, omitted, usage, releases, status);
     }
 
     /** The same pack, saying which sections `include=` removed (SH608). */
     public ShAgentContext withOmitted(List<String> value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, capabilities, ops, digest, budget, value, usage, releases);
+                conventions, capabilities, ops, digest, budget, value, usage, releases, status);
     }
 
     /** The same pack carrying the write vocabulary (SH346). */
     public ShAgentContext withOps(String value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, capabilities, value, digest, budget, omitted, usage, releases);
+                conventions, capabilities, value, digest, budget, omitted, usage, releases, status);
     }
 
     /** The same pack carrying this tenant's spend (SH754). */
     public ShAgentContext withUsage(String value) {
         return new ShAgentContext(protocol, manifest, instance, sites, model, sitemap,
-                conventions, capabilities, ops, digest, budget, omitted, value);
+                conventions, capabilities, ops, digest, budget, omitted, value, releases, status);
     }
 
     /**

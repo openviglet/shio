@@ -27,12 +27,30 @@ export interface ShAttention {
   openNotes: number;
 }
 
+/** One agent run, as the dashboard names it — the intent is what makes it worth a row. */
+export interface ShRun {
+  session: string;
+  intent: string | null;
+  agent: string | null;
+  changes: number;
+  pending: number;
+  at: string | null;
+}
+
+/** Whether the instance is failing at anything, from the in-memory window since boot. */
+export interface ShDiagnostics {
+  incidents: number;
+  unpersisted: number;
+}
+
 /** The dashboard's whole answer. */
 export interface ShConsoleSummary {
   sites: number;
   postTypes: number;
   version: string;
   attention: ShAttention;
+  runs: ShRun[];
+  diagnostics: ShDiagnostics;
   activity: ShHistory[];
 }
 

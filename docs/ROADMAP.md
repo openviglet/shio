@@ -96,7 +96,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- ⏳ **SH1050** (deps: SH1048 ✅, SH991 ✅, SH1003 ✅) **the dashboard downloads two whole collections to show two numbers** — The same numbers in the context pack, dropped if they regress it, and the tiles home still lacks: agent runs and diagnostics. → §LXXII.8
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
 - 📋 **SH1052** (deps: —) **every post-editor field is a label with no htmlFor over a widget that cannot take an id** — The widget contract is attr, onChange and postId, so a screen reader meets each field of every post type as an unnamed edit box and a label click focuses nothing. → §LXXII.10
 - 📋 **SH1053** (deps: DS VDS141, SH964) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
@@ -164,17 +163,6 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
-
-## Done when — SH1050
-
-- **The pack carries the counts, or the measurement says why it does not**
-  `response.context.terse` is measured with the numbers in and out. In if it holds,
-  dropped with the figure recorded if it does not — the design's own escape, and either
-  answer closes this. What must not happen is the cheapest read growing unremarked.
-- **Home names the agent's runs and the instance's health** Two tiles the attention
-  queue still lacks: recent agent runs with their intent and a link into the review
-  action, and instance diagnostics. Each drawn only when it has something, the way the
-  three shipped ones are, and each linking to the page that acts on it.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -1312,3 +1312,36 @@ wants exactly this, and composing it from the review surface, the scheduled list
 and the change feed is four calls for one question — P2 by name. It cost 68 tokens on a document
 read every session, `response.manifest` was raised with that argument, and `indexIsCuratedNotTheWholeApi`
 went from 29 to 30 rows having first asked what it supersedes: not another row, a *sequence*.
+
+### The rest of it: the pack, the runs, the incidents (SH1050)
+
+**`include=status` on the context pack**, and it is opt-in for `usage`'s reason rather than
+`releases`': the section changes constantly. A review queue moves when anybody decides anything and
+the scheduled count moves as the week passes, so letting it into the default pack would put a number
+that changes on every publish inside the document SH116's conditional read exists to keep matching.
+That is also the honest answer to the design's own escape clause — *dropped if it regresses the
+cheapest read* — because a caller who does not ask pays nothing and `response.context.terse` did not
+move. It carries the counts and the attention half, not the trail: what an agent does with this is
+decide whether to look somewhere before it writes, and the trail is `/agent/changes` with a cursor.
+
+The pack's site count is the **readable** one, and the endpoint's is the instance total. A pack is
+always the caller's view — a credential is a site allow-list — where a console session is a person
+with an ACL. Two numbers that are allowed to differ, for a reason stated in both places.
+
+`ShConsoleSummary.SOON` lives on the record rather than the controller so both readers share the
+window. Two definitions of "soon" is a tile and a pack disagreeing about what is due, which is the
+kind of thing nobody notices and nobody can explain.
+
+**Home names what the agent did.** A list, not a count — the count is already on the review tile,
+and what a curator needs before opening a diff is the **intent**: a session id says an agent was
+here, the sentence it declared says what it was trying to do. Each row links into the review queue,
+which is the "review action" the design asks for. Sessions with nothing pending are drawn too: *the
+agent ran and you have dealt with it* is a different fact from *the agent has not run*, and a list
+showing only the first would make a quiet instance and a busy one look the same.
+
+**Incidents are a window, and the sentence says so.** The log is in-memory and starts empty at boot,
+so a bare count would read as a total — `0` meaning "nothing ever" and `0` meaning "nothing yet" are
+different answers about an instance somebody may have restarted. The tile is drawn only when it is
+not zero; `shio status` prints *since this process started*, and reports `unpersisted` beside it,
+because if the database was the thing failing then the record of the failure is exactly what could
+not be written down.

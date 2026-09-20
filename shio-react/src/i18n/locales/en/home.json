@@ -24,5 +24,11 @@
   "home.attentionDesc": "What needs a person, not what exists.",
   "home.attentionReview": "Review queue · {{count}} changes",
   "home.attentionScheduled": "Publishing this week",
-  "home.attentionNotes": "Open notes"
+  "home.attentionNotes": "Open notes",
+  "home.runs": "What the agent did",
+  "home.runsDesc": "Recent runs, and what each said it was doing.",
+  "home.runPending": "{{count}} waiting",
+  "home.runSettled": "settled",
+  "home.runChanges": "{{count}} changes",
+  "home.attentionIncidents": "Incidents since boot"
 }

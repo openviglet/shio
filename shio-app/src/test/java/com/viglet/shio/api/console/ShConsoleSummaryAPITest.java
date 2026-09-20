@@ -61,6 +61,8 @@ class ShConsoleSummaryAPITest {
     @Autowired
     private ShConsoleSummaryAPI api;
     @Autowired
+    private com.viglet.shio.api.agent.ShAgentContextService shAgentContextService;
+    @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -133,7 +135,7 @@ class ShConsoleSummaryAPITest {
 
     @Test
     void theWindowCountsWhatHappensInIt() {
-        long soon = shPostUnifiedRepository.countScheduledBetween(now, now.plus(ShConsoleSummaryAPI.SOON));
+        long soon = shPostUnifiedRepository.countScheduledBetween(now, now.plus(ShConsoleSummary.SOON));
 
         assertThat(soon)
                 .as("SH1050: two posts have a transition inside the week — one going up, one doing "
@@ -147,12 +149,37 @@ class ShConsoleSummaryAPITest {
         // The other side of the edge, so the comparison is shown to be a comparison. A window
         // entirely in the past must be empty however many transitions exist ahead of it.
         long before = shPostUnifiedRepository.countScheduledBetween(
-                now.minus(ShConsoleSummaryAPI.SOON), now);
+                now.minus(ShConsoleSummary.SOON), now);
 
         assertThat(before)
                 .as("SH1050: a past window counted future transitions, so the bound is not being "
                         + "applied and every dashboard would report the whole backlog as due")
                 .isZero();
+    }
+
+    @Test
+    void thePackCarriesTheSameNumbersAndOnlyWhenAsked() {
+        // SH1050's second criterion. The pack says what a caller CAN do; `include=status` says what
+        // is going on. It is opt-in for `usage`'s reason rather than `releases`': a review queue
+        // moves when anybody decides anything, so a default pack carrying it would put a number
+        // that changes on every publish inside the document SH116's conditional read keeps matching.
+        assertThat(shAgentContextService.context(null, 0, null, null, null).status())
+                .as("SH1050: the default pack carries the instance's state, so a caller who asked "
+                        + "for the model and the sitemap is paying for a number that moves under "
+                        + "them — and the digest they cache it by moves with it")
+                .isNull();
+
+        var asked = shAgentContextService.context(null, 0, null, "status", null).status();
+        assertThat(asked)
+                .as("SH1050: `include=status` returned nothing, so the section exists in the enum "
+                        + "and nowhere else")
+                .isNotNull();
+        assertThat(asked.scheduledSoon())
+                .as("SH1050: the pack and the console must mean the same week. Two definitions of "
+                        + "`soon` is a tile and a pack disagreeing about what is due, which is the "
+                        + "kind of thing nobody notices and nobody can explain.")
+                .isEqualTo(2);
+        assertThat(asked.postTypes()).isPositive();
     }
 
     @Test
@@ -180,5 +207,15 @@ class ShConsoleSummaryAPITest {
                 .as("SH1050: home reads its activity list out of this answer rather than making a "
                         + "second request, so a null here is a second request coming back")
                 .isNotNull();
+        assertThat(summary.runs())
+                .as("SH1050: the runs list is absent, so home's 'what the agent did' section has "
+                        + "nothing to draw and `shio status` prints no runs on an instance that "
+                        + "has had them")
+                .isNotNull();
+        assertThat(summary.diagnostics())
+                .as("SH1050: diagnostics is absent. Zero incidents and no diagnostics at all are "
+                        + "different answers, and only one of them means the instance is healthy.")
+                .isNotNull();
+        assertThat(summary.diagnostics().incidents()).isNotNegative();
     }
 }

@@ -87,18 +87,32 @@ public enum ShAgentContextSection {
      * read for what one holds, and forty addresses per release in the pack would be the P3 regression
      * the opt-in sections exist to avoid.</p>
      */
-    RELEASES;
+    RELEASES,
+    /**
+     * SH1050 — what is going on here: counts, and what is waiting for a person.
+     *
+     * <p><b>Asked for by name</b>, and its reason is {@link #USAGE}'s rather than {@link #RELEASES}'
+     * — it changes constantly. A review queue moves when anybody decides anything and the scheduled
+     * count moves as the week passes, so letting it into the default pack would put a number that
+     * changes on every publish inside the document SH116's conditional read exists to keep
+     * matching. A caller who wants the state of the instance asks for it, and pays for it then.</p>
+     *
+     * <p>It is the same answer `GET /api/v2/console/summary` gives, minus the trail rows: what an
+     * agent does with this is decide whether to look somewhere before it writes, and the trail
+     * itself is `/agent/changes`, which is a different question with a cursor on it.</p>
+     */
+    STATUS;
 
     /**
      * What a bare {@code /agent/context} returns, and what {@code include=all} means.
      *
-     * <p>Everything except {@link #MANIFEST}, {@link #OPS}, {@link #USAGE} and {@link #RELEASES} —
-     * see their notes.
+     * <p>Everything except {@link #MANIFEST}, {@link #OPS}, {@link #USAGE}, {@link #RELEASES} and
+     * {@link #STATUS} — see their notes.
      * "All the sections of the context pack" and "the context pack plus a different document" are
      * different requests, and only the first one should be reachable without saying so.</p>
      */
     private static Set<ShAgentContextSection> defaults() {
-        return EnumSet.complementOf(EnumSet.of(MANIFEST, OPS, USAGE, RELEASES));
+        return EnumSet.complementOf(EnumSet.of(MANIFEST, OPS, USAGE, RELEASES, STATUS));
     }
 
     /**

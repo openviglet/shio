@@ -24,5 +24,11 @@
   "home.attentionDesc": "O que precisa de uma pessoa, não o que existe.",
   "home.attentionReview": "Fila de revisão · {{count}} alterações",
   "home.attentionScheduled": "Publicando nesta semana",
-  "home.attentionNotes": "Notas abertas"
+  "home.attentionNotes": "Notas abertas",
+  "home.runs": "O que o agente fez",
+  "home.runsDesc": "Execuções recentes, e o que cada uma disse que estava fazendo.",
+  "home.runPending": "{{count}} aguardando",
+  "home.runSettled": "resolvido",
+  "home.runChanges": "{{count}} alterações",
+  "home.attentionIncidents": "Incidentes desde o início"
 }

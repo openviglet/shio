@@ -85,6 +85,25 @@ export function render(baseUrl, summary) {
     }
   }
 
+  const runs = summary.runs ?? [];
+  if (runs.length) {
+    lines.push("  runs:");
+    for (const run of runs.slice(0, 4)) {
+      // The intent first, because it is the thing a reader can act on; the session id is what is
+      // always there. `waiting` is how much of the run nobody has decided on yet.
+      const what = run.intent || run.agent || run.session;
+      const waiting = run.pending ? `, ${run.pending} waiting` : "";
+      lines.push(`    ${String(what).slice(0, 60)}  (${run.changes ?? 0} change(s)${waiting})`);
+    }
+  }
+
+  const health = summary.diagnostics ?? {};
+  if (health.incidents || health.unpersisted) {
+    // A window and not a total: the log starts empty at boot, so the sentence says since when.
+    lines.push(`  incidents: ${health.incidents ?? 0} since this process started`
+      + (health.unpersisted ? `, ${health.unpersisted} that could not be written down` : ""));
+  }
+
   const activity = summary.activity ?? [];
   if (activity.length) {
     lines.push("  recent:");

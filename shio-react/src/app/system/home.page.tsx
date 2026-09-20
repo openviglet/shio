@@ -7,6 +7,7 @@
  * (at your option) any later version.
  */
 import {
+  IconAlertTriangle,
   IconCalendarClock,
   IconChecklist,
   IconFileText,
@@ -35,7 +36,7 @@ import { ROUTES } from "@/app/routes.const"
 import type { ShHistory } from "@/models/history/history.model"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
-import { ShConsoleSummaryService } from "@/services/console/summary.service"
+import { ShConsoleSummaryService, type ShRun } from "@/services/console/summary.service"
 
 
 /**
@@ -68,8 +69,9 @@ import { ShConsoleSummaryService } from "@/services/console/summary.service"
 
 const summaryService = new ShConsoleSummaryService()
 
-/** SH1050 — one identity while the summary loads, not one per render. */
+/** SH1050 — one identity each while the summary loads, not one per render. */
 const EMPTY_ACTIVITY: ShHistory[] = []
+const EMPTY_RUNS: ShRun[] = []
 
 /** Tone per activity action. Replaces six hardcoded colour-class strings on the console page. */
 const ACTION_TONE: Record<string, BentoTone> = {
@@ -103,6 +105,8 @@ export default function BentoHomePage() {
   const appVersion = summary?.version ?? ""
   const activity = summary?.activity ?? EMPTY_ACTIVITY
   const attention = summary?.attention
+  const runs = summary?.runs ?? EMPTY_RUNS
+  const incidents = summary?.diagnostics?.incidents ?? 0
 
   const stats = useMemo(() => [
     { label: t("home.statSites"), value: siteCount, icon: IconFileText, url: `${ROUTES.CONSOLE}/content`, tone: "blue" as BentoTone },
@@ -145,7 +149,17 @@ export default function BentoHomePage() {
       url: `${ROUTES.CONSOLE}/content`,
       tone: "rose" as BentoTone,
     },
-  ].filter((tile) => tile.value > 0) : []), [t, attention])
+    {
+      // A window and not a total: the incident log starts empty at boot, so zero means "nothing
+      // since this process started". Drawn only when it is not zero, which is when the difference
+      // stops mattering — and the trail is the nearest screen that can say what happened.
+      label: t("home.attentionIncidents"),
+      value: incidents,
+      icon: IconAlertTriangle,
+      url: ROUTES.ADMIN_ACTIVITY,
+      tone: "rose" as BentoTone,
+    },
+  ].filter((tile) => tile.value > 0) : []), [t, attention, incidents])
 
   /*
    * `BentoTile` requires an eyebrow, so it carries the **area** each action leads into rather
@@ -232,6 +246,55 @@ export default function BentoHomePage() {
           />
         ))}
       </BentoSection>
+
+      {runs.length > 0 && (
+        /*
+         * SH1050 — what the agent has been doing, and what it said it was doing.
+         *
+         * A list rather than a count, because the number is already on the review tile above and
+         * the thing a curator needs before opening a diff is the *intent*: a session id says an
+         * agent was here, the sentence it declared says what it was trying to do. Each row links
+         * into the review queue, which is where the deciding happens — the "review action" the
+         * design asks for is the row itself being a way in.
+         *
+         * Sessions with nothing pending are drawn too. "The agent ran and you have dealt with it"
+         * is a different fact from "the agent has not run", and a list showing only the first
+         * would make a quiet instance and a busy one look the same.
+         */
+        <BentoSection
+          title={t("home.runs")}
+          description={t("home.runsDesc")}
+          titleHref={ROUTES.ADMIN_REVIEW}
+          gridClassName="block"
+        >
+          <ul className="divide-border/60 divide-y">
+            {runs.map((run) => (
+              <li key={run.session} className="flex items-center gap-3 py-2.5">
+                <span className={bentoChipClass(run.pending > 0 ? "amber" : "slate")}>
+                  <span
+                    className={BENTO_TONE_CLASS[run.pending > 0 ? "amber" : "slate"]}
+                    aria-hidden="true"
+                  />
+                  {run.pending > 0
+                    ? t("home.runPending", { count: run.pending })
+                    : t("home.runSettled")}
+                </span>
+                <Link
+                  to={ROUTES.ADMIN_REVIEW}
+                  className="flex-1 truncate text-sm font-medium hover:underline"
+                >
+                  {/* The intent, or the agent's name, or the session — in that order, because the
+                      first is what a person can act on and the last is what is always there. */}
+                  {run.intent || run.agent || run.session}
+                </Link>
+                <span className="text-muted-foreground shrink-0 text-xs">
+                  {t("home.runChanges", { count: run.changes })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </BentoSection>
+      )}
 
       <BentoSection
         title={t("home.recentActivity")}

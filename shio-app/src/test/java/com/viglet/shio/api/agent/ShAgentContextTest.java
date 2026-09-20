@@ -455,9 +455,12 @@ class ShAgentContextTest {
                     // spend: a budget a caller cannot ask about is one it has to be told.
                     // SH993 — `releases` joins the opt-in three for the same reason `ops` did: a
                     // caller that never learns the section exists cannot discover a release by name.
+                    // SH1050 — and `status` for the same reason again: an agent that cannot name
+                    // the section has to compose "what is going on here" from four other calls,
+                    // which is the sequence this section exists to replace.
                     assertThat(properties.get("allowed")).isEqualTo(
                             List.of("instance", "sites", "model", "sitemap", "conventions",
-                                    "manifest", "ops", "usage", "releases"));
+                                    "manifest", "ops", "usage", "releases", "status"));
                 });
     }
 

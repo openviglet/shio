@@ -8,13 +8,14 @@
  */
 package com.viglet.shio.api.console;
 
-import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.api.history.ShHistoryAPI;
 import com.viglet.shio.api.review.ShReviewService;
 import com.viglet.shio.persistence.repository.note.ShNoteRepository;
@@ -56,17 +57,21 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "Console", description = "What the console's home needs, in one answer")
 public class ShConsoleSummaryAPI {
 
-    /** How far ahead "soon" looks. A week is the horizon somebody plans a publish inside. */
-    static final Duration SOON = Duration.ofDays(7);
-
     /** Enough rows for the home page's activity list, and a ceiling on what this answer costs. */
     private static final int ACTIVITY_ROWS = 8;
+
+    /** Enough runs to see what the agent has been doing, and few enough to read at a glance. */
+    private static final int RUN_ROWS = 4;
+
+    /** The incident window this counts. Bounded, for the reason the log itself is bounded. */
+    private static final int INCIDENT_WINDOW = 50;
 
     private final ShSiteRepository shSiteRepository;
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShNoteRepository shNoteRepository;
     private final ShReviewService shReviewService;
+    private final ShAgentIncidentLog shAgentIncidentLog;
     private final ShHistoryAPI shHistoryAPI;
 
     public ShConsoleSummaryAPI(ShSiteRepository shSiteRepository,
@@ -74,12 +79,14 @@ public class ShConsoleSummaryAPI {
                                ShPostUnifiedRepository shPostUnifiedRepository,
                                ShNoteRepository shNoteRepository,
                                ShReviewService shReviewService,
+                               ShAgentIncidentLog shAgentIncidentLog,
                                ShHistoryAPI shHistoryAPI) {
         this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shNoteRepository = shNoteRepository;
         this.shReviewService = shReviewService;
+        this.shAgentIncidentLog = shAgentIncidentLog;
         this.shHistoryAPI = shHistoryAPI;
     }
 
@@ -91,14 +98,35 @@ public class ShConsoleSummaryAPI {
         var attention = new ShConsoleSummary.Attention(
                 pending.sessions(),
                 pending.changes(),
-                shPostUnifiedRepository.countScheduledBetween(now, now.plus(SOON)),
+                shPostUnifiedRepository.countScheduledBetween(now, now.plus(ShConsoleSummary.SOON)),
                 shNoteRepository.countByResolvedFalse());
         return new ShConsoleSummary(
                 shSiteRepository.count(),
                 shPostTypeRepository.count(),
                 version(),
                 attention,
+                runs(),
+                new ShConsoleSummary.Diagnostics(
+                        shAgentIncidentLog.recent(INCIDENT_WINDOW).size(),
+                        shAgentIncidentLog.unpersisted()),
                 shHistoryAPI.recent(ACTIVITY_ROWS, null, null, null, null, null, null, null).rows());
+    }
+
+    /**
+     * What the agent has been doing, newest first.
+     *
+     * <p>The review queue's own listing, projected to what a dashboard row needs. Sessions with
+     * nothing pending are kept on purpose: "the agent ran and you have already dealt with it" is a
+     * different fact from "the agent has not run", and a list that showed only the first would make
+     * a quiet instance and a busy one look the same.</p>
+     */
+    private List<ShConsoleSummary.Run> runs() {
+        return shReviewService.sessions(RUN_ROWS).stream()
+                .map(session -> new ShConsoleSummary.Run(
+                        session.session(), session.intent(), session.agentName(),
+                        session.changes(), session.pending(),
+                        session.lastSeen() == null ? null : session.lastSeen().toString()))
+                .toList();
     }
 
     /**
