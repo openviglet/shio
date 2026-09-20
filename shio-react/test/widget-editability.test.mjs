@@ -72,6 +72,25 @@ function widgetSources() {
   return byName
 }
 
+/**
+ * Through a lazy wrapper to the widget it defers to (SH1044).
+ *
+ * <p>A map entry may name a `Suspense` boundary rather than the editor itself — SH1044 made the
+ * Ace widget lazy, because the map is imported by every screen that draws a post's fields and
+ * naming the widget directly put CodeMirror in the eager bundle. A wrapper forwards `{...props}`
+ * and so calls `onChange` nowhere, which this scan would read as a widget that does not write.</p>
+ *
+ * <p>Followed rather than excused: the question is whether the thing a curator types into writes,
+ * and an indirection does not change the answer. One hop, because a wrapper around a wrapper is a
+ * shape worth failing on.</p>
+ */
+function follow(text, file) {
+  const deferred = /import\("\.\/([\w.-]+)"\)/u.exec(text)
+  if (!deferred) return { text, file }
+  const target = `${deferred[1]}.tsx`
+  return { text: read("src", "components", "widgets", target), file: `${file} → ${target}` }
+}
+
 test("SH1012: every widget the table calls editable calls onChange", () => {
   const sources = widgetSources()
   const documented = documentedWidgets()
@@ -93,9 +112,9 @@ test("SH1012: every widget the table calls editable calls onChange", () => {
   const mute = []
   for (const { name } of documented) {
     const file = sources.get(name)
-    const source = read("src", "components", "widgets", file)
+    const source = follow(read("src", "components", "widgets", file), file)
     // Called, not merely received. `onChange` in the props type is exactly what the Relator had.
-    if (!/onChange\(|onChange\?\.\(/u.test(source)) mute.push(`${name} (${file})`)
+    if (!/onChange\(|onChange\?\.\(/u.test(source.text)) mute.push(`${name} (${source.file})`)
   }
 
   assert.deepEqual(mute, [],

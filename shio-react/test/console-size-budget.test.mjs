@@ -111,6 +111,13 @@ test("SH1043: a large module planted into the entry fails the gate, and names it
   assert.equal(stemOf("/assets/vendor-huge-eeeeeeee.js"), "vendor-huge.js",
     "a ceiling keyed by the hashed name would be stale on the next edit, which is a budget "
     + "nobody can keep");
+  assert.equal(stemOf("/assets/breadcrumb.context-BssgEydx-D1t6Pnxg.js"), "breadcrumb.context.js",
+    "SH1044: a package that ships pre-hashed files gets re-hashed on the way through, so a chunk "
+    + "can carry more than one — stripping once leaves a ceiling keyed by somebody else's release, "
+    + "which is the stalest kind");
+  assert.equal(stemOf("/assets/jsonMode.js"), "jsonMode.js",
+    "and a name whose own last segment is eight characters is not a hash: there is no `-` before "
+    + "it, which is what the rule keys on rather than the length alone");
 });
 
 test("SH1043: a ceiling that outlives its chunk fails too", async () => {

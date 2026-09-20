@@ -44,29 +44,29 @@ export default defineConfig({
   build: {
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes("node_modules")) {
-            // GraphiQL + Monaco + graphql are only reached via the lazily-loaded
-            // GraphQL Explorer page. Keep them in their own chunk so the generic
-            // vendor-lib rule below doesn't pull this multi-MB editor into the
-            // eager bundle (it would, since it matches every node_modules id).
-            if (
-              id.includes("graphiql") ||
-              id.includes("@graphiql") ||
-              id.includes("monaco") ||
-              id.includes("node_modules/graphql/") ||
-              id.includes("codemirror")
-            ) {
-              return "vendor-graphiql";
-            }
-            if (id.includes("@radix-ui")) return "vendor-ui";
-            return "vendor-lib";
-          }
-        },
-      },
-    },
+    // SH1044 — there is deliberately no `manualChunks` here, and deleting it is the fix.
+    //
+    // There used to be one, and its own comment said what it was for: keep GraphiQL, Monaco and
+    // CodeMirror out of the eager bundle, "since [the vendor-lib rule] matches every node_modules
+    // id". It did the opposite. A manual chunk is a chunk the bundler must place, and under
+    // rolldown a named vendor chunk becomes a static dependency of the entry — so `index.html`
+    // preloaded `vendor-graphiql` on every console route, for a page whose own chunk is 3 KB.
+    //
+    // MEASURED, because the first attempt at this task was the reordering §LXXII.2 proposed —
+    // give CodeMirror its own chunk ahead of the GraphiQL rule — and it moved the total by 4 KB:
+    //
+    //   manual chunks, codemirror folded into vendor-graphiql   7298.3 KB raw   2148.6 KB gzip
+    //   manual chunks, codemirror given its own vendor chunk    7293.9 KB raw   2146.2 KB gzip
+    //   no manual chunks at all                                 1506.4 KB raw    403.5 KB gzip
+    //
+    // The bundler's own splitting puts each of them behind the dynamic import that reaches it:
+    // Monaco (2.8 MB) and the GraphiQL page (678 KB) behind the lazy route, CodeMirror (573 KB)
+    // behind the lazy Ace widget. Hand-grouping was also what made the SH1017 CodeMirror version
+    // conflict read as a GraphiQL fault, because the dead editor was in a chunk named for it
+    // (codemirror-singleton.test.mjs).
+    //
+    // `console-size-budget.json` is what keeps this honest now: a rule stating an intention was
+    // believed for as long as nothing measured it.
     outDir: "../shio-app/src/main/resources/public/",
   },
   resolve: {

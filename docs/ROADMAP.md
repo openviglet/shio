@@ -94,7 +94,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1044** (deps: SH1043 ✅) **the lazy GraphiQL split is defeated, so the editor's chunk loads on every console route** — The manual-chunk rule claims every module id containing codemirror, and the widget map imports CodeMirror eagerly, so the entry statically imports the GraphiQL vendor chunk. → §LXXII.2
 - 📋 **SH1045** (deps: SH1043 ✅) **the console declares dependencies that nothing imports, and nothing would notice another** — The table library, class utilities, a Radix package and others appear in the manifest and in no import, and no lint checks that a declared dependency is reachable. → §LXXII.3
 - 📋 **SH1046** (deps: SH1043 ✅) **the console has no query cache, so every mount refetches whole collections from scratch** — Seventeen call sites fetch whole collections and the browser refetches the entire post-type catalogue on every folder navigation, while one hand-rolled store shows the fix. → §LXXII.4
 - 📋 **SH1047** (deps: SH1046) **no console fetch can be cancelled, so a fast navigation renders whichever response arrives last** — AbortController appears nowhere, and the browser's page fetch is recreated on each folder, sort or query change with nothing cancelling the request before it. → §LXXII.5
@@ -111,6 +110,7 @@
 - 📋 **SH1078** (deps: —) **a move changes which URLs a visitor can reach and its answer names only the objects it moved** — Copy and move return the touched objects, so no caller learns which delivery addresses changed without a second verify --delivery run. → §LXXII.16
 - 📋 **SH1079** (deps: —) **an import creates a whole site and answers with the site alone, so what arrived is only knowable by re-reading** — POST /api/v2/import returns ShSite and no tally of what landed, so the write whose effect a caller can least predict carries the least proof. → §LXXII.17
 - 📋 **SH1112** (deps: SH1043 ✅) **an agent cannot ask a running instance what its console costs to load** — The budget's two readers are a pnpm script and a build gate, so checking a console change needs this checkout, its toolchain and a build — which is P1 on the surface P1 is about. → §LXXII.18
+- 📋 **SH1113** (deps: SH1043 ✅) **nothing measures what one console route costs, so a screen's own fetches hide inside a total** — SH1043 counts the bytes every route pays before the first row, which is blind to a page that then fetches three collections to draw two figures. → §LXXII.19
 
 ## Block BH — One content model, many languages
 

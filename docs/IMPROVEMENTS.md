@@ -2315,25 +2315,6 @@ code, so their additions are visible as raises rather than folded into a baselin
 Resilience and access follow, and the assistant dock from Block AX already carries the
 announcements this block would otherwise have to build.
 
-### LXXII.2 The editor chunk, loaded when an editor is opened (SH1044)
-
-The analysis measured the real build: the entry chunk statically imports the GraphiQL
-vendor chunk, so index.html preloads about 1.33 MB gzip of it and a render-blocking
-stylesheet, while the GraphQL route's own chunk is a few kilobytes, which proves the
-split is nominal. The cause is one ordering: the manual-chunk rule routes every id
-containing codemirror into the GraphiQL chunk, and the Ace widget imports CodeMirror
-into the widget map, which the app imports eagerly. The config's own comment asserts the
-opposite of what shipped.
-
-Split three ways. Give CodeMirror its own vendor chunk, matched before the GraphiQL
-rule. Make the Ace widget a lazy component behind a Suspense boundary in the widget map,
-so its chunk loads only for a post that has a code field. And fix or delete the Radix
-manual-chunk rule, which produces no output file under the current bundler.
-
-BG1's gate records the before and after in the commit. The live browser probe, which
-already walks every route, starts recording request count, transfer bytes and time to
-first row per route, the per-route budget this gate cannot see.
-
 ### LXXII.3 Declared dependencies that are reachable, or named as peers (SH1045)
 
 A grep over shio-react/src finds no import of @tanstack/react-table, next-themes,
@@ -2663,6 +2644,31 @@ complete one ships the budget into the build and lets `verify` judge it.
 
 The assertion is an agent reading the eager total from a running instance and getting
 the bytes the script prints for the same build.
+
+### LXXII.19 A budget per route, from the probe that already walks them (SH1113)
+
+SH1043's gate measures one number for the whole console: what every route pays before
+the first row. That is right for a budget and blind to what a curator experiences, which
+is a page. A route fetching three collections to draw two figures costs the same eager
+bytes as one fetching nothing — SH1050 is that page, and nothing would have caught it.
+
+The instrument is nearly there. `e2e/console-check.mjs` already drives a browser through
+every route against a live instance, which is where request count, transfer bytes and
+time to first row are observable and nowhere else: the bundle gate reads files on disk
+and knows nothing about what a page then asks the server for.
+
+So the probe records three numbers per route and holds them the way the bundle budget
+holds its own — ceilings with a sentence each, a raise somebody argues for. The
+per-route shape is what makes it useful: a total would let a new screen's cost hide
+inside the sum.
+
+Two things to settle while building. It needs an instance, so it belongs with
+conformance rather than `pnpm test`, and where it runs decides whether a regression
+blocks a commit. And time to first row moves with the machine, so it wants a ratio
+against a baseline route rather than a millisecond ceiling nobody can reproduce.
+
+The assertion is a planted extra fetch on one route failing that route's entry and no
+other.
 
 ## LXXIII One content model, many languages (Block BH)
 

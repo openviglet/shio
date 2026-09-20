@@ -1982,3 +1982,46 @@ and it now has a number to argue against rather than an impression.
   gate over): a ceiling set to the measurement refuses the next change instead of measuring it, and
   the cheapest way to pass then is to delete somebody else's feature — the degrade-the-measurement
   non-goal by name.
+
+## The chunking rule that caused what it was written to prevent (SH1044)
+
+`vite.config.ts` carried a `manualChunks` function whose own comment said what it was for: keep
+GraphiQL, Monaco and CodeMirror out of the eager bundle, *"since [the vendor-lib rule] matches every
+node_modules id"*. **It did the opposite.** A manual chunk is a chunk the bundler must place, and
+under rolldown a named vendor chunk becomes a static dependency of the entry — so `index.html`
+preloaded `vendor-graphiql` on every console route, for a page whose own chunk is 3 KB.
+
+**The first attempt was the one §LXXII.2 proposed** — give CodeMirror its own chunk, matched ahead
+of the GraphiQL rule, because the Ace widget imports CodeMirror and the widget map names that widget
+eagerly. It moved the total by **4 KB**, and that is the finding: the ordering was a real defect and
+not the cause.
+
+| | raw | gzip |
+|---|---|---|
+| manual chunks, CodeMirror folded into `vendor-graphiql` | 7298.3 KB | 2148.6 KB |
+| manual chunks, CodeMirror given its own vendor chunk | 7293.9 KB | 2146.2 KB |
+| **no manual chunks at all** | **1506.4 KB** | **403.5 KB** |
+
+Two changes ship together and both are load-bearing. **Deleting `manualChunks`** lets the bundler
+put each editor behind the dynamic import that reaches it: Monaco (2.8 MB) and the GraphiQL page
+(678 KB) behind the lazy route. **Making the Ace widget lazy** keeps CodeMirror (573 KB raw, 197 KB
+gzip) out of the entry — without it the widget map still names the editor directly, and the map is
+imported by every screen that draws a post's fields. The split is per *field kind*, which is the
+only place the question can be answered: the editor arrives when somebody opens a `PageLayout`,
+`Region` or `Theme`.
+
+Three things worth keeping from it:
+
+- **A rule stating an intention was believed for as long as nothing measured it.** The comment was
+  wrong from the day the bundler changed under it, and read correctly the whole time.
+- **Hand-grouping cost more than bytes.** The SH1017 CodeMirror version conflict surfaced as a dead
+  editor in a chunk named `vendor-graphiql`, so it read as a GraphiQL fault for as long as it did
+  (`codemirror-singleton.test.mjs` records that).
+- **The `@radix-ui` → `vendor-ui` rule produced no output file**, which is SH1045's subject seen
+  from the build side: nothing in the console imports Radix directly any more, so the rule named a
+  chunk that never existed. It went with the rest.
+
+SH1043's gate is what made this checkable, and it did two jobs here: it priced the before and after,
+and it **refused the stale entries** — a ceiling for a chunk that is no longer eager fails, which is
+why `vendor-graphiql.js`, `vendor-graphiql.css`, `vendor-codemirror.js` and `vendor-lib.js` are
+deleted from the budget in the same commit rather than left as numbers nobody was measuring.

@@ -114,9 +114,17 @@ export async function measure(dist) {
  * nobody can keep. The stem is what stays: `index.js`, `vendor-lib.js`, and so on.</p>
  */
 export function stemOf(asset) {
-  const name = asset.replace(/^.*\//, "");
-  const hashed = /^(.+)-[A-Za-z0-9_-]{8}\.(js|css)$/.exec(name);
-  return hashed ? `${hashed[1]}.${hashed[2]}` : name;
+  let name = asset.replace(/^.*\//, "");
+  // Until it stops changing, because a chunk can carry MORE THAN ONE hash: a package that ships
+  // pre-hashed files gets re-hashed on the way through, so the design system arrives as
+  // `breadcrumb.context-BssgEydx-D1t6Pnxg.js` and stripping once would leave a ceiling keyed by
+  // `breadcrumb.context-BssgEydx.js` — still stale on the next release of somebody else's package,
+  // which is the stalest kind.
+  for (;;) {
+    const hashed = /^(.+)-[A-Za-z0-9_-]{8}\.(js|css)$/.exec(name);
+    if (!hashed) return name;
+    name = `${hashed[1]}.${hashed[2]}`;
+  }
 }
 
 /**

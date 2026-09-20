@@ -7,7 +7,7 @@ import { ComboBoxWidget } from "./combobox.widget"
 import { DateWidget } from "./date.widget"
 import { HiddenWidget } from "./hidden.widget"
 import { MultiSelectWidget } from "./multi-select.widget"
-import { AceEditorWidget } from "./ace-editor.widget"
+import { AceEditorLazyWidget } from "./ace-editor.lazy"
 import { ContentSelectWidget } from "./content-select.widget"
 import { FileWidget } from "./file.widget"
 import { RelatorWidget } from "./relator.widget"
@@ -29,10 +29,13 @@ const WIDGET_MAP: Record<string, React.ComponentType<WidgetProps>> = {
   "Date": DateWidget,
   "Hidden": HiddenWidget,
   "Multi Select": MultiSelectWidget,
-  "Ace Editor - Javascript": AceEditorWidget,
-  "Ace Editor - HTML": AceEditorWidget,
+  // SH1044 — lazy, and named here rather than imported: this map is drawn by every screen that
+  // shows a post's fields, so naming the widget itself made every console route import
+  // CodeMirror - and, through the manual-chunk rule, 4.8 MB of GraphiQL with it.
+  "Ace Editor - Javascript": AceEditorLazyWidget,
+  "Ace Editor - HTML": AceEditorLazyWidget,
   // SH252 — a stylesheet gets a stylesheet editor.
-  "Ace Editor - CSS": AceEditorWidget,
+  "Ace Editor - CSS": AceEditorLazyWidget,
   "Content Select": ContentSelectWidget,
   "File": FileWidget,
   "Relator": RelatorWidget,
@@ -54,7 +57,7 @@ export {
   DateWidget,
   HiddenWidget,
   MultiSelectWidget,
-  AceEditorWidget,
+  AceEditorLazyWidget,
   ContentSelectWidget,
   FileWidget,
   RelatorWidget,
