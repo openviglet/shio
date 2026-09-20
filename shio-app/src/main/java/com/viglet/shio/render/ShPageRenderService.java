@@ -512,21 +512,44 @@ public class ShPageRenderService {
         return shPostUnifiedRepository.findDistinctLocalesBySiteId(siteByKey(siteKey).getId(), state);
     }
 
+    /**
+     * SH1042 — the id behind a preview's site key, for a caller that has to check it before reading.
+     *
+     * <p>Here rather than in the route for {@code localesOf}'s reason one method up: site resolution
+     * is SH181's order and it lives in this class, so a second resolver in the security layer would
+     * be a second opinion about which of an id, a friendly URL and a name wins a collision.</p>
+     *
+     * @throws UnknownSiteException exactly as a render of the same key would
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> siteIdOf(String siteKey) {
+        return siteIfAny(siteKey).map(ShSite::getId);
+    }
+
     private ShSite siteByKey(String siteKey) {
+        return siteIfAny(siteKey).orElseThrow(() -> new UnknownSiteException(siteKey));
+    }
+
+    /**
+     * The site a key names, or empty — SH181's order, in one place.
+     *
+     * <p>Split out of {@link #siteByKey} rather than copied beside it (SH1042): a caller that has
+     * to ask <em>whether</em> a key resolves would otherwise either carry its own three lookups, and
+     * so its own opinion about which of an id, a furl and a name wins a collision, or catch the
+     * refusal — and a caught exception standing in for "no" is the silent degradation
+     * {@code ShSilentCatchInventoryTest} exists to count.</p>
+     */
+    private Optional<ShSite> siteIfAny(String siteKey) {
         // SH181's order: the declared key wins a collision.
         Optional<ShSite> byId = shSiteRepository.findById(siteKey);
         if (byId.isPresent()) {
-            return byId.get();
+            return byId;
         }
         ShSite byFurl = shSiteRepository.findByFurl(siteKey);
         if (byFurl != null) {
-            return byFurl;
+            return Optional.of(byFurl);
         }
-        ShSite byName = shSiteRepository.findByName(siteKey);
-        if (byName == null) {
-            throw new UnknownSiteException(siteKey);
-        }
-        return byName;
+        return Optional.ofNullable(shSiteRepository.findByName(siteKey));
     }
 
     private ShPostUnified pageAt(ShSite site, String url, ShPostState state) {

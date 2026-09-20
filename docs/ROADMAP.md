@@ -84,12 +84,13 @@
 
 ## Block BF — The visual editor becomes a composer
 
-- 📋 **SH1042** (deps: —) **a stakeholder cannot be sent an expiring link to a draft rendered by Shio itself** — The preview route is console-authenticated and the token mint returns a null token for an internal site, so only sites with an external front end can be previewed by anyone else. → §LXXI.7
 - 📋 **SH1101** (deps: SH1038 ✅) **a copied post comes back with no id, so duplicating a section can only place the same one twice** — `copyto` returns only the folders it made, so nothing can address a post it just copied, and the editor's Duplicate repeats the reference instead. → §LXXI.8
 - 📋 **SH1105** (deps: SH1039 ✅) **the inserter rail describes a section in a sentence, which is the worst way to show a shape** — A curator picks between a hero and a rich-text block by looking, and the rail has no thumbnail and no drop target — so placement is two buttons and nothing can be dragged. → §LXXI.9
 - 📋 **SH1106** (deps: SH1039 ✅) **a page can name a section of a type its own template says does not belong there, and nothing says so** — `sh-accepts` is read by the console and by nothing else, so any write past that screen composes a page against a list no instrument consults. → §LXXI.10
 - 📋 **SH1108** (deps: SH1040 ✅) **the console cannot offer patterns, because it cannot read the project file they live in** — A pattern is a file in the tree and the console is a browser, so the inserter rail's Patterns tab has nothing to list and Save as pattern has nowhere to write. → §LXXI.11
 - 📋 **SH1109** (deps: SH1041 ✅) **a save in the visual editor proves nothing — it returns a toast and the curator has to look** — The render digests, the change log and the reporting dock all exist and nothing joins them, so the one surface where a person edits by hand closes its loop with the word saved. → §LXXI.12
+- 📋 **SH1110** (deps: SH1042 ✅) **a share link for one page lets its reader see every draft on that site until it expires** — The credential is bounded to a site because the token row has no target, and narrowing it needs an answer about how a shared page's own images and stylesheet are reached. → §LXXI.13
+- 📋 **SH1111** (deps: SH1042 ✅) **a share link is sent and then nobody can see it, because the token screen hides ephemeral rows** — Revocation works and the reading does not: nothing lists the live links, and an agent that just built a site has no verb that prints one. → §LXXI.14
 
 ## Block BG — The console as an application: cost, resilience and access
 

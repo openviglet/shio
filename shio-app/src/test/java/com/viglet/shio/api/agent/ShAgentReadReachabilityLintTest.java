@@ -164,6 +164,12 @@ class ShAgentReadReachabilityLintTest {
         byRoot.put("/sites", notAgentFacing(
                 "delivery: the published page a visitor is served. What an agent reads about a "
                 + "site is its content, through /agent/read and the CDA"));
+        byRoot.put("/api/v2/preview-share", notAgentFacing(
+                "SH1042: where a person who has no account here exchanges a share link for a "
+                + "preview cookie. It answers a redirect and a Set-Cookie and nothing an agent "
+                + "could use — the agent reads the draft itself through /agent/read, which is "
+                + "draft-preferred, and MINTS the link through /api/v2/preview-token, which is "
+                + "the reachable half of this feature"));
 
         // SH1005 closed the last one. It was the audit trail per object: /agent/changes walked the
         // same rows by cursor and could not answer "what happened to this page", which is the

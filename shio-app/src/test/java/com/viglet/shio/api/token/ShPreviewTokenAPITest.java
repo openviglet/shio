@@ -7,7 +7,6 @@ package com.viglet.shio.api.token;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -124,7 +123,7 @@ class ShPreviewTokenAPITest {
     }
 
     @Test
-    @DisplayName("SH184: no front end means Shio renders it — not a 400, and no token")
+    @DisplayName("SH1042: no front end means Shio renders it, behind an expiring share link")
     void blankSiteUrlFallsBackToShiosOwnPreview() {
         when(shPostUnifiedRepository.findById("post-1"))
                 .thenReturn(List.of(post("post-1", ShPostState.DRAFT, "/x", "siteA", "")));
@@ -142,17 +141,33 @@ class ShPreviewTokenAPITest {
 
         ShPreviewTokenResponse body = (ShPreviewTokenResponse) response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.previewUrl()).isEqualTo("/preview/siteA/x");
         assertThat(body.token())
                 .as("""
-                        /preview/** is console-authenticated and already draft-preferred, so a \
-                        token would be a credential that unlocks nothing. The two destinations \
-                        differ by exactly this: an external front end needs one to turn its own \
-                        draft mode on at /api/preview.""")
-                .isNull();
-        assertThat(body.expiresAt()).isNull();
-        // ...and nothing was written, because there was nothing to write.
-        verify(shApiTokenRepository, never()).saveAndFlush(any(ShApiToken.class));
+                        SH184 answered a NULL token here, and the reasoning was right at the time: \
+                        "/preview/** is already console-authenticated, so a credential for it \
+                        would unlock nothing". SH1042 is the change that made the second half \
+                        false — a SHARE token is now the one thing that unlocks it — so the \
+                        branch that minted nothing is the branch that left a draft unshowable to \
+                        anyone without a console login.""")
+                .isNotNull();
+        assertThat(body.previewUrl())
+                .as("the exchange route, not the preview path: the credential leaves the URL on "
+                        + "the first hop, so what a recipient forwards is an ordinary page address")
+                .startsWith("/api/v2/preview-share/")
+                .contains("to=%2FsiteA%2Fx");
+        assertThat(body.expiresAt()).isNotNull();
+
+        ArgumentCaptor<ShApiToken> written = ArgumentCaptor.forClass(ShApiToken.class);
+        verify(shApiTokenRepository).saveAndFlush(written.capture());
+        assertThat(written.getValue().getScope())
+                .as("""
+                        SHARE and not PREVIEW, and the difference is the whole of what makes a \
+                        link safe to forward: PREVIEW grants ROLE_CDA + ROLE_CDA_PREVIEW, so a \
+                        recipient who lifted the value out of the cookie into a `Key` header would \
+                        read that site's entire delivery API, drafts included.""")
+                .isEqualTo(ShApiTokenScope.SHARE);
+        assertThat(written.getValue().getSiteIds()).containsExactly("siteA");
+        assertThat(written.getValue().isEphemeral()).isTrue();
     }
 
     @Test

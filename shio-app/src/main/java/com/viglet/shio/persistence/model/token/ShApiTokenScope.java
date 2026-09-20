@@ -69,5 +69,33 @@ public enum ShApiTokenScope {
      * "not a system type" ({@code ShFormEligibility}); an allow-list alone would still let an
      * operator name {@code Theme} by mistake, and that is not a mistake worth leaving available.</p>
      */
-    FORM
+    FORM,
+
+    /**
+     * The credential an expiring share link carries (SH1042) — the second scope bounded by data.
+     *
+     * <h2>What it exists for</h2>
+     *
+     * <p>{@code /preview/**} is console-authenticated, so a draft Shio renders itself could be shown
+     * to nobody but a curator. {@code PREVIEW} was the answer for an <em>external</em> front end and
+     * deliberately minted <b>nothing</b> for an internal one, because "a credential for a
+     * console-authenticated path would unlock nothing" — true while the path unlocked for no
+     * credential at all. So the only previewable sites were the ones with a deployed front end,
+     * which is the product's premise inverted: a site an agent has just built has neither.</p>
+     *
+     * <h2>It carries only {@code ROLE_PREVIEW_SHARE}, for {@code FORM}'s reason</h2>
+     *
+     * <p>A share link is handed to somebody outside the console — that is the whole feature — so it
+     * is public by construction in exactly the way a form token is, and secrecy is not what bounds
+     * it. {@code PREVIEW} would have been the obvious scope to reuse and is the wrong one: it grants
+     * {@code ROLE_CDA} + {@code ROLE_USER} + {@code ROLE_CDA_PREVIEW}, so a recipient who lifted the
+     * value out of the cookie and put it in a {@code Key} header would read that site's entire
+     * delivery API, drafts included. That is §XII's escalation, reached by reuse rather than by
+     * design.</p>
+     *
+     * <p>So this grants one role that no rule outside {@code /preview/**} accepts, the filter
+     * confines it to that prefix, and it is GET-only. What it can do is what the link promises:
+     * read one site's preview until it expires.</p>
+     */
+    SHARE
 }

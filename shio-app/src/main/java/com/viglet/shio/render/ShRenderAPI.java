@@ -31,6 +31,7 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.spring.security.auth.ShPreviewShare;
 import com.viglet.shio.render.ShPageRenderService.ShRenderedPage;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -125,6 +126,25 @@ public class ShRenderAPI {
      * still where {@code file_url} points; this resolves the <em>site's own</em> path to the same
      * post and hands off to the same storage. The whole feature is the addressing.</p>
      */
+    /**
+     * SH1042 — whether this request is a share link reaching for a site it was not minted for.
+     *
+     * <p>{@code false} for every caller that is not a share, and the site is resolved only for one
+     * that is — so a curator's preview costs no extra query. An unknown key is <b>not</b> refused
+     * here: it is left to the render, which answers the same 404 it always did rather than letting
+     * this path tell a prober which keys exist.</p>
+     */
+    private boolean shareRefused(String siteKey) {
+        if (!ShPreviewShare.isShare()) {
+            return false;
+        }
+        return shPageRenderService.siteIdOf(siteKey)
+                .map(siteId -> !ShPreviewShare.allows(siteId))
+                // An unknown key is not refused here: the render answers the same 404 it always
+                // did, and deciding earlier would let this path tell a prober which keys exist.
+                .orElse(false);
+    }
+
     private ResponseEntity<?> assetOr(RuntimeException pageProblem, String siteKey, String path,
                                       ShPostState state) {
         try {
@@ -151,6 +171,15 @@ public class ShRenderAPI {
                                   HttpServletRequest request) {
         ShContentPerspective perspective = ShContentPerspective.parse(state)
                 .requireVersion("/preview", "GET /api/v2/agent/read?address=<address>&state=release:<name>");
+        // SH1042 — a share link is bounded to one site, and this is where the site is known. The
+        // filter that authenticated the cookie saw only a path, whose first segment may be an id, a
+        // friendly URL or a name; resolving it there would be a second opinion about SH181's order
+        // in front of every preview request. 404 rather than 403, for the reason
+        // ShAuthenticationEntryPoint gives about an absent path: 403 tells the holder of one site's
+        // link that another site exists.
+        if (shareRefused(siteKey)) {
+            return ResponseEntity.notFound().build();
+        }
         // An asset has no revisions, so a revision preview that lands on one serves the draft's bytes.
         ShPostState wanted = perspective.rowOr(ShPostState.DRAFT);
         ShRenderedPage rendered;
@@ -190,7 +219,12 @@ public class ShRenderAPI {
         ShRenderedPage page = new ShRenderedPage(walkable, rendered.site(), rendered.url(),
                 rendered.layout(), rendered.regions(), rendered.state(), rendered.postId(),
                 rendered.siteId(), rendered.composition(), rendered.revision());
-        String body = editor
+        // SH1042 — and never for a share reader, whatever the link says. The bridge makes elements
+        // contenteditable and opens a postMessage channel to whatever framed the page; a recipient
+        // outside the console is exactly who must not have it, and `?editor=true` is a query string
+        // anybody can type. The banner stays: a shared draft that did not say it was a draft is the
+        // screenshot that ends up in a meeting as if it were the site.
+        String body = editor && !ShPreviewShare.isShare()
                 ? editorBridge.inject(banner.wrap(page), originOf(request),
                         previewLinks.pathsForBridge(rendered))
                 : banner.wrap(page);

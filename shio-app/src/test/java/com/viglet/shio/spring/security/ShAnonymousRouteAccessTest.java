@@ -105,6 +105,13 @@ class ShAnonymousRouteAccessTest {
 			new Route("/api/v2/discovery", "/api/v2/discovery", Access.PUBLIC),
 			new Route("/api/v2/setup", "/api/v2/setup", Access.PUBLIC),
 			new Route("/api/v2/login", "/api/v2/login", Access.PUBLIC),
+			// SH1042 — PUBLIC, and the one row in this table that most deserves the second look
+			// the /api/v2/cda/form/** row below asks for. It is public because a share link is
+			// followed by somebody who has no account here, which is the whole feature; it grants
+			// nothing because all it does is validate a SHARE credential and set a cookie, and it
+			// answers 404 without a valid one. The draft itself stays behind /preview/**, which is
+			// still AUTHENTICATED below and which ShPreviewIsNotPublicTest still refuses to open.
+			new Route("/api/v2/preview-share/**", "/api/v2/preview-share/nope", Access.PUBLIC),
 			// -- governed (authenticated()): a no-credential request is refused with 401 --
 			// SH359 lived here: /preview/** must never answer an anonymous caller.
 			new Route("/preview/**", "/preview/any-site/any-page", Access.AUTHENTICATED),

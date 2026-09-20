@@ -28,6 +28,7 @@ import com.viglet.shio.tenant.ShTenantFilter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -101,6 +102,32 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
      */
     private static final String MCP_PATH = "/mcp";
 
+    /**
+     * Shio's own renderer, reachable by an expiring share link (SH1042).
+     *
+     * <p>The fifth surface, and the first whose credential arrives in a <b>cookie</b> rather than in
+     * the {@code Key} header: the caller is a browser following a link somebody was sent, and a
+     * browser sends no custom header. The cookie is also what keeps the credential out of a copied
+     * URL and out of the {@code Referer} of every image on the page.</p>
+     *
+     * <p>Widening this list is the act {@code security.md} warns about, so the bound is narrow in
+     * both directions: only a {@code SHARE} token authenticates here, and a {@code SHARE} token
+     * authenticates <b>nowhere else</b>. Neither half is redundant — the first keeps a CDA key out
+     * of the preview, the second keeps a link handed to a stranger out of the delivery API.</p>
+     */
+    private static final String PREVIEW_PATH_PREFIX = "/preview";
+
+    /** Where a share credential rides. Read here; written once by the exchange route. */
+    public static final String SHARE_COOKIE = "shio-preview-share";
+
+    /**
+     * The one authority a share link carries, and it is granted by no other scope.
+     *
+     * <p>Public so the authorization rule and the renderer can name the same string: a role spelled
+     * twice is a role that can be spelled differently once.</p>
+     */
+    public static final String ROLE_PREVIEW_SHARE = "ROLE_PREVIEW_SHARE";
+
     private static final String RATE_LIMIT_REMAINING_HEADER = "X-Rate-Limit-Remaining";
 
     private final ShApiTokenRepository shApiTokenRepository;
@@ -118,7 +145,11 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
                                     @NotNull HttpServletResponse response,
                                     @NotNull FilterChain filterChain) throws ServletException, IOException {
 
-        String tokenValue = request.getHeader(TOKEN_HEADER);
+        // SH1042 — on the preview the credential is a cookie, because the caller is a browser
+        // following a link and browsers send no custom header. Everywhere else it stays the `Key`
+        // header, so a cookie this instance set can never stand in for one on the delivery API.
+        boolean preview = isPreviewPath(request);
+        String tokenValue = preview ? shareCookie(request) : request.getHeader(TOKEN_HEADER);
         boolean presented = tokenValue != null && !tokenValue.isBlank();
 
         // An explicitly presented `Key` wins over an authentication already in the context
@@ -145,7 +176,7 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // The GraphQL delivery endpoint (SH4) and the agent surface (SH76) are the
         // second and third such surfaces.
         boolean graphQl = isGraphQlPath(request) || isMcpPath(request);
-        if (!isCdaPath(request) && !graphQl && !isAgentPath(request)) {
+        if (!isCdaPath(request) && !graphQl && !isAgentPath(request) && !preview) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -177,6 +208,16 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
 
         ShApiTokenScope scope = apiToken.getScope() != null ? apiToken.getScope() : ShApiTokenScope.READ;
         ShApiTokenEnv env = apiToken.getEnv() != null ? apiToken.getEnv() : ShApiTokenEnv.PROD;
+
+        // SH1042 — the confinement, both ways, and neither half is redundant. A SHARE token is the
+        // one credential this product hands to somebody outside the console, so it authenticates
+        // ONLY the renderer it was issued for; and the renderer accepts ONLY that scope, so a CDA
+        // or agent key cannot be spent on a draft it was never granted. Left unauthenticated rather
+        // than refused, so the request meets the ordinary 401 and tells a prober nothing.
+        if ((scope == ShApiTokenScope.SHARE) != preview) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // READ/PREVIEW tokens are read-only: only allow GET requests. WRITE tokens
         // may use any method (the CDA write surface itself lands in SH10). GraphQL
@@ -244,6 +285,14 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         if (scope == ShApiTokenScope.FORM) {
             return List.of(new SimpleGrantedAuthority("ROLE_FORM"));
         }
+        // SH1042 — and SHARE returns before it too, for exactly FORM's reason one surface over. A
+        // share link is handed to somebody outside the console, so ROLE_CDA would let its recipient
+        // read the whole site — drafts included, since PREVIEW also grants ROLE_CDA_PREVIEW —
+        // through a header the cookie's value fits in. This grants one role no rule outside the
+        // renderer accepts.
+        if (scope == ShApiTokenScope.SHARE) {
+            return List.<GrantedAuthority>of(new SimpleGrantedAuthority(ROLE_PREVIEW_SHARE));
+        }
         var authorities = new ArrayList<GrantedAuthority>(List.of(
                 new SimpleGrantedAuthority("ROLE_CDA"),
                 new SimpleGrantedAuthority("ROLE_USER")));
@@ -302,6 +351,26 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
     private static boolean isMcpPath(HttpServletRequest request) {
         String path = relativePath(request);
         return path.equals(MCP_PATH) || path.startsWith(MCP_PATH + "/");
+    }
+
+    /** SH1042 — Shio's own renderer, the one surface whose credential is a cookie. */
+    private static boolean isPreviewPath(HttpServletRequest request) {
+        String path = relativePath(request);
+        return path.equals(PREVIEW_PATH_PREFIX) || path.startsWith(PREVIEW_PATH_PREFIX + "/");
+    }
+
+    /** The share credential, or {@code null} — this is the only cookie this filter reads. */
+    private static String shareCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+        for (Cookie cookie : cookies) {
+            if (SHARE_COOKIE.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 
     /** Request URI with any servlet context path stripped. */

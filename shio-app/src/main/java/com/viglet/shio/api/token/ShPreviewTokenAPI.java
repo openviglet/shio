@@ -110,11 +110,14 @@ public class ShPreviewTokenAPI {
         // draft mode on at /api/preview, while /preview/** is already console-authenticated
         // and already draft-preferred. Minting a credential for the second would be issuing
         // a key nobody unlocks anything with.
+        // SH1042 — and the last sentence above stopped being true, which is what this task is.
+        // "A key nobody unlocks anything with" was right while `/preview/**` unlocked for no
+        // credential at all; a SHARE token is now the one that does, so an internal front end mints
+        // one too and this answers a link rather than a null. The paragraph stays because it is the
+        // reasoning that was correct and then was not, and the reason it stopped being correct is
+        // the feature.
         Destination destination = ShSiteFrontEnd.of(site);
-        if (!destination.isExternal()) {
-            return ResponseEntity.ok((Object) new ShPreviewTokenResponse(null,
-                    ShSiteFrontEnd.pageUrl(destination, post.getFurl()), null, 0L));
-        }
+        boolean share = !destination.isExternal();
         String base = destination.baseUrl();
 
         Instant now = Instant.now(clock);
@@ -122,12 +125,17 @@ public class ShPreviewTokenAPI {
 
         ShApiToken token = new ShApiToken();
         token.setTitle("preview:" + post.getId());
-        token.setDescription("Short-lived draft preview (SH13)");
+        token.setDescription(share
+                ? "Expiring share link for Shio's own preview (SH1042)"
+                : "Short-lived draft preview (SH13)");
         token.setToken(UUID.randomUUID().toString().replace("-", "").substring(0, 25));
         token.setOwner(principal != null ? principal.getName() : "system");
         token.setCreatedDate(now);
         token.setEnabled(true);
-        token.setScope(ShApiTokenScope.PREVIEW);
+        // SHARE grants one role no rule outside the renderer accepts, which is what makes a
+        // credential safe to put in a link somebody forwards; PREVIEW would have granted ROLE_CDA
+        // and handed the recipient the whole delivery API for that site.
+        token.setScope(share ? ShApiTokenScope.SHARE : ShApiTokenScope.PREVIEW);
         token.setEnv(ShApiTokenEnv.PREVIEW);
         token.setSiteIds(Set.of(site.getId())); // SH2: confine the token to this one site
         token.setExpiresAt(now.plusSeconds(ttl));
@@ -137,7 +145,9 @@ public class ShPreviewTokenAPI {
         // Opportunistic purge so the table doesn't accumulate dead preview rows (no scheduler).
         shApiTokenRepository.deleteByEphemeralTrueAndExpiresAtBefore(now);
 
-        String previewUrl = buildPreviewUrl(base, post.getFurl(), token.getToken(), cfg);
+        String previewUrl = share
+                ? shareUrl(destination, post.getFurl(), token.getToken())
+                : buildPreviewUrl(base, post.getFurl(), token.getToken(), cfg);
         log.info("Minted preview token for post '{}' (site {}), expires {}", post.getId(), site.getId(),
                 token.getExpiresAt());
 
@@ -170,6 +180,21 @@ public class ShPreviewTokenAPI {
     }
 
     /** {@code <base><path>?<tokenParam>=<token>&<urlParam>=<encoded furl>}. */
+    /**
+     * SH1042 — the link for Shio's own renderer: the exchange route, and where to land.
+     *
+     * <p>Relative, like the preview URL beside it, because this instance does not reliably know its
+     * own public origin (a reverse proxy, a silo host) and a wrong absolute URL is worse than one a
+     * caller composes. The destination is the ordinary preview path the credential is minted for —
+     * the exchange refuses anything that is not one, so it is a hint rather than an authority.</p>
+     */
+    private static String shareUrl(Destination destination, String furl, String token) {
+        String path = ShSiteFrontEnd.pageUrl(destination, furl)
+                .substring(ShSiteFrontEnd.PREVIEW_BASE.length() - 1);
+        return ShPreviewShareAPI.PATH + "/" + URLEncoder.encode(token, StandardCharsets.UTF_8)
+                + "?to=" + URLEncoder.encode(path, StandardCharsets.UTF_8);
+    }
+
     private static String buildPreviewUrl(String base, String furl, String token, ShCdaProperties.Preview cfg) {
         String trimmedBase = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
         String url = (furl == null || furl.isBlank()) ? "/" : furl;

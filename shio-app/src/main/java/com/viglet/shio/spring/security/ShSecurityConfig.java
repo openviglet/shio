@@ -103,6 +103,24 @@ public class ShSecurityConfig {
      * does not: publishing changes what the public sees, minting a preview token does not.</p>
      */
     private static final String PREVIEW_TOKEN_PATH = "/api/v2/preview-token";
+
+    /**
+     * SH1042 — where a share link is exchanged for a preview session, and the only anonymous route
+     * this feature adds.
+     *
+     * <p>It is a sibling of the mint rather than a path under {@code /preview/**}, and that is the
+     * whole of the decision: an allow-list entry under that prefix is exactly what made every draft
+     * on the instance readable once (see the note beside the entry that is deliberately absent), and
+     * the rule this file follows is that the question is never <em>is this route safe</em> but
+     * <em>what does the allow-list already say about this prefix</em>. Here it says one thing about
+     * one route.</p>
+     *
+     * <p>Being public grants nothing: it validates a {@code SHARE} credential and sets a cookie.
+     * Without a valid one it answers 404, and {@code /preview/**} still refuses every request that
+     * arrives without the cookie — which is what {@code ShPreviewIsNotPublicTest} keeps asserting,
+     * unchanged.</p>
+     */
+    private static final String PREVIEW_SHARE_PATH = "/api/v2/preview-share/**";
     /**
      * SH343 — webhook subscriptions. The agent reads its own delivery failures in
      * {@code /agent/diagnostics} (SH103, with SH269's frames) and had no route to inspect, repair or
@@ -361,6 +379,10 @@ public class ShSecurityConfig {
                         // NOT /preview/** — see the note on the other chain. It was here from
                         // before the renderer existed and made every draft anonymous-readable.
                         mvc.matcher("/sites/**"),
+                        // SH1042 — in both chains, because a share link is sent to somebody who has
+                        // no account in either: an instance behind Keycloak is exactly the one
+                        // where a stakeholder cannot be asked to log in.
+                        mvc.matcher(PREVIEW_SHARE_PATH),
                         mvc.matcher(SETUP_PATH),
                         mvc.matcher(LOGIN_PATH)).permitAll();
                 // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
@@ -419,6 +441,18 @@ public class ShSecurityConfig {
                                 mvc.matcher("/index.html"),
                                 mvc.matcher("/login/**"),
                                 mvc.matcher("/sites/**"),
+                                // SH1042 — the exchange route for a share link, and the only thing
+                                // on it that is public. Deliberately NOT under `/preview/`: the
+                                // rule this file states is that the question is never "is this
+                                // route safe" but "what does the allow-list already say about this
+                                // prefix", and an entry under that prefix is the shape that made
+                                // every draft readable once already. Here it says what it is.
+                                //
+                                // It grants nothing by itself: it validates a SHARE credential and
+                                // exchanges it for a cookie, and `/preview/**` still refuses every
+                                // request that arrives without one. `ShPreviewIsNotPublicTest` is
+                                // unchanged and still passes, which is the point.
+                                mvc.matcher(PREVIEW_SHARE_PATH),
                                 mvc.matcher("/__tur/**"),
                                 mvc.matcher("/"),
                                 mvc.matcher("/assets/**"),

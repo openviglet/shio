@@ -2132,26 +2132,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.7 A share link that unlocks Shio's own renderer (SH1042)
-
-The preview path sits under the authenticated rule and was deliberately removed from
-permitAll. The token machinery serves only an external front end: when a site's front
-end is internal, the mint returns a null token with zero expiry, and its javadoc
-explains why, since a credential for a console-authenticated path would unlock nothing.
-That held while the only reader was a curator. For a site an agent just built, it means
-the only previewable sites are those with a deployed external front end, the inverse of
-the product's premise.
-
-The preview route accepts a share credential: preview scope, one site, a post, folder,
-site or release, and an expiry, which the token row already models with its ephemeral
-flag, expiry and site allow-list. It is exchanged once for a cookie so the credential
-does not travel in a copied URL's referer, and it grants anonymous, read-only, draft,
-no-store and noindex access, never the editor bridge, with the preview banner kept.
-
-A list-and-revoke endpoint makes active links visible and killable. shio share prints
-the URL, the most useful thing an agent can hand a person at the end of a run. The
-assertion: an anonymous request with no credential is still refused.
-
 ### LXXI.8 A copy that can be addressed (SH1101)
 
 Duplicate in the visual editor repeats the reference rather than the post, because the
@@ -2268,6 +2248,53 @@ waits for, and that number decides whether the pair is taken always or on reques
 The log also serialises into the change-set shape the agent path answers with, so what a
 curator did reads like what an agent did. The assertion is a save whose delta names the
 field that moved, and a text-only edit reported as leaving the appearance alone.
+
+### LXXI.13 A share link that is one page wide (SH1110)
+
+A share link is minted for one page and bounded to that page's **site**, so the
+stakeholder sent a link to the new pricing page can read every draft on that site until
+it expires. The mint says so and the credential is ephemeral, which is why this shipped
+rather than not at all — but it is more than the link promises.
+
+The token row has no target column, so the narrowing is schema: a nullable path prefix
+beside the site allow-list, matched against the request. A prefix rather than an SH79
+address on purpose — the check runs where a security decision is made and must not
+resolve content to reach a verdict, and a prefix expresses post, folder and site in one
+comparison.
+
+What the design did not settle, and what makes this a task rather than a column: **a
+shared page's own sub-resources.** A page pulls images, a stylesheet and a region's
+script, several rewritten into the preview's own address space, so a credential confined
+to `/about` refuses the page's own pictures. The answer is one of three — leave assets
+to the site bound, serve them under a path the prefix covers, or mint against the set
+the page references — and choosing costs a measurement of what a real page pulls.
+
+The assertion is a link for one page refused on another page of the same site, and the
+shared page rendering whole: every image, the stylesheet and the banner.
+
+### LXXI.14 Which links are live, and `shio share` (SH1111)
+
+A share link is created and then nobody can see it. The token listing hides ephemeral
+rows on purpose, so a curator's token screen is not a list of fifteen-minute credentials
+— and a share link is ephemeral by construction, so the screen for looking at
+credentials is the one place this one never appears.
+
+That is the wrong half of the trade for a link that was **sent to somebody**. An expiry
+bounds the damage and answers neither question a person has after sending one: what is
+live now, and can I stop that one. Revocation already works — `enabled = false` is what
+the filter checks first — so the reading is what is missing.
+
+So the listing takes a side: `GET /api/v2/preview-share` answers the live share rows for
+sites the caller may read, each with its site, what it was minted for, when it expires
+and who made it; `DELETE` on one disables it. The filter is unchanged.
+
+The other half is the sentence at the end of an agent's run. `shio share <address>`
+prints a URL, the most useful thing an agent can hand a person after building something
+unseen, and it calls the mint the console calls so there is one idea of what a share
+link is. `--list` and `--revoke` put the reading and the stopping in the same place.
+
+The assertion is a revoked link refused at the preview, and a listing showing one
+curator's live links and not another tenant's.
 
 ## LXXII The console as an application: cost, resilience and access (Block BG)
 

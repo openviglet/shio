@@ -193,6 +193,42 @@ registered after `BasicAuthenticationFilter` while CORS runs at the head of the 
   session, so the console and the Universal Editor never noticed. `ShPreviewIsNotPublicTest`
   refuses the next reopening, from the outside and with no credentials, because a test over the
   config would only restate it.
+- **A share link opens it for one credential, and the entry above did not move (SH1042).** A draft
+  Shio renders itself could be shown to nobody but a curator, and SH184 minted **nothing** for an
+  internal front end on the reasoning that "a credential for a console-authenticated path would
+  unlock nothing" — correct while the path unlocked for no credential at all, and the reason the
+  only previewable sites were the ones with a deployed external front end. That is the product's
+  premise inverted: a site an agent has just built has neither a front end nor a stakeholder who can
+  log in. Four decisions carry it, and each answers a way this could have gone wrong:
+  - **A new scope, not `PREVIEW`.** `SHARE` grants only `ROLE_PREVIEW_SHARE`, which no rule outside
+    the renderer accepts — `FORM`'s reasoning one surface over. Reusing `PREVIEW` was the obvious
+    move and the escalation: it grants `ROLE_CDA` + `ROLE_CDA_PREVIEW`, so a recipient who lifted
+    the value out of the cookie into a `Key` header would read that site's whole delivery API,
+    drafts included. The confinement runs **both ways** in `ShApiTokenFilter`: only `SHARE`
+    authenticates the preview, and `SHARE` authenticates nowhere else.
+  - **The public route is `/api/v2/preview-share/**`, a sibling of the mint and not a path under
+    `/preview/`.** That is the bullet below applied to this task's own work: an allow-list entry
+    under that prefix is the thing that made every draft readable once. Being public grants
+    nothing — it validates a credential and sets a cookie, and answers **404** without one.
+  - **The credential is exchanged for a cookie, and leaves the URL on the first hop.** A link is
+    copied, forwarded and pasted into a ticket, so a token in the query string ends up in history
+    and in the `Referer` of every image on the page. The cookie is `HttpOnly` (the page is content
+    somebody authored and this instance renders), `SameSite=Lax`, `Secure` when the request is, and
+    `Path=/preview` — so the browser cannot send it to the console or the API even by accident.
+    It is the first cookie Shio itself writes.
+  - **The site is enforced at the renderer, where the site is already resolved.** The filter sees
+    only a path whose first segment may be an id, a furl or a name, and a second resolver there
+    would be a second opinion about SH181's order. `ShPreviewShare.allows` reads an empty allow-list
+    as **nothing** rather than everything, which is where it differs from `ShApiTokenContext` by
+    exactly one bit and in the only direction that matters here. The editor bridge is forced off
+    whatever `?editor=true` says, and the banner stays.
+
+  What this does **not** do yet is narrow a link to one page: the credential is bounded to a site,
+  so a recipient can read that site's drafts until it expires. SH1110 is the narrowing — it needs a
+  target column and an answer about how a shared page's own sub-resources are reached, which the
+  design did not settle — and SH1111 is the other absence: nothing lists the live links, because the
+  token screen hides ephemeral rows by design. `ShPreviewShareTest` drives the refusals and
+  `ShPreviewIsNotPublicTest` is unchanged: no cookie is still no preview.
 - **The general rule this is an instance of:** an allow-list entry outlives the route it was
   written for. Both halves read correctly on their own — the entry names a path that once meant
   something else, the new controller's comment names the rule it believes it inherits — and
