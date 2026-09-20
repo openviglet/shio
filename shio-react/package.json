@@ -20,6 +20,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "surface:digest": "node scripts/surface-digest.mjs",
+    "size": "node scripts/console-size.mjs",
     "console:provision": "node e2e/provision.mjs",
     "console:check": "node e2e/console-check.mjs",
     "test": "node --import ../scripts/test-watchdog.mjs --test \"test/*.test.mjs\""

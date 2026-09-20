@@ -1799,6 +1799,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BG — The console as an application: cost, resilience and access
 
+- **SH1043** — The console's load is measured and bounded: **7,473,483 bytes raw / 2,200,187 gzip** before the first row of content, of which `vendor-graphiql` is 4.8 MB preloaded on every route for one page whose own chunk is 3 KB — the number SH1044 now has to argue against. The reader composes on the bundler's own analysis (the entry plus every `modulepreload` Vite emits for a statically imported chunk) rather than re-deriving the import graph, and refuses a build that declares none rather than measuring the entry alone and passing forever. Ceilings are keyed by each chunk's stem, so an edit does not make them stale, and a chunk that is no longer eager fails as loudly as one that grew. The comparison runs wherever a build exists and says so when there is none; a planted `dist` drives the whole gate on every run, so it has been shown to fail (design §LXXII.1 recorded in `docs/agents/build.md`).
+
 ## Block BH — One content model, many languages
 
 ## Block BI — The areas this round did not reach

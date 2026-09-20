@@ -2315,25 +2315,6 @@ code, so their additions are visible as raises rather than folded into a baselin
 Resilience and access follow, and the assistant dock from Block AX already carries the
 announcements this block would otherwise have to build.
 
-### LXXII.1 A bundle budget, seeded before this round adds code (SH1043)
-
-The design system has a size budget enforced by its own comparator. Shio's gates are the
-Maven suite, the JS suite and conformance, and none looks at a byte, while the agent's
-cost is governed by a properties file of per-endpoint ceilings with a reason for every
-raise. The analysis measured the console at roughly 7.3 MB raw and 2.16 MB gzip loaded
-before the first row of content.
-
-console-size-budget.json holds one entry per built chunk plus a computed eager total in
-raw and gzip bytes. A test reads the built index.html, resolves the static import graph,
-computes the eager total and fails on a breach, printing both numbers on every run, so a
-raise is a deliberate act with its reason in the commit.
-
-The seed is taken now, before Blocks BC to BF add console code, so their cost appears as
-raises they must argue for rather than being absorbed into a baseline. The diagnostics
-endpoint reports the eager total as a finding, so an agent can check its own frontend
-change without a browser. The assertion is the gate failing on a planted import of a
-large module into the entry.
-
 ### LXXII.2 The editor chunk, loaded when an editor is opened (SH1044)
 
 The analysis measured the real build: the entry chunk statically imports the GraphiQL
@@ -2656,6 +2637,32 @@ So: answer an import with what arrived, by kind, and with whatever the import it
 already knows went wrong — a skipped file, an unresolved post type. A first import on a
 fresh instance is also the moment an operator has the least context to interpret
 silence, which is when a bare created site reads as success.
+
+### LXXII.18 The eager total, from the instance that serves it (SH1112)
+
+SH1043 gave the console a number and two readers: a `pnpm` script and a gate that fails
+a build. Neither is reachable from an instance, so an agent that changed a console file
+and wants to know what it cost needs this checkout, this toolchain and a build — the
+shape P1 exists to refuse, one surface along from where it usually bites.
+
+The instance already serves the artefact. `index.html` and its chunks sit under the
+Spring Boot static root, so the reading the script makes is available to the server with
+no build step and no browser: the entry, the preload links, the stylesheets, their
+bytes.
+
+Where it belongs is the open question. SH1043's design said `/agent/diagnostics`, and
+diagnostics reports **incidents** — something went wrong, with a count and a fix — while
+an eager total is a standing fact about what is deployed. The manifest is where standing
+facts live; `verify` is where one becomes a finding by crossing a line. And that line
+lives in the repository, so a server reporting a breach needs the ceiling shipped with
+the build.
+
+That decides it: a number the caller compares is honest, a verdict needs the ceiling to
+travel with the artefact. The cheap version puts the number on the manifest; the
+complete one ships the budget into the build and lets `verify` judge it.
+
+The assertion is an agent reading the eager total from a running instance and getting
+the bytes the script prints for the same build.
 
 ## LXXIII One content model, many languages (Block BH)
 

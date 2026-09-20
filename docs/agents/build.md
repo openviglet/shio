@@ -1943,3 +1943,42 @@ So `ShBootstrapArgsLintTest` reads the source and requires that a `run(` inside 
 `main(String[] args)` carries them. It reads the parameter's declared name rather than assuming
 `args`, and a second test pins the exact pair of lines that shipped so the rule cannot silently match
 nothing.
+
+## What the console costs to load, measured at last (SH1043)
+
+The agent's cost is governed to the endpoint: `token-budgets.properties` holds a ceiling per
+response, a raise carries its reason, and P3 makes a regression a build failure. The half of the
+product a **person** waits for had no number at all — the three gates are the Maven suite, the JS
+suite and conformance, and none of them looks at a byte. That asymmetry is how a 4.8 MB vendor chunk
+came to be preloaded on every console route with nobody noticing.
+
+**Measured first, and the measurement is what made the task worth doing.** On this tree the console
+loads **7,473,483 bytes raw / 2,200,187 gzip** before the first row of content, and `vendor-graphiql`
+is 4.8 MB of it — preloaded on every route, for one page whose own chunk is 3 KB. That is SH1044,
+and it now has a number to argue against rather than an impression.
+
+- `pnpm --filter shio-react run size` prints the report; `console-size-budget.json` holds the
+  ceilings and a sentence per chunk; `test/console-size-budget.test.mjs` is the gate.
+- **It reads the bundler's own answer.** Which chunks are *eager* is a question about the static
+  import graph and Vite has already answered it: the entry is the `<script type="module">` and every
+  statically imported chunk gets a `<link rel="modulepreload">` in the emitted HTML. Parsing the
+  chunks' own `import` statements would be a second implementation of that analysis, disagreeing
+  with the first on the day a bundler option changes — and the browser reads the same file.
+- **A build with no preload links is refused rather than measured.** Turning `build.modulePreload`
+  off would otherwise leave the reader measuring the entry alone and passing every ceiling forever:
+  the report-zero shape, reached by a config change nobody connected to this gate.
+- **Ceilings are keyed by the chunk's stem**, not its hashed filename, or every edit would make the
+  budget stale. Four kinds of breach are reported, and the last two are the ones a plain total
+  misses: a new eager chunk the budget does not name, and an entry that is no longer eager — so a
+  ceiling cannot outlive the thing it was about, which is exactly what SH1044 is about to do to two
+  of them.
+- **The comparison needs a build and `pnpm test` does not make one**, because `vite build` is a
+  minute against a suite that runs in eight seconds. So it measures wherever a build exists and says
+  out loud when there is none — "no build in this tree" and "the console got smaller" must never
+  read the same. What runs on **every** run is the planted build: a synthetic `dist` drives the
+  reader and the comparison end to end, so the gate has been shown to fail rather than only ever
+  having been run against something that satisfies it.
+- **The seed has ~4% of room under it, and a test asserts that it still does** (SH736's lesson one
+  gate over): a ceiling set to the measurement refuses the next change instead of measuring it, and
+  the cheapest way to pass then is to delete somebody else's feature — the degrade-the-measurement
+  non-goal by name.
