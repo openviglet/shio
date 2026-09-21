@@ -410,6 +410,13 @@ public class ShAgentVerifyService {
         if (requested.contains(ShAgentCheck.PAGE)) {
             pages(scan, findings, notes, declared);
         }
+        // SH1055 — over the same pages the check above renders. Its own group rather than a rule
+        // inside `page`, because a team running a publish gate asks for accessibility by name and
+        // because the cost is a caller's decision: on a site with a thousand pages this is a
+        // thousand renders, which is exactly what a group is for in this vocabulary.
+        if (requested.contains(ShAgentCheck.A11Y)) {
+            accessibility(scan, findings, notes);
+        }
         if (requested.contains(ShAgentCheck.DIAGNOSTICS)) {
             diagnostics(findings);
         }
@@ -2281,6 +2288,61 @@ public class ShAgentVerifyService {
         if (!read.isEmpty()) {
             notes.add("The page check rendered " + read.size() + " page(s) and resolved "
                     + references + " reference(s) against the URL each page is served at.");
+        }
+    }
+
+    /**
+     * SH1055 — the accessibility family, over the pages a visitor actually receives.
+     *
+     * <h2>Why it renders rather than reading the stored fields</h2>
+     *
+     * <p>Every rule here is about the <em>document</em>: whether it declares a language, whether it
+     * marks a main region, whether the headings its layout and its sections compose into form an
+     * outline. None of that is knowable from a post's fields — a page is a layout, a theme and a
+     * list of sections, and the defect is usually in the layout rather than in anything a curator
+     * typed. The same subjects and the same cap as {@code page}, for the same reasons.</p>
+     *
+     * <h2>It says what it read, even when it found nothing</h2>
+     *
+     * <p>A clean accessibility pass and a pass that rendered no pages are the same report without
+     * this note, and one of them is a site with no published pages at all.</p>
+     */
+    private void accessibility(Scan scan, List<Finding> findings, List<String> notes) {
+        String check = ShAgentCheck.A11Y.wireName();
+        Map<String, Map<String, String>> bindings = new HashMap<>();
+        List<ShPostUnified> subjects = scan.published().stream()
+                .filter(post -> post.getShSite() != null && !isBlank(post.getFurl()))
+                .filter(post -> isPage(post, bindings))
+                .sorted(Comparator.comparing(ShAgentVerifyService::address))
+                .toList();
+        List<ShPostUnified> read = subjects.size() > MAX_PAGES
+                ? subjects.subList(0, MAX_PAGES)
+                : subjects;
+        int violations = 0;
+        for (ShPostUnified post : read) {
+            String address = address(post);
+            String html;
+            try {
+                html = pageRenderService.render(post.getShSite().getId(),
+                        ShAddress.normalizePath(post.getFurl()), ShPostState.PUBLISHED).html();
+            } catch (ShPageRenderService.ShPageRedirectException | ShTeachingException cannotRender) {
+                // A page that does not render is `page`'s finding and not this one's. Reporting it
+                // twice under two rule names would make one repair look like two defects.
+                continue;
+            }
+            for (ShHtmlAccessibility.Violation violation : ShHtmlAccessibility.of(html)) {
+                violations += 1;
+                findings.add(Finding.warning(check, violation.rule(), address, null,
+                        violation.detail(), violation.fix()));
+            }
+        }
+        if (subjects.size() > read.size()) {
+            notes.add("The accessibility check read " + read.size() + " of " + subjects.size()
+                    + " published page(s) and stopped at the cap — the rest were not checked.");
+        }
+        if (!read.isEmpty()) {
+            notes.add("The accessibility check read " + read.size() + " rendered page(s) and "
+                    + "found " + violations + " violation(s).");
         }
     }
 

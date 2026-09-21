@@ -4,9 +4,9 @@ Empty required fields, references to posts that do not exist, images with no byt
 pages on one URL, links that resolve to nothing. Errors exit 1; warnings are counted.
 
   --site <idOrName>    Scope to one site
-  --checks <groups>    projection,replication,content,routes,page,diagnostics,delivery
-                       (default: all that can run). projection and replication read the
-                       file tree only; page renders each published page
+  --checks <groups>    projection,replication,content,routes,page,a11y,diagnostics,
+                       delivery (default: all that can run). projection and replication
+                       read the file tree only; page and a11y render each published page
   --delivery           Also fetch each published route from the site's own origin
   --strict             Fail on warnings too (off by default)
   --limit <n>          Findings to print (counts cover the whole run)

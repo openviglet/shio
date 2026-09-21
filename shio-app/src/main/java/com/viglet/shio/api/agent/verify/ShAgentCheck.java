@@ -86,7 +86,32 @@ public enum ShAgentCheck {
      * 5xx). Included by default because the failures it reports are invisible
      * everywhere else, and on a healthy instance it reports nothing and costs nothing.
      */
-    DIAGNOSTICS;
+    DIAGNOSTICS,
+
+    /**
+     * SH1055 — what is wrong with a published page for somebody who is not looking at it.
+     *
+     * <p>A CMS's real accessibility exposure is the pages it publishes, and verify had exactly one
+     * rule about them. This is the family: the heading outline, the document's language, a link
+     * with no name, a page with no main region, a form control nothing labels — each composed over
+     * what {@link #PAGE} already renders, so it costs a walk of bytes that exist rather than a
+     * second render.</p>
+     *
+     * <h2>Where `image-no-alt` and `asset-no-alt` stayed, and why</h2>
+     *
+     * <p>They are accessibility rules and they are <b>not</b> here. Both need no render — one reads
+     * a stored field, the other reads the asset table — which is what makes them cheap enough to
+     * have always been in {@code content}, and moving them would mean {@code checks=content} quietly
+     * stopped reporting undescribed images for every caller that has been asking for it. A group is
+     * a cost boundary in this vocabulary, not a subject index.</p>
+     *
+     * <h2>Contrast is not here either</h2>
+     *
+     * <p>The design named it, and it needs a theme's declared token pairs resolved to colours —
+     * which is SH1051's subject and is blocked outside this repository. A rule that guessed at the
+     * pairs would report on the guess.</p>
+     */
+    A11Y;
 
     public String wireName() {
         return name().toLowerCase(Locale.ROOT);

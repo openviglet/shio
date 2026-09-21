@@ -546,8 +546,8 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   not a defect. **Skipped when the site publishes nothing** (no front door is missing from a
   building with no rooms) and **skipped on a scoped run** — every other `routes` rule is about a
   subject the run looked at, and this one is about the site.
-- `GET /agent/verify` — the content-side `tsc` (SH99/SH100). `checks=content,routes,diagnostics`
-  (all by default), `site=`, `limit=`. **`ok` is false only for an *error*** — a warning is
+- `GET /agent/verify` — the content-side `tsc` (SH99/SH100).
+  `checks=content,routes,page,a11y,diagnostics` (all by default), `site=`, `limit=`. **`ok` is false only for an *error*** — a warning is
   something the CMS cannot prove from inside itself (an empty folder, a link that may be a
   front-end route), and a gate that failed on those is a gate people bypass. Every finding
   carries an SH79 address and a `fix`. `found` vs `findings` makes a cut visible (SH138's rule).
@@ -3763,3 +3763,52 @@ and replaced it with a naming convention, which is a belief about the code. The 
 **call sites**: every `data.put`/`putArray`/`remove` in the service, resolving the key through
 whichever class declares it, and counting a bare string literal too. What the writer writes is a
 fact about its statements, so that is what is read.
+
+## `checks=a11y` — the page as somebody who is not looking at it receives it (SH1055)
+
+A CMS's real accessibility exposure is the pages it **publishes**, and verify had one rule about
+them. The family is five rules read off the rendered document: `heading-skip`, `lang-missing`,
+`link-no-text`, `landmark-missing`, `form-label-missing`. Each is about the *document* rather than
+about any post's fields — whether the layout declares a language, marks a main region, composes an
+outline — which is why it renders rather than reading stored values, over the same subjects and the
+same cap as `page`. `ShHtmlAccessibility.of(html)` is pure, so the rules are testable without a
+site.
+
+**Its own group, not rules inside `page`.** A team running a publish gate asks for accessibility by
+name, and on a site with a thousand pages the cost is a caller's decision. A group is a cost
+boundary in this vocabulary.
+
+**`image-no-alt` and `asset-no-alt` stayed in `content`,** which reads as an inconsistency and is
+not one. Both need no render — one reads a stored field, the other the asset table — and that is
+what makes them cheap enough to be on by default. Moving them would mean `checks=content` quietly
+stopped reporting undescribed images for every caller already asking for it. Contrast, which the
+design named, needs a theme's declared token pairs resolved to colours: that is SH1051's subject,
+and a rule that guessed at the pairs would report on the guess.
+
+**Every rule is conservative, and the fixture that proves it is the second one.** A rule that fires
+on a page that is fine is a rule somebody turns off, and the four that were right go with it. So a
+link named by the `alt` of the image inside it, a control wrapped in its own `<label>`, a
+`role="main"` instead of a `<main>`, an `<a name>` with no `href`, a fragment with no `<html>` — all
+real, all common, all silent. `ShHtmlAccessibilityTest` runs the one-of-each page and then the
+*correct* form of each of those same shapes. Only the first heading jump is reported and unnamed
+links are deduplicated per `href`: a page whose sections are all one level too deep is one repair,
+not forty sentences.
+
+**A page that will not render is skipped here** — `page` renders the same pages and has already
+reported it, and a second finding under an a11y rule name would make one broken template read as
+two defects. That is the one silent catch this added (`ShSilentCatchInventoryTest`, api 80 to 81).
+
+### What it found on its first run: our own blueprint
+
+`marketing-site` — the blueprint the headline benchmark applies, and the starting point this
+product recommends — produced pages with **no `<main>`** and **no `<h1>`**: the section template
+emitted `<h2>` for every section, so the first heading on every page skipped a level. Both rules
+fired on all three published pages, and the repair is two lines of the layout: the section loop
+wrapped in `<main>`, and `{{#if @first}}` choosing `<h1>` for the first section's heading — the data
+frame `getRelation` has published since SH772, used for the case its own note names.
+
+The measurement is the argument for repairing the blueprint rather than raising the budget.
+`ShAgentTaskBenchmarkTest.buildMarketingSite` came to **4432 tokens against a 4000 ceiling** with
+the findings, and **3972** with the blueprint repaired — under the ceiling, which did not move. Six
+warnings about Shio's own template would otherwise have been the first thing every agent building a
+marketing site read.

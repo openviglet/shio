@@ -1555,6 +1555,31 @@ The assertion is a repo-wide scan: no tracked source file contains a control cha
 in the C0 range other than tab and newline. Three files named on the first run; a fourth
 is the finding.
 
+### LXIV.21 `--delivery` asks for more and sends less (SH1120)
+
+`withDelivery` in `cli/src/commands/verify.mjs` composes the check list when
+`--delivery` is passed without `--checks`. Its fallback is the literal
+`content,routes,diagnostics`, and the comment above it argues — correctly — that sending
+`delivery` alone "would quietly drop the rules that do not need a network". That list is
+the bug the comment warns about: the server's default is every group, and this
+hand-written copy has been missing `page` since SH516 and now misses `a11y` too. So
+`shio verify --delivery` runs *fewer* checks than `shio verify`, which is the opposite
+of what the flag promises, and `verify.test.mjs` pins the narrower list as if it were
+correct.
+
+A client-side copy of a server-side default is the shape, not the two group names. The
+server already answers `all`, and already adds `delivery` to the default set when
+fetching is on (`ShAgentCheck.defaults`), so the CLI needs to name nothing: with no
+`--checks`, `--delivery` can send `all` and let the server compose the set. That removes
+the list from the client permanently, which is the point — a fourth group will be added
+and this line would be missed again.
+
+The fix is `withDelivery` sending `all` when the caller named no checks, keeping the
+explicit list when they did, and the test asserting the request no longer narrows the
+run. The durable half is an assertion that the CLI names no check group of its own
+anywhere: a wired list here is a second vocabulary that drifts from the one the server
+publishes.
+
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key
@@ -2456,25 +2481,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.13 An accessibility check family over delivered pages (SH1055)
-
-A CMS's real accessibility liability is the pages it publishes. The verify inventory has
-one accessibility rule, image-no-alt, which SH1031 makes reachable. There is no rule for
-heading order, document language, empty links, landmarks or form labels, although the
-outline reader already parses headings and the render endpoint already reports
-landmarks, links and images.
-
-Add a checks=a11y family composed over what the render path builds: heading-skip,
-lang-missing, link-no-text, landmark-missing and form-label-missing, with image-no-alt
-and asset-no-alt folded in, each carrying an address and a fix. Contrast belongs here
-too, since the appearance digest already inventories classes and a theme's declared
-token pairs can be measured with the same arithmetic BG9 uses for the console.
-
-The family runs in shio verify, in the Insights panel from SH1013, and as a selectable
-check in BA8's publish gates, so a team can refuse to publish a page that fails it. The
-assertions render a fixture page with one violation of each rule and read each finding
-with its address.
-
 ### LXXII.14 The console lint is red and only CI runs it (SH1075)
 
 Found running `pnpm lint` in shio-react while moving files for SH961, not by reading
@@ -3084,3 +3090,28 @@ So the budget needs a page that renders: a layout, a container declaring what it
 accepts, and a couple of section types provisioned. The assertion is two keys, one for
 the plain read and one for the catalogue, each measured against a page that actually
 composes.
+
+### LXXIV.11 A blueprint nobody applies is a blueprint nothing checks (SH1121)
+
+`checks=a11y` found two rules broken by `marketing-site`'s layout — no `<main>`, and a
+first heading of `<h2>` — and that one was repaired in the same commit, because the
+headline benchmark applies it and went over its token budget. `landing` has exactly the
+same defect and no benchmark, so nothing reported it: its PageLayout emits `<html lang>`
+and a `<body>` of sections, no main region, and no `h1` anywhere on any page it builds.
+
+Three of the six blueprints ship a PageLayout. `blog` is clean, `marketing-site` is now
+clean, and `landing` is not. The other three — `docs`, `product-catalog`,
+`nextjs-starter` — carry no layout of their own, and the starter's markup lives in
+`files/app/layout.tsx`, which no Shio check renders. That is worth confirming rather
+than assuming.
+
+The repair follows the sibling's: wrap the section loop in `<main>`, and choose `<h1>`
+for the first section's heading through the `@first` data frame `getRelation` has
+published since SH772. It is small, and the reason this is a task rather than a typo is
+the second half.
+
+**A blueprint nobody applies is a blueprint nothing checks.** Every appliable unit this
+product recommends should be provably clean against our own gate, and the way to know
+that is an assertion rather than a sweep: apply each blueprint that ships a layout,
+render a page, and assert `a11y` reports nothing. That fails on the blueprint added next
+year, which a fixed list of three names cannot.

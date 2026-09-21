@@ -218,7 +218,13 @@ class ShSilentCatchInventoryTest {
             // exists to remove. Each logs through ShIoFailure.describe (SH756), and the listing is
             // the observable: a rendition the capture could not write is one the dialog does not
             // offer, so a revert is never promised over bytes that are not there.
-            "api", 80,
+            // SH1055 RAISES it, 80 to 81, for the one catch the accessibility pass needs: a page
+            // that will not render is skipped there because `page` renders the same pages and has
+            // already reported it. The defect is in the report — under the rule that owns it — and
+            // a second finding under an a11y rule name would make one broken template read as two
+            // defects. This is the narrowest form of the judgement above: not "not worth
+            // reporting", but "reported by the check whose subject it is".
+            "api", 81,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.
