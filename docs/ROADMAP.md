@@ -114,9 +114,9 @@
 
 ## Block BH — One content model, many languages
 
-- 🛠 **SH1060** (deps: SH1058 ✅, SH1022 ✅) **no surface shows translation coverage, so what is missing in pt-br is a full scan nobody runs** — shio_find cannot filter by locale though every row carries one, and the only coverage report is a warning that returns early on a scoped scan. → §LXXIII.5
+- ⏳ **SH1060** (deps: SH1058 ✅, SH1022 ✅) **no surface shows translation coverage, so what is missing in pt-br is a full scan nobody runs** — No endpoint reports current, stale and missing per locale in one read, and the console has no Languages board to work from. → §LXXIII.5
 - 📋 **SH1061** (deps: SH1056 ✅) **translating means leaving the source, so the two languages are never visible together** — The whole translation interface is a menu that navigates to the sibling post, so a translator works from memory or a second browser tab. → §LXXIII.6
-- 📋 **SH1062** (deps: SH1060, SH1006) **a curator cannot ask the connected agent to translate a page or fill a locale's gaps** — Shio hosts no model, and the assistant's request relay has no translation form, so the coverage board's missing cells can be read and not handed to the agent. → §LXXIII.7
+- 📋 **SH1062** (deps: SH1060 ⏳, SH1006) **a curator cannot ask the connected agent to translate a page or fill a locale's gaps** — Shio hosts no model, and the assistant's request relay has no translation form, so the coverage board's missing cells can be read and not handed to the agent. → §LXXIII.7
 - 📋 **SH1125** (deps: SH1056 ✅) **the browser's locale chip does not say which row is the site's default language** — SH1059's design asked for it once a site could declare a default; the console can read the policy now and the browser never asks for it. → §LXXIII.8
 - 📋 **SH1128** (deps: SH1123 ✅) **a post's availableLocales names a translation that exists only as a draft, to a production token** — translate creates a DRAFT and the group read asks for no state, so a switcher links to a page its own token gets a 404 for while the translation is written. → §LXXIII.9
 - 📋 **SH1130** (deps: SH1057 ✅) **nothing flags a declared locale no page is written in, so every URL in it quietly serves another language** — The route accepts a declared locale and falls back along the chain, so a locale the site promises and never wrote looks served while showing none of it. → §LXXIII.10
@@ -165,6 +165,13 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
+
+## Done when — SH1060
+
+- **One read answers a site's coverage, and the console works from it** A coverage read
+  returns per locale the current, stale and missing pages with their addresses from one
+  grouped query, and the console's Languages board shows a row per group and a cell per
+  locale — the board's counts asserted against the read's and against find's.
 
 ## Non-goals (do NOT add as tasks)
 

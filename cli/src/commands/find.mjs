@@ -42,7 +42,7 @@ export const HELP = helpText("find");
  * server refuses, which is a worse message than the one the usage text gives.
  */
 export const QUERY_FLAGS = [
-  "site", "folder", "subtree", "type", "state", "locale",
+  "site", "folder", "subtree", "type", "state", "locale", "missingLocale",
   "modifiedSince", "modifiedBefore", "author", "modifier", "q",
 ];
 

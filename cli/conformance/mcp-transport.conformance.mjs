@@ -52,7 +52,7 @@ import { openMcp } from "./support/mcp-stdio.mjs";
  * cost the project had decided it would pay. `cli/test/budget-restatement.test.mjs` now holds this
  * constant against that key, in `pnpm test`, where both sides are files and no instance is needed.
  */
-const TOOLS_LIST_BUDGET_TOKENS = 2960;
+const TOOLS_LIST_BUDGET_TOKENS = 2975;
 
 /** The rough-and-honest conversion the budget file itself uses: four characters to a token. */
 const CHARS_PER_TOKEN = 4;

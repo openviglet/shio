@@ -176,6 +176,9 @@ class ShContentQuerySurfacesTest {
                 ShContentQuery.ALL.withModifiedSince(RECENT.toString()),
                 ShContentQuery.ALL.withModifiedBefore(RECENT.toString()),
                 ShContentQuery.ALL.withType(typeName).withAuthor("ana").withLocale("pt_BR"),
+                // SH1060 — the coverage word answers on both surfaces or the console's board and
+                // the agent's work list are two different backlogs for one site.
+                ShContentQuery.ALL.withMissingLocale("de"),
                 ShContentQuery.ALL.withState("published").withModifiedSince("2026-01-01"))) {
 
             assertThat(fromConsole(filter))

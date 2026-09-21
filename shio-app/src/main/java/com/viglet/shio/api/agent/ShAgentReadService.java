@@ -282,6 +282,10 @@ public class ShAgentReadService {
             // whose trash is full — the one answer this call must not give.
             matches = trashed(sites, query.type()).stream()
                     .filter(post -> matchesInMemory(post, query))
+                    // SH1060 — asked explicitly here, because this is the one listing that cannot
+                    // use the predicate: a filter the query accepts and a listing quietly drops
+                    // answers 200 with every row, which is what the vocabulary exists to prevent.
+                    .filter(post -> matchesMissingLocale(post, query.missingLocale()))
                     .toList();
         } else {
             matches = shPostUnifiedRepository.findByQuery(
@@ -289,7 +293,7 @@ public class ShAgentReadService {
                     wanted == null ? BOTH_STATES : List.of(wanted),
                     folderIds, query.q(), contentQueryResolver.typeId(query), query.locale(),
                     query.modifiedSince(), query.modifiedBefore(), query.author(),
-                    query.modifier());
+                    query.modifier(), query.missingLocale());
         }
 
         // SH545 — free while both rows are in hand, and one id-only projection when `state`
@@ -1149,6 +1153,23 @@ public class ShAgentReadService {
      * {@code ShPostUnifiedRepository.QUERY_FILTERS} — inclusive below, exclusive above, the
      * creation date standing in for a post never edited.</p>
      */
+    /**
+     * SH1060 — whether this post's group has no translation in {@code locale}, for the trash.
+     *
+     * <p>The same rule the {@code missingLocale} predicate states, asked a row at a time because a
+     * trashed row is outside the index that predicate reads. One query per row and only when the
+     * filter is set, over a listing bounded by what is in the trash.</p>
+     */
+    private boolean matchesMissingLocale(ShPostUnified post, String locale) {
+        if (locale == null || locale.isBlank()) {
+            return true;
+        }
+        String group = post.getTranslationGroupId();
+        return group != null && group.equals(post.getId())
+                && shPostUnifiedRepository.findByTranslationGroupId(group).stream()
+                        .noneMatch(sibling -> locale.equals(sibling.getLocale()));
+    }
+
     private static boolean matchesInMemory(ShPostUnified post, ShContentQuery query) {
         java.time.Instant changed = post.getModifiedDate() == null
                 ? post.getDate() : post.getModifiedDate();

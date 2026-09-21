@@ -425,6 +425,7 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                             @Param("before") Instant before,
                                             @Param("author") String author,
                                             @Param("modifier") String modifier,
+                                            @Param("missingLocale") String missingLocale,
                                             Pageable pageable);
 
     /**
@@ -436,10 +437,18 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     default Page<ShPostUnified> pageConsoleRows(Collection<String> folderIds, String query,
             String typeId, ShPostState state, String locale, Instant since, Instant before,
             String author, String modifier, Pageable pageable) {
+        return pageConsoleRows(folderIds, query, typeId, state, locale, since, before, author,
+                modifier, null, pageable);
+    }
+
+    /** As above, narrowed to the groups missing a locale (SH1060); null is every group. */
+    default Page<ShPostUnified> pageConsoleRows(Collection<String> folderIds, String query,
+            String typeId, ShPostState state, String locale, Instant since, Instant before,
+            String author, String modifier, String missingLocale, Pageable pageable) {
         return pageConsoleRowsLike(folderIds,
                 query == null || query.isBlank() ? null : fullTextPattern(query), typeId, state,
                 blankToNull(locale), since, before, lowerOrNull(author), lowerOrNull(modifier),
-                pageable);
+                blankToNull(missingLocale), pageable);
     }
 
     /**
@@ -476,19 +485,29 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                          @Param("since") Instant since,
                                          @Param("before") Instant before,
                                          @Param("author") String author,
-                                         @Param("modifier") String modifier);
+                                         @Param("modifier") String modifier,
+                                         @Param("missingLocale") String missingLocale);
 
     /** {@link #findByQueryLower} with the term and the two people columns normalized once. */
     default List<ShPostUnified> findByQuery(Collection<String> siteIds,
             Collection<ShPostState> states, Collection<String> folderIds, String term,
             String typeId, String locale, Instant since, Instant before, String author,
             String modifier) {
+        return findByQuery(siteIds, states, folderIds, term, typeId, locale, since, before, author,
+                modifier, null);
+    }
+
+    /** As above, narrowed to the groups missing a locale (SH1060); null is every group. */
+    default List<ShPostUnified> findByQuery(Collection<String> siteIds,
+            Collection<ShPostState> states, Collection<String> folderIds, String term,
+            String typeId, String locale, Instant since, Instant before, String author,
+            String modifier, String missingLocale) {
         boolean anyFolder = folderIds == null || folderIds.isEmpty();
         return findByQueryLower(siteIds, states, anyFolder,
                 anyFolder ? List.of("") : folderIds,
                 term == null || term.isBlank() ? null : fullTextPattern(term),
                 blankToNull(typeId), blankToNull(locale), since, before,
-                lowerOrNull(author), lowerOrNull(modifier));
+                lowerOrNull(author), lowerOrNull(modifier), blankToNull(missingLocale));
     }
 
     static String blankToNull(String value) {
@@ -749,7 +768,15 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             + " and (:since is null or coalesce(p.modifiedDate, p.date) >= :since)"
             + " and (:before is null or coalesce(p.modifiedDate, p.date) < :before)"
             + " and (:author is null or lower(p.owner) = :author)"
-            + " and (:modifier is null or lower(p.modifier) = :modifier)";
+            + " and (:modifier is null or lower(p.modifier) = :modifier)"
+            // SH1060 — "what is missing in pt-br", as a predicate rather than a scan. A group with
+            // no member in that locale, answered on the group's SOURCE alone (`p.id =
+            // p.translationGroupId`, SH383's anchor): reporting every member would answer one gap
+            // as many times as the page already has languages, and the source is the page somebody
+            // translates FROM. The subquery is on this table, so no join and no SH22 hazard.
+            + " and (:missingLocale is null or (p.id = p.translationGroupId and not exists ("
+            + "   select 1 from ShPostUnified t where t.translationGroupId = p.translationGroupId"
+            + "     and t.locale = :missingLocale)))";
 
     /**
      * Turns a user-typed term into the LIKE pattern {@link #FULLTEXT_PREDICATE} needs:

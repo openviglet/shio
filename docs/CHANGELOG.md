@@ -1823,6 +1823,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1127** — SH1057's CDA half: the three listings and the client take a locale as a database predicate, so a pt-br page of fifty holds fifty pt-br posts and totalPosts counts them.
 - **SH1129** — SH1057's GraphQL half: posts carry both fields and postByUrl and posts take locale; a page reads its groups in one query, 5 statements at 5 rows or 25 against 105 per row.
 - **SH1058** — shio_read, the file projection and the console's languages menu each say a translation has fallen behind its source, and say nothing when it has not (design §LXXIII.3 superseded: translatedFrom would put a digest in a file with nothing to compare it against, so the projection carries translationStale, the fact a reader can act on) (design §LXXIII.3 recorded in `docs/agents/renderer.md`).
+- **SH1060 (the coverage question as a filter)** — missingLocale joins the query vocabulary on every surface, so what is still to translate into a locale is one predicate and one row per page to write.
 
 ## Block BI — The areas this round did not reach
 

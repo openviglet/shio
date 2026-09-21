@@ -4158,6 +4158,7 @@ answer was a `curl` with a hand-built query string.
 ```
 shio find --state draft --modified-since 2026-09-01 --modifier ana
 shio find --site Blog /blog --type Article
+shio find --site Blog --missing-locale pt-br
 ```
 
 Every flag is a word the server takes, and that is not a coincidence held together by care: the

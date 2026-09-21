@@ -166,7 +166,7 @@ const unifiedService = new ShPostUnifiedService()
  */
 const BROWSER_LIST = {
   q: "", sort: "order", view: "list",
-  type: "", state: "", locale: "", modifiedSince: "", modifiedBefore: "",
+  type: "", state: "", locale: "", missingLocale: "", modifiedSince: "", modifiedBefore: "",
   author: "", modifier: "", subtree: "",
 }
 
@@ -174,6 +174,8 @@ const BROWSER_LIST = {
 function browserFilters(value: Record<keyof typeof BROWSER_LIST, string>): ShContentFilters {
   return {
     q: value.q, type: value.type, state: value.state, locale: value.locale,
+    // SH1060 — the coverage question, asked of a folder: which pages here have no pt-br yet.
+    missingLocale: value.missingLocale,
     modifiedSince: value.modifiedSince, modifiedBefore: value.modifiedBefore,
     author: value.author, modifier: value.modifier, subtree: value.subtree,
   }

@@ -3607,10 +3607,19 @@ own.
 ## One query vocabulary, four surfaces (SH1022)
 
 `/agent/find` filters by **the words every content listing filters by**: `site`, `folder`,
-`subtree`, `type`, `state`, `locale`, `modifiedSince`, `modifiedBefore`, `author`, `modifier` and
-`q`, parsed by `ShContentQuery`. The same eleven are served by `shio_find`, by `shio find` and —
-minus the two the path already answers — by the console's `GET /api/v2/object/{id}/list`, and they
-mean the same thing on each. `author` is the `owner` column, `modifier` the `modifier` column; both
+`subtree`, `type`, `state`, `locale`, `missingLocale`, `modifiedSince`, `modifiedBefore`, `author`,
+`modifier` and `q`, parsed by `ShContentQuery`. The same twelve are served by `shio_find`, by
+`shio find` and — minus the two the path already answers — by the console's
+`GET /api/v2/object/{id}/list`, and they mean the same thing on each.
+
+**`missingLocale` is the coverage question (SH1060):** the pages whose translation group has *no*
+member in that tag — "what is still to translate into pt-br" as a predicate rather than a scan
+whose cost grows with the site. It answers on the group's **source** (`p.id =
+p.translationGroupId`, SH383's anchor), so a page already in three languages and missing a fourth
+is one row and not three: a work list with one entry per thing to do. It composes with the rest of
+the vocabulary like any other word, and the trash listing — the one read that cannot use the
+predicate, since a trashed row is outside that index — asks the same question a row at a time
+rather than dropping the filter. `author` is the `owner` column, `modifier` the `modifier` column; both
 match case-insensitively. The window is **inclusive below and exclusive above**, so two adjacent
 ranges partition the timeline instead of overlapping on one instant, and it reads
 `coalesce(modifiedDate, date)` because "changed this week" that excludes what was *written* this

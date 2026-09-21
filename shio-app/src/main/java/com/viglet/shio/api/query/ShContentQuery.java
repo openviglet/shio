@@ -59,6 +59,10 @@ import com.viglet.shio.api.post.ShContentPerspective;
  *                       {@link ShContentPerspective} accepts, validated here so every surface
  *                       refuses the same typo
  * @param locale         a locale tag as stored, e.g. {@code en} or {@code pt_BR}
+ * @param missingLocale  SH1060 — the pages whose translation group has <b>no</b> member in this
+ *                       locale, which is "what is still to translate into pt-br" as a filter
+ *                       rather than a scan. Answered on the group's source alone, so one gap is
+ *                       one row however many languages the page already has
  * @param modifiedSince  inclusive lower bound on the last change
  * @param modifiedBefore exclusive upper bound on the last change
  * @param author         who created the post — the {@code owner} column, matched case-insensitively
@@ -78,12 +82,12 @@ import com.viglet.shio.api.post.ShContentPerspective;
 public record ShContentQuery(String site, String folder, Boolean subtree, String type,
         String state, String locale, Instant modifiedSince, Instant modifiedBefore, String author,
         String modifier, String q, String sort, Integer page, Integer size, Integer folderPage,
-        Integer folderSize) {
+        Integer folderSize, String missingLocale) {
 
     /** The vocabulary, in the order the design names it — the {@code allowed} set of a refusal. */
     public static final List<String> KEYS = List.of("site", "folder", "subtree", "type", "state",
-            "locale", "modifiedSince", "modifiedBefore", "author", "modifier", "q", "sort",
-            "page", "size", "folderPage", "folderSize");
+            "locale", "missingLocale", "modifiedSince", "modifiedBefore", "author", "modifier",
+            "q", "sort", "page", "size", "folderPage", "folderSize");
 
     /** The words that page or order rather than filter — every listing has its own answer. */
     public static final List<String> PAGING =
@@ -95,7 +99,7 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
 
     /** No filter at all: every readable row. */
     public static final ShContentQuery ALL = new ShContentQuery(null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null, null);
 
     /** The most common starting point, and the one a test writes. */
     public static ShContentQuery ofSite(String site) {
@@ -104,70 +108,77 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
 
     public ShContentQuery withSite(String value) {
         return new ShContentQuery(value, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withFolder(String value) {
         return new ShContentQuery(site, value, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withSubtree(Boolean value) {
         return new ShContentQuery(site, folder, value, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withType(String value) {
         return new ShContentQuery(site, folder, subtree, value, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withState(String value) {
         return new ShContentQuery(site, folder, subtree, type, value, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withLocale(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, value, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
+    }
+
+    /** SH1060 — the groups with no translation in this locale, answered on the source. */
+    public ShContentQuery withMissingLocale(String value) {
+        return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize,
+                value);
     }
 
     public ShContentQuery withModifiedSince(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale,
                 instant("modifiedSince", value), modifiedBefore, author, modifier, q, sort, page,
-                size, folderPage, folderSize);
+                size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withModifiedBefore(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
                 instant("modifiedBefore", value), author, modifier, q, sort, page, size,
-                folderPage, folderSize);
+                folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withAuthor(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, value, modifier, q, sort, page, size, folderPage, folderSize);
+                modifiedBefore, value, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withModifier(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, value, q, sort, page, size, folderPage, folderSize);
+                modifiedBefore, author, value, q, sort, page, size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withQ(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, value, sort, page, size, folderPage, folderSize);
+                modifiedBefore, author, modifier, value, sort, page, size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withSort(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, value, page, size, folderPage, folderSize);
+                modifiedBefore, author, modifier, q, value, page, size, folderPage, folderSize, missingLocale);
     }
 
     public ShContentQuery withPaging(Integer pageValue, Integer sizeValue) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
                 modifiedBefore, author, modifier, q, sort, pageValue, sizeValue, folderPage,
-                folderSize);
+                folderSize, missingLocale);
     }
 
     /**
@@ -180,7 +191,7 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
      */
     public ShContentQuery withFolderPaging(Integer pageValue, Integer sizeValue) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, pageValue, sizeValue);
+                modifiedBefore, author, modifier, q, sort, page, size, pageValue, sizeValue, missingLocale);
     }
 
     /** Whether the caller asked for a page of folders rather than all of them. */
@@ -234,6 +245,7 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
             case "type" -> withType(text(value));
             case "state" -> withState(validState(text(value)));
             case "locale" -> withLocale(text(value));
+            case "missingLocale" -> withMissingLocale(text(value));
             case "modifiedSince" -> withModifiedSince(text(value));
             case "modifiedBefore" -> withModifiedBefore(text(value));
             case "author" -> withAuthor(text(value));

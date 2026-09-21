@@ -194,7 +194,7 @@ public class ShObjectNavigationService {
                 Page<ShPostUnified> posts = shPostUnifiedRepository.pageConsoleRows(
                         folderScope(folder, query.subtree()), text, typeId, state, query.locale(),
                         query.modifiedSince(), query.modifiedBefore(), query.author(),
-                        query.modifier(),
+                        query.modifier(), query.missingLocale(),
                         PageRequest.of(pageIndex, pageSize, sort.sort()));
                 Children children = children(folder, query, sort, text);
                 yield mapper.listing(folder.getId(), children.rows(),

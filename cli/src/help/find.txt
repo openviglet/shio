@@ -6,6 +6,7 @@ shio find — the posts matching a query, as addresses and titles
   --type <name>          Post-type name
   --state <state>        published or draft
   --locale <tag>         Locale tag, e.g. pt_BR
+  --missing-locale <tag> Pages with no translation in that tag
   --modified-since <t>   ISO date/instant; inclusive
   --modified-before <t>  ISO date/instant; exclusive
   --author <user>        Created by
@@ -17,6 +18,7 @@ shio find — the posts matching a query, as addresses and titles
 Examples:
   shio find --state draft --modified-since 2026-09-01 --modifier ana
   shio find --site Blog /blog --type Article
+  shio find --site Blog --missing-locale pt-br
 
 The same words GET /api/v2/agent/find, shio_find and the console listing
 take. An unknown one is refused with the list that exists, never ignored.

@@ -43,6 +43,9 @@ public class ShFindTool implements ShMcpTool {
 
     @Override
     public String description() {
+        // The filters are named by the schema below, `missingLocale` among them: a description
+        // restating its own parameters is what `max-per-tool` exists to catch, and the room it
+        // would cost is room the coverage word needs (SH1060).
         return "Find posts by site, type, folder, state, locale, date or author. Addresses "
                 + "and titles, never bodies: read only what you pick.";
     }
@@ -54,18 +57,20 @@ public class ShFindTool implements ShMcpTool {
         // reservation by trimming the nine that were already here, not by raising the ceiling:
         // a schema is read on every turn of every session, which is what P3 is about.
         Map<String, Object> properties = new LinkedHashMap<>();
-        properties.put("site", ShMcpTool.string("Site name; omit for all you can read."));
+        properties.put("site", ShMcpTool.string("Site name; omit for all readable."));
         properties.put("type", ShMcpTool.string("Post-type name, e.g. Article."));
-        properties.put("folder", ShMcpTool.string("Folder path /blog, or folder:<site>/<path>; its subtree."));
+        properties.put("folder", ShMcpTool.string("/blog or folder:<site>/<path>; its subtree."));
         properties.put("subtree", ShMcpTool.string("false: that folder only."));
         properties.put("q", ShMcpTool.string("Full text: title, summary, fields."));
-        properties.put("limit", ShMcpTool.integer("Maximum rows (default 25)."));
+        properties.put("limit", ShMcpTool.integer("Max rows (default 25)."));
         // Worth its schema (P3): without it an MCP-only client is back to the dead end
         // SH146 removed — a result past the cap it can see is truncated and cannot finish.
         properties.put("after", ShMcpTool.string("Cursor from a truncated result."));
         // SH990 — REST's state=, within this tool's SH977 reservation.
         properties.put("state", ShMcpTool.string("published or draft."));
         properties.put("locale", ShMcpTool.string("Locale tag, e.g. pt_BR."));
+        // SH1060 — the coverage question as a filter: what is still to translate.
+        properties.put("missingLocale", ShMcpTool.string("Pages lacking that translation."));
         properties.put("modifiedSince", ShMcpTool.string("ISO date/instant; inclusive."));
         properties.put("modifiedBefore", ShMcpTool.string("ISO date/instant; exclusive."));
         properties.put("author", ShMcpTool.string("Created by."));
@@ -73,7 +78,7 @@ public class ShFindTool implements ShMcpTool {
         // SH991 — within this tool's SH977 reservation, which named a schedule predicate.
         properties.put("scheduled", ShMcpTool.string("any, or from..to in ISO instants."));
         // SH993 — the read half of the release ops, inside the same reservation.
-        properties.put("release", ShMcpTool.string("Release name: its posts. Needs site."));
+        properties.put("release", ShMcpTool.string("Release name: its posts; needs site."));
         return ShMcpTool.schema(properties, List.of());
     }
 
@@ -91,6 +96,7 @@ public class ShFindTool implements ShMcpTool {
                 .withQ(ShMcpArgs.string(arguments, "q"))
                 .withState(ShMcpArgs.string(arguments, "state"))
                 .withLocale(ShMcpArgs.string(arguments, "locale"))
+                .withMissingLocale(ShMcpArgs.string(arguments, "missingLocale"))
                 .withModifiedSince(ShMcpArgs.string(arguments, "modifiedSince"))
                 .withModifiedBefore(ShMcpArgs.string(arguments, "modifiedBefore"))
                 .withAuthor(ShMcpArgs.string(arguments, "author"))

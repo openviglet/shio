@@ -31,6 +31,8 @@ export interface ShContentFilters {
   type?: string
   state?: string
   locale?: string
+  /** SH1060 — the pages with no translation in this tag, which is the coverage question. */
+  missingLocale?: string
   modifiedSince?: string
   modifiedBefore?: string
   author?: string
@@ -47,8 +49,8 @@ export interface ShContentFilters {
  * being a piece of component state and became the same URL word every other filter is.
  */
 export const CONTENT_FILTERS = [
-  "q", "type", "state", "locale", "modifiedSince", "modifiedBefore", "author", "modifier",
-  "subtree",
+  "q", "type", "state", "locale", "missingLocale", "modifiedSince", "modifiedBefore", "author",
+  "modifier", "subtree",
 ] as const
 
 /** The filters that carry a value, as query parameters — blank means "not asked for". */

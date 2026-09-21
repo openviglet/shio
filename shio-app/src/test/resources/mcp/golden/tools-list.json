@@ -220,6 +220,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "missingLocale" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "modifiedBefore" : {
             "description" : "#string",
             "type" : "string"
