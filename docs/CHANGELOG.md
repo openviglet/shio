@@ -1817,6 +1817,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 - **SH1056 (the policy and the agent-side reads)** — a site declares its default locale, its enabled set and a fallback order; site.upsert writes it, the pack and the render frame read it, and an unset column still derives.
 - **SH1123** — SH1056's delivery half: the site read carries the policy, and an undeclared site is described by the rows the token reads, so a production switcher never offers a draft-only language.
+- **SH1059** — Each browser row keeps its locale as a chip beside the type, and the checkbox, title and actions all name the row with it, so a page and its translation are two different rows.
 
 ## Block BI — The areas this round did not reach
 

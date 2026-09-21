@@ -2042,6 +2042,16 @@ naming the row: eight identical "Actions" buttons is what a screen reader hears 
 the set in one place is a side benefit — what a row can do was previously readable only by scrolling
 the JSX that drew it.
 
+**A row is named by `rowLabel(item)`, the title plus its locale (SH1059).** The server sent `locale`
+on every post row and the mapping into `ObjectChild` dropped it, so a page and its translation —
+which the unique key permits by design — were two rows with the same title, date and type, and a
+curator deleting "the duplicate" deleted a translation. The locale is a chip beside the post-type
+badge, which is the badge two translations share, and `rowLabel` is what the checkbox, the title
+button and the actions trigger all say, so the two rows differ to a screen reader exactly where they
+differ on screen. Every post carries a locale (`en` by default), so every post row has a chip; a
+folder has none and its label is its name alone. Marking the site's *default* locale on the chip
+waits for the console to read the site's policy, which is SH1056's console half.
+
 ## The filters are the server's, and they travel (SH1022)
 
 The content browser's toolbar has a **Filters** popover — post-type, state, changed-after,

@@ -50,7 +50,8 @@ test("SH1020: no row action is reachable by pointer alone", () => {
       + "screen reader was never told they existed.")
   assert.match(PAGE, /<BentoActionsMenu/u,
     "SH1020: the design system's menu, which is where the site list moved its four in its own sweep")
-  assert.match(PAGE, /triggerLabel=\{t\("content\.rowActions", \{ name: item\.name \}\)\}/u,
+  // SH1059 — per row by `rowLabel`, the title plus its locale, since two translations share a title.
+  assert.match(PAGE, /triggerLabel=\{t\("content\.rowActions", \{ name: rowLabel\(item\) \}\)\}/u,
     "SH1020: named per row, or a screen reader hears eight identical 'Actions' buttons")
 })
 

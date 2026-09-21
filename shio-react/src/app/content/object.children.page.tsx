@@ -102,6 +102,20 @@ interface ObjectChild {
   position?: number
   postTypeName?: string
   publishStatus?: string
+  /**
+   * SH1059 — which language this row is. Two locales of one page are two rows with the same title,
+   * date and type, and without this a curator deleting "the duplicate" deletes a translation.
+   */
+  locale?: string
+}
+
+/**
+ * SH1059 — how a row is named to anything that is not looking at it: the title, and the locale
+ * when there is one. The checkbox, the actions trigger and the title all say this, so two
+ * translations of one page are two different things to a screen reader, as they are on screen.
+ */
+function rowLabel(item: ObjectChild): string {
+  return item.locale ? `${item.name} (${item.locale})` : item.name
 }
 
 /** Posts per request. The folder's subfolders come whole regardless (SH165). */
@@ -408,6 +422,7 @@ export default function ObjectChildrenPage() {
     objectType: "POST" as const,
     postTypeName: post.postTypeTitle || post.postType,
     publishStatus: post.publishStatus,
+    locale: post.locale,
   }))
 
   const combinedItems: ObjectChild[] = [...folderItems, ...postItems]
@@ -1259,7 +1274,7 @@ export default function ObjectChildrenPage() {
                     className="mt-1 shrink-0"
                     checked={selectedItems.has(item.id)}
                     onCheckedChange={() => toggleSelect(item.id)}
-                    aria-label={`Select ${item.name}`}
+                    aria-label={`Select ${rowLabel(item)}`}
                   />
 
                   {/* Icon */}
@@ -1275,6 +1290,7 @@ export default function ObjectChildrenPage() {
                       type="button"
                       className="text-left font-medium text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate block"
                       onClick={() => handleItemClick(item)}
+                      aria-label={rowLabel(item)}
                     >
                       {item.name}
                     </button>
@@ -1291,6 +1307,16 @@ export default function ObjectChildrenPage() {
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                         {item.objectType === "FOLDER" ? t("content.folder") : item.postTypeName || t("content.postLabel")}
                       </Badge>
+                      {/* SH1059 — beside the type, which is the badge two translations share. */}
+                      {item.locale && (
+                        <Badge
+                          variant="secondary"
+                          className="font-mono text-[10px] uppercase px-1.5 py-0 bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+                          title={t("content.localeChip", { locale: item.locale })}
+                        >
+                          {item.locale}
+                        </Badge>
+                      )}
                       {siteName && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                           {siteName}
@@ -1313,7 +1339,7 @@ export default function ObjectChildrenPage() {
                   */}
                   <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
                     <BentoActionsMenu
-                      triggerLabel={t("content.rowActions", { name: item.name })}
+                      triggerLabel={t("content.rowActions", { name: rowLabel(item) })}
                       actions={rowActions(item)}
                     />
                   </div>

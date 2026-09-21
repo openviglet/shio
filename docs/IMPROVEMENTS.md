@@ -1580,6 +1580,30 @@ run. The durable half is an assertion that the CLI names no check group of its o
 anywhere: a wired list here is a second vocabulary that drifts from the one the server
 publishes.
 
+### LXIV.22 The console lint went red where nothing local looks (SH1124)
+
+SH665 repaired the console's `pnpm lint` and moved the 33 findings that existed that day
+into `shio-react/eslint-suppressions.json`, so CI would be green and red on anything
+new. It is red now: `pnpm lint` in `shio-react` reports 19 errors and none of them is in
+the suppressions file. Ten are `react-hooks/set-state-in-effect`, four
+`react-hooks/refs`, three `react-refresh/only-export-components`, one a use before
+declaration, and one a disable comment in the content browser naming
+`jsx-a11y/no-noninteractive-element-to-interactive-role`, a rule the config does not
+load at all.
+
+They arrived one commit at a time because no local gate runs the lint. The three stamped
+gates are the Java suite, `pnpm test` and conformance; the CI job that does run it fails
+before it starts (SH1076), so every red step after that one is invisible too.
+
+Two halves. Fix the nineteen: most are the React Compiler's rules, and each is a
+cascading render or a stale read rather than a style point. Delete the dead disable
+comment. Then make the lint a gate a local run cannot skip, as a fourth stamped gate
+beside the three rather than a step of `pnpm test`, for SH665's own reason that a red
+lint must not hide a red suite. Adding the nineteen to the suppressions file is the
+wrong answer: that file holds what predates the lint, not what it watched arrive.
+
+The assertion is the exit code: `pnpm lint` exits 0 from a clean checkout.
+
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key
@@ -2783,24 +2807,6 @@ because a lagging translation is ordinary work in progress.
 The reads are conditional so a monolingual read stays byte-identical: shio_read reports
 the flag only when true, the file projection carries translatedFrom beside translationOf
 under SH1004's merge rule, and the console shows a badge on the post.
-
-### LXXIII.4 The locale the browser was already sent (SH1059)
-
-The content browser's row type declares locale and the server includes it, and the
-mapping into rows keeps id, title, date, type and publish status and drops it. Two
-locales of one page, which the unique key permits by design, render as two rows with the
-same title, date and type and nothing to tell them apart. A curator deleting the one
-they think is a duplicate deletes a translation.
-
-This is the one-line defect inside the larger coverage task, separated so it does not
-wait for it. Keep locale in the mapping and render it as a chip beside the post-type
-badge, showing the tag and, where the site's enabled set from BH1 exists, marking the
-default locale. The chip is part of each row's accessible name, so a screen reader
-distinguishes the two rows as a sighted reader does.
-
-The assertion carries the id: a folder containing a post and its translation renders two
-rows whose accessible names differ by locale. BH5 builds the coverage view on the same
-field.
 
 ### LXXIII.5 Coverage, from one grouped query, as a board (SH1060)
 

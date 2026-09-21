@@ -310,6 +310,7 @@
   "content.relatorItemNumber": "Item {{number}}",
   "content.browserList": "Content items",
   "content.rowActions": "Actions for {{name}}",
+  "content.localeChip": "Written in {{locale}}",
   "content.bulkPlanTitle": "{{op}} {{count}} item(s)?",
   "content.bulkOp.PUBLISH": "Publish",
   "content.bulkOp.UNPUBLISH": "Unpublish",
