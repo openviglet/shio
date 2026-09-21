@@ -251,10 +251,14 @@ export interface ShioQueryParams {
   postType?: string;
   page?: number;
   size?: number;
+  /** Only posts written in this locale (SH1057), e.g. `"pt-br"`; omitted, every locale. */
+  locale?: string;
 }
 
 /** Paging parameters for listings. */
 export interface ShioPageParams {
   page?: number;
   size?: number;
+  /** Only posts written in this locale (SH1057); a folder's subfolders are listed whatever it is. */
+  locale?: string;
 }

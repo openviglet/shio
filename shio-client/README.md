@@ -41,11 +41,11 @@ console.log(post?.attrs.title);
 |---|---|---|
 | `getSites()` | `GET /site` | `ShioSite[]` |
 | `getSite(siteId)` | `GET /site/{id}` | `ShioSite \| null` |
-| `listChildren(folderId, {page,size})` | `GET /object/{id}/list` | `ShioListing \| null` |
+| `listChildren(folderId, {page,size,locale})` | `GET /object/{id}/list` | `ShioListing \| null` |
 | `getPath(objectId)` | `GET /object/{id}/path` | `ShioPath \| null` |
 | `getPost(postId)` | `GET /post/{id}` | `ShioPost \| null` |
-| `getPostByUrl(siteId, url)` | `GET /post/by-url` | `ShioPost \| null` |
-| `query({siteId,folderId,postType,page,size})` | `GET /query` | `ShioListing` |
+| `getPostByUrl(siteId, url, locale?)` | `GET /post/by-url` | `ShioPost \| null` |
+| `query({siteId,folderId,postType,page,size,locale})` | `GET /query` | `ShioListing` |
 
 - Single-resource getters return `null` on `404`.
 - Any other non-OK status throws `ShioHttpError` (`{ status, url, body }`).
@@ -59,7 +59,8 @@ already make:
 
 ```ts
 const site = await shio.getSite(siteId);
-const post = await shio.getPostByUrl(siteId, url);
+// null when the post at `url` is in another language; its availableLocales say which exist
+const post = await shio.getPostByUrl(siteId, url, locale) ?? await shio.getPostByUrl(siteId, url);
 
 const offered = site?.locales?.enabled ?? [];
 const links = offered.map((tag) => ({

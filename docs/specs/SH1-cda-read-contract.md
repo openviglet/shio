@@ -41,11 +41,16 @@ Base path: `/api/v2/cda`. All GET. All return `application/json`. Auth: `Key: <t
 |---|---|---|---|
 | GET | `/cda/site` | List published sites | — |
 | GET | `/cda/site/{siteId}` | One site (metadata + root folder id) | — |
-| GET | `/cda/object/{folderId}/list` | Children of a folder (subfolders + published posts) | `page`, `size` (default 0/50) |
+| GET | `/cda/object/{folderId}/list` | Children of a folder (subfolders + published posts) | `page`, `size` (default 0/50), `locale` |
 | GET | `/cda/object/{id}/path` | Breadcrumb path for a folder or post | — |
 | GET | `/cda/post/{id}` | One published post (attrs expanded) | — |
-| GET | `/cda/post/by-url` | Resolve a published post by site + friendly URL | `siteId` (req), `url` (req, e.g. `/developers/intro`) |
-| GET | `/cda/query` | Query published posts | `siteId`, `folderId`, `postType`, `page`, `size` |
+| GET | `/cda/post/by-url` | Resolve a published post by site + friendly URL | `siteId` (req), `url` (req, e.g. `/developers/intro`), `locale` |
+| GET | `/cda/query` | Query published posts | `siteId`, `folderId`, `postType`, `page`, `size`, `locale` |
+| GET | `/cda/search` | Full-text search of published posts | `q` (req), `siteId`, `page`, `size`, `locale` |
+
+`locale` (SH53 on `by-url`, SH1127 on the listings) narrows to posts written in that tag — the
+posts only, never a folder's subfolders — and counts only those in `totalPosts`. Omitted or blank,
+every locale, which is what each read answered before it took one.
 
 **404 semantics:** unknown id, unpublished content, or unresolvable url → `404` with the error body in §5.4. Never return a draft.
 

@@ -2760,13 +2760,12 @@ to the one endpoint that accepts it while its response type already declares one
 
 The route half shipped first: a translation lives at its own URL, so the segment selects
 through the translation group along BH1's chain (a 302), recorded in renderer.md.
-Replace the second default constant with the policy's canonical tag. Add locale to CDA
-list, query and search, and locale plus available locales to GraphQL with a locale
-argument, measuring first the per-row available-locales lookup, which is an N+1 on a
-list.
+Replace the second default constant with the policy's canonical tag. CDA list, query and
+search and the client shipped as SH1127. Add locale plus available locales to GraphQL
+with a locale argument, measuring first the per-row available-locales lookup, which is
+an N+1 on a list.
 
-The client gains a locale option and a third argument on post-by-url. A verify finding
-flags a route that accepts a distinction it does not honour.
+A verify finding flags a route that accepts a distinction it does not honour.
 
 ### LXXIII.3 Staleness as a digest comparison (SH1058)
 

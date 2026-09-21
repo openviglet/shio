@@ -77,7 +77,7 @@ export class ShioClient {
     params?: ShioPageParams,
     opts?: ShioRequestOptions
   ): Promise<ShioListing | null> {
-    const qs = buildQuery({ page: params?.page, size: params?.size });
+    const qs = buildQuery({ page: params?.page, size: params?.size, locale: params?.locale });
     return this.requestOrNull<ShioListing>(
       `/object/${seg(folderId)}/list${qs}`,
       opts
@@ -99,14 +99,28 @@ export class ShioClient {
   /**
    * Resolve a published post by site + friendly URL — the call behind catch-all
    * routing (e.g. Next.js `[...slug]`). Returns `null` if unresolved.
+   *
+   * SH1057 — pass a `locale` as the third argument to resolve only the translation
+   * in that language: `getPostByUrl(siteId, "/about", "pt-br")` is `null` when the
+   * post at `/about` is in another language, and its `availableLocales` says which.
    */
+  getPostByUrl(siteId: string, url: string, opts?: ShioRequestOptions): Promise<ShioPost | null>;
   getPostByUrl(
     siteId: string,
     url: string,
+    locale: string,
+    opts?: ShioRequestOptions
+  ): Promise<ShioPost | null>;
+  getPostByUrl(
+    siteId: string,
+    url: string,
+    localeOrOpts?: string | ShioRequestOptions,
     opts?: ShioRequestOptions
   ): Promise<ShioPost | null> {
-    const qs = buildQuery({ siteId, url });
-    return this.requestOrNull<ShioPost>(`/post/by-url${qs}`, opts);
+    const locale = typeof localeOrOpts === "string" ? localeOrOpts : undefined;
+    const options = typeof localeOrOpts === "string" ? opts : localeOrOpts;
+    const qs = buildQuery({ siteId, url, locale });
+    return this.requestOrNull<ShioPost>(`/post/by-url${qs}`, options);
   }
 
   // --- Schema (SH11) ---
@@ -136,6 +150,7 @@ export class ShioClient {
       postType: params?.postType,
       page: params?.page,
       size: params?.size,
+      locale: params?.locale,
     });
     return this.request<ShioListing>(`/query${qs}`, opts);
   }

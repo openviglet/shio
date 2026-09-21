@@ -1440,3 +1440,22 @@ a path is read on every navigation, and resolving an undeclared site's languages
 a front end needs once. The five-argument constructor is that shape, and the console's own `/path`
 (`ShConsoleNavigationMapper`) uses it too. `ShCdaSiteLocalesTest` asserts the declared read, the
 production/preview split, the batched listing and the silent breadcrumb.
+
+## A delivery listing can be asked for one language (SH1127)
+
+SH1057's CDA half. `by-url` was the one read that took `locale`; the folder list, `/query` and
+`/search` took none, so a front end rendering one language of a two-language site got every
+translation beside it and had to drop half *after* paging — a page of fifty held whatever mix the
+database returned and `totalPosts` counted both. All three take `locale` now, and it narrows the
+**posts** only: a folder has no language, and a listing that hid subfolders because a locale was
+set would empty the navigation.
+
+It is a predicate and not a post-filter, for the count: the production reads page in the database,
+through `…AndLocale` finders beside the three paged listings and `LOCALE_FILTER` appended to the six
+search queries — the same `(:locale is null or p.locale = :locale)` spelling SH1022's
+`QUERY_FILTERS` uses, and null is "every locale", so the entry points that take none answer as they
+did. The preview reads already load their two states whole and page draft-preferred in memory, so
+there the locale filters the rows before `draftPreferred` pages them. A blank `?locale=` is
+"not asked", since that is what a front end sends from an unset variable. `@viglet/shio-client`
+passes it on `listChildren`, `query` and — as a third argument, with options still accepted there —
+`getPostByUrl`. `ShCdaLocaleFilterTest` holds all three reads on both paths.

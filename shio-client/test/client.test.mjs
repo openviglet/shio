@@ -149,3 +149,34 @@ test("getPostType encodes the name and translates 404 to null (SH11)", async () 
   const missing = new ShioClient({ baseUrl: BASE, fetch: fakeFetch({ status: 404 }) });
   assert.equal(await missing.getPostType("Nope"), null);
 });
+
+test("SH1057: getPostByUrl takes a locale as its third argument, and options still fit there", async () => {
+  const fetchFn = fakeFetch({ body: { id: "p1", attrs: {}, availableLocales: ["en", "pt-br"] } });
+  const client = new ShioClient({ baseUrl: BASE, fetch: fetchFn });
+  const controller = new AbortController();
+
+  await client.getPostByUrl("s1", "/about", "pt-br", { signal: controller.signal });
+  await client.getPostByUrl("s1", "/about", { signal: controller.signal });
+
+  const localized = new URL(fetchFn.calls[0].url);
+  assert.equal(localized.searchParams.get("locale"), "pt-br",
+    "SH1057: the one CDA read that accepted a locale could not be sent one from the client");
+  assert.equal(fetchFn.calls[0].init.signal, controller.signal);
+  assert.equal(new URL(fetchFn.calls[1].url).searchParams.has("locale"), false,
+    "SH1057: the two-argument form, options in third place, is unchanged");
+  assert.equal(fetchFn.calls[1].init.signal, controller.signal);
+});
+
+test("SH1057: listChildren and query pass a locale, and send nothing when none is given", async () => {
+  const fetchFn = fakeFetch({ body: { folders: [], posts: [], page: 0, size: 10, totalPosts: 0 } });
+  const client = new ShioClient({ baseUrl: BASE, fetch: fetchFn });
+
+  await client.listChildren("f1", { locale: "pt-br" });
+  await client.query({ siteId: "s1", locale: "pt-br" });
+  await client.query({ siteId: "s1" });
+
+  assert.equal(new URL(fetchFn.calls[0].url).searchParams.get("locale"), "pt-br");
+  assert.equal(new URL(fetchFn.calls[1].url).searchParams.get("locale"), "pt-br",
+    "SH1057: a listing a front end cannot narrow to one language shows every translation twice");
+  assert.equal(new URL(fetchFn.calls[2].url).searchParams.has("locale"), false);
+});

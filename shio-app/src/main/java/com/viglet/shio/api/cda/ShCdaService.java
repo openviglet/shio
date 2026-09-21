@@ -163,6 +163,16 @@ public class ShCdaService {
 
     /** As above, over the rows {@code state} names (SH990); a revision is refused for a listing. */
     public Optional<ShCdaListing> listChildren(String folderId, int page, int size, String state) {
+        return listChildren(folderId, page, size, state, null);
+    }
+
+    /**
+     * As above, in one locale (SH1057) — the posts only, since a folder has none.
+     *
+     * @param locale a tag such as {@code pt-br}, or null/blank for every locale
+     */
+    public Optional<ShCdaListing> listChildren(String folderId, int page, int size, String state,
+                                               String locale) {
         List<ShPostState> states = listingStates(state);
         return shFolderRepository.findById(folderId)
                 .filter(folder -> siteAllowed(siteIdOf(folder)))
@@ -170,7 +180,7 @@ public class ShCdaService {
             List<ShCdaFolder> folders = shFolderRepository.findByParentFolderOrderByPositionAsc(folder).stream()
                     .map(mapper::toFolder)
                     .toList();
-            Page<ShPostUnified> posts = pageByFolder(folder, states, pageable(page, size));
+            Page<ShPostUnified> posts = pageByFolder(folder, states, localeOf(locale), pageable(page, size));
             return new ShCdaListing(folderId, folders, summaries(posts),
                     page, size, posts.getTotalElements());
         });
@@ -267,8 +277,14 @@ public class ShCdaService {
     /** As above, over the rows {@code state} names (SH990). */
     public ShCdaListing query(String siteId, String folderId, String postType, int page, int size,
                               String state) {
+        return query(siteId, folderId, postType, page, size, state, null);
+    }
+
+    /** As above, in one locale (SH1057); null or blank is every locale. */
+    public ShCdaListing query(String siteId, String folderId, String postType, int page, int size,
+                              String state, String locale) {
         Page<ShPostUnified> posts = queryPage(siteId, folderId, postType, listingStates(state),
-                pageable(page, size));
+                localeOf(locale), pageable(page, size));
         return new ShCdaListing(folderId, List.of(), summaries(posts),
                 page, size, posts.getTotalElements());
     }
@@ -286,7 +302,7 @@ public class ShCdaService {
     /** As above, over the rows {@code state} names (SH990) — GraphQL's {@code posts(state:)}. */
     public List<ShCdaPost> queryPosts(String siteId, String folderId, String postType, int page, int size,
                                       String state) {
-        return queryPage(siteId, folderId, postType, listingStates(state), pageable(page, size))
+        return queryPage(siteId, folderId, postType, listingStates(state), null, pageable(page, size))
                 .getContent().stream()
                 .map(mapper::toPost)
                 .toList();
@@ -307,6 +323,11 @@ public class ShCdaService {
 
     /** As above, over the rows {@code state} names (SH990). */
     public ShCdaListing search(String q, String siteId, int page, int size, String state) {
+        return search(q, siteId, page, size, state, null);
+    }
+
+    /** As above, in one locale (SH1057); null or blank is every locale. */
+    public ShCdaListing search(String q, String siteId, int page, int size, String state, String locale) {
         List<ShPostState> states = listingStates(state);
         Pageable pageable = pageable(page, size);
         if (q == null || q.isBlank()) {
@@ -314,12 +335,12 @@ public class ShCdaService {
         }
         // The repository normalizes the term (SH131) — lower-casing and %-wrapping it
         // here as well would search for `%%term%%`, which matches nothing.
-        Page<ShPostUnified> posts = searchPage(siteId, q, states, pageable);
+        Page<ShPostUnified> posts = searchPage(siteId, q, states, localeOf(locale), pageable);
         return new ShCdaListing(null, List.of(), summaries(posts), page, size, posts.getTotalElements());
     }
 
     private Page<ShPostUnified> searchPage(String siteId, String term, List<ShPostState> states,
-                                           Pageable pageable) {
+                                           String locale, Pageable pageable) {
         if (siteId != null && !siteId.isBlank()) {
             if (!siteAllowed(siteId)) {
                 return Page.empty(pageable);
@@ -328,26 +349,43 @@ public class ShCdaService {
             if (!types.isEmpty()) {
                 return states.size() > 1
                         ? draftPreferred(shPostUnifiedRepository
-                                .searchBySiteAndTypesAndStateIn(siteId, types, states, term), pageable)
-                        : shPostUnifiedRepository.searchBySiteAndTypesAndState(siteId, types, states.get(0), term, pageable);
+                                .searchBySiteAndTypesAndStateIn(siteId, types, states, term, locale), pageable)
+                        : shPostUnifiedRepository.searchBySiteAndTypesAndState(siteId, types, states.get(0),
+                                term, locale, pageable);
             }
-            return searchBySites(List.of(siteId), term, states, pageable);
+            return searchBySites(List.of(siteId), term, states, locale, pageable);
         }
         // No explicit site: restrict to the token's allow-list when present, else all sites.
         Set<String> allowed = allowedSiteIds();
         if (allowed != null) {
-            return allowed.isEmpty() ? Page.empty(pageable) : searchBySites(allowed, term, states, pageable);
+            return allowed.isEmpty() ? Page.empty(pageable)
+                    : searchBySites(allowed, term, states, locale, pageable);
         }
         return states.size() > 1
-                ? draftPreferred(shPostUnifiedRepository.searchByStateIn(states, term), pageable)
-                : shPostUnifiedRepository.searchByState(states.get(0), term, pageable);
+                ? draftPreferred(shPostUnifiedRepository.searchByStateIn(states, term, locale), pageable)
+                : shPostUnifiedRepository.searchByState(states.get(0), term, locale, pageable);
     }
 
     private Page<ShPostUnified> searchBySites(Collection<String> siteIds, String term,
-                                              List<ShPostState> states, Pageable pageable) {
+                                              List<ShPostState> states, String locale, Pageable pageable) {
         return states.size() > 1
-                ? draftPreferred(shPostUnifiedRepository.searchBySitesAndStateIn(siteIds, states, term), pageable)
-                : shPostUnifiedRepository.searchBySitesAndState(siteIds, states.get(0), term, pageable);
+                ? draftPreferred(shPostUnifiedRepository.searchBySitesAndStateIn(siteIds, states, term, locale),
+                        pageable)
+                : shPostUnifiedRepository.searchBySitesAndState(siteIds, states.get(0), term, locale, pageable);
+    }
+
+    /**
+     * SH1057 — a locale filter, or null for none: blank is "not asked" rather than "the empty tag",
+     * which is what a front end sending `?locale=` from an unset variable means.
+     */
+    private static String localeOf(String locale) {
+        return locale == null || locale.isBlank() ? null : locale.trim();
+    }
+
+    /** SH1057 — the rows of one locale, for the draft-preferred reads that page in memory. */
+    private static List<ShPostUnified> inLocale(List<ShPostUnified> rows, String locale) {
+        return locale == null ? rows
+                : rows.stream().filter(row -> locale.equals(row.getLocale())).toList();
     }
 
     /**
@@ -406,20 +444,20 @@ public class ShCdaService {
     }
 
     private Page<ShPostUnified> queryPage(String siteId, String folderId, String postType,
-                                          List<ShPostState> states, Pageable pageable) {
+                                          List<ShPostState> states, String locale, Pageable pageable) {
         if (folderId != null && !folderId.isBlank()) {
             return shFolderRepository.findById(folderId)
                     .filter(folder -> siteAllowed(siteIdOf(folder)))
-                    .map(folder -> pageByFolder(folder, states, pageable))
+                    .map(folder -> pageByFolder(folder, states, locale, pageable))
                     .orElse(Page.empty(pageable));
         }
         if (siteId == null || siteId.isBlank() || !siteAllowed(siteId)) {
             return Page.empty(pageable);
         }
         if (postType != null && !postType.isBlank()) {
-            return pageBySiteAndType(siteId, postType, states, pageable);
+            return pageBySiteAndType(siteId, postType, states, locale, pageable);
         }
-        return pageBySite(siteId, states, pageable);
+        return pageBySite(siteId, states, locale, pageable);
     }
 
     /**
@@ -427,11 +465,15 @@ public class ShCdaService {
      * preview), one is that state alone. Every listing below takes its states the same way, which is
      * what let SH990 add a perspective without a second copy of each query.
      */
-    private Page<ShPostUnified> pageByFolder(ShFolder folder, List<ShPostState> states, Pageable pageable) {
-        return states.size() > 1
-                ? draftPreferred(shPostUnifiedRepository
-                        .findByShFolderAndStateIn(folder, states), pageable)
-                : shPostUnifiedRepository.findByShFolderAndState(folder, states.get(0), pageable);
+    private Page<ShPostUnified> pageByFolder(ShFolder folder, List<ShPostState> states, String locale,
+                                             Pageable pageable) {
+        if (states.size() > 1) {
+            return draftPreferred(inLocale(shPostUnifiedRepository
+                    .findByShFolderAndStateIn(folder, states), locale), pageable);
+        }
+        return locale == null
+                ? shPostUnifiedRepository.findByShFolderAndState(folder, states.get(0), pageable)
+                : shPostUnifiedRepository.findByShFolderAndStateAndLocale(folder, states.get(0), locale, pageable);
     }
 
     /**
@@ -443,23 +485,31 @@ public class ShCdaService {
      * would get for a real type with no content — never an error.
      */
     private Page<ShPostUnified> pageBySiteAndType(String siteId, String postType, List<ShPostState> states,
-                                                  Pageable pageable) {
+                                                  String locale, Pageable pageable) {
         ShPostType type = shPostTypeRepository.findByName(postType);
         if (type == null) {
             return Page.empty(pageable);
         }
-        return states.size() > 1
-                ? draftPreferred(shPostUnifiedRepository
-                        .findByShSite_IdAndShPostType_IdAndStateIn(siteId, type.getId(), states), pageable)
-                : shPostUnifiedRepository
-                        .findByShSite_IdAndShPostType_IdAndState(siteId, type.getId(), states.get(0), pageable);
+        if (states.size() > 1) {
+            return draftPreferred(inLocale(shPostUnifiedRepository
+                    .findByShSite_IdAndShPostType_IdAndStateIn(siteId, type.getId(), states), locale), pageable);
+        }
+        return locale == null
+                ? shPostUnifiedRepository
+                        .findByShSite_IdAndShPostType_IdAndState(siteId, type.getId(), states.get(0), pageable)
+                : shPostUnifiedRepository.findByShSite_IdAndShPostType_IdAndStateAndLocale(
+                        siteId, type.getId(), states.get(0), locale, pageable);
     }
 
-    private Page<ShPostUnified> pageBySite(String siteId, List<ShPostState> states, Pageable pageable) {
-        return states.size() > 1
-                ? draftPreferred(shPostUnifiedRepository
-                        .findByShSite_IdAndStateIn(siteId, states), pageable)
-                : shPostUnifiedRepository.findByShSite_IdAndState(siteId, states.get(0), pageable);
+    private Page<ShPostUnified> pageBySite(String siteId, List<ShPostState> states, String locale,
+                                           Pageable pageable) {
+        if (states.size() > 1) {
+            return draftPreferred(inLocale(shPostUnifiedRepository
+                    .findByShSite_IdAndStateIn(siteId, states), locale), pageable);
+        }
+        return locale == null
+                ? shPostUnifiedRepository.findByShSite_IdAndState(siteId, states.get(0), pageable)
+                : shPostUnifiedRepository.findByShSite_IdAndStateAndLocale(siteId, states.get(0), locale, pageable);
     }
 
     // --- helpers ---

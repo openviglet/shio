@@ -131,6 +131,20 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     Page<ShPostUnified> findByShSite_IdAndShPostType_IdAndState(String siteId, String postTypeId,
                                                                ShPostState state, Pageable pageable);
 
+    // --- SH1057: the three paged delivery listings above, in one locale. A delivery read that
+    //     asks for pt-br pages the pt-br rows, so its `totalPosts` counts what it can page through
+    //     rather than a total the locale then thins out in memory. ---
+
+    Page<ShPostUnified> findByShFolderAndStateAndLocale(ShFolder shFolder, ShPostState state,
+                                                        String locale, Pageable pageable);
+
+    Page<ShPostUnified> findByShSite_IdAndStateAndLocale(String siteId, ShPostState state,
+                                                         String locale, Pageable pageable);
+
+    Page<ShPostUnified> findByShSite_IdAndShPostType_IdAndStateAndLocale(String siteId, String postTypeId,
+                                                                         ShPostState state, String locale,
+                                                                         Pageable pageable);
+
     /**
      * How many rows point at this post-type, both states counted (SH163's rename report).
      *
@@ -737,60 +751,96 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
         return "%" + normalized + "%";
     }
 
-    @Query("select p from ShPostUnified p where p.state = :state and " + FULLTEXT_PREDICATE)
+    /**
+     * SH1057 — the delivery read's locale, as a predicate every search appends.
+     *
+     * <p>Null means "any locale", which is what every search asked before this existed, so the
+     * entry points below that take no locale pass null and answer exactly as they did.</p>
+     */
+    String LOCALE_FILTER = " and (:locale is null or p.locale = :locale)";
+
+    @Query("select p from ShPostUnified p where p.state = :state and " + FULLTEXT_PREDICATE + LOCALE_FILTER)
     Page<ShPostUnified> searchByStateLike(@Param("state") ShPostState state, @Param("like") String like,
-                                          Pageable pageable);
+                                          @Param("locale") String locale, Pageable pageable);
 
-    @Query("select p from ShPostUnified p where p.state in :states and " + FULLTEXT_PREDICATE)
+    @Query("select p from ShPostUnified p where p.state in :states and " + FULLTEXT_PREDICATE + LOCALE_FILTER)
     List<ShPostUnified> searchByStateInLike(@Param("states") Collection<ShPostState> states,
-                                            @Param("like") String like);
+                                            @Param("like") String like, @Param("locale") String locale);
 
-    @Query("select p from ShPostUnified p where p.shSite.id in :siteIds and p.state = :state and " + FULLTEXT_PREDICATE)
+    @Query("select p from ShPostUnified p where p.shSite.id in :siteIds and p.state = :state and "
+            + FULLTEXT_PREDICATE + LOCALE_FILTER)
     Page<ShPostUnified> searchBySitesAndStateLike(@Param("siteIds") Collection<String> siteIds,
                                                   @Param("state") ShPostState state, @Param("like") String like,
-                                                  Pageable pageable);
+                                                  @Param("locale") String locale, Pageable pageable);
 
-    @Query("select p from ShPostUnified p where p.shSite.id in :siteIds and p.state in :states and " + FULLTEXT_PREDICATE)
+    @Query("select p from ShPostUnified p where p.shSite.id in :siteIds and p.state in :states and "
+            + FULLTEXT_PREDICATE + LOCALE_FILTER)
     List<ShPostUnified> searchBySitesAndStateInLike(@Param("siteIds") Collection<String> siteIds,
                                                     @Param("states") Collection<ShPostState> states,
-                                                    @Param("like") String like);
+                                                    @Param("like") String like, @Param("locale") String locale);
 
     @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.id in :postTypeIds "
-            + "and p.state = :state and " + FULLTEXT_PREDICATE)
+            + "and p.state = :state and " + FULLTEXT_PREDICATE + LOCALE_FILTER)
     Page<ShPostUnified> searchBySiteAndTypesAndStateLike(@Param("siteId") String siteId,
                                                          @Param("postTypeIds") Collection<String> postTypeIds,
                                                          @Param("state") ShPostState state,
-                                                         @Param("like") String like, Pageable pageable);
+                                                         @Param("like") String like,
+                                                         @Param("locale") String locale, Pageable pageable);
 
     @Query("select p from ShPostUnified p where p.shSite.id = :siteId and p.shPostType.id in :postTypeIds "
-            + "and p.state in :states and " + FULLTEXT_PREDICATE)
+            + "and p.state in :states and " + FULLTEXT_PREDICATE + LOCALE_FILTER)
     List<ShPostUnified> searchBySiteAndTypesAndStateInLike(@Param("siteId") String siteId,
                                                            @Param("postTypeIds") Collection<String> postTypeIds,
                                                            @Param("states") Collection<ShPostState> states,
-                                                           @Param("like") String like);
+                                                           @Param("like") String like,
+                                                           @Param("locale") String locale);
 
-    // --- The search entry points. Take the term as the user typed it. ---
+    // --- The search entry points. Take the term as the user typed it, and a locale or null. ---
 
     /** Full-text search in one state, across the whole instance. */
     default Page<ShPostUnified> searchByState(ShPostState state, String term, Pageable pageable) {
-        return searchByStateLike(state, fullTextPattern(term), pageable);
+        return searchByState(state, term, null, pageable);
+    }
+
+    /** As above, in one locale (SH1057); a null locale is every locale. */
+    default Page<ShPostUnified> searchByState(ShPostState state, String term, String locale,
+                                              Pageable pageable) {
+        return searchByStateLike(state, fullTextPattern(term), locale, pageable);
     }
 
     /** Full-text search across a state set, across the whole instance. */
     default List<ShPostUnified> searchByStateIn(Collection<ShPostState> states, String term) {
-        return searchByStateInLike(states, fullTextPattern(term));
+        return searchByStateIn(states, term, null);
+    }
+
+    /** As above, in one locale (SH1057); a null locale is every locale. */
+    default List<ShPostUnified> searchByStateIn(Collection<ShPostState> states, String term, String locale) {
+        return searchByStateInLike(states, fullTextPattern(term), locale);
     }
 
     /** Full-text search in one state, scoped to a set of sites. */
     default Page<ShPostUnified> searchBySitesAndState(Collection<String> siteIds, ShPostState state,
                                                       String term, Pageable pageable) {
-        return searchBySitesAndStateLike(siteIds, state, fullTextPattern(term), pageable);
+        return searchBySitesAndState(siteIds, state, term, null, pageable);
+    }
+
+    /** As above, in one locale (SH1057); a null locale is every locale. */
+    default Page<ShPostUnified> searchBySitesAndState(Collection<String> siteIds, ShPostState state,
+                                                      String term, String locale, Pageable pageable) {
+        return searchBySitesAndStateLike(siteIds, state, fullTextPattern(term), locale, pageable);
     }
 
     /** Full-text search across a state set, scoped to a set of sites. */
     default List<ShPostUnified> searchBySitesAndStateIn(Collection<String> siteIds,
                                                         Collection<ShPostState> states, String term) {
-        return searchBySitesAndStateInLike(siteIds, states, fullTextPattern(term));
+        return searchBySitesAndStateIn(siteIds, states, term, null);
+    }
+
+    /** As above, in one locale (SH1057); a null locale is every locale. */
+    default List<ShPostUnified> searchBySitesAndStateIn(Collection<String> siteIds,
+                                                        Collection<ShPostState> states, String term,
+                                                        String locale) {
+        return searchBySitesAndStateInLike(siteIds, states, fullTextPattern(term), locale);
     }
 
     /** Full-text search in one state, scoped to a site and a set of post-types. */
@@ -798,7 +848,16 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                                              Collection<String> postTypeIds,
                                                              ShPostState state, String term,
                                                              Pageable pageable) {
-        return searchBySiteAndTypesAndStateLike(siteId, postTypeIds, state, fullTextPattern(term), pageable);
+        return searchBySiteAndTypesAndState(siteId, postTypeIds, state, term, null, pageable);
+    }
+
+    /** As above, in one locale (SH1057); a null locale is every locale. */
+    default Page<ShPostUnified> searchBySiteAndTypesAndState(String siteId,
+                                                             Collection<String> postTypeIds,
+                                                             ShPostState state, String term,
+                                                             String locale, Pageable pageable) {
+        return searchBySiteAndTypesAndStateLike(siteId, postTypeIds, state, fullTextPattern(term),
+                locale, pageable);
     }
 
     /** Full-text search across a state set, scoped to a site and a set of post-types. */
@@ -806,7 +865,16 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                                                Collection<String> postTypeIds,
                                                                Collection<ShPostState> states,
                                                                String term) {
-        return searchBySiteAndTypesAndStateInLike(siteId, postTypeIds, states, fullTextPattern(term));
+        return searchBySiteAndTypesAndStateIn(siteId, postTypeIds, states, term, null);
+    }
+
+    /** As above, in one locale (SH1057); a null locale is every locale. */
+    default List<ShPostUnified> searchBySiteAndTypesAndStateIn(String siteId,
+                                                               Collection<String> postTypeIds,
+                                                               Collection<ShPostState> states,
+                                                               String term, String locale) {
+        return searchBySiteAndTypesAndStateInLike(siteId, postTypeIds, states, fullTextPattern(term),
+                locale);
     }
 
     // --- Aggregate counts for the agent context pack (SH77). Grouped so the whole

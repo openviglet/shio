@@ -66,8 +66,10 @@ public class ShCdaAPI {
     public ResponseEntity<ShCdaListing> list(@PathVariable String folderId,
                                              @RequestParam(name = "page", defaultValue = "0") int page,
                                              @RequestParam(name = "size", defaultValue = "50") int size,
-                                             @RequestParam(name = "state", required = false) String state) {
-        return ResponseEntity.of(shCdaService.listChildren(folderId, page, size, state));
+                                             @RequestParam(name = "state", required = false) String state,
+                                             // SH1057 — the posts in one locale; omitted, every locale.
+                                             @RequestParam(name = "locale", required = false) String locale) {
+        return ResponseEntity.of(shCdaService.listChildren(folderId, page, size, state, locale));
     }
 
     @GetMapping("/object/{id}/path")
@@ -111,8 +113,9 @@ public class ShCdaAPI {
                               @RequestParam(name = "postType", required = false) String postType,
                               @RequestParam(name = "page", defaultValue = "0") int page,
                               @RequestParam(name = "size", defaultValue = "50") int size,
-                              @RequestParam(name = "state", required = false) String state) {
-        return shCdaService.query(siteId, folderId, postType, page, size, state);
+                              @RequestParam(name = "state", required = false) String state,
+                              @RequestParam(name = "locale", required = false) String locale) {
+        return shCdaService.query(siteId, folderId, postType, page, size, state, locale);
     }
 
     @GetMapping("/search")
@@ -121,7 +124,8 @@ public class ShCdaAPI {
                                @RequestParam(name = "siteId", required = false) String siteId,
                                @RequestParam(name = "page", defaultValue = "0") int page,
                                @RequestParam(name = "size", defaultValue = "50") int size,
-                               @RequestParam(name = "state", required = false) String state) {
-        return shCdaService.search(q, siteId, page, size, state);
+                               @RequestParam(name = "state", required = false) String state,
+                               @RequestParam(name = "locale", required = false) String locale) {
+        return shCdaService.search(q, siteId, page, size, state, locale);
     }
 }
