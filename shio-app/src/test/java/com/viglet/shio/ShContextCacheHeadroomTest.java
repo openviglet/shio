@@ -245,6 +245,11 @@ class ShContextCacheHeadroomTest {
      * counted as the page's. The behaviour tests (ShGraphQLSchemaTest, ShCdaLocaleFilterTest) need
      * no context of their own; only the measurement does. SH1057's route test was folded into the
      * shared context instead of taking a slot, which is SH315's rule applied in the other direction.
+     *
+     * SH1063 spent nothing, and the near miss is worth the line: ShIndexStatusTest wants indexing ON,
+     * which is a property and therefore a context — until it borrows ShAgentSearchReindexTest's
+     * shape and mutates the `ShTuringProperties` bean, restoring it in `@AfterAll`. A slot is the
+     * scarce thing here; a save-and-restore is four lines.
      */
     private static final int DECLARED_CONTEXTS = 78;
 

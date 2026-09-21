@@ -1829,3 +1829,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BI — The areas this round did not reach
 
+- **SH1063 (the read and the unroutable finding)** — A read says whether a page is findable and where its content goes, and verify names a site that publishes into a search index it has no route into.

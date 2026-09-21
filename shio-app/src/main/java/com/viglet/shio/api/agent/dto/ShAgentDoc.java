@@ -71,7 +71,8 @@ public record ShAgentDoc(String address, String type, String state, String folde
                          Schedule schedule,
                          java.util.List<Note> notes,
                          Working working,
-                         Boolean translationStale) {
+                         Boolean translationStale,
+                         Index index) {
 
     /** The twenty-field form, before SH1058 said a translation had fallen behind its source. */
     public ShAgentDoc(String address, String type, String state, String folder,
@@ -82,7 +83,35 @@ public record ShAgentDoc(String address, String type, String state, String folde
                       Schedule schedule, java.util.List<Note> notes, Working working) {
         this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
                 published, url, digest, curatorUrl, previewUrl, revisions, schedule, notes, working,
-                null);
+                null, null);
+    }
+
+    /**
+     * SH1063 — whether this page reached the search index, and where it would go.
+     *
+     * <p>Only with {@code include=index}, like every other rider on this read. An instance that
+     * does not index says so once ({@code enabled: false}) rather than leaving a reader to infer
+     * it from an absent site, because "indexing is off" and "this page routes nowhere" are
+     * different answers and only the second is a defect.</p>
+     *
+     * @param enabled     whether this instance indexes at all — configured and pointed somewhere
+     * @param searchSite  the search site this page's content belongs in, or null when it routes
+     *                    nowhere, which is the failure that raises no error
+     * @param indexed     whether this page is one that gets sent: published, routed, and of a type
+     *                    the mapper indexes
+     * @param lastFailure the most recent indexing failure recorded for this address, or null
+     * @param failedAt    when that failure was last seen
+     */
+    public record Index(Boolean enabled, String searchSite, Boolean indexed, String lastFailure,
+                        String failedAt) {
+    }
+
+    /** The same row, saying whether it is findable (SH1063). */
+    public ShAgentDoc withIndex(Index status) {
+        return status == null ? this
+                : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                        locale, translationOf, published, url, digest, curatorUrl, previewUrl,
+                        revisions, schedule, notes, working, translationStale, status);
     }
 
     /**
@@ -98,7 +127,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return !Boolean.TRUE.equals(stale) ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
                         locale, translationOf, published, url, digest, curatorUrl, previewUrl,
-                        revisions, schedule, notes, working, Boolean.TRUE);
+                        revisions, schedule, notes, working, Boolean.TRUE, index);
     }
 
     /** The nineteen-field form, before SH1008 said who else is on this page. */

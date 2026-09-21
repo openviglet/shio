@@ -112,6 +112,19 @@ public class ShAgentReadService {
     private final ShContentQueryResolver contentQueryResolver;
     /** SH1058 — whether a translation still matches the source it was written from. */
     private final com.viglet.shio.post.ShTranslationStaleness shTranslationStaleness;
+    /** SH1063 — where a page's content is indexed, and whether this instance indexes at all. */
+    private final com.viglet.shio.turing.ShTuringIndexService shTuringIndexService;
+    /** SH1063 — where a failed push is recorded, which is the only trace one leaves. */
+    private final com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog incidentLog;
+
+    /**
+     * How far back an {@code include=index} read looks for a failure.
+     *
+     * <p>The incident log is a bounded window in memory, so this is "the recent past" rather than
+     * a history: an old failure that has scrolled out is reported as none, which is the same thing
+     * the diagnostics read says about it.</p>
+     */
+    private static final int INCIDENT_WINDOW = 200;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -128,7 +141,11 @@ public class ShAgentReadService {
                               com.viglet.shio.api.note.ShNoteService shNoteService,
                               com.viglet.shio.api.history.ShWorkingService shWorkingService,
                               ShContentQueryResolver contentQueryResolver,
-                              com.viglet.shio.post.ShTranslationStaleness shTranslationStaleness) {
+                              com.viglet.shio.post.ShTranslationStaleness shTranslationStaleness,
+                              com.viglet.shio.turing.ShTuringIndexService shTuringIndexService,
+                              com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog incidentLog) {
+        this.shTuringIndexService = shTuringIndexService;
+        this.incidentLog = incidentLog;
         this.shTranslationStaleness = shTranslationStaleness;
         this.contentQueryResolver = contentQueryResolver;
         this.siteAccess = siteAccess;
@@ -515,6 +532,20 @@ public class ShAgentReadService {
                                  boolean impact, String state, boolean digest,
                                  boolean links, boolean revisions, boolean schedule,
                                  boolean notes, boolean working) {
+        return read(addresses, fields, ids, impact, state, digest, links, revisions, schedule,
+                notes, working, false);
+    }
+
+    /**
+     * @param index SH1063 — whether this page is findable: the search site it belongs in, whether
+     *              it is one that gets sent, and the last indexing failure recorded for it. Opt-in
+     *              like every rider here, because an instance that does not index would otherwise
+     *              pay for a block that says so on every row of every read
+     */
+    public List<ShAgentDoc> read(List<String> addresses, List<String> fields, boolean ids,
+                                 boolean impact, String state, boolean digest,
+                                 boolean links, boolean revisions, boolean schedule,
+                                 boolean notes, boolean working, boolean index) {
         List<ShAgentDoc> docs = readWithoutSchedule(addresses, fields, ids, impact, state, digest,
                 links, revisions);
         if (schedule) {
@@ -523,7 +554,47 @@ public class ShAgentReadService {
         if (notes) {
             docs = withNotes(docs);
         }
-        return working ? withWorking(docs) : docs;
+        if (working) {
+            docs = withWorking(docs);
+        }
+        return index ? docs.stream().map(this::withIndex).toList() : docs;
+    }
+
+    /**
+     * SH1063 — is this page findable, and where would it go.
+     *
+     * <p>Three facts a reader cannot get anywhere else, and they are different answers to
+     * different failures: indexing switched off is a decision, a site that routes nowhere is the
+     * defect that raises no error, and a recorded failure is the push that did happen and did not
+     * land. A draft is reported as not indexed rather than as broken — only published content is
+     * sent.</p>
+     */
+    private ShAgentDoc withIndex(ShAgentDoc doc) {
+        if (doc.error() != null || doc.address() == null) {
+            return doc;
+        }
+        boolean enabled = shTuringIndexService.active();
+        String site = ShAddress.parse(doc.address()).site();
+        String searchSite = site == null ? null
+                : shTuringIndexService.snSiteFor(site).orElse(null);
+        boolean indexed = enabled && searchSite != null && Boolean.TRUE.equals(doc.published());
+        com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog.Incident failure = lastIndexFailure(doc.address());
+        return doc.withIndex(new ShAgentDoc.Index(enabled, searchSite, indexed,
+                failure == null ? null : failure.message(),
+                failure == null ? null : String.valueOf(failure.lastSeen())));
+    }
+
+    /** The most recent indexing failure recorded against this address, or null. */
+    private com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog.Incident lastIndexFailure(String address) {
+        com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog.Incident latest = null;
+        for (com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog.Incident incident : incidentLog.recent(INCIDENT_WINDOW)) {
+            if (incident.kind() == com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog.Kind.INDEX
+                    && address.equals(incident.subject())
+                    && (latest == null || incident.lastSeen().isAfter(latest.lastSeen()))) {
+                latest = incident;
+            }
+        }
+        return latest;
     }
 
     /**

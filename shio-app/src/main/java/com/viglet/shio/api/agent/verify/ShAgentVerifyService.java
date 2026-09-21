@@ -191,6 +191,8 @@ public class ShAgentVerifyService {
     private final ShVocabularyPostTypes vocabularyPostTypes;
     /** SH1058 — which post is a translation's source, and which version of it. */
     private final ShTranslationStaleness shTranslationStaleness;
+    /** SH1063 — whether this instance indexes, and where a site's content would go. */
+    private final com.viglet.shio.turing.ShTuringIndexService shTuringIndexService;
 
     /**
      * SH1034 — the reverse index, which is what makes {@code asset-unused} affordable.
@@ -256,7 +258,9 @@ public class ShAgentVerifyService {
                                 ShVocabularyPostTypes vocabularyPostTypes,
                                 ShObjectReferenceService shObjectReferenceService,
                                 ShTranslationStaleness shTranslationStaleness,
+                                com.viglet.shio.turing.ShTuringIndexService shTuringIndexService,
                                 PlatformTransactionManager transactionManager) {
+        this.shTuringIndexService = shTuringIndexService;
         this.shTranslationStaleness = shTranslationStaleness;
         this.shObjectReferenceService = shObjectReferenceService;
         RuleBasedTransactionAttribute definition = new RuleBasedTransactionAttribute();
@@ -407,6 +411,7 @@ public class ShAgentVerifyService {
         ShFrontEndRoutes declared = declaredRoutes(site);
         if (requested.contains(ShAgentCheck.ROUTES)) {
             routes(scan, findings, declared, proving ? unproven : null, notes, scope.partial());
+            unroutableIndex(scan, findings);
         }
         Delivery delivery = proving
                 ? delivery(scan, findings, unproven, explicitlyAsked(checks))
@@ -1213,6 +1218,48 @@ public class ShAgentVerifyService {
                             + "`translationOf` and the locale in `locale` (POST /api/v2/agent/batch). "
                             + "A warning rather than an error: a half-translated site is work in "
                             + "progress, not a defect."));
+        }
+    }
+
+    /**
+     * SH1063 — a site that publishes into a search index it has no route into.
+     *
+     * <h2>The failure that raises nothing</h2>
+     *
+     * <p>Indexing is switched on, a page is published, the listener builds its document — and the
+     * site maps to no search site, so the push is never made. Nothing errors, nothing is recorded,
+     * and the answer to "is this page findable" is no with no trace anywhere. That is the shape
+     * this whole task is about, and it is the one a report can state in one line.</p>
+     *
+     * <p>Silent when indexing is off, because then no site routes anywhere and that is a decision
+     * rather than a defect; and silent for a site with nothing published, because a site nobody
+     * has published into is not yet missing from an index. A <b>warning</b>: the content is
+     * correct and the configuration is not, which is a thing to fix rather than a thing to
+     * refuse.</p>
+     */
+    private void unroutableIndex(Scan scan, List<Finding> findings) {
+        if (!shTuringIndexService.active()) {
+            return;
+        }
+        String check = ShAgentCheck.ROUTES.wireName();
+        Set<String> publishing = new java.util.LinkedHashSet<>();
+        for (ShPostUnified post : scan.published()) {
+            if (post.getShSite() != null) {
+                publishing.add(post.getShSite().getId());
+            }
+        }
+        for (String siteId : publishing) {
+            ShSite site = scan.siteById().get(siteId);
+            if (site == null || shTuringIndexService.snSiteFor(site.getName()).isPresent()) {
+                continue;
+            }
+            findings.add(Finding.warning(check, "index-unroutable",
+                    ShAddress.site(site.getName()).toString(), null,
+                    "Indexing is on and site '" + site.getName() + "' maps to no search site, so "
+                            + "nothing it publishes is sent and nothing says so.",
+                    "Add this site to `shio.turing.sites` (or set `shio.turing.default-site`), or "
+                            + "turn indexing off for this instance. A warning rather than an "
+                            + "error: the content is right and the routing is not."));
         }
     }
 

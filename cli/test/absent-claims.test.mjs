@@ -128,6 +128,11 @@ const DECLARED = new Map(Object.entries({
     "`shio_apply --at --mode insert`, which SH1040's design named and which needs the SERVER to "
     + "hold the pattern. False the day a project file can reach the registry without the "
     + "marketplace's upload — a change to how `shio.blueprint.path` is filled, not to a doc.",
+  "docs/agents/turing.md | is deliberately not here":
+    "The last indexed instant on `include=index`. Nothing writes one today — the listener records "
+    + "failures and no success — so the read reports what is knowable. False the day any write "
+    + "path stamps a success, which is a column on `sh_post_unified` and a write per publish, "
+    + "and is a cost to argue for with a measurement rather than a doc change.",
   "docs/agents/renderer.md | are not here":
     "Rebasing a reference `snapshot --against` can still measure. False if the snapshot "
     + "comparison stops depending on the original's own paths.",

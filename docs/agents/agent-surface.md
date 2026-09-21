@@ -3598,6 +3598,16 @@ did (P3), and resolved one query for the whole read rather than one per address.
 The **terse** form carries a `note` line per open note. A note only the JSON carried would be a note
 this surface does not have: an MCP session reads terse, and the correction has to reach it there.
 
+**`include=index`** (SH1063) is the sixth rider, and it answers the question search exists for:
+`enabled` (does this instance index at all), `searchSite` (where this page's content belongs, absent
+when the site routes nowhere), `indexed` (published *and* routed *and* switched on — the three that
+have to be true for a page to be sent) and the last indexing failure recorded against this address.
+Three different answers to three different failures: switched off is a decision, routing nowhere is
+the defect that raises no error, and a recorded failure is the push that happened and did not land.
+Opt-in like every rider, because an instance that does not index would otherwise pay for a block
+saying so on every row. The failure comes from the incident window in memory, so an old one that has
+scrolled out reads as none — the same thing the diagnostics read says about it.
+
 **`include=working`** (SH1008) is the rider beside it, and the same shape for the opposite reason: a
 note is what somebody asked of this page, and this is who else is on it *now*. A run that wrote to
 the address inside the last minute is reported with its name, its declared intent and an `until`, and

@@ -412,7 +412,11 @@ public class ShAgentAPI {
                 // SH1008 — and whether another run wrote here in the last minute, so a session
                 // learns somebody else is on the page BEFORE it plans a write rather than after
                 // SH985's guard refuses one. Never a lock: it refuses nothing.
-                includes(include, "working"));
+                includes(include, "working"),
+                // SH1063 — and whether it is findable: the search site it belongs in, whether it
+                // is one that gets sent, and the last indexing failure recorded against it. The
+                // question search exists for had no surface at all on any of the three.
+                includes(include, "index"));
         return isTerse(format)
                 ? shAgentBodyEtag.terse("read", ShAgentReadTerse.docs(docs), ifNoneMatch)
                 : shAgentBodyEtag.json("read", docs, ifNoneMatch);

@@ -321,3 +321,29 @@ the report has to be honest about it. That test also **costs no Spring context**
 property overrides, it was priced at one of the two slots left under the cache ceiling, so it
 mutates the `ShTuringProperties` bean and restores it instead (SH315 permits sharing for a test that
 only reads its own fixtures).
+
+## Is this page findable — the question that had no surface (SH1063)
+
+`searchIndexing` is a live manifest feature whose only surfaces were a properties class, a listener
+and an incident log entry: no controller, no console page, nothing in the CLI. On an instance with
+indexing **on**, nobody could answer the question search exists for, and a push that failed after
+commit was recorded only as an incident nobody was looking at.
+
+**`/agent/read?include=index`** answers it for an address: `enabled`, the `searchSite` this page's
+content belongs in, whether it `indexed` (published *and* routed *and* switched on), and the last
+indexing failure recorded against it. The three are different answers to different failures —
+switched off is a **decision**, routing nowhere is the **defect that raises no error**, and a
+recorded failure is the push that happened and did not land. A draft reads as not indexed rather
+than as broken, because only published content is sent.
+
+**`verify` gains `index-unroutable`**, under `checks=routes` since it asks the same kind of question
+(is this reachable) and needs no fetch: indexing is on, a site has published content, and it maps to
+no search site — so every push it would make is never made and nothing says so. A **warning**: the
+content is right and the configuration is not. Silent when indexing is off (then nothing routes
+anywhere, and that is a decision) and silent for a site with nothing published.
+
+**What is deliberately not here yet:** the *last indexed instant*. Nothing writes one — the listener
+records failures and no success — so reporting it would mean a new column and a write per publish,
+which is a cost to argue for with a measurement rather than to slip into a read. The read says what
+is knowable today, and says nothing where nothing is known. `ShIndexStatusTest` drives both halves,
+borrowing the property-mutation shape above so it costs no context.
