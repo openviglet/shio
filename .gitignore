@@ -21,7 +21,6 @@ hs_err_pid*
 /.classpath
 /.project
 /.settings/
-/.vscode/
 /.idea/
 .sts4-cache
 .metals

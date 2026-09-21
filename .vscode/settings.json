@@ -1,0 +1,23 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "sonarlint.connectedMode.project": {
+        "connectionId": "viglet",
+        "projectKey": "viglet_shio"
+    },
+    "java.debug.settings.onBuildFailureProceed": true,
+    // Identify this worktree in the window title / taskbar
+    "window.title": "Shio CMS ${separator} ${dirty}${activeEditorShort} ${separator} ${appName}",
+
+    // Tomato status bar so this worktree is easy to spot
+    "workbench.colorCustomizations": {
+        "statusBar.background": "#FF6347",
+        "statusBar.foreground": "#000000",
+        "statusBar.border": "#B33A24",
+        "statusBar.noFolderBackground": "#FF6347",
+        "statusBar.debuggingBackground": "#FF6347",
+        "statusBarItem.hoverBackground": "#B33A24",
+        "statusBarItem.remoteBackground": "#B33A24",
+        "statusBarItem.remoteForeground": "#FFFFFF"
+    }
+}
