@@ -40,19 +40,27 @@ public record ShSiteCoverage(String site, List<String> locales, List<Group> rows
      * One translation group — the page, in every language the site offers.
      *
      * @param address the group's source, which is the page a translation is made from
+     * @param id      the source's id, which is what the console routes by and what a translation
+     *               is created from; the address is what an agent addresses it by
      * @param title   the source's title, so a board row reads as a page rather than as a URL
      * @param cells   locale → what exists in it; a locale with no entry is missing
      */
-    public record Group(String address, String title, Map<String, Cell> cells) {
+    public record Group(String address, String id, String title, Map<String, Cell> cells) {
     }
 
     /**
      * What one language holds for one page.
      *
+     * <p>Both identifiers, and the reason is that the two readers of this board address a page
+     * differently: the console opens {@code /content/post/{id}} and an agent writes to
+     * {@code post:<site>/<url>}. A board carrying only one of them sends the other reader back for
+     * a lookup per cell.</p>
+     *
      * @param state   {@code current}, {@code stale} (SH1058) or {@code missing}
      * @param address the translation's own address, absent when there is nothing to open
+     * @param id      the translation's id, absent for the same reason
      */
-    public record Cell(String state, String address) {
+    public record Cell(String state, String address, String id) {
     }
 
     /** How many groups are in each state, for one language. */

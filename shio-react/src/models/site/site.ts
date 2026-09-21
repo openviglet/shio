@@ -22,6 +22,38 @@ export type ShSiteLocalePolicy = {
   declared: boolean;
 };
 
+/**
+ * SH1131 — a site's translation coverage: a row per page, a cell per language.
+ *
+ * A cell carries both identifiers because the two readers address a page differently — the console
+ * opens `/content/post/{id}` and an agent writes to `post:<site>/<url>`.
+ */
+export type ShSiteCoverage = {
+  site: string;
+  locales: string[];
+  rows: ShCoverageRow[];
+  totals: Record<string, ShCoverageCount>;
+  page: number;
+  size: number;
+  total: number;
+};
+
+export type ShCoverageRow = {
+  address: string;
+  id: string;
+  title?: string;
+  cells: Record<string, ShCoverageCell>;
+};
+
+export type ShCoverageCell = {
+  /** `current`, `stale` (SH1058) or `missing`. */
+  state: "current" | "stale" | "missing";
+  address?: string;
+  id?: string;
+};
+
+export type ShCoverageCount = { current: number; stale: number; missing: number };
+
 /** SH1056 — what a declaration sends: the document `site.upsert` takes under `data.locales`. */
 export type ShSiteLocaleDeclaration = {
   default: string;

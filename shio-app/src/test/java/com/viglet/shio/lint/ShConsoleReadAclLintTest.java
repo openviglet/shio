@@ -127,6 +127,10 @@ class ShConsoleReadAclLintTest {
             Map.entry("/api/v2/site/{id}/locales", "SH1056 — the languages a site offers, a setting "
                     + "of the site like its record above; the tags it derives from content are the "
                     + "ones every post row already shows, never a post's title or body"),
+            Map.entry("/api/v2/site/{id}/coverage", "SH1060 — which of those languages each page is "
+                    + "in. It reports a page's title and address, which is what the folder listing "
+                    + "beside it reports, and never a body; a reader who may not open a page still "
+                    + "has to see that it is the one missing Portuguese"),
             Map.entry("/api/v2/site/{id}/export",
                     "an SH68 exchange package, guarded by the export role"),
             Map.entry("/api/v2/folder/trash", "the folder trash, which SH222 scopes by site"),

@@ -9,6 +9,8 @@
 import { IconLanguage } from "@tabler/icons-react"
 import { BentoFormSection } from "@viglet/viglet-design-system/bento"
 import { useTranslation } from "react-i18next"
+import { Link } from "react-router-dom"
+import { ROUTES } from "@/app/routes.const"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -31,11 +33,13 @@ const TO_DEFAULT = "__default__"
  * meaning: it reports the languages its content is already in. Showing that list as if somebody had
  * chosen it would make the difference invisible, and the difference is the feature.
  */
-export function SiteLanguagesSection({ catalogue, policy, draft, onChange }: {
+export function SiteLanguagesSection({ catalogue, policy, draft, onChange, siteId }: {
   catalogue: ShLocale[]
   policy: ShSiteLocalePolicy | null
   draft: LanguagesDraft
   onChange: (next: LanguagesDraft) => void
+  /** SH1060 — where the board lives; absent on a site that has not been created yet. */
+  siteId?: string
 }) {
   const { t, i18n } = useTranslation()
   const nameOf = (tag: string) => {
@@ -45,6 +49,14 @@ export function SiteLanguagesSection({ catalogue, policy, draft, onChange }: {
 
   return (
     <BentoFormSection icon={IconLanguage} tone="violet" title={t("content.siteLanguages")}>
+      {/* SH1060 — which languages the site offers is decided here; what it HAS in them is a
+          read, and the board is where that read is shown. */}
+      {siteId && (
+        <Link className="text-xs text-muted-foreground hover:underline"
+          to={`${ROUTES.CONSOLE}/content/site/${siteId}/languages`}>
+          {t("content.coverageOpen")} →
+        </Link>
+      )}
       <div className="flex items-start gap-2">
         <Checkbox
           id="site-languages-declare"

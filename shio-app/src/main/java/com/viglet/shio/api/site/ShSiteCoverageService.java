@@ -89,13 +89,13 @@ public class ShSiteCoverageService {
                 String state = member == null ? ShSiteCoverage.MISSING
                         : stale(member, sourceDigests.get(entry.getKey()))
                                 ? ShSiteCoverage.STALE : ShSiteCoverage.CURRENT;
-                cells.put(locale, new Cell(state,
-                        member == null ? null : address(site, member)));
+                cells.put(locale, new Cell(state, member == null ? null : address(site, member),
+                        member == null ? null : member.id()));
                 int[] counts = tally.get(locale);
                 counts[ShSiteCoverage.CURRENT.equals(state) ? 0
                         : ShSiteCoverage.STALE.equals(state) ? 1 : 2]++;
             }
-            groups.add(new Group(address(site, source), source.title(), cells));
+            groups.add(new Group(address(site, source), source.id(), source.title(), cells));
         }
         groups.sort(Comparator.comparing((Group group) -> group.title() == null ? "" : group.title())
                 .thenComparing(Group::address));

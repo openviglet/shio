@@ -2748,26 +2748,6 @@ The MCP write path that silently dropped locale and translationOf was a live def
 is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
 translates, reached through the assistant, and every result lands as a reviewable draft.
 
-### LXXIII.5 Coverage, from one grouped query, as a board (SH1060)
-
-shio_find cannot filter by locale although every result carries one, so what is missing
-in pt-br is a scan whose cost grows with the site rather than with the answer. The only
-coverage report is the agent's missing-translation warning, which is warning-level and
-returns early on a scoped scan, and no console view exists.
-
-The query vocabulary from SH1022 gains locale and missingLocale; the second is the one
-that pays, because every post whose translation group has no pt-br member is a single
-grouped query on the server and a paged scan anywhere else. The same predicates reach
-the CLI and shio report. A coverage endpoint returns, per locale, current, stale from
-BH3 and missing, with addresses, built as one grouped query rather than one lookup per
-group.
-
-The console gets a Languages board: a row per translation group, a column per enabled
-locale, and each cell current, stale or missing with a click through to the post or to
-creating the translation. That turns a translation backlog into a work list, for a
-person or for an agent handed it through BH7. The assertion compares the board's counts
-with the endpoint's and with find.
-
 ### LXXIII.6 A translation workspace (SH1061)
 
 SH53's menu navigates to the sibling's editor, and does the same after creating one.

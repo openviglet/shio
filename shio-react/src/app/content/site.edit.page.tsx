@@ -248,6 +248,7 @@ export default function BentoSiteEditPage() {
           <SiteLanguagesSection
             catalogue={catalogue}
             policy={policy}
+            siteId={siteId}
             draft={languages}
             onChange={(next) => {
               setLanguages(next)

@@ -2053,6 +2053,15 @@ folder has none and its label is its name alone. The chip does not mark the site
 locale: the browser does not fetch the site's policy (`GET /api/v2/site/{id}/locales`, SH1056),
 and SH1125 is filed for it.
 
+**The Languages board is one site's coverage, at `content/site/:siteId/languages` (SH1060).** A row
+per page and a column per language the site offers, reached from the site editor's Languages card —
+which is the pair that makes sense: the card *decides* which languages the site is in, and the board
+shows what it has in them. Each cell is a way in rather than a status: an existing translation
+opens, and a **missing** one is created from the cell with `translate`, so the gesture happens where
+the gap is instead of after walking to the source. The tallies come from the server's own pass over
+the site (`GET /site/{id}/coverage`, SH1131) and never from the rows on screen — a board counting
+what it displays would say "one missing" while paging through forty.
+
 **A translation whose source moved is marked in the languages menu (SH1058).** `translationStale`
 rides on the console post — absent unless true, so a monolingual instance's reads are unchanged —
 and `PostTranslationsMenu` reads it twice over one call: an amber marker on the sibling rows, which

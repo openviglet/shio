@@ -1,0 +1,196 @@
+import { IconLanguage } from "@tabler/icons-react"
+import { AlertTriangle, Check, Languages, Plus } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+import { Link, useNavigate, useParams } from "react-router-dom"
+import { GradientButton, toast } from "@viglet/viglet-design-system"
+import { EmptyState } from "@/components/empty-state"
+import { PageHero } from "@/components/page-hero"
+import { Panel } from "@/components/panel"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ROUTES } from "@/app/routes.const"
+import { isCancelled } from "@/lib/read-options"
+import { reportProblem } from "@/lib/problem"
+import { ShSiteService } from "@/services/site/site.service"
+import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
+import type { ShCoverageCell, ShSiteCoverage } from "@/models/site/site"
+
+const siteService = new ShSiteService()
+const unifiedService = new ShPostUnifiedService()
+
+const PAGE_SIZE = 50
+
+/**
+ * SH1060 — the Languages board: a row per page, a column per language the site offers.
+ *
+ * What it is for is the decision a translation backlog forces — where to spend the next week —
+ * and that decision needs the gaps in one place rather than a page at a time. Each cell is
+ * current, stale (SH1058) or missing, and each is a way in: an existing translation opens, and a
+ * missing one is created from this page rather than by walking to the source first.
+ *
+ * The counts come from the server's own pass over the site (SH1131), never from the rows on
+ * screen: a board that counted what it is showing would say "one missing" while paging through
+ * forty.
+ */
+export default function LanguagesPage() {
+  const { siteId } = useParams() as { siteId: string }
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [board, setBoard] = useState<ShSiteCoverage | null>(null)
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState<string | null>(null)
+
+  const load = useCallback((signal?: AbortSignal) => {
+    setLoading(true)
+    return siteService.coverage(siteId, page, PAGE_SIZE, { signal })
+      .then((answer) => {
+        setBoard(answer)
+        setLoading(false)
+      })
+      .catch((reason) => {
+        // SH1047 — an abort is not an empty board: paging quickly would otherwise blank the table
+        // the later answer is about to fill, and leaving the page would report a site with nothing
+        // in it.
+        if (isCancelled(reason)) return
+        setBoard(null)
+        setLoading(false)
+      })
+  }, [siteId, page])
+
+  useEffect(() => {
+    // SH1047 — the key moves when the reader pages, so a slow first page must not land over the
+    // second: the earlier read is aborted rather than raced.
+    const abort = new AbortController()
+    void load(abort.signal)
+    return () => abort.abort()
+  }, [load])
+
+  /** The gesture the board exists for: start the missing translation from where it is missing. */
+  const translate = async (sourceId: string, locale: string) => {
+    setBusy(`${sourceId}|${locale}`)
+    try {
+      const created = await unifiedService.translate(sourceId, locale)
+      toast.success(t("content.translationCreated"))
+      navigate(`${ROUTES.CONSOLE}/content/post/${created.id}`)
+    } catch (error) {
+      reportProblem(error, t("common.error"))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const cell = (rowId: string, locale: string, value: ShCoverageCell | undefined) => {
+    if (!value || value.state === "missing") {
+      return (
+        <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+          disabled={busy === `${rowId}|${locale}`}
+          onClick={() => translate(rowId, locale)}
+          title={t("content.coverageTranslate", { locale })}>
+          <Plus className="size-3.5" />
+          {t("content.coverageMissing")}
+        </Button>
+      )
+    }
+    const stale = value.state === "stale"
+    return (
+      <Link className="inline-flex items-center gap-1 text-xs hover:underline"
+        to={`${ROUTES.CONSOLE}/content/post/${value.id}`}
+        title={stale ? t("content.translationStaleHint") : undefined}>
+        {stale
+          ? <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" />
+          : <Check className="size-3.5 text-green-600 dark:text-green-400" />}
+        {stale ? t("content.translationStale") : t("content.coverageCurrent")}
+      </Link>
+    )
+  }
+
+  const locales = board?.locales ?? []
+  const pages = board ? Math.ceil(board.total / Math.max(board.size, 1)) : 0
+
+  return (
+    <>
+      <PageHero
+        icon={Languages}
+        title={t("content.coverageTitle")}
+        subtitle={t("content.coverageDescription")}
+        urlBase={`${ROUTES.CONSOLE}/content`}
+      />
+      <div className="space-y-3 p-6">
+        {/* The totals are the site's, so they do not move as the reader pages. */}
+        {board && (
+          <div className="flex flex-wrap gap-2">
+            {locales.map((locale) => (
+              <Badge key={locale} variant="outline" className="gap-2 text-xs">
+                <span className="font-mono uppercase">{locale}</span>
+                <span className="text-muted-foreground">
+                  {t("content.coverageTally", {
+                    current: board.totals[locale]?.current ?? 0,
+                    stale: board.totals[locale]?.stale ?? 0,
+                    missing: board.totals[locale]?.missing ?? 0,
+                  })}
+                </span>
+              </Badge>
+            ))}
+          </div>
+        )}
+        {!loading && (!board || board.rows.length === 0) ? (
+          <EmptyState
+            icon={IconLanguage}
+            tone="blue"
+            title={t("content.coverageEmptyTitle")}
+            description={t("content.coverageEmptyDescription")}
+          />
+        ) : (
+          <Panel contentClassName="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("content.coveragePage")}</TableHead>
+                  {locales.map((locale) => (
+                    <TableHead key={locale} className="w-32 font-mono text-xs uppercase">
+                      {locale}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {board?.rows.map((row) => (
+                  <TableRow key={row.address}>
+                    <TableCell>
+                      <Link className="font-medium hover:underline"
+                        to={`${ROUTES.CONSOLE}/content/post/${row.id}`}>
+                        {row.title || row.address}
+                      </Link>
+                      <div className="text-xs text-muted-foreground">{row.address}</div>
+                    </TableCell>
+                    {locales.map((locale) => (
+                      <TableCell key={locale}>{cell(row.id, locale, row.cells[locale])}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Panel>
+        )}
+        {pages > 1 && (
+          <div className="flex items-center justify-end gap-2 text-xs">
+            <GradientButton type="button" size="sm" variant="outline" disabled={page === 0}
+              onClick={() => setPage((current) => Math.max(current - 1, 0))}>
+              {t("common.previous")}
+            </GradientButton>
+            <span className="text-muted-foreground">
+              {t("content.coveragePageOf", { page: page + 1, pages })}
+            </span>
+            <GradientButton type="button" size="sm" variant="outline" disabled={page + 1 >= pages}
+              onClick={() => setPage((current) => current + 1)}>
+              {t("common.next")}
+            </GradientButton>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}

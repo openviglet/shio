@@ -1,4 +1,6 @@
-import type { ShSite, ShSiteLocaleDeclaration, ShSiteLocalePolicy } from "@/models/site/site";
+import type {
+  ShSite, ShSiteCoverage, ShSiteLocaleDeclaration, ShSiteLocalePolicy,
+} from "@/models/site/site";
 import axios from "axios";
 import type { ShRead } from "@/lib/read-options"
 
@@ -69,6 +71,13 @@ export class ShSiteService {
   /** SH1056 — stops declaring, so the site reports the languages its content is in again. */
   async clearLocales(id: string): Promise<ShSiteLocalePolicy> {
     const response = await axios.delete<ShSiteLocalePolicy>(`/v2/site/${id}/locales`);
+    return response.data;
+  }
+
+  /** SH1131 — what the site has in each of its languages, and what it has not. */
+  async coverage(id: string, page = 0, size = 50, read: ShRead = {}): Promise<ShSiteCoverage> {
+    const response = await axios.get<ShSiteCoverage>(`/v2/site/${id}/coverage`,
+      { params: { page, size }, signal: read.signal });
     return response.data;
   }
 
