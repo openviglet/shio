@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ROUTES } from "@/app/routes.const"
-import { AlertTriangle, Check, Languages, Plus } from "lucide-react"
+import { AlertTriangle, Check, Columns2, Languages, Plus } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -115,6 +115,17 @@ export function PostTranslationsMenu({ postId, siteId, currentLocale }: {
             )}
           </DropdownMenuItem>
         ))}
+        {/* SH1061 — the way into the workspace, offered only on a page that HAS a source to sit
+            beside: on the source itself there is nothing to put in the left pane. */}
+        {translations.some((tr) => tr.id === postId && tr.translationGroupId !== postId) && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate(`${ROUTES.CONSOLE}/content/post/${postId}/translate`)}>
+              <Columns2 className="mr-2 h-4 w-4" />
+              {t("content.translateOpen")}
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-muted-foreground">{t("content.addTranslation")}</DropdownMenuLabel>
         {!policy?.declared && (

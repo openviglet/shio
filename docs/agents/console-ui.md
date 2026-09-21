@@ -2053,6 +2053,22 @@ folder has none and its label is its name alone. The chip does not mark the site
 locale: the browser does not fetch the site's policy (`GET /api/v2/site/{id}/locales`, SH1056),
 and SH1125 is filed for it.
 
+**The translation workspace is `content/post/:postId/translate` (SH1061).** The whole translation
+interface was a menu that navigated *away*: a translator read the English page, went to the
+Portuguese one, and worked from memory or a second tab. The workspace puts them side by side —
+source left, translation right — **aligned by the post-type's own field order**, so the two sides
+say the same thing in the same place. The left pane renders text and not widgets, which is what
+makes it read-only *by construction*: there is no input to click into, and editing English believing
+it is Portuguese is the mistake the layout exists to prevent. Each field carries a
+copy-from-source for the values a translation keeps verbatim (a product name, a URL, a number).
+Saves land in the target's DRAFT and publishing stays the separate gesture it is everywhere (P7).
+Two columns where there is room and stacked where there is not, because shrinking two panes onto a
+phone gives a translator two unreadable columns instead of one readable one. It reads the row
+(SH985's version guard needs that read, or the save is unconditional) and the group once — the
+siblings list carries every document, so the source pane costs no request of its own. Reached from
+the translations menu, and offered only on a page that *has* a source: on the source itself there is
+nothing to put in the left pane.
+
 **The Languages board is one site's coverage, at `content/site/:siteId/languages` (SH1060).** A row
 per page and a column per language the site offers, reached from the site editor's Languages card —
 which is the pair that makes sense: the card *decides* which languages the site is in, and the board

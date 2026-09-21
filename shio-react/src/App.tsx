@@ -42,6 +42,7 @@ import StaticFileListPage from "./app/content/static-file.list.page"
 import TrashPage from "./app/content/trash.page"
 import LanguagesPage from "./app/content/languages.page"
 import ScheduledPage from "./app/content/scheduled.page"
+import TranslatePage from "./app/content/translate.page"
 import NotFoundPage from "./app/system/not-found.page"
 import LoginPage from "./app/login/login.page"
 import SetupPage from "./app/setup/setup.page"
@@ -154,6 +155,11 @@ function App() {
                 <Route
                   path="content/site/:siteId/languages"
                   element={<LanguagesPage />}
+                />
+                {/* SH1061 — one page beside the language it is being translated into. */}
+                <Route
+                  path="content/post/:postId/translate"
+                  element={<TranslatePage />}
                 />
                 <Route
                   path="content/files"
