@@ -55,6 +55,34 @@ export interface ShioSite {
   description?: string;
   url?: string;
   rootFolderId?: string;
+  /**
+   * The languages this site is in (SH1123) — what a language switcher is built from.
+   * Present on {@link ShioClient.getSite} and {@link ShioClient.getSites}; absent on the
+   * `site` a {@link ShioPath} carries.
+   */
+  locales?: ShioSiteLocales;
+}
+
+/**
+ * A site's locale policy (SH1123). Pair it with {@link ShioPost.availableLocales}: the
+ * site says which languages it offers, the post says which of them this page exists in.
+ */
+export interface ShioSiteLocales {
+  /** The locale the site is written in — always one of {@link enabled}. */
+  defaultLocale: string;
+  /** Every locale the site offers, in the order a switcher lists them. */
+  enabled: string[];
+  /**
+   * Locale to show instead when a page is missing in the one asked for, e.g.
+   * `{ "pt-br": "pt" }`. A locale with no entry falls back to {@link defaultLocale}.
+   */
+  fallback: Record<string, string>;
+  /**
+   * `true` when somebody chose this policy. `false` when it was read off the published
+   * content, in which case {@link enabled} lists what has been translated so far rather
+   * than what the site promises.
+   */
+  declared: boolean;
 }
 
 /** A folder (listing item / breadcrumb node). */

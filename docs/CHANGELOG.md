@@ -1816,6 +1816,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 ## Block BH — One content model, many languages
 
 - **SH1056 (the policy and the agent-side reads)** — a site declares its default locale, its enabled set and a fallback order; site.upsert writes it, the pack and the render frame read it, and an unset column still derives.
+- **SH1123** — SH1056's delivery half: the site read carries the policy, and an undeclared site is described by the rows the token reads, so a production switcher never offers a draft-only language.
 
 ## Block BI — The areas this round did not reach
 

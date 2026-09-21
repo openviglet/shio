@@ -51,6 +51,30 @@ console.log(post?.attrs.title);
 - Any other non-OK status throws `ShioHttpError` (`{ status, url, body }`).
 - Every method accepts a final `{ signal }` option for cancellation.
 
+## A language switcher
+
+A site's `locales` says which languages it offers; a post's `availableLocales` says which of
+them this page exists in. Together they are a switcher, with no call beyond the two you
+already make:
+
+```ts
+const site = await shio.getSite(siteId);
+const post = await shio.getPostByUrl(siteId, url);
+
+const offered = site?.locales?.enabled ?? [];
+const links = offered.map((tag) => ({
+  tag,
+  // a language this page is missing in shows the site's fallback for it, else its default
+  target: post?.availableLocales.includes(tag)
+    ? tag
+    : site?.locales?.fallback[tag] ?? site?.locales?.defaultLocale,
+}));
+```
+
+`locales.declared` is `false` when nobody has chosen the site's languages yet. The list is
+then the languages its published pages are already written in, which is a description of the
+content so far rather than a promise about it.
+
 ## Next.js App Router — catch-all page
 
 The `getPostByUrl` call is built for `[...slug]` routing:

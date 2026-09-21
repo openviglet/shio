@@ -1387,9 +1387,38 @@ instance default the pack already publishes once, `locales` when there is only o
 encodings, which is the assertion that fails if a later row starts emitting a locale
 unconditionally.
 
-**What this part does not do**, and SH1056 stays open for it: the CDA site read carries no locale
-yet, so a headless front end still has nothing to negotiate against; the console has no Languages
-card; SH53's translations menu still offers every seeded tag rather than the enabled set. The
-design also asked for a `locales` block in the **site marker file** — there is no site marker file.
-The projection has content, folders, assets and a base snapshot, and a site's own row is projected
-nowhere, so that half is a subsystem rather than a field.
+**What this part does not do**: the CDA read came with SH1123, below. The console still has no
+Languages card, and SH53's translations menu still offers every seeded tag rather than the enabled
+set; SH1056 stays open for those two. The design also asked for a `locales` block in the
+**site marker file** — there is no site marker file. The projection has content, folders, assets
+and a base snapshot, and a site's own row is projected nowhere, so that half is a subsystem rather
+than a field, and SH1122 owns it.
+
+## The delivered site says which languages it offers (SH1123)
+
+SH1056's delivery half, recorded under its own id because a task carries one partial entry.
+
+`GET /api/v2/cda/site` and `/site/{id}` carry `locales`: `{defaultLocale, enabled, fallback,
+declared}`, the record `ShCdaSiteLocales`, mirrored in `@viglet/shio-client` as
+`ShioSiteLocales` (`ShCdaTypeScriptMirrorTest` holds the two together). With a post's
+`availableLocales` beside it, that is a whole language switcher from the delivery API alone: the
+site says which languages it offers, the post says which of them this page exists in, and
+`fallback` says where a missing one should land.
+
+**`defaultLocale`, not the stored document's `default`.** `default` is a Java keyword, a record
+component is what the mirror test compares, and `defaultLocale` is the name the context pack
+already gives the same fact — one name per fact across the surfaces.
+
+**An undeclared site is described by what the reader can fetch.** The author-side union counts
+drafts on purpose (a site being written in Portuguese is in Portuguese the day before launch). The
+delivery read cannot: a production token reads `PUBLISHED` alone, so a draft-only language would be
+a switcher entry linking to a 404. `ShSiteLocaleService.of(sites, readable)` derives from the
+states the token reads, through `findDistinctLocalesBySiteIdInAndStateIn`, so a preview token hears
+the draft's language and a production token does not. A *declared* policy is a decision, and every
+reader gets it verbatim.
+
+**The breadcrumb's site carries none.** `ShCdaPath.site` is the same record with `locales` absent:
+a path is read on every navigation, and resolving an undeclared site's languages is a content query
+a front end needs once. The five-argument constructor is that shape, and the console's own `/path`
+(`ShConsoleNavigationMapper`) uses it too. `ShCdaSiteLocalesTest` asserts the declared read, the
+production/preview split, the batched listing and the silent breadcrumb.

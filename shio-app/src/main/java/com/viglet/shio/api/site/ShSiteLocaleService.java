@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.system.ShLocaleRepository;
@@ -83,6 +84,27 @@ public class ShSiteLocaleService {
      */
     @Transactional(readOnly = true)
     public Map<String, ShSiteLocales> of(List<ShSite> sites) {
+        return resolve(sites, null);
+    }
+
+    /**
+     * As {@link #of(List)}, deriving an undeclared site's union from these states only (SH1123).
+     *
+     * <p>The delivery read's variant. A declared policy is the same answer to every reader — it is
+     * a decision, not a description — but a derived one describes content, and a reader that can
+     * see only published rows must be described only published rows. Otherwise a production
+     * front end is told the site offers a language that exists only in a draft.</p>
+     *
+     * @param readable the states the caller reads, e.g. {@code PUBLISHED} alone for a production
+     *                 token
+     */
+    @Transactional(readOnly = true)
+    public Map<String, ShSiteLocales> of(List<ShSite> sites, Collection<ShPostState> readable) {
+        return resolve(sites, readable == null ? List.of() : readable);
+    }
+
+    /** @param readable null for every state, which is the author's view */
+    private Map<String, ShSiteLocales> resolve(List<ShSite> sites, Collection<ShPostState> readable) {
         Map<String, ShSiteLocales> resolved = new LinkedHashMap<>();
         List<String> derive = new ArrayList<>();
         for (ShSite site : sites) {
@@ -94,7 +116,7 @@ public class ShSiteLocaleService {
             }
         }
         if (!derive.isEmpty()) {
-            Map<String, Collection<String>> inContent = contentLocales(derive);
+            Map<String, Collection<String>> inContent = contentLocales(derive, readable);
             for (String id : derive) {
                 resolved.put(id, ShSiteLocales.derived(ShPostUnifiedWriteService.DEFAULT_LOCALE,
                         inContent.getOrDefault(id, List.of())));
@@ -187,9 +209,16 @@ public class ShSiteLocaleService {
     }
 
     /** One query for every undeclared site: {@code [siteId, locale]} rows, grouped. */
-    private Map<String, Collection<String>> contentLocales(List<String> siteIds) {
+    private Map<String, Collection<String>> contentLocales(List<String> siteIds,
+                                                           Collection<ShPostState> readable) {
         Map<String, Collection<String>> bySite = new LinkedHashMap<>();
-        for (Object[] row : shPostUnifiedRepository.findDistinctLocalesBySiteIdIn(siteIds)) {
+        if (readable != null && readable.isEmpty()) {
+            return bySite;
+        }
+        List<Object[]> rows = readable == null
+                ? shPostUnifiedRepository.findDistinctLocalesBySiteIdIn(siteIds)
+                : shPostUnifiedRepository.findDistinctLocalesBySiteIdInAndStateIn(siteIds, readable);
+        for (Object[] row : rows) {
             String siteId = (String) row[0];
             String locale = (String) row[1];
             bySite.computeIfAbsent(siteId, id -> new TreeSet<>()).add(locale);

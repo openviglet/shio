@@ -21,6 +21,8 @@ import com.viglet.shio.api.cda.dto.ShCdaPostSummary;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.cda.dto.ShCdaSchemaField;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
+import com.viglet.shio.api.cda.dto.ShCdaSiteLocales;
+import com.viglet.shio.api.site.ShSiteLocales;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
@@ -62,10 +64,24 @@ public class ShCdaMapper {
     }
 
     public ShCdaSite toSite(ShSite site, String rootFolderId) {
+        return toSite(site, rootFolderId, null);
+    }
+
+    /** SH1123 — the site read, carrying the locale policy a switcher is built from. */
+    public ShCdaSite toSite(ShSite site, String rootFolderId, ShSiteLocales locales) {
         if (site == null) {
             return null;
         }
-        return new ShCdaSite(site.getId(), site.getName(), site.getDescription(), site.getUrl(), rootFolderId);
+        return new ShCdaSite(site.getId(), site.getName(), site.getDescription(), site.getUrl(),
+                rootFolderId, toLocales(locales));
+    }
+
+    public ShCdaSiteLocales toLocales(ShSiteLocales locales) {
+        if (locales == null) {
+            return null;
+        }
+        return new ShCdaSiteLocales(locales.defaultLocale(), locales.enabled(), locales.fallback(),
+                locales.declared());
     }
 
     public ShCdaFolder toFolder(ShFolder folder) {

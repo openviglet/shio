@@ -620,6 +620,22 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             + "order by p.shSite.id, p.locale")
     List<Object[]> findDistinctLocalesBySiteIdIn(@Param("siteIds") Collection<String> siteIds);
 
+    /**
+     * SH1123 — the same read, over only the states a delivery reader can see.
+     *
+     * <p>The method above counts drafts on purpose, because it answers the author. The CDA answers
+     * a front end, and there a locale nothing but a draft is written in is a switcher entry that
+     * links to a 404: a production token reads {@code PUBLISHED} alone, so it must not be told the
+     * site offers a language it cannot fetch a single page in.</p>
+     *
+     * @return one row per (site, locale) pair as {@code [siteId, locale]}, ordered
+     */
+    @Query("select distinct p.shSite.id, p.locale from ShPostUnified p "
+            + "where p.shSite.id in :siteIds and p.state in :states and p.locale is not null "
+            + "and p.deletedDate is null order by p.shSite.id, p.locale")
+    List<Object[]> findDistinctLocalesBySiteIdInAndStateIn(@Param("siteIds") Collection<String> siteIds,
+                                                           @Param("states") Collection<ShPostState> states);
+
     // --- Content i18n / locales (SH53) ---
 
     /** All sibling translation rows (across states) sharing a translation group. */

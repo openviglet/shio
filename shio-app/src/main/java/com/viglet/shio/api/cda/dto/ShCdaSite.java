@@ -22,11 +22,21 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  */
 // SH127: nulls omitted. NON_NULL only — a `false` or a `0` here is an answer.
 // Rationale and the SDK half of the change: ShCdaJsonLeanTest.
+//
+// SH1123 — `locales` is on the site reads (`/site`, `/site/{id}`) and absent from the site a
+// breadcrumb carries: a path is read per page, and resolving an undeclared site's languages is a
+// content query that a front end needs once, not on every navigation.
 @JsonInclude(Include.NON_NULL)
 public record ShCdaSite(
         String id,
         String name,
         String description,
         String url,
-        String rootFolderId) {
+        String rootFolderId,
+        ShCdaSiteLocales locales) {
+
+    /** A site with no locale policy attached — the shape a breadcrumb carries. */
+    public ShCdaSite(String id, String name, String description, String url, String rootFolderId) {
+        this(id, name, description, url, rootFolderId, null);
+    }
 }

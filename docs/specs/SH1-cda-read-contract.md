@@ -60,7 +60,15 @@ public record ShCdaSite(
     String name,
     String description,
     String url,
-    String rootFolderId) {}
+    String rootFolderId,
+    ShCdaSiteLocales locales) {}   // SH1123 — on /site reads; absent on a path's site
+
+// ShCdaSiteLocales (SH1123 — what a language switcher is built from)
+public record ShCdaSiteLocales(
+    String defaultLocale,
+    List<String> enabled,
+    Map<String, String> fallback,
+    boolean declared) {}
 
 // ShCdaFolder (lightweight, used in listings + path)
 public record ShCdaFolder(

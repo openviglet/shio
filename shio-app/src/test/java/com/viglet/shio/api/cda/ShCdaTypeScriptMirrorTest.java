@@ -72,6 +72,7 @@ class ShCdaTypeScriptMirrorTest {
     /** Read-contract record -> the {@code types.ts} interface that mirrors it. */
     private static final Map<String, String> MIRRORED = Map.of(
             "ShCdaSite", "ShioSite",
+            "ShCdaSiteLocales", "ShioSiteLocales",
             "ShCdaFolder", "ShioFolder",
             "ShCdaPostSummary", "ShioPostSummary",
             "ShCdaPost", "ShioPost",
@@ -192,7 +193,9 @@ class ShCdaTypeScriptMirrorTest {
         assertThat(interfaces.get("ShioPostSummary")).containsEntry("locale", true);
         // JSDoc prose must not be mistaken for a property.
         assertThat(interfaces.get("ShioSite").keySet())
-                .containsExactly("id", "name", "description", "url", "rootFolderId");
+                .containsExactly("id", "name", "description", "url", "rootFolderId", "locales");
+        // SH1123 — `declared` is a primitive, so the SDK must not make a consumer narrow it.
+        assertThat(interfaces.get("ShioSiteLocales")).containsEntry("declared", false);
         assertThat(recordComponents("ShCdaPost")).isNotEmpty();
 
         // ...and it must notice a field that is gone.

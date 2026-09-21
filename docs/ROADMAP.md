@@ -113,12 +113,12 @@
 
 ## Block BH — One content model, many languages
 
-- ⏳ **SH1056** (deps: SH952 ✅) **no site can declare its default locale, its enabled locales or a fallback order** — The CDA read, the console card and SH53's menu filter are still to come, and the file-tree block needs a site marker file that does not exist. → §LXXIII.1
-- 📋 **SH1057** (deps: SH1056 ⏳) **the public locale segment never selects content, and most of delivery cannot ask for a locale** — The segment reaches only the validator and the link prefix, and CDA list, query and search, GraphQL and the TypeScript client take no locale at all. → §LXXIII.2
-- 📋 **SH1058** (deps: SH1056 ⏳) **nothing knows a translation is out of date, so editing the source leaves every translation claiming to be current** — Translate copies the source's data and records only the group id, with no source revision or digest, and the only translation rule asks about absence. → §LXXIII.3
+- 🛠 **SH1056** (deps: SH952 ✅) **no site can declare its default locale, its enabled locales or a fallback order** — The console has no Languages card and SH53's translations menu still offers every seeded tag, so a declared policy changes nothing a curator sees. → §LXXIII.1
+- 📋 **SH1057** (deps: SH1056 🛠) **the public locale segment never selects content, and most of delivery cannot ask for a locale** — The segment reaches only the validator and the link prefix, and CDA list, query and search, GraphQL and the TypeScript client take no locale at all. → §LXXIII.2
+- 📋 **SH1058** (deps: SH1056 🛠) **nothing knows a translation is out of date, so editing the source leaves every translation claiming to be current** — Translate copies the source's data and records only the group id, with no source revision or digest, and the only translation rule asks about absence. → §LXXIII.3
 - 📋 **SH1059** (deps: —) **the content browser discards the locale the server sends, so two languages of one page look identical** — The row type declares locale and the mapper keeps id, title, date, type and status, so a page and its translation render as two indistinguishable rows. → §LXXIII.4
 - 📋 **SH1060** (deps: SH1058, SH1022 ✅) **no surface shows translation coverage, so what is missing in pt-br is a full scan nobody runs** — shio_find cannot filter by locale though every row carries one, and the only coverage report is a warning that returns early on a scoped scan. → §LXXIII.5
-- 📋 **SH1061** (deps: SH1056 ⏳) **translating means leaving the source, so the two languages are never visible together** — The whole translation interface is a menu that navigates to the sibling post, so a translator works from memory or a second browser tab. → §LXXIII.6
+- 📋 **SH1061** (deps: SH1056 🛠) **translating means leaving the source, so the two languages are never visible together** — The whole translation interface is a menu that navigates to the sibling post, so a translator works from memory or a second browser tab. → §LXXIII.6
 - 📋 **SH1062** (deps: SH1060, SH1006) **a curator cannot ask the connected agent to translate a page or fill a locale's gaps** — Shio hosts no model, and the assistant's request relay has no translation form, so the coverage board's missing cells can be read and not handed to the agent. → §LXXIII.7
 
 ## Block BI — The areas this round did not reach
@@ -134,7 +134,7 @@
 - 📋 **SH1103** (deps: —) **a gate stamp stays fresh across the ship that changes what it certified, so a red commit lands unseen** — Staleness is the HEAD sha and `ship` writes the governed docs at that same HEAD — which the JS suite reads, so a ship turns `pnpm test` red after its last green run. → §LXXIV.9
 - 📋 **SH1104** (deps: SH1039 ✅) **the editable read is on no response budget, and it just grew a section that scales with the catalogue** — Sixteen responses are measured and `/agent/editable` is not one, so `include=insertable` has no ceiling and the budget fixture renders no page to measure it against. → §LXXIV.10
 - 📋 **SH1121** (deps: SH1055 ✅) **the landing blueprint builds pages with no main region and no h1, which the a11y check reports on each** — marketing-site was repaired because a benchmark caught it; landing has the same defect and no assertion holds any blueprint to our own gate. → §LXXIV.11
-- 📋 **SH1122** (deps: SH1056 ⏳) **a site's own settings are projected to no file, so url, bindings and the locale policy cannot be authored or diffed** — A site root's _folder.md says nothing about the site, so the one object that decides whether a page renders is reachable only through the API. → §LXXIV.12
+- 📋 **SH1122** (deps: SH1056 🛠) **a site's own settings are projected to no file, so url, bindings and the locale policy cannot be authored or diffed** — A site root's _folder.md says nothing about the site, so the one object that decides whether a page renders is reachable only through the API. → §LXXIV.12
 
 ## Priority
 

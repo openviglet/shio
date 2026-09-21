@@ -19,6 +19,8 @@ export type {
   ShioClientConfig,
   ShioRequestOptions,
   ShioSite,
+  // SH1123 — the languages a site offers, which a switcher is built from.
+  ShioSiteLocales,
   ShioFolder,
   ShioPostSummary,
   ShioPost,

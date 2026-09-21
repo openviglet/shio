@@ -42,6 +42,8 @@ import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
+import com.viglet.shio.api.site.ShSiteLocaleService;
+import com.viglet.shio.api.site.ShSiteLocales;
 import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -85,14 +87,18 @@ public class ShCdaService {
     private final ShCdaMapper mapper;
     /** SH990 — what a page said at a revision, for a preview token's {@code state=rev:<n>}. */
     private final ShPostRevisionService shPostRevisionService;
+    /** SH1056 — which languages a site is in, the one resolver every surface reads. */
+    private final ShSiteLocaleService shSiteLocaleService;
 
     public ShCdaService(ShSiteRepository shSiteRepository,
                         ShFolderRepository shFolderRepository,
                         ShPostUnifiedRepository shPostUnifiedRepository,
                         ShPostTypeRepository shPostTypeRepository,
                         ShCdaMapper mapper,
-                        ShPostRevisionService shPostRevisionService) {
+                        ShPostRevisionService shPostRevisionService,
+                        ShSiteLocaleService shSiteLocaleService) {
         this.shPostRevisionService = shPostRevisionService;
+        this.shSiteLocaleService = shSiteLocaleService;
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -119,19 +125,36 @@ public class ShCdaService {
                 .map(mapper::toPostTypeSchema);
     }
 
+    /**
+     * Every site this token may read, each with the languages it is in (SH1123).
+     *
+     * <p>The policies resolve in one batch: a declared one costs nothing and the undeclared ones
+     * share a query, so the listing does not become a query per site.</p>
+     */
     public List<ShCdaSite> listSites() {
-        return shSiteRepository.findAll().stream()
+        List<ShSite> sites = shSiteRepository.findAll().stream()
                 .filter(site -> siteAllowed(site.getId()))
-                .map(site -> mapper.toSite(site, rootFolderId(site)))
+                .toList();
+        Map<String, ShSiteLocales> locales = shSiteLocaleService.of(sites, readStates());
+        return sites.stream()
+                .map(site -> mapper.toSite(site, rootFolderId(site), locales.get(site.getId())))
                 .toList();
     }
 
+    /**
+     * One site, with the languages it is in (SH1123).
+     *
+     * <p>An undeclared site's languages are read off the rows this token can see — a production
+     * token is not told the site offers a language only a draft is written in, because every
+     * switcher entry it built from that would link to a page it cannot fetch.</p>
+     */
     public Optional<ShCdaSite> getSite(String siteId) {
         if (!siteAllowed(siteId)) {
             return Optional.empty();
         }
         return shSiteRepository.findById(siteId)
-                .map(site -> mapper.toSite(site, rootFolderId(site)));
+                .map(site -> mapper.toSite(site, rootFolderId(site),
+                        shSiteLocaleService.of(List.of(site), readStates()).get(site.getId())));
     }
 
     public Optional<ShCdaListing> listChildren(String folderId, int page, int size) {

@@ -33,6 +33,7 @@ export type {
   ShioClientConfig,
   ShioRequestOptions,
   ShioSite,
+  ShioSiteLocales,
   ShioFolder,
   ShioPostSummary,
   ShioPost,
