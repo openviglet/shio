@@ -11,6 +11,8 @@ package com.viglet.shio.api.post.unified.dto;
 import java.time.Instant;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 
 import tools.jackson.databind.JsonNode;
@@ -63,7 +65,41 @@ public record ShConsolePost(
         ShConsolePostFolder shFolder,
         ShConsolePostSite shSite,
         JsonNode data,
-        List<String> undeclaredFields) {
+        List<String> undeclaredFields,
+        /**
+         * SH1058 — true when the source this page translates has changed since, absent otherwise.
+         *
+         * <p>Per-property {@code NON_NULL} rather than on the record: a key carrying {@code null}
+         * on every post of a monolingual instance is a byte every console read pays for a fact
+         * that does not apply to it, and annotating the record would change how its other absent
+         * fields serialize.</p>
+         */
+        @JsonInclude(Include.NON_NULL) Boolean translationStale) {
+
+    /** Without the staleness flag — what every caller wanted before SH1058. */
+    public ShConsolePost(String id, String state, String title, String summary, String furl,
+                         String owner, String modifier, String publisher, boolean published,
+                         String publishStatus, Instant date, Instant modifiedDate,
+                         Instant publicationDate, Instant publishScheduledDate,
+                         Instant unpublishScheduledDate, Instant deletedDate, String locale,
+                         String translationGroupId, ShPostTypeDef shPostType,
+                         ShConsolePostFolder shFolder, ShConsolePostSite shSite, JsonNode data,
+                         List<String> undeclaredFields) {
+        this(id, state, title, summary, furl, owner, modifier, publisher, published, publishStatus,
+                date, modifiedDate, publicationDate, publishScheduledDate, unpublishScheduledDate,
+                deletedDate, locale, translationGroupId, shPostType, shFolder, shSite, data,
+                undeclaredFields, null);
+    }
+
+    /** The same post, saying its source has moved on (SH1058). */
+    public ShConsolePost withTranslationStale(Boolean stale) {
+        return !Boolean.TRUE.equals(stale) ? this
+                : new ShConsolePost(id, state, title, summary, furl, owner, modifier, publisher,
+                        published, publishStatus, date, modifiedDate, publicationDate,
+                        publishScheduledDate, unpublishScheduledDate, deletedDate, locale,
+                        translationGroupId, shPostType, shFolder, shSite, data, undeclaredFields,
+                        Boolean.TRUE);
+    }
 
     /** The post's folder, and through it its site — what the console's breadcrumb needs. */
     public record ShConsolePostFolder(String id, String name, ShConsolePostSite shSite) {

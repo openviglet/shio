@@ -9,6 +9,7 @@
 package com.viglet.shio.api.agent.verify;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.time.Instant;
 import java.util.List;
@@ -24,7 +25,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding;
+import com.viglet.shio.api.post.unified.dto.ShConsolePost;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
@@ -63,6 +66,10 @@ class ShTranslationStalenessTest {
 
     @Autowired
     private ShPostUnifiedWriteService write;
+    @Autowired
+    private com.viglet.shio.api.agent.ShAgentReadService shAgentReadService;
+    @Autowired
+    private com.viglet.shio.api.post.unified.ShConsolePostReadService consoleReads;
     @Autowired
     private ShAgentVerifyService shAgentVerifyService;
     @Autowired
@@ -121,12 +128,13 @@ class ShTranslationStalenessTest {
                 .isEqualTo(ShDocumentDigest.of(source.getData(), objectMapper));
         assertThat(source.getSourceDigest()).as("and a source records nothing: it translates no one")
                 .isNull();
-        assertThat(stale()).as("SH1058: a translation of the source as it reads now is current").isEmpty();
+        assertThat(staleAt("sobre"))
+                .as("SH1058: a translation of the source as it reads now is current").isEmpty();
 
         write.update(source.getId(), new UpdateRequest(json("{\"body\":\"hello again\"}"),
                 ShPostState.DRAFT, "admin"));
 
-        List<Finding> found = stale();
+        List<Finding> found = staleAt("sobre");
         assertThat(found).as("SH1058: the source moved on and nothing said so").hasSize(1);
         assertThat(found.getFirst().severity()).isEqualTo("warning");
         assertThat(found.getFirst().address()).isEqualTo("post:" + siteName + "/sobre");
@@ -135,9 +143,56 @@ class ShTranslationStalenessTest {
         write.update(translation.getId(), new UpdateRequest(json("{\"body\":\"ola de novo\"}"),
                 ShPostState.DRAFT, "admin"));
 
-        assertThat(stale())
+        assertThat(staleAt("sobre"))
                 .as("SH1058: the translator's own save records the source as it reads then")
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH1058: the agent read and the console say it, and say nothing when it is current")
+    void everyReadSurfaceReportsIt() {
+        ShPostUnified source = create("/terms", "en", "{\"body\":\"terms\"}", null);
+        ShPostUnified translation = create("/termos", "pt-br", "{\"body\":\"termos\"}", source.getId());
+        String address = "post:" + siteName + "/termos";
+
+        assertThat(read(address).translationStale())
+                .as("SH1058: a translation of the source as it reads now says nothing, so a "
+                        + "monolingual instance's reads are byte-identical")
+                .isNull();
+        assertThat(console(translation.getId()).translationStale()).isNull();
+
+        write.update(source.getId(), new UpdateRequest(json("{\"body\":\"terms, revised\"}"),
+                ShPostState.DRAFT, "admin"));
+
+        assertThat(read(address).translationStale())
+                .as("SH1058: shio_read is where an agent finds out it is about to edit a page whose "
+                        + "source moved")
+                .isTrue();
+        assertThat(console(translation.getId()).translationStale())
+                .as("SH1058: and the console badges the post from the same rule")
+                .isTrue();
+        assertThat(console(source.getId()).translationStale())
+                .as("SH1058: the source translates nothing, so it is never stale")
+                .isNull();
+    }
+
+    @Test
+    @DisplayName("SH1058: the translations list reads its source once, whatever the language count")
+    void theTranslationsListSaysWhichSiblingsLag() {
+        ShPostUnified source = create("/help", "en", "{\"body\":\"help\"}", null);
+        ShPostUnified portuguese = create("/ajuda", "pt-br", "{\"body\":\"ajuda\"}", source.getId());
+        create("/aide", "fr", "{\"body\":\"aide\"}", source.getId());
+
+        write.update(source.getId(), new UpdateRequest(json("{\"body\":\"help, revised\"}"),
+                ShPostState.DRAFT, "admin"));
+        write.update(portuguese.getId(), new UpdateRequest(json("{\"body\":\"ajuda revisada\"}"),
+                ShPostState.DRAFT, "admin"));
+
+        List<ShConsolePost> siblings = consoleReads.translations(source.getId());
+
+        assertThat(siblings).extracting(ShConsolePost::furl, ShConsolePost::translationStale)
+                .as("SH1058: the menu has to say WHICH language needs a pass, not that one does")
+                .contains(tuple("ajuda", null), tuple("aide", true), tuple("help", null));
     }
 
     @Test
@@ -170,9 +225,25 @@ class ShTranslationStalenessTest {
         assertThat(digest).hasSize(64);
     }
 
-    private List<Finding> stale() {
+    private ShAgentDoc read(String address) {
+        return shAgentReadService.read(List.of(address), List.of(), false).getFirst();
+    }
+
+    private ShConsolePost console(String postId) {
+        return consoleReads.get(postId, ShPostState.DRAFT).orElseThrow();
+    }
+
+    /**
+     * The staleness findings for one page.
+     *
+     * <p>By page and not by site: the tests share this class's site, and each leaves its own pair
+     * behind — an assertion on the whole site's findings would be an assertion about which test ran
+     * first (SH315's rule, inside one class).</p>
+     */
+    private List<Finding> staleAt(String furl) {
         return shAgentVerifyService.verify(siteName, "content", 200).findings().stream()
                 .filter(finding -> RULE.equals(finding.rule()))
+                .filter(finding -> ("post:" + siteName + "/" + furl).equals(finding.address()))
                 .toList();
     }
 

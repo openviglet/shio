@@ -43,7 +43,7 @@ import com.viglet.shio.object.ShFolderSite;
 import lombok.extern.slf4j.Slf4j;
 
 import com.viglet.shio.api.post.unified.ShHtmlSanitizer;
-import com.viglet.shio.post.ShDocumentDigest;
+import com.viglet.shio.post.ShTranslationStaleness;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.widget.ShSystemWidget;
 import com.viglet.shio.render.ShTemplateTitles;
@@ -132,6 +132,8 @@ public class ShPostUnifiedWriteService {
     private final ShPostRevisionService shPostRevisionService;
     /** SH1010 — the one field rule that reads other posts, and the write-time default. */
     private final ShFieldUniqueness shFieldUniqueness;
+    /** SH1058 — which post is a translation's source, and which version of it. */
+    private final ShTranslationStaleness shTranslationStaleness;
 
     /**
      * SH1034 — the reverse index, maintained beside every write that touches {@code data}.
@@ -157,7 +159,9 @@ public class ShPostUnifiedWriteService {
                                      ShHtmlSanitizer shHtmlSanitizer,
                                      ShPostRevisionService shPostRevisionService,
                                      ShFieldUniqueness shFieldUniqueness,
-                                     ShObjectReferenceService shObjectReferenceService) {
+                                     ShObjectReferenceService shObjectReferenceService,
+                                     ShTranslationStaleness shTranslationStaleness) {
+        this.shTranslationStaleness = shTranslationStaleness;
         this.shObjectReferenceService = shObjectReferenceService;
         this.shFieldUniqueness = shFieldUniqueness;
         this.shHtmlSanitizer = shHtmlSanitizer;
@@ -438,27 +442,19 @@ public class ShPostUnifiedWriteService {
     }
 
     /**
-     * SH1058 — the digest of a translation group's source as it reads now, or null when the group
-     * has no source left to read.
+     * SH1058 — the digest of a translation group's source as it reads now, or null.
      *
-     * <p>The source is the member whose id <em>is</em> the group id (SH383's anchor rule), read
-     * draft-preferred: the version a curator editing the source is looking at is the version a
-     * translation is measured against.</p>
+     * <p>{@link ShTranslationStaleness} owns the rule — which post is the source, and which version
+     * of it — because the write that stamps and the readers that compare have to agree, and four
+     * copies of a two-part rule is four opinions.</p>
      */
-    @Transactional(readOnly = true)
-    public String sourceDigestOf(String translationGroupId) {
-        if (translationGroupId == null || translationGroupId.isBlank()) {
-            return null;
-        }
-        return resolveAnyState(translationGroupId)
-                .map(source -> ShDocumentDigest.of(source.getData(), objectMapper))
-                .orElse(null);
+    private String sourceDigestOf(String translationGroupId) {
+        return shTranslationStaleness.sourceDigest(translationGroupId).orElse(null);
     }
 
     /** Whether this row is a translation of another post rather than a source of its own group. */
     public static boolean isTranslation(ShPostUnified post) {
-        String group = post.getTranslationGroupId();
-        return group != null && !group.isBlank() && !group.equals(post.getId());
+        return ShTranslationStaleness.isTranslation(post);
     }
 
     /** All sibling translations of a post's group (SH53), DRAFT-preferred, one per id. */

@@ -150,6 +150,8 @@
   "content.translations": "Translations",
   "content.addTranslation": "Add translation",
   "content.translationCreated": "Translation created",
+  "content.translationStale": "Out of date",
+  "content.translationStaleHint": "The page this translates has changed since. Saving this translation marks it up to date.",
   "content.trash": "Trash",
   "content.scheduledTitle": "Scheduled",
   "content.scheduledDescription": "What goes live or comes down, in the order it will happen.",

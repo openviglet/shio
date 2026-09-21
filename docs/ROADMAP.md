@@ -114,8 +114,7 @@
 
 ## Block BH — One content model, many languages
 
-- ⏳ **SH1058** (deps: SH1056 ✅) **nothing knows a translation is out of date, so editing the source leaves every translation claiming to be current** — shio_read does not say a translation is stale, the file projection carries no translatedFrom, and the console shows no badge on a stale translation. → §LXXIII.3
-- 📋 **SH1060** (deps: SH1058 ⏳, SH1022 ✅) **no surface shows translation coverage, so what is missing in pt-br is a full scan nobody runs** — shio_find cannot filter by locale though every row carries one, and the only coverage report is a warning that returns early on a scoped scan. → §LXXIII.5
+- 📋 **SH1060** (deps: SH1058 ✅, SH1022 ✅) **no surface shows translation coverage, so what is missing in pt-br is a full scan nobody runs** — shio_find cannot filter by locale though every row carries one, and the only coverage report is a warning that returns early on a scoped scan. → §LXXIII.5
 - 📋 **SH1061** (deps: SH1056 ✅) **translating means leaving the source, so the two languages are never visible together** — The whole translation interface is a menu that navigates to the sibling post, so a translator works from memory or a second browser tab. → §LXXIII.6
 - 📋 **SH1062** (deps: SH1060, SH1006) **a curator cannot ask the connected agent to translate a page or fill a locale's gaps** — Shio hosts no model, and the assistant's request relay has no translation form, so the coverage board's missing cells can be read and not handed to the agent. → §LXXIII.7
 - 📋 **SH1125** (deps: SH1056 ✅) **the browser's locale chip does not say which row is the site's default language** — SH1059's design asked for it once a site could declare a default; the console can read the policy now and the browser never asks for it. → §LXXIII.8
@@ -166,13 +165,6 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
-
-## Done when — SH1058
-
-- **Every surface that reads a translation says when it is stale** shio_read reports the
-  flag only when true, the file projection carries translatedFrom beside translationOf
-  under SH1004's merge rule, and the console badges the post — each asserted where a
-  monolingual read stays byte-identical.
 
 ## Non-goals (do NOT add as tasks)
 

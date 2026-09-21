@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ROUTES } from "@/app/routes.const"
-import { Check, Languages, Plus } from "lucide-react"
+import { AlertTriangle, Check, Languages, Plus } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -61,6 +61,9 @@ export function PostTranslationsMenu({ postId, siteId, currentLocale }: {
   }, [siteId])
 
   const existing = new Set(translations.map((tr) => tr.locale).filter(Boolean) as string[])
+  // SH1058 — the page being edited is a member of the group the menu already read, so knowing
+  // whether it has fallen behind its source costs no second call.
+  const staleHere = translations.some((tr) => tr.id === postId && tr.translationStale)
   const localeLabel = (l: ShLocale) => (i18n.language === "pt" ? l.pt : l.en) || l.initials
 
   const switchTo = (tr: ShPostUnified) => {
@@ -83,9 +86,18 @@ export function PostTranslationsMenu({ postId, siteId, currentLocale }: {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <GradientButton type="button" size="sm" variant="outline" loading={busy}>
+        <GradientButton type="button" size="sm" variant="outline" loading={busy}
+          title={staleHere ? t("content.translationStaleHint") : undefined}>
           <Languages className="size-4" />
           {currentLocale ? currentLocale.toUpperCase() : t("content.translations")}
+          {/* SH1058 — the trigger carries it because a curator who has not opened the menu is
+              exactly the one who does not know the source moved under this page. */}
+          {staleHere && (
+            <span className="ml-1 inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="size-3.5" />
+              <span className="text-xs">{t("content.translationStale")}</span>
+            </span>
+          )}
         </GradientButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -95,6 +107,12 @@ export function PostTranslationsMenu({ postId, siteId, currentLocale }: {
             {tr.id === postId ? <Check className="mr-2 h-4 w-4" /> : <span className="mr-2 w-4" />}
             <span className="font-mono text-xs uppercase">{tr.locale}</span>
             <span className="ml-2 truncate text-muted-foreground">{tr.title}</span>
+            {/* SH1058 — which of the languages needs a pass, which is the question somebody opens
+                this menu to answer once a page has more than two. */}
+            {tr.translationStale && (
+              <AlertTriangle className="ml-auto size-3.5 shrink-0 text-amber-600 dark:text-amber-400"
+                aria-label={t("content.translationStale")} />
+            )}
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />

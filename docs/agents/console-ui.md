@@ -2053,6 +2053,14 @@ folder has none and its label is its name alone. The chip does not mark the site
 locale: the browser does not fetch the site's policy (`GET /api/v2/site/{id}/locales`, SH1056),
 and SH1125 is filed for it.
 
+**A translation whose source moved is marked in the languages menu (SH1058).** `translationStale`
+rides on the console post — absent unless true, so a monolingual instance's reads are unchanged —
+and `PostTranslationsMenu` reads it twice over one call: an amber marker on the sibling rows, which
+is how a curator sees *which* language needs a pass, and on the trigger itself, because the person
+who has not opened the menu is the one who does not know the source moved under this page. The
+translations list resolves the group's source **once** for the whole list rather than per row, since
+every member shares one group by construction.
+
 ## The filters are the server's, and they travel (SH1022)
 
 The content browser's toolbar has a **Filters** popover — post-type, state, changed-after,

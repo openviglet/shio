@@ -1475,7 +1475,12 @@ renderer over one body of content at a second address. See the section on it bel
   stale" (a translation written before the column), so nothing is backfilled. Unlike
   `translation-missing` it runs on a scoped run, because its evidence is present: the translation, and
   its source read by id when the scope left it out. `ShTranslationStalenessTest` drives it through the
-  real write service.
+  real write service. **`ShTranslationStaleness` owns the rule** — which post is the source and which
+  version of it — because four surfaces ask it (the write that stamps, `verify`, `/agent/read` and the
+  console) and a disagreement shows up as a badge contradicting a report. The three reads carry it
+  only when true: `shio_read`'s `translationStale`, the file projection's `translationStale:` key, and
+  the console's amber marker in the translations menu — so a monolingual instance's reads, files and
+  screens are exactly what they were.
   **The engine is the one source of the capability set (SH260)**: `register(name, ShHelperShape,
   helper)` records the name *and the call shape* (`BLOCK` / `BLOCK_PATH_ARG` / `INLINE_PATH_ARG`),
   and every reader asks — the unknown-helper refusal lists `engine.registeredNames()` (alphabetical,

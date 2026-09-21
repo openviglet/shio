@@ -150,6 +150,8 @@
   "content.translations": "Traduções",
   "content.addTranslation": "Adicionar tradução",
   "content.translationCreated": "Tradução criada",
+  "content.translationStale": "Desatualizada",
+  "content.translationStaleHint": "A página que esta traduz mudou desde então. Salvar esta tradução a marca como atualizada.",
   "content.trash": "Lixeira",
   "content.scheduledTitle": "Agendados",
   "content.scheduledDescription": "O que entra ou sai do ar, na ordem em que vai acontecer.",

@@ -74,6 +74,8 @@ export interface ShPostUnified {
   deletedDate?: string
   locale?: string
   translationGroupId?: string
+  /** SH1058 — true when the page this one translates has changed since; absent otherwise. */
+  translationStale?: boolean
   shPostType?: ShPostTypeRef
   shFolder?: { id: string; name: string; shSite?: { id: string; name: string } }
   shSite?: { id: string; name: string }

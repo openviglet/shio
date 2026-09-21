@@ -1477,6 +1477,14 @@ the anchor names nothing, which keeps it a forest; a declaring post is compiled 
 document never has to be ordered by hand; and a target that resolves to nothing is a teaching 400,
 because creating an unlinked post and reporting success is SH331's silent drop.
 
+**A read says when a translation has fallen behind (SH1058).** `translationStale: true` on
+`/agent/read`, and nothing at all otherwise — never `false`, so every row of a monolingual instance
+is the row it was. It answers the question an agent has before rewriting a page: the source this
+translates has changed since the translation was written. The comparison is a stored digest of the
+source's document (`ShTranslationStaleness`, shared with `verify`'s `translation-stale` and the
+console), stamped at translate time and re-stamped by the translation's own edit — so a write is how
+a translation says it has caught up, and no read ever refreshes it.
+
 **A scheduled publish is `when` on `post.publish` (SH342).** ISO-8601, absent means now, and a
 **past instant is refused rather than read as now** — publishing now is what the op already means with
 no `when`, so accepting a past date would make two calls mean the same thing and swallow the timezone

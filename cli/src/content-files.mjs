@@ -48,7 +48,8 @@ const FENCE = "---";
 // SH348 — `locale` sits after `folder` because it is *state* the server reports, unlike `publish`
 // and `movedFrom` after it, which are instructions the author writes. The order is observable in
 // every file, so it is a decision rather than an accident (P5).
-const META_ORDER = ["site", "url", "type", "folder", "locale", "translationOf", "publish", "movedFrom", "body", BLOCK_KEYS];
+const META_ORDER = ["site", "url", "type", "folder", "locale", "translationOf", "translationStale",
+  "publish", "movedFrom", "body", BLOCK_KEYS];
 
 /**
  * The widgets whose value is **code**, and the extension each one's sidecar takes (SH191).
@@ -403,6 +404,12 @@ export function serializePost(doc, bodyField = null, sidecarFields = []) {
     // than an instruction, so it sits with `locale` above `publish`, and the server reports the
     // group's *anchor* so the tree is a forest rather than a graph.
     translationOf: doc.translationOf ? normalizeUrl(doc.translationOf) : undefined,
+    // SH1058 — state, beside `translationOf` and above `publish`, and written only when true: the
+    // source this page translates has changed since it was written. A reader with the tree in front
+    // of them can grep for the pages needing a pass, which is the one question the field answers —
+    // and never written otherwise, so a site whose translations are current is byte-identical.
+    // Derived, never an instruction: a push ignores it, the way a server-owned fact has to be.
+    translationStale: doc.translationStale === true ? true : undefined,
     publish: typeof doc.publish === "boolean" ? doc.publish : undefined,
     // SH150 — an instruction, like `publish`: it says where this post came from, so a push
     // can move it instead of re-creating it. A pull never writes one (the server has no such
@@ -692,6 +699,8 @@ export function parsePost(relPath, text) {
     folder: meta.folder == null ? null : normalizeUrl(meta.folder),
     locale: meta.locale ? String(meta.locale) : undefined,
     translationOf: meta.translationOf ? normalizeUrl(meta.translationOf) : undefined,
+    // SH1058 — read back so a merge that rewrites the file keeps it; nothing pushes it.
+    translationStale: meta.translationStale === true ? true : undefined,
     publish: typeof meta.publish === "boolean" ? meta.publish : undefined,
     movedFrom: meta.movedFrom ? normalizeUrl(meta.movedFrom) : undefined,
     bodyField,

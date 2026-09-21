@@ -999,6 +999,9 @@ export function fromAgentDoc(doc) {
     // because a file already knows its own site (the path names it) and a cross-site translation is
     // not a thing a site-scoped tree can hold.
     translationOf: translationUrl(doc.translationOf),
+    // SH1058 — the read reports it only when true, so a page whose source has not moved, and every
+    // page of a monolingual site, carries nothing and its file is byte-identical to before.
+    translationStale: doc.translationStale === true ? true : undefined,
     data: doc.data && typeof doc.data === "object" ? doc.data : {},
   };
 }

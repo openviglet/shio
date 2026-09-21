@@ -70,7 +70,36 @@ public record ShAgentDoc(String address, String type, String state, String folde
                          java.util.List<ShRevisionRow> revisions,
                          Schedule schedule,
                          java.util.List<Note> notes,
-                         Working working) {
+                         Working working,
+                         Boolean translationStale) {
+
+    /** The twenty-field form, before SH1058 said a translation had fallen behind its source. */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published, String url, String digest, String curatorUrl,
+                      String previewUrl, java.util.List<ShRevisionRow> revisions,
+                      Schedule schedule, java.util.List<Note> notes, Working working) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, url, digest, curatorUrl, previewUrl, revisions, schedule, notes, working,
+                null);
+    }
+
+    /**
+     * SH1058 — the same row, saying the source has changed since this translation was written.
+     *
+     * <p>{@code true} or absent, never {@code false}: the flag is a fact when it is there, and a
+     * monolingual instance — every row of it — pays nothing, which is the shape {@code locale} and
+     * {@code translationOf} beside it already have. Applied last in the read's chain, as
+     * {@code notes} and {@code working} are, because the {@code with…} methods before it rebuild
+     * the row from the fields they know.</p>
+     */
+    public ShAgentDoc withTranslationStale(Boolean stale) {
+        return !Boolean.TRUE.equals(stale) ? this
+                : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                        locale, translationOf, published, url, digest, curatorUrl, previewUrl,
+                        revisions, schedule, notes, working, Boolean.TRUE);
+    }
 
     /** The nineteen-field form, before SH1008 said who else is on this page. */
     public ShAgentDoc(String address, String type, String state, String folder,

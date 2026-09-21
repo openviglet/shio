@@ -1822,7 +1822,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1057** — The public segment selects a page's translation and a declared site is addressed in its own tag; with SH1127 and SH1129 every delivery read and the client can ask for a locale (design §LXXIII.2 superseded: the furl-plus-locale finder it named cannot reach a translation at its own URL, so the segment selects through the translation group) (design §LXXIII.2 recorded in `docs/agents/renderer.md`).
 - **SH1127** — SH1057's CDA half: the three listings and the client take a locale as a database predicate, so a pt-br page of fifty holds fifty pt-br posts and totalPosts counts them.
 - **SH1129** — SH1057's GraphQL half: posts carry both fields and postByUrl and posts take locale; a page reads its groups in one query, 5 statements at 5 rows or 25 against 105 per row.
-- **SH1058 (the digest and the verify finding)** — A translation stamps the digest of the source it was written against, and verify reports translation-stale when the source reads differently since.
+- **SH1058** — shio_read, the file projection and the console's languages menu each say a translation has fallen behind its source, and say nothing when it has not (design §LXXIII.3 superseded: translatedFrom would put a digest in a file with nothing to compare it against, so the projection carries translationStale, the fact a reader can act on) (design §LXXIII.3 recorded in `docs/agents/renderer.md`).
 
 ## Block BI — The areas this round did not reach
 

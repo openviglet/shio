@@ -2748,26 +2748,6 @@ The MCP write path that silently dropped locale and translationOf was a live def
 is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
 translates, reached through the assistant, and every result lands as a reviewable draft.
 
-### LXXIII.3 Staleness as a digest comparison (SH1058)
-
-The translate verb copies the source's data and records the translation group, and
-nothing captures which version of the source it came from: the row has no source digest,
-source version or translated-from field. The only translation rule reports a missing
-translation, so it cannot report a stale one. It is the most-used signal in every
-commercial localization workflow, and Shio cannot represent it: a site can be fully
-translated, then wrong, and no surface can tell.
-
-The cheap part is a digest. Add a source_digest column by Liquibase, stamp it at
-translate time from a hash over the source post's data, and never refresh it, since it
-is a snapshot rather than a mirror, so staleness is a string comparison against the
-source's current digest rather than a diff. The rule for which post is the source
-already exists. A translation-stale finding joins verify as a warning, never an error,
-because a lagging translation is ordinary work in progress.
-
-The reads are conditional so a monolingual read stays byte-identical: shio_read reports
-the flag only when true, the file projection carries translatedFrom beside translationOf
-under SH1004's merge rule, and the console shows a badge on the post.
-
 ### LXXIII.5 Coverage, from one grouped query, as a board (SH1060)
 
 shio_find cannot filter by locale although every result carries one, so what is missing

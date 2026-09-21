@@ -48,7 +48,7 @@ import com.viglet.shio.api.post.ShRequiredFields;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.post.type.ShVocabularyPostTypes;
-import com.viglet.shio.post.ShDocumentDigest;
+import com.viglet.shio.post.ShTranslationStaleness;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.staticfile.ShFileStorageService;
@@ -189,6 +189,8 @@ public class ShAgentVerifyService {
     private final ShAgentDeliveryProbe deliveryProbe;
     /** SH773 — the shipped model, to compare this instance's copy of it against. */
     private final ShVocabularyPostTypes vocabularyPostTypes;
+    /** SH1058 — which post is a translation's source, and which version of it. */
+    private final ShTranslationStaleness shTranslationStaleness;
 
     /**
      * SH1034 — the reverse index, which is what makes {@code asset-unused} affordable.
@@ -253,7 +255,9 @@ public class ShAgentVerifyService {
                                 ShSiteAssets siteAssets,
                                 ShVocabularyPostTypes vocabularyPostTypes,
                                 ShObjectReferenceService shObjectReferenceService,
+                                ShTranslationStaleness shTranslationStaleness,
                                 PlatformTransactionManager transactionManager) {
+        this.shTranslationStaleness = shTranslationStaleness;
         this.shObjectReferenceService = shObjectReferenceService;
         RuleBasedTransactionAttribute definition = new RuleBasedTransactionAttribute();
         definition.setReadOnly(true);
@@ -1235,7 +1239,7 @@ public class ShAgentVerifyService {
         }
         Map<String, java.util.Optional<String>> sourceDigests = new HashMap<>();
         for (ShPostUnified post : latest.values()) {
-            if (!ShPostUnifiedWriteService.isTranslation(post) || post.getSourceDigest() == null) {
+            if (!ShTranslationStaleness.isTranslation(post) || post.getSourceDigest() == null) {
                 continue;
             }
             String sourceId = post.getTranslationGroupId();
@@ -1255,14 +1259,17 @@ public class ShAgentVerifyService {
         }
     }
 
-    /** The source's digest as it reads now, draft-preferred, or empty when there is no source. */
+    /**
+     * The source's digest as it reads now, or empty when there is no source.
+     *
+     * <p>Off the scanned row when the run already read it, and by id when the scope left it out —
+     * both through {@link ShTranslationStaleness}, which owns what "the source" and "as it reads
+     * now" mean, so a scoped run and a whole-site run cannot answer differently.</p>
+     */
     private java.util.Optional<String> currentDigest(ShPostUnified inScan, String sourceId) {
-        ShPostUnified source = inScan != null ? inScan
-                : shPostUnifiedRepository.findByIdAndState(sourceId, ShPostState.DRAFT)
-                        .or(() -> shPostUnifiedRepository.findByIdAndState(sourceId, ShPostState.PUBLISHED))
-                        .orElse(null);
-        return java.util.Optional.ofNullable(source)
-                .map(found -> ShDocumentDigest.of(found.getData(), objectMapper));
+        return inScan != null
+                ? java.util.Optional.of(shTranslationStaleness.digestOf(inScan))
+                : shTranslationStaleness.sourceDigest(sourceId);
     }
 
     /**

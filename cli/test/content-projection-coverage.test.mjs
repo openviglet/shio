@@ -44,6 +44,7 @@ const PROJECTED = [
   "sidecarFiles",
   "site",
   "translationOf",
+  "translationStale",
   "type",
   "url",
 ];
@@ -119,6 +120,30 @@ describe("SH348: the content projection's field coverage", () => {
       ).translationOf,
       "/about",
       "SH348 step 4: the tree records which post this one translates, by URL",
+    );
+  });
+
+  it("SH1058: carries staleness only when the source has moved on", () => {
+    const stale = projectedPost(
+      { site: "Blog", url: "/sobre", type: "Article", translationOf: "/about", translationStale: true },
+      "TITLE",
+    );
+    const current = projectedPost(
+      { site: "Blog", url: "/sobre", type: "Article", translationOf: "/about" },
+      "TITLE",
+    );
+
+    assert.equal(
+      stale.translationStale,
+      true,
+      "SH1058: a tree that cannot say which translations need a pass makes the agent ask the server "
+        + "one page at a time, which is the read P4 exists to avoid",
+    );
+    assert.equal(
+      current.translationStale,
+      undefined,
+      "SH1058: and a translation that matches its source writes nothing, so a site whose "
+        + "translations are current is byte-identical",
     );
   });
 

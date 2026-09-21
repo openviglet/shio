@@ -21,6 +21,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.post.ShTranslationStaleness;
 
 /**
  * The console's post reads (SH176), mapped inside a transaction.
@@ -45,11 +46,15 @@ public class ShConsolePostReadService {
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShConsolePostMapper mapper;
+    /** SH1058 — whether a translation still matches the source it was written from. */
+    private final ShTranslationStaleness shTranslationStaleness;
 
     public ShConsolePostReadService(ShPostUnifiedRepository shPostUnifiedRepository,
                                     ShFolderRepository shFolderRepository,
                                     ShPostUnifiedWriteService shPostUnifiedWriteService,
-                                    ShConsolePostMapper mapper) {
+                                    ShConsolePostMapper mapper,
+                                    ShTranslationStaleness shTranslationStaleness) {
+        this.shTranslationStaleness = shTranslationStaleness;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
@@ -58,7 +63,11 @@ public class ShConsolePostReadService {
 
     @Transactional(readOnly = true)
     public Optional<ShConsolePost> get(String id, ShPostState state) {
-        return shPostUnifiedRepository.findByIdAndState(id, state).map(mapper::toConsolePost);
+        return shPostUnifiedRepository.findByIdAndState(id, state)
+                .map(row -> mapper.toConsolePost(row)
+                        // SH1058 — one row, so at most one extra read, and only for a row that
+                        // carries a stamp: a post that is not a translation asks nothing.
+                        .withTranslationStale(shTranslationStaleness.isStale(row) ? Boolean.TRUE : null));
     }
 
     /**
@@ -115,9 +124,31 @@ public class ShConsolePostReadService {
         return mapper.toConsolePosts(shPostUnifiedWriteService.listTrash());
     }
 
+    /**
+     * A page's siblings, each saying whether it has fallen behind the source (SH1058).
+     *
+     * <p>The group's source is read <b>once</b> for the whole list rather than per row: every
+     * member shares one group by construction, so the per-row shape would be the same query as
+     * many times as the page has languages.</p>
+     */
     @Transactional(readOnly = true)
     public List<ShConsolePost> translations(String id) {
-        return mapper.toConsolePosts(shPostUnifiedWriteService.listTranslations(id));
+        List<ShPostUnified> rows = shPostUnifiedWriteService.listTranslations(id);
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        Optional<String> source = shTranslationStaleness.sourceDigest(rows.getFirst().getTranslationGroupId());
+        return rows.stream()
+                .map(row -> mapper.toConsolePost(row).withTranslationStale(staleAgainst(row, source)))
+                .toList();
+    }
+
+    /** Whether this row's stamp differs from the source digest already in hand. */
+    private static Boolean staleAgainst(ShPostUnified row, Optional<String> sourceDigest) {
+        return row.getSourceDigest() != null
+                && ShTranslationStaleness.isTranslation(row)
+                && sourceDigest.filter(current -> !current.equals(row.getSourceDigest())).isPresent()
+                ? Boolean.TRUE : null;
     }
 
     private static ShPostState other(ShPostState state) {

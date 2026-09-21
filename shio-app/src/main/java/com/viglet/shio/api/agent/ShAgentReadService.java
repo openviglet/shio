@@ -110,6 +110,8 @@ public class ShAgentReadService {
     private final com.viglet.shio.api.history.ShWorkingService shWorkingService;
     /** SH1022 — the one place a filter's names become the ids the predicate binds. */
     private final ShContentQueryResolver contentQueryResolver;
+    /** SH1058 — whether a translation still matches the source it was written from. */
+    private final com.viglet.shio.post.ShTranslationStaleness shTranslationStaleness;
 
     public ShAgentReadService(ShAgentSiteAccess siteAccess,
                               ShFolderRepository shFolderRepository,
@@ -125,7 +127,9 @@ public class ShAgentReadService {
                               ShPostLinks shPostLinks,
                               com.viglet.shio.api.note.ShNoteService shNoteService,
                               com.viglet.shio.api.history.ShWorkingService shWorkingService,
-                              ShContentQueryResolver contentQueryResolver) {
+                              ShContentQueryResolver contentQueryResolver,
+                              com.viglet.shio.post.ShTranslationStaleness shTranslationStaleness) {
+        this.shTranslationStaleness = shTranslationStaleness;
         this.contentQueryResolver = contentQueryResolver;
         this.siteAccess = siteAccess;
         this.shFolderRepository = shFolderRepository;
@@ -705,7 +709,11 @@ public class ShAgentReadService {
                         links ? previewUrl(post) : null)
                 // SH987 — the page's history, terse and only when asked. Last in the chain for
                 // SH721's reason: a read that did not ask is byte-identical to the one before this.
-                .withRevisions(revisions ? shPostRevisionService.rows(post.getId()) : null);
+                .withRevisions(revisions ? shPostRevisionService.rows(post.getId()) : null)
+                // SH1058 — and whether the source has moved on since this translation was written.
+                // Never asked of a post that carries no stamp, so a monolingual instance pays no
+                // query and every row of it is byte-identical to what it was.
+                .withTranslationStale(shTranslationStaleness.isStale(post) ? Boolean.TRUE : null);
     }
 
     /**

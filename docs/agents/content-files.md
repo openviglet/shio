@@ -26,6 +26,12 @@ needs the model). Owned by `cli/src/content-files.mjs` (the format, pure),
   of the tree deliberately — a UUID in a file is what Block I exists to remove. The table exists
   because SH255's round-trip guard tests values of fields the format **has** and cannot see a field it
   **lacks**.
+  **`translationStale: true` beside it (SH1058)** says the page this one translates has changed since,
+  so the pages needing a pass are a grep over the tree rather than a call per page. Written **only
+  when true**, so a site whose translations are current is byte-identical; **derived, never an
+  instruction** — a push ignores it, the way a server-owned fact has to be, and it round-trips through
+  `projectedPost` so a merge that rewrites the file keeps it. `content-projection-coverage.test.mjs`
+  pins it into the projected key set.
 - **Two memory files, and the difference between them is a permission (SH161, SH231).** A
   *site's* notes project to `shio/content/<site>/.memory.yaml` and are reconciled like a field
   — three-way merged, a local deletion honoured as a forget. The **instance's** notes project
