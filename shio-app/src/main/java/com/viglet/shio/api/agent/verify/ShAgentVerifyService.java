@@ -48,6 +48,7 @@ import com.viglet.shio.api.post.ShRequiredFields;
 import com.viglet.shio.api.post.type.dto.ShPostTypeAttrDef;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.post.type.ShVocabularyPostTypes;
+import com.viglet.shio.post.ShDocumentDigest;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.staticfile.ShFileStorageService;
@@ -393,6 +394,7 @@ public class ShAgentVerifyService {
         if (requested.contains(ShAgentCheck.CONTENT)) {
             content(scan, findings);
             untranslated(scan, scope, findings);
+            staleTranslations(scan, findings);
         }
         // Routes runs before delivery because it decides what delivery has to adjudicate:
         // a link that resolves against the content graph needs no request at all, and the
@@ -1208,6 +1210,59 @@ public class ShAgentVerifyService {
                             + "A warning rather than an error: a half-translated site is work in "
                             + "progress, not a defect."));
         }
+    }
+
+    /**
+     * SH1058 — a translation whose source has changed since it was written.
+     *
+     * <p>{@code translation-missing} asks about absence, so a site could be fully translated, then
+     * wrong, and nothing could tell. A translation now records the digest of the source it was
+     * written against ({@code source_digest}), and this compares it with the source's digest as the
+     * source reads now — a string comparison, not a diff.</p>
+     *
+     * <p>A <b>warning</b>, as {@code translation-missing} is: a translation that lags its source is
+     * work in progress. It runs on a scoped run too, unlike that rule, because its evidence is a
+     * present thing — the translation in scope and its source, read by id when the scope left it
+     * out. A translation with no digest (written before there was one) is not known to be stale and
+     * stays silent; so does one whose source is gone, which is SH348's broken link, not this.</p>
+     */
+    private void staleTranslations(Scan scan, List<Finding> findings) {
+        String check = ShAgentCheck.CONTENT.wireName();
+        Map<String, ShPostUnified> latest = new LinkedHashMap<>();
+        for (ShPostUnified post : scan.posts()) {
+            latest.merge(post.getId(), post,
+                    (kept, other) -> kept.getState() == ShPostState.DRAFT ? kept : other);
+        }
+        Map<String, java.util.Optional<String>> sourceDigests = new HashMap<>();
+        for (ShPostUnified post : latest.values()) {
+            if (!ShPostUnifiedWriteService.isTranslation(post) || post.getSourceDigest() == null) {
+                continue;
+            }
+            String sourceId = post.getTranslationGroupId();
+            java.util.Optional<String> current = sourceDigests.computeIfAbsent(sourceId,
+                    id -> currentDigest(latest.get(id), id));
+            if (current.isEmpty() || current.get().equals(post.getSourceDigest())) {
+                continue;
+            }
+            ShPostUnified source = latest.get(sourceId);
+            findings.add(Finding.warning(check, "translation-stale", address(post), null,
+                    "The page this translates"
+                            + (source == null ? "" : " (" + address(source) + ")")
+                            + " has changed since this translation was written.",
+                    "Bring this translation up to date and save it; its next edit records the source "
+                            + "as it reads then. A warning rather than an error: a translation that "
+                            + "lags its source is work in progress."));
+        }
+    }
+
+    /** The source's digest as it reads now, draft-preferred, or empty when there is no source. */
+    private java.util.Optional<String> currentDigest(ShPostUnified inScan, String sourceId) {
+        ShPostUnified source = inScan != null ? inScan
+                : shPostUnifiedRepository.findByIdAndState(sourceId, ShPostState.DRAFT)
+                        .or(() -> shPostUnifiedRepository.findByIdAndState(sourceId, ShPostState.PUBLISHED))
+                        .orElse(null);
+        return java.util.Optional.ofNullable(source)
+                .map(found -> ShDocumentDigest.of(found.getData(), objectMapper));
     }
 
     /**

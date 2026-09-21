@@ -1462,6 +1462,20 @@ renderer over one body of content at a second address. See the section on it bel
   order — deterministic and meaningless), reading as "the Portuguese page is missing German". It hangs on
   the group's **anchor** now, which SH53's column already identifies for free: a master post carries its
   own id as the group.
+  **`translation-stale` (SH1058) is the other half: a translation whose source has changed since.**
+  `sh_post_unified.source_digest` is stamped by `ShPostUnifiedWriteService.create` whenever the group is
+  not the post's own — so both doors that make a translation (the console's `translate` and the agent's
+  `translationOf`) get it — and holds `ShDocumentDigest` of the source's document, draft-preferred.
+  The digest sorts object keys before hashing, because a re-save that reorders keys is not an edit and
+  would otherwise make every translation of a re-saved page stale; array order is kept, because blocks
+  in another order are another page. **A snapshot, never a mirror**: a source edit never touches it,
+  which is what makes staleness a string comparison. The translation's *own* content edit re-stamps it
+  — that save is the translator saying the text matches the source in front of them — and publish,
+  a draft rebuilt from the live row and a revision restore all carry it across. Null means "not known to be
+  stale" (a translation written before the column), so nothing is backfilled. Unlike
+  `translation-missing` it runs on a scoped run, because its evidence is present: the translation, and
+  its source read by id when the scope left it out. `ShTranslationStalenessTest` drives it through the
+  real write service.
   **The engine is the one source of the capability set (SH260)**: `register(name, ShHelperShape,
   helper)` records the name *and the call shape* (`BLOCK` / `BLOCK_PATH_ARG` / `INLINE_PATH_ARG`),
   and every reader asks — the unknown-helper refusal lists `engine.registeredNames()` (alphabetical,

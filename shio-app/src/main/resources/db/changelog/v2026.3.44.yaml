@@ -1,0 +1,34 @@
+databaseChangeLog:
+  # SH1058 — `sh_post_unified.source_digest`: what a translation was translated FROM.
+  #
+  # A hash over the source post's document, stamped when the translation is written and never
+  # refreshed from the source: it is a snapshot, not a mirror. Staleness is then a string comparison
+  # between this column and the source's current digest, rather than a diff nobody stored the other
+  # side of. The translation's own write re-stamps it, because that write is the translator saying
+  # the text now matches the source they are looking at.
+  #
+  # NULLABLE FOREVER. Null is "not a translation, or a translation written before this existed", and
+  # both read as "not known to be stale" — backfilling a digest of today's source into every existing
+  # translation would declare them all current, which is a claim nobody has checked.
+  #
+  # 64 because it holds a lowercase hex SHA-256 and nothing else. Snake-case `sh_post_unified`, the
+  # table 2026.2 created under that name (not the SH26 baseline's PascalCase). Not a tenant
+  # discriminator, so no ShTenantBackfillRunner entry. Type DB-agnostic per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1058-post-source-digest
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: sh_post_unified
+                columnName: source_digest
+      changes:
+        - addColumn:
+            tableName: sh_post_unified
+            columns:
+              - column:
+                  name: source_digest
+                  type: VARCHAR(64)

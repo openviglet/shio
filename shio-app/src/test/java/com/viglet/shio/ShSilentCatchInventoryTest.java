@@ -328,6 +328,13 @@ class ShSilentCatchInventoryTest {
             // read that surfaces it. Refusing here would answer one problem with a message
             // about another, sending whoever read it to fill in a value that is there.
             "migration", 3,
+            // 1 since SH1058: `ShDocumentDigest.of` hashes a document that does not parse as its
+            // raw text instead of its canonical form. That is the correct digest, not a degraded one:
+            // the only property the value has to keep is that it changes exactly when the content
+            // does, and raw text still does. The malformed post is already reported by verify's own
+            // rule and by the render path's CONTENT incident, so recording it here would put one
+            // broken post in the diagnostics window once per translation measured against it.
+            "post", 1,
             // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
             // as "no text", and does not record it. The render path already reports that exact post
             // as a CONTENT degradation, which is the branch of SH270's own rule this falls under —

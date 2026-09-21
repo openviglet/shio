@@ -179,6 +179,17 @@ public class ShPostUnified implements Serializable {
     private String translationGroupId;
 
     /**
+     * SH1058 — the digest of the source's document this translation was written against, or null
+     * when the post is not a translation or was translated before there was a digest.
+     *
+     * <p>A snapshot, never a mirror: nothing refreshes it when the source changes, which is what
+     * makes "the source has moved on since" a string comparison. The translation's own write
+     * re-stamps it — see {@code ShPostUnifiedWriteService}.</p>
+     */
+    @Column(name = "source_digest", length = 64)
+    private String sourceDigest;
+
+    /**
      * SH55 — soft-delete (trash) marker. When non-null the post is in the trash:
      * the {@code @SQLRestriction} hides it from every normal read, but the row
      * survives so it can be restored or purged. {@code null} = live.
@@ -453,6 +464,15 @@ public class ShPostUnified implements Serializable {
 
     public void setTranslationGroupId(String translationGroupId) {
         this.translationGroupId = translationGroupId;
+    }
+
+    /** SH1058 — the source digest this translation was written against, or null. */
+    public String getSourceDigest() {
+        return sourceDigest;
+    }
+
+    public void setSourceDigest(String sourceDigest) {
+        this.sourceDigest = sourceDigest;
     }
 
     public Instant getDeletedDate() {

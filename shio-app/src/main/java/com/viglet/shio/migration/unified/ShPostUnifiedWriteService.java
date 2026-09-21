@@ -43,6 +43,7 @@ import com.viglet.shio.object.ShFolderSite;
 import lombok.extern.slf4j.Slf4j;
 
 import com.viglet.shio.api.post.unified.ShHtmlSanitizer;
+import com.viglet.shio.post.ShDocumentDigest;
 import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.widget.ShSystemWidget;
 import com.viglet.shio.render.ShTemplateTitles;
@@ -216,6 +217,11 @@ public class ShPostUnifiedWriteService {
         row.setLocale(req.locale() != null && !req.locale().isBlank() ? req.locale() : DEFAULT_LOCALE);
         row.setTranslationGroupId(req.translationGroupId() != null && !req.translationGroupId().isBlank()
                 ? req.translationGroupId() : postId);
+        // SH1058 — a translation records which version of the source it was written against. Both
+        // doors that create one (the console's translate and the agent's translationOf) arrive here.
+        if (!postId.equals(row.getTranslationGroupId())) {
+            row.setSourceDigest(sourceDigestOf(row.getTranslationGroupId()));
+        }
         row.setPublished(state == ShPostState.PUBLISHED);
         row.setPublishStatus(state == ShPostState.PUBLISHED
                 ? ShObjectPublishStatus.PUBLISH : ShObjectPublishStatus.DRAFT);
@@ -292,6 +298,16 @@ public class ShPostUnifiedWriteService {
             row.setData(writeJson(clean));
             applyTitleAndSummary(row, clean, row.getShPostType());
             shTemplateTitles.checkFree(row);
+            // SH1058 — a translation's own edit is the translator saying the text now matches the
+            // source in front of them, so it re-stamps against the source as it is now. A source
+            // edit never touches this: that is what makes the translation stale until somebody
+            // answers it.
+            if (!changed.isEmpty() && isTranslation(row)) {
+                String current = sourceDigestOf(row.getTranslationGroupId());
+                if (current != null) {
+                    row.setSourceDigest(current);
+                }
+            }
         }
         row.setModifiedDate(Instant.now());
         if (req.modifier() != null) row.setModifier(req.modifier());
@@ -421,6 +437,30 @@ public class ShPostUnifiedWriteService {
                 payload, ShPostState.DRAFT, owner, locale, groupId));
     }
 
+    /**
+     * SH1058 — the digest of a translation group's source as it reads now, or null when the group
+     * has no source left to read.
+     *
+     * <p>The source is the member whose id <em>is</em> the group id (SH383's anchor rule), read
+     * draft-preferred: the version a curator editing the source is looking at is the version a
+     * translation is measured against.</p>
+     */
+    @Transactional(readOnly = true)
+    public String sourceDigestOf(String translationGroupId) {
+        if (translationGroupId == null || translationGroupId.isBlank()) {
+            return null;
+        }
+        return resolveAnyState(translationGroupId)
+                .map(source -> ShDocumentDigest.of(source.getData(), objectMapper))
+                .orElse(null);
+    }
+
+    /** Whether this row is a translation of another post rather than a source of its own group. */
+    public static boolean isTranslation(ShPostUnified post) {
+        String group = post.getTranslationGroupId();
+        return group != null && !group.isBlank() && !group.equals(post.getId());
+    }
+
     /** All sibling translations of a post's group (SH53), DRAFT-preferred, one per id. */
     @Transactional(readOnly = true)
     public List<ShPostUnified> listTranslations(String postId) {
@@ -534,6 +574,8 @@ public class ShPostUnifiedWriteService {
         pub.setData(draft.getData());
         pub.setLocale(draft.getLocale());
         pub.setTranslationGroupId(draft.getTranslationGroupId());
+        // SH1058 — the published row says what it was translated from, as the draft did.
+        pub.setSourceDigest(draft.getSourceDigest());
         ShPostUnified saved = shPostUnifiedRepository.save(pub);
         // SH1034 — the PUBLISHED row is a second document with its own edges: it has just taken
         // the draft's data, and until this runs the index describes the page as it was last live.
@@ -576,6 +618,7 @@ public class ShPostUnifiedWriteService {
                     d.setDate(published.getDate());
                     d.setLocale(published.getLocale());
                     d.setTranslationGroupId(published.getTranslationGroupId());
+                    d.setSourceDigest(published.getSourceDigest());
                     return d;
                 });
 
@@ -627,6 +670,7 @@ public class ShPostUnifiedWriteService {
                             d.setOwner(live.getOwner());
                             d.setDate(live.getDate());
                             d.setTranslationGroupId(live.getTranslationGroupId());
+                            d.setSourceDigest(live.getSourceDigest());
                             return d;
                         }))
                 .orElseThrow(() -> new IllegalArgumentException("Post not found: " + postId));
@@ -869,6 +913,7 @@ public class ShPostUnifiedWriteService {
         draft.setFurl(published.getFurl());
         draft.setLocale(published.getLocale());
         draft.setTranslationGroupId(published.getTranslationGroupId());
+        draft.setSourceDigest(published.getSourceDigest());
         draft.setPublished(false);
         draft.setPublishStatus(ShObjectPublishStatus.DRAFT);
         return draft;
