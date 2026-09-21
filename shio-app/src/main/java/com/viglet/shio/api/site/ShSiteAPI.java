@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.site.dto.ShSiteRequest;
@@ -54,16 +55,20 @@ public class ShSiteAPI {
     private final ShTenantQuotaService shTenantQuotaService;
     /** SH1056 — which languages a site is in, the one resolver every surface reads. */
     private final ShSiteLocaleService shSiteLocaleService;
+    /** SH1060 — what it has in each of them, and what it has not. */
+    private final ShSiteCoverageService shSiteCoverageService;
 
     public ShSiteAPI(ShSiteRepository shSiteRepository, ShSiteWriteService shSiteWriteService,
                      ShSiteExportService shSiteExportService,
                      ShTenantQuotaService shTenantQuotaService,
-                     ShSiteLocaleService shSiteLocaleService) {
+                     ShSiteLocaleService shSiteLocaleService,
+                     ShSiteCoverageService shSiteCoverageService) {
         this.shSiteRepository = shSiteRepository;
         this.shSiteWriteService = shSiteWriteService;
         this.shSiteExportService = shSiteExportService;
         this.shTenantQuotaService = shTenantQuotaService;
         this.shSiteLocaleService = shSiteLocaleService;
+        this.shSiteCoverageService = shSiteCoverageService;
     }
 
     @GetMapping
@@ -142,6 +147,29 @@ public class ShSiteAPI {
     public ResponseEntity<ShSiteLocales> locales(@PathVariable String id) {
         return resolve(id)
                 .map(site -> ResponseEntity.ok(shSiteLocaleService.of(site)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * SH1131 — what this site has in each of its languages, and what it has not (SH1060's read).
+     *
+     * <p>A row per page and a cell per language — {@code current}, {@code stale} (SH1058) or
+     * {@code missing} — with the address to open in each, plus the per-language totals over the
+     * whole site rather than over the page in hand. That is the work list a Languages board draws
+     * and the one an agent can act on; {@code missingLocale} on {@code /agent/find} answers the
+     * same question one language at a time, and this answers every language at once.</p>
+     *
+     * <p>Paged, because a site's pages are its content and a board has to open on a large one. The
+     * cost is two queries whatever the page: one projection of the site's rows and one read of the
+     * sources' documents, and the second is skipped entirely on a site whose translations carry no
+     * SH1058 stamp.</p>
+     */
+    @GetMapping("/{id}/coverage")
+    public ResponseEntity<ShSiteCoverage> coverage(@PathVariable String id,
+                                                   @RequestParam(name = "page", defaultValue = "0") int page,
+                                                   @RequestParam(name = "size", defaultValue = "50") int size) {
+        return resolve(id)
+                .map(site -> ResponseEntity.ok(shSiteCoverageService.of(site, page, size)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 

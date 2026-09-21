@@ -1442,6 +1442,24 @@ a front end needs once. The five-argument constructor is that shape, and the con
 (`ShConsoleNavigationMapper`) uses it too. `ShCdaSiteLocalesTest` asserts the declared read, the
 production/preview split, the batched listing and the silent breadcrumb.
 
+## A site's coverage in one read (SH1131)
+
+`GET /api/v2/site/{id}/coverage?page=&size=` answers a **row per page and a cell per language** —
+`current`, `stale` (SH1058) or `missing`, each with the address to open — plus the per-language
+totals **over the whole site** rather than over the page of rows in hand, because a summary counted
+over the page says "one missing" on a board showing one of forty. The columns are the site's
+declared languages (SH1056), so a language it has written nothing in is a column of `missing`,
+which is the backlog the read exists to show.
+
+**Two queries whatever the site holds.** The shape tempts a lookup per group — four hundred pages,
+four hundred queries, and the surface meant to make the backlog visible is the one nobody opens. So
+it is one projection of the site's rows (`findCoverageRowsBySiteId`: group, id, locale, furl, title,
+stamp, state — columns, never documents) and one read of the **sources'** documents to digest, taken
+only for groups where some member carries a stamp: a site whose translations predate SH1058 reads no
+documents at all. The totals come from the same pass as the rows, so a board cannot say seven and
+show six. `missingLocale` on `/agent/find` asks the same question one language at a time, and
+`ShSiteCoverageTest` holds the two answers to each other.
+
 ## A delivery listing can be asked for one language (SH1127)
 
 SH1057's CDA half. `by-url` was the one read that took `locale`; the folder list, `/query` and

@@ -675,6 +675,31 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<ShPostUnified> findByTranslationGroupId(String translationGroupId);
 
     /**
+     * SH1060 — everything a coverage board reads, as one projection per site.
+     *
+     * <p>Columns and not entities: the board needs which group, which language, where it is and
+     * whether it carries a stamp, and loading the documents to answer that would read a site's
+     * whole content to draw a table of links. Both states, because the board describes the page a
+     * curator is editing (draft-preferred), as every other console read does.</p>
+     *
+     * @return rows of {@code [translationGroupId, id, locale, furl, title, sourceDigest, state]}
+     */
+    @Query("select p.translationGroupId, p.id, p.locale, p.furl, p.title, p.sourceDigest, p.state "
+            + "from ShPostUnified p where p.shSite.id = :siteId")
+    List<Object[]> findCoverageRowsBySiteId(@Param("siteId") String siteId);
+
+    /**
+     * SH1060 — the documents a coverage read has to digest, in one query.
+     *
+     * <p>Only the groups' sources, and only where some member carries a stamp: a site whose
+     * translations predate SH1058 reads no documents at all.</p>
+     *
+     * @return rows of {@code [id, state, data]}
+     */
+    @Query("select p.id, p.state, p.data from ShPostUnified p where p.id in :ids")
+    List<Object[]> findDocumentsByIdIn(@Param("ids") Collection<String> ids);
+
+    /**
      * SH1129 — the locales several translation groups are in, for a listing in one query.
      *
      * <p>{@link #findByTranslationGroupId} answers one post's switcher and loads whole rows to do
