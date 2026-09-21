@@ -29,6 +29,7 @@ import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.post.revision.ShPostRevisionService;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
+import com.viglet.shio.api.site.ShSiteLocaleService;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -124,6 +125,8 @@ public class ShPageRenderService {
     private final ShAgentIncidentLog incidentLog;
     /** SH990 — what a page said at a revision, for {@code state=rev:<n>}. */
     private final ShPostRevisionService shPostRevisionService;
+    /** SH1057 — the site's fallback chain, which decides what a reader asking for a locale gets. */
+    private final ShSiteLocaleService shSiteLocaleService;
 
     public ShPageRenderService(ShSiteRepository shSiteRepository,
                                ShPostUnifiedRepository shPostUnifiedRepository,
@@ -133,8 +136,10 @@ public class ShPageRenderService {
                                ShRenderModel renderModel,
                                ObjectMapper objectMapper,
                                ShAgentIncidentLog incidentLog,
-                               ShPostRevisionService shPostRevisionService) {
+                               ShPostRevisionService shPostRevisionService,
+                               ShSiteLocaleService shSiteLocaleService) {
         this.shPostRevisionService = shPostRevisionService;
+        this.shSiteLocaleService = shSiteLocaleService;
         this.shSiteRepository = shSiteRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -199,6 +204,30 @@ public class ShPageRenderService {
                                  Map<String, String> params) {
         ShSite site = siteByKey(siteKey);
         return renderPage(site, pageAt(site, url, state), state, params, null);
+    }
+
+    /**
+     * SH1057 — as {@link #render(String, String, ShPostState, Map)}, for a reader who asked for a
+     * locale.
+     *
+     * <p>The public route parsed its locale segment into the link prefix and nothing read it, so on
+     * a site with two languages every locale URL rendered the same page. This is where the segment
+     * reaches the resolution: see {@link #pageInLocale} for what "the page in pt-br" means when a
+     * translation lives at its own URL.</p>
+     *
+     * @param locale the locale the URL named, or null/blank for the page at the path, whatever its
+     *               language — which is what every call made before this one got
+     * @throws ShPageRedirectException 302 to a translation at its own URL, when that is the answer
+     */
+    @Transactional(readOnly = true,
+        noRollbackFor = { ShTeachingException.class, ShPageRedirectException.class })
+    public ShRenderedPage render(String siteKey, String url, ShPostState state,
+                                 Map<String, String> params, String locale) {
+        ShSite site = siteByKey(siteKey);
+        ShPostUnified page = locale == null || locale.isBlank()
+                ? pageAt(site, url, state)
+                : pageInLocale(site, url, state, locale.trim());
+        return renderPage(site, page, state, params, null);
     }
 
     /**
@@ -509,7 +538,14 @@ public class ShPageRenderService {
      */
     @Transactional(readOnly = true)
     public List<String> localesOf(String siteKey, ShPostState state) {
-        return shPostUnifiedRepository.findDistinctLocalesBySiteId(siteByKey(siteKey).getId(), state);
+        ShSite site = siteByKey(siteKey);
+        List<String> inContent = shPostUnifiedRepository.findDistinctLocalesBySiteId(site.getId(), state);
+        // SH1057 — and the ones the site declares, which a URL may now name before any page is
+        // written in them: the fallback chain answers it, so refusing it would 404 a URL the site
+        // promises. Sorted and distinct, as the query already was.
+        java.util.TreeSet<String> offered = new java.util.TreeSet<>(inContent);
+        shSiteLocaleService.declared(site).ifPresent(policy -> offered.addAll(policy.enabled()));
+        return List.copyOf(offered);
     }
 
     /**
@@ -561,6 +597,102 @@ public class ShPageRenderService {
             });
         }
         return page.orElseThrow(() -> new UnknownPageException(site.getName(), furl, state));
+    }
+
+    /**
+     * SH1057 — the page a reader asking for {@code wanted} gets at this path.
+     *
+     * <h2>A translation has its own URL, so the locale selects through the group</h2>
+     *
+     * <p>{@code translate} creates the sibling through {@code create}, which gives it a free friendly
+     * URL — an English {@code /about} and its Portuguese translation at {@code /about-2}, linked by
+     * {@code translationGroupId}. So "{@code /pt-br/about}" cannot mean a second row at
+     * {@code /about}; it means the Portuguese member of {@code /about}'s group. The answer is a
+     * <b>302</b> to that member's own URL, in the reader's locale space: serving it here would put
+     * one page at two addresses, which is the split SH467 exists to close, and a 302 rather than a
+     * 301 because the translation that is missing today may be written tomorrow.</p>
+     *
+     * <h2>In the site's own order</h2>
+     *
+     * <p>The locales are tried along the site's declared fallback chain (SH1056) — the one asked
+     * for, then its fallback, ending at the default — and at each one: the page at the path when it
+     * is already in that locale, a row at the same path in that locale (the unique key allows two
+     * translations to share a URL, and a locale-blind read there would otherwise redirect to itself
+     * for ever), then a group member elsewhere. A site with no declared policy tries the locale asked
+     * for alone. When nothing answers, the page at the path is served as it always was, which is
+     * what keeps a single-language site's URLs exactly as they were.</p>
+     */
+    private ShPostUnified pageInLocale(ShSite site, String url, ShPostState state, String wanted) {
+        String furl = url == null || url.isBlank() ? "/" : url;
+        Optional<ShPostUnified> exact = rowInLocale(site, furl, state, wanted);
+        if (exact.isPresent()) {
+            return exact.get();
+        }
+        ShPostUnified page = pageAt(site, url, state);
+        List<String> chain = shSiteLocaleService.declared(site)
+                .map(policy -> policy.chain(wanted))
+                .orElse(List.of(wanted));
+        List<ShPostUnified> siblings = null;
+        for (String locale : chain) {
+            if (locale.equalsIgnoreCase(page.getLocale())) {
+                return page;
+            }
+            if (!locale.equalsIgnoreCase(wanted)) {
+                Optional<ShPostUnified> here = rowInLocale(site, furl, state, locale);
+                if (here.isPresent()) {
+                    return here.get();
+                }
+            }
+            if (siblings == null) {
+                siblings = translationsOf(page, state);
+            }
+            inLocale(siblings, locale).ifPresent(sibling -> {
+                throw new ShPageRedirectException(sibling.getFurl(), false);
+            });
+        }
+        return page;
+    }
+
+    private static Optional<ShPostUnified> inLocale(List<ShPostUnified> rows, String locale) {
+        return rows.stream().filter(row -> locale.equalsIgnoreCase(row.getLocale())).findFirst();
+    }
+
+    /** The row at this path in this locale, draft-preferred when previewing as {@link #pageWithFurl} is. */
+    private Optional<ShPostUnified> rowInLocale(ShSite site, String furl, ShPostState state, String locale) {
+        return state == ShPostState.DRAFT
+                ? first(shPostUnifiedRepository.findByShSite_IdAndFurlAndStateAndLocale(
+                                site.getId(), furl, ShPostState.DRAFT, locale),
+                        () -> shPostUnifiedRepository.findByShSite_IdAndFurlAndStateAndLocale(
+                                site.getId(), furl, ShPostState.PUBLISHED, locale))
+                : shPostUnifiedRepository.findByShSite_IdAndFurlAndStateAndLocale(
+                        site.getId(), furl, ShPostState.PUBLISHED, locale);
+    }
+
+    /**
+     * The page's translations a reader of this state may be sent to, by id.
+     *
+     * <p>Its own site only, never itself, never one in the trash, and never one at the page's own
+     * URL — that one is {@link #rowInLocale}'s to serve, and redirecting to it would redirect to the
+     * address the reader is already at. Ordered by id so a group holding two members in one locale
+     * sends every reader to the same one.</p>
+     */
+    private List<ShPostUnified> translationsOf(ShPostUnified page, ShPostState state) {
+        String group = page.getTranslationGroupId() != null ? page.getTranslationGroupId() : page.getId();
+        String siteId = page.getShSite() == null ? null : page.getShSite().getId();
+        Map<String, ShPostUnified> byId = new java.util.TreeMap<>();
+        for (ShPostUnified row : shPostUnifiedRepository.findByTranslationGroupId(group)) {
+            boolean readable = row.getState() == state
+                    || (state == ShPostState.DRAFT && row.getState() == ShPostState.PUBLISHED);
+            if (!readable || row.getId().equals(page.getId()) || row.getDeletedDate() != null
+                    || row.getShSite() == null || !row.getShSite().getId().equals(siteId)
+                    || row.getFurl() == null || row.getFurl().isBlank()
+                    || row.getFurl().equals(page.getFurl())) {
+                continue;
+            }
+            byId.merge(row.getId(), row, (kept, other) ->
+                    kept.getState() == ShPostState.DRAFT ? kept : other);
+        }
+        return List.copyOf(byId.values());
     }
 
     private Optional<ShPostUnified> pageWithFurl(ShSite site, String furl, ShPostState state) {

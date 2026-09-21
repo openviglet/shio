@@ -683,7 +683,24 @@ renderer over one body of content at a second address. See the section on it bel
   because that is the same set. The default short-circuits, so only a URL that actually names
   another locale pays the site read and the projection; `localesOf` lives on `ShPageRenderService`
   because `siteByKey` (SH181's id → furl → name order) does, and a second copy of that on the
-  controller is the copy that stops matching.
+  controller is the copy that stops matching. Since SH1057 the set also holds the locales a site
+  *declares* (SH1056), since a URL may name one before any page is written in it and the fallback
+  chain answers it.
+- **The locale segment selects the content (SH1057)** — `Address.selectedLocale()` reaches
+  `ShPageRenderService.render(…, locale)`, and `DEFAULT_LOCALE` is *no* selection (it is every link
+  the route has built, and reading it as English would send a Portuguese site's home to its English
+  translation). A translation lives at **its own URL** — `translate` goes through `create`, which
+  gives it a free furl — and shares `translationGroupId` with its source, so "`/pt-br/about`" means
+  the pt-br member of `/about`'s group. `pageInLocale` walks the site's declared fallback chain (the
+  locale asked for alone when nothing is declared), and at each locale takes, in order: the page at
+  the path if it is already in it; a row at the same path in it (the unique key lets two
+  translations share a URL, and a locale-blind read there would redirect to itself for ever); a
+  group member elsewhere, answered with a **302** to that member's URL in the reader's locale space.
+  Serving the member in place would put one page at two addresses — SH467's split — and 302 rather
+  than 301 because the missing translation may be written tomorrow. When nothing answers, the page
+  at the path is served as it always was, which is what keeps a single-language site unchanged.
+  Only the public route passes a locale; the preview resolves as before. `ShSitesLocaleSelectionTest`
+  holds both directions, the chain, the untranslated page, the route default and the shared URL.
 - **A `File` post is reachable at the path its source used, and `src` joins the rewrite (SH437)** —
   a static file's bytes are public at `/file_source/<postId>/<fileName>` (SH38), keyed by an id no
   source ever chose, so a fidelity replica's `<img src="/img/hero.png">` was as broken with the bytes

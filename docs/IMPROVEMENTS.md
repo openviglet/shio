@@ -2758,8 +2758,8 @@ validator hides the mismatch. The CDA's list, query and search take no locale, t
 GraphQL schema has no locale reference, and the TypeScript client cannot pass a locale
 to the one endpoint that accepts it while its response type already declares one.
 
-Thread the segment into a locale-aware resolve using the finder that exists, then BH1's
-fallback chain, then today's locale-blind finder last, so no monolingual site changes.
+The route half shipped first: a translation lives at its own URL, so the segment selects
+through the translation group along BH1's chain (a 302), recorded in renderer.md.
 Replace the second default constant with the policy's canonical tag. Add locale to CDA
 list, query and search, and locale plus available locales to GraphQL with a locale
 argument, measuring first the per-row available-locales lookup, which is an N+1 on a

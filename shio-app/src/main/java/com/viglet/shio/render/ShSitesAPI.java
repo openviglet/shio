@@ -84,12 +84,13 @@ import jakarta.servlet.http.HttpServletRequest;
  * on the surface they cannot reach. So a format that is not {@code default} is now
  * {@link UnknownFormatException}, and the segment finally means what this note always said.</p>
  *
- * <p><b>The locale segment has the same shape and is deliberately left (SH459).</b> It is read into
- * the prefix and never passed to the renderer, so {@code /sites/acme/default/xx-yy/} also answers the
- * home page with 200. The format check above already covers every case this task measured — a
- * root-relative reference puts its first segment in the <em>format</em> slot — and narrowing the
- * locale axis is a statement about a multi-language CMS rather than a defect fix, so it is filed
- * rather than taken here.</p>
+ * <p><b>The locale segment was left, then checked, then read.</b> SH459 made a locale the site has no
+ * content in a 404 instead of the home page with a 200, and it still only reached the prefix. Since
+ * SH1057 it selects the content: {@link Address#selectedLocale} goes to the renderer, which serves the
+ * page at the path when it is in that locale and otherwise sends the reader, with a 302, to the
+ * member of its translation group the site's fallback chain names — at that translation's own URL.
+ * The route's own default ({@link #DEFAULT_LOCALE}) asks for nothing, so every link it has built
+ * resolves as it did.</p>
  *
  * <h2>Six guards, inverted</h2>
  *
@@ -163,8 +164,10 @@ public class ShSitesAPI {
         requireKnownLocale(address);
         ShRenderedPage rendered;
         try {
+            // SH1057 — the segment reaches the resolution. The route's own default is every link it
+            // has ever built, so it asks for nothing and the page at the path is served as before.
             rendered = shPageRenderService.render(address.site(), address.path(),
-                    ShPostState.PUBLISHED, readerParams(request));
+                    ShPostState.PUBLISHED, readerParams(request), address.selectedLocale());
         } catch (ShPageRenderService.UnknownPageException noPage) {
             // SH437's fallback, on this route too: a site's own images are served at the source's
             // paths, and a public page whose images 404 is not a published site.
@@ -297,6 +300,19 @@ public class ShSitesAPI {
      * @param prefix what a link in this page has to be prefixed with to stay in this address space
      */
     public record Address(String site, String path, String prefix, String locale) {
+
+        /**
+         * SH1057 — the locale this URL asks the content to be in, or null when it asks for none.
+         *
+         * <p>{@link #DEFAULT_LOCALE} is the value this route writes whenever the reader named nothing,
+         * and every link it has built carries it, so it is not a request for English: it is the
+         * absence of a request, and reading it as one would redirect a Portuguese site's own home
+         * page to its English translation.</p>
+         */
+        public String selectedLocale() {
+            return locale == null || locale.isBlank() || DEFAULT_LOCALE.equalsIgnoreCase(locale)
+                    ? null : locale;
+        }
 
         /**
          * @param within everything after {@code /sites}
