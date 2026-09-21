@@ -84,6 +84,9 @@ public class ShGraphQLSchema {
     /** SH990 — the {@code state=} grammar, as a query argument. */
     private static final String FIELD_STATE = "state";
     private static final String FIELD_FOLDER_ID = "folderId";
+    /** SH1129 — a post's language, as a field and as the argument that narrows to one. */
+    private static final String FIELD_LOCALE = "locale";
+    private static final String FIELD_AVAILABLE_LOCALES = "availableLocales";
 
     /** Common post fields shared by every content type, with their resolvers. */
     private static final Map<String, Function<ShCdaPost, Object>> COMMON_FIELDS = new LinkedHashMap<>();
@@ -99,6 +102,11 @@ public class ShGraphQLSchema {
         COMMON_FIELDS.put("date", post -> asText(post.date()));
         COMMON_FIELDS.put("modifiedDate", post -> asText(post.modifiedDate()));
         COMMON_FIELDS.put("publicationDate", post -> asText(post.publicationDate()));
+        // SH1129 — the two fields a language switcher is built from, which REST has carried since
+        // SH52 and the GraphQL schema never declared: a GraphQL front end could not tell which
+        // language a post was in, nor which others it existed in.
+        COMMON_FIELDS.put(FIELD_LOCALE, ShCdaPost::locale);
+        COMMON_FIELDS.put(FIELD_AVAILABLE_LOCALES, ShCdaPost::availableLocales);
     }
 
     private final ShPostTypeRepository shPostTypeRepository;
@@ -350,6 +358,8 @@ public class ShGraphQLSchema {
                 .argument(arg(FIELD_SITE_ID, new GraphQLNonNull(Scalars.GraphQLString)))
                 .argument(arg("url", new GraphQLNonNull(Scalars.GraphQLString)))
                 .argument(arg(FIELD_STATE, Scalars.GraphQLString))
+                // SH1129 — REST's by-url has taken a locale since SH53; this is the same argument.
+                .argument(arg(FIELD_LOCALE, Scalars.GraphQLString))
                 .build();
         // Note: scalars / non-null-of-scalar are both GraphQLInputType and
         // GraphQLOutputType, so they are valid argument types.
@@ -361,6 +371,7 @@ public class ShGraphQLSchema {
                 .argument(argDefault("page", Scalars.GraphQLInt, 0))
                 .argument(argDefault("size", Scalars.GraphQLInt, 50))
                 .argument(arg(FIELD_STATE, Scalars.GraphQLString))
+                .argument(arg(FIELD_LOCALE, Scalars.GraphQLString))
                 .build();
 
         codeRegistry.dataFetcher(FieldCoordinates.coordinates(QUERY_TYPE, "post"),
@@ -368,13 +379,13 @@ public class ShGraphQLSchema {
                         env.getArgument(FIELD_STATE)).orElse(null));
         codeRegistry.dataFetcher(FieldCoordinates.coordinates(QUERY_TYPE, "postByUrl"),
                 (DataFetcher<Object>) env -> shCdaService
-                        .getPostByUrl(env.getArgument(FIELD_SITE_ID), env.getArgument("url"), null,
-                                env.getArgument(FIELD_STATE)).orElse(null));
+                        .getPostByUrl(env.getArgument(FIELD_SITE_ID), env.getArgument("url"),
+                                env.getArgument(FIELD_LOCALE), env.getArgument(FIELD_STATE)).orElse(null));
         codeRegistry.dataFetcher(FieldCoordinates.coordinates(QUERY_TYPE, "posts"),
                 (DataFetcher<Object>) env -> shCdaService.queryPosts(
                         env.getArgument(FIELD_SITE_ID), env.getArgument(FIELD_FOLDER_ID), env.getArgument(FIELD_POST_TYPE),
                         intArg(env.getArgument("page"), 0), intArg(env.getArgument("size"), 50),
-                        env.getArgument(FIELD_STATE)));
+                        env.getArgument(FIELD_STATE), env.getArgument(FIELD_LOCALE)));
 
         return GraphQLObjectType.newObject().name(QUERY_TYPE)
                 .field(post).field(postByUrl).field(posts).build();
@@ -428,6 +439,9 @@ public class ShGraphQLSchema {
         return switch (name) {
             case "id" -> new GraphQLNonNull(Scalars.GraphQLID);
             case "published" -> Scalars.GraphQLBoolean;
+            // Never null and never holding one, as REST's `availableLocales: string[]` is.
+            case FIELD_AVAILABLE_LOCALES ->
+                    new GraphQLNonNull(GraphQLList.list(new GraphQLNonNull(Scalars.GraphQLString)));
             default -> Scalars.GraphQLString;
         };
     }

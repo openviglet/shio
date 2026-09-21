@@ -1821,6 +1821,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1059** — Each browser row keeps its locale as a chip beside the type, and the checkbox, title and actions all name the row with it, so a page and its translation are two different rows.
 - **SH1057 (the public route selects the translation)** — The public locale segment now selects a page's translation along the site's fallback chain, with a 302 to its own URL, and the route's default still asks for nothing.
 - **SH1127** — SH1057's CDA half: the three listings and the client take a locale as a database predicate, so a pt-br page of fifty holds fifty pt-br posts and totalPosts counts them.
+- **SH1129** — SH1057's GraphQL half: posts carry both fields and postByUrl and posts take locale; a page reads its groups in one query, 5 statements at 5 rows or 25 against 105 per row.
 
 ## Block BI — The areas this round did not reach
 

@@ -656,6 +656,19 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<ShPostUnified> findByTranslationGroupId(String translationGroupId);
 
     /**
+     * SH1129 — the locales several translation groups are in, for a listing in one query.
+     *
+     * <p>{@link #findByTranslationGroupId} answers one post's switcher and loads whole rows to do
+     * it. A delivery list asking the same of every row would be a query per row, so this is the
+     * same fact for a page: two columns, both states, as the single read counts them.</p>
+     *
+     * @return one row per (group, locale) pair as {@code [translationGroupId, locale]}
+     */
+    @Query("select distinct p.translationGroupId, p.locale from ShPostUnified p "
+            + "where p.translationGroupId in :groups and p.locale is not null")
+    List<Object[]> findDistinctLocalesByTranslationGroupIdIn(@Param("groups") Collection<String> groups);
+
+    /**
      * Every post claiming this friendly URL in this state <em>and</em> this locale, by id — SH323.
      *
      * <p>SH321's shape one parameter along, and it needed the same fix for the same reason: the

@@ -2761,9 +2761,8 @@ to the one endpoint that accepts it while its response type already declares one
 The route half shipped first: a translation lives at its own URL, so the segment selects
 through the translation group along BH1's chain (a 302), recorded in renderer.md.
 Replace the second default constant with the policy's canonical tag. CDA list, query and
-search and the client shipped as SH1127. Add locale plus available locales to GraphQL
-with a locale argument, measuring first the per-row available-locales lookup, which is
-an N+1 on a list.
+search and the client shipped as SH1127. GraphQL shipped as SH1129, with a page's
+available locales read in one query rather than one per row.
 
 A verify finding flags a route that accepts a distinction it does not honour.
 
@@ -2868,6 +2867,30 @@ remove.
 
 The assertion carries the id: with a declared default of `pt-br`, the `pt-br` row's
 accessible name says it is the default and the `en` row's does not.
+
+### LXXIII.9 A switcher entry for a page nobody published (SH1128)
+
+A post's `availableLocales` is read from its whole translation group, and nothing in
+that read asks for a state. `translate` creates the sibling as a DRAFT, so the moment a
+curator starts a Portuguese translation, every production token's read of the English
+page says it exists in `pt-br`. A switcher built from that field links to a page the
+same token gets a 404 for, and it stays that way for as long as the translation is being
+written.
+
+SH1123 fixed the same defect one level up: a site's derived languages are read from the
+states the token can see, so a production switcher is never offered a draft-only
+language. The post-level field kept the old rule, and SH1129 carried it into GraphQL
+deliberately, so the two surfaces agree while this is open rather than disagreeing in a
+way nobody filed.
+
+The fix is the one SH1123 made: the group's locales come from the rows in the states the
+reader reads. `PUBLISHED` for a production token, both for a preview token. The batch
+query SH1129 added takes the states as a parameter, and the single-post path moves onto
+it so there is one reading of the rule instead of two.
+
+The assertion carries the id: a published English page with a draft-only `pt-br` sibling
+reports `["en"]` to a production token and `["en","pt-br"]` to a preview token, on REST
+and on GraphQL.
 
 ## LXXIV The areas this round did not reach (Block BI)
 

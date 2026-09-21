@@ -42,6 +42,8 @@ interface ShContent {
   date: String            # ISO-8601 instant
   modifiedDate: String
   publicationDate: String
+  locale: String                  # SH1129 — the language this post is written in
+  availableLocales: [String!]!    # SH1129 — every language its translation group is in
 }
 
 # one per content post-type, e.g. "News":
@@ -57,10 +59,18 @@ type ShGenericPost implements ShContent { # fallback for system / unmapped types
 
 type Query {
   post(id: ID!): ShContent
-  postByUrl(siteId: String!, url: String!): ShContent
-  posts(siteId: String, folderId: String, postType: String, page: Int = 0, size: Int = 50): [ShContent!]!
+  postByUrl(siteId: String!, url: String!, state: String, locale: String): ShContent
+  posts(siteId: String, folderId: String, postType: String, page: Int = 0, size: Int = 50,
+        state: String, locale: String): [ShContent!]!
 }
 ```
+
+`locale` (SH1129) is REST's parameter of the same name: `postByUrl` resolves only the translation
+in that language, `posts` lists only posts written in it. `availableLocales` on a `posts` page is
+read for every row's translation group in **one** query rather than one per row —
+`ShCdaAvailableLocalesBenchmarkTest` holds a page of five and a page of twenty-five to the same
+statement count. Both names are now reserved: a post-type attribute called `locale` becomes the
+field `locale2`, as any attribute colliding with a common field already did.
 
 A client queries exactly the fields a page needs via inline fragments:
 ```graphql

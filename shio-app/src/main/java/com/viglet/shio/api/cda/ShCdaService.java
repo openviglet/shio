@@ -302,10 +302,45 @@ public class ShCdaService {
     /** As above, over the rows {@code state} names (SH990) — GraphQL's {@code posts(state:)}. */
     public List<ShCdaPost> queryPosts(String siteId, String folderId, String postType, int page, int size,
                                       String state) {
-        return queryPage(siteId, folderId, postType, listingStates(state), null, pageable(page, size))
-                .getContent().stream()
-                .map(mapper::toPost)
+        return queryPosts(siteId, folderId, postType, page, size, state, null);
+    }
+
+    /**
+     * As above, in one locale — GraphQL's {@code posts(locale:)} (SH1129).
+     *
+     * <p>Each post carries the locales its translation group is in, read for the whole page in one
+     * query. The single-post reads ask per post, which is one query for one post; on a list the same
+     * shape is one query per row, and a page of fifty was fifty-one.</p>
+     */
+    public List<ShCdaPost> queryPosts(String siteId, String folderId, String postType, int page, int size,
+                                      String state, String locale) {
+        List<ShPostUnified> rows = queryPage(siteId, folderId, postType, listingStates(state),
+                localeOf(locale), pageable(page, size)).getContent();
+        Map<String, List<String>> byGroup = availableLocales(rows);
+        return rows.stream()
+                .map(post -> mapper.toPost(post, byGroup.getOrDefault(groupOf(post), List.of())))
                 .toList();
+    }
+
+    /** SH1129 — the locales every row's translation group is in, in one query for the page. */
+    private Map<String, List<String>> availableLocales(List<ShPostUnified> rows) {
+        if (rows.isEmpty()) {
+            return Map.of();
+        }
+        Set<String> groups = new java.util.LinkedHashSet<>();
+        rows.forEach(post -> groups.add(groupOf(post)));
+        Map<String, java.util.TreeSet<String>> sorted = new LinkedHashMap<>();
+        for (Object[] row : shPostUnifiedRepository.findDistinctLocalesByTranslationGroupIdIn(groups)) {
+            sorted.computeIfAbsent((String) row[0], group -> new java.util.TreeSet<>()).add((String) row[1]);
+        }
+        Map<String, List<String>> byGroup = new LinkedHashMap<>();
+        sorted.forEach((group, locales) -> byGroup.put(group, List.copyOf(locales)));
+        return byGroup;
+    }
+
+    /** The translation group a post belongs to — its own id when it was never translated. */
+    private static String groupOf(ShPostUnified post) {
+        return post.getTranslationGroupId() != null ? post.getTranslationGroupId() : post.getId();
     }
 
     /**

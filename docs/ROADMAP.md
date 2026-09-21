@@ -114,12 +114,13 @@
 
 ## Block BH — One content model, many languages
 
-- 🛠 **SH1057** (deps: SH1056 ✅) **the public locale segment never selects content, and most of delivery cannot ask for a locale** — GraphQL still has no locale argument or field, and the public route's en-us default still disagrees with the en every post is stored in. → §LXXIII.2
+- 🛠 **SH1057** (deps: SH1056 ✅) **the public locale segment never selects content, and most of delivery cannot ask for a locale** — The public route's en-us default still disagrees with the en every post is stored in, and nothing flags a route that accepts a locale it does not honour. → §LXXIII.2
 - 📋 **SH1058** (deps: SH1056 ✅) **nothing knows a translation is out of date, so editing the source leaves every translation claiming to be current** — Translate copies the source's data and records only the group id, with no source revision or digest, and the only translation rule asks about absence. → §LXXIII.3
 - 📋 **SH1060** (deps: SH1058, SH1022 ✅) **no surface shows translation coverage, so what is missing in pt-br is a full scan nobody runs** — shio_find cannot filter by locale though every row carries one, and the only coverage report is a warning that returns early on a scoped scan. → §LXXIII.5
 - 📋 **SH1061** (deps: SH1056 ✅) **translating means leaving the source, so the two languages are never visible together** — The whole translation interface is a menu that navigates to the sibling post, so a translator works from memory or a second browser tab. → §LXXIII.6
 - 📋 **SH1062** (deps: SH1060, SH1006) **a curator cannot ask the connected agent to translate a page or fill a locale's gaps** — Shio hosts no model, and the assistant's request relay has no translation form, so the coverage board's missing cells can be read and not handed to the agent. → §LXXIII.7
 - 📋 **SH1125** (deps: SH1056 ✅) **the browser's locale chip does not say which row is the site's default language** — SH1059's design asked for it once a site could declare a default; the console can read the policy now and the browser never asks for it. → §LXXIII.8
+- 📋 **SH1128** (deps: SH1123 ✅) **a post's availableLocales names a translation that exists only as a draft, to a production token** — translate creates a DRAFT and the group read asks for no state, so a switcher links to a page its own token gets a 404 for while the translation is written. → §LXXIII.9
 
 ## Block BI — The areas this round did not reach
 

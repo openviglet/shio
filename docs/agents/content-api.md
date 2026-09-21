@@ -1459,3 +1459,9 @@ there the locale filters the rows before `draftPreferred` pages them. A blank `?
 "not asked", since that is what a front end sends from an unset variable. `@viglet/shio-client`
 passes it on `listChildren`, `query` and — as a third argument, with options still accepted there —
 `getPostByUrl`. `ShCdaLocaleFilterTest` holds all three reads on both paths.
+
+**GraphQL has the same two fields and the same argument (SH1129).** `ShContent` declares `locale`
+and `availableLocales`, and `postByUrl` and `posts` take `locale`. A `posts` page reads every row's
+translation group in one query (`findDistinctLocalesByTranslationGroupIdIn`) — the single-post reads
+ask per post, and that shape on a list is a query per row; `ShCdaAvailableLocalesBenchmarkTest`
+prints both and holds the page's count flat from five rows to twenty-five.

@@ -272,7 +272,7 @@ class ShGraphQLSchemaTest {
     void postsQueryDelegatesToServiceWithDefaults() {
         when(shPostTypeRepository.findAll())
                 .thenReturn(List.of(postType("News", (byte) 0, "headline")));
-        lenient().when(shCdaService.queryPosts("siteA", null, null, 0, 50, null))
+        lenient().when(shCdaService.queryPosts("siteA", null, null, 0, 50, null, null))
                 .thenReturn(List.of(post("p1", "A", "News", Map.of("headline", "h"))));
 
         GraphQL graphQL = GraphQL.newGraphQL(schema().buildSchema()).build();
@@ -298,7 +298,7 @@ class ShGraphQLSchemaTest {
                 .thenReturn(Optional.of(post("p9", "As it was", "News", Map.of("headline", "then"))));
         when(shCdaService.getPostByUrl("siteA", "/news/hello", null, "published"))
                 .thenReturn(Optional.of(post("p9", "Live", "News", Map.of("headline", "now"))));
-        when(shCdaService.queryPosts("siteA", null, null, 0, 50, "draft"))
+        when(shCdaService.queryPosts("siteA", null, null, 0, 50, "draft", null))
                 .thenReturn(List.of(post("p9", "Drafted", "News", Map.of("headline", "soon"))));
 
         GraphQL graphQL = GraphQL.newGraphQL(schema().buildSchema()).build();
@@ -312,5 +312,36 @@ class ShGraphQLSchemaTest {
         assertThat(data.get("a")).isEqualTo(Map.of("title", "As it was"));
         assertThat(data.get("b")).isEqualTo(Map.of("title", "Live"));
         assertThat(data.get("c")).isEqualTo(List.of(Map.of("title", "Drafted")));
+    }
+
+    @Test
+    @DisplayName("SH1129: a post says its language and its translations, and a query can ask for one")
+    void theLocaleIsAFieldAndAnArgument() {
+        when(shPostTypeRepository.findAll())
+                .thenReturn(List.of(postType("News", (byte) 0, "headline")));
+        ObjectNode attrs = MAPPER.createObjectNode();
+        ShCdaPost portuguese = new ShCdaPost("p7", "Ola", null, "/news/ola", "News", "siteA", "folderA",
+                true, null, null, null, "pt-br", List.of("en", "pt-br"), attrs, null);
+        when(shCdaService.getPostByUrl("siteA", "/news/ola", "pt-br", null))
+                .thenReturn(Optional.of(portuguese));
+        when(shCdaService.queryPosts("siteA", null, null, 0, 50, null, "pt-br"))
+                .thenReturn(List.of(portuguese));
+
+        GraphQL graphQL = GraphQL.newGraphQL(schema().buildSchema()).build();
+        ExecutionResult result = graphQL.execute("{ "
+                + "one: postByUrl(siteId: \"siteA\", url: \"/news/ola\", locale: \"pt-br\") "
+                + "{ locale availableLocales } "
+                + "many: posts(siteId: \"siteA\", locale: \"pt-br\") { locale availableLocales } }");
+
+        assertThat(result.getErrors())
+                .as("SH1129: REST carried locale and availableLocales since SH52 and the schema "
+                        + "declared neither, so a GraphQL front end could build no switcher")
+                .isEmpty();
+        Map<String, Object> data = result.getData();
+        Map<String, Object> expected = Map.of("locale", "pt-br", "availableLocales", List.of("en", "pt-br"));
+        assertThat(data.get("one"))
+                .as("SH1129: the locale argument reached by-url, which REST has long taken (see SH53)")
+                .isEqualTo(expected);
+        assertThat(data.get("many")).isEqualTo(List.of(expected));
     }
 }

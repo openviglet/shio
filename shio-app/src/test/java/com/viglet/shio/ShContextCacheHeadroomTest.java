@@ -237,8 +237,16 @@ class ShContextCacheHeadroomTest {
      * else happens to be scheduled, so the assertion would be about suite order; and on the budget
      * context above, its four posts would move the byte figures that class exists to hold still.
      * Two tests in one package, two contexts, and the reason is the same one twice.
+     *
+     * SH1129 spent one more, to 78, with maxSize raised 80 -> 81 beside it so the next addition is
+     * still a line moved here rather than a refusal. ShCdaAvailableLocalesBenchmarkTest counts the
+     * statements a GraphQL page of posts prepares to report each row's translations, from
+     * Hibernate's cumulative statistics — the SH221 shape, where a neighbour's reads would be
+     * counted as the page's. The behaviour tests (ShGraphQLSchemaTest, ShCdaLocaleFilterTest) need
+     * no context of their own; only the measurement does. SH1057's route test was folded into the
+     * shared context instead of taking a slot, which is SH315's rule applied in the other direction.
      */
-    private static final int DECLARED_CONTEXTS = 77;
+    private static final int DECLARED_CONTEXTS = 78;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY
