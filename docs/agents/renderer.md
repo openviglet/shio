@@ -701,6 +701,15 @@ renderer over one body of content at a second address. See the section on it bel
   at the path is served as it always was, which is what keeps a single-language site unchanged.
   Only the public route passes a locale; the preview resolves as before. `ShSitesLocaleSelectionTest`
   holds both directions, the chain, the untranslated page, the route default and the shared URL.
+- **A declared site is addressed in its own tag, not `en-us` (SH1057)** — `DEFAULT_LOCALE` is 0.3.8's
+  label for "no locale named", so a pt-br site's links said `en-us` over content stored as `pt-br`.
+  Once a site *declares* a default, a request in the legacy label or in none is a **302** to the
+  same path in that locale's space (`toDeclaredLocale`), and the links the reader then follows stay
+  there. **Only a declared site moves**: moving every existing site would serve each page at two
+  addresses to fix a label nobody chose, and declaring a policy is the act of choosing. The header
+  form carries no locale and is left alone, as is a site whose declared default is `en-us` itself.
+  The tag rides out on `ShRenderedPage.siteLocale` because the render already holds the site, so it
+  costs no query — only the render before the 302, once per reader on a legacy URL.
 - **A `File` post is reachable at the path its source used, and `src` joins the rewrite (SH437)** —
   a static file's bytes are public at `/file_source/<postId>/<fileName>` (SH38), keyed by an id no
   source ever chose, so a fidelity replica's `<img src="/img/hero.png">` was as broken with the bytes

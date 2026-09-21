@@ -17,7 +17,7 @@
       "task": "SH1072",
       "declared": "2026-09-21",
       "expires": "2026-09-28",
-      "why": "SH799's ceiling: seven shipped ids wait to be named in docs-shio/COVERAGE.md — SH1052 and SH1055 from earlier sessions, then SH1056, SH1059, SH1123, SH1127 and SH1129 from this run — two over the five the reader carries. It is the one failure in the JS suite; every other test is green, and nothing here reads a byte of the change being committed. Naming them is a COVERAGE.md edit in vigletdocs followed by `pnpm run coverage:mirror` here, and that working tree carries an uncommitted 322-line docs pass across eight pages (COVERAGE.md among them) that is not this run's to commit, so no commit there can hold the new rows apart from it. SH1072 is the open task for exactly this backlog; it goes when that docs pass is committed and the ids are named, and this entry is deleted in that commit."
+      "why": "SH799's ceiling: eight shipped ids wait to be named in docs-shio/COVERAGE.md — SH1052 and SH1055 from earlier sessions, then SH1056, SH1057, SH1059, SH1123, SH1127 and SH1129 from this run — three over the five the reader carries. It is the one failure in the JS suite; every other test is green, and nothing here reads a byte of the change being committed. Naming them is a COVERAGE.md edit in vigletdocs followed by `pnpm run coverage:mirror` here, and that working tree carries an uncommitted 322-line docs pass across eight pages (COVERAGE.md among them) that is not this run's to commit, so no commit there can hold the new rows apart from it. SH1072 is the open task for exactly this backlog; it goes when that docs pass is committed and the ids are named, and this entry is deleted in that commit."
     }
   ]
 }

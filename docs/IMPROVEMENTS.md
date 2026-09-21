@@ -2748,24 +2748,6 @@ The MCP write path that silently dropped locale and translationOf was a live def
 is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
 translates, reached through the assistant, and every result lands as a reviewable draft.
 
-### LXXIII.2 Delivery that honours the locale it is asked for (SH1057)
-
-The public site route parses its locale segment into the link prefix, and the only place
-that reads it is the validator that returns 404 for an unknown tag. It never reaches the
-resolver, so on a site with two locales both URLs render the same post. Two constants
-disagree about the default tag, en in storage and en-us in the delivery URL, and the
-validator hides the mismatch. The CDA's list, query and search take no locale, the
-GraphQL schema has no locale reference, and the TypeScript client cannot pass a locale
-to the one endpoint that accepts it while its response type already declares one.
-
-The route half shipped first: a translation lives at its own URL, so the segment selects
-through the translation group along BH1's chain (a 302), recorded in renderer.md.
-Replace the second default constant with the policy's canonical tag. CDA list, query and
-search and the client shipped as SH1127. GraphQL shipped as SH1129, with a page's
-available locales read in one query rather than one per row.
-
-A verify finding flags a route that accepts a distinction it does not honour.
-
 ### LXXIII.3 Staleness as a digest comparison (SH1058)
 
 The translate verb copies the source's data and records the translation group, and
@@ -2891,6 +2873,32 @@ it so there is one reading of the rule instead of two.
 The assertion carries the id: a published English page with a draft-only `pt-br` sibling
 reports `["en"]` to a production token and `["en","pt-br"]` to a preview token, on REST
 and on GraphQL.
+
+### LXXIII.10 A promised language nobody wrote (SH1130)
+
+SH1057's design ended on a verify finding for "a route that accepts a distinction it
+does not honour", and it shipped without one, because the route now does honour the
+distinction: a locale segment selects the translation, and a missing translation falls
+back along the site's chain.
+
+What is left for verify to see is the case the fallback makes invisible. A site declares
+`["pt-br","en"]` and has written nothing in `pt-br`. Every `/pt-br/` URL answers 200
+with the English page, because that is what the chain is for, and nothing anywhere says
+the site offers a language it has not published a word in. The switcher shows it, the
+SH459 check accepts it, the reader gets English under a Portuguese address.
+
+A warning, `locale-declared-unwritten`, on a site whose declared policy enables a locale
+no published post is written in. Its two exits: write the pages, or drop the locale from
+the policy. The mirror belongs in the same pass: `locale-undeclared-content`, a
+published post in a locale the policy does not enable, which no switcher will ever link
+to.
+
+Both read the policy the column declares and the locales the published rows carry, which
+is one query per site, and both are silent on an undeclared site, whose languages are by
+definition the ones its content is in.
+
+The assertion carries the id: a site declaring pt-br with only English content reports
+the first finding, and after one pt-br page is published it does not.
 
 ## LXXIV The areas this round did not reach (Block BI)
 

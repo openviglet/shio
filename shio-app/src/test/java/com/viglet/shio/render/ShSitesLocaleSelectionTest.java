@@ -101,6 +101,7 @@ class ShSitesLocaleSelectionTest {
             ShFolder chainRoot = site(chained, "{\"default\":\"en\",\"enabled\":[\"pt-br\",\"pt\",\"en\"],"
                     + "\"fallback\":{\"pt-br\":\"pt\"}}", layoutType);
             String guide = UUID.randomUUID().toString();
+            post(chainRoot, pageType, "/", "en", "chained home", null);
             post(chainRoot, pageType, "/guide", "en", "guide in english", guide);
             post(chainRoot, pageType, "/guia", "pt", "guia em portugues europeu", guide);
 
@@ -150,6 +151,24 @@ class ShSitesLocaleSelectionTest {
                 .andExpect(status().isFound())
                 .andExpect(header().string("Location", "/sites/" + chained + "/default/pt-br/guia"));
         body(at(chained, "pt-br", "/guia").andExpect(status().isOk()), "guia em portugues europeu");
+    }
+
+    @Test
+    @DisplayName("SH1057: a site that declared a default is addressed in it, not in en-us")
+    void aDeclaredDefaultNamesTheSitesUrls() throws Exception {
+        at(chained, "en-us", "/guide?utm=x")
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "/sites/" + chained + "/default/en/guide?utm=x"));
+        mockMvc.perform(get("/sites/" + chained + "/"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "/sites/" + chained + "/default/en/"));
+        body(at(chained, "en", "/guide").andExpect(status().isOk()), "guide in english");
+    }
+
+    @Test
+    @DisplayName("SH1057: an undeclared site keeps en-us, so no existing URL moves")
+    void anUndeclaredSiteKeepsItsUrls() throws Exception {
+        body(at(plain, "en-us", "/about").andExpect(status().isOk()), "about in english");
     }
 
     @Test

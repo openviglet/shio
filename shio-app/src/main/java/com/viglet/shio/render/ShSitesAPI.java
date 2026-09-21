@@ -175,6 +175,10 @@ public class ShSitesAPI {
         } catch (ShPageRenderService.ShPageRedirectException redirect) {
             return redirectTo(address, redirect, request);
         }
+        ResponseEntity<?> declared = toDeclaredLocale(address, rendered, request);
+        if (declared != null) {
+            return declared;
+        }
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
                 // Cacheable and indexable — the two guards that are inverted rather than dropped.
@@ -223,6 +227,43 @@ public class ShSitesAPI {
         if (known.stream().noneMatch(locale::equalsIgnoreCase)) {
             throw new UnknownLocaleException(locale, known);
         }
+    }
+
+    /**
+     * SH1057 — a site that declared its default locale is addressed in it, not in {@code en-us}.
+     *
+     * <p>{@link #DEFAULT_LOCALE} is 0.3.8's label for "the reader named no locale", and every URL
+     * this route built wrote it — so a Portuguese site's public links said {@code en-us} while its
+     * content was stored as {@code pt-br}. Once a site <em>declares</em> a default (SH1056), that tag
+     * is the one its URLs name: a request in the legacy label, or in none, is answered with a
+     * <b>302</b> to the same path in the declared locale's space, where the links it then follows
+     * stay. 302 because a curator can change the default tomorrow, and a cached 301 would keep
+     * sending readers to the old one.</p>
+     *
+     * <p><b>Only a declared site moves.</b> An undeclared site keeps {@code en-us}, exactly as it
+     * was: moving every existing site's URLs would serve each page at two addresses (the SH467
+     * split) to fix a label nobody chose, while declaring a policy is the act of choosing. The header
+     * form names no locale in its URLs at all, so it is left alone; and a site whose declared
+     * default <em>is</em> {@code en-us} would redirect to itself, so it is left alone too.</p>
+     *
+     * <p>The tag comes back on the rendered page, which already holds the site, so this costs no
+     * query. What it costs is the render before the 302 — paid once per reader on a legacy URL of a
+     * declared site, which is the request that was about to be answered in the wrong space.</p>
+     *
+     * @return the redirect, or null when the page is to be served as rendered
+     */
+    private ResponseEntity<?> toDeclaredLocale(Address address, ShRenderedPage rendered,
+                                               HttpServletRequest request) {
+        String declared = rendered.siteLocale();
+        if (declared == null || declared.isBlank() || address.isHeaderForm()
+                || address.selectedLocale() != null || DEFAULT_LOCALE.equalsIgnoreCase(declared)) {
+            return null;
+        }
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(java.net.URI.create(
+                        withQueryOf(request, address.inLocale(declared).prefix() + address.path())))
+                .cacheControl(CacheControl.maxAge(MAX_AGE).cachePublic())
+                .build();
     }
 
     private ResponseEntity<?> asset(RuntimeException pageProblem, Address address) {
@@ -312,6 +353,23 @@ public class ShSitesAPI {
         public String selectedLocale() {
             return locale == null || locale.isBlank() || DEFAULT_LOCALE.equalsIgnoreCase(locale)
                     ? null : locale;
+        }
+
+        /** Whether this is the {@code x-sh-site} form, whose URLs carry no format or locale. */
+        public boolean isHeaderForm() {
+            return BASE.equals(prefix);
+        }
+
+        /**
+         * SH1057 — the same address in another locale's space: the prefix a reader's links then
+         * carry. The format stays {@link #DEFAULT_FORMAT}, the only one the route serves.
+         */
+        public Address inLocale(String tag) {
+            if (isHeaderForm()) {
+                return this;
+            }
+            return new Address(site, path,
+                    BASE + "/" + encode(site) + "/" + encode(DEFAULT_FORMAT) + "/" + encode(tag), tag);
         }
 
         /**

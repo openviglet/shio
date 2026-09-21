@@ -30,6 +30,7 @@ import com.viglet.shio.api.post.revision.ShPostRevisionService;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
 import com.viglet.shio.api.site.ShSiteLocaleService;
+import com.viglet.shio.api.site.ShSiteLocales;
 import com.viglet.shio.persistence.model.post.revision.ShPostRevision;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -448,7 +449,9 @@ public class ShPageRenderService {
                 // layout's title used to be the banner's only statement about how a page was made,
                 // and since SH464 one layout serves all three modes, so it named the wrong one.
                 compositionOf(stable, composed),
-                revision);
+                revision,
+                // SH1057 — the column alone, no content read: the same rule the render model uses.
+                shSiteLocaleService.declared(site).map(ShSiteLocales::defaultLocale).orElse(null));
     }
 
     /**
@@ -1153,15 +1156,29 @@ public class ShPageRenderService {
      *                    {@code mixed}, or {@code null} where the page holds neither field
      *                    (SH559). Read from the page, never from the layout's name.
      */
+    /**
+     * @param siteLocale SH1057 — the default locale the site <em>declared</em>, or null when it
+     *                   declared none. Carried out of the render because the site is already loaded
+     *                   here and the public route needs it to name its links; asking again would be a
+     *                   second site resolution on every public request.
+     */
     public record ShRenderedPage(String html, String site, String url, String layout,
                                  List<String> regions, ShPostState state, String postId,
-                                 String siteId, String composition, Integer revision) {
+                                 String siteId, String composition, Integer revision,
+                                 String siteLocale) {
 
         /** A render of a row, which is every render before SH990 could read a revision. */
         public ShRenderedPage(String html, String site, String url, String layout,
                               List<String> regions, ShPostState state, String postId,
                               String siteId, String composition) {
-            this(html, site, url, layout, regions, state, postId, siteId, composition, null);
+            this(html, site, url, layout, regions, state, postId, siteId, composition, null, null);
+        }
+
+        /** A render that says nothing about the site's declared locale — every caller but one. */
+        public ShRenderedPage(String html, String site, String url, String layout,
+                              List<String> regions, ShPostState state, String postId,
+                              String siteId, String composition, Integer revision) {
+            this(html, site, url, layout, regions, state, postId, siteId, composition, revision, null);
         }
     }
 

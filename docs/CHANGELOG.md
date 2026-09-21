@@ -1819,7 +1819,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1056** — A site declares its languages on either door, the pack and the CDA report them, and the console edits the policy and offers only the declared languages as translations (design §LXXIII.1 recorded in `docs/agents/content-api.md`).
 - **SH1123** — SH1056's delivery half: the site read carries the policy, and an undeclared site is described by the rows the token reads, so a production switcher never offers a draft-only language.
 - **SH1059** — Each browser row keeps its locale as a chip beside the type, and the checkbox, title and actions all name the row with it, so a page and its translation are two different rows.
-- **SH1057 (the public route selects the translation)** — The public locale segment now selects a page's translation along the site's fallback chain, with a 302 to its own URL, and the route's default still asks for nothing.
+- **SH1057** — The public segment selects a page's translation and a declared site is addressed in its own tag; with SH1127 and SH1129 every delivery read and the client can ask for a locale (design §LXXIII.2 superseded: the furl-plus-locale finder it named cannot reach a translation at its own URL, so the segment selects through the translation group) (design §LXXIII.2 recorded in `docs/agents/renderer.md`).
 - **SH1127** — SH1057's CDA half: the three listings and the client take a locale as a database predicate, so a pt-br page of fifty holds fifty pt-br posts and totalPosts counts them.
 - **SH1129** — SH1057's GraphQL half: posts carry both fields and postByUrl and posts take locale; a page reads its groups in one query, 5 statements at 5 rows or 25 against 105 per row.
 
