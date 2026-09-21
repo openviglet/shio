@@ -54,6 +54,20 @@ export type ShCoverageCell = {
 
 export type ShCoverageCount = { current: number; stale: number; missing: number };
 
+/**
+ * SH1063 — search indexing: whether it is on, where it sends, and which sites route nowhere.
+ *
+ * A site with published pages and no `searchSite` reaches no index and raises no error, which is
+ * the row the card exists to show.
+ */
+export type ShIndexStatus = {
+  enabled: boolean;
+  target?: string | null;
+  defaultSite?: string | null;
+  sites: { site: string; searchSite?: string | null; published: number }[];
+  failures: number;
+};
+
 /** SH1056 — what a declaration sends: the document `site.upsert` takes under `data.locales`. */
 export type ShSiteLocaleDeclaration = {
   default: string;

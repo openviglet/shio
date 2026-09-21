@@ -127,6 +127,10 @@ class ShConsoleReadAclLintTest {
             Map.entry("/api/v2/site/{id}/locales", "SH1056 — the languages a site offers, a setting "
                     + "of the site like its record above; the tags it derives from content are the "
                     + "ones every post row already shows, never a post's title or body"),
+            Map.entry("/api/v2/agent/index", "SH1063 — the search-indexing routing table: site "
+                    + "names, where each routes and how many pages it has published. Deployment "
+                    + "configuration and counts, never a page's content, and the counts are of "
+                    + "what is already public"),
             Map.entry("/api/v2/site/{id}/coverage", "SH1060 — which of those languages each page is "
                     + "in. It reports a page's title and address, which is what the folder listing "
                     + "beside it reports, and never a body; a reader who may not open a page still "

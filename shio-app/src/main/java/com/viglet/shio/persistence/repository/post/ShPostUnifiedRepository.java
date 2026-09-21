@@ -989,6 +989,15 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<Object[]> countDistinctBySiteId();
 
     /**
+     * SH1063 — the same count in one state, for the routing table's "what a broken route costs".
+     *
+     * @return rows of {@code [siteId (String), posts (Long)]}
+     */
+    @Query("select p.shSite.id, count(distinct p.id) from ShPostUnified p "
+            + "where p.shSite is not null and p.state = :state group by p.shSite.id")
+    List<Object[]> countDistinctBySiteIdAndState(@Param("state") ShPostState state);
+
+    /**
      * SH143 — the URL index a <em>scoped</em> verify run still needs whole.
      *
      * <p>Two lint rules are cross-cutting by nature: "is any other published post claiming

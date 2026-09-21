@@ -249,8 +249,13 @@ const UNEXERCISED = {
     // needs a run that wrote drafts AND a curator who rejected one of them, which is two actors in
     // one fixture. `ShAgentReviewReadOnlyTest` proves the scoping and the read-only shape; what a
     // live suite would add is that a real agent credential sees its own rejection over the wire.
+    // `shio://index` arrives with SH1063 and joins on arrival: its live scenario is an instance
+    // with indexing ON and a site deliberately routed nowhere, which is a deployment shape rather
+    // than a content one — the conformance instance indexes nothing, so the table it would read is
+    // "off" and every row empty. `ShIndexStatusTest` proves the table and the terse rendering.
     "shio://blueprint/", "shio://blueprints", "shio://context", "shio://diagnostics",
-    "shio://manifest", "shio://ops", "shio://review/mine", "shio://schema/", "shio://surfaces",
+    "shio://index", "shio://manifest", "shio://ops", "shio://review/mine", "shio://schema/",
+    "shio://surfaces",
   ],
   verbs: [
     // SH997 — `gate` joins the list on arrival: its live scenario is a pipeline that declares a
@@ -264,6 +269,9 @@ const UNEXERCISED = {
     // SH1003 — `notes` joins with the ops it reads: a live scenario leaves a request on a page and
     // watches the work list carry it, which is the same fixture `note.add` needs.
     "notes",
+    // SH1063 — `index` joins with the resource it prints, and for the same reason: the state worth
+    // driving live is an instance that indexes, and the conformance instance does not.
+    "index",
     // SH711 spawned ten of these as a process. What is left splits three ways, and the split is
     // more useful than the count:
     //

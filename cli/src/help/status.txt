@@ -7,5 +7,4 @@ Examples:
   shio status --json
 
 Reads /api/v2/console/summary, the same answer the console's home draws.
-`shio context` says what you can do here; this says what is going on.
 A row is printed only when its number is not zero.

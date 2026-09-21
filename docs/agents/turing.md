@@ -342,6 +342,17 @@ no search site — so every push it would make is never made and nothing says so
 content is right and the configuration is not. Silent when indexing is off (then nothing routes
 anywhere, and that is a decision) and silent for a site with nothing published.
 
+**The routing table is one read, on four surfaces.** `GET /api/v2/agent/index` (`?format=terse`
+for lines) answers whether indexing is on, where it points, and every site with the search site it
+resolves to plus how many published pages it has — and `ShTuringIndexStatusService` is the only
+place that computes it, because three readings of "which search site does this go to" would be
+three chances to disagree with the listener that actually routes. On top of that one read:
+`shio://index` for MCP, `shio index status` for a terminal (exit **1** when some site publishes
+into nothing, so a script can act on it) and the console's card on the site page, which stays
+**silent when indexing is off** — a card explaining a feature nobody turned on is noise on every
+site page. `shio index reindex --site X [--dry-run]` rides SH413's `site.upsert data.reindex`
+rather than adding a second way to do it.
+
 **What is deliberately not here yet:** the *last indexed instant*. Nothing writes one — the listener
 records failures and no success — so reporting it would mean a new column and a write per publish,
 which is a cost to argue for with a measurement rather than to slip into a read. The read says what

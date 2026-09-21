@@ -1829,4 +1829,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BI — The areas this round did not reach
 
-- **SH1063 (the read and the unroutable finding)** — A read says whether a page is findable and where its content goes, and verify names a site that publishes into a search index it has no route into.
+- **SH1063** — One routing table read answers whether what this instance publishes is findable, and it reaches a resource, the CLI, the console card and verify — with the per-page answer on the read an agent already makes (design §LXXIV.1 superseded: the last indexed instant is left out and declared as absent: nothing writes one, so reporting it is a column and a write per publish to argue for with a measurement) (design §LXXIV.1 recorded in `docs/agents/turing.md`).

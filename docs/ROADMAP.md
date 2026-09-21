@@ -121,7 +121,6 @@
 
 ## Block BI — The areas this round did not reach
 
-- ⏳ **SH1063** (deps: —) **nothing in the console, the CLI or MCP can say whether a published page reached the search index** — No shio://index resource, no shio index status or reindex --dry-run, no REST read beside publish and no console card; and nothing writes a last-indexed instant. → §LXXIV.1
 - 📋 **SH1064** (deps: SH996 ✅) **changing a page's friendly URL breaks every inbound link, and no writer ever creates the redirect Shio models** — REDIRECT is a system post type the renderer serves with a permanent flag choosing 301 or 302, and no rename, move, unpublish or delete path writes one. → §LXXIV.2
 - 📋 **SH1065** (deps: —) **site export is an id-keyed zip with no CLI verb, no MCP reach and no console button** — Import has REST, a CLI verb and an example while export is reachable only by building a URL from a resolved uuid, so no surface moves a site between instances. → §LXXIV.3
 - 📋 **SH1066** (deps: SH970 ⏳, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — A submission is written as a draft into a folder a developer configured, the nav has no Forms entry, and a curator must guess the folder to find them. → §LXXIV.4
@@ -163,13 +162,6 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
-
-## Done when — SH1063
-
-- **Index state is readable from the CLI, MCP and the console, not only a read** A
-  shio://index resource publishes the routing table, shio index status and reindex
-  --dry-run use the existing reindex path, REST answers beside publish, and the site
-  page shows enabled state, target, search site and last failure.
 
 ## Non-goals (do NOT add as tasks)
 

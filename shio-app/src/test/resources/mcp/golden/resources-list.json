@@ -19,6 +19,11 @@
       "uri" : "shio://diagnostics"
     }, {
       "description" : "#string",
+      "mimeType" : "text/plain",
+      "name" : "Shio search indexing",
+      "uri" : "shio://index"
+    }, {
+      "description" : "#string",
       "mimeType" : "application/json",
       "name" : "Shio capability manifest",
       "uri" : "shio://manifest"

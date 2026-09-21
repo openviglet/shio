@@ -20,6 +20,7 @@ Commands:
   publish [addr] Make drafts live, or take live pages down (--unpublish)
   gate           The checks a site runs before content goes live (run, list)
   verify         Lint the content and its routes; exits non-zero on an error
+  index          Which sites reach the search index, and push one there again
   changes        What changed, with a cursor to resume from
   review         What an agent run left for a person (list, show, decide)
   notes          What a curator is still asking for

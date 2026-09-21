@@ -22,6 +22,7 @@ import type { ShSite, ShSiteLocalePolicy } from "@/models/site/site"
 import { usePostTypes } from "@/hooks/use-catalogue"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShLocaleService, type ShLocale } from "@/services/locale/locale.service"
+import { SiteIndexSection } from "@/components/site-index.section"
 import { SiteLanguagesSection } from "@/components/site-languages.section"
 import { declarationOf, draftOf, type LanguagesDraft } from "@/lib/site-languages"
 import { reportProblem } from "@/lib/problem"
@@ -244,6 +245,9 @@ export default function BentoSiteEditPage() {
             </div>
           </div>
         </BentoFormSection>
+        {/* SH1063 — silent unless this instance indexes; then it says whether this site reaches
+            the index at all, which nothing anywhere used to answer. */}
+        <SiteIndexSection siteName={site?.name} />
         {languages && (
           <SiteLanguagesSection
             catalogue={catalogue}

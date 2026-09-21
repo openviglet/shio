@@ -123,6 +123,13 @@ class ShPerspectiveCoverageLintTest {
                     + "is asked what THIS publish would put live, and what is live is already past "
                     + "it"),
             Map.entry("ShAgentAPI#diagnostics", HISTORY),
+            // SH1063 — the routing table is deployment configuration: where this instance sends
+            // what it publishes. There is no draft of a mapping, and only published content is
+            // ever sent, so a `state` here would be asking for the unpublished version of a
+            // setting. The per-page question a version WOULD change is on the read that takes one
+            // already (`/agent/read?include=index`).
+            Map.entry("ShAgentAPI#index", "it answers about this instance's configuration rather "
+                    + "than about a page: there is no draft of a routing table"),
             Map.entry("ShRenderAPI#editorScript", "it serves the editor bridge's script, which is "
                     + "code the preview loads and not a page"),
             Map.entry("ShCdaAPI#sites", NOT_A_PAGE),

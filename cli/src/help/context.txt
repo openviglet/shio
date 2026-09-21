@@ -8,8 +8,7 @@ shio context — the agent context pack: model + sitemap + conventions, in one c
   --depth <n>          Folder-tree depth to walk
   --budget <tokens>    Estimated-token ceiling (0 = unbounded)
   --from <id>          Resume cursor from a truncated pack
-  --ids                Put object ids back on every row (off by default — a row is
-                       addressable without one, and a UUID is the priciest field)
+  --ids                Put object ids back on every row (off by default)
   --out <file>         Write the pack to a file instead of stdout
 
 Examples:

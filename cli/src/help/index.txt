@@ -1,0 +1,15 @@
+shio index — is what this instance publishes findable, and push it again
+
+  shio index status            The routing table: every site, and where it sends
+  shio index reindex --site X  Send site X's published pages to the index again
+
+  --site <name>          The site to reindex (required by reindex)
+  --dry-run              Say how many would be sent, and send none
+  --json                 Raw JSON instead of lines
+
+A site with published pages and no search site reads UNROUTABLE, and status
+exits 1 when there is one. verify --checks routes reports the same site.
+
+Examples:
+  shio index status
+  shio index reindex --site Blog --dry-run

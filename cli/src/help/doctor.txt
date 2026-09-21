@@ -1,23 +1,19 @@
 shio doctor — can I work here? The readiness facts, in one call
 
-Answers what the first five minutes of a session used to cost five calls and a guess: is the
-instance up and WHICH BUILD, do the credentials work, is the render model provisioned and
-current, which sites exist, and is there a local content tree.
+Is the instance up and WHICH BUILD, do the credentials work, is the render model provisioned
+and current, which sites exist, is there a local content tree.
 
-The build stamp is the one worth reading. `version` says "dev" on any instance not run from a
-packaged jar — the same string before and after a rebuild — and that is exactly the mode where
-the running instance can lag the tree you are editing. `built <instant>` is the comparable
-answer; when it is absent the run says so rather than implying the instance is current.
+`version` says "dev" on any instance not run from a packaged jar — the same string before and
+after a rebuild, which is the mode where the instance can lag your tree. Read `built
+<instant>` instead; when it is absent the run says so.
 
   --json               The checks as data instead of the aligned list
   --url <url>          The instance (default $SHIO_URL, else http://localhost:2710)
   --user <name>        Console user (default $SHIO_USER)
   --password <pass>    Console password (default $SHIO_PASSWORD)
 
-Three outcomes, not two. `ok`, `FAIL`, and `??` for a fact that could not be established — an
-instance that does not answer leaves the later checks unanswerable, and reporting those as
-failures would invent four defects out of one. Exit 1 on any FAIL; a `??` does not fail, because
-running this with no instance is how you check your own tree.
+Three outcomes: `ok`, `FAIL`, and `??` for a fact an unreachable instance left unanswerable.
+Exit 1 on any FAIL; a `??` does not fail — running this with no instance checks your own tree.
 
 Examples:
   shio doctor

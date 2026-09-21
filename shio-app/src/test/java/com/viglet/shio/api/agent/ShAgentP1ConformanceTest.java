@@ -385,9 +385,16 @@ class ShAgentP1ConformanceTest {
         // fact rather than content (turning it into an operation would put one environment's
         // index names in the database). What an agent needs is to know it happens, which is this
         // flag, and to be told when it fails, which rides /agent/diagnostics as an INDEX incident.
-        byFeature.put("searchIndexing", instanceFact("whether publishing also makes the page "
-                + "findable in Turing (SH84); off by default, and failures arrive as INDEX "
-                + "incidents on the change feed rather than as a call an agent makes"));
+        // SH1063 — it was an instance fact, classified as one because the only thing an agent
+        // could do was know it happens. That reading was honest and it was the gap: on an instance
+        // with indexing on, nothing could answer whether a given page had reached the index, and a
+        // site mapping to no search site published into a void with no error anywhere. The routing
+        // table is now a read, so the feature is reached rather than merely declared.
+        byFeature.put("searchIndexing", mcpResource("shio://index", "whether publishing also makes "
+                + "the page findable in Turing (SH84), and where it sends it: the routing table, "
+                + "site by site, with a site that routes nowhere named (SH1063). Also "
+                + "`/agent/read?include=index` per page, `shio index status`, and verify's "
+                + "`index-unroutable`"));
 
         // SH678. Reached, and read-only on purpose rather than as a first slice: MCP tools call
         // services in process, and an API token reaches /mcp while being barred from

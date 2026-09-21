@@ -4228,3 +4228,18 @@ others check arithmetic, this one checks that the destructive reading is unreach
 It is on `live-coverage`'s `UNEXERCISED` list deliberately. A scripted fetch proves the sum and the
 refusal and cannot prove the *number the server sent was true*; only a live run can — upload,
 reference, assert it is not offered, unreference, assert it is.
+
+## `shio index` — is what this publishes findable (SH1063)
+
+`shio index status` prints the routing table off `GET /api/v2/agent/index`: indexing on or off,
+where it points, and every site with the search site it resolves to. The row it exists for is
+`Careers -> (nowhere)  4 published  UNROUTABLE` — published content with no route into the index,
+which raises no error anywhere else, and which makes the command **exit 1** so a script can act on
+it rather than parse the text. A site with nothing published is not missing from an index and does
+not count.
+
+`shio index reindex --site X [--dry-run]` rides `site.upsert data.reindex` (SH413), the path the
+agent already uses, so this is a way in and not a second way to do it. The renderer is a pure
+function (`render`/`unroutable` in `commands/index-status.mjs`) for the reason `shio status`'s is:
+the exit code and the text are built from the same answer, so they cannot come apart —
+`index-status.test.mjs` holds both.

@@ -66,6 +66,8 @@ class ShIndexStatusTest {
     @Autowired
     private ShTuringProperties turingProperties;
     @Autowired
+    private ShTuringIndexStatusService statusService;
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @PersistenceContext
@@ -159,6 +161,41 @@ class ShIndexStatusTest {
     void aRoutedSiteIsSilent() {
         assertThat(shAgentVerifyService.verify("sh1063-routed", "routes", 200).findings())
                 .noneMatch(finding -> "index-unroutable".equals(finding.rule()));
+    }
+
+    @Test
+    @DisplayName("SH1063: the routing table is one read, and it names the site that goes nowhere")
+    void theRoutingTableIsOneRead() {
+        ShTuringIndexStatus status = statusService.status();
+
+        assertThat(status.enabled()).isTrue();
+        assertThat(status.target()).isEqualTo("http://127.0.0.1:1");
+        assertThat(status.sites()).extracting(ShTuringIndexStatus.Route::site)
+                .as("SH1063: every site, in name order, because the question is which of them "
+                        + "routes nowhere and a partial table cannot answer it")
+                .contains("sh1063-adrift", "sh1063-routed");
+        assertThat(status.sites()).filteredOn(route -> "sh1063-routed".equals(route.site()))
+                .singleElement()
+                .satisfies(route -> {
+                    assertThat(route.searchSite()).isEqualTo("Routed");
+                    assertThat(route.published()).isEqualTo(1);
+                });
+        assertThat(status.sites()).filteredOn(route -> "sh1063-adrift".equals(route.site()))
+                .singleElement()
+                .satisfies(route -> assertThat(route.searchSite()).isNull());
+    }
+
+    @Test
+    @DisplayName("SH1063: the terse table says UNROUTABLE where content is published into nothing")
+    void theTerseTableNamesTheGap() {
+        String text = ShTuringIndexTerse.status(statusService.status());
+
+        assertThat(text).startsWith("indexing on -> http://127.0.0.1:1");
+        assertThat(text)
+                .as("SH1063: the line an operator greps for — published pages, no route out")
+                .contains("sh1063-adrift -> (nowhere)  1 published  UNROUTABLE");
+        assertThat(text).contains("sh1063-routed -> Routed");
+        assertThat(text).doesNotContain("sh1063-routed -> Routed  1 published  UNROUTABLE");
     }
 
     private ShAgentDoc read(String address, boolean index) {

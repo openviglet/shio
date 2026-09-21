@@ -113,6 +113,8 @@ public class ShAgentAPI {
     private final ShBlueprintService shBlueprintService;
     private final ShAgentBodyEtag shAgentBodyEtag;
     private final ShAgentProofService shAgentProofService;
+    /** SH1063 — the routing table every index surface reads. */
+    private final com.viglet.shio.turing.ShTuringIndexStatusService shTuringIndexStatusService;
 
     public ShAgentAPI(ShAgentManifestService shAgentManifestService,
                       ShAgentContextService shAgentContextService,
@@ -131,7 +133,9 @@ public class ShAgentAPI {
                       ShAgentProofService shAgentProofService,
                       com.viglet.shio.api.gate.ShAgentGateApiService shAgentGateApiService,
                       ShAgentRunService shAgentRunService,
-                      ShAgentVerdictService shAgentVerdictService) {
+                      ShAgentVerdictService shAgentVerdictService,
+                      com.viglet.shio.turing.ShTuringIndexStatusService shTuringIndexStatusService) {
+        this.shTuringIndexStatusService = shTuringIndexStatusService;
         this.shAgentGateApiService = shAgentGateApiService;
         this.shAgentRunService = shAgentRunService;
         this.shAgentVerdictService = shAgentVerdictService;
@@ -989,6 +993,29 @@ public class ShAgentAPI {
                 ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
                         .body(ShAgentVerifyTerse.diagnostics(diagnostics))
                 : ResponseEntity.ok(diagnostics);
+    }
+
+    /**
+     * SH1063 — where this instance sends what it publishes, and which sites go nowhere.
+     *
+     * <p>The routing table rather than the switch: "indexing is on" is one bit and not the question
+     * anybody has, which is whether <em>this</em> site's pages reach a search index. A site mapping
+     * to nothing is the failure that raises no error — the listener builds a document, finds no
+     * route and sends nothing — so it is a row here with an empty target, and a finding in
+     * {@code verify}.</p>
+     *
+     * <p>One read for three surfaces: {@code shio://index}, {@code shio index status} and the
+     * console's card all show this, because three computations of "which search site does this go
+     * to" would be three chances to disagree with the listener that actually routes.</p>
+     */
+    @GetMapping("/index")
+    @Operation(summary = "Search indexing: is it on, where it sends, and which sites route nowhere")
+    public ResponseEntity<Object> index(@RequestParam(name = "format", required = false) String format) {
+        com.viglet.shio.turing.ShTuringIndexStatus status = shTuringIndexStatusService.status();
+        return isTerse(format)
+                ? ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
+                        .body(com.viglet.shio.turing.ShTuringIndexTerse.status(status))
+                : ResponseEntity.ok(status);
     }
 
     private static boolean isTerse(String format) {

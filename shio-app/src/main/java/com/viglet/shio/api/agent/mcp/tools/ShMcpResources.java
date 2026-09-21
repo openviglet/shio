@@ -284,6 +284,27 @@ public class ShMcpResources {
      * reporting only what is durable would answer zero for the first minute of every window, and an
      * agent that reads zero right after doing work stops believing the number.</p>
      */
+    /**
+     * Where this instance sends what it publishes (SH1063).
+     *
+     * <p>A resource and not a tool, by the test this class applies: it takes no arguments and it is
+     * state to look at rather than an act to perform, and {@code tools/list} is paid on every turn
+     * while a resource is one row on {@code resources/list}. What it makes visible is the failure
+     * that raises nothing — a site mapping to no search site publishes into a void, and until this
+     * existed the only trace was the absence of results in somebody else's search box.</p>
+     */
+    @Bean
+    ShMcpResource shMcpIndexResource(
+            com.viglet.shio.turing.ShTuringIndexStatusService indexStatusService) {
+        return resource("shio://index", "Shio search indexing",
+                "Whether this instance indexes what it publishes, where it sends it, and the "
+                        + "routing table site by site — a site with published pages and no search "
+                        + "site reaches no index and raises no error. Read it when search is "
+                        + "missing content that exists.",
+                TEXT, "/api/v2/agent/index",
+                uri -> com.viglet.shio.turing.ShTuringIndexTerse.status(indexStatusService.status()));
+    }
+
     @Bean
     ShMcpResource shMcpUsageResource(ShAgentUsageService usageService) {
         return resource("shio://usage", "Shio usage meter",

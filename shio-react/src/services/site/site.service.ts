@@ -1,5 +1,5 @@
 import type {
-  ShSite, ShSiteCoverage, ShSiteLocaleDeclaration, ShSiteLocalePolicy,
+  ShIndexStatus, ShSite, ShSiteCoverage, ShSiteLocaleDeclaration, ShSiteLocalePolicy,
 } from "@/models/site/site";
 import axios from "axios";
 import type { ShRead } from "@/lib/read-options"
@@ -71,6 +71,18 @@ export class ShSiteService {
   /** SH1056 — stops declaring, so the site reports the languages its content is in again. */
   async clearLocales(id: string): Promise<ShSiteLocalePolicy> {
     const response = await axios.delete<ShSiteLocalePolicy>(`/v2/site/${id}/locales`);
+    return response.data;
+  }
+
+  /**
+   * SH1063 — whether what this instance publishes is findable, and where it sends it.
+   *
+   * The agent surface's own read (`/v2/agent/index`), not a console copy of it: three readings of
+   * "which search site does this site go to" would be three chances to disagree with the listener
+   * that actually routes (P10).
+   */
+  async indexStatus(read: ShRead = {}): Promise<ShIndexStatus> {
+    const response = await axios.get<ShIndexStatus>("/v2/agent/index", { signal: read.signal });
     return response.data;
   }
 

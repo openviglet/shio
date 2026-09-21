@@ -1,9 +1,8 @@
 shio audit <page> — what is wrong with a rendered page, as text with a selector each
 
 Errors are what a machine observed (a 404, a thrown exception) and exit 1; overflow,
-contrast, a collapsed box and a fallback font are warnings that exit 0, because each is
-design intent often enough that gating on them makes this the exit code people wrap in
-|| true. Needs playwright.
+contrast, a collapsed box and a fallback font are warnings that exit 0 (each is design
+intent often enough). Needs playwright.
 
   --page <page>        The page to audit (or a bare positional, or --address)
   --width <n[,n]>      Viewport width(s) to load, default 1280 — findings merge across them

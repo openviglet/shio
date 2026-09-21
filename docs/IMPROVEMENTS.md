@@ -2860,26 +2860,6 @@ the P1 census could classify. The conformance gate knows none of this round's ne
 vocabulary. And no task carries the documentation sweep for everything the round ships,
 which the project's own process requires when a block closes.
 
-### LXXIV.1 Index status, readable on every surface (SH1063)
-
-ShTuringIndexService.active() is published as the manifest feature searchIndexing, so
-the P1 census already counts it. The com.viglet.shio.turing package holds configuration,
-a document mapper, field declarations, an index listener, the service, properties and a
-text extractor, and no controller. In the console the word turing appears only in the
-nav declaration and a stylesheet. So on an instance where indexing is on, nobody can
-answer the question search exists for, is this page findable, and a failed push after
-commit is recorded only as an incident.
-
-The chain is short because the machinery exists. shio_read include=index reports the
-resolved search site, the last indexed instant and the last incident for an address; a
-shio://index resource publishes the routing table, which makes a site routing nowhere
-visible rather than silent. shio index status and shio index reindex --dry-run use the
-reindex path an existing test covers. REST adds a read beside publish, and the console
-shows a card on the site page with enabled state, target, search site and last failure.
-
-verify gains index-unroutable for a published site whose search site resolves to
-nothing, the failure that costs most because it raises no error.
-
 ### LXXIV.2 A rename that offers the redirect it needs (SH1064)
 
 ShSystemPostType declares REDIRECT, the page render service serves it, and SH385 decided

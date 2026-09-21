@@ -290,6 +290,17 @@ export class ShioAgentClient {
   }
 
   /**
+   * GET /api/v2/agent/index (SH1063) — the search-indexing routing table.
+   *
+   * @returns {Promise<{enabled: boolean, target?: string, defaultSite?: string,
+   *           sites: {site: string, searchSite?: string, published: number}[],
+   *           failures: number}>}
+   */
+  async indexStatus(query = {}) {
+    return this.#get("index", query);
+  }
+
+  /**
    * GET /api/v2/agent/find (SH83) — post addresses, never bodies.
    *
    * `after` is SH146's page cursor: a truncated response carries `cursor`, and passing it

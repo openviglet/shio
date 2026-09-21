@@ -26,7 +26,6 @@ page lost something; a fact the replica GAINED is never a failure.
 
 Examples:
   shio diff --site Acme
-  shio diff --site Acme --json
   shio diff --site Acme --against proposal
   shio diff --site Acme --mode fidelity
   shio diff --site Acme --against published

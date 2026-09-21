@@ -19,8 +19,7 @@ exits 0, so the gate is opt-in. Needs playwright; pixelmatch + pngjs diff per pi
   --timeout <ms>       Per-page navigation timeout (default 30000)
   --out <dir>          Where the images go (default shio/snapshots)
 
-NOT --url: that is the instance, and it also picks the server a front-endless site is
-previewed from.
+NOT --url: that is the instance (and the origin a front-endless site previews from).
 
 Examples:
   shio snapshot post:Acme/about
