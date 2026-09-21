@@ -217,11 +217,12 @@ public final class ShAgentOps {
                     "Put a published release back: each page to what it replaced, pages it first "
                             + "published come down."),
             // SH1003 — the channel back. `data.body` is the correction itself; `field` narrows it to
-            // one field and `revision` to one version, and `kind` is comment, request or reply.
+            // one field and `revision` to one version, and `kind` is comment, request, reply or
+            // reviewed (SH1061's per-field mark, which a work list must not read as a request).
             new OpSpec(ShAgentBatchService.NOTE_ADD,
                     List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
                     "Say something about this page: `data.body`; also `field`, `revision`, "
-                            + "`parent`, `kind` (comment/request/reply)."),
+                            + "`parent`, `kind` (comment/request/reply/reviewed)."),
             new OpSpec(ShAgentBatchService.NOTE_RESOLVE,
                     List.of(ADDRESS, DATA), List.of(), List.of(), List.of(CANCEL),
                     "Close `data.note`; `cancel` re-opens."),

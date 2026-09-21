@@ -14,7 +14,7 @@ export interface ShNote {
   revisionNo?: number | null
   /** The note this replies to; absent on a root. */
   parentId?: string | null
-  /** COMMENT | REQUEST | REPLY. */
+  /** COMMENT | REQUEST | REPLY | REVIEWED (SH1061, a field checked against its source). */
   kind: string
   body: string
   author?: string | null

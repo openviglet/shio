@@ -2748,25 +2748,6 @@ The MCP write path that silently dropped locale and translationOf was a live def
 is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
 translates, reached through the assistant, and every result lands as a reviewable draft.
 
-### LXXIII.6 A translation workspace (SH1061)
-
-SH53's menu navigates to the sibling's editor, and does the same after creating one.
-There is no translation route, no split view, no source pane and no field-by-field
-pairing, while every competitor treats this screen as the heart of the feature. The data
-is ready: the translations read exists and field order is deterministic.
-
-A workspace at its own route shows the source's fields read-only on one side and the
-target's editable on the other, aligned by post-type ordinal, with per-field
-copy-from-source and per-field mark-reviewed. Target saves land in draft, publishing
-stays a separate explicit gesture, and the source pane is visibly read-only so nobody
-edits English believing it is Portuguese. At narrow widths it stacks source above target
-with a sticky language toggle rather than shrinking two columns. The translations read
-takes an expand, so the pane loads in one request.
-
-Mark-reviewed writes a note of kind reviewed through SH1003, so review state is visible
-to an agent too. The assertions open the workspace, copy a field from source, save, and
-read the target draft with the source untouched.
-
 ### LXXIII.7 Translation by the connected agent, requested from the board (SH1062)
 
 Every commercial CMS ships an in-product translate button, and Shio's non-goal refuses

@@ -12,7 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 
-import { copyFromSource, pairedFields, sourceText } from "../src/lib/translate-pane.ts"
+import { copyFromSource, pairedFields, reviewedFields, sourceText } from "../src/lib/translate-pane.ts"
 
 /**
  * SH1061 — the two panes of the translation workspace, as rules rather than as JSX.
@@ -57,6 +57,26 @@ test("SH1061: the source pane is text, so every value survives being shown", () 
   assert.equal(sourceText(3), "3")
   assert.equal(sourceText([{ type: "paragraph" }]).includes("paragraph"), true,
     "SH1061: a blocks body has to read as its content, not as [object Object]")
+})
+
+test("SH1061: a field is reviewed while its mark is open, and stops being when it is resolved", () => {
+  const notes = [
+    { id: "1", kind: "REVIEWED", fieldPath: "title", resolved: false },
+    { id: "2", kind: "REVIEWED", fieldPath: "body", resolved: true },
+    { id: "3", kind: "REQUEST", fieldPath: "summary", resolved: false },
+    { id: "4", kind: "REVIEWED", fieldPath: null, resolved: false },
+  ]
+
+  const marked = reviewedFields(notes)
+
+  assert.deepEqual([...marked], ["title"])
+  assert.equal(marked.has("body"), false,
+    "SH1061: resolving the mark is how a field stops being reviewed — the same gesture every "
+      + "other note has")
+  assert.equal(marked.has("summary"), false,
+    "SH1061: a request on a field is somebody asking for work, which is the opposite of a review")
+  assert.equal(marked.size, 1,
+    "SH1061: a mark with no field is about the page, not about a row of it")
 })
 
 test("SH1061: the target saves as a draft, and the source pane renders no widget", () => {

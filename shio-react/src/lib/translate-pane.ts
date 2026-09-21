@@ -6,7 +6,11 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
+import type { ShNote } from "@/models/note/note.model"
 import type { ShPostTypeSchemaField } from "@/models/post-unified/post-unified"
+
+/** SH1061 — the note kind a per-field review mark is written as. */
+export const REVIEWED = "reviewed"
 
 /**
  * SH1061 — what the two panes of the translation workspace agree on.
@@ -59,4 +63,21 @@ export function sourceText(value: unknown): string {
   if (typeof value === "string") return value
   if (typeof value === "number" || typeof value === "boolean") return String(value)
   return JSON.stringify(value, null, 2)
+}
+
+/**
+ * SH1061 — the fields somebody has marked as checked against the source.
+ *
+ * Open marks only, and a mark is one note per field: resolving it is how a field stops being
+ * reviewed, which is the same gesture every other note has. A mark with no field is about the
+ * page rather than a row of it, and is not a row's mark.
+ */
+export function reviewedFields(notes: ShNote[]): Set<string> {
+  const marked = new Set<string>()
+  for (const note of notes) {
+    if (!note.resolved && note.kind?.toLowerCase() === REVIEWED && note.fieldPath) {
+      marked.add(note.fieldPath)
+    }
+  }
+  return marked
 }

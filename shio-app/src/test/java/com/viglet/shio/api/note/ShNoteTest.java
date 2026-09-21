@@ -265,4 +265,30 @@ class ShNoteTest {
                 .as("SH1003: a work list that kept a finished item is one nobody reads twice")
                 .doesNotContain(request.getId());
     }
+
+    @Test
+    @DisplayName("SH1061: a reviewed mark is a note, and it is not work")
+    void aReviewedMarkIsNotWork() {
+        ShNote mark = shNoteService.add(postId, "data.subtitle", null, null, "reviewed",
+                "Reviewed against the source: data.subtitle", "ana");
+
+        assertThat(mark.getKind()).isEqualTo("REVIEWED");
+        assertThat(shNoteService.open(null, null)).extracting(ShNote::getId)
+                .as("SH1061: a work list is what is still being asked of somebody, and 'this field "
+                        + "has been checked' is the opposite — counted in, the page translated most "
+                        + "carefully would report the most outstanding work")
+                .doesNotContain(mark.getId());
+        assertThat(shNoteService.openOn(Set.of(postId)).getOrDefault(postId, List.of()))
+                .extracting(ShNote::getId)
+                .as("SH1061: nor does it ride the read an agent makes before rewriting the page")
+                .doesNotContain(mark.getId());
+
+        assertThat(shNoteService.open("reviewed", null)).extracting(ShNote::getId)
+                .as("SH1061: asked for by name it is there, which is how the workspace reads the "
+                        + "marks back")
+                .contains(mark.getId());
+        assertThat(shNoteService.of(postId)).extracting(ShNote::getId)
+                .as("SH1061: and it is in the page's own thread, where the console reads it")
+                .contains(mark.getId());
+    }
 }

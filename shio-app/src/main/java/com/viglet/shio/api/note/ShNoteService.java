@@ -99,10 +99,11 @@ public class ShNoteService {
 
         public UnknownKindException(String sent) {
             super(ShProblem.badRequest("unknown-note-kind", "no note kind called '" + sent + "'")
-                    .withDetail("A comment is a remark, a request is something to act on, and a "
-                            + "reply is a message under another one. Assignment is a request, not a "
-                            + "fourth kind.")
-                    .withAllowed(List.of("comment", "request", "reply"))
+                    .withDetail("A comment is a remark, a request is something to act on, a reply "
+                            + "is a message under another one, and reviewed says a field has been "
+                            + "checked against the source it translates (SH1061). Assignment is a "
+                            + "request, not a kind of its own.")
+                    .withAllowed(List.of("comment", "request", "reply", "reviewed"))
                     .withDidYouMeanFrom(sent)
                     .withFix("Pass one of the three, or omit it for comment."));
         }
@@ -180,6 +181,12 @@ public class ShNoteService {
         }
         for (ShNote note : shNoteRepository
                 .findByObjectIdInAndResolvedFalseOrderByCreatedAtAsc(objectIds)) {
+            // SH1061 — a reviewed mark is not something being asked of this page, and this read is
+            // what an agent consults before rewriting one. The marks are in the object's own note
+            // list, which is where the translation workspace reads them.
+            if (Kind.REVIEWED.name().equals(note.getKind())) {
+                continue;
+            }
             if (shContentAclService.canRead(note.getObjectId())) {
                 byObject.computeIfAbsent(note.getObjectId(), id -> new java.util.ArrayList<>())
                         .add(note);
@@ -188,13 +195,21 @@ public class ShNoteService {
         return byObject;
     }
 
-    /** Everything still asking for something, newest first — the work list. */
+    /**
+     * Everything still asking for something, newest first — the work list.
+     *
+     * <p>SH1061's {@code reviewed} marks are left out unless a caller asks for that kind by name.
+     * A work list is what is still being asked of somebody, and "this field has been checked" is
+     * the opposite of a request: counted in, a page translated carefully would report as the one
+     * with the most outstanding work.</p>
+     */
     @Transactional(readOnly = true)
     public List<ShNote> open(String kind, Integer limit) {
         String wanted = kind == null || kind.isBlank() ? null : kindOf(kind).name();
         int capped = limit == null || limit <= 0 ? DEFAULT_LIMIT : Math.min(limit, MAX_LIMIT);
         return shNoteRepository.findOpen(wanted, PageRequest.of(0, capped)).stream()
                 .filter(note -> shContentAclService.canRead(note.getObjectId()))
+                .filter(note -> wanted != null || !ShNote.Kind.REVIEWED.name().equals(note.getKind()))
                 .toList();
     }
 

@@ -3560,9 +3560,17 @@ here", not "this sentence is wrong".
 `sh_note` anchors on three columns, narrowing: `object_id` is required, `field_path` and
 `revision_no` are not. "This page is wrong", "this field is wrong" and "this field was wrong at
 version 7" are one kind of statement at three resolutions, and three tables for them would be three
-read paths for one question. `kind` is `COMMENT`, `REQUEST` or `REPLY`: assignment **is** a request,
-and the alternative — an assignee column, a request table and a comment table — would be three
-shapes that all mean "somebody said something about this".
+read paths for one question. `kind` is `COMMENT`, `REQUEST`, `REPLY` or — since SH1061 — `REVIEWED`:
+assignment **is** a request, and the alternative — an assignee column, a request table and a comment
+table — would be three shapes that all mean "somebody said something about this".
+
+**`REVIEWED` is the fourth kind and the one that is not work (SH1061).** It says a field has been
+checked against the source it translates, written by the console's translation workspace and read
+back by it, so what a curator ticks is what an agent sees. It is left out of the work list
+(`open(null, …)`) and of a read's `include=notes`, because both answer "what is still being asked of
+this page" and a review mark is the opposite of a request — counted in, the page translated most
+carefully would report the most outstanding work. Asked for **by name** (`kind=reviewed`) it is
+there, and it is always in the object's own thread.
 
 **Visibility is the object's, never its own.** Every read and write goes through the SH54 content
 ACL for `objectId`: "who may see this remark" has one honest answer, which is "whoever may see the

@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Languages, Save } from "lucide-react"
+import { ArrowLeftRight, CheckCheck, Circle, Languages, Save } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useParams } from "react-router-dom"
@@ -12,12 +12,14 @@ import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { ROUTES } from "@/app/routes.const"
 import { isCancelled } from "@/lib/read-options"
 import { reportProblem } from "@/lib/problem"
-import { copyFromSource, pairedFields, sourceText } from "@/lib/translate-pane"
+import { REVIEWED, copyFromSource, pairedFields, reviewedFields, sourceText } from "@/lib/translate-pane"
+import { ShNoteService } from "@/services/note/note.service"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import type { ShPostTypeSchemaField, ShPostUnified } from "@/models/post-unified/post-unified"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 
 const service = new ShPostUnifiedService()
+const noteService = new ShNoteService()
 
 /**
  * SH1061 — the translation workspace: the source on one side, the translation on the other.
@@ -40,15 +42,31 @@ export default function TranslatePage() {
   const [data, setData] = useState<Record<string, unknown>>({})
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
+  /** SH1061 — the fields already checked against the source, as notes the agent sees too. */
+  const [reviewed, setReviewed] = useState<Set<string>>(new Set())
+  /**
+   * Which pane the reader is on when the two are stacked (SH1061).
+   *
+   * Only at narrow widths: shrinking two panes onto a phone gives a translator two unreadable
+   * columns, so one is shown at a time and this is the switch. Wide enough, both are on screen and
+   * the toggle is not rendered at all.
+   */
+  const [pane, setPane] = useState<"source" | "target">("target")
 
   const load = useCallback((signal?: AbortSignal) => {
     // One read for the pair: the translations list carries every sibling's document, so the source
-    // pane costs no second request (the group is what the list is).
-    return Promise.all([service.get(postId, "DRAFT"), service.translations(postId)])
-      .then(([row, siblings]) => {
+    // pane costs no second request (the group is what the list is). The row itself is read because
+    // SH985's version guard needs it, and the notes are what carry the review marks.
+    return Promise.all([
+      service.get(postId, "DRAFT"),
+      service.translations(postId),
+      noteService.of(postId),
+    ])
+      .then(([row, siblings, notes]) => {
         if (signal?.aborted) return
         setTarget(row)
         setData({ ...(row.data ?? {}) })
+        setReviewed(reviewedFields(notes))
         const group = row.translationGroupId
         setSource(siblings.find((sibling) => sibling.id === group && sibling.id !== row.id) ?? null)
       })
@@ -72,6 +90,40 @@ export default function TranslatePage() {
   const copyField = (field: string) => {
     setData((current) => copyFromSource(current, source?.data, field))
     setDirty(true)
+  }
+
+  /**
+   * SH1061 — this field has been checked against the source, written where an agent can read it.
+   *
+   * A note rather than a flag on the row: review state is a statement somebody made, with an
+   * author and a time, and the channel for those already exists (SH1003). Unmarking resolves the
+   * note, which is the same gesture every other note has.
+   */
+  const toggleReviewed = async (field: string) => {
+    const was = reviewed.has(field)
+    try {
+      if (was) {
+        const notes = await noteService.of(postId)
+        const mark = notes.find((note) => !note.resolved && note.fieldPath === field
+          && note.kind?.toLowerCase() === REVIEWED)
+        if (mark) await noteService.resolve(mark.id)
+      } else {
+        await noteService.add({
+          objectId: postId,
+          fieldPath: field,
+          kind: REVIEWED,
+          body: t("content.translateReviewedBody", { field }),
+        })
+      }
+      setReviewed((current) => {
+        const next = new Set(current)
+        if (was) next.delete(field)
+        else next.add(field)
+        return next
+      })
+    } catch (error) {
+      reportProblem(error, t("common.error"))
+    }
   }
 
   const save = async () => {
@@ -105,6 +157,17 @@ export default function TranslatePage() {
           <Badge variant="outline" className="font-mono text-xs uppercase">
             {target?.locale ?? "—"}
           </Badge>
+          {/* Stacked widths only: where both panes fit, there is nothing to switch between. */}
+          <div className="flex gap-1 lg:hidden">
+            <Button type="button" size="sm" variant={pane === "source" ? "secondary" : "ghost"}
+              className="h-7 px-2 text-xs" onClick={() => setPane("source")}>
+              {source?.locale ?? t("content.translateSource")}
+            </Button>
+            <Button type="button" size="sm" variant={pane === "target" ? "secondary" : "ghost"}
+              className="h-7 px-2 text-xs" onClick={() => setPane("target")}>
+              {target?.locale ?? t("content.translateTarget")}
+            </Button>
+          </div>
           <div className="ml-auto">
             <GradientButton type="button" size="sm" onClick={save} loading={saving} disabled={!dirty}>
               <Save className="size-4" />
@@ -116,7 +179,7 @@ export default function TranslatePage() {
         {/* Two columns where there is room, stacked where there is not: shrinking two panes to
             half a phone gives a translator two unreadable columns instead of one readable one. */}
         <div className="grid gap-4 lg:grid-cols-2">
-          <Panel>
+          <Panel className={pane === "source" ? "" : "hidden lg:block"}>
             <p className="mb-3 text-xs text-muted-foreground">
               {t("content.translateSourceHint", { locale: source?.locale ?? "" })}
             </p>
@@ -141,10 +204,26 @@ export default function TranslatePage() {
             </div>
           </Panel>
 
-          <Panel>
+          <Panel className={pane === "target" ? "" : "hidden lg:block"}>
             <p className="mb-3 text-xs text-muted-foreground">
               {t("content.translateTargetHint", { locale: target?.locale ?? "" })}
             </p>
+            {/* SH1061 — the review marks, per field, beside the fields they are about. Written as
+                notes, so what a curator ticks here is what an agent reads. */}
+            {schema.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-1">
+                {schema.map((field) => (
+                  <Button key={field.name} type="button" variant="ghost" size="sm"
+                    className={`h-6 gap-1 px-2 text-xs ${reviewed.has(field.name)
+                      ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}
+                    onClick={() => toggleReviewed(field.name)}
+                    title={t("content.translateReviewedHint")}>
+                    {reviewed.has(field.name) ? <CheckCheck className="size-3.5" /> : <Circle className="size-3.5" />}
+                    {field.label || field.name}
+                  </Button>
+                ))}
+              </div>
+            )}
             {schema.length > 0 && (
               <PostFormFields
                 schema={schema}

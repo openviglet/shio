@@ -97,7 +97,8 @@ public class ShNoteAPI {
      * @param fieldPath  the field, when the note is about one
      * @param revisionNo the version, when it is about one
      * @param parentId   the note this replies to
-     * @param kind       {@code comment}, {@code request} or {@code reply}; omitted means comment
+     * @param kind       {@code comment}, {@code request}, {@code reply} or {@code reviewed}
+     *                   (SH1061); omitted means comment
      */
     public record NotePayload(String objectId, String fieldPath, Integer revisionNo,
                               String parentId, String kind, String body) {

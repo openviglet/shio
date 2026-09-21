@@ -66,7 +66,16 @@ public class ShNote implements Serializable {
         /** Something to act on — the one a work list is made of. */
         REQUEST,
         /** A message under another one. */
-        REPLY
+        REPLY,
+        /**
+         * SH1061 — this field has been checked against the source it translates.
+         *
+         * <p>A fourth kind rather than a comment, because a work list must not offer it as
+         * something to act on and a reader must not have to parse a body to tell "reviewed" from
+         * "please review". It carries the field it is about, like any other note, so the console's
+         * translation workspace and an agent reading {@code include=notes} see the same marks.</p>
+         */
+        REVIEWED
     }
 
     @Id

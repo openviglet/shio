@@ -1825,7 +1825,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1058** — shio_read, the file projection and the console's languages menu each say a translation has fallen behind its source, and say nothing when it has not (design §LXXIII.3 superseded: translatedFrom would put a digest in a file with nothing to compare it against, so the projection carries translationStale, the fact a reader can act on) (design §LXXIII.3 recorded in `docs/agents/renderer.md`).
 - **SH1060** — Coverage is a filter on every surface, a read per site, and a console board where a missing cell is the gesture that starts the translation (design §LXXIII.5 recorded in `docs/agents/content-api.md`).
 - **SH1131** — SH1060's read half: GET /site/{id}/coverage answers a row per page and a cell per language — current, stale or missing with addresses — from two queries whatever the site holds.
-- **SH1061 (the side-by-side workspace)** — A translator sees the source beside the translation, aligned by the post-type's field order, with copy-from-source per field and saves landing in the draft.
+- **SH1061** — The source sits beside the translation, and a field checked against it says so as a note an agent reads, with the panes stacking behind a toggle where there is no room for two (design §LXXIII.6 recorded in `docs/agents/console-ui.md`).
 
 ## Block BI — The areas this round did not reach
 

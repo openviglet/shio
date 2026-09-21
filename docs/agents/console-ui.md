@@ -2068,6 +2068,13 @@ phone gives a translator two unreadable columns instead of one readable one. It 
 siblings list carries every document, so the source pane costs no request of its own. Reached from
 the translations menu, and offered only on a page that *has* a source: on the source itself there is
 nothing to put in the left pane.
+**Per-field mark-reviewed writes a note** (`kind=reviewed`, SH1061's fourth kind), so review state
+is a statement with an author and a time rather than a flag on a row, and an agent reads the same
+marks; unmarking resolves the note, which is the gesture every other note already has. At narrow
+widths the panes stack and a **toggle** picks which one is on screen, because two half-width columns
+on a phone are two unreadable panes instead of one readable one. The rules the panes agree on —
+the ordinal pairing, the one-field copy, the text rendering and which fields count as reviewed —
+live in `lib/translate-pane.ts`, where `translate-pane.test.mjs` runs them.
 
 **The Languages board is one site's coverage, at `content/site/:siteId/languages` (SH1060).** A row
 per page and a column per language the site offers, reached from the site editor's Languages card —
