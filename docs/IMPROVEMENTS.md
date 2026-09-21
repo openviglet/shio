@@ -3115,3 +3115,28 @@ product recommends should be provably clean against our own gate, and the way to
 that is an assertion rather than a sweep: apply each blueprint that ships a layout,
 render a page, and assert `a11y` reports nothing. That fails on the blueprint added next
 year, which a fixed list of three names cannot.
+
+### LXXIV.12 The site marker file the projection never had (SH1122)
+
+The tree holds content, folders, assets and a snapshot. A site root is a folder, so it
+gets a `_folder.md` — carrying `site` and `folder` and nothing about the site.
+Everything a site *is* lives only in its row: `url`, `furl`, the bindings that decide
+whether a page renders at all, `searchablePostTypes`, `formSuccess`, and now SH1056's
+locale policy. None of it pulls, pushes or diffs.
+
+Found by SH1056, whose design asked for "a locales block in the site marker file" — a
+sentence that reads as a field on an existing file and is a subsystem. The locale half
+shipped against the API and stopped there, and every later task wanting a site-level
+setting in the tree stops here too.
+
+It is P4 with a hole in it: the one object an agent must configure before a page can
+render is the one it cannot edit as a file. Measurable in the replication chain — a
+clone reproduces content and re-derives bindings through an API call, so two instances
+agree about posts and cannot be diffed about sites.
+
+The shape is settled by what exists: a `_site.md` beside `_folder.md`, the same
+serializer with its own fixed `META_ORDER`, the same three-way merge. One thing is
+undecided — whether bindings are keys there or stay an API-only edge, since a binding
+naming a layout by title is a reference the tree cannot check.
+
+The assertion is a round trip: push a site, change a field on disk, pull, read the diff.

@@ -34,6 +34,8 @@ import com.viglet.shio.api.cda.ShCdaMapper;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.site.ShSiteLocaleService;
+import com.viglet.shio.api.site.ShSiteLocales;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -96,6 +98,8 @@ public class ShAgentContextService {
     private final ShReviewService shReviewService;
     /** SH1050 — the open-note count, for `include=status`. */
     private final ShNoteRepository shNoteRepository;
+    /** SH1056 — the site's declared locale policy, or the one its content implies. */
+    private final ShSiteLocaleService shSiteLocaleService;
 
     public ShAgentContextService(ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -109,11 +113,13 @@ public class ShAgentContextService {
                                 ShAgentUsageService shAgentUsageService,
                                 ShReleaseService shReleaseService,
                                 ShReviewService shReviewService,
-                                ShNoteRepository shNoteRepository) {
+                                ShNoteRepository shNoteRepository,
+                                ShSiteLocaleService shSiteLocaleService) {
         this.shAgentUsageService = shAgentUsageService;
         this.shReleaseService = shReleaseService;
         this.shReviewService = shReviewService;
         this.shNoteRepository = shNoteRepository;
+        this.shSiteLocaleService = shSiteLocaleService;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostTypeRepository = shPostTypeRepository;
@@ -331,16 +337,28 @@ public class ShAgentContextService {
     }
 
     private List<ShAgentContext.Site> siteRows(List<ShSite> sites, Map<String, Long> postsBySite, boolean ids) {
+        // SH1056 — one query for every site whose policy has to be derived, not one per row.
+        Map<String, ShSiteLocales> policies = shSiteLocaleService.of(sites);
         return sites.stream()
-                .map(site -> new ShAgentContext.Site(
-                        ids ? site.getId() : null,
-                        site.getName(),
-                        site.getUrl(),
-                        ids ? rootFolder(site).map(ShFolder::getId).orElse(null) : null,
-                        postsBySite.getOrDefault(site.getId(), 0L),
-                        // SH591 — present only when true. A `scratch=false` on every row is a
-                        // token per site to say the ordinary thing.
-                        site.isScratch() ? Boolean.TRUE : null))
+                .map(site -> {
+                    ShSiteLocales locales = policies.get(site.getId());
+                    return new ShAgentContext.Site(
+                            ids ? site.getId() : null,
+                            site.getName(),
+                            site.getUrl(),
+                            ids ? rootFolder(site).map(ShFolder::getId).orElse(null) : null,
+                            postsBySite.getOrDefault(site.getId(), 0L),
+                            // SH591 — present only when true. A `scratch=false` on every row is a
+                            // token per site to say the ordinary thing.
+                            site.isScratch() ? Boolean.TRUE : null,
+                            // SH1056 — and the same rule for all three: the pack already says the
+                            // instance default once, and a monolingual site repeating it on every
+                            // row would cost tokens to say nothing (P3).
+                            ShPostUnifiedWriteService.DEFAULT_LOCALE.equals(locales.defaultLocale())
+                                    ? null : locales.defaultLocale(),
+                            locales.enabled().size() > 1 ? locales.enabled() : null,
+                            locales.declared() ? Boolean.TRUE : null);
+                })
                 .toList();
     }
 

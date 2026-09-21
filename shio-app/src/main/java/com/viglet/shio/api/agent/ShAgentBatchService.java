@@ -38,6 +38,8 @@ import com.viglet.shio.api.release.ShReleaseService;
 import com.viglet.shio.persistence.model.release.ShRelease;
 import com.viglet.shio.api.post.revision.ShRevisionRow;
 import com.viglet.shio.api.post.unified.ShPostStateNotFoundException;
+import com.viglet.shio.api.site.ShSiteLocaleService;
+import com.viglet.shio.api.site.ShSiteLocales;
 import com.viglet.shio.api.site.ShSiteWriteService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -398,6 +400,8 @@ public class ShAgentBatchService {
     private final ShFolderWriteService shFolderWriteService;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ShSiteWriteService shSiteWriteService;
+    /** SH1056 — the one door a locale policy is validated through, on both upsert branches. */
+    private final ShSiteLocaleService shSiteLocaleService;
     /** SH244 — the one copy implementation, which the console's `/copyto` also calls (SH245). */
     private final ShObjectWriteService shObjectWriteService;
     private final ShContentAclService shContentAclService;
@@ -443,6 +447,7 @@ public class ShAgentBatchService {
                                ShFolderWriteService shFolderWriteService,
                                ShPostUnifiedWriteService shPostUnifiedWriteService,
                                ShSiteWriteService shSiteWriteService,
+                               ShSiteLocaleService shSiteLocaleService,
                                ShObjectWriteService shObjectWriteService,
                                ShContentAclService shContentAclService,
                                ShTenantQuotaService shTenantQuotaService,
@@ -481,6 +486,7 @@ public class ShAgentBatchService {
         this.shFolderWriteService = shFolderWriteService;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shSiteWriteService = shSiteWriteService;
+        this.shSiteLocaleService = shSiteLocaleService;
         this.shObjectWriteService = shObjectWriteService;
         this.shContentAclService = shContentAclService;
         this.shTenantQuotaService = shTenantQuotaService;
@@ -1860,8 +1866,14 @@ public class ShAgentBatchService {
         // on. `siteFill` never sees it: a flag that could be raised on an existing site would make
         // `shio site rm --scratch` a way to bulk-delete a site somebody chose to keep.
         boolean scratch = flag(op.data(), "scratch");
+        // SH1056 — validated before the dry-run return, for this class's own rule: a plan derived
+        // from a second reading of the rule is a plan that can disagree with the run it predicts.
+        // A policy naming a locale this instance does not know is a 400 at plan time too.
+        Optional<String> locales = shSiteLocaleService.declare(
+                op.data() == null ? null : op.data().get(ShSiteLocales.FIELD));
         String detail = createDetail(bindings) + (scratch ? ", declared SCRATCH — disposable, and "
-                + "`shio site rm --scratch` may remove it in one confirmation" : "");
+                + "`shio site rm --scratch` may remove it in one confirmation" : "")
+                + (locales.isPresent() ? ", with a declared locale policy" : "");
         if (session.dryRun) {
             return session.change(op, address, Change.CREATE, detail, null);
         }
@@ -1871,6 +1883,7 @@ public class ShAgentBatchService {
         payload.setDescription(text(op.data(), "description"));
         payload.setUrl(text(op.data(), "url"));
         payload.setFurl(text(op.data(), "furl"));
+        payload.setLocales(locales.orElse(null));
         payload.setScratch(scratch ? Boolean.TRUE : null);
         ShSite created = shSiteWriteService.createBlank(payload, bindings, session.actor);
         // SH413 — a brand-new site has nothing published, so this is almost always a no-op line.
@@ -2015,6 +2028,11 @@ public class ShAgentBatchService {
                 requested.put(field, value);
             }
         }
+        // SH1056 — the one fillable field that arrives as an object rather than a string, so it is
+        // validated here and handed on as the bytes to store. Everything after this treats it like
+        // `url`: filled when the site has no policy, kept and reported when it has one.
+        shSiteLocaleService.declare(op.data() == null ? null : op.data().get(ShSiteLocales.FIELD))
+                .ifPresent(json -> requested.put(ShSiteLocales.FIELD, json));
         // SH328 — the one edge that makes a site render, and the only op that can write it.
         Map<String, String> bindings = bindingsOf(op.data());
         ShSiteWriteService.ShSiteFill fill = session.dryRun

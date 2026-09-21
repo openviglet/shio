@@ -600,6 +600,26 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<String> findDistinctLocalesBySiteId(@Param("siteId") String siteId,
                                              @Param("state") ShPostState state);
 
+    /**
+     * SH1056 — the locales several sites' content is written in, in one query.
+     *
+     * <p>What an undeclared site reports as its policy, and the reason this is not the method
+     * above in a loop: the context pack and the site listing both answer for every site a caller
+     * can see, and a per-site query there is a query per row on a read P2 promises replaces a
+     * session.</p>
+     *
+     * <p>Both states, unlike {@link #findDistinctLocalesBySiteId}: a draft written in Portuguese
+     * means the site is being authored in Portuguese, and a policy that only counted what is
+     * published would report a language as absent on the day before it is launched. Deleted rows
+     * are excluded — a locale nothing but the recycle bin holds is not one the site offers.</p>
+     *
+     * @return one row per (site, locale) pair as {@code [siteId, locale]}, ordered
+     */
+    @Query("select distinct p.shSite.id, p.locale from ShPostUnified p "
+            + "where p.shSite.id in :siteIds and p.locale is not null and p.deletedDate is null "
+            + "order by p.shSite.id, p.locale")
+    List<Object[]> findDistinctLocalesBySiteIdIn(@Param("siteIds") Collection<String> siteIds);
+
     // --- Content i18n / locales (SH53) ---
 
     /** All sibling translation rows (across states) sharing a translation group. */

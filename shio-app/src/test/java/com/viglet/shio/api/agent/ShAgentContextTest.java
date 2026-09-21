@@ -571,6 +571,63 @@ class ShAgentContextTest {
         assertThat(terse).contains("\nbudget est=");
     }
 
+    // --- SH1056: the site's locale policy, where it costs something to say ---
+
+    @Test
+    @DisplayName("SH1056: a monolingual site in the instance default says nothing about locales")
+    void theOrdinarySiteCostsNoLocaleTokens() {
+        ShAgentContext pack = context();
+        String terse = ShAgentContextTerse.render(pack);
+
+        assertThat(pack.sites()).isNotEmpty().allSatisfy(site -> {
+            assertThat(site.defaultLocale())
+                    .as("SH1056: the pack already publishes the instance default once, on "
+                            + "`instance` — repeating it on every site row is tokens spent to "
+                            + "say the ordinary thing (P3)")
+                    .isNull();
+            assertThat(site.locales())
+                    .as("SH1056: and a list of one naming that same default repeats two facts "
+                            + "to add none")
+                    .isNull();
+            assertThat(site.localesDeclared()).isNull();
+        });
+        assertThat(terse)
+                .as("SH1056: the terse form spends nothing either — this is the assertion that "
+                        + "fails if a later row starts emitting a locale unconditionally")
+                .doesNotContain("locales=")
+                .doesNotContain("locales-declared=");
+    }
+
+    @Test
+    @DisplayName("SH1056: a declared policy reaches the pack, and says it was a decision")
+    void aDeclaredPolicyIsVisibleAndMarkedAsChosen() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShSite site = entityManager
+                    .createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                    .setParameter("name", siteName)
+                    .getSingleResult();
+            site.setLocales("{\"default\":\"pt-br\",\"enabled\":[\"pt-br\",\"en\"],"
+                    + "\"fallback\":{}}");
+            entityManager.merge(site);
+        });
+
+        ShAgentContext pack = shAgentContextService.context(siteName, null, 0, null, null);
+        ShAgentContext.Site row = pack.sites().stream()
+                .filter(each -> siteName.equals(each.name()))
+                .findFirst().orElseThrow();
+
+        assertThat(row.defaultLocale()).isEqualTo("pt-br");
+        assertThat(row.locales()).containsExactly("pt-br", "en");
+        assertThat(row.localesDeclared())
+                .as("SH1056: \"offers Portuguese\" means one thing as a decision and another as a "
+                        + "description of what has been translated so far, and this is the flag "
+                        + "that tells them apart")
+                .isTrue();
+        assertThat(ShAgentContextTerse.render(pack))
+                .contains("locales=pt-br,en")
+                .contains("locales-declared=true");
+    }
+
     @Test
     void terseAndJsonDescribeTheSameState() {
         ShAgentContext pack = context();

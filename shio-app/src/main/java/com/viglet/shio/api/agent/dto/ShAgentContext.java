@@ -230,14 +230,30 @@ public record ShAgentContext(
      *                     second half of SH591 is precisely this: a listing that shows thirteen
      *                     sites and no difference between the two a human curates and the eleven
      *                     an agent left behind is a listing the human cannot act on.
+     * @param defaultLocale SH1056 — the locale this site is written in, omitted when it is the
+     *                     instance default {@code instance.defaultLocale} already published once
+     *                     per pack. The common site says nothing here (P3).
+     * @param locales      the locales it offers, omitted while there is only one: a list of one
+     *                     naming the default repeats two facts to add none
+     * @param localesDeclared whether somebody chose the two above, or they were read off the
+     *                     content. Present only when true, and it is the distinction this whole
+     *                     field exists for: "offers Portuguese" means one thing as a decision and
+     *                     another as a description of what has been translated so far
      */
     @JsonInclude(Include.NON_NULL)
     public record Site(String id, String name, String url, String rootFolderId, long posts,
-                       Boolean scratch) {
+                       Boolean scratch, String defaultLocale, List<String> locales,
+                       Boolean localesDeclared) {
 
         /** The five-field form, before SH591 made a disposable site visible as one. */
         public Site(String id, String name, String url, String rootFolderId, long posts) {
             this(id, name, url, rootFolderId, posts, null);
+        }
+
+        /** The six-field form, before SH1056 gave a site a locale policy of its own. */
+        public Site(String id, String name, String url, String rootFolderId, long posts,
+                    Boolean scratch) {
+            this(id, name, url, rootFolderId, posts, scratch, null, null, null);
         }
     }
 

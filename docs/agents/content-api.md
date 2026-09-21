@@ -1345,3 +1345,51 @@ different answers about an instance somebody may have restarted. The tile is dra
 not zero; `shio status` prints *since this process started*, and reports `unpersisted` beside it,
 because if the database was the thing failing then the record of the failure is exactly what could
 not be written down.
+
+## A site declares the locales it is in (SH1056, first part)
+
+`ShSite.locales` holds `{"default":…,"enabled":[…],"fallback":{…}}`, written and read through
+`ShSiteLocales` and resolved by `ShSiteLocaleService`. Before it, nothing could say what languages
+a site *offers*: the render frame published an instance-wide default, verify took the union of the
+locales it happened to find while scanning, and the translations menu offered all forty-five seeded
+tags on every post. Three different shapes of one unanswerable question.
+
+**One column, not three.** The three answers are only meaningful together — a default outside the
+enabled set is not a default, and a fallback pointing at a locale the site does not offer is a
+redirect to nothing. Three columns would each be individually valid and jointly meaningless, and
+the refusal could not say which of the three is wrong.
+
+**Nullable forever, and that is the whole migration.** An unset column reports the derived union,
+which is exactly what every site reported before there was a setting, so nothing changes on upgrade
+and nothing is backfilled. Writing a derived policy into every row at migration time would look
+like the same thing and is not: it freezes a description of what had been typed by then into a
+decision nobody made. `declared()` is what tells the two apart, and it is the distinction the
+feature exists for — "offers Portuguese" means one thing as a decision and another as a description
+of what has been translated so far.
+
+**`site.upsert` fills it and never replaces it.** `locales` joined `ShSiteWriteService.FILLABLE`,
+so it gets the rule `url` and `description` already have: filled when the site has none, kept and
+reported when it has one (P7). It is the one fillable field that arrives as an object, so
+`ShSiteLocaleService.declare` validates it and hands on the bytes. Validation runs **before** the
+dry-run return, this class's own rule: a plan derived from a second reading of the rule is a plan
+that can disagree with the run it predicts, so a mis-cased `pt-BR` is a teaching 400 on a plan too.
+
+**Where it costs a query, and where it does not.** `of(List<ShSite>)` is batched, because the two
+callers are listings and a query per row is not what P2 promises. The **render** path uses
+`declared(site)` instead — the column alone, no derive — since composing a page per request must
+not add a content query to tell a template something `render.defaultLocale` already says.
+`site.defaultLocale` falls back to the instance default so a comparison is never against nothing,
+and `site.locales` is absent on an undeclared site rather than derived.
+
+**In the pack, the ordinary site says nothing.** `defaultLocale` is omitted when it equals the
+instance default the pack already publishes once, `locales` when there is only one, and
+`localesDeclared` unless it is true (P3). `ShAgentContextTest` asserts the silence in both
+encodings, which is the assertion that fails if a later row starts emitting a locale
+unconditionally.
+
+**What this part does not do**, and SH1056 stays open for it: the CDA site read carries no locale
+yet, so a headless front end still has nothing to negotiate against; the console has no Languages
+card; SH53's translations menu still offers every seeded tag rather than the enabled set. The
+design also asked for a `locales` block in the **site marker file** — there is no site marker file.
+The projection has content, folders, assets and a base snapshot, and a site's own row is projected
+nowhere, so that half is a subsystem rather than a field.

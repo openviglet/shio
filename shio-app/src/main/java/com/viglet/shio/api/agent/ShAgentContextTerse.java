@@ -124,6 +124,13 @@ public final class ShAgentContextTerse {
                     .count("posts", site.posts())
                     // SH591 — the word a human scanning this list needs, and only where it is true.
                     .attr("scratch", Boolean.TRUE.equals(site.scratch()) ? "true" : null)
+                    // SH1056 — all three absent on a monolingual site in the instance default,
+                    // which is the ordinary one and already knows the locale from `instance`.
+                    .attr("locale", site.defaultLocale())
+                    .attr("locales", site.locales() == null ? null
+                            : String.join(",", site.locales()))
+                    .attr("locales-declared",
+                            Boolean.TRUE.equals(site.localesDeclared()) ? "true" : null)
                     .build());
         }
         for (ShAgentContext.Type type : nullSafe(pack.model())) {

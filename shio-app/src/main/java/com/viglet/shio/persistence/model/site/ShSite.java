@@ -56,7 +56,18 @@ public class ShSite extends ShObject {
 	
 	@Column(name = "searchable_post_types", length = 5 * 1024 * 1024) // 5Mb
 	private String searchablePostTypes;
-	
+
+	/**
+	 * The site's declared locale policy as JSON, or null while it has none (SH1056).
+	 *
+	 * <p>Null is not a missing value here, it is an answer: an undeclared site reports the locales
+	 * its content is written in, which is what every site did before there was a setting. See
+	 * {@code ShSiteLocales} for the document's shape and {@code ShSiteLocaleService} for which of
+	 * the two a reader gets.</p>
+	 */
+	@Column(name = "locales", length = 4096)
+	private String locales;
+
 	@OneToMany(mappedBy = "shSite", cascade = CascadeType.ALL)
 	@Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
 	private Set<ShFolder> shFolders = new HashSet<>();
@@ -126,6 +137,11 @@ public class ShSite extends ShObject {
 
     public void setFormSuccess(String formSuccess) {
 		this.formSuccess = formSuccess;
+	}
+
+	/** SH1056 — the declared policy, or null to go back to reading it off the content. */
+	public void setLocales(String locales) {
+		this.locales = locales;
 	}
 
 	/** SH591 — written by the create that declared it, and by nothing else. */

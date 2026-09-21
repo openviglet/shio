@@ -1,0 +1,42 @@
+databaseChangeLog:
+  # SH1056 — `ShSite.locales`: the locale policy a site declares.
+  #
+  # One column and not three, because the three answers are only meaningful together: a default
+  # outside the enabled set is not a default, and a fallback pointing at a locale the site does not
+  # offer is a redirect to nothing. Three columns would each be individually valid and jointly
+  # meaningless, and the refusal could not say which of the three is wrong. The document is
+  # `{"default":…,"enabled":[…],"fallback":{…}}`, written in that key order with the map sorted, so
+  # the same policy serializes to the same bytes (P5) — `ShSiteLocales.toJson`.
+  #
+  # NULLABLE FOREVER, and that is the migration. Before this, a site's languages were inferred from
+  # the locales its posts happened to carry, deliberately, because there was no setting to read.
+  # That answer survives as the unset case: a null column reports the derived union exactly as
+  # today, so no site changes behaviour on upgrade and nothing has to be backfilled. Writing a
+  # derived policy into every row at migration time would look like the same thing and is not — it
+  # would freeze a description of what had been typed by then into a decision nobody made.
+  #
+  # 4096 rather than the 5Mb the two neighbouring JSON columns carry. Those hold a binding per
+  # post-type and can grow with the model; this holds a handful of tags and a small map, and a
+  # column sized for a megabyte invites something else to be stored in it.
+  #
+  # PascalCase `ShSite` because this is the SH26 baseline's table, and the lowercase `locales`
+  # spelling every other column on it uses. Not a tenant discriminator, so no
+  # ShTenantBackfillRunner entry. Type DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26:
+  # preserve identifier case on PostgreSQL (it does not propagate through `include`).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1056-site-locales
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShSite
+                columnName: locales
+      changes:
+        - addColumn:
+            tableName: ShSite
+            columns:
+              - column:
+                  name: locales
+                  type: VARCHAR(4096)

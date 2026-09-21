@@ -164,6 +164,9 @@ public class ShSiteWriteService {
         site.setPostTypeLayout(payload.getPostTypeLayout());
         site.setSearchablePostTypes(payload.getSearchablePostTypes());
         site.setFormSuccess(payload.getFormSuccess());
+        // SH1056 — validated by whoever built the payload, because this method takes an entity and
+        // an entity cannot refuse. `ShSiteLocaleService.declare` is the one door.
+        site.setLocales(payload.getLocales());
         // SH591 — carried from the create and settable nowhere else. A flag anybody could raise
         // later would make `shio site rm --scratch` a way to bulk-delete a site somebody chose to
         // keep; the guarantee it rests on is that the declaration preceded the content.
@@ -390,7 +393,8 @@ public class ShSiteWriteService {
      * Which fields {@link #fillEmpty} may write, in the order a report lists them — URL
      * first because it is the one that makes a site visible.
      */
-    public static final List<String> FILLABLE = List.of("url", "description", "furl");
+    public static final List<String> FILLABLE =
+            List.of("url", "description", "furl", ShSiteLocales.FIELD);
 
     /**
      * @param filled fields that were empty and now hold the requested value
@@ -408,6 +412,10 @@ public class ShSiteWriteService {
             case "url" -> site.getUrl();
             case "description" -> site.getDescription();
             case "furl" -> site.getFurl();
+            // SH1056 — the already-validated JSON, so the fill rule is the one every other field
+            // gets: a site that has no policy takes this one, and a site that has one keeps it and
+            // is told so. Changing a policy somebody set is the console's job, not an upsert's.
+            case ShSiteLocales.FIELD -> site.getLocales();
             default -> null;
         };
     }
@@ -417,6 +425,7 @@ public class ShSiteWriteService {
             case "url" -> site.setUrl(value);
             case "description" -> site.setDescription(value);
             case "furl" -> site.setFurl(value);
+            case ShSiteLocales.FIELD -> site.setLocales(value);
             default -> throw new IllegalStateException("Unfillable site field " + field);
         }
     }

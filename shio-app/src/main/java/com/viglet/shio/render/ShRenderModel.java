@@ -11,6 +11,9 @@ package com.viglet.shio.render;
 import com.viglet.shio.api.form.ShFormSubmissionAPI;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
+import com.viglet.shio.api.site.ShSiteLocaleService;
+import com.viglet.shio.api.site.ShSiteLocales;
+import java.util.Optional;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -100,10 +103,14 @@ public class ShRenderModel {
 
     private final ObjectMapper objectMapper;
     private final ShAgentIncidentLog incidentLog;
+    /** SH1056 — the site's declared policy, read off its own column and never derived here. */
+    private final ShSiteLocaleService shSiteLocaleService;
 
-    public ShRenderModel(ObjectMapper objectMapper, ShAgentIncidentLog incidentLog) {
+    public ShRenderModel(ObjectMapper objectMapper, ShAgentIncidentLog incidentLog,
+                         ShSiteLocaleService shSiteLocaleService) {
         this.objectMapper = objectMapper;
         this.incidentLog = incidentLog;
+        this.shSiteLocaleService = shSiteLocaleService;
     }
 
     /**
@@ -396,6 +403,20 @@ public class ShRenderModel {
         // post through the CDA, so there is no path by which a consent banner behaves one way in the
         // preview and another in production (P10, and the question SH389 was filed on).
         frame.put("scripts", scripts == null ? ShSiteScripts.of(null) : scripts);
+        // SH1056 — the per-site default SH383 said it could not promise, now that a site can
+        // declare one. `render.defaultLocale` stays where it is and keeps its meaning (the
+        // instance's), so no template built on it breaks; this is the narrower fact a template
+        // actually wants for an `hreflang` or an `x-default`, and it falls back to the same value
+        // so the comparison is never against nothing.
+        //
+        // `locales` is the DECLARED set only, and absent on a site that has not declared one. The
+        // alternative is the derived union, which is a content query — on a path that composes a
+        // page per request, to tell a switcher what `{{#translations}}` already tells it per post.
+        // A key that costs a query per render to be usually empty is the wrong trade (P3).
+        Optional<ShSiteLocales> policy = shSiteLocaleService.declared(site);
+        frame.put("defaultLocale", policy.map(ShSiteLocales::defaultLocale)
+                .orElse(ShPostUnifiedWriteService.DEFAULT_LOCALE));
+        policy.ifPresent(locales -> frame.put("locales", locales.enabled()));
         return ShStableMap.copyOf(frame);
     }
 

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
+import com.viglet.shio.api.site.ShSiteLocaleService;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 
 import tools.jackson.databind.ObjectMapper;
@@ -37,8 +38,12 @@ import tools.jackson.databind.ObjectMapper;
  */
 class ShRenderModelAnnotatedTest {
 
-    private final ShRenderModel renderModel =
-            new ShRenderModel(new ObjectMapper(), new ShAgentIncidentLog());
+    // SH1056 — the locale service reads the site's own column here and never the content, so the
+    // two repositories it would need for a DERIVED policy are genuinely unused on this path. A
+    // mock would assert that; a null says it, and fails loudly if the path ever starts deriving.
+    private final ShRenderModel renderModel = new ShRenderModel(new ObjectMapper(),
+            new ShAgentIncidentLog(),
+            new ShSiteLocaleService(null, null, new ShAgentIncidentLog(), new ObjectMapper()));
 
     /** A verbatim block as `convert` keeps it, with one element annotated (SH868 stamps these). */
     private static final String KEPT =

@@ -39,6 +39,7 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
@@ -769,6 +770,76 @@ class ShAgentBatchTest {
                 .as("an empty map leaves the column null, exactly as before — the fix adds a "
                         + "binding when one was sent and changes nothing when none was")
                 .isEmpty();
+    }
+
+    // --- SH1056: a site declares the locales it is in --------------------------------------
+
+    @Test
+    @DisplayName("SH1056: a create declares the site's locale policy, and stores it stably")
+    void aCreateDeclaresALocalePolicy() {
+        String name = "sh1056-" + UUID.randomUUID().toString().substring(0, 8);
+
+        Change change = only(run(false, siteOp(name, localeData("en", List.of("en", "pt-br"),
+                Map.of("pt-br", "en")))));
+
+        assertThat(change.detail()).contains("declared locale policy");
+        assertThat(localesOn(name))
+                .as("SH1056: P5 — the fixed key order and the sorted map, so the same policy is "
+                        + "the same bytes wherever it is projected")
+                .isEqualTo("{\"default\":\"en\",\"enabled\":[\"en\",\"pt-br\"],"
+                        + "\"fallback\":{\"pt-br\":\"en\"}}");
+    }
+
+    @Test
+    @DisplayName("SH1056: a locale this instance does not know is refused at plan time too")
+    void anUnknownLocaleIsRefusedBeforeAnythingIsWritten() {
+        String name = "sh1056-" + UUID.randomUUID().toString().substring(0, 8);
+        JsonNode policy = localeData("pt-BR", List.of("pt-BR"), Map.of());
+
+        assertThatThrownBy(() -> run(true, siteOp(name, policy)))
+                .as("SH1056: this class's own rule — a plan derived from a second reading of the "
+                        + "rule is a plan that can disagree with the run it predicts, so the "
+                        + "casing an agent guesses is a 400 on the dry run as well")
+                .isInstanceOf(ShTeachingException.class);
+        assertThat(localesOn(name)).as("and nothing was written").isNull();
+    }
+
+    @Test
+    @DisplayName("SH1056: an upsert fills a policy that is missing and keeps one that is set")
+    void aPolicyIsFilledOnceAndThenKept() {
+        String name = "sh1056-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, null));
+
+        Change filled = only(run(false, siteOp(name, localeData("en", List.of("en"), Map.of()))));
+        Change kept = only(run(false, siteOp(name, localeData("pt-br", List.of("pt-br"),
+                Map.of()))));
+
+        assertThat(filled.detail()).contains("filled").contains("locales");
+        assertThat(kept.detail())
+                .as("SH1056: P7 — an upsert fills what is empty and never replaces a decision "
+                        + "somebody made, and it says which value it protected")
+                .contains("kept the existing").contains("locales");
+        assertThat(localesOn(name)).contains("\"default\":\"en\"");
+    }
+
+    /** The site's declared locale policy as stored, read straight out of the column. */
+    private String localesOn(String name) {
+        return new TransactionTemplate(transactionManager).execute(status -> entityManager
+                .createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                .setParameter("name", name)
+                .getResultStream()
+                .findFirst()
+                .map(ShSite::getLocales)
+                .orElse(null));
+    }
+
+    private JsonNode localeData(String defaultLocale, List<String> enabled,
+                                Map<String, String> fallback) {
+        Map<String, Object> policy = new java.util.LinkedHashMap<>();
+        policy.put("default", defaultLocale);
+        policy.put("enabled", enabled);
+        policy.put("fallback", fallback);
+        return objectMapper.valueToTree(Map.of("locales", policy));
     }
 
     /** The site's post-type → layout map as stored, read straight out of the column. */
