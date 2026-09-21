@@ -2049,8 +2049,9 @@ curator deleting "the duplicate" deleted a translation. The locale is a chip bes
 badge, which is the badge two translations share, and `rowLabel` is what the checkbox, the title
 button and the actions trigger all say, so the two rows differ to a screen reader exactly where they
 differ on screen. Every post carries a locale (`en` by default), so every post row has a chip; a
-folder has none and its label is its name alone. Marking the site's *default* locale on the chip
-waits for the console to read the site's policy, which is SH1056's console half.
+folder has none and its label is its name alone. The chip does not mark the site's *default*
+locale: the browser does not fetch the site's policy (`GET /api/v2/site/{id}/locales`, SH1056),
+and SH1125 is filed for it.
 
 ## The filters are the server's, and they travel (SH1022)
 

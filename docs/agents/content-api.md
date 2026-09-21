@@ -1346,7 +1346,7 @@ not zero; `shio status` prints *since this process started*, and reports `unpers
 because if the database was the thing failing then the record of the failure is exactly what could
 not be written down.
 
-## A site declares the locales it is in (SH1056, first part)
+## A site declares the locales it is in (SH1056)
 
 `ShSite.locales` holds `{"default":…,"enabled":[…],"fallback":{…}}`, written and read through
 `ShSiteLocales` and resolved by `ShSiteLocaleService`. Before it, nothing could say what languages
@@ -1387,12 +1387,30 @@ instance default the pack already publishes once, `locales` when there is only o
 encodings, which is the assertion that fails if a later row starts emitting a locale
 unconditionally.
 
-**What this part does not do**: the CDA read came with SH1123, below. The console still has no
-Languages card, and SH53's translations menu still offers every seeded tag rather than the enabled
-set; SH1056 stays open for those two. The design also asked for a `locales` block in the
-**site marker file** — there is no site marker file. The projection has content, folders, assets
-and a base snapshot, and a site's own row is projected nowhere, so that half is a subsystem rather
-than a field, and SH1122 owns it.
+**The console's door, and the one that replaces.** `GET /api/v2/site/{id}/locales` answers the
+policy the site reports (the author's view, drafts counted), `PUT` declares one over whatever it
+had — the body is the document `site.upsert` takes under `data.locales`, validated by the same
+`ShSiteLocaleService.declare`, so a mis-cased tag is the same teaching 400 on both doors — and
+`DELETE` stops declaring, answering with what the site reports now. The write is
+`ShSiteWriteService.declareLocales`, its own verb rather than a field of `update`, because the
+site's `PUT` is a whole-object replace and a form that did not render the policy would null it on
+every save. Replacing a decision is the curator's gesture: the upsert keeps a set policy and says
+"change it in the console", and this is where that sentence leads — the same fill boundary `url`
+and `description` have, recorded on `/api/v2/site`'s row in `ShStatelessReachabilityLintTest`.
+
+The site editor's **Languages** section edits a draft inside the shell's one form (SH899) and
+writes only when the draft moved, so an untouched card never turns a derived policy into a
+declared copy of itself. SH53's translations menu narrows to a declared policy's enabled set, in
+its order, and marks the default; an undeclared site still offers the whole catalogue and says so,
+since narrowing to the languages its content already has would stop it ever gaining a second. The
+rules the draft is edited by — a default that is still enabled, fallbacks whose both ends are
+offered, none starting at the default — are `shio-react/src/lib/site-languages.ts`, pure so
+`site-languages.test.mjs` runs them.
+
+**What SH1056 does not do**: the design asked for a `locales` block in the **site marker file** —
+there is no site marker file. The projection has content, folders, assets and a base snapshot, and
+a site's own row is projected nowhere, so that half is a subsystem rather than a field, and SH1122
+owns it. The CDA read shipped as SH1123, below.
 
 ## The delivered site says which languages it offers (SH1123)
 

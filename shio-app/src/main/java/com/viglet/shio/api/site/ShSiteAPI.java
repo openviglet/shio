@@ -34,6 +34,7 @@ import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.tenant.ShTenantQuotaService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Console site management API. The CDA delivery counterpart is read-only
@@ -51,14 +52,18 @@ public class ShSiteAPI {
     private final ShSiteWriteService shSiteWriteService;
     private final ShSiteExportService shSiteExportService;
     private final ShTenantQuotaService shTenantQuotaService;
+    /** SH1056 — which languages a site is in, the one resolver every surface reads. */
+    private final ShSiteLocaleService shSiteLocaleService;
 
     public ShSiteAPI(ShSiteRepository shSiteRepository, ShSiteWriteService shSiteWriteService,
                      ShSiteExportService shSiteExportService,
-                     ShTenantQuotaService shTenantQuotaService) {
+                     ShTenantQuotaService shTenantQuotaService,
+                     ShSiteLocaleService shSiteLocaleService) {
         this.shSiteRepository = shSiteRepository;
         this.shSiteWriteService = shSiteWriteService;
         this.shSiteExportService = shSiteExportService;
         this.shTenantQuotaService = shTenantQuotaService;
+        this.shSiteLocaleService = shSiteLocaleService;
     }
 
     @GetMapping
@@ -123,6 +128,53 @@ public class ShSiteAPI {
                                          Principal principal) {
         return shSiteWriteService.update(id, toEntity(payload), principal != null ? principal.getName() : null)
                 .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * SH1056 — the languages a site is in, as the console shows and edits them.
+     *
+     * <p>The author's view: an undeclared site reports the locales its content is written in,
+     * drafts included, which is what the context pack reports too. The delivery API derives from
+     * what its token can read instead (SH1123) — the difference is the reader, not the rule.</p>
+     */
+    @GetMapping("/{id}/locales")
+    public ResponseEntity<ShSiteLocales> locales(@PathVariable String id) {
+        return resolve(id)
+                .map(site -> ResponseEntity.ok(shSiteLocaleService.of(site)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * SH1056 — declares a site's locale policy, replacing any it had.
+     *
+     * <p>The body is the document {@code site.upsert} takes under {@code data.locales} —
+     * {@code {"default":…,"enabled":[…],"fallback":{…}}} — and it is validated by the same method,
+     * so a mis-cased {@code pt-BR} is the same teaching 400 on both doors. This one replaces where
+     * the upsert only fills, which is the point of it: changing a decision somebody made is the
+     * curator's gesture, and the upsert's refusal to make it names this page.</p>
+     */
+    @PutMapping("/{id}/locales")
+    public ResponseEntity<ShSiteLocales> declareLocales(@PathVariable String id,
+                                                        @RequestBody JsonNode policy,
+                                                        Principal principal) {
+        String json = shSiteLocaleService.declare(policy)
+                .orElseThrow(ShSiteLocales.EmptyEnabledException::new);
+        return shSiteWriteService.declareLocales(id, json, principal != null ? principal.getName() : null)
+                .map(site -> ResponseEntity.ok(shSiteLocaleService.of(site)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * SH1056 — stops declaring a policy, so the site reports the locales its content is in again.
+     *
+     * <p>Answers with the policy the site reports <em>now</em>, because "cleared" is not an answer
+     * a curator can check: what the switcher will offer after this is.</p>
+     */
+    @DeleteMapping("/{id}/locales")
+    public ResponseEntity<ShSiteLocales> clearLocales(@PathVariable String id, Principal principal) {
+        return shSiteWriteService.declareLocales(id, null, principal != null ? principal.getName() : null)
+                .map(site -> ResponseEntity.ok(shSiteLocaleService.of(site)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 

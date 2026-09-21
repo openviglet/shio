@@ -1580,30 +1580,6 @@ run. The durable half is an assertion that the CLI names no check group of its o
 anywhere: a wired list here is a second vocabulary that drifts from the one the server
 publishes.
 
-### LXIV.22 The console lint went red where nothing local looks (SH1124)
-
-SH665 repaired the console's `pnpm lint` and moved the 33 findings that existed that day
-into `shio-react/eslint-suppressions.json`, so CI would be green and red on anything
-new. It is red now: `pnpm lint` in `shio-react` reports 19 errors and none of them is in
-the suppressions file. Ten are `react-hooks/set-state-in-effect`, four
-`react-hooks/refs`, three `react-refresh/only-export-components`, one a use before
-declaration, and one a disable comment in the content browser naming
-`jsx-a11y/no-noninteractive-element-to-interactive-role`, a rule the config does not
-load at all.
-
-They arrived one commit at a time because no local gate runs the lint. The three stamped
-gates are the Java suite, `pnpm test` and conformance; the CI job that does run it fails
-before it starts (SH1076), so every red step after that one is invisible too.
-
-Two halves. Fix the nineteen: most are the React Compiler's rules, and each is a
-cascading render or a stale read rather than a style point. Delete the dead disable
-comment. Then make the lint a gate a local run cannot skip, as a fourth stamped gate
-beside the three rather than a step of `pnpm test`, for SH665's own reason that a red
-lint must not hide a red suite. Adding the nineteen to the suppressions file is the
-wrong answer: that file holds what predates the lint, not what it watched arrive.
-
-The assertion is the exit code: `pnpm lint` exits 0 from a clean checkout.
-
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key
@@ -2730,6 +2706,30 @@ validators of its own, so the question there is whether a long-lived session kee
 The assertion is a second identical read costing no body, counted rather than claimed,
 and a stale store failing loudly rather than re-fetching everything.
 
+### LXXII.23 A size verdict about somebody else's build (SH1126)
+
+SH1043's comparison runs against whatever console build sits in
+`shio-app/src/main/resources/public`, and `pnpm test` never builds one. So the gate
+measures a build of *some* tree, and nothing says which. Seen on consecutive tasks:
+SH1059 passed `pnpm test` against a build that predated its own change, and the next
+task failed the headroom check only because a build made outside the session happened to
+include it. Both verdicts were about bytes the task under test had not produced.
+
+The conformance gate had the same shape and SH460 closed it there: the instance states
+its build time and commit, and the harness refuses one older than HEAD. The console
+build can carry the same identity. A small Vite plugin writes `build-info.json` beside
+`index.html`, holding the commit and a digest of `shio-react/src`, and the size test
+compares that digest with the tree it runs in. A match is measured. A mismatch is said
+out loud, in the same words as the no-build case, rather than measured, because a number
+from a different tree is worse than no number.
+
+A stale build must not fail the suite, or every source edit would demand a one-minute
+build before `pnpm test`. The gate that must see the bytes is the one that already
+builds: CI's `./mvnw package` without `skip.npm`.
+
+The assertion is a planted mismatch: a synthetic dist whose digest differs from the tree
+reports "not measured" and never a total.
+
 ## LXXIII One content model, many languages (Block BH)
 
 Localization in Shio is complete in the data and thin everywhere above it. ShPostUnified
@@ -2747,26 +2747,6 @@ rather than a diff, and gives curators a coverage board and a side-by-side works
 The MCP write path that silently dropped locale and translationOf was a live defect and
 is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
 translates, reached through the assistant, and every result lands as a reviewable draft.
-
-### LXXIII.1 A locale policy, declared as content (SH1056)
-
-The page render service states it outright: there is no per-site default locale, the
-value is instance-wide, and calling it a site default would promise a setting nobody can
-set. The site entity has no locale field. Verify derives a site's languages from the
-locales its posts already carry, deliberately inferred rather than configured. So the
-translations menu offers every seeded locale on every post, the missing-translation
-warning fires only after something was translated, and a headless front end has nothing
-to negotiate against.
-
-A locale policy, default, enabled set and fallback map, stored as content: a field on
-site.upsert rather than a new tool, a locales block in the site marker file that pulls
-and pushes byte-stably, and a read on the CDA site so a front end can build a switcher.
-The migration default is the derived union, so no site changes behaviour on upgrade and
-the original argument survives as the unset case.
-
-The resolved policy joins the context pack, the render frame's default moves onto the
-site, and SH53's menu filters to the enabled set. The console gets a Languages card on
-the site page. It depends on SH952 because an agent must be able to write locale at all.
 
 ### LXXIII.2 Delivery that honours the locale it is asked for (SH1057)
 
@@ -2866,6 +2846,29 @@ Nothing is published by the request, and a stale cell becomes current only when 
 draft is approved. The assertions request a missing translation, fulfil it through MCP,
 read the draft with its translationOf, and watch the board cell move from missing to
 pending review.
+
+### LXXIII.8 The chip that cannot say which language is the original (SH1125)
+
+SH1059 put each post row's locale on a chip beside the post-type badge and named the row
+by it, so a page and its translation are two rows. Its design also asked that the chip
+mark the site's default locale "where the site's enabled set exists", and it did not
+exist then: the console could not read a site's policy until SH1056 gave it `GET
+/api/v2/site/{id}/locales`.
+
+It can now, and the browser still does not ask. So a folder holding a page in English
+and in Portuguese says which row is which and not which one is the original, which is
+the question a curator deleting one of them is actually asking.
+
+The browser already resolves the folder's site on every navigation (`/path` answers it),
+so this is one read of the policy per site the curator opens, cached under the same key
+the query layer uses for the site, and a word on the chip whose tag equals
+`defaultLocale` when the policy is declared. An undeclared policy's default is a
+description of the content rather than a choice, so it is not marked: a chip saying
+"default" about something nobody chose would be the same confusion SH1056 exists to
+remove.
+
+The assertion carries the id: with a declared default of `pt-br`, the `pt-br` row's
+accessible name says it is the default and the `en` row's does not.
 
 ## LXXIV The areas this round did not reach (Block BI)
 

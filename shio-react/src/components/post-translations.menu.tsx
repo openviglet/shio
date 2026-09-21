@@ -14,22 +14,36 @@ import { useNavigate } from "react-router-dom"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShLocaleService, type ShLocale } from "@/services/locale/locale.service"
+import { ShSiteService } from "@/services/site/site.service"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
+import type { ShSiteLocalePolicy } from "@/models/site/site"
 import { reportProblem } from "@/lib/problem"
+import { offeredLocales } from "@/lib/site-languages"
 
 const unifiedService = new ShPostUnifiedService()
 const localeService = new ShLocaleService()
+const siteService = new ShSiteService()
 
 /**
  * SH53 — language switcher / translation creator for the post editor. Lists the
  * sibling translations of the current post (switch to one) and offers the
  * remaining locales to spin up a new linked translation.
+ *
+ * SH1056 — "the remaining locales" are the site's, once it has declared them: forty-five seeded
+ * tags on every post is an offer to write pages the site will never link to. An undeclared site
+ * still offers the whole catalogue, and says so, because narrowing to the languages its content is
+ * already in would stop it ever gaining a second one.
  */
-export function PostTranslationsMenu({ postId, currentLocale }: { postId: string; currentLocale?: string }) {
+export function PostTranslationsMenu({ postId, siteId, currentLocale }: {
+  postId: string
+  siteId?: string
+  currentLocale?: string
+}) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [translations, setTranslations] = useState<ShPostUnified[]>([])
   const [locales, setLocales] = useState<ShLocale[]>([])
+  const [policy, setPolicy] = useState<ShSiteLocalePolicy | null>(null)
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(() => {
@@ -40,6 +54,11 @@ export function PostTranslationsMenu({ postId, currentLocale }: { postId: string
     load()
     localeService.list().then(setLocales).catch(() => setLocales([]))
   }, [load])
+
+  useEffect(() => {
+    if (!siteId) return
+    siteService.locales(siteId).then(setPolicy).catch(() => setPolicy(null))
+  }, [siteId])
 
   const existing = new Set(translations.map((tr) => tr.locale).filter(Boolean) as string[])
   const localeLabel = (l: ShLocale) => (i18n.language === "pt" ? l.pt : l.en) || l.initials
@@ -80,13 +99,19 @@ export function PostTranslationsMenu({ postId, currentLocale }: { postId: string
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-muted-foreground">{t("content.addTranslation")}</DropdownMenuLabel>
-        {locales
+        {!policy?.declared && (
+          <p className="px-2 pb-1 text-xs text-muted-foreground">{t("content.translationsUndeclared")}</p>
+        )}
+        {offeredLocales(locales, policy)
           .filter((l) => !existing.has(l.initials))
           .map((l) => (
             <DropdownMenuItem key={l.initials} disabled={busy} onClick={() => addTranslation(l.initials)}>
               <Plus className="mr-2 h-4 w-4" />
               <span className="font-mono text-xs uppercase">{l.initials}</span>
               <span className="ml-2 truncate text-muted-foreground">{localeLabel(l)}</span>
+              {policy?.declared && policy.defaultLocale === l.initials && (
+                <span className="ml-auto text-xs text-muted-foreground">{t("content.defaultLocale")}</span>
+              )}
             </DropdownMenuItem>
           ))}
       </DropdownMenuContent>

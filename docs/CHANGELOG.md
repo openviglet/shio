@@ -1721,6 +1721,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH982** — ShAgentP7ConformanceTest classifies every mutating path on dry run, confirm token, audit row and review entry, each claim falsifiable both ways, and prints the counts (design §LXIV.10 recorded in `docs/agents/agent-surface.md`).
 - **SH983** — ShAgentP9ConformanceTest asks every mutating path what proof its answer carries — a change set, a digest, findings, a route delta — each present with the file and token that prove it, or absent with the reason a caller needs none, so a write that starts answering with a digest fails until its row moves. The evidence is a token in the response type rather than in the controller, which is what separates a digest offered on a second endpoint from one that answers the write: /api/v2/staticfile stamps sha256 on the item a replace returns. ShGuardCensus now holds the shape both censuses walk (design §LXIV.11 recorded in `docs/agents/agent-surface.md`).
 - **SH984** — design-system-waits.test.mjs derives its population from the roadmap now — every line whose deps carry a DS VDS reference — instead of holding a sample: SH984 was filed against seven lines and the first run of that check found thirteen, six of them invisible to the read that filed the task. Twelve carry a probe reading the installed package for the export, bin or type they wait on, with a proof the read reached it; SH948 declares itself unprobeable, because use:local runs from the design system's own checkout and nothing it changes is published, and reading a checkout is a path that exists on one machine. The shape-reading probes are also driven against the shape they wait for and against what is installed today, which caught a skip-link probe matching the word skip in two comments (design §LXIV.12 recorded in `docs/agents/console-ui.md`).
+- 🗑 **SH1124** — superseded by SH1075: Filed twice: SH1075 already holds this red console lint, measured the day before at twenty errors, with the same instrument-first design.
 
 ## Block AZ — What the content said before
 
@@ -1815,7 +1816,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BH — One content model, many languages
 
-- **SH1056 (the policy and the agent-side reads)** — a site declares its default locale, its enabled set and a fallback order; site.upsert writes it, the pack and the render frame read it, and an unset column still derives.
+- **SH1056** — A site declares its languages on either door, the pack and the CDA report them, and the console edits the policy and offers only the declared languages as translations (design §LXXIII.1 recorded in `docs/agents/content-api.md`).
 - **SH1123** — SH1056's delivery half: the site read carries the policy, and an undeclared site is described by the rows the token reads, so a production switcher never offers a draft-only language.
 - **SH1059** — Each browser row keeps its locale as a chip beside the type, and the checkbox, title and actions all name the row with it, so a page and its translation are two different rows.
 

@@ -482,7 +482,8 @@ export default function PostUnifiedEditPage() {
                   {t("content.previewDraft")}
                 </GradientButton>
               )}
-              <PostTranslationsMenu postId={postId} currentLocale={post.locale} />
+              <PostTranslationsMenu postId={postId} siteId={post.shSite?.id ?? post.shFolder?.shSite?.id}
+                currentLocale={post.locale} />
               <GradientButton
                 type="button"
                 size="sm"

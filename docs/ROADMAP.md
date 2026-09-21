@@ -44,7 +44,6 @@
 - 📋 **SH1118** (deps: SH1049 ✅) **the shared comment stripper silently deletes half a file, and every scan over it passes** — A slash and two stars in any string opens a block comment to it, so one Playwright pattern cut 43,389 characters out of what thirty-one suites read. → §LXIV.19
 - 📋 **SH1119** (deps: SH1052 ✅) **two committed regexes hold a literal backspace where a word boundary was meant, so both assert nothing** — A heredoc expanded the escape before the file was written, and the check that internal task ids do not ship has matched nothing since. → §LXIV.20
 - 📋 **SH1120** (deps: —) **shio verify --delivery runs fewer checks than shio verify, silently dropping page and a11y** — withDelivery hand-copies the server's default as content,routes,diagnostics, so the flag asking for the stronger proof sends the narrower run. → §LXIV.21
-- 📋 **SH1124** (deps: —) **the console lint CI runs has 19 errors no suppression covers, because no local gate runs it** — SH665 suppressed the findings of its day so anything new would be red; nineteen arrived since, unseen, because the three stamped gates never run the lint. → §LXIV.22
 
 ## Block AZ — What the content said before
 
@@ -111,15 +110,16 @@
 - 📋 **SH1114** (deps: SH1045 ✅) **the reachability walk reads one manifest of eleven, and four of the ten it skips are published** — SH1045 found eighteen dead declarations in the console and nothing asks the same question of the CLI, the SDKs or the starter, where a consumer pays for the answer. → §LXXII.20
 - 📋 **SH1116** (deps: SH1046 ✅, SH1047 ✅) **thirty-five console screens still read inside an effect and cancel nothing** — SH1047 migrated the five its symptom named and declared the rest, so the same race is recorded rather than fixed on every other screen that fetches. → §LXXII.21
 - 📋 **SH1117** (deps: SH1048 ✅) **the CLI never sends If-None-Match to Shio, so every run pays the full body of an unchanged read** — SH1048 made the console's reads answer 304, which a browser takes for free and Node does not — the CLI sends a conditional GET only to external assets it clones. → §LXXII.22
+- 📋 **SH1126** (deps: SH1043 ✅) **the console size gate measures whatever build is in public, whether or not it was built from the tree under test** — pnpm test never builds the console, so a pass can measure bytes older than the change and a fail can come from a build made outside the task. → §LXXII.23
 
 ## Block BH — One content model, many languages
 
-- 🛠 **SH1056** (deps: SH952 ✅) **no site can declare its default locale, its enabled locales or a fallback order** — The console has no Languages card and SH53's translations menu still offers every seeded tag, so a declared policy changes nothing a curator sees. → §LXXIII.1
-- 📋 **SH1057** (deps: SH1056 🛠) **the public locale segment never selects content, and most of delivery cannot ask for a locale** — The segment reaches only the validator and the link prefix, and CDA list, query and search, GraphQL and the TypeScript client take no locale at all. → §LXXIII.2
-- 📋 **SH1058** (deps: SH1056 🛠) **nothing knows a translation is out of date, so editing the source leaves every translation claiming to be current** — Translate copies the source's data and records only the group id, with no source revision or digest, and the only translation rule asks about absence. → §LXXIII.3
+- 📋 **SH1057** (deps: SH1056 ✅) **the public locale segment never selects content, and most of delivery cannot ask for a locale** — The segment reaches only the validator and the link prefix, and CDA list, query and search, GraphQL and the TypeScript client take no locale at all. → §LXXIII.2
+- 📋 **SH1058** (deps: SH1056 ✅) **nothing knows a translation is out of date, so editing the source leaves every translation claiming to be current** — Translate copies the source's data and records only the group id, with no source revision or digest, and the only translation rule asks about absence. → §LXXIII.3
 - 📋 **SH1060** (deps: SH1058, SH1022 ✅) **no surface shows translation coverage, so what is missing in pt-br is a full scan nobody runs** — shio_find cannot filter by locale though every row carries one, and the only coverage report is a warning that returns early on a scoped scan. → §LXXIII.5
-- 📋 **SH1061** (deps: SH1056 🛠) **translating means leaving the source, so the two languages are never visible together** — The whole translation interface is a menu that navigates to the sibling post, so a translator works from memory or a second browser tab. → §LXXIII.6
+- 📋 **SH1061** (deps: SH1056 ✅) **translating means leaving the source, so the two languages are never visible together** — The whole translation interface is a menu that navigates to the sibling post, so a translator works from memory or a second browser tab. → §LXXIII.6
 - 📋 **SH1062** (deps: SH1060, SH1006) **a curator cannot ask the connected agent to translate a page or fill a locale's gaps** — Shio hosts no model, and the assistant's request relay has no translation form, so the coverage board's missing cells can be read and not handed to the agent. → §LXXIII.7
+- 📋 **SH1125** (deps: SH1056 ✅) **the browser's locale chip does not say which row is the site's default language** — SH1059's design asked for it once a site could declare a default; the console can read the policy now and the browser never asks for it. → §LXXIII.8
 
 ## Block BI — The areas this round did not reach
 
@@ -134,7 +134,7 @@
 - 📋 **SH1103** (deps: —) **a gate stamp stays fresh across the ship that changes what it certified, so a red commit lands unseen** — Staleness is the HEAD sha and `ship` writes the governed docs at that same HEAD — which the JS suite reads, so a ship turns `pnpm test` red after its last green run. → §LXXIV.9
 - 📋 **SH1104** (deps: SH1039 ✅) **the editable read is on no response budget, and it just grew a section that scales with the catalogue** — Sixteen responses are measured and `/agent/editable` is not one, so `include=insertable` has no ceiling and the budget fixture renders no page to measure it against. → §LXXIV.10
 - 📋 **SH1121** (deps: SH1055 ✅) **the landing blueprint builds pages with no main region and no h1, which the a11y check reports on each** — marketing-site was repaired because a benchmark caught it; landing has the same defect and no assertion holds any blueprint to our own gate. → §LXXIV.11
-- 📋 **SH1122** (deps: SH1056 🛠) **a site's own settings are projected to no file, so url, bindings and the locale policy cannot be authored or diffed** — A site root's _folder.md says nothing about the site, so the one object that decides whether a page renders is reachable only through the API. → §LXXIV.12
+- 📋 **SH1122** (deps: SH1056 ✅) **a site's own settings are projected to no file, so url, bindings and the locale policy cannot be authored or diffed** — A site root's _folder.md says nothing about the site, so the one object that decides whether a page renders is reachable only through the API. → §LXXIV.12
 
 ## Priority
 
@@ -165,23 +165,6 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
-
-## Done when — SH1056
-
-- **A front end can build a switcher from the CDA alone** GET /api/v2/cda/site/{id} and
-  the listing both carry the resolved default and enabled set, so a headless front end
-  has something to negotiate against. Batched, because the listing answers for every
-  readable site. Shipped in part one: the policy, site.upsert, the context pack and the
-  render frame.
-- **The console stops offering forty-five locales on every post** SH53's translations
-  menu filters to the site's enabled set, and the site page gets a Languages card that
-  can set the policy — the only surface that may change one, since site.upsert
-  deliberately fills and never replaces. A site with no declared policy keeps today's
-  menu.
-- **The policy is authorable as a file, or SH1122 owns that half** The design asked for
-  a locales block in the site marker file, and there is no site marker file — a site's
-  row is projected nowhere. Either SH1122 lands the file and a locales block goes in it,
-  or this line records that the file half moved there and closes without it.
 
 ## Non-goals (do NOT add as tasks)
 

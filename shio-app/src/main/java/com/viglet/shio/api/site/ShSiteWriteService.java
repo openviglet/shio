@@ -430,6 +430,31 @@ public class ShSiteWriteService {
         }
     }
 
+    /**
+     * SH1056 — sets a site's locale policy, or clears it back to the one its content implies.
+     *
+     * <p>The console's door, and the one that <em>replaces</em>. {@code site.upsert} fills a policy
+     * that is missing and keeps one that is set (P7, the rule {@link #FILLABLE} gives every field),
+     * and says "change it in the console" when it keeps one — so this is where that sentence
+     * leads. It is its own verb rather than a field of {@link #update}, because that one is a
+     * whole-object replace and a form that did not render the policy would null it on every
+     * save.</p>
+     *
+     * @param json the policy as {@code ShSiteLocaleService.declare} validated it, or null to stop
+     *             declaring one — which is not "no languages": the site then reports the locales its
+     *             content is written in, as every site did before there was a setting
+     * @return the site, or empty when no live site has that id
+     */
+    @Transactional
+    public Optional<ShSite> declareLocales(String id, String json, String modifier) {
+        return shSiteRepository.findById(id).map(site -> {
+            site.setLocales(json);
+            site.setModifier(modifier);
+            site.setModifiedDate(Instant.now());
+            return shSiteRepository.save(site);
+        });
+    }
+
     @Transactional
     public Optional<ShSite> update(String id, ShSite payload, String modifier) {
         return shSiteRepository.findById(id).map(site -> {

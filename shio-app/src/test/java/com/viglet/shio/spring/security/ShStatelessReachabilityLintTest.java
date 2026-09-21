@@ -149,7 +149,11 @@ class ShStatelessReachabilityLintTest {
         byPath.put("/api/v2/site", agentEquivalent(Set.of("POST", "PUT", "DELETE"),
                 "site.upsert (SH170) and site.delete (SH463) — and this path is the reason SH170 "
                 + "exists, since a stateless caller here gets a bodiless 403 and the CLI's "
-                + "e2e/provision.mjs walked the CSRF dance by hand"));
+                + "e2e/provision.mjs walked the CSRF dance by hand. /{id}/locales (SH1056) is "
+                + "covered as a fill: site.upsert declares a policy a site does not have, and "
+                + "replacing or clearing one somebody set is the console's by SH184's rule, the "
+                + "same boundary url and description have. A sub-path, so the SH463 verb check "
+                + "cannot see it and this sentence is the record"));
         // /api/v2/staticfile was here, classified AGENT_EQUIVALENT on the reasoning that the
         // `shio_assets` tool and the SH145 projection covered it. SH437 measured that and it was
         // false in the direction that matters: an agent can *read* the media library over MCP and

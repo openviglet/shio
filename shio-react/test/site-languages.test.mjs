@@ -1,0 +1,102 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+import { strict as assert } from "node:assert"
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { test } from "node:test"
+import { fileURLToPath } from "node:url"
+import {
+  declarationOf, draftOf, offeredLocales, prune, setFallback, toggleLocale,
+} from "../src/lib/site-languages.ts"
+
+/**
+ * SH1056 — the console half of a site's locale policy: the card that edits it, and the menu that
+ * stops offering forty-five languages on every post.
+ *
+ * @scans code
+ */
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
+const read = (...path) => readFileSync(join(ROOT, ...path), "utf8")
+
+const CATALOGUE = ["en", "es", "fr", "pt", "pt-br"].map((initials) => ({ initials, en: initials, pt: initials }))
+const DECLARED = { defaultLocale: "pt-br", enabled: ["pt-br", "en"], fallback: {}, declared: true }
+const DERIVED = { defaultLocale: "en", enabled: ["en"], fallback: {}, declared: false }
+
+test("SH1056: a declared policy is what the translations menu offers, in its order", () => {
+  assert.deepEqual(offeredLocales(CATALOGUE, DECLARED).map((l) => l.initials), ["pt-br", "en"],
+    "SH1056: the site said which languages it publishes — offering the rest is offering to write "
+      + "pages nothing will link to")
+})
+
+test("SH1056: an undeclared site is offered the whole catalogue, not the languages it already has", () => {
+  assert.equal(offeredLocales(CATALOGUE, DERIVED).length, CATALOGUE.length,
+    "SH1056: narrowing to the derived set would stop a one-language site ever adding a second")
+  assert.equal(offeredLocales(CATALOGUE, null).length, CATALOGUE.length,
+    "SH1056: a policy that failed to load must not empty the menu")
+})
+
+test("SH1056: the draft never composes a policy the server would refuse", () => {
+  const draft = { ...draftOf(DECLARED), fallback: { en: "pt-br" } }
+
+  const withoutDefault = toggleLocale(draft, "pt-br", false)
+  assert.equal(withoutDefault.defaultLocale, "en",
+    "SH1056: a default outside the enabled set is not a default, so disabling it re-picks one")
+  assert.deepEqual(withoutDefault.fallback, {},
+    "SH1056: a fallback pointing at a locale the site no longer offers is a redirect to nothing")
+
+  const added = toggleLocale(draft, "fr", true)
+  assert.deepEqual(added.enabled, ["pt-br", "en", "fr"],
+    "SH1056: a newly offered locale goes last — a switcher's order is a decision, not an alphabet")
+
+  assert.deepEqual(prune({ ...draft, fallback: { "pt-br": "en" } }).fallback, {},
+    "SH1056: a rule from the default is dropped — every chain already ends there")
+  assert.deepEqual(setFallback(added, "fr", "").fallback, { en: "pt-br" },
+    "SH1056: clearing a rule sends that locale's missing pages back to the default")
+})
+
+test("SH1056: what the card sends is the document site.upsert takes", () => {
+  assert.deepEqual(declarationOf(draftOf(DECLARED)),
+    { default: "pt-br", enabled: ["pt-br", "en"], fallback: {} },
+    "SH1056: one vocabulary on both doors — `default`, as the agent writes it")
+})
+
+test("SH1056: the menu reads the post's site and narrows through the one rule", () => {
+  const MENU = read("src", "components", "post-translations.menu.tsx")
+  assert.match(MENU, /offeredLocales\(locales, policy\)/u,
+    "SH1056: the menu offers what the rule returns, not the raw catalogue")
+  assert.match(MENU, /siteService\.locales\(siteId\)/u)
+  assert.match(read("src", "app", "content", "post.edit.page.tsx"),
+    /<PostTranslationsMenu postId=\{postId\} siteId=\{post\.shSite\?\.id \?\? post\.shFolder\?\.shSite\?\.id\}/u,
+    "SH1056: without the site the menu cannot know the policy and offers everything")
+})
+
+test("SH1056: the card is part of the one save, and writes only when it moved", () => {
+  const PAGE = read("src", "app", "content", "site.edit.page.tsx")
+  const form = /<form id="site-edit" onSubmit=\{onSubmit\}>([\s\S]*?)<\/form>/u.exec(PAGE)?.[1] ?? ""
+  assert.match(form, /<SiteLanguagesSection/u,
+    "SH1056: inside the form the shell's Save submits (SH899), not a second button")
+  assert.match(PAGE, /if \(languages && languagesDirty\)/u,
+    "SH1056: an untouched card must not turn a derived policy into a declared copy of itself")
+  assert.match(PAGE, /service\.declareLocales\(site\.id, declarationOf\(languages\)\)/u)
+  assert.match(PAGE, /service\.clearLocales\(site\.id\)/u,
+    "SH1056: unticking 'declare' goes back to the content's languages rather than saving an empty list")
+})
+
+test("SH1056: every string the card and the menu ask for exists in both locales", () => {
+  const keys = [
+    "content.siteLanguages", "content.siteLanguagesDeclare", "content.siteLanguagesDeclaredHint",
+    "content.siteLanguagesDerivedHint", "content.siteLanguagesEnabled", "content.siteLanguagesDefault",
+    "content.siteLanguagesFallback", "content.siteLanguagesFallbackHint",
+    "content.siteLanguagesFallbackDefault", "content.translationsUndeclared", "content.defaultLocale",
+  ]
+  for (const locale of ["en", "pt"]) {
+    const strings = JSON.parse(read("src", "i18n", "locales", locale, "content.json"))
+    for (const key of keys) assert.ok(strings[key], `SH1056: ${locale} is missing ${key}`)
+  }
+})

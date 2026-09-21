@@ -124,6 +124,9 @@ class ShConsoleReadAclLintTest {
                     + "at all; a site the reader may not open still has to be nameable"),
             Map.entry("/api/v2/site/trash", "trashed sites, an admin read for the same reason"),
             Map.entry("/api/v2/site/{id}", "one site's own record — its name, locale and settings"),
+            Map.entry("/api/v2/site/{id}/locales", "SH1056 — the languages a site offers, a setting "
+                    + "of the site like its record above; the tags it derives from content are the "
+                    + "ones every post row already shows, never a post's title or body"),
             Map.entry("/api/v2/site/{id}/export",
                     "an SH68 exchange package, guarded by the export role"),
             Map.entry("/api/v2/folder/trash", "the folder trash, which SH222 scopes by site"),

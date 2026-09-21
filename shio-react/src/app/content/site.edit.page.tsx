@@ -18,11 +18,16 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { siteDestination } from "@/lib/site-front-end"
-import type { ShSite } from "@/models/site/site"
+import type { ShSite, ShSiteLocalePolicy } from "@/models/site/site"
 import { usePostTypes } from "@/hooks/use-catalogue"
 import { ShSiteService } from "@/services/site/site.service"
+import { ShLocaleService, type ShLocale } from "@/services/locale/locale.service"
+import { SiteLanguagesSection } from "@/components/site-languages.section"
+import { declarationOf, draftOf, type LanguagesDraft } from "@/lib/site-languages"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShSiteService()
+const localeService = new ShLocaleService()
 
 /**
  * SH899 — the site editor, and the first entity shell in this console.
@@ -57,9 +62,19 @@ export default function BentoSiteEditPage() {
   const postTypes = usePostTypes().data ?? []
   const [searchableTypes, setSearchableTypes] = useState<string[]>([])
   const [url, setUrl] = useState("")
+  // SH1056 — the policy the site reports, the form's draft of it, and whether the draft moved.
+  const [policy, setPolicy] = useState<ShSiteLocalePolicy | null>(null)
+  const [languages, setLanguages] = useState<LanguagesDraft | null>(null)
+  const [languagesDirty, setLanguagesDirty] = useState(false)
+  const [catalogue, setCatalogue] = useState<ShLocale[]>([])
 
   useEffect(() => {
     if (!siteId) return
+    service.locales(siteId).then((reported) => {
+      setPolicy(reported)
+      setLanguages(draftOf(reported))
+    }).catch(() => setPolicy(null))
+    localeService.list().then(setCatalogue).catch(() => setCatalogue([]))
     service.get(siteId).then((data) => {
       setSite(data)
       setUrl(data.url ?? "")
@@ -96,6 +111,22 @@ export default function BentoSiteEditPage() {
     }
     await service.update(merged)
     setSite(merged)
+    // SH1056 — its own call, because the site's PUT is a whole-object replace that does not carry
+    // the policy, and only when it moved: an untouched card must not turn a derived policy into a
+    // declared copy of itself.
+    if (languages && languagesDirty) {
+      try {
+        const reported = languages.declare
+          ? await service.declareLocales(site.id, declarationOf(languages))
+          : await service.clearLocales(site.id)
+        setPolicy(reported)
+        setLanguages(draftOf(reported))
+        setLanguagesDirty(false)
+      } catch (error) {
+        reportProblem(error, t("common.error"))
+        return
+      }
+    }
     toast.success(t("common.saved"))
   }
 
@@ -213,6 +244,18 @@ export default function BentoSiteEditPage() {
             </div>
           </div>
         </BentoFormSection>
+        {languages && (
+          <SiteLanguagesSection
+            catalogue={catalogue}
+            policy={policy}
+            draft={languages}
+            onChange={(next) => {
+              setLanguages(next)
+              setLanguagesDirty(true)
+              onStateChange({ isDirty: true, isSubmitting: false })
+            }}
+          />
+        )}
         </form>
       )}
     </BentoEntityShell>

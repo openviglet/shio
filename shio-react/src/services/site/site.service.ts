@@ -1,4 +1,4 @@
-import type { ShSite } from "@/models/site/site";
+import type { ShSite, ShSiteLocaleDeclaration, ShSiteLocalePolicy } from "@/models/site/site";
 import axios from "axios";
 import type { ShRead } from "@/lib/read-options"
 
@@ -48,6 +48,28 @@ export class ShSiteService {
   /** SH648 — remove a site for good. This is what {@link delete} used to do. */
   async purge(id: string): Promise<void> {
     await axios.delete(`/v2/site/${id}/purge`);
+  }
+
+  /** SH1056 — the languages the site reports: declared, or read off its content. */
+  async locales(id: string, read: ShRead = {}): Promise<ShSiteLocalePolicy> {
+    const response = await axios.get<ShSiteLocalePolicy>(`/v2/site/${id}/locales`,
+      { signal: read.signal });
+    return response.data;
+  }
+
+  /**
+   * SH1056 — declares the site's languages, replacing any it had. The agent's upsert only fills a
+   * missing policy and sends a curator here to change one, so this is the call that replaces.
+   */
+  async declareLocales(id: string, policy: ShSiteLocaleDeclaration): Promise<ShSiteLocalePolicy> {
+    const response = await axios.put<ShSiteLocalePolicy>(`/v2/site/${id}/locales`, policy);
+    return response.data;
+  }
+
+  /** SH1056 — stops declaring, so the site reports the languages its content is in again. */
+  async clearLocales(id: string): Promise<ShSiteLocalePolicy> {
+    const response = await axios.delete<ShSiteLocalePolicy>(`/v2/site/${id}/locales`);
+    return response.data;
   }
 
   async export(id: string): Promise<Blob> {
