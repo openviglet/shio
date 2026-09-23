@@ -2904,27 +2904,6 @@ submission true, and verify gains form-destination-missing for a form whose fold
 longer exists. The assertions post a submission, find it on the Forms page and through
 MCP, and archive it.
 
-### LXXIV.5 Replication, declared so the census must decide it (SH1067)
-
-The manifest's features map carries multiTenant, oidc, webhooks, scheduledPublish,
-previewTokens, rateLimit, signedImageUrls, searchIndexing, marketplace, graphql, search
-and locales, and no replication key. shio clone, shio convert and shio propose, which
-turn an existing site into an authorable Shio site, exist only as CLI commands. So the
-conformance test that classifies every feature cannot see them, a curator who finds a
-page worth replicating cannot start from the console, and an MCP-only client cannot
-start at all.
-
-The smallest honest move comes first: declare replication as a feature key, which forces
-the census to classify it and turns an absence into a decision, either an agent route or
-an exception with a reason and a falsifier. Then give it the reach the decision names.
-The likely shape is a resource describing replication runs and their status plus a
-request, since a capture needs a browser and the instance runs none, so the work stays
-in the CLI where Playwright is an optional import and the instance records and reports
-it.
-
-The console gets a replication entry that starts a run through that request and shows
-its status, reporting outcomes through the dock.
-
 ### LXXIV.6 The third gate, told about the round (SH1068)
 
 cli/conformance holds docs-vocabulary.conformance.mjs, which asks whether documented
@@ -3131,3 +3110,27 @@ answer and in `shio export`'s output, how many File posts it wrote without bytes
 The first is what a hand-over means. The second is honest and cheap, and is what
 SH1065's boundary paragraph currently documents as the deliberate shape — the paragraph
 says it carries no bytes, but nobody decided that; it is what the code does.
+
+### LXXIV.15 The replication round the instance never hears about (SH1067) (SH1135)
+
+SH1067 classified replication and left one thing out on purpose: a curator who finds a
+page worth replicating still cannot start from the console, and nobody can ask an
+instance what replications have been run against it. The capture half cannot move to the
+server — a crawler behind an endpoint is SH101's request-forgery surface, and "the
+instance does not run a browser" is a standing non-goal — so the naive shape, a request
+the instance records and something executes, is a queue whose worker does not exist.
+
+What could exist is the **record**. A round is a sequence of artefacts on disk —
+inventory, proposal, plan, conversion — and the instance sees only the site that came
+out. `shio convert` could report the round it just applied (source URL, page counts, the
+plan's digest, what was accepted) and the instance could hold it beside the site. A
+console entry then answers what a curator opening an unfamiliar site asks: where did
+this come from.
+
+Starting a run from the console is the harder half and should be argued separately: it
+means either a worker the product does not have, or a console that hands the curator a
+command to run. The second is honest and unglamorous, and it is what `shio remember`'s
+notes already do for other hand-offs.
+
+Open question this must answer first: whether the record belongs in instance memory
+(SH161, which already travels with an export) or in a table of its own.

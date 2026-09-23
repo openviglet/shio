@@ -168,3 +168,29 @@ A round leaves a site per attempt. Convert with `--scratch` and sweep with
 `shio site rm --scratch`; post-types have the same flag and `shio post-type rm
 --scratch`. Write what the round was for to the instance — `shio remember <key>` —
 because the next session reads that and not this file's git history.
+
+## Where replication sits in the P1 census (SH1067)
+
+Two of the arc's three acts have been declared since they shipped — `siteCapture` (SH377) and
+`conversionProposal` (SH379), both `false` with a pointer at the command that does them. The
+**conversion** had no key at all, so "can an agent replicate a site" was a question
+`ShAgentP1ConformanceTest` could not ask, let alone answer. `siteConversion` is now declared and
+classified, which turns the absence into a decision somebody can disagree with.
+
+The decision is **CLI-only, with a falsifier**, and the interesting half is that it is not
+CLI-only all the way down:
+
+- **Composing** the document reads captured markup out of the file tree. An endpoint that took
+  it would be uploading a stranger's HTML, or fetching it — which is SH101's request-forgery
+  surface and SH268 settled it. Same reason `conversionProposal` carries.
+- **Applying** it is an ordinary write. `shio convert` posts an SH82 desired-state document to
+  `/agent/apply`; `shio convert --out <file>` writes that document instead. So an MCP client
+  handed the file finishes the replication with `shio_apply` and needs nothing new — which is
+  why the manifest's pointer names `--out` rather than the applying command.
+- **Falsifier**: an instance that grows a capture service — a crawler behind an endpoint, the
+  thing the standing "the instance does not run a browser" non-goal refuses — flips the key and
+  this paragraph with it.
+
+What is deliberately *not* here is a replication run the instance records and the console starts.
+That needs a worker on the server for the half the server must not do, and the shape it would take
+is its own task rather than a corner of this one.

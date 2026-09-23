@@ -123,7 +123,6 @@
 ## Block BI — The areas this round did not reach
 
 - 📋 **SH1066** (deps: SH970 ⏳, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — A submission is written as a draft into a folder a developer configured, the nav has no Forms entry, and a curator must guess the folder to find them. → §LXXIV.4
-- 📋 **SH1067** (deps: —) **replication lives only in the CLI, with no manifest feature key the P1 census could classify** — shio clone, convert and propose are a differentiator with no MCP reach and no console entry, and without a key ShAgentP1ConformanceTest cannot see the gap at all. → §LXXIV.5
 - 📋 **SH1068** (deps: —) **the conformance gate knows none of the vocabulary this round adds, so its docs checks stay green over new names** — pnpm conformance pins documented tools, ops, properties and verbs against the code, and the round adds dozens with no line updating its vocabulary sources. → §LXXIV.6
 - 📋 **SH1069** (deps: —) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — The block-completion sweep of docs-shio, the coverage matrix and the public site is required when a block's last task ships, and no block here declares one. → §LXXIV.7
 - 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads a browser global and a filename as symbols this repository should define, so six ledger entries that were correct when written keep the gate permanently red. → §LXXIV.8
@@ -133,6 +132,7 @@
 - 📋 **SH1122** (deps: SH1056 ✅) **a site's own settings are projected to no file, so url, bindings and the locale policy cannot be authored or diffed** — A site root's _folder.md says nothing about the site, so the one object that decides whether a page renders is reachable only through the API. → §LXXIV.12
 - 📋 **SH1133** (deps: —) **a redirect on a site with its own front end routes nobody, and the lint still demands one** — Redirect posts are served by the instance's renderer; a Next.js site's URLs are served by the front end, which the CDA and the SDK never tell which addresses moved. → §LXXIV.13
 - 📋 **SH1134** (deps: —) **an exported site carries no asset bytes, so every File post arrives pointing at nothing** — The format has a files/ directory and the import restores from it; the site export passes an empty list, so the pages render with broken images and neither side says so. → §LXXIV.14
+- 📋 **SH1135** (deps: —) **an instance cannot say what a site was replicated from, and the console cannot start a run** — Every artefact of a round lives on the CLI's disk and the instance sees only the site that came out, so the source URL behind a page is lost the moment the shell closes. → §LXXIV.15
 
 ## Priority
 

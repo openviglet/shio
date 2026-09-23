@@ -321,6 +321,16 @@ public class ShAgentManifestService {
         // and nothing in a session tells a client it exists — which is exactly the absence SH393
         // says must be published rather than left to be discovered by not finding a tool.
         features.put("conversionProposal", false);
+        // SH1067 — the third act of the replication arc, and the one the census could not see. Two
+        // of the three had keys (`siteCapture` since SH377, `conversionProposal` since SH379) and
+        // the conversion itself had none, so "can an agent replicate a site" had no answer here at
+        // all. `false` for its siblings' reason and for one of its own, which is the interesting
+        // half: the conversion's WRITE is not CLI-shaped — `shio convert` composes an SH82
+        // desired-state document and applies it through `POST /agent/apply`, which an MCP client
+        // reaches with `shio_apply` today. What cannot leave the CLI is composing that document
+        // from a capture in the file tree, which is `conversionProposal`'s reason. So the pointer
+        // beside it names the command that WRITES the document rather than the one that applies it.
+        features.put("siteConversion", false);
         return features;
     }
 
@@ -377,6 +387,10 @@ public class ShAgentManifestService {
         elsewhere.put("exchange", "shio import <file> | shio export site:<name>");
         elsewhere.put("pageAudit", "shio audit <page>");
         elsewhere.put("siteCapture", "shio clone <url>");
+        // SH1067 — `--out` is the half that matters to a client holding `shio_apply`: it
+        // writes the desired-state document instead of applying it, so the conversion
+        // arrives on this surface even though composing it did not.
+        elsewhere.put("siteConversion", "shio convert --out <file>");
         elsewhere.put("visualSnapshot", "shio snapshot <page>");
         // Operator-shaped: a person's credential is the point, not a browser. SH975 — this said the
         // word `console`, which is not something a caller can run, and was wrong besides:

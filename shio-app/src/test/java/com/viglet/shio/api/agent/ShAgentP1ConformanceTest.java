@@ -524,6 +524,18 @@ class ShAgentP1ConformanceTest {
                 + "or having the instance fetch it, which SH268 settled. The artefact is also a *file* "
                 + "a reviewer argues with and partially accepts, which is P4's case rather than a "
                 + "JSON-RPC one").decided());
+        byFeature.put("siteConversion", new Delivery(Reach.CLI_ONLY, "shio_convert",
+                "SH1067 — the act the census could not see, and the one whose decision is not its "
+                + "siblings'. Composing the document is CLI-shaped for `conversionProposal`'s "
+                + "reason: it reads captured markup out of the file tree, and an endpoint that took "
+                + "it would be uploading a stranger's HTML or fetching it (SH268). APPLYING it is "
+                + "not CLI-shaped at all — `shio convert` posts an SH82 desired-state document to "
+                + "`/agent/apply`, which is `shio_apply`, so an MCP client that is handed "
+                + "`convert --out` finishes the replication with the tool it already has. That is "
+                + "why the pointer names `--out`: it is the seam where this capability rejoins the "
+                + "surface. Falsifier: an instance that grows a capture service (a crawler behind "
+                + "an endpoint, the thing SH101 refuses) flips this key and this row with it")
+                .decided());
         byFeature.put("pageAudit", new Delivery(Reach.CLI_ONLY, "shio_audit",
                 "SH391 — a decision rather than a gap, in the same sense `reviewQueue` is; SH813 made "
                 + "that distinction a field, and the run counts it. `shio audit` returns text an agent can act on, "
@@ -728,6 +740,7 @@ class ShAgentP1ConformanceTest {
                         "postTypeMerge",
                         "reviewQueue",
                         "siteCapture",
+                        "siteConversion",
                         "visualSnapshot");
 
         assertThat(advertisedNow)
