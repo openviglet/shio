@@ -74,6 +74,7 @@
 - 📋 **SH1093** (deps: —) **two suite tests fail intermittently on Windows and pass on an unchanged re-run** — A blueprint install moves a directory across temp dirs and a CLI exit test bounds wall-clock at 100ms, so a held handle or a loaded machine reds a gate nothing is wrong with. → §LXVIII.15
 - 📋 **SH1094** (deps: —) **the live preview is a card under the form, so reading it means scrolling away from the fields** — SH1014 left the split view unbuilt because two panes with a remembered ratio change the editor's shape rather than adding to it, which is a design-system question first. → §LXVIII.16
 - 📋 **SH1095** (deps: —) **an author editing content as files cannot see the page before pushing it** — Rendering from proposed values reached MCP, REST and the console, and the files tier — the one P4 calls the agent's cheapest — has no verb for it. → §LXVIII.17
+- 📋 **SH1132** (deps: —) **the console cannot change a page's URL, so a rename is an agent-only act** — post.move is the only writer of a friendly URL; the console's form has no field for one, and its single path to a URL change is a rollback that restores an older revision's. → §LXVIII.19
 
 ## Block BD — Finding, selecting and acting on content
 
@@ -121,7 +122,6 @@
 
 ## Block BI — The areas this round did not reach
 
-- 📋 **SH1064** (deps: SH996 ✅) **changing a page's friendly URL breaks every inbound link, and no writer ever creates the redirect Shio models** — REDIRECT is a system post type the renderer serves with a permanent flag choosing 301 or 302, and no rename, move, unpublish or delete path writes one. → §LXXIV.2
 - 📋 **SH1065** (deps: —) **site export is an id-keyed zip with no CLI verb, no MCP reach and no console button** — Import has REST, a CLI verb and an example while export is reachable only by building a URL from a resolved uuid, so no surface moves a site between instances. → §LXXIV.3
 - 📋 **SH1066** (deps: SH970 ⏳, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — A submission is written as a draft into a folder a developer configured, the nav has no Forms entry, and a curator must guess the folder to find them. → §LXXIV.4
 - 📋 **SH1067** (deps: —) **replication lives only in the CLI, with no manifest feature key the P1 census could classify** — shio clone, convert and propose are a differentiator with no MCP reach and no console entry, and without a key ShAgentP1ConformanceTest cannot see the gap at all. → §LXXIV.5
@@ -132,6 +132,7 @@
 - 📋 **SH1104** (deps: SH1039 ✅) **the editable read is on no response budget, and it just grew a section that scales with the catalogue** — Sixteen responses are measured and `/agent/editable` is not one, so `include=insertable` has no ceiling and the budget fixture renders no page to measure it against. → §LXXIV.10
 - 📋 **SH1121** (deps: SH1055 ✅) **the landing blueprint builds pages with no main region and no h1, which the a11y check reports on each** — marketing-site was repaired because a benchmark caught it; landing has the same defect and no assertion holds any blueprint to our own gate. → §LXXIV.11
 - 📋 **SH1122** (deps: SH1056 ✅) **a site's own settings are projected to no file, so url, bindings and the locale policy cannot be authored or diffed** — A site root's _folder.md says nothing about the site, so the one object that decides whether a page renders is reachable only through the API. → §LXXIV.12
+- 📋 **SH1133** (deps: —) **a redirect on a site with its own front end routes nobody, and the lint still demands one** — Redirect posts are served by the instance's renderer; a Next.js site's URLs are served by the front end, which the CDA and the SDK never tell which addresses moved. → §LXXIV.13
 
 ## Priority
 

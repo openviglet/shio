@@ -219,9 +219,13 @@ const UNEXERCISED = {
     // worth asserting live is that a curator's sentence reaches a resumed session, which is the
     // slice that puts notes on the read. They are proved in ShNoteTest against the service and the
     // op vocabulary.
+    // `post.redirect` arrives with SH1064 and joins beside `post.move`, which is not a coincidence:
+    // the live scenario for it IS the move's — rename a published page, then keep its old address
+    // answering — so it will be covered by the run that covers `post.move` and by no other. It is
+    // proved in ShRedirectOpTest against the service, the refusal and the lint it clears.
     "folder.delete", "folder.restore",
     "note.add", "note.resolve",
-    "post.move", "post.restore", "post.rollback", "post.unpublish",
+    "post.move", "post.redirect", "post.restore", "post.rollback", "post.unpublish",
     "release.add", "release.archive", "release.remove", "release.rollback", "release.run",
     "release.upsert",
     "site.delete", "site.restore",
@@ -305,8 +309,13 @@ const UNEXERCISED = {
     // asserted against a seeded instance in `ShConsoleSummaryAPITest`, which is a proof about the
     // counts; what only a live run can prove is that the rows a curator sees on the dashboard and
     // the rows this prints are the same rows — the claim the one endpoint was built to make.
-    "mcp", "publish", "remember", "report", "rollback", "schedule", "snapshot", "status",
-    "surfaces", "types", "versions",
+    // `redirects` arrives with SH1064 and is unwritten rather than out of scope, for the reason
+    // `assets` gives: its answer is derived from history — the addresses a site used to serve —
+    // so the only place it can be wrong is an instance that has actually renamed something. A
+    // live scenario would publish a page, rename it, and read the orphan back. `ShRedirectOpTest`
+    // proves the finding and its repair against a seeded site; the wire is not proved.
+    "mcp", "publish", "redirects", "remember", "report", "rollback", "schedule", "snapshot",
+    "status", "surfaces", "types", "versions",
   ],
 };
 

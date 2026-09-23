@@ -311,6 +311,7 @@
   "content.publishGoesLive": "{{url}} passa a responder pela primeira vez.",
   "content.publishMoves": "A página no ar vai para {{to}}, e {{from}} deixa de responder.",
   "content.publishInbound": "{{count}} página(s) publicada(s) apontam para {{url}}.",
+  "content.publishRedirect": "Manter {{url}} respondendo, como redirecionamento permanente (301).",
   "content.publishGateStopped": "Uma verificação impediu esta publicação: {{reason}}",
   "content.publishOverrideLabel": "Publicar mesmo assim, dizendo por quê",
   "content.publishOverrideHint": "Quem ler o histórico desta página vai ver esta frase e o seu nome.",

@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
@@ -49,7 +50,7 @@ export function PublishPreviewDialog({
   postId: string
   open: boolean
   setOpen: (open: boolean) => void
-  onConfirm: (override?: string) => void
+  onConfirm: (override?: string, redirect?: boolean) => void
   publishing: boolean
   /** SH998 — what the gate said, when one has already refused this publish. */
   gateRefusal?: string | null
@@ -59,6 +60,12 @@ export function PublishPreviewDialog({
   const [routes, setRoutes] = useState<ShPublishRoutes | null>(null)
   const [loading, setLoading] = useState(false)
   const [override, setOverride] = useState("")
+  /*
+   * SH1064 — ticked, and the curator can untick it. A rename with no redirect breaks every
+   * bookmark and inbound link into the page, and nothing anywhere says so afterwards; a redirect
+   * nobody wanted is one post to delete. The default goes to the recoverable side.
+   */
+  const [redirect, setRedirect] = useState(true)
 
   useEffect(() => {
     if (!open) return
@@ -66,6 +73,7 @@ export function PublishPreviewDialog({
     setPlan(null)
     setRoutes(null)
     setOverride("")
+    setRedirect(true)
     Promise.all([service.publishPlan(postId), service.publishRoutes(postId)])
       .then(([answer, moved]) => {
         setPlan(answer)
@@ -111,6 +119,23 @@ export function PublishPreviewDialog({
                 {t("content.publishInbound", { count: routes.inbound, url: routes.stops })}
               </p>
             ) : null}
+            {/*
+              SH1064 — offered exactly when an address stops answering, which is the only moment
+              it means anything. The count above is the argument for it, and until now that
+              paragraph was a fact with nothing to do about it.
+            */}
+            {routes?.stops && (
+              <div className="flex items-start gap-2 pt-1">
+                <Checkbox
+                  id="publish-redirect"
+                  checked={redirect}
+                  onCheckedChange={(value) => setRedirect(value === true)}
+                />
+                <Label htmlFor="publish-redirect" className="font-normal leading-snug">
+                  {t("content.publishRedirect", { url: routes.stops })}
+                </Label>
+              </div>
+            )}
           </div>
         )}
 
@@ -133,7 +158,8 @@ export function PublishPreviewDialog({
 
         <DialogFooter className="gap-2">
           <Button
-            onClick={() => onConfirm(gateRefusal ? override : undefined)}
+            onClick={() => onConfirm(gateRefusal ? override : undefined,
+              redirect && !!routes?.stops)}
             // A blank reason is refused by the server, which is the rule; the button knows it too, so
             // a curator is not taught the rule by a second refusal.
             disabled={publishing || loading || (!!gateRefusal && !override.trim())}

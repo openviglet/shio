@@ -55,7 +55,7 @@ function inventoryOf(html) {
       assets: countAssets(doc.assets),
       forms: doc.forms.length,
       textChars: doc.textChars,
-      // SH867 â€” from `scanPage` for the reason the two above are: a fixture that builds the row its
+      // SH867 — from `scanPage` for the reason the two above are: a fixture that builds the row its
       // own way cannot see the defect the row exists to catch.
       elements: doc.elements,
     }],

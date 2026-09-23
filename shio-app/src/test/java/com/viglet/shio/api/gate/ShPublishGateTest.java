@@ -263,7 +263,7 @@ class ShPublishGateTest {
                 .as("SH997: a plan that could not say which gate would stop it promises what the run "
                         + "refuses")
                 .contains("gate 'ready' stops this: verify");
-        assertThatThrownBy(() -> api.publish(postId, null, false, null, () -> "ana"))
+        assertThatThrownBy(() -> api.publish(postId, null, false, null, false, () -> "ana"))
                 .isInstanceOf(ShPublishGateService.GateFailedException.class);
         assertThat(live("/console")).isFalse();
     }
@@ -273,7 +273,7 @@ class ShPublishGateTest {
     void aWaiverNeedsAReason() {
         String postId = SITE + "-unreasoned";
 
-        assertThatThrownBy(() -> api.publish(postId, null, false, "  ", () -> "ana"))
+        assertThatThrownBy(() -> api.publish(postId, null, false, "  ", false, () -> "ana"))
                 .isInstanceOf(ShPublishGateService.WaiverNeedsReasonException.class)
                 .satisfies(failure -> assertThat(((ShTeachingException) failure).problem()
                         .toProblemDetail().getDetail())
@@ -288,7 +288,7 @@ class ShPublishGateTest {
     void aWaiverPublishesAndIsRecordedTwice() {
         String postId = SITE + "-waived";
 
-        api.publish(postId, null, false, "the campaign page it links to launches tomorrow",
+        api.publish(postId, null, false, "the campaign page it links to launches tomorrow", false,
                 () -> "ana");
 
         assertThat(live("/waived")).isTrue();
@@ -318,7 +318,7 @@ class ShPublishGateTest {
                 Set.of(), ShApiTokenEnv.PROD, true));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         try {
-            assertThatThrownBy(() -> api.publish(postId, null, false, "it is fine, I checked",
+            assertThatThrownBy(() -> api.publish(postId, null, false, "it is fine, I checked", false,
                     () -> "sh998-agent"))
                     .isInstanceOf(ShPublishGateService.AgentCannotWaiveException.class);
         } finally {

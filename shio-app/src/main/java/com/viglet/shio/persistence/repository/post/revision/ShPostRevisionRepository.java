@@ -45,4 +45,26 @@ public interface ShPostRevisionRepository extends JpaRepository<ShPostRevision, 
      */
     @Query("SELECT MAX(r.versionNo) FROM ShPostRevision r WHERE r.postId = :postId")
     Integer maxVersionNo(@Param("postId") String postId);
+
+    /**
+     * Every friendly URL this site's posts have ever been captured at (SH1064).
+     *
+     * <h2>The one read that is not about a single post, and why it is allowed to be</h2>
+     *
+     * <p>The class rule above stands: this table is asked "what was this page before". This asks
+     * exactly that of a whole site at once, because the question {@code verify} has to answer —
+     * "does this broken link point at an address that <b>used to be</b> a page here?" — cannot be
+     * answered post by post: the post the link points at is precisely the one nobody can name any
+     * more. Without it the CMS knows the answer and reports a guess, which is the gap SH1064 is
+     * about.</p>
+     *
+     * <p><b>A full verify only</b>, like {@code no-home-page} and for the measured reason SH334
+     * gave: it is a question about the site, so a scoped run would attach a paragraph about the
+     * estate to a task about one page (P3). One query per site per full run, over an index on
+     * {@code post_id}; the distinct list is URLs, not rows, so a site with a long history pays for
+     * its distinct addresses rather than for its publishes.</p>
+     */
+    @Query("SELECT DISTINCT r.furl FROM ShPostRevision r WHERE r.furl IS NOT NULL AND r.postId IN "
+            + "(SELECT p.id FROM ShPostUnified p WHERE p.shSite.id = :siteId)")
+    List<String> distinctFurlsBySiteId(@Param("siteId") String siteId);
 }

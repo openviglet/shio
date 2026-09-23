@@ -3847,3 +3847,50 @@ The measurement is the argument for repairing the blueprint rather than raising 
 the findings, and **3972** with the blueprint repaired — under the ceiling, which did not move. Six
 warnings about Shio's own template would otherwise have been the first thing every agent building a
 marketing site read.
+
+## The redirect a rename needs (SH1064)
+
+`Redirect` has been a system post-type since SH385: the renderer serves it, its `PERMANENT` flag
+chooses 301 over 302, and `verify` reports a target that resolves to nothing. **Nothing ever wrote
+one.** Grepping the write service and the batch service for the type name returned the renderer and
+the lint and no writer, so renaming `/pricing` to `/plans` answered 200 at the new URL, 404 at the
+old one, and said nothing — every bookmark, search result and inbound link from somebody else's
+site broke silently. The content-files side was further along (a post carries `movedFrom`, so the
+three-way merge follows a rename) and that instructs a merge; it routes nothing.
+
+**`post.redirect`** is the seventh post verb: the address is the **old** path — SH385 gave the type
+no `from` field, so a redirect's source is its own friendly URL — and `to` takes an address, a
+site-relative path or an absolute URL. `data.permanent:true` asks for a 301; the default is 302,
+which is **SH385's rule and not a new one** — the first draft of this op inverted it ("a rename is
+not coming back"), which is the argument SH385 had already weighed and declined, because a
+permanent redirect is cached by browsers effectively for ever and a wrong one is the hardest
+routing mistake to take back. Two defaults for one field, differing by which door wrote it, is
+also the split P5 exists to stop.
+
+Three decisions worth keeping:
+
+- **A name, not a flag on `post.move`.** A batch is all-or-nothing and applied in order, so a move
+  followed by a redirect at the vacated address *is* one transaction. A flag would also have been a
+  second way to write a `Redirect` beside `post.upsert type=Redirect`. Measured before it was added,
+  because the vocabulary is re-sent every turn: an op name costs ~4 est. tokens inside
+  `shio_write`'s enum — SH977's cheap rung — and the list reads 2968 of 2975 after it.
+- **It publishes**, which is the one place this surface departs from draft-default. A draft redirect
+  routes nobody: the renderer serves published rows, so the op would report success while the old
+  links went on 404ing. The change row says so rather than leaving it to be found.
+- **A page at that address is refused** (`redirect-path-occupied`), not overwritten. Two posts on
+  one URL is SH99's `duplicate-url`, and the refusal says to move the page out of the way in the
+  same batch, before the op.
+
+**`verify` gains `url-orphaned`**, under `checks=routes`, and it is an **error** where
+`link-unresolved` is a warning — because here the CMS is not guessing. The evidence is the revision
+table: a revision captures the page as it was, `furl` included, so the addresses a site *used to*
+answer are its distinct revision URLs minus the ones it answers today. An address in that set with
+a published page still linking to it is a 404 on a route this instance served, and the finding
+carries the `post.redirect` op that repairs it. One finding per address rather than one per link —
+the subject is the URL and the pages linking to it are its count. A **full** run only, for
+`no-home-page`'s measured reason (SH334): it is a question about the site, and a scoped run would
+attach a paragraph about the estate to a task about one page.
+
+**What it cannot see**: a rename on an instance that captures no revisions, and a page deleted
+before any revision existed. The rule reports what it can prove and is silent otherwise, which is
+the direction SH410 points.

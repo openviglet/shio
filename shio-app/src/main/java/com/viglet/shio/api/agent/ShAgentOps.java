@@ -151,6 +151,18 @@ public final class ShAgentOps {
                     List.of(ADDRESS), List.of(), List.of(TO, FOLDER), List.of(EXPECT),
                     "Change a post's URL, its folder, or both, keeping its id and history. A "
                             + "published post's live URL changes immediately."),
+            // SH1064 — the op the move's own report points at. The one thing a caller would
+            // otherwise get backwards is which end `address` is: a Redirect has no `from` field
+            // (SH385), so the post answers AT the address that has to keep working.
+            //
+            // Cut to two keys by the SH346 ceiling, which this op breached by 16 tokens and which
+            // says re-open the surface rather than raise the number. `folder` went with it: where
+            // a redirect is filed in the tree is not a decision an agent has to make, so the site
+            // root is the rule and there is one less key on every session's copy of this.
+            new OpSpec(ShAgentBatchService.POST_REDIRECT,
+                    List.of(ADDRESS, TO), List.of(), List.of(), List.of(DATA, EXPECT),
+                    "`address` is the OLD path, kept answering; `to` is where readers go. "
+                            + "Published; 302 unless `data.permanent:true`."),
             new OpSpec(ShAgentBatchService.POST_PUBLISH,
                     List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, CANCEL, EXPECT),
                     // SH992 paid for `cancel` and unpublish's `when` out of this sentence rather than
@@ -160,8 +172,8 @@ public final class ShAgentOps {
                             + "answers noop (SH462)."),
             new OpSpec(ShAgentBatchService.POST_UNPUBLISH,
                     List.of(ADDRESS), List.of(), List.of(), List.of(WHEN, CANCEL),
-                    "Withdraw the published row; the draft stays. `when`, `cancel` and `id:` as "
-                            + "for post.publish."),
+                    "Withdraw the published row; the draft stays. `when`, `cancel`, `id:` as "
+                            + "post.publish."),
             new OpSpec(ShAgentBatchService.POST_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(EXPECT, DATA),
                     "Trash a post."),
@@ -190,7 +202,7 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.RENDER_PROVISION,
                     List.of(), List.of(), List.of(), List.of(ADDRESS, DATA),
                     "Create the PageLayout/Region/Theme post-types this instance renders with, "
-                            + "idempotently. Do this once before writing a layout. "
+                            + "idempotently, once before writing a layout. "
                             + "`data.reconcile:true` also adds the fields an older instance's "
                             + "render types are missing. `data.types` installs SH95 vocabulary "
                             + "types by name (Page, SectionHero). `data.fields` {Type:[name]} "

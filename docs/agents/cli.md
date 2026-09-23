@@ -4240,6 +4240,20 @@ not count.
 
 `shio index reindex --site X [--dry-run]` rides `site.upsert data.reindex` (SH413), the path the
 agent already uses, so this is a way in and not a second way to do it. The renderer is a pure
-function (`render`/`unroutable` in `commands/index-status.mjs`) for the reason `shio status`'s is:
+function (`render`/`unroutable` in `commands/index.mjs`) for the reason `shio status`'s is:
 the exit code and the text are built from the same answer, so they cannot come apart —
 `index-status.test.mjs` holds both.
+
+## `shio redirects` — which old addresses still answer (SH1064)
+
+Two reads, and only the second one is new. The table is `find --type Redirect` with the fields
+joined on in one multi-address `read` — where each redirect answers, where it sends, and whether a
+visitor gets a 301 or a 302 (the Check Box is `"1"` from the console and a boolean from an op, so
+the value is coerced rather than trusted). The half worth the command's name is underneath it:
+`verify --checks routes` filtered to `url-orphaned`, the addresses this site used to serve and no
+longer does, each printed with the `post.redirect` op that repairs it. It **exits 1** when there is
+one, for `index status`'s reason — a listing a gate cannot act on is a listing nobody runs twice.
+
+`--no-check` skips the orphan pass, which is the expensive half; it is on by default because the
+row nobody knew to look for is the whole point. `render`, `rows` and `orphans` are pure, so the
+text and the exit code are built from one answer (`redirects.test.mjs`).

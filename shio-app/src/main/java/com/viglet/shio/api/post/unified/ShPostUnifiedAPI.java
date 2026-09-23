@@ -73,6 +73,8 @@ public class ShPostUnifiedAPI {
     private final ShConsolePublishPlan shConsolePublishPlan;
     /** SH1021 — the curator's bulk verbs, through the agent's writer. */
     private final ShPostUnifiedBulkService shPostUnifiedBulkService;
+    /** SH1064 — the redirect a rename leaves behind, through the agent's own op. */
+    private final ShConsoleRedirects shPostUnifiedRedirects;
     /** SH997 — what this site says about content before it reaches visitors. */
     private final ShPublishGateService shPublishGateService;
 
@@ -86,7 +88,9 @@ public class ShPostUnifiedAPI {
                             ShPostRevisionService shPostRevisionService,
                             ShConsolePublishPlan shConsolePublishPlan,
                             ShPublishGateService shPublishGateService,
-                            ShPostUnifiedBulkService shPostUnifiedBulkService) {
+                            ShPostUnifiedBulkService shPostUnifiedBulkService,
+                            ShConsoleRedirects shPostUnifiedRedirects) {
+        this.shPostUnifiedRedirects = shPostUnifiedRedirects;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shConsolePostReadService = shConsolePostReadService;
         this.shTenantQuotaService = shTenantQuotaService;
@@ -203,6 +207,12 @@ public class ShPostUnifiedAPI {
             // SH998 — the sanctioned way past a failing gate, and its price is the sentence: a gate
             // with no way past it is one a team removes the day it blocks something urgent.
             @RequestParam(name = "override", required = false) String override,
+            // SH1064 — keep the address this publish is about to vacate answering. Off unless the
+            // caller asks, and the console asks by default: the dialog already prints which URL
+            // stops resolving and how many pages link to it, and until now that paragraph was
+            // information with nothing to do about it.
+            @RequestParam(name = "redirect", required = false, defaultValue = "false")
+            boolean redirect,
             Principal principal) {
         // SH995 — PUBLISH rather than WRITE: a curator who may edit this page is not automatically
         // the one who decides it goes live. The draft is saved either way, which is what the refusal
@@ -219,10 +229,20 @@ public class ShPostUnifiedAPI {
         // it, in which case what they wrote travels into the audit row beside the publish.
         String waived = shPublishGateService.requirePost(id, override);
         String actor = principal != null ? principal.getName() : null;
+        // SH1064 — read before the publish, because afterwards the live row is at the draft's URL
+        // and the address that stopped resolving is nobody's. The same order `post.move` asks its
+        // own question in, for the same reason.
+        String vacated = redirect ? shConsolePublishPlan.vacatedUrl(id) : null;
         ShAgentSessionContext.set(ShAgentSessionContext.consoleSession(actor, Instant.now()));
         try {
             ShConsolePost written = shConsolePostReadService
                     .written(shPostUnifiedWriteService.publish(id, actor, waived));
+            if (vacated != null) {
+                // Composed (P10, SH1021's precedent): the op the agent surface runs, through the
+                // one service that knows what writing a redirect means. A console copy of it is
+                // how two surfaces come to disagree about whether a redirect is published.
+                shPostUnifiedRedirects.after(id, vacated, actor);
+            }
             return ResponseEntity.ok().eTag(shConsolePostVersion.etagAfterWriting(id)).body(written);
         } finally {
             // The thread is pooled, so a session left bound would stamp the next request's audit

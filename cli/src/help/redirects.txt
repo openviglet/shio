@@ -1,0 +1,12 @@
+shio redirects — which old addresses still answer, and which ones should
+
+  --site <name>          One site (or a bare positional); omit for all you can read
+  --no-check             Skip the orphan pass, the expensive half
+  --json                 Raw JSON instead of lines
+
+An address this site used to serve, still linked to and answering nothing, is verify's
+url-orphaned; this lists those too and exits 1 on one. Write one with a post.redirect op:
+it publishes (a draft redirect routes nobody) and is a 302 unless data.permanent is true.
+
+Example:
+  shio redirects --site Acme

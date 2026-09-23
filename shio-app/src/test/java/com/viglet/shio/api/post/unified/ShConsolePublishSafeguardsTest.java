@@ -66,6 +66,9 @@ class ShConsolePublishSafeguardsTest {
     private ShReviewService shReviewService;
     @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
+    /** SH1064 — the Redirect system type has to exist before anything can write one. */
+    @Autowired
+    private com.viglet.shio.render.ShRenderPostTypes shRenderPostTypes;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -76,6 +79,7 @@ class ShConsolePublishSafeguardsTest {
 
     @BeforeAll
     void seed() {
+        shRenderPostTypes.ensure();
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             Instant then = Instant.parse("2026-01-01T00:00:00Z");
             ShSite site = new ShSite();
@@ -100,7 +104,9 @@ class ShConsolePublishSafeguardsTest {
             type.setOwner("admin");
             entityManager.persist(type);
 
-            for (String url : List.of("/planned", "/reviewed")) {
+            // SH1064 — `/renamed` is published here and its draft moved in the test, which is
+            // the shape a console rename has: two rows, two furls, one publish between them.
+            for (String url : List.of("/planned", "/reviewed", "/renamed")) {
                 ShPostUnified draft = new ShPostUnified();
                 draft.setId(SITE + url.replace('/', '-'));
                 draft.setState(ShPostState.DRAFT);
@@ -136,7 +142,7 @@ class ShConsolePublishSafeguardsTest {
     void aDryRunWritesNothing() {
         String postId = SITE + "-planned";
 
-        Object body = api.publish(postId, null, true, null, () -> "ana").getBody();
+        Object body = api.publish(postId, null, true, null, false, () -> "ana").getBody();
 
         assertThat(body).isInstanceOf(ShAgentChangeSet.class);
         ShAgentChangeSet answer = (ShAgentChangeSet) body;
@@ -156,7 +162,7 @@ class ShConsolePublishSafeguardsTest {
     void aConsolePublishIsReviewable() {
         String postId = SITE + "-reviewed";
 
-        api.publish(postId, null, false, null, () -> "ana");
+        api.publish(postId, null, false, null, false, () -> "ana");
 
         assertThat(live("/reviewed")).isTrue();
         String session = ShAgentSessionContext.consoleSession("ana", Instant.now());
@@ -171,6 +177,45 @@ class ShConsolePublishSafeguardsTest {
                 .as("SH996: the thread is pooled, so a session left bound would stamp the next "
                         + "request's audit rows with this curator's day")
                 .isEmpty();
+    }
+
+    /**
+     * SH1064 — the dialog said which URL would stop answering and could do nothing about it.
+     *
+     * <p>The fixture is the console's own case: a draft whose URL differs from the live row's, so
+     * publishing moves the live address. That is the {@code stops} SH996 already prints, and until
+     * this shipped the paragraph printing it was information with no action beside it.</p>
+     */
+    @Test
+    @DisplayName("SH1064: publishing a renamed draft with redirect=true leaves the old URL live")
+    void aRenameCanLeaveItsRedirect() {
+        String postId = SITE + "-renamed";
+        api.publish(postId, null, false, null, false, () -> "ana");
+        // Live at /renamed, draft now at /renamed-2026: publishing moves the live URL, which is
+        // what a rename is here — the live row and the draft each carry their own furl (SH81).
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                        .ifPresent(draft -> {
+                            draft.setFurl("/renamed-2026");
+                            draft.setData("{\"title\":\"/renamed-2026\"}");
+                            shPostUnifiedRepository.save(draft);
+                        }));
+
+        api.publish(postId, null, false, null, true, () -> "ana");
+
+        ShPostUnified redirect = new TransactionTemplate(transactionManager).execute(status ->
+                shPostUnifiedRepository.findAll().stream()
+                        .filter(post -> post.getShSite() != null
+                                && SITE.equals(post.getShSite().getName())
+                                && "/renamed".equals(post.getFurl())
+                                && post.getState() == ShPostState.PUBLISHED)
+                        .findFirst().orElse(null));
+
+        assertThat(redirect)
+                .as("SH1064: a curator who renames a page breaks every bookmark into it, and the "
+                        + "console's own dialog was the place that knew and said nothing actionable")
+                .isNotNull();
+        assertThat(redirect.getData()).contains("\"TO\":\"/renamed-2026\"", "\"PERMANENT\":true");
     }
 
     @Test

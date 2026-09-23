@@ -201,10 +201,16 @@ export class ShPostUnifiedService {
    * @param override SH998 — the reason a curator gave for publishing past a failing gate. Sent only
    *                 when they typed one: an absent parameter is "no override", and an empty one is
    *                 an override with nothing written down, which the server refuses on purpose.
+   * @param redirect SH1064 — keep the URL this publish vacates answering. The server decides
+   *                 whether there is one to keep: it compares the live row with the draft, so a
+   *                 checkbox left ticked on an ordinary publish writes nothing.
    */
-  async publish(id: string, override?: string): Promise<ShPostUnified> {
+  async publish(id: string, override?: string, redirect?: boolean): Promise<ShPostUnified> {
+    const params: Record<string, string | boolean> = {}
+    if (override) params.override = override
+    if (redirect) params.redirect = true
     const response = await axios.post<ShPostUnified>(`/v2/post-unified/${id}/publish`, undefined,
-      { headers: this.ifMatch(id, "DRAFT"), params: override ? { override } : undefined })
+      { headers: this.ifMatch(id, "DRAFT"), params: Object.keys(params).length ? params : undefined })
     // The draft row survives a publish, so the tag the write answers with is the draft's.
     this.remember(id, "DRAFT", response.headers)
     return response.data

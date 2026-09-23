@@ -2485,3 +2485,29 @@ undefined}` — a state attribute renders or vanishes depending on the framework
 them are `{x ? "true" : "false"}`, and `aria-required="false"` is a real statement rather than a
 missing one. SH1010 held the hint paragraph's exact markup; the hint now carries an id the control
 names, so the assertion holds the two halves instead of one line.
+
+## The publish dialog can now act on the sentence it was already printing (SH1064)
+
+SH996 put the routes on the publish preview: which URL goes live, which one **stops** resolving,
+and how many published pages link to the one that goes. That paragraph was information with
+nothing to do about it — a curator read "4 published pages link to /pricing" and pressed Publish
+anyway, because the alternative was not renaming the page.
+
+The dialog now offers a checkbox when `routes.stops` is set, **ticked**, and the tick sends
+`redirect=true` to `POST /v2/post-unified/{id}/publish`. The default goes to the recoverable side:
+a rename with no redirect breaks every bookmark into the page and nothing afterwards says so, while
+a redirect nobody wanted is one post to delete. The server decides whether there is anything to
+write — it compares the live row's `furl` with the draft's *before* publishing, because afterwards
+both carry the new URL — so a stale tick on an ordinary publish writes nothing.
+
+It **composes** rather than copying (SH1021's precedent one verb over): the controller builds a
+`post.redirect` op and hands it to `ShAgentBatchService`, so whether a redirect is published, which
+status it carries and what happens when a page already answers there each have exactly one home. If
+the op is refused, the refusal says the publish already happened (`redirect-not-written`) — the
+publish committed in its own transaction, and a curator told "this failed" about a page that is
+live is the P7 surprise this exists to avoid.
+
+**What the console still has no screen for is the rename itself.** A post's friendly URL is changed
+by `post.move` on the agent surface; the console's only path to it is a rollback that restores an
+older revision's URL, which is the case this dialog handles. A rename affordance — with the inbound
+count before its button arms — is the console half SH1064 leaves open.

@@ -4,7 +4,7 @@
  *
  * Licensed under the Apache License, Version 2.0.
  *
- * shio â€” the Shio CMS command-line interface (SH16). The "JS dev, zero Java"
+ * shio — the Shio CMS command-line interface (SH16). The "JS dev, zero Java"
  * workflow: scaffold a site, generate types, and manage the content model as
  * code (post-types pull/push).
  *
@@ -40,9 +40,9 @@ const BOOLEANS = [
   // Instance memory (SH114): read the store, or drop one note from it.
   "list", "forget",
   // SH231: adopt the exporting installation's house rules on a `push --content`. Off by
-  // default and explicit by construction â€” that is the whole safety argument (P7).
+  // default and explicit by construction — that is the whole safety argument (P7).
   "adopt-memory",
-  // Accepted findings (SH142): `--accept` writes the baseline. `--baseline` is NOT here â€”
+  // Accepted findings (SH142): `--accept` writes the baseline. `--baseline` is NOT here —
   // it is bare (use the default path) or takes one (use that file), and both are useful.
   "accept",
   // SH141: prove each published route by fetching it, rather than resolving it against the
@@ -51,32 +51,35 @@ const BOOLEANS = [
   // SH104: `--mark` records the position a handoff covered; `--no-verify` drops the open
   // questions when the caller only wants the change list.
   "mark", "no-verify",
-  // SH102: a visual change is not a failure, so the gate is opt-in â€” and `--accept` moves the
+  // SH102: a visual change is not a failure, so the gate is opt-in — and `--accept` moves the
   // baseline deliberately rather than as a side effect of looking.
   "fail-on-change", "viewport-only",
-  // SH102/SH391: force the instance's own preview even for a site that has a front end â€” the only
+  // SH102/SH391: force the instance's own preview even for a site that has a front end — the only
   // way to look at a draft.
   "preview",
   // SH377: `--render` drives a browser so a client-rendered page is captured as it renders, and
-  // `--ignore-robots` is for your own site â€” it is recorded in the inventory, so a capture taken
+  // `--ignore-robots` is for your own site — it is recorded in the inventory, so a capture taken
   // without permission cannot later be mistaken for one taken with it.
   "render", "ignore-robots",
   // SH378: download the bytes the inventory names. Opt-in, because SH377's default promise is that
   // a capture writes nothing you have not read the inventory for first.
   "assets",
   // SH379: keep the captured HTML, which is what `shio propose` computes a mapping from. Opt-in for
-  // the same reason, and it costs no extra request â€” the bytes were already in hand.
+  // the same reason, and it costs no extra request — the bytes were already in hand.
   "markup",
   // SH469: take the site's own `<script src>` as well, so the replica works and not only renders.
   // Opt-in because `--render` bakes the post-hydration DOM and handing that page its bundle back is
-  // a hydration nobody asked for â€” but the *absence* is reported either way.
+  // a hydration nobody asked for — but the *absence* is reported either way.
   "scripts",
   // SH543: `clone` reports where it is to two files beside the inventory, because the caller of a
   // two-hour crawl is not watching its pipe. `--no-progress` is for a run that must write only what
   // it was asked for.
   "no-progress",
+  // SH1064: `redirects` asks verify for the orphaned addresses, which is the expensive half of it.
+  // Negated rather than opt-in, because the half worth having is the one nobody knew to ask for.
+  "no-check",
   // SH546: `publish` names its targets, and `--all` is the flag that says "name them from a find
-  // instead of from my argv" â€” a decision, so a flag. `--unpublish` is the same verb inverted,
+  // instead of from my argv" — a decision, so a flag. `--unpublish` is the same verb inverted,
   // spelled the way `shio_publish` spells it rather than as a second command.
   "all", "unpublish",
   // SH992: `--cancel` calls off the pending publish or unpublish; `--when` takes its instant.
@@ -87,7 +90,7 @@ const BOOLEANS = [
   // SH589: the two instruments `judge` will not run unless asked, each for its own reason.
   "browser", "verbose",
   // SH987: `rollback` plans by default and writes only when told, which is `apply`'s shape for the
-  // one write whose subject the caller cannot see â€” a number naming bytes that are not on screen.
+  // one write whose subject the caller cannot see — a number naming bytes that are not on screen.
   "apply",
 ];
 
@@ -95,7 +98,7 @@ const BOOLEANS = [
 // apply a package with defaults the caller believed they had overridden (SH93). `address` is a
 // set for the same reason (SH640): `diff --against published --address a --address b` asks about
 // both, and last-one-wins would quietly answer about one of them.
-// SH1040 â€” `section` joins them for the same reason: `patterns save --section 0 --section 2`
+// SH1040 — `section` joins them for the same reason: `patterns save --section 0 --section 2`
 // asks for both, and last-one-wins would capture one of them without saying which.
 const REPEATABLE = ["param", "address", "section"];
 
@@ -143,8 +146,10 @@ const COMMANDS = {
   assets: () => import("./commands/assets.mjs"),
   patterns: () => import("./commands/patterns.mjs"),
   status: () => import("./commands/status.mjs"),
-  // SH1063 â€” `shio index status` and `shio index reindex`, the search half of "did it land".
+  // SH1063 — `shio index status` and `shio index reindex`, the search half of "did it land".
   index: () => import("./commands/index.mjs"),
+  // SH1064 — which old addresses still answer, and which ones a rename left 404ing.
+  redirects: () => import("./commands/redirects.mjs"),
 };
 
 const HELP = helpText("shio");
@@ -154,7 +159,7 @@ const HELP = helpText("shio");
  *
  * <p>Loading the module to print its help is the whole point: the strings live beside the `flags.`
  * reads they describe, so a new flag and its meaning are one edit apart. A module with no `HELP` is
- * a defect `help.test.mjs` fails the build for â€” falling back to the global text here would hide it,
+ * a defect `help.test.mjs` fails the build for — falling back to the global text here would hide it,
  * and the global text is the wrong answer to a question about one command.</p>
  */
 async function printCommandHelp(command) {
@@ -165,7 +170,7 @@ async function printCommandHelp(command) {
 async function main() {
   const [command, ...rest] = argv.slice(2);
 
-  // SH435 â€” `shio help <command>` is the other spelling of `shio <command> --help`, and it is
+  // SH435 — `shio help <command>` is the other spelling of `shio <command> --help`, and it is
   // answered here so `help` keeps working as a command name rather than becoming one.
   if (command === "help" && COMMANDS[rest[0]]) {
     await printCommandHelp(rest[0]);
@@ -187,10 +192,10 @@ async function main() {
     booleans: BOOLEANS,
     repeatable: REPEATABLE,
   });
-  // SH435 â€” the command's own help, not the global one. This branch used to print `HELP` before
+  // SH435 — the command's own help, not the global one. This branch used to print `HELP` before
   // `loader()` ran, so no command was ever consulted about its own flags: `shio clone --help`
   // answered with forty lines about every other command and none about clone's fourteen. The cost
-  // landed on the agent, which is what makes it a P3 item and not a polish one â€” learning a
+  // landed on the agent, which is what makes it a P3 item and not a polish one — learning a
   // command's interface meant grepping its source for `flags.`, having already paid for a help
   // text that answered something else.
   if (flags.help) {
@@ -198,7 +203,7 @@ async function main() {
     return;
   }
 
-  // SH1000 â€” what this run is for, declared once and carried by every request it makes. Global
+  // SH1000 — what this run is for, declared once and carried by every request it makes. Global
   // rather than per command because the premise belongs to the run: `apply`, `push --content`,
   // `convert` and `publish` all write, and a sentence spelled into one of them is a sentence the
   // other three cannot say.
@@ -208,7 +213,7 @@ async function main() {
 
   const mod = await loader();
   const ctx = defaultContext();
-  // SH587 â€” say that this instance carries notes before the command speaks, not after. The
+  // SH587 — say that this instance carries notes before the command speaks, not after. The
   // notes are what an earlier session worked out about the site the caller is about to act on,
   // so they change what the run does; printed underneath a report they would be a footnote.
   // On stderr, because a command's stdout is somebody's `--json` pipe.
@@ -220,7 +225,7 @@ async function main() {
   }
 }
 
-// SH440 â€” every non-zero exit goes through `finish`, which disarms the request layer first. A
+// SH440 — every non-zero exit goes through `finish`, which disarms the request layer first. A
 // thrown error is the path that used to abort: it reaches here with a fetch handle still live, and
 // `process.exit` then asserted in libuv's teardown rather than exiting. Success returns instead,
 // so a pending stdout write is not truncated on the way out.

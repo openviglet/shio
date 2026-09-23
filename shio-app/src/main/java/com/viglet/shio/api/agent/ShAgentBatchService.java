@@ -79,7 +79,9 @@ import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.post.type.ShPostFieldFlags;
 import com.viglet.shio.post.type.ShSystemPostType;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
@@ -171,6 +173,32 @@ public class ShAgentBatchService {
     public static final String FOLDER_DELETE = "folder.delete";
     public static final String POST_UPSERT = "post.upsert";
     public static final String POST_MOVE = "post.move";
+
+    /**
+     * SH1064 — the redirect a rename needs, written by the caller that renamed.
+     *
+     * <h2>Why a name and not a flag on {@code post.move}</h2>
+     *
+     * <p>A batch is all-or-nothing and applied in order, so {@code post.move} followed by
+     * {@code post.redirect} at the vacated address <em>is</em> "in the same transaction" — the thing
+     * the design asked a flag for. A flag would additionally have been a second way to write a
+     * {@code Redirect} post, which {@code post.upsert type=Redirect} already does; this name is the
+     * one spelling of the whole gesture, and the op the move's own report now points at.</p>
+     *
+     * <p>Measured before it was added, because the vocabulary is re-sent every turn (P3): an op name
+     * costs ~3 est. tokens inside {@code shio_write}'s enum, which is SH977's cheap rung — the tool
+     * measured 493 of a 520 ceiling and the list 2964 of 2975, so this spends 3 of the eleven SH1060
+     * deliberately left for a task like this one rather than opening a ceiling conversation.</p>
+     *
+     * <h2>It publishes, and that is the one place it departs from draft-default</h2>
+     *
+     * <p>Every other write here lands in {@code DRAFT} (P7). A draft redirect routes nobody: the
+     * renderer serves published rows, so the op would report success and the old links would go on
+     * 404ing — SH767's failure shape, where the content looks authored and the symptom is somebody
+     * opening the page. So the row goes live, and the change says so rather than leaving it to be
+     * discovered.</p>
+     */
+    public static final String POST_REDIRECT = "post.redirect";
     public static final String POST_PUBLISH = "post.publish";
     public static final String POST_UNPUBLISH = "post.unpublish";
     public static final String POST_DELETE = "post.delete";
@@ -367,8 +395,9 @@ public class ShAgentBatchService {
     /** The closed op vocabulary, in the order a teaching error lists it. */
     public static final List<String> OPS = List.of(
             SITE_UPSERT, SITE_DELETE, FOLDER_UPSERT, FOLDER_MOVE, FOLDER_COPY, FOLDER_DELETE,
-            POST_UPSERT, POST_MOVE, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE, POST_RESTORE,
-            POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION, RELEASE_UPSERT,
+            POST_UPSERT, POST_MOVE, POST_REDIRECT, POST_PUBLISH, POST_UNPUBLISH, POST_DELETE,
+            POST_RESTORE, POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION,
+            RELEASE_UPSERT,
             RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE, RELEASE_ROLLBACK,
             NOTE_ADD, NOTE_RESOLVE, ASSET_META);
 
@@ -907,6 +936,7 @@ public class ShAgentBatchService {
             case FOLDER_DELETE -> folderDelete(op, session);
             case POST_UPSERT -> postUpsert(op, session);
             case POST_MOVE -> postMove(op, session);
+            case POST_REDIRECT -> postRedirect(op, session);
             case POST_PUBLISH -> postPublish(op, session);
             case POST_UNPUBLISH -> postUnpublish(op, session);
             case POST_DELETE -> postDelete(op, session);
@@ -3048,14 +3078,177 @@ public class ShAgentBatchService {
         if (!inbound.any()) {
             return null;
         }
-        String fix = "Repoint those links at " + to + ", or move this post back. "
-                + "They are authored URLs, not references, so nothing rewrote them.";
+        // SH1064 — the redirect comes first in the fix because it is the one repair that works on
+        // the links this instance cannot see: a bookmark, somebody else's page, a search result.
+        // Repointing the N pages here leaves all of those 404ing, which is why "no writer ever
+        // creates the redirect" was a defect rather than a preference.
+        String fix = "Keep '" + from.path() + "' answering with a post.redirect op in this same "
+                + "batch, after the move: {\"op\":\"post.redirect\",\"address\":\"" + from
+                + "\",\"to\":\"" + to + "\"}. Or repoint those links at " + to + " — they are "
+                + "authored URLs, not references, so nothing rewrote them.";
         return new ShAgentChangeSet.InboundLinks(from.path(), inbound.addresses(), inbound.found(),
                 inbound.truncated()
                         ? fix + " " + inbound.found() + " pages link to it; "
                                 + inbound.addresses().size() + " are listed — re-run the move's "
                                 + "verify (or GET /agent/verify?checks=routes) for the rest."
                         : fix);
+    }
+
+    /**
+     * SH1064 — keeps an address answering after the page behind it went somewhere else.
+     *
+     * <h2>The address is the OLD path, which is the whole shape of it</h2>
+     *
+     * <p>SH385 gave {@code Redirect} no {@code from} field: a redirect's source <em>is</em> its own
+     * friendly URL, so this op writes a post at the address the reader still has in their bookmark,
+     * and {@code to} names where they end up. That also means the order inside a batch is the
+     * gesture: {@code post.move} vacates {@code /pricing}, then {@code post.redirect} occupies it —
+     * and because a batch is all-or-nothing, the rename and the redirect land together or not at
+     * all. Run the other way round the path is still taken, and the refusal below says so.</p>
+     *
+     * <h2>Idempotent, like every other op here</h2>
+     *
+     * <p>A redirect already pointing where this one would point is a {@code noop}; one pointing
+     * somewhere else is an {@code update}. A <b>page</b> at that address is refused rather than
+     * overwritten — that is somebody's content, and a redirect shadowing a real page is SH99's
+     * {@code duplicate-url} error one layer down.</p>
+     */
+    private Change postRedirect(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.POST);
+        ShSite site = requireSite(address.site(), session);
+        String to = redirectTarget(op, address);
+        boolean permanent = redirectPermanent(op);
+
+        Optional<ShPostUnified> existing = findPost(site, address.path());
+        requireExpectedState(op, address, existing.orElse(null));
+        if (existing.isPresent()) {
+            ShPostUnified post = existing.get();
+            String typeName = post.getShPostType() == null ? null : post.getShPostType().getName();
+            if (!ShSystemPostType.REDIRECT.equals(typeName)) {
+                throw new RedirectPathOccupiedException(address, typeName);
+            }
+            JsonNode desired = redirectData(post.getTitle(), to, permanent);
+            if (sameData(post, desired)) {
+                return session.change(op, address, Change.NOOP, null, post.getId());
+            }
+            if (!session.dryRun) {
+                shContentAclService.requireWrite(post.getId());
+                shPostUnifiedWriteService.update(post.getId(),
+                        new UpdateRequest(desired, ShPostState.DRAFT, session.actor));
+                shContentAclService.requirePublish(post.getId());
+                shPostUnifiedWriteService.publish(post.getId(), session.actor);
+            }
+            return session.change(op, address, Change.UPDATE, liveRedirect(permanent), post.getId());
+        }
+
+        ShPostType redirectType = shPostTypeRepository.findByName(ShSystemPostType.REDIRECT);
+        if (redirectType == null) {
+            throw new RedirectTypeMissingException(address);
+        }
+        // The site root, always. Where a redirect is filed in the console tree is not a decision
+        // an agent has to make, and the `folder` key it would need was 3 est. tokens on every
+        // session's copy of the vocabulary — which is the trade SH346's ceiling asked for when
+        // this op breached it (P3).
+        ShFolder folder = requireRootFolder(site);
+        session.planPost(address);
+        if (session.dryRun || folder == null) {
+            return session.change(op, address, Change.CREATE, liveRedirect(permanent), null);
+        }
+        shContentAclService.requireWrite(folder.getId());
+        shTenantQuotaService.checkCanCreatePost();
+        ShPostUnified created = shPostUnifiedWriteService.create(new CreateRequest(
+                folder.getId(), redirectType.getId(),
+                redirectData(address.path() + " -> " + to, to, permanent),
+                ShPostState.DRAFT, session.actor, op.locale(), null));
+        shPostUnifiedWriteService.setFurl(created.getId(), declaredFurl(op, address));
+        shContentAclService.requirePublish(created.getId());
+        shPostUnifiedWriteService.publish(created.getId(), session.actor);
+        return session.change(op, address, Change.CREATE, liveRedirect(permanent), created.getId());
+    }
+
+    /** Said on every redirect row: it is live now, and which status a visitor gets. */
+    private static String liveRedirect(boolean permanent) {
+        return "published immediately — a draft redirect routes nobody; "
+                + (permanent ? "301 permanent" : "302 temporary (data.permanent:true for 301)");
+    }
+
+    /**
+     * A redirect's destination: {@code to}, as a path or an absolute URL.
+     *
+     * <p>A {@code post:} address is accepted and reduced to its URL, because that is the currency
+     * the rest of this surface is written in (SH79) and {@code TO} stores a path. An absolute URL
+     * passes through untouched — a page that now lives on another host is the case the field's
+     * own rule already allows, and the one {@code verify} declines to check.</p>
+     */
+    private String redirectTarget(ShAgentBatch.Op op, ShAddress address) {
+        if (op.to() == null || op.to().isBlank()) {
+            throw new MissingOpFieldException("to", op.op(), address, "post:Blog/plans",
+                    "A redirect needs somewhere to send the reader: `to` takes an address, a "
+                            + "site-relative path, or an absolute URL.");
+        }
+        String raw = op.to().trim();
+        if (raw.startsWith("http://") || raw.startsWith("https://")) {
+            return raw;
+        }
+        return raw.contains(":") ? ShAddress.parse(raw).path() : ShAddress.normalizePath(raw);
+    }
+
+    /**
+     * 302 unless the caller asks for permanence, which is SH385's rule and not a new one.
+     *
+     * <p>The first draft of this op inverted it — a rename is not coming back, so 301 — and that is
+     * the argument SH385 already weighed and declined: <b>a permanent redirect is cached by
+     * browsers effectively for ever, and a wrong one is the hardest routing mistake to take back.</b>
+     * Two defaults for one field, differing by which door wrote it, is also the split P5 exists to
+     * stop. So {@code data.permanent:true} is the opt-in here exactly as the Check Box is in the
+     * console, and the caller that ticks it is the one making the claim.</p>
+     */
+    private boolean redirectPermanent(ShAgentBatch.Op op) {
+        JsonNode data = op.data();
+        JsonNode permanent = data == null ? null : data.get(ShSystemPostTypeAttr.PERMANENT
+                .toLowerCase(java.util.Locale.ROOT));
+        if (permanent == null && data != null) {
+            permanent = data.get(ShSystemPostTypeAttr.PERMANENT);
+        }
+        return permanent != null && ShPostFieldFlags.isTrue(
+                permanent.isBoolean() ? permanent.asBoolean() : permanent.asString());
+    }
+
+    /** The two fields a {@code Redirect} declares, plus the title every post needs. */
+    private JsonNode redirectData(String title, String to, boolean permanent) {
+        return objectMapper.createObjectNode()
+                .put(ShSystemPostTypeAttr.TITLE, title)
+                .put(ShSystemPostTypeAttr.TO, to)
+                .put(ShSystemPostTypeAttr.PERMANENT, permanent);
+    }
+
+    /** A page already answers there, and a redirect would shadow it (SH1064). */
+    public static class RedirectPathOccupiedException extends ShTeachingException {
+        public RedirectPathOccupiedException(ShAddress address, String postType) {
+            super(ShProblem.of("redirect-path-occupied", HttpStatus.CONFLICT,
+                            "A page already answers at '" + address + "'")
+                    .withDetail("A redirect's source is its own friendly URL, so this op would "
+                            + "need the address that '" + (postType == null ? "a post" : postType)
+                            + "' holds. Two posts on one URL is SH99's duplicate-url error, and "
+                            + "the page would win or lose by accident.")
+                    .withFix("Move or delete that page first — post.move it out of the way in the "
+                            + "same batch, before this op — or point the redirect at a different "
+                            + "old address."));
+        }
+    }
+
+    /** This instance has no {@code Redirect} post-type yet (SH1064). */
+    public static class RedirectTypeMissingException extends ShTeachingException {
+        public RedirectTypeMissingException(ShAddress address) {
+            super(ShProblem.badRequest("redirect-type-missing",
+                            "This instance has no 'Redirect' post-type")
+                    .withDetail("Redirect is one of the system types the render model provisions, "
+                            + "and nothing has provisioned it here, so there is no type to write "
+                            + address + " as.")
+                    .withFix("Run a render.provision op (POST /api/v2/agent/batch): "
+                            + "{\"op\":\"render.provision\",\"address\":\"" + address.site()
+                            + "\"} — it seeds the system types, then re-run this batch."));
+        }
     }
 
     /**

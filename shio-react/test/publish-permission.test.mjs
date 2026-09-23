@@ -72,9 +72,14 @@ test("SH998: the override appears in the refusal, and never before it", () => {
   assert.match(page, /problem\.type\?\.endsWith\("publish-gate-failed"\)/,
     "SH998: branched on the problem's type, never on its sentence — the sentence is for the "
       + "curator and is meant to be improvable")
-  assert.match(service, /params: override \? \{ override \} : undefined/,
+  // SH1064 gave this call a second optional parameter, so the ternary became a built object.
+  // What SH998 is about is unchanged and is what is asserted: an empty override is not sent.
+  assert.match(service, /if \(override\) params\.override = override/,
     "SH998: absent means no override; empty means an override with nothing written down, which "
       + "the server refuses on purpose")
+  assert.match(service, /params: Object\.keys\(params\)\.length \? params : undefined/,
+    "SH998: and a call with neither sends no params at all, rather than an empty object the "
+      + "server would have to read as a blank override")
 
   for (const locale of ["en", "pt"]) {
     const content = JSON.parse(read("src", "i18n", "locales", locale, "content.json"))

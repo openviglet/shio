@@ -71,6 +71,7 @@ import com.viglet.shio.render.ShSiteAssets;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.post.revision.ShPostRevisionRepository;
 import com.viglet.shio.url.ShFurlSpellings;
 import com.viglet.shio.api.post.unified.ShHtmlSanitizer;
 import com.viglet.shio.widget.ShSystemWidget;
@@ -194,6 +195,9 @@ public class ShAgentVerifyService {
     /** SH1063 — whether this instance indexes, and where a site's content would go. */
     private final com.viglet.shio.turing.ShTuringIndexService shTuringIndexService;
 
+    /** SH1064 — where the addresses this site used to serve are still written down. */
+    private final ShPostRevisionRepository shPostRevisionRepository;
+
     /**
      * SH1034 — the reverse index, which is what makes {@code asset-unused} affordable.
      *
@@ -259,7 +263,9 @@ public class ShAgentVerifyService {
                                 ShObjectReferenceService shObjectReferenceService,
                                 ShTranslationStaleness shTranslationStaleness,
                                 com.viglet.shio.turing.ShTuringIndexService shTuringIndexService,
+                                ShPostRevisionRepository shPostRevisionRepository,
                                 PlatformTransactionManager transactionManager) {
+        this.shPostRevisionRepository = shPostRevisionRepository;
         this.shTuringIndexService = shTuringIndexService;
         this.shTranslationStaleness = shTranslationStaleness;
         this.shObjectReferenceService = shObjectReferenceService;
@@ -2037,6 +2043,10 @@ public class ShAgentVerifyService {
         Map<String, Set<String>> publishedUrls = new HashMap<>();
         scan.publishedByUrl().forEach((siteId, byUrl) ->
                 publishedUrls.put(siteId, new HashSet<>(byUrl.keySet())));
+        // SH1064 — the addresses this site has served before and does not serve now. Empty on a
+        // scoped run, which is what keeps the rule off a task it has nothing to do with.
+        Map<String, Set<String>> vacated = partial ? Map.of() : vacatedUrls(scan, publishedUrls);
+        Map<String, Map<String, Integer>> orphaned = new LinkedHashMap<>();
         int silenced = 0;
         for (ShPostUnified post : scan.published()) {
             String address = address(post);
@@ -2047,8 +2057,10 @@ public class ShAgentVerifyService {
                                 + "{\"op\":\"post.move\",\"address\":\"id:" + post.getId()
                                 + "\",\"to\":\"post:<site>/<url>\"}."));
             }
-            silenced += markup(check, post, address, publishedUrls, declared, unproven, findings);
+            silenced += markup(check, post, address, publishedUrls, declared, unproven, findings,
+                    vacated, orphaned);
         }
+        orphanedUrls(check, scan, orphaned, findings);
         if (silenced > 0) {
             notes.add(silenced + " unresolved link(s) matched routes declared as the front end's "
                     + "(memory key '" + ShFrontEndRoutes.MEMORY_KEY + "') and were not reported"
@@ -2057,6 +2069,83 @@ public class ShAgentVerifyService {
         if (!partial) {
             homePage(scan, findings, check);
         }
+    }
+
+    /**
+     * SH1064 — every address a site has served before and does not serve now.
+     *
+     * <h2>Where a "previous address" comes from when nothing stores one</h2>
+     *
+     * <p>No column holds a post's old URL: {@code post.move} rewrites {@code furl} in place, and
+     * the audit row it writes says <em>update</em>. What does hold it is the revision table — a
+     * revision captures the page as it was, {@code furl} included (SH986) — so the addresses this
+     * site used to answer are the distinct revision URLs minus the ones it answers today. Derived
+     * rather than stored, which is why this rule needed no migration and works on content that
+     * predates it.</p>
+     *
+     * <p><b>Both states subtracted</b>, not just published: a page whose draft is at the new URL
+     * and whose live row is still at the old one has not vacated anything, and reporting it would
+     * name a URL that resolves. A rename nobody has published yet is not an orphan.</p>
+     */
+    private Map<String, Set<String>> vacatedUrls(Scan scan, Map<String, Set<String>> publishedUrls) {
+        Map<String, Set<String>> vacated = new LinkedHashMap<>();
+        for (String siteId : publishedUrls.keySet()) {
+            Set<String> current = new HashSet<>(publishedUrls.getOrDefault(siteId, Set.of()));
+            for (ShPostUnified post : scan.posts()) {
+                if (post.getShSite() != null && siteId.equals(post.getShSite().getId())
+                        && !isBlank(post.getFurl())) {
+                    current.add(normalized(post.getFurl()));
+                }
+            }
+            Set<String> gone = new LinkedHashSet<>();
+            for (String furl : shPostRevisionRepository.distinctFurlsBySiteId(siteId)) {
+                String path = normalized(furl);
+                if (!path.isBlank() && !current.contains(path)) {
+                    gone.add(path);
+                }
+            }
+            if (!gone.isEmpty()) {
+                vacated.put(siteId, gone);
+            }
+        }
+        return vacated;
+    }
+
+    /**
+     * SH1064 — an address this site used to answer, still linked to, answering nothing.
+     *
+     * <h2>An error, and the first one on this surface that can say the fix in one op</h2>
+     *
+     * <p>{@code link-unresolved} is a warning because four things could be true and the CMS cannot
+     * tell them apart. Here it can: the address was a page here, it is not one now, and a
+     * <b>published</b> page points at it. So the reader gets a 404 on a route this instance used
+     * to serve, which is the one shape of broken link the CMS is responsible for and the one it
+     * can repair without asking anybody what the path was supposed to mean.</p>
+     *
+     * <p>One finding per address rather than one per link: the subject is the URL and the pages
+     * linking to it are its count, which is also the cheaper report (P3) — a URL linked from
+     * forty pages is one line, not forty.</p>
+     */
+    private void orphanedUrls(String check, Scan scan,
+                              Map<String, Map<String, Integer>> orphaned, List<Finding> findings) {
+        orphaned.forEach((siteId, paths) -> {
+            ShSite site = scan.siteById().get(siteId);
+            if (site == null) {
+                return;
+            }
+            paths.forEach((path, inbound) -> {
+                String address = ShAddress.post(site.getName(), path).toString();
+                findings.add(Finding.error(check, "url-orphaned", address, null,
+                        "Site '" + site.getName() + "' used to serve '" + path + "' and does not "
+                                + "now, and " + inbound + " published page(s) still link to it — "
+                                + "so every bookmark and inbound link to that address is a 404.",
+                        "Keep it answering with a post.redirect op (POST /api/v2/agent/batch): "
+                                + "{\"op\":\"post.redirect\",\"address\":\"" + address
+                                + "\",\"to\":\"post:" + site.getName() + "/<where it went>\"}. "
+                                + "Repointing the pages here fixes only the links this instance "
+                                + "can see."));
+            });
+        });
     }
 
     /**
@@ -2128,7 +2217,9 @@ public class ShAgentVerifyService {
      */
     private int markup(String check, ShPostUnified post, String address,
                        Map<String, Set<String>> publishedUrls, ShFrontEndRoutes declaredRoutes,
-                       List<Unresolved> unproven, List<Finding> findings) {
+                       List<Unresolved> unproven, List<Finding> findings,
+                       Map<String, Set<String>> vacated,
+                       Map<String, Map<String, Integer>> orphaned) {
         JsonNode data = data(post);
         Set<String> siteUrls = post.getShSite() == null
                 ? Set.of()
@@ -2146,7 +2237,7 @@ public class ShAgentVerifyService {
             ShHtmlOutline.Outline outline = ShHtmlOutline.of(value.asString());
             for (ShHtmlOutline.Link link : outline.links()) {
                 silenced += linkFinding(check, post, address, attr.getName(), link.href(),
-                        siteUrls, declaredRoutes, unproven, findings);
+                        siteUrls, declaredRoutes, unproven, findings, vacated, orphaned);
             }
             for (ShHtmlOutline.Image image : outline.images()) {
                 imageFindings(check, address, attr.getName(), image, findings);
@@ -2168,7 +2259,9 @@ public class ShAgentVerifyService {
      */
     private int linkFinding(String check, ShPostUnified post, String address, String field,
                             String href, Set<String> siteUrls, ShFrontEndRoutes declaredRoutes,
-                            List<Unresolved> unproven, List<Finding> findings) {
+                            List<Unresolved> unproven, List<Finding> findings,
+                            Map<String, Set<String>> vacated,
+                            Map<String, Map<String, Integer>> orphaned) {
         if (!isInternal(href)) {
             return 0;
         }
@@ -2188,6 +2281,16 @@ public class ShAgentVerifyService {
         }
         if (claimed) {
             return 1;
+        }
+        // SH1064 — the one case where the CMS is not guessing. This site served that path, it
+        // does not now, and a published page still links to it: `link-unresolved`'s four
+        // possibilities collapse to one fact, so it is counted for `url-orphaned` below instead of
+        // reported as a maybe. Counted rather than emitted here, because the subject is the
+        // address and the pages linking to it are its count.
+        if (siteId != null && vacated.getOrDefault(siteId, Set.of()).contains(path)) {
+            orphaned.computeIfAbsent(siteId, id -> new LinkedHashMap<>())
+                    .merge(path, 1, Integer::sum);
+            return 0;
         }
         // A warning, not an error: the front end owns routes the CMS never sees (a
         // listing page, a generated tag index). Reporting those as errors would make the

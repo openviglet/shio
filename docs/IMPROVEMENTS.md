@@ -2069,6 +2069,29 @@ about the file.
 It is the one rung of P1's ladder this capability is missing: MCP has it, REST has it,
 the console has it, and files do not.
 
+### LXVIII.19 A rename the curator can do (SH1064's other half) (SH1132)
+
+SH1064 went looking for the console's rename dialog and found there is none. A post's
+friendly URL is its identity (SH81), and the only writer that changes one is `post.move`
+on the agent surface: `ShPostUnifiedWriteService.setFurl` has exactly two callers, both
+inside the batch service, and the console's own `PUT /post-unified/{id}` takes `data`
+and a state and nothing else. A curator who wants `/pricing` to become `/plans` has to
+ask an agent, or create a second post and delete the first, which is the data-loss path
+`post.move` exists to prevent.
+
+The one case where the console does see a URL change is a rollback: restoring a revision
+puts that revision's `furl` on the draft, so the live row and the draft disagree until
+the next publish. That is why SH996's publish plan reports `moves` and `stops` at all,
+and it is where SH1064's redirect offer landed.
+
+The shape is the one the batch already has: a dialog on the post editor carrying the new
+URL, the inbound count `ShPostLinks` computes, and SH1064's redirect offer — composed
+onto `post.move` through `ShAgentBatchService` as SH1021 composed the bulk verbs, never
+a console writer that would define a move twice. The open question is whether it renames
+the draft alone or both rows: the op moves both and the live URL changes immediately,
+which is right for an agent applying a plan and is the surprise P7 forbids for a curator
+who has not published.
+
 ## LXIX Finding, selecting and acting on content (Block BD)
 
 The content browser is where a curator spends the day, and it is the console's weakest
@@ -2860,27 +2883,6 @@ the P1 census could classify. The conformance gate knows none of this round's ne
 vocabulary. And no task carries the documentation sweep for everything the round ships,
 which the project's own process requires when a block closes.
 
-### LXXIV.2 A rename that offers the redirect it needs (SH1064)
-
-ShSystemPostType declares REDIRECT, the page render service serves it, and SH385 decided
-that its PERMANENT flag chooses 301 over 302. Grepping the unified write service and the
-agent batch service for it returns nothing: no rename, move, unpublish or delete path
-has ever created one. The content-files side is further along than the server, since a
-post carries movedFrom so the three-way merge can follow a rename, but that instructs
-the merge and routes nothing on the instance. So renaming pricing to plans answers 200,
-and every external link, bookmark and link from the site's own published pages then
-404s.
-
-SH996 computes, for a publish, which URLs stop resolving and how many published pages
-link to them. A friendly-URL change or a move reuses that computation and answers with
-the count of inbound links that will break, and with redirect set it writes a Redirect
-post in the same transaction. The batch vocabulary gains post.redirect rather than a
-tool. verify gains url-orphaned for a previous address with inbound links that resolves
-nowhere, and shio redirects lists them.
-
-The console's rename dialog states the count before its button arms and offers the
-redirect checked by default.
-
 ### LXXIV.3 Export on every surface, and what it does and does not carry (SH1065)
 
 GET /api/v2/site/{id}/export produces a zip, and ShSiteAPI's javadoc notes the route
@@ -3100,3 +3102,27 @@ undecided — whether bindings are keys there or stay an API-only edge, since a 
 naming a layout by title is a reference the tree cannot check.
 
 The assertion is a round trip: push a site, change a field on disk, pull, read the diff.
+
+### LXXIV.13 A redirect the front end never hears about (SH1064) (SH1133)
+
+A `Redirect` is served by `ShPageRenderService`, which answers `/sites/**` — the
+instance's own delivery. A site with a front end does not go through it: Next.js owns
+those URLs, asks the CDA for content by address, and never asks which addresses moved.
+So SH1064's op, the console's publish-dialog offer and `verify`'s `url-orphaned` all now
+write and demand a post that, for a headless site, changes nothing a visitor can
+observe. The lint is the sharpest edge: it reports an error whose fix writes a row
+nobody serves, and then goes quiet because the address resolves.
+
+Nothing in the delivery layer knows the type. `@viglet/shio-client` has no redirect
+call, `create-shio-app`'s template has no middleware, and the CDA has no listing —
+grepping all three for the name returns the CLI and the converter only.
+
+What this needs is one read and one consumer. The CDA gains the site's redirect table,
+the SDK a `redirects()` that returns it, and `create-shio-app` a `middleware.ts` that
+consults it before a 404 — the map is small, site-scoped and cacheable, so the front end
+can hold it rather than ask per request. `verify` then stops claiming a repair it cannot
+make: with a front end configured, `url-orphaned` says the redirect has to reach the
+front end's own routing, and `shio redirects` prints which of the two serves each row.
+
+The alternative — teaching the renderer to answer for a headless site — is not one: that
+is the delivery split the product is built on.

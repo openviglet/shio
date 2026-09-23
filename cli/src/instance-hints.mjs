@@ -59,6 +59,10 @@ export const NOTES_COMMANDS = new Set([
   // SH1063 — it reads the instance the notes are about, and "this site reaches no index" is
   // exactly the kind of state a standing note tends to be about.
   "index",
+  // SH1064 — it reads the same instance with console credentials, and "we dropped /pricing on
+  // purpose, do not redirect it" is exactly the standing decision its orphan list would otherwise
+  // invite somebody to undo.
+  "redirects",
   // SH1022 — it is the listing an agent opens a session with, against the instance the notes are
   // about, and "which pages are drafts" is exactly the question a standing note usually qualifies.
   "find",

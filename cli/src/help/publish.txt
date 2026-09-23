@@ -1,7 +1,7 @@
 shio publish [address...] — make drafts live, or take live pages down
 
 The only call that changes what visitors see. Re-publishing unchanged content is a noop, so
-running this twice is safe; shio verify and shio diff are what tell you it worked.
+running this twice is safe.
 
   --address <a,b>      Addresses to publish, comma-separated (or pass them as arguments)
   --site <name>        The site, required with --all

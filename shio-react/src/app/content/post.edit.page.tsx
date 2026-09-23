@@ -337,11 +337,13 @@ export default function PostUnifiedEditPage() {
    * never saw — draft-default (P7) is only meaningful if the deliberate act promotes
    * what is on screen.
    */
-  async function handlePublish(override?: string) {
+  // SH1064 — `redirect` arrives from the dialog, which offers it only when an address stops
+  // answering; the server still decides whether there is one, so a stale tick writes nothing.
+  async function handlePublish(override?: string, redirect?: boolean) {
     setIsPublishing(true)
     try {
       const saved = await unifiedService.update(postId, { data, state })
-      await unifiedService.publish(postId, override)
+      await unifiedService.publish(postId, override, redirect)
       setInsightsAt((n) => n + 1)
       setPost(saved)
       setData(saved.data || {})

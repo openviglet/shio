@@ -167,6 +167,15 @@ const CLAIMS = {
       + "red-suites.test.mjs filters only its own SELF (`js`), so `java` is in its judged set, and "
       + "SH798's wrapper test holds the two exclusions to being exactly the two comparator hosts",
   },
+  "cli/test/live-coverage.test.mjs -> ShRedirectOpTest": {
+    kind: Kind.HANDS_OFF,
+    why: "SH1064 — two declarations (the verb `redirects`, the op `post.redirect`) say the live "
+      + "tier does not drive them and name the Java test as what does. Verified: ShRedirectOpTest "
+      + "runs the op through the batch service — the create publishes, a re-run is a noop, a page "
+      + "at the address is refused with `redirect-path-occupied` — and drives `verify` for the "
+      + "`url-orphaned` finding and its disappearance after the redirect is written. What it does "
+      + "NOT cover is the wire, which is exactly what the two declarations claim is uncovered",
+  },
   "shio-app/src/test/java/com/viglet/shio/api/agent/ShAgentCanonicalSlashTest.java -> ShRenderRedirectTest": {
     kind: Kind.HANDS_OFF,
     why: "asserts the apply half and says the route half is covered elsewhere. Verified: "

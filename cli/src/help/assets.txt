@@ -1,9 +1,8 @@
 shio assets prune — the assets nothing references, and what deleting them would free
 
 Reads the media listing, keeps the rows whose usage count is zero, and prints them with the
-bytes they occupy. A dry run: nothing is deleted. The count comes from the reverse reference
-index, so it is one query rather than a scan per asset, and zero means nothing points at the
-asset rather than nobody asked.
+bytes they occupy. A dry run: nothing is deleted. Zero means nothing points at the asset,
+not that nobody asked.
 
   --site <name>        Only this site's assets
   --folder <id>        Only this folder's assets

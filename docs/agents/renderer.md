@@ -301,7 +301,12 @@ renderer over one body of content at a second address. See the section on it bel
   claiming one path is *impossible* rather than reported; a redirect shadowing a real page is already
   SH99's `duplicate-url` **error**, which is one of the two findings SH385 asked for arriving with no
   code; and in the CLI's tree lint "served or redirected" is one lookup, because a Redirect is a post
-  with that `url`. Five more decisions: **302 is the default and 301 is opt-in**, because a permanent
+  with that `url`. **Something writes them now (SH1064)**: `post.redirect` is the batch op, the
+  console's publish dialog offers one when a rename vacates an address, and `verify` reports
+  `url-orphaned` for a path this site used to serve that a published page still links to — for two
+  years the type was served, linted and only ever authored by a curator by hand. That op keeps the
+  default below rather than inverting it, which is the whole reason the default is stated here.
+  Five more decisions: **302 is the default and 301 is opt-in**, because a permanent
   redirect is cached by browsers effectively for ever and a wrong one is the hardest routing mistake to
   take back (SH121's shape applied to a status code); **`PERMANENT` is read from `"1"` or `true`**,
   since the Check Box widget stores one through the console and the other through `post.upsert` and a

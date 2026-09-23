@@ -78,6 +78,27 @@ public class ShConsolePublishPlan {
                 .orElse(null);
     }
 
+    /**
+     * SH1064 — the address this publish is about to stop serving, or {@code null}.
+     *
+     * <p>The live row and the draft are separate rows with their own {@code furl} (SH81), so a
+     * draft whose URL differs from the one on the page visitors see is a publish that moves the
+     * live address. That is the {@code stops} the plan already reports; this is the same fact for
+     * the writer rather than for the reader, and it is read <b>before</b> the publish because
+     * afterwards both rows carry the new URL and the old one belongs to nobody.</p>
+     */
+    @Transactional(readOnly = true)
+    public String vacatedUrl(String postId) {
+        String draft = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.DRAFT)
+                .map(ShPostUnified::getFurl).orElse(null);
+        String live = shPostUnifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED)
+                .map(ShPostUnified::getFurl).orElse(null);
+        if (draft == null || live == null || live.isBlank() || live.equalsIgnoreCase(draft)) {
+            return null;
+        }
+        return live;
+    }
+
     /** The plan for publishing one post, by console id. */
     @Transactional(readOnly = true)
     public ShAgentChangeSet of(String postId) {

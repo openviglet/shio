@@ -311,6 +311,7 @@
   "content.publishGoesLive": "{{url}} starts resolving for the first time.",
   "content.publishMoves": "The live page moves to {{to}}, and {{from}} stops resolving.",
   "content.publishInbound": "{{count}} published page(s) link to {{url}}.",
+  "content.publishRedirect": "Keep {{url}} answering, as a permanent (301) redirect.",
   "content.publishGateStopped": "A check stopped this publish: {{reason}}",
   "content.publishOverrideLabel": "Publish anyway, and say why",
   "content.publishOverrideHint": "Everyone who reads this page's history will see this sentence and your name.",
