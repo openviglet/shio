@@ -1,7 +1,6 @@
 shio import <file> — clone an SH68 exchange package (.zip) into this instance
 
-The way to accept a site somebody hands you. Export one with
-GET /api/v2/site/{id}/export.
+The way to accept a site somebody hands you; `shio export site:<name>` makes one.
 
   --file <file.zip>    The package, when no positional is given
 

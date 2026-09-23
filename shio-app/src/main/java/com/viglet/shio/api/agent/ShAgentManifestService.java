@@ -371,7 +371,10 @@ public class ShAgentManifestService {
         // something the tool they are already holding answers.
         elsewhere.put("contentAsFiles", "shio pull --content");
         elsewhere.put("conversionProposal", "shio propose");
-        elsewhere.put("exchange", "shio import <file>");
+        // SH1065 — both halves now, because until it had a verb the export was reachable only
+        // by building a URL from a resolved uuid, and a pointer naming one half reads as a
+        // capability that only goes one way.
+        elsewhere.put("exchange", "shio import <file> | shio export site:<name>");
         elsewhere.put("pageAudit", "shio audit <page>");
         elsewhere.put("siteCapture", "shio clone <url>");
         elsewhere.put("visualSnapshot", "shio snapshot <page>");

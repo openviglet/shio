@@ -14,4 +14,4 @@ Examples:
   shio init acme --blueprint marketing-site --site Acme --param brand=Acme
 
 With --site and no --blueprint, a site whose pages are built from sections is refused: the
-built-in template renders a page's body and not its sections (SH502).
+built-in template renders a body, not sections (SH502).

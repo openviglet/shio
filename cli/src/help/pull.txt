@@ -6,8 +6,8 @@ shio pull — pull the post-types into shio/post-types/*.json
 
 With --content (the SH90 projection):
   Content projects to shio/content/<site>/<url>.md — YAML frontmatter is the fields, the
-  body is the post's rich-text field, and binaries land in shio/assets/<site>/... so a File
-  field reads as a path rather than a UUID. A pull merges three ways (last-synced base,
+  body is the post's rich-text field, and binaries land in shio/assets/<site>/... as paths
+  rather than UUIDs. A pull merges three ways (last-synced base,
   server, files): only a field both sides changed is a conflict, and a conflict writes
   nothing and exits non-zero.
   The instance's own house rules project to shio/.memory.yaml; a push leaves them (SH231).

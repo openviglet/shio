@@ -150,6 +150,8 @@ const COMMANDS = {
   index: () => import("./commands/index.mjs"),
   // SH1064 — which old addresses still answer, and which ones a rename left 404ing.
   redirects: () => import("./commands/redirects.mjs"),
+  // SH1065 — the half `import` was missing: a whole site, as a zip a pipeline can move.
+  export: () => import("./commands/export.mjs"),
 };
 
 const HELP = helpText("shio");

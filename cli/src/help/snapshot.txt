@@ -5,8 +5,7 @@ exits 0, so the gate is opt-in. Needs playwright; pixelmatch + pngjs diff per pi
 
   --page <page>        The page to photograph (or a bare positional, or --address)
   --site <name>        Photograph every PUBLISHED page of a site instead, one baseline each.
-                       A page the browser could not open is unreachable, not unchanged, and
-                       exits 1
+                       A page the browser could not open exits 1
   --against <url>      Compare against the ORIGINAL at that URL, both captured in this run.
                        A difference exits 1
   --accept             Replace the baseline without reporting a change

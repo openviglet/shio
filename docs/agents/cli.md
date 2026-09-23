@@ -4257,3 +4257,23 @@ one, for `index status`'s reason — a listing a gate cannot act on is a listing
 `--no-check` skips the orphan pass, which is the expensive half; it is on by default because the
 row nobody knew to look for is the whole point. `render`, `rows` and `orphans` are pure, so the
 text and the exit code are built from one answer (`redirects.test.mjs`).
+
+## `shio export` — the half `import` was missing (SH1065)
+
+`shio import` shipped with SH268 and the console has had a Download action since Block AR, so a
+site could be accepted and a curator could fetch one; a pipeline could do neither. The route is
+`GET /api/v2/site/{id}/export` and stays **strictly id-keyed** on purpose (a near-miss resolved by
+name exports the wrong site), which left the one export of an address-native product unreachable by
+address. `shio export site:Acme [--out acme.zip]` resolves the address on the agent surface and
+streams the zip off the console route — two surfaces, one gesture.
+
+The filename comes off the server's `Content-Disposition` rather than being composed: the server
+slugs the site's own furl, and SH1065 made the console read the same header, so a zip written by
+the CLI and one downloaded from a browser are now the same file. What the package carries is in
+[content-api.md](content-api.md#what-an-export-carries-and-what-it-does-not-sh1065).
+
+**No MCP half, and that is import's decision rather than a new one.** An SH68 package is a zip: a
+client with no filesystem can neither read one nor put one in a JSON-RPC frame, and base64 in a
+message is a megabyte of tokens for one line of shell. The manifest's `elsewhere` map now names
+both halves (`shio import <file> | shio export site:<name>`), which is how an MCP client learns
+where the capability lives instead of finding out by failing.

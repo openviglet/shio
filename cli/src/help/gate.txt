@@ -1,7 +1,7 @@
 shio gate [run|list] [address...] — the checks a site runs before content goes live
 
 Gates live on the instance and run wherever a publish does; this is where a pipeline finds
-out first, and where `audit` runs — it needs a browser the instance does not have.
+out first, and where `audit` runs (it needs a browser).
 
   --site <name>        Whose gates to ask about (required)
   run                  Check the addresses named, or every draft (default)

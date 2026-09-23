@@ -314,8 +314,12 @@ const UNEXERCISED = {
     // so the only place it can be wrong is an instance that has actually renamed something. A
     // live scenario would publish a page, rename it, and read the orphan back. `ShRedirectOpTest`
     // proves the finding and its repair against a seeded site; the wire is not proved.
-    "mcp", "publish", "redirects", "remember", "report", "rollback", "schedule", "snapshot",
-    "status", "surfaces", "types", "versions",
+    // `export` arrives with SH1065 and is unwritten rather than out of scope: its live scenario is
+    // the round trip — export a site this run built, import it into a second instance, and read the
+    // same addresses back — which is the one assertion a scripted fetch cannot make, since what it
+    // proves is that the zip is ACCEPTED by the importer rather than merely produced.
+    "export", "mcp", "publish", "redirects", "remember", "report", "rollback", "schedule",
+    "snapshot", "status", "surfaces", "types", "versions",
   ],
 };
 

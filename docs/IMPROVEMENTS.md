@@ -2883,25 +2883,6 @@ the P1 census could classify. The conformance gate knows none of this round's ne
 vocabulary. And no task carries the documentation sweep for everything the round ships,
 which the project's own process requires when a block closes.
 
-### LXXIV.3 Export on every surface, and what it does and does not carry (SH1065)
-
-GET /api/v2/site/{id}/export produces a zip, and ShSiteAPI's javadoc notes the route
-stays strictly id-keyed, so a caller must resolve a uuid first: the one export route of
-an address-native product cannot be reached with an address. cli/src/commands holds
-import.mjs and no export, no MCP tool or resource exports, and the console's services
-never call the route. That asymmetry is P1 broken the way this round keeps finding it:
-the half a person clicked shipped, and the half a pipeline needs did not.
-
-The chain is small. shio export site:<name> --out writes the zip, resolving the address
-and streaming to a file. The manifest indexes the route. MCP gets a resource rather than
-a tool, since a zip through a tool call is the reasoning shio_assets already gives for
-uploads. The console gets a menu item on the site page beside Import.
-
-The task also writes down a boundary nobody has stated: what an export carries and what
-it does not, users, tokens, revisions, notes, releases, and how that differs from shio
-pull. Promotion between environments is named as that boundary's open question, with
-releases from Block BA as the likely unit, rather than being solved here.
-
 ### LXXIV.4 A forms surface for the arrivals the dock reports (SH1066)
 
 ShFormSubmissionAPI's javadoc argues that a submission is a post, so trash, export, ACL,
@@ -3126,3 +3107,27 @@ front end's own routing, and `shio redirects` prints which of the two serves eac
 
 The alternative — teaching the renderer to answer for a headless site — is not one: that
 is the delivery split the product is built on.
+
+### LXXIV.14 A hand-over with no bytes in it (SH1065) (SH1134)
+
+The exchange format has carried binaries since SH68: `ShExchangePackageCodec` writes a
+`files/` directory with one entry per `ShExchangeFile`, named by id, and
+`ShSiteImportService` hands `pkg.files()` straight back to the writer that restores
+them. A **site** export does not use any of it. `ShSiteExportService.buildPackage`
+passes `List.of()` for that component, so the zip holds `export.json` and nothing else,
+and the posts inside it include every `File` post the site had — each pointing at bytes
+the receiving instance has never seen.
+
+Nothing reports it. The import succeeds, the pages render, the images are broken:
+SH767's shape, where it looks authored and the symptom is somebody opening the page.
+`verify` would say so on the target, if anybody ran it there.
+
+Two ways to close it, and choosing is the task. **Carry the bytes**: collect the `File`
+posts while walking the folders and write each through the codec's `files/` path, which
+the existing import already restores — the cost is a zip the size of the media library.
+**Or refuse to pretend**: keep the package textual and have the export say, in its
+answer and in `shio export`'s output, how many File posts it wrote without bytes.
+
+The first is what a hand-over means. The second is honest and cheap, and is what
+SH1065's boundary paragraph currently documents as the deliberate shape — the paragraph
+says it carries no bytes, but nobody decided that; it is what the code does.

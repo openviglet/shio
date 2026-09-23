@@ -1,0 +1,12 @@
+shio export site:<name> — hand a whole site to another instance, as a zip
+
+  --site <name>        The site, when no positional is given
+  --out <file>         Where to write it (default: the name the server chose)
+  --json               The path and size as JSON
+
+Carries the site, its folders, its posts in both states, their post-types and the site's
+notes — not users, tokens, revisions, releases or uploaded bytes. `shio import` is the
+other half.
+
+Example:
+  shio export site:Acme --out acme.zip

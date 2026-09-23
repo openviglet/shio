@@ -24,6 +24,6 @@ Examples:
   shio clone https://acme.example.com --markup --assets --site Acme --depth 2
   shio clone --refresh
 
-  A long one, in the background:
+  In the background, reading its progress:
     shio clone https://acme.example.com --render --assets --site Acme > clone.log 2>&1 &
-    cat shio/.shio/clone-status.json      # where it is
+    cat shio/.shio/clone-status.json

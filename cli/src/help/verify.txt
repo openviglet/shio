@@ -1,7 +1,7 @@
 shio verify — lint the content and its routes; exits 1 on an error (the CI gate)
 
-Empty required fields, references to posts that do not exist, images with no bytes, two
-pages on one URL, links that resolve to nothing. Errors exit 1; warnings are counted.
+Empty required fields, references to nothing, images with no bytes, two pages on one URL,
+links that resolve nowhere. Errors exit 1; warnings are counted.
 
   --site <idOrName>    Scope to one site
   --checks <groups>    projection,replication,content,routes,page,a11y,diagnostics,

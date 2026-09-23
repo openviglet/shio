@@ -191,6 +191,28 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
 - `POST /api/v2/site` — create. **Session + CSRF**, so a stateless caller gets a bodiless 403;
   that is the friction SH170 is filed for, and `shio-react/e2e/provision.mjs` walks it by hand.
 
+### What an export carries, and what it does not (SH1065)
+
+The zip is an `ShExchangePackage`: the **site** row (url, furl, description, the post-type/layout
+bindings, the searchable types, the form-success page), every **folder** under its roots, every
+**post** in both states, the **post-types those posts use** — the referenced subset, not the whole
+catalogue — and the site's **notes** (SH161, site-scoped only, so what an earlier session worked
+out travels with it).
+
+It does **not** carry users, tokens, ACLs, revisions, releases, gates, schedules, notes scoped to
+another site or to the instance, or the **bytes of uploaded files**: `files` is an empty list on a
+site export, so a `File` post arrives pointing at bytes the target instance does not have. That
+one is a **gap rather than a decision** (SH1134): the format has a `files/` directory and the
+import restores from it, and nothing on either side says the bytes were left out. Neither
+does it carry the tenant — `buildTenantPackage` is a different call, and SH72 provisioning is its
+only caller.
+
+That makes it a **hand-over**, not a backup and not a promotion. `shio pull --content` is the other
+shape and answers a different question: it projects one site's content to files for authoring and
+merges back three ways, carrying assets as paths on disk. Promoting between environments is
+neither — the unit there is a release (Block BA), and naming it here is what keeps somebody from
+reaching for a zip because it is the thing that exists.
+
 ### Importing an exchange package — `POST /api/v2/import`
 
 Multipart (`file`), accepts an SH68 package zip and clones it in via `ShSiteImportService`.

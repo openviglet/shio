@@ -85,6 +85,11 @@ export const NOTES_COMMANDS = new Set([
  */
 export const NOTES_EXEMPT = new Map([
   ["init", "scaffolds a project; there may be no instance yet, and none is required"],
+  // SH1065 — it reads the instance and writes a file, so a note is one request away. Exempt for
+  // `import`'s reason inverted: the output is a zip on disk, and a notice about what a curator
+  // asked for on THIS instance is advice for the instance the package is going to.
+  ["export", "writes a package for another instance; a note about this one travels with it "
+    + "inside the zip (SH161), which is where it is useful"],
   ["types", "speaks the CDA with a token — the memory endpoint is not on that surface"],
   ["dev", "long-running; it delegates to types and would print the notice once, at boot"],
   ["build", "compiles local sources; it never opens a connection"],

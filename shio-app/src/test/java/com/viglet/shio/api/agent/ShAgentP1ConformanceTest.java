@@ -468,10 +468,11 @@ class ShAgentP1ConformanceTest {
         // line. So the capability is CLI-shaped, `shio import` exists, and this row is the manifest
         // telling an MCP client which tool to reach for instead of letting it find out by failing.
         byFeature.put("exchange", new Delivery(Reach.CLI_ONLY, "shio import",
-                "an SH68 package is a zip, and this surface is JSON — so import is CLI-shaped by "
+                "an SH68 package is a zip, and this surface is JSON — so exchange is CLI-shaped by "
                 + "construction rather than by omission (SH268, decided against SH186's precedent). "
-                + "`shio import <file>` posts it; export stays declared (GET /site/{id}/export) "
-                + "because a zip *out* is a byte stream a caller can already ask for").decided());
+                + "SH1065 closed the half that was a gap rather than a decision: `shio export "
+                + "site:<name>` resolves the address and streams the zip the strictly id-keyed "
+                + "route answers with, so both directions are now a verb and neither is a tool").decided());
         // SH793 — this said "3 tokens under" the ceiling. It was 19 when somebody finally measured,
         // and nothing had reproduced the 3 since it was written: the figure lived here, in prose, in
         // a file no budget run reads. The trade still holds at 19 — a described field does not fit

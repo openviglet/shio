@@ -93,9 +93,19 @@ export class ShSiteService {
     return response.data;
   }
 
-  async export(id: string): Promise<Blob> {
+  /**
+   * SH1065 — the zip, and the name the server gave it.
+   *
+   * The download used to be saved as `${site.name}.zip`, composed here. The server slugs the
+   * site's own furl to build its `Content-Disposition`, so one artifact had two names depending
+   * on which surface fetched it — and `shio export` writes the server's. Read rather than
+   * derived, for the reason SH1065 gives the CLI: a second slugger is how they drift.
+   */
+  async export(id: string): Promise<{ blob: Blob; fileName: string | null }> {
     const response = await axios.get(`/v2/site/${id}/export`, { responseType: "blob" });
-    return response.data;
+    const disposition = String(response.headers?.["content-disposition"] ?? "");
+    const named = /filename="?([^";]+)"?/.exec(disposition);
+    return { blob: response.data, fileName: named?.[1] ?? null };
   }
 
   async import(file: File): Promise<ShSite> {

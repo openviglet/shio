@@ -252,6 +252,25 @@ export class ShioAdminClient {
     return res.json();
   }
 
+  /**
+   * GET /api/v2/site/{id}/export (SH1065) — the exchange zip, with the name the server chose.
+   *
+   * The filename comes off `Content-Disposition` rather than being derived here: the server slugs
+   * the site's own furl to build it, and a second slugger in this file is how an export written by
+   * the CLI and one downloaded from the console come to be called different things.
+   */
+  async exportSite(id) {
+    const url = `${this.baseUrl}/api/v2/site/${encodeURIComponent(id)}/export`;
+    const res = await this.fetch(url, {
+      method: "GET",
+      headers: { Authorization: this.#authHeader() },
+    });
+    if (!res.ok) throw new ShioHttpError(res.status, url, await bodyOf(res));
+    const disposition = res.headers?.get?.("content-disposition") ?? "";
+    const named = /filename="?([^";]+)"?/u.exec(disposition);
+    return { bytes: new Uint8Array(await res.arrayBuffer()), fileName: named?.[1] ?? null };
+  }
+
   /** GET /api/v2/post-type — all lossless post-type defs. */
   getPostTypeDefs() {
     return this.#request("GET", "");

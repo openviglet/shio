@@ -168,11 +168,13 @@ export default function BentoSiteEditPage() {
           label: t("content.export"),
           icon: IconDownload,
           onSelect: () => {
-            void service.export(siteId).then((blob) => {
+            // SH1065 — the server's own filename, so this download and `shio export` write the
+            // same file. The fallback is the site's name, for an instance older than that header.
+            void service.export(siteId).then(({ blob, fileName }) => {
               const href = URL.createObjectURL(blob)
               const a = document.createElement("a")
               a.href = href
-              a.download = `${site.name}.zip`
+              a.download = fileName ?? `${site.name}.zip`
               a.click()
               URL.revokeObjectURL(href)
             })

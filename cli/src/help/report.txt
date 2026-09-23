@@ -1,7 +1,7 @@
 shio report — the human handoff: what changed, preview links, open questions
 
-Markdown on stdout — paste it into a pull-request body. It composes changes, context
-and verify; there is no endpoint behind it.
+Markdown on stdout — paste it into a pull-request body; it composes changes, context
+and verify.
 
   --since <cursor>     Range start; "last" = where the last --mark left off, "content" =
                        where the last content pull reached. Omit for a window

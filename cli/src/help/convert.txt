@@ -1,7 +1,7 @@
 shio convert --site <name> - apply the accepted conversion plan as content
 
-Turns the blocks you accepted with shio propose --accept into posts, plus the captured
-theme and scripts. Running it twice changes nothing the second time.
+Turns the blocks accepted by shio propose --accept into posts, plus the captured theme
+and scripts. Running it twice changes nothing.
 
 Every post lands in DRAFT: shio publish --site <name> --all is the step after this one.
 

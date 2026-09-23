@@ -4,8 +4,8 @@ Bare, it lists what this instance could install. A catalogue is read once an ope
 one (shio.marketplace.enabled, shio.marketplace.url); without one the listing answers with the
 packages that ship here.
 
-Installing puts a package where the registry can see it and stops — applying it to a site
-stays shio apply --blueprint <id>. Install and uninstall need an admin credential.
+Installing puts a package where the registry can see it; applying it stays shio apply
+--blueprint <id>. Install and uninstall need an admin credential.
 
   list                 The catalogue, and where the list came from
   show <id>            One entry in full, with its README

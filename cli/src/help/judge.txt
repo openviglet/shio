@@ -1,8 +1,8 @@
 shio judge --site <name> — run the instruments, answer once, name the disagreements
 
 verify, diff and audit run; snapshot is opt-in. A skipped one reads NOT RUN, never green.
-Findings are judged against acceptance.properties: at or below the bar, ACCEPTED and
-printed as tasks for later; above it or unnamed there, they HOLD and this exits 1.
+Findings are judged against acceptance.properties: at or below the bar ACCEPTED, above
+it or unnamed there they HOLD and this exits 1.
 INCONCLUSIVE means an instrument that bar rests on did not run.
 
   --site <name>        The site to judge (or a bare positional)
