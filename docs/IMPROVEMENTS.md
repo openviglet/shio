@@ -1350,30 +1350,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.13 A gate nobody runs went quiet instead of red (SH1070)
-
-Found by running the gate, not by reading anything: SH941 touched `docs/`, which is what
-the docs gate covers, so it ran for the first time in a long while and came back red on
-two suites at once.
-
-`docs-stack` reports `Spring Boot 4.1.0 at developer-guide.md:44 — declared: 4.1.1`,
-which is SH628's instrument doing what it shipped to do — a version in prose is a claim
-nothing derives — against a published page the pom moved out from under. `docs-coverage`
-reports SH653's summary disagreeing with its own tables: the sentence says 57 clusters,
-56 covered, 50 green; the rows count 54, 54 and 48. Both are real, both live in the
-published-docs checkout rather than here, and neither is a defect in the instrument.
-
-What makes this a task rather than two corrections is the number beside it. `pnpm gates`
-reports the docs gate **135 commits** behind, against 2 for java and 13 for conformance,
-so both drifts sat in front of an instrument built to catch them while nothing ran it.
-It is not among the three `agents.md` names as blocking and not in `red-suites.json`, so
-it went quiet rather than red — and it is the one gate whose subject lives in a sibling
-repository, which a clone may not have at all.
-
-So: correct both drifts, then decide what stops the third. Either the docs gate joins
-the blocking set with its sibling-checkout absence handled explicitly, or its staleness
-is reported somewhere a commit passes.
-
 ### LXIV.14 A documentation queue that became a backlog (SH1072)
 
 SH758's reader prints rather than fails, because the fix is in another repository and a

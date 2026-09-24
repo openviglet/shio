@@ -4,12 +4,20 @@
   "emptied": "SH789 — the `fixture-traits` entry was deleted here rather than by SH780, which is what its own text expected. The grounds are different and that is the point: an exception is a licence to commit over a red, and there was no red. Roughly fifty consecutive green `pnpm test` runs, and the two comparators that should have said so were blind to this gate in exactly this direction (that hole is what SH789 fixed). SH778 and SH780 stay open: they are about diagnosing the flake, not about licensing it, and SH778's third instrument now prints the process exit code — so a third sighting arrives with a diagnosis instead of a mystery, and the correct response to it is SH579's rule from the top, not a licence that was already sitting here.",
   "exceptions": [
     {
+      "suite": "docs",
+      "test": "conformance/docs-coverage.conformance.mjs — SH747: the count of shipped ids the matrix does not name never rises",
+      "task": "SH1072",
+      "declared": "2026-09-24",
+      "expires": "2026-09-28",
+      "why": "The same queue as the js entry below, seen by the gate that reads vigletdocs itself: 500 shipped ids unnamed in COVERAGE.md against a ceiling of 490, the ten over being this round's ships (SH1052 through SH1069) that SH758 already lists. Declared rather than left to go stale because SH1070 ran this gate at HEAD, and a fresh red with no entry fails SH755. Every other docs suite is green after SH1070's Spring Boot fix: docs-stack, SH653's summary and SH1069's feature ratchet. Naming the ids is a COVERAGE.md edit in a vigletdocs tree that still carries an uncommitted docs pass nobody in this run owns. It goes with SH1072, and this entry is deleted in that commit."
+    },
+    {
       "suite": "conformance",
-      "test": "conformance/docs-stack.conformance.mjs — every stated Spring Boot version matches pom.xml",
-      "task": "SH1070",
-      "declared": "2026-09-23",
-      "expires": "2026-09-30",
-      "why": "Run for SH989 against a clean store on :2711: 123 tests, 121 pass, and both failures are SH1070's two drifts, word for word — developer-guide.md:44 states Spring Boot 4.1.0 against the pom's 4.1.1, and COVERAGE.md's summary disagrees with its rows. Both live in the vigletdocs checkout the docs suites read, and neither reads a byte SH989 changed: every scenario that drives the instance, the CLI and the change feed passed. Not fixed in this commit because the fix is a vigletdocs commit, and COVERAGE.md there carries uncommitted rows from earlier today (SH1072's half that has not landed) which a summary correction cannot be committed apart from. Run against a clean export of vigletdocs HEAD instead it is 119 of 123, the extra two being SH758 and SH747, because docs/coverage-named.json was mirrored from those uncommitted rows. It goes away with SH1070, and this entry is deleted in that commit. Narrowed on 2026-09-15 by SH991's docs pass: naming SH984-SH990 in the same uncommitted COVERAGE.md made the summary recountable, and it now agrees with its tables there, so SH653 passes and the Spring Boot version is the one drift still red. Re-declared on 2026-09-23, one week rather than fourteen days, because the first fortnight was not spent on it: the fix is a commit in the vigletdocs checkout, which still carries the same 322-line docs pass across eight pages that was open when this was first declared, and every session since has been draining this repository's backlog instead. Nothing about the red has changed, which is the point of re-dating it rather than widening it: SH1070 is one line in developer-guide.md there, and the shorter window is what makes the next session that touches vigletdocs pay for it."
+      "test": "conformance/docs-coverage.conformance.mjs — SH747: the count of shipped ids the matrix does not name never rises",
+      "task": "SH1072",
+      "declared": "2026-09-24",
+      "expires": "2026-09-28",
+      "why": "The docs entry above, reached a second way: `pnpm conformance` globs every conformance file, docs-coverage among them, so the same SH747 ratchet (500 unnamed against 490) turns this gate red too, whatever the instance scenarios answer. Nothing this run changed is read by the instance-driving suites. Deleted with SH1072, in the commit that names the ids in COVERAGE.md and lowers nothing, because naming them brings the count back under the ceiling."
     },
     {
       "suite": "js",

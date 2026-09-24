@@ -362,6 +362,22 @@ test("SH841: the owed debt is printed on the stale line and nowhere else", () =>
     "and with nothing measured it says nothing: an absent argument is an absent claim");
 });
 
+test("SH1070: a docs gate left unrun while the pages move is named on every pnpm test", () => {
+  // SH1070 found `docs` 135 commits behind, with two drifts sitting in front of the instrument
+  // built to catch them. It stays a warning and not a block (build.md says why), so what has to
+  // hold is that the warning reaches the one output every commit produces. Two halves: the gate's
+  // subject covers the pages a docs commit touches, and the table prints its debt.
+  assert.ok(GATE_COVERS.docs?.includes("docs/"),
+    "SH1070: an edit under docs/ must owe the docs gate a run, or the 135 is never counted");
+  assert.ok(GATES.includes("docs"), "SH1070: the docs gate is in the table pnpm test prints");
+
+  const world = { docs: { sha: "a1963877", when: "then", red: false, stale: true } };
+  const lines = gateLines(world, new Set(), "js", new Set(), { docs: 135 }).join("\n");
+  assert.match(lines, /docs —[^\n]*OWED: 135 commit\(s\)/,
+    "SH1070: a docs gate that has not run since the pages changed is printed as owed, with the "
+    + "count, by the suite every commit runs");
+});
+
 /**
  * SH844 — the check that can tell a subject that is too wide from one that is right.
  *

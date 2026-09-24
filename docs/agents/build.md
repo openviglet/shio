@@ -2064,3 +2064,22 @@ Two details the reader is wrong without:
 the inventory. Exemptions live in the script's `KEPT` map with a sentence each, and it is **empty**:
 everything unreachable was deleted rather than excused. A stale exemption fails too — for the reason
 SH1043's budget fails on a ceiling that outlives its chunk.
+
+## The docs gate stays a warning locally, and it was 135 commits unrun (SH1070)
+
+`pnpm gates` found `docs` 135 commits behind, and running it turned up two drifts SH628 and SH653
+exist to catch: `developer-guide.md` stated Spring Boot 4.1.0 against the pom's 4.1.1, and
+COVERAGE.md's summary disagreed with its rows. Both were corrected in vigletdocs. The summary was
+fixed by the docs pass that is still uncommitted there.
+
+The task asked what stops a third. The answer was **already in the tree**, so nothing was built:
+
+- **CI runs it on every push** (`suites.yml`, SH655) and clones vigletdocs to do it, so a clone
+  with no sibling checkout is handled where it matters.
+- **Every `pnpm test` prints it**: SH755's table names each gate, and SH841 marks a stale one whose
+  subject has changed since as `OWED: N commit(s)`. The 135 was that line, read.
+
+Making `docs` block a local commit was rejected. Its subject is another repository, and SH771
+already decided that a red which only a second repository can fix goes stale on the next ship
+rather than gating it. When a run *is* fresh and red, SH755 fails `pnpm test` until
+`red-suites.json` declares it, so a red somebody has seen cannot stay quiet.
