@@ -1613,31 +1613,6 @@ endpoint with the new instant, which records the dropper as the requester SH991 
 The zone line stays above every view. A test drives a drop and reads the change back
 through the agent's scheduled listing.
 
-### LXVI.14 Casing without a locale, measured (SH1085)
-
-`String.toLowerCase()` with no argument uses `Locale.getDefault()`, and Turkish maps `I`
-to the dotless `ı`. Verified rather than suspected:
-`"PUBLISH".toLowerCase(Locale.forLanguageTag("tr"))` returns `publısh`.
-
-That value is `ShWebhookEventType.wire()` — the `event` field of every signed outbound
-payload, which the `create-shio-app` receiver matches on byte-for-byte. On a JVM whose
-default locale is Turkish, every publish webhook this product has ever sent would be
-silently ignored by its own reference receiver, and nothing here or there would report a
-failure: the delivery succeeds, the handler falls through.
-
-There are nine such calls in `shio-app`, found by one grep, and the others are not
-decoration. `ShURLFormatter` lower-cases a friendly URL, so the same title mints a
-different address depending on where the JVM runs — and an address is the product's
-identity for a page (SH79). `ShSiteExportService` and `ShSiteImportService` each slug
-independently, so an export taken on one box may not re-import on another.
-`ShMarketplaceInstaller` looks a blueprint up by a lower-cased id, and
-`ShCsrfAccessDeniedHandler` decides whether a cookie name contains `SESSION`.
-
-SH338's order: the lint first. It fails on any `toLowerCase()` / `toUpperCase()` with no
-`Locale`, naming the file, which is what finds the tenth. Then the nine become
-`Locale.ROOT`, which is the answer in every one of these cases — none of them is casing
-text for a person to read.
-
 ### LXVI.15 A schedule that fires past the gate (SH1138)
 
 SH1084's lint lists every method that publishes and whether it evaluates the site's

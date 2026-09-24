@@ -2083,3 +2083,13 @@ Making `docs` block a local commit was rejected. Its subject is another reposito
 already decided that a red which only a second repository can fix goes stale on the next ship
 rather than gating it. When a run *is* fresh and red, SH755 fails `pnpm test` until
 `red-suites.json` declares it, so a red somebody has seen cannot stay quiet.
+
+## Casing names its locale (SH1085)
+
+A `toLowerCase()` or `toUpperCase()` with no argument reads `Locale.getDefault()`. On a Turkish JVM,
+`"PUBLISH"` then becomes `"publısh"`. That was the `event` field of every signed webhook, which the
+`create-shio-app` receiver matches byte for byte, and it also broke the friendly URL a title mints
+and the slug an export and an import each derive. `ShLocaleCasingLintTest` fails on any bare casing
+call in `shio-app`, and every one found so far is `Locale.ROOT`: none of them is text for a person
+to read. The task counted nine and the scan found eleven. The lint's third test sets a Turkish
+default and asserts the webhook's wire value and a minted URL are unchanged.

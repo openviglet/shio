@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Locale;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -248,10 +249,10 @@ public class ShObjectNavigationService {
         if (query == null || query.isBlank()) {
             return all;
         }
-        String term = query.trim().toLowerCase();
+        String term = query.trim().toLowerCase(Locale.ROOT);
         return all.stream()
                 .filter(folder -> folder.getName() != null
-                        && folder.getName().toLowerCase().contains(term))
+                        && folder.getName().toLowerCase(Locale.ROOT).contains(term))
                 .toList();
     }
 

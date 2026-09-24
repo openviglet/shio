@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Locale;
 
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -439,7 +440,7 @@ public final class ShBlocks {
         if (node.isObject()) {
             return "an object";
         }
-        return "a " + node.getNodeType().toString().toLowerCase();
+        return "a " + node.getNodeType().toString().toLowerCase(Locale.ROOT);
     }
 
     /** A blocks document this instance cannot store, and what to write instead (P6). */

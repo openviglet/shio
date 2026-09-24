@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.Locale;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -804,7 +805,7 @@ public class ShReviewService {
             case RESTORE -> Optional.of("a restore is already an undo");
             case UPDATE -> Optional.of("a section's rename or move has no undo the queue can "
                     + "perform — the previous name is in this entry's description");
-            default -> Optional.of("no undo for a folder " + action.name().toLowerCase());
+            default -> Optional.of("no undo for a folder " + action.name().toLowerCase(Locale.ROOT));
         };
     }
 

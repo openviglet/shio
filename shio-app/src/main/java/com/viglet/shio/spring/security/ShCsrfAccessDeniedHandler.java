@@ -11,6 +11,7 @@ package com.viglet.shio.spring.security;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Locale;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -129,7 +130,7 @@ public class ShCsrfAccessDeniedHandler implements AccessDeniedHandler {
             return false;
         }
         for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
-            if (cookie.getName() != null && cookie.getName().toUpperCase().contains("SESSION")) {
+            if (cookie.getName() != null && cookie.getName().toUpperCase(Locale.ROOT).contains("SESSION")) {
                 return true;
             }
         }

@@ -16,6 +16,8 @@
  */
 package com.viglet.shio.url;
 
+import java.util.Locale;
+
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -31,7 +33,7 @@ public class ShURLFormatter {
 	public static String format(String url) {
 
 		// 1. Covert to Lowercase
-		String formattedURL = url.toLowerCase();
+		String formattedURL = url.toLowerCase(Locale.ROOT);
 
 		// 2. Convert HTML Symbol Entities to space, for examples: "Ampersand" euro or
 		// Ampersand Hash Tag 174

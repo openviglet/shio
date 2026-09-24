@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.Locale;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -155,7 +156,7 @@ public class ShMarketplaceInstaller {
      */
     public Installed uninstall(String id) {
         Path root = blueprintDirectory();
-        ShBlueprint present = registry.all().get(id == null ? "" : id.trim().toLowerCase());
+        ShBlueprint present = registry.all().get(id == null ? "" : id.trim().toLowerCase(Locale.ROOT));
         if (present == null) {
             throw new ShBlueprintRegistry.UnknownBlueprintException(id, registry.names());
         }

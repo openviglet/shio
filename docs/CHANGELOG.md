@@ -1747,6 +1747,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1081** — The TypeScript client sends state on getPost, getPostByUrl, listChildren and query, and the React hooks pass it and refetch on it, so a front end can preview a draft or a revision (design §LXVI.10 superseded: getPostByUrl already took locale since SH1057, so only state was missing) (design §LXVI.10 recorded in `docs/agents/content-api.md`).
 - **SH1083** — POST /agent/batch refuses an op field that is not an Op component with undeclared-op-field, the index and a didYouMean, so a misspelled cancel no longer publishes now (design §LXVI.12 recorded in `docs/agents/agent-surface.md`).
 - **SH1084** — A lint now holds every publishing method to the publish gate or a reasoned exemption, and Approve, PATCH with publish and the CDA publish evaluate it, with SH998's waiver where a person acts (design §LXVI.13 recorded in `docs/agents/agent-surface.md`).
+- **SH1085** — Every casing call in shio-app names Locale.ROOT and a lint refuses a bare one, so a Turkish JVM emits publish, not publısh, and mints the same URLs and slugs as any other (design §LXVI.14 recorded in `docs/agents/build.md`).
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

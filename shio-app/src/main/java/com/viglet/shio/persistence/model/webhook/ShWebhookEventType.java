@@ -5,6 +5,8 @@
  */
 package com.viglet.shio.persistence.model.webhook;
 
+import java.util.Locale;
+
 /**
  * The content-lifecycle transitions an outbound webhook (SH12) can fire on.
  * The wire value emitted in the payload is the {@link #wire() lower-cased} name
@@ -40,7 +42,7 @@ public enum ShWebhookEventType {
 
     /** The lower-cased token sent in the JSON {@code event} field. */
     public String wire() {
-        return name().toLowerCase();
+        return name().toLowerCase(Locale.ROOT);
     }
 
     /**

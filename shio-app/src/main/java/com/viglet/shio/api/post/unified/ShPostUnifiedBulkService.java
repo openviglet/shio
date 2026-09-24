@@ -11,6 +11,7 @@ package com.viglet.shio.api.post.unified;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 
@@ -113,7 +114,7 @@ public class ShPostUnifiedBulkService {
     public static class NothingSelectedException extends ShTeachingException {
         public NothingSelectedException(Op op) {
             super(ShProblem.badRequest("nothing-selected",
-                    "This bulk " + op.name().toLowerCase() + " names no posts.")
+                    "This bulk " + op.name().toLowerCase(Locale.ROOT) + " names no posts.")
                     .withDetail("A run over an empty selection is a caller mistake rather than a "
                             + "no-op: the button that sent it was enabled, so something upstream "
                             + "believes there is a selection.")
