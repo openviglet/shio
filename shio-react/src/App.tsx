@@ -49,7 +49,6 @@ import SetupPage from "./app/setup/setup.page"
 import { BentoGraphQLRoute } from "./app/routes"
 import LegacyConsoleRedirect from "./app/legacy-console-redirect"
 import { LEGACY_CONSOLE_PATTERNS, ROUTES } from "./app/routes.const"
-import { SectionCardChromeProvider } from "@viglet/viglet-design-system/bento"
 import { ThemeProvider } from "./components/theme-provider"
 import { SHIO_DEFAULT_THEME, SHIO_THEME_STORAGE_KEY } from "./theme"
 import { Toaster } from "./components/ui/sonner"
@@ -63,13 +62,6 @@ function App() {
       <ThemeProvider defaultTheme={SHIO_DEFAULT_THEME} storageKey={SHIO_THEME_STORAGE_KEY}>
           <ShioQueryProvider>
             <Toaster />
-            {/*
-              SH958 — the section chrome, once, above the router. The design system's context
-              defaults to `console`, so without this every `AdaptiveSectionCard` would render the
-              package's other look. It decides nothing else: once the package's default is bento
-              (VDS145) it is a no-op, and SH963 deletes it.
-            */}
-            <SectionCardChromeProvider chrome="bento">
             <Routes>
               <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.CONSOLE} replace />} />
               <Route path={ROUTES.SETUP} element={<SetupPage />} />
@@ -275,7 +267,6 @@ function App() {
               {/* And outside it, for a path that is not under the console at all. */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
-            </SectionCardChromeProvider>
           </ShioQueryProvider>
       </ThemeProvider>
     </div>

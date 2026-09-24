@@ -1078,27 +1078,6 @@ The assertion is that copy-ds.cmd --list, run from this checkout, names Shio and
 zero. A wrapper whose only job is a path it gets wrong is worth less than no wrapper,
 because it reports a missing package instead of a broken script.
 
-### LX.11 The published release this console does not take (SH1088)
-
-Eight lines here are `blocked-outside` on a design-system id, and every one of those ids
-has shipped: VDS129, VDS130, VDS131, VDS132, VDS133, VDS134, VDS135 and VDS140 all
-landed before the `2026.3.11` version bump, and npm serves `2026.3.11`. The console's
-range is `^2026.3.10`, so the lockfile is the only thing holding it — `node_modules`
-carries no `corner-slot`, no `BentoShell` and a `BentoBackToTop` with no props, which is
-how SH964's blocker was confirmed still real after the changelog said otherwise.
-
-It is not a version bump, which is why it is a task. The same release carries two
-deliberate removals: VDS146 took out `SectionCardChromeProvider`, which `App.tsx` mounts
-above the router, and VDS147 removed the console-era page vocabulary. So the upgrade is:
-take `2026.3.11`, delete the chrome provider (SH963's job, which this absorbs or hands
-back), find what VDS147 renamed, and run the console's own suites — `chrome-adapter`,
-`chrome-vocabulary-census` and `bento-is-the-default` exist precisely to say what moved.
-
-What it buys is the block, not the version: Block AX opens entirely, and four of Block
-AU's five lines lose their external dep. The check that it was worth doing is `roadkeep
-deps` reporting no `blocked-outside` line whose id is already in the installed package —
-a state a reader can confirm without opening npm.
-
 ## LXI The live defects, fixed before anything is built on them (Block AV)
 
 Everything else in this round adds a capability. This block removes behaviour that is
@@ -1139,24 +1118,6 @@ The order is the one this project uses for any sweep: a lint that counts the voc
 and may only shrink, then one root provider, then the branches, the era instruments, the
 names and the prose. The last task removes the provider itself, once the package drops
 the switch in VDS146.
-
-### LXII.7 The last chrome declaration, removed with the switch (SH963)
-
-After AW2 through AW6, one reference remains by design: the provider at the root that
-tells the package's components to render bento. It exists only because the package still
-has a SectionChrome type with a console value and, until VDS145, a console default.
-
-VDS146 removes the type, the provider, the hook and every console branch from the
-package, once VDS144's census reads zero console consumers, which in today's
-measurements waits on Dumont's own cutover. When that release lands, this task deletes
-Shio's root provider and its import, raises the design-system floor to the release that
-carries the removal, and moves AW1's census to an empty debt list asserted to stay
-empty.
-
-The design-system waits list from SH937 carries an entry for this line, with a probe
-that reads the installed package's bento types for SectionChrome and a proof that the
-read reached the bento declarations. That is what turns this dependency into a red test
-on the day the release arrives, instead of a line somebody has to remember to re-read.
 
 ## LXIII The Viglet assistant: where the console reports, and how the curator reaches the agent (Block AX)
 

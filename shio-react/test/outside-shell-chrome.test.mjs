@@ -89,12 +89,13 @@ function mountedOutsideTheShell() {
   const outside = shell === null ? APP : APP.replace(shell, "")
   const imports = defaultImports()
   const found = new Map()
-  // SH958 — the provider moved above <Routes>, so an element is provided when the root is, and a
-  // per-route wrapper is the older spelling of the same fact rather than the only one.
-  const root = /<SectionCardChromeProvider\s+chrome="bento"\s*>\s*<Routes>/.test(APP)
+  // SH963 — there is no chrome switch any more (VDS146), so every mount renders bento by
+  // construction. SH958's root provider was how that used to be true; now nothing has to be.
+  // A provider reappearing in App.tsx is caught by chrome-provider-root.test.mjs.
+  const root = true
 
   for (const [element] of outside.matchAll(/element=\{[\s\S]*?\}\s*\/?>/g)) {
-    const bento = root || /SectionCardChromeProvider\s+chrome="bento"/.test(element)
+    const bento = root
     for (const [, name] of element.matchAll(/<(\w+)\s*\/>/g)) {
       const file = resolve(imports.get(name) ?? "")
       if (!file) continue
@@ -163,9 +164,9 @@ function chromeReaders() {
 
 test("SH959: nothing in the console branches on chrome, so outside the shell renders bento", () => {
   assert.deepEqual(chromeReaders(), [],
-    "SH959: a component reads useSectionChrome() again. Every surface is under one bento provider"
-      + " (SH958), so the answer is always the same, and a branch on it is a second rendering"
-      + " nothing exercises — the console half this block deleted. Render the bento form.")
+    "SH959: a component reads useSectionChrome() again. The package removed the hook (VDS146,"
+      + " SH963), so this can only be a local copy of it, and a branch on chrome is a second"
+      + " rendering nothing exercises. Render the bento form.")
 
   const outside = mountedOutsideTheShell()
   const unprovided = [...outside].filter(([, { bento }]) => !bento).map(([name]) => name)

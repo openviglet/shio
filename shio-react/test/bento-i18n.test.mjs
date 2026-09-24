@@ -71,11 +71,36 @@ const LOCALES = ["en", "pt"]
 function bentoKeys() {
   const bundle = join(
     CONSOLE_ROOT, "node_modules", "@viglet", "viglet-design-system", "dist", "bento.es.js")
-  const source = readFileSync(bundle, "utf8")
-  return [...new Set(
-    [...source.matchAll(/"([a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9_]+)+)"/g)].map(([, key]) => key),
-  )].sort()
+  return keysIn(readFileSync(bundle, "utf8"))
 }
+
+/**
+ * The dotted literals a bundle renders as text, which is not every dotted literal in it.
+ *
+ * SH1088 — "no false positives" held until 2026.3.11, when `BentoActionsMenu` gave actions stable
+ * dotted ids (`id: "entity.delete"`, rendered as `data-action-id`) and a warning that quotes one
+ * inside a template string. Neither is a translation key. So a literal counts only when at least
+ * one occurrence is neither an `id:` value nor inside a backtick template.
+ */
+export function keysIn(source) {
+  const templates = [...source.matchAll(/`(?:\\.|[^`\\])*`/g)]
+    .map((match) => [match.index, match.index + match[0].length])
+  const insideTemplate = (at) => templates.some(([start, end]) => at > start && at < end)
+  const rendered = new Set()
+  for (const match of source.matchAll(/"([a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9_]+)+)"/g)) {
+    const isId = /\bid:\s*$/.test(source.slice(Math.max(0, match.index - 12), match.index))
+    if (!isId && !insideTemplate(match.index)) rendered.add(match[1])
+  }
+  return [...rendered].sort()
+}
+
+test("SH1088: an action id and a quoted id in a warning are not translation keys", () => {
+  const sample = 'a={id: "entity.delete"}; warn(`give it a name, such as "post.delete": x`);'
+    + ' t("forms.save", {defaultValue: "Save"})'
+  assert.deepEqual(keysIn(sample), ["forms.save"],
+    "SH1088: the key reader counts an action id or a quoted example as a string to translate, "
+      + "which is how 2026.3.11 made this suite demand translations for entity.delete")
+})
 
 /** Shio's own bundle for one locale, merged the way `src/i18n/index.ts` merges it. */
 function shioBundle(locale) {

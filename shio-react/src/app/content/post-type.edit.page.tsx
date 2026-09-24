@@ -5,12 +5,7 @@ import { Button } from "@/components/ui/button"
 /*
  * SH892 — the form's section is `AdaptiveSectionCard`. Its header takes `{icon, title,
  * description}` and nothing else, so the details tabs live inside `Content`, not in the header.
- *
- * **`StaticHeader` and `Content` must be DIRECT children of `AdaptiveSectionCard`.** The component
- * finds them with `Children.forEach`, which does not descend, so wrapping `Content` in anything —
- * `<Tabs>` was the first draft of this very edit — leaves it with a header and no content, and it
- * renders an **empty section**: the entire post-type form, gone. `chrome-adapter.test.mjs` asserts
- * it. Imported from the bento subpath, the only entry that exports it.
+ * Imported from the bento subpath, the only entry that exports it.
  */
 import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
 import { Input } from "@/components/ui/input"

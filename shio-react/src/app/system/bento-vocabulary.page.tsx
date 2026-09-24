@@ -35,7 +35,6 @@ import {
   BentoStatusMarker,
   BentoTile,
   BentoTileGrid,
-  SectionCardChromeProvider,
   bentoChipClass,
   resolveBentoLayout,
   toBentoLayoutEntries,
@@ -203,23 +202,17 @@ export default function BentoVocabularyPage() {
         </p>
       </BentoFormSection>
 
-      {/*
-       * The adapter VDS22 shipped, under the provider that decides which chrome it renders as.
-       * `bento` here; the console branch is the package's default, which is what lets one form's
-       * fields be written once and rendered in either era (SH892).
-       */}
-      <SectionCardChromeProvider chrome="bento">
-        <AdaptiveSectionCard>
-          <AdaptiveSectionCard.StaticHeader
-            icon={IconWand}
-            title={COPY.adaptiveTitle}
-            description={COPY.adaptiveDescription}
-          />
-          <AdaptiveSectionCard.Content>
-            <p className="text-sm text-muted-foreground">{COPY.adaptiveBody}</p>
-          </AdaptiveSectionCard.Content>
-        </AdaptiveSectionCard>
-      </SectionCardChromeProvider>
+      {/* The adapter VDS22 shipped: a section composed from a header and a body. */}
+      <AdaptiveSectionCard>
+        <AdaptiveSectionCard.StaticHeader
+          icon={IconWand}
+          title={COPY.adaptiveTitle}
+          description={COPY.adaptiveDescription}
+        />
+        <AdaptiveSectionCard.Content>
+          <p className="text-sm text-muted-foreground">{COPY.adaptiveBody}</p>
+        </AdaptiveSectionCard.Content>
+      </AdaptiveSectionCard>
 
       <BentoSection title={COPY.mosaicTitle} description={COPY.layoutDescription}>
         <div className="col-span-2 md:col-span-4 lg:col-span-6">

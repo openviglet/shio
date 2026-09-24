@@ -81,6 +81,16 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  AW: {
+    swept: false,
+    why: "seven tasks retiring the console's second chrome, closed by SH963 deleting the root "
+      + "provider once design system 2026.3.11 removed the switch. Every surface a curator sees was "
+      + "already bento before the block opened (Block AR's cutover), so what moved was the machinery "
+      + "that could have rendered the other look: the provider, the hook, the branches that read it "
+      + "and the prose that narrated them. None of README, shio-site or docs-shio describes a chrome "
+      + "switch, so no outward sentence became untrue; `docs/agents/console-ui.md` carries the change, "
+      + "and the census that was the block's criterion reads zero",
+  },
   AV: {
     swept: true,
     why: "nine defect fixes, and seven of them change what a reader can do or see, so the sweep is "

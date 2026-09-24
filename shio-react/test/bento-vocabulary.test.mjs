@@ -96,7 +96,6 @@ const RENDERED = [
   "BentoStatusMarker",
   "BentoTile",
   "BentoTileGrid",
-  "SectionCardChromeProvider",
   "bentoChipClass",
   "resolveBentoLayout",
   "toBentoLayoutEntries",
@@ -126,9 +125,18 @@ const DEFERRED = {
   BentoSaveBar: "SH892 — the fixed half of the morph; BentoFormHero is what composes it.",
   BentoScrollSaveBar: "SH892 — the scroll-driven half, for the same reason.",
   useBentoScrollFade: "SH892 — the hook behind the morph, exercised by whatever renders it.",
-  useSectionChrome:
-    "SH963 — the read side of a switch with one live value. SH959 deleted every reader in this"
-    + " console, the witness here included; the hook leaves with the switch when VDS146 ships.",
+  // SH1088 — 2026.3.11 and .12 ended eleven design-system waits, and these are what they shipped.
+  // Each is a whole surface or a shell piece, so each belongs to the task that adopts it rather
+  // than to a harness that fetches nothing.
+  BentoShell: "SH946 — the shell whose main carries the reading column; it recomposes the root.",
+  BentoPaletteTrigger: "SH946 — the shell's palette control, mounted with the shell.",
+  BENTO_SHELL_SHORTCUTS: "SH946 — the shell's shortcut table, read by the shell it belongs to.",
+  useBentoShellShortcuts: "SH946 — the shell's shortcut hook, exercised by the shell.",
+  BentoDiff: "SH988 — the word-level diff the version dialog adopts over two revisions.",
+  BentoVersionRail: "SH988 — the revision rail beside that diff.",
+  BentoFilterBar: "SH1024 — the filter bar over the query vocabulary, on four surfaces.",
+  EMPTY_FILTERS: "SH1024 — the bar's empty state, used with it.",
+  BentoDataTable: "SH1026 — the table view the content browser offers and does not render.",
 }
 
 test("SH887: the harness accounts for every runtime export the bento layer ships", () => {

@@ -11,10 +11,6 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { createElement as h } from "react"
-import { renderToStaticMarkup } from "react-dom/server"
-import { StaticRouter } from "react-router-dom"
-import { SectionCardChromeProvider } from "@viglet/viglet-design-system/bento"
 import { survey } from "../scripts/surface-digest.mjs"
 import { findElements } from "./support/jsx-elements.mjs"
 import { stripComments } from "./support/source-text.mjs"
@@ -46,14 +42,11 @@ const FOLDER_EDIT = stripComments(
   readFileSync(join(SRC, "app", "content", "folder.edit.page.tsx"), "utf8"))
 const APP = stripComments(readFileSync(join(SRC, "App.tsx"), "utf8"))
 
-test("SH900: the browser is one component with no console chrome of its own", () => {
+test("SH900: the browser is one component, with no Card or PageHeader of its own", () => {
   assert.doesNotMatch(BROWSER, /@\/components\/ui\/card/,
-    "SH900: the content browser imports Card again. Its three panels go through"
-      + " AdaptiveSectionCard so the same component renders console cards or frosted sections —"
-      + " a raw Card is a panel that cannot follow the provider.")
+    "SH900: the content browser imports Card again, a second card beside the Panels it renders.")
   assert.doesNotMatch(BROWSER, /@\/components\/page-header/,
-    "SH900: the content browser imports PageHeader directly, so its header cannot follow the"
-      + " chrome. PageHero is the seam.")
+    "SH900: the content browser imports PageHeader directly. PageHero is its header.")
   assert.match(BROWSER, /PageHero/, "SH900: the browser lost its adaptive header")
 
   /*
@@ -69,18 +62,14 @@ test("SH900: the browser is one component with no console chrome of its own", ()
    */
   const panels = findElements(BROWSER, "Panel").filter((el) => !el.selfClosing)
   assert.ok(panels.length >= 3,
-    `SH900/SH902: only ${panels.length} Panel(s) in the browser; the three panels — the`
-      + " stats strip, the toolbar and the listing — are what the console chrome was.")
+    `SH900/SH902: only ${panels.length} Panel(s) in the browser; its three regions — the`
+      + " stats strip, the toolbar and the listing — are panels.")
   assert.doesNotMatch(BROWSER, /<AdaptiveSectionCard\b/,
-    "SH902: the browser mounts an AdaptiveSectionCard again. If it has no Header child it renders"
-      + " a console card in bento chrome and nothing says so — use Panel, or give it a"
-      + " header and mean it.")
+    "SH902: the browser mounts an AdaptiveSectionCard again. Its regions are panels under a hero"
+      + " that already names the page, not titled sections — use Panel (SH923).")
 })
 
-test("SH900: the bento route wraps that same component in the provider", () => {
-  assert.match(APP, /SectionCardChromeProvider chrome="bento"/,
-    "SH900: nothing in App.tsx provides bento chrome, so the browser renders console cards under"
-      + " the bento shell — the half-migrated look this block exists to end.")
+test("SH900: the bento route mounts that same component", () => {
   assert.match(APP, /<ObjectChildrenPage \/>/,
     "SH900: the bento route mounts something other than the console's own browser component."
       + " If it was copied after all, 960 lines now need every fix twice.")
@@ -95,23 +84,6 @@ test("SH900: a page whose entity is all identity renders no save button", () => 
   assert.match(FOLDER_EDIT, /\{\(\) => null\}/,
     "SH900: the folder editor's render prop returns something. If it grew a form, it needs a"
       + " <form id> and `autosaveOnly` has to go — the two go together.")
-})
-
-test("SH900: the provider really does change what the same tree renders", async () => {
-  // The claim the whole task rests on, exercised rather than described: one element tree, two
-  // chromes. `chrome-adapter.test.mjs` proves it for the section; this proves the arrangement
-  // the route actually uses.
-  const { AdaptiveSectionCard } = await import("@viglet/viglet-design-system/bento")
-  const tree = h(AdaptiveSectionCard, null,
-    h(AdaptiveSectionCard.StaticHeader, { icon: () => null, title: "T" }),
-    h(AdaptiveSectionCard.Content, null, h("span", null, "body")))
-  const render = (chrome) => renderToStaticMarkup(
-    h(StaticRouter, { location: "/bento/content" },
-      h(SectionCardChromeProvider, { chrome }, tree)))
-
-  assert.notEqual(render("console"), render("bento"),
-    "SH900: the provider no longer changes the rendering, so mounting the browser under it"
-      + " achieves nothing and the bento route shows console chrome.")
 })
 
 test("SH900: the survey sees the browser's seams, and the two folder surfaces", () => {

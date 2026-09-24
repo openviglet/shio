@@ -15,8 +15,8 @@ import { endOfOpeningTag, findElements } from "./support/jsx-elements.mjs"
  * SH928 — six readers scan JSX through this helper and none of them scanned the helper.
  *
  * `findElements` is the shared answer to "which `<Tag>`s does this file render, and what is inside
- * them". `chrome-adapter`, `bento-a11y`, `bento-bespoke-slice`, `bento-browser`, `bento-site-slice`
- * and `spa-contexts` all ask it. It had no test of its own, and it was wrong: `bodyOf` counted
+ * them". `bento-a11y`, `bento-bespoke-slice`, `bento-browser`, `bento-site-slice` and
+ * `spa-contexts` all ask it. It had no test of its own, and it was wrong: `bodyOf` counted
  * every `<Tag` before the next `</Tag>` as a nested open, self-closing children included, so a
  * container holding thirty of them was short thirty closers and was dropped.
  *

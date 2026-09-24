@@ -15,24 +15,50 @@ or by the product passing a prop. Almost all of the divergence between two produ
 from this layer is an argument about that ownership rather than about a component.
 [docs/reference/page-anatomy.dc.html](reference/page-anatomy.dc.html) draws it.
 
-**The nav is the rail** — fixed, one width, desktop only, with its gutter reserved by
-`bento-rail-gutter` on whatever wraps the routed page (§7).
+**`BentoShell` is the shell.** Pass it the rail, the header's two edges and the routed
+page; it owns the rest of this section.
+
+```tsx
+<BentoShell
+  rail={<BentoNavRail groups={groups} homeRoute={ROUTES.HOME} />}
+  headerStart={<ProductMark />}
+  headerEnd={<BentoUserMenu accountRoute={ROUTES.ACCOUNT} logoutUrl={ROUTES.LOGOUT} />}
+>
+  <Outlet />
+</BentoShell>
+```
+
+**The nav is the rail** — fixed, one width, desktop only. The shell reserves its gutter
+when it is given one (§7).
 
 **The header carries a set, in this order:** the mark and wordmark; a back control where
 the route has a parent; the palette trigger, with the platform's own keyboard hint. On the
 trailing edge: the locale where a second one ships, the ground, and the signed-in user.
-`BentoBackToTop` sits at the corner.
+The trigger is `BentoPaletteTrigger`, and `useBentoShellShortcuts` binds the keys it and
+`BentoShortcutsDialog` show, so no product writes a keydown listener for them.
 
 Two things the header is not. It is not a second always-visible nav — the rail is the nav
 and the palette is the mobile one, and a second eats the width the content needs. And it is
 not a home for one surface's controls: a switcher or a pending count belongs to the surface
 that owns it, not to every page that renders beneath it.
 
+**The corner is the shell's.** The assistant dock, passed as `dock`, takes it, and
+`BentoBackToTop` stacks above the dock. Neither is fixed to the viewport inside the shell:
+two components each pinning themselves to one corner is how the dock came to cover the
+button.
+
 **The shell owns the reading column.** `main` sets the max width, the gutters and the
 vertical rhythm once, so every page begins and ends on the same line; a page sets none of
 the three. A narrower column for a single-question form is a variant the shell offers by
 name, not a class each page repeats. The moment pages set their own they disagree, and the
 defect exists only *between* screens — which is why nobody reviewing one of them sees it.
+
+`column` names the variant: `default` for every page, `narrow` for a single-question
+form, `wide` for a table or a board, and `full` for a tool that owns the viewport, such as
+a chat, which fills the width and height and scrolls inside itself. The route decides the
+variant and passes it to the shell; the page never does. Each width is a custom property
+(`--bento-column-default`, `-narrow`, `-wide`), so a product re-keys one once.
+`viglet-ds-page-lint` reports a page whose outermost element sets any of the three.
 
 **A page may own an aside**, inside that column and scrolling with it: filters, a contents
 list, a conversation. That is not the console era's sidebar, which collapses, remembers its
@@ -60,6 +86,18 @@ there.
 **A list screen** is one `BentoListPage` call with a `renderTile`. Use
 `BentoEntityTile` for the common icon-chip + status-pill + title + meta shape;
 hand-roll a tile only when the entity genuinely needs a different layout.
+
+A list a reader sorts, selects a range of and acts on in bulk, or one that runs
+to thousands of rows, is `BentoDataTable` instead. It mounts only the visible rows,
+its headers sort and say how, a row is reachable and selectable from the keyboard,
+and row actions are a menu of named items. Pass the rows, the columns and the
+actions, and store the column layout it reports. Never build a table from `Table`
+and a scroll container: that is the list every console rebuilt before this one.
+
+Filters over a list are `BentoFilterBar`: a search field, the facets you declare,
+and the active filters as removable chips. It holds no state. Keep its value where
+the URL can hold it, filter your rows with it, and pass the same value to the
+table as `selectionScope`, so a selection never outlives the rows it was made on.
 
 **A form screen with its own hero** is `BentoFormHero` as the first child inside
 the `<form>` it submits. It renders both halves of the morph itself.
@@ -165,10 +203,13 @@ stylesheet imports this package and then declares its own `:root`, so it lands
 after the preset's dark block at the same specificity and in no layer. One value
 set there wins on *both* grounds, and the dark ground silently gets the light
 value. The inputs are read per ground, so you never write a dark block.
+`viglet-ds-page-lint` reports a stylesheet or a style object that sets it.
 
 The solid fill carries text, so that pair holds 4.5:1 on both grounds (§6). An
 accent stop at full chroma usually does not, so this value is often a deeper step
-than the one the chip is drawn with.
+than the one the chip is drawn with. `viglet-ds-page-lint --contrast <your
+stylesheet>` measures every pair your re-key touches, on both grounds, before a
+screenshot does.
 
 If you need a one-off tint, set `--bento-tone-from` / `--bento-tone-to` on a
 subtree instead of touching the tokens.
@@ -199,7 +240,18 @@ push, and a violation fails the build.
   `{boolean}` expression is a lint failure.
 - **Headings increase by one.** The hero is `h1`, so a section under it is `h2`
   — which is what `BentoFormSection` renders by default. A repeated label, like
-  the sticky bar's title, is not a heading at all.
+  the sticky bar's title, is not a heading at all. `BentoEmptyState`'s title is an
+  `h2` too; pass `titleLevel={3}` when it sits inside a section.
+- **Busy is not disabled.** A control whose action is running takes `loading`:
+  it says so with `aria-busy`, ignores a second press and keeps focus, where
+  `disabled` would drop the focus of the button just pressed as the result is
+  announced. A Save with nothing to save is `aria-disabled`, focusable and inert,
+  for the same reason. `disabled` is for a control that is genuinely unavailable.
+- **Landmarks and focus are the shell's.** `BentoShell` renders the one `main`,
+  labelled, and a skip link as the first thing a keyboard reaches. On a route
+  change it moves focus to the new page's `h1` and announces it, so give every
+  page exactly one `h1` (the hero is one) and never manage focus on navigation
+  yourself.
 - **Contrast holds at 4.5:1**, including text on a tinted surface. Tinted pills
   need the darker text token in light mode.
 - **Reduced motion**: every animation in `bento.css` is turned off under
@@ -213,10 +265,10 @@ push, and a violation fails the build.
   tiles and `row-span-2` for a featured one. **Keep spans in multiples of two**
   so tiles reflow cleanly at every breakpoint — this is what keeps two consoles'
   grids aligned.
-- The nav rail is desktop-only. Reserve its gutter with `bento-rail-gutter` on
-  whatever wraps the routed page. On mobile, navigation is the header's command
-  trigger and the global shortcut; do not add a second always-visible nav that
-  eats mobile width.
+- The nav rail is desktop-only. `BentoShell` reserves its gutter; a shell that is
+  still a product's own puts `bento-rail-gutter` on whatever wraps the routed page.
+  On mobile, navigation is the header's command trigger and the global shortcut;
+  do not add a second always-visible nav that eats mobile width.
 - There is **no sidebar provider**, and no context between the shell's pieces.
   The console era needs one because its sidebar collapses, remembers and pushes
   content; the rail is fixed, one width, and hidden below `md`. That is about the

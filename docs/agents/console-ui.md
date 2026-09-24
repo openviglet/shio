@@ -2545,3 +2545,25 @@ the line appeared 809 ms after the write. Two things to know when running it. Th
 `main`, so the check reads the body. The line's full text is what gets stripped before comparing, in
 both languages. What an open tab costs is SH967's `events.idle` budget: four statements per pass,
 per tab.
+
+## Design system 2026.3.12, and the waits it ended (SH1088, with SH963)
+
+The console held `@viglet/viglet-design-system` at 2026.3.10 while npm served .11 and .12. It now
+takes `^2026.3.12`. The release did two things at once:
+
+- **It removed the chrome switch (VDS146).** `SectionCardChromeProvider`, `useSectionChrome` and
+  `AdaptiveSectionCard`'s console branch are gone, so the root provider in `App.tsx` went with them.
+  That was SH963, absorbed here because the console did not compile without it. `AdaptiveSectionCard`
+  now renders the bento section with nothing above it. SH892's two structural rules are retired: a
+  header-less card renders bento, and a nested `Content` keeps its body. `chrome-adapter.test.mjs`
+  holds the new facts. SH957's census is an empty list asserted to stay empty, and the three guards
+  that must name the switch to refuse it are listed in `REFUSES_THE_SWITCH`.
+- **It ended eleven waits.** `design-system-waits.test.mjs` read each one by name. SH963 shipped, and
+  SH943, SH946, SH947, SH964, SH966, SH968, SH988, SH1007, SH1024 and SH1026 left the list and lost
+  their `DS VDS` dep. `PINNED` is 2026.3.12, and four waits remain: SH944, SH948, SH1051 and SH1053.
+  The nine new bento exports are in the vocabulary harness's `DEFERRED`, each under the task that
+  adopts it.
+
+One reader had to learn something. SH891's key scan claimed "no false positives" over the bundle,
+and 2026.3.11 broke it: `BentoActionsMenu` gives actions dotted ids (`entity.delete`), and a warning
+quotes one inside a template string. `keysIn` now skips `id:` values and template-literal text.

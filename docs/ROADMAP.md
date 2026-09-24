@@ -11,23 +11,18 @@
 
 ## Block AU — The design system's consumer contract, adopted and gated
 
-- 📋 **SH943** (deps: DS VDS129) **the package declares three of the seven design-system entries Shio's product source imports** — consumers.json omits ./bento, ./bento.css, ./router and ./i18n, so the parity digest the package's guards read describes a console four entries smaller than the real one. → §LX.4
+- 📋 **SH943** (deps: —) **the package declares three of the seven design-system entries Shio's product source imports** — consumers.json omits ./bento, ./bento.css, ./router and ./i18n, so the parity digest the package's guards read describes a console four entries smaller than the real one. → §LX.4
 - 📋 **SH944** (deps: SH941 ✅, DS VDS135) **the design system reaches this repository as copied files, never as an enabled Claude Code plugin** — Shio already ships claude-plugin/ with a manifest, commands and skills, so the pattern a design-system plugin would follow is in this tree and unread. → §LX.5
-- 📋 **SH946** (deps: SH941 ✅, DS VDS131) **six bento pages set their own max-width, gutters and rhythm, at three different widths** — The contract gives the reading column to the shell, but with no shell exported each page invents one, and the defect exists only between screens. → §LX.7
-- 📋 **SH947** (deps: SH946, SH942 ✅, DS VDS132) **the contract's two named rules have no check inside Shio's own test run** — A page setting its own column and a stylesheet setting --vg-primary directly would both pass pnpm test today, since nothing here spawns a page lint. → §LX.8
+- 📋 **SH946** (deps: SH941 ✅) **six bento pages set their own max-width, gutters and rhythm, at three different widths** — The contract gives the reading column to the shell, but with no shell exported each page invents one, and the defect exists only between screens. → §LX.7
+- 📋 **SH947** (deps: SH946, SH942 ✅) **the contract's two named rules have no check inside Shio's own test run** — A page setting its own column and a stylesheet setting --vg-primary directly would both pass pnpm test today, since nothing here spawns a page lint. → §LX.8
 - 📋 **SH948** (deps: DS VDS130) **copy-ds.cmd cannot find the design system, so a package change cannot be tried in Shio unpublished** — It forwards to use:local, whose walk from the package's position on disk now reaches a worktree container, and the wrapper adds nothing but that path. → §LX.9
-- 📋 **SH1088** (deps: —) **eight tasks wait on design-system work that is published, because this console holds 2026.3.10** — VDS129 to VDS135 and VDS140 are all inside 2026.3.11, which npm serves and the lockfile does not take, and the same release removes two exports App.tsx imports. → §LX.11
-
-## Block AW — One chrome: bento, and nothing left that names another
-
-- 📋 **SH963** (deps: SH958 ✅, DS VDS146) **Shio still has to declare a chrome at all, because the package keeps a switch with a console value** — Until the design system drops SectionChrome the root provider must stay, and while it stays the census cannot reach zero. → §LXII.7
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
-- 📋 **SH964** (deps: DS VDS133) **the console mounts no Viglet assistant, so its 106 toasts reach no mascot and no dock** — VigletAvatar, VigletAssistant and useAssistantNotifications shipped in the design system's Block E, but 2026.3.10 is installed here and VDS133 gave them the shell's corner after it. → §LXIII.1
+- 📋 **SH964** (deps: —) **the console mounts no Viglet assistant, so its 106 toasts reach no mascot and no dock** — VigletAvatar, VigletAssistant and useAssistantNotifications shipped in the design system's Block E, but 2026.3.10 is installed here and VDS133 gave them the shell's corner after it. → §LXIII.1
 - 📋 **SH965** (deps: SH964) **nothing checks that a console write reports an outcome, so a silent save leaves the mascot idle** — useAssistantNotifications reads toasts, so a mutation that resolves without one is invisible to the dock, its announcer and the curator at the same moment. → §LXIII.2
-- 📋 **SH966** (deps: SH964, SH955 ✅, DS VDS134) **a refused save reaches the dock as the word Error, with the server's fix left behind** — Once the console reads problem documents, the dock can speak the detail and offer fix, didYouMean and a jump to the failing field instead of a toast. → §LXIII.3
-- 📋 **SH968** (deps: SH967 ✅, DS VDS134) **agent runs and review arrivals surface only as a header count the curator cannot open** — SH936 put the pending count beside the account menu, while the contract says a count belongs to the surface that owns it, and the dock is where the system reports. → §LXIII.5
+- 📋 **SH966** (deps: SH964, SH955 ✅) **a refused save reaches the dock as the word Error, with the server's fix left behind** — Once the console reads problem documents, the dock can speak the detail and offer fix, didYouMean and a jump to the failing field instead of a toast. → §LXIII.3
+- 📋 **SH968** (deps: SH967 ✅) **agent runs and review arrivals surface only as a header count the curator cannot open** — SH936 put the pending count beside the account menu, while the contract says a count belongs to the surface that owns it, and the dock is where the system reports. → §LXIII.5
 - ⏳ **SH969** (deps: SH967 ✅, SH964) **a scheduled publish that fails becomes an agent incident, and no curator surface ever reads it** — The dock still has to report a failure with open and retry actions, a success naming the page, and an unread failure for a curator who had no screen open. → §LXIII.6
 - ⏳ **SH970** (deps: SH967 ✅, SH964) **a form submission lands as an ordinary draft in a folder, and nothing tells anyone it arrived** — The dock still has to report an arrival with tone attention, a caption, open and archive actions, and one report when several arrive together. → §LXIII.7
 - 📋 **SH971** (deps: SH968) **a curator cannot choose what the dock reports or quiet the mascot** — An author, a reviewer and an operator need different subsets of outcomes, agent runs, schedules and arrivals, and the only control today is the browser's reduced-motion setting. → §LXIII.8
@@ -45,7 +40,7 @@
 
 ## Block AZ — What the content said before
 
-- 📋 **SH988** (deps: SH987 ✅, DS VDS140) **the version dialog compares two whole values and shows nothing at all for a created page** — The review diff is gated on a published twin existing, so a create, the commonest agent output, has no review affordance, and a changed body renders as two walls of text. → §LXV.4
+- 📋 **SH988** (deps: SH987 ✅) **the version dialog compares two whole values and shows nothing at all for a created page** — The review diff is gated on a published twin existing, so a create, the commonest agent output, has no review affordance, and a changed body renders as two walls of text. → §LXV.4
 
 ## Block BA — Releases, scheduling and the publish gate
 
@@ -55,7 +50,7 @@
 ## Block BB — The curator's return channel, and the conversation with the agent
 
 - 📋 **SH1006** (deps: SH1003 ✅, SH1000 ✅, SH967 ✅, SH964) **a curator cannot ask the connected agent anything from the assistant dock** — VigletAssistant opens into a chat only when a product supplies onSend, and Shio hosts no model, so the chat must reach the external agent and nothing relays to it. → §LXVII.8
-- 📋 **SH1007** (deps: SH1006, SH1001 ✅, DS VDS134) **an agent's answer in the dock cannot carry the change it proposes** — A reply that says it drafted a new hero leaves the curator searching for the draft, while each dock message can offer an action and review already groups changes by run. → §LXVII.9
+- 📋 **SH1007** (deps: SH1006, SH1001 ✅) **an agent's answer in the dock cannot carry the change it proposes** — A reply that says it drafted a new hero leaves the curator searching for the draft, while each dock message can offer an action and review already groups changes by run. → §LXVII.9
 
 ## Block BC — The authoring surface, field by field
 
@@ -70,8 +65,8 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- 📋 **SH1024** (deps: SH1022 ✅, SH1023 ✅, DS VDS139) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — BD3 gives four surfaces one query grammar and a person has no control for it, so drafts of one type in one locale is a question only a URL can ask. → §LXIX.5
-- 📋 **SH1026** (deps: SH1025 ✅, DS VDS138) **three view-mode buttons highlight when pressed and render the identical list** — viewMode is read only to colour the button that set it, so the grid and table views a curator is offered do not exist, and the list below is one unconditional map. → §LXIX.7
+- 📋 **SH1024** (deps: SH1022 ✅, SH1023 ✅) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — BD3 gives four surfaces one query grammar and a person has no control for it, so drafts of one type in one locale is a question only a URL can ask. → §LXIX.5
+- 📋 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — viewMode is read only to colour the button that set it, so the grid and table views a curator is offered do not exist, and the list below is one unconditional map. → §LXIX.7
 - 📋 **SH1097** (deps: SH1028 ✅) **the shortcuts sheet advertises a key nothing binds and hides the one the shell does bind** — BentoShortcutsDialog renders a fixed list naming a global question mark, which Shio has never bound, and omits the slash SH889 added. → §LXIX.10
 
 ## Block BE — Media: what the bytes mean
@@ -131,12 +126,6 @@
   edit is committed in vigletdocs. Until then it exists only in that working tree, so
   the green JS gate here rests on an uncommitted file and any other checkout still reads
   the old matrix.
-
-## Done when — Block AW
-
-- **The two-chrome census reads zero** shio-react/test/chrome-vocabulary-census.test.mjs
-  prints src and test/scripts/e2e line counts on every pnpm test; STILL_TWO_CHROMES is
-  empty and the run prints 0 lines on both sides.
 
 ## Done when — SH969
 

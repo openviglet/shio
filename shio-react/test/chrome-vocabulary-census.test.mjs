@@ -42,9 +42,9 @@ import { AREAS, census } from "./support/chrome-vocabulary.mjs"
  * lowered or deleted in the same commit — which is what makes each of SH958–SH962 say, in its own
  * diff, how much it took.</p>
  *
- * <p><b>The list reaching zero is Block AW's acceptance criterion.</b> It cannot, while SH963 waits
- * on the design system: `SectionCardChromeProvider` is its export, and the root provider has to
- * name a chrome until the package stops having two.</p>
+ * <p><b>The list reaching zero is Block AW's acceptance criterion, and it reached it in SH963.</b>
+ * The design system dropped the switch (VDS146, 2026.3.11), the root provider went, and the debt
+ * below is empty and asserted to stay empty.</p>
  */
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, "..")
@@ -53,38 +53,34 @@ const ROOT = join(HERE, "..")
 const SELF = ["test/chrome-vocabulary-census.test.mjs", "test/support/chrome-vocabulary.mjs"]
 
 /**
+ * SH963 — the files that name the retired switch in order to refuse it, each with why.
+ *
+ * <p>Not debt. Each is a guard that fails if the vocabulary comes back, and a guard against a name
+ * has to spell the name. Listed rather than silently excluded, so a fourth file has to argue its way
+ * in here the way a debt line had to.</p>
+ */
+const REFUSES_THE_SWITCH = {
+  "test/chrome-provider-root.test.mjs":
+    "fails if any console source names the provider or its hook again",
+  "test/outside-shell-chrome.test.mjs":
+    "fails if any component calls the hook again (SH959's walk)",
+  "test/chrome-adapter.test.mjs":
+    "fails if the package exports a chrome switch again, and says which SH892 rules it retired",
+}
+const EXCLUDED = [...SELF, ...Object.keys(REFUSES_THE_SWITCH)]
+
+/**
  * Every file still naming the two-chrome vocabulary, with its line count. **The debt.**
  *
  * <p>Lower a number or delete a line in the commit that removes the references; add one only in a
  * diff that says why a new reference to a retired era is the right call.</p>
  */
 /*
- * SH962 — what is left is the switch itself, and every line of it is SH963's.
- *
- * The narration went: comments now say what the code does, in one chrome, and the migration's
- * reasoning is in git log. Each entry below names the design system's `SectionCardChromeProvider`
- * or `useSectionChrome`, or the test that holds the package's two-branch `AdaptiveSectionCard`, so
- * none of them can leave before the package stops exporting a second chrome (VDS146) and SH963
- * deletes the root provider:
- *
- * - App.tsx: the root provider and its import;
- * - the vocabulary page: the provider around its `AdaptiveSectionCard` specimen;
- * - chrome-adapter, chrome-provider-root, bento-browser's SH900 render: tests of the provider and
- *   of the package's two branches, and the two source files that point at chrome-adapter by name;
- * - bento-vocabulary.test: the export ledger naming both;
- * - outside-shell-chrome: the root-provider detection and the check that no component reads the hook.
+ * SH963 — empty. The last entries were the switch itself and the tests of its two branches; the
+ * package removed the switch, the root provider went with it, and the guards that refuse its return
+ * are listed in REFUSES_THE_SWITCH above rather than counted here.
  */
-const STILL_TWO_CHROMES = {
-  "src/App.tsx": 3,
-  "src/app/content/post-type.edit.page.tsx": 1,
-  "src/app/system/bento-vocabulary.page.tsx": 4,
-  "test/bento-browser.test.mjs": 4,
-  "test/bento-vocabulary.test.mjs": 2,
-  "test/chrome-adapter.test.mjs": 10,
-  "test/chrome-provider-root.test.mjs": 10,
-  "test/jsx-elements.test.mjs": 1,
-  "test/outside-shell-chrome.test.mjs": 7,
-}
+const STILL_TWO_CHROMES = {}
 
 /** Lines and files, split the way §LXII.1 split them: product source, and everything else. */
 function totals(found) {
@@ -98,7 +94,7 @@ function totals(found) {
 }
 
 test("SH957: the two-chrome vocabulary is a named debt that may only shrink", () => {
-  const { found, byProbe } = census(ROOT, SELF)
+  const { found, byProbe } = census(ROOT, EXCLUDED)
   const { src, rest } = totals(found)
 
   // Printed on every run, both halves, because a count somebody has to open a file to learn is the
@@ -120,22 +116,16 @@ test("SH957: the two-chrome vocabulary is a named debt that may only shrink", ()
 })
 
 /**
- * Files whose only census hits are prose, and why each is not narration. **Two, both a file name.**
+ * Files whose only census hits are prose, and why each is not narration. **None, since SH963.**
  *
- * <p>SH962 removed the comments that explained code by the migration that produced it. What that
- * leaves is a rule this can check: prose about two chromes survives only in a file that also names
- * the switch itself — the provider or the hook — because it is describing that switch. A file whose
- * only hits are comments is narration of a retired look. These two are the exception the heuristic
- * cannot see past: each names `chrome-adapter.test.mjs`, a test of the package's two branches, by
- * its file name, and goes when SH963 deletes that test.</p>
+ * <p>SH962 removed the comments that explained code by the migration that produced it, and left two
+ * that named `chrome-adapter.test.mjs` by file name while it tested the package's two branches.
+ * SH963 rewrote both when the branches went. A file here now is narration of a retired look.</p>
  */
-const NAMES_A_SWITCH_TEST = [
-  "src/app/content/post-type.edit.page.tsx",
-  "test/jsx-elements.test.mjs",
-]
+const NAMES_A_SWITCH_TEST = []
 
 test("SH962: prose about two chromes survives only beside the switch it describes", () => {
-  const { probesByFile } = census(ROOT, SELF)
+  const { probesByFile } = census(ROOT, EXCLUDED)
   const proseOnly = Object.entries(probesByFile)
     .filter(([, probes]) => probes.every((name) => name === "comment"))
     .map(([path]) => path)

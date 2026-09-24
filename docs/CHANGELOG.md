@@ -1678,6 +1678,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH942** — Drift in the vendored page reference now fails pnpm test, naming the file — planted drift of each kind proves the check reads them, and reformatting canvas.json stays green (design §LX.3 recorded in `docs/agents/console-ui.md`).
 - **SH945** — The five surfaces this round invents are drawn, each stating what it decides and the direction it did not take, with the rejected release tray kept as its own artboard (design §LX.6 recorded in `docs/agents/console-ui.md`).
 - **SH949** — A session in this tree now loads the shio@openviglet plugin a stranger installs, and the two skill sets are split by whether a session drives an instance or changes this source tree (design §LX.10 recorded in `agents.md`).
+- **SH1088** — The console takes design system 2026.3.12: the chrome switch it removed left with SH963, eleven waits it ended left the waits list, and ten lines lost their DS dep and are ordinary work (design §LX.11 recorded in `docs/agents/console-ui.md`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 
@@ -1699,6 +1700,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH960** — The surface digest drops its era field, which labelled 33 of 45 surfaces console, and names the seams pages compose, so 1 surface instead of 33 digests no chrome; the empty page census is deleted (design §LXII.4 superseded: every surface already reported bento; measured, 33 of 45 reported console) (design §LXII.4 recorded in `docs/agents/console-ui.md`).
 - **SH961** — The console's pages live in one tree by domain (content, admin, editor, system) instead of two trees named after the era each page was migrated from; 52 files moved with history (design §LXII.5 recorded in `docs/agents/console-ui.md`).
 - **SH962** — The console's comments and its area doc describe one chrome, the migration sections folding into one record of today's rules, and the census holds only the switch SH963 removes (design §LXII.6 recorded in `docs/agents/console-ui.md`).
+- **SH963** — The root chrome provider is gone with the switch VDS146 removed, the design-system floor is 2026.3.12, and the two-chrome census is an empty list held empty (design §LXII.7 recorded in `docs/agents/console-ui.md`).
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
