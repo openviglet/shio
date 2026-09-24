@@ -93,15 +93,25 @@ public class ShReviewAPI {
     @Operation(summary = "Approve, reject or hold this run's changes, one at a time")
     public ShReviewOutcome decide(@PathVariable String session,
                                   @RequestBody List<ShReviewService.Decision> decisions,
+                                  // SH1084 — SH998's waiver, as the publish button takes it: an
+                                  // APPROVE publishes, so a gate can stop it.
+                                  @RequestParam(name = "override", required = false) String override,
                                   Principal principal) {
-        return shReviewService.decide(session, decisions, name(principal));
+        return shReviewService.decide(session, decisions, name(principal), override);
     }
 
-    /** Publish every draft this run wrote — the step SH107 keeps the agent from taking. */
+    /**
+     * Publish every draft this run wrote — the step SH107 keeps the agent from taking.
+     *
+     * <p>SH1084 — each publish passes the site's gates. A page a gate stops comes back in
+     * {@code skipped} with the gate's reason, and {@code override=<reason>} is how it goes anyway.</p>
+     */
     @PostMapping("/sessions/{session}/approve")
     @Operation(summary = "Publish the drafts this agent run wrote")
-    public ShReviewOutcome approve(@PathVariable String session, Principal principal) {
-        return shReviewService.approve(session, name(principal));
+    public ShReviewOutcome approve(@PathVariable String session,
+                                   @RequestParam(name = "override", required = false) String override,
+                                   Principal principal) {
+        return shReviewService.approve(session, name(principal), override);
     }
 
     /** Undo it, newest change first, using SH14 restore and the SH55 trash. */

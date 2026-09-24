@@ -31,6 +31,7 @@ import com.viglet.shio.api.review.dto.ShReviewOutcome;
 import com.viglet.shio.api.review.dto.ShReviewPending;
 import com.viglet.shio.api.review.dto.ShReviewSession;
 import com.viglet.shio.api.folder.ShFolderWriteService;
+import com.viglet.shio.api.gate.ShPublishGateService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.history.ShHistory;
@@ -104,6 +105,8 @@ public class ShReviewService {
     private final ShAgentRenderService shAgentRenderService;
     private final ShPostRevisionService shPostRevisionService;
     private final ShReviewDecisionRepository shReviewDecisionRepository;
+    /** SH1084 — the site's publish gates, which Approve used to publish around. */
+    private final ShPublishGateService shPublishGateService;
 
     public ShReviewService(ShHistoryRepository shHistoryRepository,
                           ShPostUnifiedRepository shPostUnifiedRepository,
@@ -116,7 +119,9 @@ public class ShReviewService {
                           ShSiteRepository shSiteRepository,
                           ShAgentRenderService shAgentRenderService,
                           ShPostRevisionService shPostRevisionService,
-                          ShReviewDecisionRepository shReviewDecisionRepository) {
+                          ShReviewDecisionRepository shReviewDecisionRepository,
+                          ShPublishGateService shPublishGateService) {
+        this.shPublishGateService = shPublishGateService;
         this.shHistoryRepository = shHistoryRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
@@ -178,11 +183,22 @@ public class ShReviewService {
      */
     @Transactional
     public ShReviewOutcome decide(String session, List<Decision> decisions, String actor) {
-        return decide(session, decisions, actor, "decide");
+        return decide(session, decisions, actor, null);
+    }
+
+    /**
+     * As {@link #decide(String, List, String)}, with SH998's waiver for the approvals a publish gate
+     * stops (SH1084). One reason covers the call, because the curator writes it once for what they
+     * chose to send past the check.
+     */
+    @Transactional
+    public ShReviewOutcome decide(String session, List<Decision> decisions, String actor,
+                                  String waiver) {
+        return decide(session, decisions, actor, "decide", waiver);
     }
 
     private ShReviewOutcome decide(String session, List<Decision> decisions, String actor,
-                                   String label) {
+                                   String label, String waiver) {
         List<String> done = new ArrayList<>();
         List<ShReviewOutcome.Skipped> skipped = new ArrayList<>();
         Map<String, ShHistory> newest = newestPerPost(session);
@@ -199,7 +215,7 @@ public class ShReviewService {
                 throw new RejectionNeedsReasonException(postId);
             }
             try {
-                apply(session, decision, newest.get(postId), actor)
+                apply(session, decision, newest.get(postId), actor, waiver)
                         .ifPresentOrElse(reason -> skipped.add(
                                         new ShReviewOutcome.Skipped(postId, reason)),
                                 () -> done.add(postId));
@@ -216,9 +232,10 @@ public class ShReviewService {
     }
 
     /** Carry out one decision, and record it whatever it was. */
-    private Optional<String> apply(String session, Decision decision, ShHistory entry, String actor) {
+    private Optional<String> apply(String session, Decision decision, ShHistory entry, String actor,
+                                   String waiver) {
         Optional<String> refused = switch (decision.decision()) {
-            case APPROVE -> approveOne(decision.postId(), actor);
+            case APPROVE -> approveOne(decision.postId(), actor, waiver);
             case REJECT -> entry == null
                     ? Optional.of("this run changed nothing about that post")
                     : revertOne(entry, decision.postId(), actor);
@@ -232,14 +249,28 @@ public class ShReviewService {
     }
 
     /** Publish one draft this run wrote, or say why not. */
-    private Optional<String> approveOne(String postId, String actor) {
+    private Optional<String> approveOne(String postId, String actor, String waiver) {
         if (state(postId, ShPostState.DRAFT).isEmpty()) {
             return Optional.of("no draft to publish");
         }
         // SH995 — approving publishes, and approval is exactly the act a team wants to hold apart
         // from writing: the reviewer needs PUBLISH, not WRITE.
         shContentAclService.requirePublish(postId);
-        shPostUnifiedWriteService.publish(postId, actor);
+        // SH1084 — and it passes the site's publish gates, which Approve used to skip: a check the
+        // one press the queue exists for could publish around was a rule that read as enforced. A
+        // gate that stops this post is its row in `skipped`, not the end of the approval, because a
+        // curator approving eleven pages wants the nine that passed. A bad waiver still throws: that
+        // is the caller's to fix.
+        String waived;
+        try {
+            waived = shPublishGateService.requirePost(postId, waiver);
+        } catch (ShPublishGateService.GateFailedException stopped) {
+            // The title names the gate and the page ("gate 'ready' stops post:..."), which is what a
+            // curator reading the skipped list needs; the detail is the check's own findings.
+            return Optional.of(stopped.problem().toProblemDetail().getTitle()
+                    + " — approve it again with override=<reason> to publish anyway");
+        }
+        shPostUnifiedWriteService.publish(postId, actor, waived);
         return Optional.empty();
     }
 
@@ -547,12 +578,18 @@ public class ShReviewService {
      */
     @Transactional
     public ShReviewOutcome approve(String session, String actor) {
+        return approve(session, actor, null);
+    }
+
+    /** As {@link #approve(String, String)}, with SH998's waiver for a failing gate (SH1084). */
+    @Transactional
+    public ShReviewOutcome approve(String session, String actor, String waiver) {
         // SH1001 — the same call, over every change. Two code paths for one decision is how the
         // whole-run gesture and the per-change one come to disagree about what approve means:
         // which permission it asks for, what it records, what it skips.
         return decide(session, touchedPosts(session).stream()
                 .map(postId -> new Decision(postId, Kind.APPROVE, null))
-                .toList(), actor, "approve");
+                .toList(), actor, "approve", waiver);
     }
 
     /**
@@ -569,7 +606,7 @@ public class ShReviewService {
         // per-change call, and a whole-run verb exempt from that rule would be the door.
         return decide(session, newestPerPost(session).keySet().stream()
                 .map(postId -> new Decision(postId, Kind.REJECT, WHOLE_RUN_REVERT))
-                .toList(), actor, "revert");
+                .toList(), actor, "revert", null);
     }
 
     /** The reason a whole-run revert records, since the gesture is its own explanation (SH1001). */

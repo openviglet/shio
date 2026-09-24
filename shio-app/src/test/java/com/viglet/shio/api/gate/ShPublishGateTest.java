@@ -92,6 +92,9 @@ class ShPublishGateTest {
     private ShPostUnifiedAPI api;
     @Autowired
     private ShPostRevisionService shPostRevisionService;
+    /** SH1084 — the review queue, whose Approve publishes. */
+    @Autowired
+    private com.viglet.shio.api.review.ShReviewService shReviewService;
     @Autowired
     private ShHistoryRepository shHistoryRepository;
     @Autowired
@@ -174,7 +177,7 @@ class ShPublishGateTest {
             entityManager.persist(type);
 
             for (String url : List.of("/broken", "/sound", "/console", "/waived", "/unreasoned",
-                    "/agent-waived")) {
+                    "/agent-waived", "/patched", "/approved")) {
                 ShPostUnified draft = new ShPostUnified();
                 draft.setId(SITE + url.replace('/', '-'));
                 draft.setState(ShPostState.DRAFT);
@@ -266,6 +269,51 @@ class ShPublishGateTest {
         assertThatThrownBy(() -> api.publish(postId, null, false, null, false, () -> "ana"))
                 .isInstanceOf(ShPublishGateService.GateFailedException.class);
         assertThat(live("/console")).isFalse();
+    }
+
+    @Test
+    @DisplayName("SH1084: the editor's save-and-publish passes the gate, and a waiver takes it through")
+    void theEditorsPatchIsStoppedToo() {
+        String postId = SITE + "-patched";
+        ShPostUnifiedAPI.PatchPayload saveAndPublish = new ShPostUnifiedAPI.PatchPayload(
+                java.util.Map.of("body", objectMapper.getNodeFactory().stringNode("<p>edited</p>")), true);
+
+        assertThatThrownBy(() -> api.patch(postId, saveAndPublish, null, null, () -> "ana"))
+                .as("SH1084: PATCH with publish went live past a failing gate, which read as enforced "
+                        + "from the button one route over")
+                .isInstanceOf(ShPublishGateService.GateFailedException.class);
+        assertThat(live("/patched")).isFalse();
+
+        api.patch(postId, saveAndPublish, null, "the editor's fix ships with tomorrow's release",
+                () -> "ana");
+        assertThat(live("/patched"))
+                .as("SH1084: SH998's waiver reaches this route, or a gate would strand the editor")
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("SH1084: Approve passes the gate, reports the page it stops, and a waiver takes it")
+    void theReviewQueuesApproveIsStoppedToo() {
+        String postId = SITE + "-approved";
+        String session = "sh1084-" + RUN;
+        List<com.viglet.shio.api.review.ShReviewService.Decision> approve = List.of(
+                new com.viglet.shio.api.review.ShReviewService.Decision(postId,
+                        com.viglet.shio.persistence.model.review.ShReviewDecision.Kind.APPROVE, null));
+
+        var stopped = shReviewService.decide(session, approve, "ana");
+        assertThat(stopped.skipped())
+                .as("SH1084: Approve published past a failing gate; now the page comes back as a "
+                        + "skipped row naming the gate, beside whatever else did pass")
+                .anySatisfy(row -> {
+                    assertThat(row.postId()).isEqualTo(postId);
+                    assertThat(row.reason()).contains("gate 'ready'").contains("override=");
+                });
+        assertThat(live("/approved")).isFalse();
+
+        var waived = shReviewService.decide(session, approve, "ana",
+                "approved past the gate: the missing subtitle is added by the next run");
+        assertThat(waived.posts()).contains(postId);
+        assertThat(live("/approved")).isTrue();
     }
 
     @Test

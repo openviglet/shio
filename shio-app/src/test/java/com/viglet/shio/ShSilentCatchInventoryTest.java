@@ -224,7 +224,10 @@ class ShSilentCatchInventoryTest {
             // a second finding under an a11y rule name would make one broken template read as two
             // defects. This is the narrowest form of the judgement above: not "not worth
             // reporting", but "reported by the check whose subject it is".
-            "api", 81,
+            // SH1084 — 82: ShReviewService.approveOne catches a gate refusal and returns it as the
+            // post's `skipped` row, which the curator reads in the approval's answer. It is reported
+            // to the person who can act on it, just not as the whole call's failure.
+            "api", 82,
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

@@ -164,15 +164,22 @@ public class ShPostUnifiedAPI {
             @PathVariable String id,
             @RequestBody PatchPayload payload,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+            // SH1084 — SH998's waiver, as the publish button takes it: this route publishes too.
+            @RequestParam(name = "override", required = false) String override,
             Principal principal) {
         shContentAclService.requireWrite(id);
+        boolean publish = Boolean.TRUE.equals(payload.publish());
+        if (publish) {
+            // SH1084 — save-and-publish asked only for WRITE, so SH995's separation between who
+            // edits and who puts it live had a door here. PUBLISH, as the button asks.
+            shContentAclService.requirePublish(id);
+        }
         // The draft is the subject: a merge writes the draft row, which is also what the editor and
         // the Universal Editor are looking at when they compose one.
         shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT);
         ShConsolePost written = shConsolePostReadService.written(shPostDraftMergeService
-                .merge(id, payload.attrs() == null ? Map.of() : payload.attrs(),
-                        Boolean.TRUE.equals(payload.publish()),
-                        principal != null ? principal.getName() : null)
+                .merge(id, payload.attrs() == null ? Map.of() : payload.attrs(), publish,
+                        principal != null ? principal.getName() : null, override)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found: " + id)));
         return ResponseEntity.ok().eTag(shConsolePostVersion.etagAfterWriting(id)).body(written);
     }

@@ -1613,31 +1613,6 @@ endpoint with the new instant, which records the dropper as the requester SH991 
 The zone line stays above every view. A test drives a drop and reads the change back
 through the agent's scheduled listing.
 
-### LXVI.13 A gate with two doors, and the lint that finds the next one (SH1084)
-
-SH997 put the gate "where the publish happens" so no surface could bypass it, and named
-three: the agent's op, the console's button, a release run. Two more exist and neither
-was found, because nothing looks.
-
-`ShReviewService.approve` publishes every draft an agent run wrote — the one press the
-review queue exists for — and calls `shPostUnifiedWriteService.publish` directly, past
-the gate. `ShPostDraftMergeService.merge(..., publish=true)` is the same: it is what
-`PATCH /v2/post-unified/{id}` does when the payload says `publish`, which is the
-Universal Editor's save-and-publish. Both were found by reading every call site of the
-gate service: four, none of them these.
-
-That is precisely the failure SH997's own prose describes — a rule one surface enforces
-and another does not, which is worse than no rule because it reads as enforced. A
-curator who approved an agent's run past a failing check has no way to know the check
-did not run.
-
-The fix is two calls, and it is not the deliverable. SH338 binds here: the instrument
-lands first. A lint walks every caller of `ShPostUnifiedWriteService.publish` and fails
-on one that reaches a publish with no gate evaluation on the way, holding its exemptions
-as a named list rather than a count — a count lets the next surface spend it. Then the
-two fixes, and SH998's waiver reaching both: an Approve a gate stops must be able to say
-why it goes anyway, or the queue becomes a place work gets stuck with no way forward.
-
 ### LXVI.14 Casing without a locale, measured (SH1085)
 
 `String.toLowerCase()` with no argument uses `Locale.getDefault()`, and Turkish maps `I`
@@ -1662,6 +1637,30 @@ SH338's order: the lint first. It fails on any `toLowerCase()` / `toUpperCase()`
 `Locale`, naming the file, which is what finds the tenth. Then the nine become
 `Locale.ROOT`, which is the answer in every one of these cases — none of them is casing
 text for a person to read.
+
+### LXVI.15 A schedule that fires past the gate (SH1138)
+
+SH1084's lint lists every method that publishes and whether it evaluates the site's
+publish gates. The SH15 sweep sits outside its pattern and does not evaluate one.
+`ShPostScheduler` fires a due post through `publishScheduled`, and a due release through
+`ShReleaseRunner.run`. Nothing on either path calls `ShPublishGateService`. So a page
+scheduled for Monday goes live on Monday whatever a gate declared since, and whatever
+the draft became after it was scheduled.
+
+Check first what the schedule call itself evaluates. If `post.publish` with `when` gates
+at scheduling time, the hole is only content that changed afterwards. If it does not,
+the hole is every scheduled publish. Either way, evaluating the gate when the schedule
+is set is not enough, because the draft can change until the moment it fires.
+
+The fix evaluates the gate at fire time. A thread with no request cannot answer a 409,
+so a stopped publish becomes a durable incident on the change feed, as SH969 made a
+failed scheduled publish one, with the gate's title and a retry. The schedule stays, so
+a curator can fix the page or waive with SH998's reason, and the release runner reports
+the stopped page rather than aborting the release.
+
+The assertion carries the id: a post scheduled past a failing gate is still a draft
+after the sweep, and the feed carries an incident naming the gate. Then SH1084's lint
+widens its pattern to `publishScheduled` and drops the `ShReleaseRunner#run` exemption.
 
 ## LXVII The curator's return channel, and the conversation with the agent (Block BB)
 

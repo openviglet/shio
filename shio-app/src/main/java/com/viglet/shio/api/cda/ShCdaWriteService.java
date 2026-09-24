@@ -54,12 +54,16 @@ public class ShCdaWriteService {
     private final ShPostDraftMergeService draftMergeService;
     /** SH995 — publishing from the editor is the same permission it is everywhere else. */
     private final com.viglet.shio.api.acl.ShContentAclService shContentAclService;
+    /** SH1084 — the site's publish gates, which this surface's publish skipped. */
+    private final com.viglet.shio.api.gate.ShPublishGateService shPublishGateService;
 
     public ShCdaWriteService(ShPostUnifiedRepository shPostUnifiedRepository,
                              ShPostUnifiedWriteService shPostUnifiedWriteService,
                              ShCdaMapper mapper,
                              ShPostDraftMergeService draftMergeService,
-                             com.viglet.shio.api.acl.ShContentAclService shContentAclService) {
+                             com.viglet.shio.api.acl.ShContentAclService shContentAclService,
+                             com.viglet.shio.api.gate.ShPublishGateService shPublishGateService) {
+        this.shPublishGateService = shPublishGateService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.mapper = mapper;
@@ -108,6 +112,9 @@ public class ShCdaWriteService {
         if (draft.isEmpty()) {
             return Optional.empty();
         }
+        // SH1084 — the delivery API's publish passes the site's gates like every other. A token
+        // cannot waive one (SH998), so there is no waiver to pass.
+        shPublishGateService.requirePost(postId);
         return Optional.of(mapper.toPost(shPostUnifiedWriteService.publish(postId, actor)));
     }
 

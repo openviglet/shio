@@ -74,12 +74,16 @@ public class ShPostDraftMergeService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShPostUnifiedWriteService shPostUnifiedWriteService;
     private final ObjectMapper objectMapper;
+    /** SH1084 — the site's publish gates, evaluated before a merge that publishes. */
+    private final com.viglet.shio.api.gate.ShPublishGateService shPublishGateService;
 
     public ShPostDraftMergeService(ShPostUnifiedRepository shPostUnifiedRepository,
                                    ShPostUnifiedWriteService shPostUnifiedWriteService,
                                    ObjectMapper objectMapper,
-            ShObjectReferenceService shObjectReferenceService) {
+            ShObjectReferenceService shObjectReferenceService,
+            com.viglet.shio.api.gate.ShPublishGateService shPublishGateService) {
         this.shObjectReferenceService = shObjectReferenceService;
+        this.shPublishGateService = shPublishGateService;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.objectMapper = objectMapper;
@@ -98,6 +102,22 @@ public class ShPostDraftMergeService {
      */
     public Optional<ShPostUnified> merge(String postId, Map<String, JsonNode> attrChanges,
                                          boolean publish, String actor) {
+        return merge(postId, attrChanges, publish, actor, null);
+    }
+
+    /**
+     * As {@link #merge(String, Map, boolean, String)}, with a waiver for a failing publish gate.
+     *
+     * <p>SH1084 — a publish through the merge evaluates the site's gates like every other publish,
+     * after the fields are merged, so the check judges what is about to go live. A gate that stops
+     * it rolls the merge back with it: the call was save-and-publish, and half of it landing would
+     * be a draft the caller did not ask to leave. The gate is not authorization, which is why it is
+     * here while the permission stays with each caller.</p>
+     *
+     * @param waiver SH998's reason for publishing past a failing gate, or {@code null}
+     */
+    public Optional<ShPostUnified> merge(String postId, Map<String, JsonNode> attrChanges,
+                                         boolean publish, String actor, String waiver) {
         Optional<ShPostUnified> seed = editable(postId);
         if (seed.isEmpty()) {
             return Optional.empty();
@@ -105,9 +125,11 @@ public class ShPostDraftMergeService {
         ShPostUnified draft = ensureDraft(postId, seed.get());
         ShPostUnified updated = shPostUnifiedWriteService.update(postId,
                 new UpdateRequest(mergeData(draft.getData(), attrChanges), ShPostState.DRAFT, actor));
-        return Optional.of(publish
-                ? shPostUnifiedWriteService.publish(postId, actor)
-                : updated);
+        if (!publish) {
+            return Optional.of(updated);
+        }
+        String waived = shPublishGateService.requirePost(postId, waiver);
+        return Optional.of(shPostUnifiedWriteService.publish(postId, actor, waived));
     }
 
     /** Draft row if present, else the published one — the editor edits the draft. */

@@ -3396,6 +3396,27 @@ the run refuses. Gates travel as their own idempotent writes (`GET /agent/gates`
 /agent/gates/{name}`), like SH161's notes and for the same reason: a gate is not content, so folding it
 into the desired-state document would make it the thing `--prune` deletes when a tree stops naming it.
 
+### Every door that publishes (SH1084)
+
+SH997 named three gated surfaces, and there were more. `ShPublishGateLintTest` walks every method
+that calls `shPostUnifiedWriteService.publish(` and fails on one that doesn't evaluate
+`shPublishGateService.require*`, unless the method is in its `EXEMPT` map with a reason. It prints the
+population on every run (ten when it landed). It found three doors the gate skipped:
+
+- **The review queue's Approve** (`approveOne`). A gate that stops a page there comes back as a
+  `skipped` row with the gate's title, not as a failed call, because the curator still wants the
+  other pages. `override=<reason>` on `/review/sessions/{s}/approve` and `/decisions` takes it past.
+- **`PATCH /v2/post-unified/{id}` with `publish`.** The merge gates after merging, in the same
+  transaction, so a refused save-and-publish writes nothing. The route also takes `override`. It had
+  asked only `requireWrite`, and now asks `requirePublish` as the button does (SH995).
+- **The CDA write publish** (`ShCdaWriteService#publish`). A token cannot waive, so it takes no
+  `override`.
+
+Exempt, each with its reason in the map: the redirect write, the release rollback, a review revert,
+and `ShReleaseRunner#run`, which the release op gates before calling. Neither the scheduled sweep
+nor its release run evaluates a gate. The lint's pattern does not reach the sweep yet, and SH1138 is
+that task.
+
 ## Waiving a gate, and the two events an orchestrator needs (SH998)
 
 A gate with no sanctioned way past it is one a team removes the day it blocks something urgent, and
