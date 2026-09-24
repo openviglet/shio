@@ -28,15 +28,21 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.viglet.shio.api.agent.ShAgentChangeCursor;
 import com.viglet.shio.api.agent.ShAgentChangesService;
 import com.viglet.shio.api.agent.ShAgentChangesTerse;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
+import com.viglet.shio.api.events.ShEventSink;
+import com.viglet.shio.api.events.ShEventStreamHub;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
@@ -87,6 +93,9 @@ class ShAuditChangedFieldsTest {
     private ShPostUnifiedWriteService shPostUnifiedWriteService;
     @Autowired
     private ShAgentChangesService shAgentChangesService;
+    /** SH1080 — the pushed feed, read with the same option. */
+    @Autowired
+    private ShEventStreamHub hub;
     @Autowired
     private ShHistoryRepository shHistoryRepository;
     @Autowired
@@ -261,6 +270,65 @@ class ShAuditChangedFieldsTest {
 
         assertThat(ShChangedFields.decode(last(trail(postId), ShContentAction.RESTORE).getChangedFields()))
                 .containsExactly(ShSystemPostTypeAttr.TITLE);
+    }
+
+    /** Every page a stream received. */
+    private static final class PageSink implements ShEventSink {
+        final List<ShEventStreamHub.Page> pages = new java.util.ArrayList<>();
+
+        @Override
+        public void send(String id, String name, Object data) {
+            pages.add((ShEventStreamHub.Page) data);
+        }
+
+        @Override
+        public void heartbeat() {
+            // Not what this is about.
+        }
+
+        @Override
+        public void close() {
+            // Nothing is held.
+        }
+
+        List<ShAgentChanges.Change> changes() {
+            return pages.stream().flatMap(page -> page.changes().stream()).toList();
+        }
+    }
+
+    @Test
+    @DisplayName("SH1080: a pushed page names the fields when the stream asked, and only then")
+    void thePushedFeedNamesTheFieldsWhenAsked() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                "admin", "x", List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+        PageSink plain = new PageSink();
+        PageSink named = new PageSink();
+        String since = new ShAgentChangeCursor(Instant.now(), "").toString();
+        List<String> streams = List.of(hub.open(plain, since, siteName, false),
+                hub.open(named, since, siteName, true));
+        try {
+            String postId = createDraft("Streamed", "one");
+            shPostUnifiedWriteService.publish(postId, "admin");
+            shPostUnifiedWriteService.update(postId,
+                    new UpdateRequest(data("Streamed", "two"), ShPostState.DRAFT, "admin"));
+            hub.pump();
+
+            assertThat(named.changes()).anySatisfy(change -> {
+                assertThat(change.action()).isEqualTo(ShContentAction.UPDATE.name());
+                assertThat(change.fields())
+                        .as("SH1080: include=fields on the stream names what the write changed")
+                        .containsExactly(BODY);
+            });
+            assertThat(plain.changes()).allSatisfy(change -> assertThat(change.fields())
+                    .as("SH1080: a stream that did not ask is sent no names")
+                    .isNull());
+            assertThat(objectMapper.writeValueAsString(named.pages).replaceAll(",\"fields\":\\[[^]]*]", ""))
+                    .as("SH1080: the opt-in adds the names and moves nothing else in the event")
+                    .isEqualTo(objectMapper.writeValueAsString(plain.pages));
+        } finally {
+            streams.forEach(hub::close);
+            SecurityContextHolder.clearContext();
+        }
     }
 
     @Test

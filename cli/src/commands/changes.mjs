@@ -41,15 +41,11 @@ export async function run(flags, positionals, ctx) {
       : flags.since ?? positionals[0] ?? undefined;
 
   if (flags.follow) {
-    // SH989 — the event stream does not carry the names, so accepting both flags would drop one of
-    // them without saying so. Refused before connecting, with the call that does answer.
-    if (flags.fields) {
-      throw new Error(
-        "shio changes: --fields reads the names from a page of the feed, and --follow streams events " +
-          "that do not carry them. Drop --follow to see them. Example: shio changes --since last --fields",
-      );
-    }
-    return follow(client, { site: flags.site, since: since ?? undefined, json: flags.json }, ctx);
+    // SH1080 — the stream takes `include=fields` now, so --fields rides along instead of being
+    // refused (SH989 refused it while the events could not carry the names).
+    return follow(client, {
+      site: flags.site, since: since ?? undefined, json: flags.json, fields: Boolean(flags.fields),
+    }, ctx);
   }
 
   const changes = await client.changes({
@@ -88,13 +84,13 @@ export async function run(flags, positionals, ctx) {
  *
  * With `--json`, one JSON line per event (`{ "cursor", "changes", "incidents" }`), for a pipeline.
  */
-async function follow(client, { site, since, json }, ctx) {
+async function follow(client, { site, since, json, fields }, ctx) {
   const sleep = ctx.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   let position = since;
   let delay = 1000;
   for (;;) {
     try {
-      for await (const event of client.events({ site, since: position })) {
+      for await (const event of client.events({ site, since: position, fields })) {
         if (event.id) position = event.id;
         delay = 1000;
         const page = { cursor: event.id, ...event.data };

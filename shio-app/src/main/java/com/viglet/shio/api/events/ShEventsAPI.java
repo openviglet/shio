@@ -49,12 +49,15 @@ public class ShEventsAPI {
     public SseEmitter events(
             @RequestParam(name = "since", required = false) String since,
             @RequestParam(name = "site", required = false) String site,
+            @RequestParam(name = "include", required = false) String include,
             @RequestHeader(name = "Last-Event-ID", required = false) String lastEventId) {
         SseEmitter emitter = new SseEmitter(properties.getTimeoutMillis());
         // The header wins: it is what a browser's EventSource sends on its own reconnect, and it is
         // newer than whatever `since` the page was first opened with.
         String resumeFrom = lastEventId != null && !lastEventId.isBlank() ? lastEventId : since;
-        String id = hub.open(new ShSseEventSink(emitter), resumeFrom, site);
+        // SH1080 — `include=fields`, as the polled feed takes it: each entry names the fields its
+        // write changed. Off by default, so an ordinary event is byte-identical to what it was.
+        String id = hub.open(new ShSseEventSink(emitter), resumeFrom, site, includesFields(include));
         emitter.onCompletion(() -> hub.close(id));
         emitter.onTimeout(() -> {
             hub.close(id);
@@ -62,5 +65,18 @@ public class ShEventsAPI {
         });
         emitter.onError(failure -> hub.close(id));
         return emitter;
+    }
+
+    /** {@code include} is a comma list, as on the polled feed; {@code fields} is the one it takes. */
+    static boolean includesFields(String include) {
+        if (include == null) {
+            return false;
+        }
+        for (String part : include.split(",")) {
+            if ("fields".equalsIgnoreCase(part.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -46,7 +46,6 @@
 ## Block AZ — What the content said before
 
 - 📋 **SH988** (deps: SH987 ✅, DS VDS140) **the version dialog compares two whole values and shows nothing at all for a created page** — The review diff is gated on a published twin existing, so a create, the commonest agent output, has no review affordance, and a changed body renders as two walls of text. → §LXV.4
-- 📋 **SH1080** (deps: SH989 ✅) **the pushed change feed cannot name the fields each write changed, so shio changes --follow refuses --fields** — A session that follows the stream to watch a run land sees that each page changed and has to poll a second read to learn which fields. → §LXV.6
 
 ## Block BA — Releases, scheduling and the publish gate
 

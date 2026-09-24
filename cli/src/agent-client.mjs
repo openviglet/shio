@@ -497,13 +497,15 @@ export class ShioAgentClient {
    * GET /api/v2/events (SH967) — the same feed, pushed: one event per page, whose `id` is the
    * feed cursor after it.
    *
-   * @param {{ site?: string, since?: string }} [query] `since` travels as `Last-Event-ID`, the
-   *   header the server resumes from, so a reconnect and a first open are the same request.
+   * @param {{ site?: string, since?: string, fields?: boolean }} [query] `since` travels as
+   *   `Last-Event-ID`, the header the server resumes from, so a reconnect and a first open are the
+   *   same request. `fields` asks each entry to name the fields its write changed (SH1080).
    * @returns {AsyncGenerator<{ id: string|null, event: string, data: object }>}
    */
-  async *events({ site, since } = {}) {
+  async *events({ site, since, fields } = {}) {
     const params = new URLSearchParams();
     if (site) params.set("site", String(site));
+    if (fields) params.set("include", "fields");
     const search = params.toString();
     const url = `${this.baseUrl}/api/v2/events${search ? `?${search}` : ""}`;
     const headers = {

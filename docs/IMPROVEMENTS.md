@@ -1573,22 +1573,6 @@ than as a modal, since a modal per entry is a click per entry on a long run. An 
 entry has no live comparison left, so it lists the names SH989 stored on its audit row
 instead.
 
-### LXV.6 A pushed change that names its fields (SH1080)
-
-SH989 stored the changed field names on every audit row and made them readable on a page
-of the feed, over REST include=fields, the shio_changes fields argument and shio changes
---fields. The pushed feed does not take the option. GET /api/v2/events opens a
-subscription holding a site and a cursor, and ShEventStreamHub reads each page with
-fields off, so shio changes --follow --fields is refused before connecting rather than
-silently dropping the flag.
-
-Carry it the way the polled read does. The events endpoint accepts include=fields, the
-subscription record keeps the flag, and the hub passes it to
-ShAgentChangesService.changes, whose rows already carry the names; withoutId copies them
-across already. The CLI client's events() sends the parameter and the refusal in
-changes.mjs goes. The default event stays byte-identical, asserted the way
-ShAuditChangedFieldsTest asserts the polled row.
-
 ## LXVI Releases, scheduling and the publish gate (Block BA)
 
 Publishing in Shio is one post at a time. ShPostScheduler fires each due row in its own

@@ -106,6 +106,15 @@ public class ShEventStreamHub {
      * feed — which also refuses, here and not on the pump thread, a site the caller cannot read.
      */
     public String open(ShEventSink sink, String since, String site) {
+        return open(sink, since, site, false);
+    }
+
+    /**
+     * As {@link #open(ShEventSink, String, String)}, and with {@code fields} each entry names the
+     * fields its write changed (SH1080), read the way the polled feed reads them under
+     * {@code include=fields}.
+     */
+    public String open(ShEventSink sink, String since, String site, boolean fields) {
         String scope = site == null || site.isBlank() ? null : site.trim();
         String cursor;
         if (since != null && !since.isBlank()) {
@@ -122,7 +131,7 @@ public class ShEventStreamHub {
         String id = UUID.randomUUID().toString();
         subscriptions.put(id, new Subscription(id, sink,
                 SecurityContextHolder.getContext().getAuthentication(), ShTenantContext.getTenantId(),
-                scope, cursor));
+                scope, cursor, fields));
         return id;
     }
 
@@ -167,7 +176,8 @@ public class ShEventStreamHub {
             boolean sent = false;
             for (int page = 0; page < Math.max(1, properties.getMaxPagesPerPass()); page++) {
                 ShAgentChanges changes = changesService.changes(subscription.site(),
-                        subscription.cursor(), properties.getPageLimit(), true, 0);
+                        subscription.cursor(), properties.getPageLimit(), true, 0,
+                        subscription.fields());
                 List<ShAgentChanges.Change> visible = changes.changes().stream()
                         .filter(change -> change.id() == null || aclService.canRead(change.id(), memo))
                         .map(ShEventStreamHub::withoutId)
@@ -254,21 +264,27 @@ public class ShEventStreamHub {
         private final Authentication authentication;
         private final String tenant;
         private final String site;
+        private final boolean fields;
         private volatile String cursor;
         private volatile long lastSentNanos = System.nanoTime();
 
         Subscription(String id, ShEventSink sink, Authentication authentication, String tenant,
-                     String site, String cursor) {
+                     String site, String cursor, boolean fields) {
             this.id = id;
             this.sink = sink;
             this.authentication = authentication;
             this.tenant = tenant;
             this.site = site;
             this.cursor = cursor;
+            this.fields = fields;
         }
 
         String site() {
             return site;
+        }
+
+        boolean fields() {
+            return fields;
         }
 
         String id() {

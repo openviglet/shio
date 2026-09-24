@@ -3094,8 +3094,12 @@ It reaches every surface through a parameter that already existed or an argument
 - **MCP** `shio_changes` takes `fields`. It spent one of SH811's two arguments of headroom, and the
   properties file says so beside the ceiling.
 - **The CLI** `shio changes --fields` prints a `fields:` line under each row, and `(none changed)`
-  for an empty list. With `--follow` it is refused, not ignored: the event stream does not carry
-  the names, and accepting both flags would drop one without saying so.
+  for an empty list. With `--follow` it rides on the stream (SH1080).
+- **The pushed feed** `GET /api/v2/events?include=fields` (SH1080). The subscription keeps the flag
+  and the hub reads each page with it, so an event names fields exactly as a polled page does. A
+  stream that did not ask gets an event byte-identical to before, apart from the names, and
+  `ShAuditChangedFieldsTest` asserts that. Until SH1080, `--follow --fields` was refused before
+  connecting, because accepting it would have dropped the flag silently.
 - **The console** Activity page shows the names under each description; `/api/v2/history` always
   carries `changedFields`, since a console table is not a budgeted response.
 

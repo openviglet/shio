@@ -1929,15 +1929,41 @@ test("SH989: --fields asks for include=fields and prints the names, and says whe
     "SH989: a create records no names, so it prints none");
 });
 
-test("SH989: --fields with --follow is refused rather than silently dropped", async () => {
-  let called = false;
-  const ctx = ctxWith(async () => {
-    called = true;
-    return json({});
+test("SH1080: --fields with --follow asks the stream for the names and prints them", async () => {
+  // SH989 refused this pair while the events could not carry the names. They can now, so the
+  // flag rides on the stream's own opt-in and the page prints the way a polled one does.
+  const requests = [];
+  const controller = new AbortController();
+  const ctx = ctxWith(async (url) => {
+    requests.push(String(url));
+    return eventStream([sseEvent("c12", {
+      changes: [{ action: "UPDATE", address: "post:Blog/hello", by: "agent", at: "t1",
+        what: "Updated", fields: ["body", "title"] }],
+    })]);
   });
+  ctx.signal = controller.signal;
+  ctx.sleep = async () => controller.abort();
 
-  await assert.rejects(() => changes.run({ follow: true, fields: true }, [], ctx), /--fields.*--follow/s);
-  assert.equal(called, false, "SH989: refused before connecting");
+  await changes.run({ follow: true, fields: true }, [], ctx);
+
+  assert.match(requests[0], /\/api\/v2\/events\?include=fields$/,
+    "SH1080: the flag is the stream's opt-in, not a local filter");
+  assert.match(ctx.stdout.text, /UPDATE post:Blog\/hello — Updated \[agent at t1\]\n {6}fields: body, title\n/);
+});
+
+test("SH1080: --follow without --fields asks the stream for nothing extra", async () => {
+  const requests = [];
+  const controller = new AbortController();
+  const ctx = ctxWith(async (url) => {
+    requests.push(String(url));
+    return eventStream([]);
+  });
+  ctx.signal = controller.signal;
+  ctx.sleep = async () => controller.abort();
+
+  await changes.run({ follow: true }, [], ctx);
+
+  assert.doesNotMatch(requests[0], /include=/);
 });
 
 test("SH989: without --fields the feed is asked for nothing extra", async () => {
