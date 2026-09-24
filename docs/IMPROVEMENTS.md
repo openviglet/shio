@@ -1375,32 +1375,6 @@ with the tables has visited the file without fixing what it says.
 `red-suites.json` carries the dated exception that licenses committing over this, and it
 names this task, so the licence dies when the work does.
 
-### LXIV.15 A rule that refuses what it teaches (SH1074)
-
-SH893's reader refuses `aria-<state>={...}` unless the expression starts with a quote:
-`aria-${state}=\{(?!\s*")([^}]*)\}`. Its failure message says to write
-`aria-selected={active ? "true" : "false"}` — a form that begins with `active`, and
-which the regex therefore rejects. The rule and the sentence teaching it disagree, and
-the sentence is the one a reader acts on.
-
-Nobody had noticed because the console has zero ARIA state attributes, which the message
-itself says: *"this console had zero of these when the rule arrived"*. A guard over an
-empty set is green whatever it means. It surfaced on the first attempt to add one —
-SH955's field pin — where following the message verbatim failed the build.
-
-BENTO-AUTHORING's accessibility section, vendored here by SH941, is the authority and it
-agrees with the message rather than with the regex: **ARIA values are string literals**
-— `aria-selected={active ? "true" : "false"}` is given as the correct form.
-
-So the regex is what is wrong. It should accept a conditional whose branches are both
-quoted strings, and keep refusing `{active}`, a bare `aria-hidden`, and anything else
-that resolves to a boolean. The narrow version — require every branch of a ternary to be
-a quoted literal — is the rule the contract actually states.
-
-The console still has no ARIA state attribute the corrected rule would accept, so the
-fix lands with a fixture rather than a corpus — and the first real one will be written
-by somebody reading the message rather than the regex.
-
 ### LXIV.16 A dependency only this machine has (SH1076)
 
 Found reading a failed CI run while checking what the IDE sync had pushed, and confirmed

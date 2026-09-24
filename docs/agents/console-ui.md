@@ -1544,8 +1544,10 @@ it on the wrong input.
 `PostFormFields` takes a `problem` prop and marks that one field: a destructive border and the
 message under the widget, with `role="alert"` so it is announced rather than only coloured.
 **Not `aria-invalid`** — the wrapper is a div, not a form control, and marking it invalid would
-tell a screen reader the wrong thing about what it is. (Writing it that way also ran into SH893's
-lint, whose regex refuses the exact ternary its own message recommends; filed as SH1074.) The
+tell a screen reader the wrong thing about what it is. (Writing it that way also looked like it
+ran into SH893's lint refusing the exact ternary its own message recommends. That was filed as
+SH1074, but SH985 had already fixed it: `isStringLiteral` in `bento-a11y.test.mjs` accepts a
+ternary whose branches are both quoted, and a fixture pins both directions.) The
 editor clears the mark on the next save, or a corrected field keeps its red border and the form
 lies in the other direction.
 

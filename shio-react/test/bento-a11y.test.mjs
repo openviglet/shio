@@ -411,8 +411,10 @@ test("SH893: the reader is not vacuous — and specifically not in the way it wa
   // the form it exists to refuse. It accepted neither and refused nothing for as long as no page
   // had one of these attributes: a rule with no instance is a rule nobody has run.
   assert.ok(isStringLiteral('"true"'), "a literal is a literal")
+  // SH1074 filed the same contradiction from SH955's field pin, after SH985 had already fixed it;
+  // this is the assertion that would have caught it for either.
   assert.ok(isStringLiteral('active ? "true" : "false"'),
-    "SH893's own failure message prescribes this exact form, so the rule has to accept it")
+    "SH1074: SH893's own failure message prescribes this exact form, so the rule has to accept it")
   assert.ok(!isStringLiteral("active"),
     "a bare boolean is what the rule is about — React drops it and the control loses its state")
   assert.ok(!isStringLiteral('active ? "true" : other'),
