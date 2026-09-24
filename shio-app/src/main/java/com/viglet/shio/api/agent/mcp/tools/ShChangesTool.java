@@ -57,17 +57,17 @@ public class ShChangesTool implements ShMcpTool {
 
     @Override
     public String description() {
+        // SH1086 trimmed the second sentence to pay for `address`: "call it with no since=" restated
+        // the parameter below, and the cursor's meaning is `since`'s own description.
         return "Content changes: what was created, updated, published or deleted, by whom, and "
-                + "from which agent session. Call it with no since= to get a recent window plus a "
-                + "cursor; pass that cursor back next time to see only what happened after it.";
+                + "from which agent session. Returns a cursor; pass it back as since= to resume.";
     }
 
     @Override
     public Map<String, Object> inputSchema() {
         return ShMcpTool.schema(Map.of(
                 "site", ShMcpTool.string("Site name; omit for every site you can read."),
-                "since", ShMcpTool.string("A cursor from a previous call — returns only what "
-                        + "happened after it."),
+                "since", ShMcpTool.string("A previous cursor; only what came after it."),
                 "limit", ShMcpTool.integer("How many entries (default 50, max 500)."),
                 // SH989 — REST's include=fields. After an approve the draft and the live row are one
                 // document, so these names are the only description of the run that was accepted.
@@ -75,7 +75,11 @@ public class ShChangesTool implements ShMcpTool {
                 // SH999 — the question this tool's own description promised and could not answer.
                 // `by=curator` is "what changed that was not me", which is what a resuming session
                 // is actually asking; every row looked the same before.
-                "by", ShMcpTool.string("Whose writes: agent, curator, or a session id.")),
+                "by", ShMcpTool.string("Whose writes: agent, curator, or a session id."),
+                // SH1086 — SH1005's strongest narrowing: "what happened to this page", where a
+                // correction starts. action, actor and subject stay on REST and the CLI; subject
+                // least of all, since a caller asking about one object already has its address.
+                "address", ShMcpTool.string("One page's history, e.g. post:Blog/hello.")),
                 List.of());
     }
 
@@ -88,6 +92,7 @@ public class ShChangesTool implements ShMcpTool {
                 ShMcpArgs.integer(arguments, "limit"),
                 false, null,
                 ShMcpArgs.bool(arguments, "fields"),
-                ShMcpArgs.string(arguments, "by")));
+                new com.viglet.shio.api.history.ShHistoryFilter(ShMcpArgs.string(arguments, "by"),
+                        null, null, null, null, ShMcpArgs.string(arguments, "address"))));
     }
 }

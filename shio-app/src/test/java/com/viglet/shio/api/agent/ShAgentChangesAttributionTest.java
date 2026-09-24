@@ -85,6 +85,9 @@ class ShAgentChangesAttributionTest {
     private ShMcpServer shMcpServer;
     @Autowired
     private ShReviewService shReviewService;
+    /** SH1086 — the MCP tool, driven directly. */
+    @Autowired
+    private com.viglet.shio.api.agent.mcp.tools.ShChangesTool shChangesTool;
     @Autowired
     private tools.jackson.databind.ObjectMapper objectMapper;
     @Autowired
@@ -203,6 +206,26 @@ class ShAgentChangesAttributionTest {
                 .as("SH999: a session with no rows is an empty feed, not a refusal — the vocabulary "
                         + "is two words and everything else is an id")
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH1086: shio_changes takes address, the one narrowing SH1005 left on REST that earns it")
+    void theMcpToolNarrowsToOnePage() throws Exception {
+        String everything = shChangesTool.call(objectMapper.readTree(
+                "{\"site\":\"" + site + "\"}"));
+        String thisPage = shChangesTool.call(objectMapper.readTree(
+                "{\"site\":\"" + site + "\",\"address\":\"" + postId + "\"}"));
+        String another = shChangesTool.call(objectMapper.readTree(
+                "{\"site\":\"" + site + "\",\"address\":\"sh1086-nobody-wrote-this\"}"));
+
+        assertThat(thisPage)
+                .as("SH1086: every row in this site is about the one post, so its history is all of it")
+                .isEqualTo(everything);
+        assertThat(another)
+                .as("SH1086: \"what happened to this page\" answered for a page nothing touched is an "
+                        + "empty history, not the whole site's")
+                .doesNotContain("Updated \"Home\"")
+                .doesNotContain("Published \"Home\"");
     }
 
     @Test

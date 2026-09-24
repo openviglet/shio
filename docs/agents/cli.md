@@ -4315,5 +4315,8 @@ help text lists the values each flag takes.
 call that does answer. The event stream takes a site and nothing that narrows by row. Before this,
 `--by` sent with `--follow` was dropped, and every change printed as if it matched.
 
-The MCP half is still open. `shio_changes`' input schema is paid on every turn, against a
-`tools/list` ceiling, so adding `address` there waits on a measurement of that tool's headroom.
+**The MCP half took one of the four.** `shio_changes`' schema is paid on every turn, and the list
+stood at 2968 of 2975. `address` was added and paid for by trimming the tool's own description and
+`since` text, which restated the cursor: 2964 after, four fewer than before. `action`, `actor` and
+`subject` stay on REST and the CLI. `subject` is the weakest, since a caller asking about one object
+already has its address. `ShAgentChangesAttributionTest` drives the tool with `address`.

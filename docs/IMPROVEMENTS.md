@@ -1695,30 +1695,6 @@ The agent's side is one field on note.add, the run it answers with, which a sess
 already knows. The assertions answer a request with a run that drafts a change, then
 approve it from the dock's action and read the published result and the decision row.
 
-### LXVII.11 The narrowings that stopped at REST (SH1086)
-
-SH1005 put every narrowing of the audit trail in one query set and exposed the four new
-ones — action, actor, subject and address — on `/agent/changes` and on the console's
-page. That was the right place to stop for one task and the wrong place to leave it: P1
-reads MCP → CLI → REST → console, and these landed on the last two.
-
-The cost is why they stopped there. `shio_changes`'s input schema is re-sent on every
-turn of every session, so an argument there is paid whether or not it is used, against a
-`tools.list` ceiling that three tasks have already had to trim to stay under. The CLI's
-help has the same shape one budget down. Neither is an argument for never adding them;
-both are an argument for measuring first.
-
-So this is the measurement and then the decision: what each argument costs, what
-trimming pays for, and which of the four earn it. `address` is the strongest candidate —
-it answers "what happened to this page", which is the question a correction starts from,
-and the one an agent reaches for after reading a note (SH1003). `subject` is the
-weakest: an agent that asked for a folder's history already knows the address it asked
-about.
-
-The CLI is cheaper and should not wait on the tool schema. `shio changes --action` and
-`--actor` are flags over a REST surface that already takes them, and the help budget can
-be measured in one run.
-
 ### LXVII.12 A stream nobody has seen deliver (SH1087)
 
 SH967 built the event stream and SH1005 gave it its first console client: the Activity

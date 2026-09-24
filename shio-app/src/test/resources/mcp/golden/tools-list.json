@@ -112,6 +112,10 @@
       "description" : "#string",
       "inputSchema" : {
         "properties" : {
+          "address" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "by" : {
             "description" : "#string",
             "type" : "string"
