@@ -1951,6 +1951,39 @@ test("SH1080: --fields with --follow asks the stream for the names and prints th
   assert.match(ctx.stdout.text, /UPDATE post:Blog\/hello — Updated \[agent at t1\]\n {6}fields: body, title\n/);
 });
 
+test("SH1086: the four narrowings SH1005 gave REST reach the CLI as flags", async () => {
+  const seen = [];
+  const ctx = ctxWith(async (url) => {
+    seen.push(new URL(String(url)));
+    return json({ found: 0, window: true, cursor: "c", changes: [], notes: [] });
+  });
+
+  await changes.run({
+    action: "PUBLISH", actor: "ana", subject: "post", address: "post:Blog/hello",
+  }, [], ctx);
+
+  const query = seen[0].searchParams;
+  assert.equal(query.get("action"), "PUBLISH");
+  assert.equal(query.get("actor"), "ana");
+  assert.equal(query.get("subject"), "post");
+  assert.equal(query.get("address"), "post:Blog/hello",
+    "SH1086: \"what happened to this page\" was a REST and console question the CLI could not ask");
+});
+
+test("SH1086: a narrowing with --follow is refused, not silently dropped", async () => {
+  let called = false;
+  const ctx = ctxWith(async () => {
+    called = true;
+    return eventStream([]);
+  });
+
+  await assert.rejects(() => changes.run({ follow: true, address: "post:Blog/hello" }, [], ctx),
+    /--address.*--follow/s);
+  await assert.rejects(() => changes.run({ follow: true, by: "curator" }, [], ctx),
+    /--by.*--follow/s, "SH1086: --by was dropped with --follow before this, and printed everything");
+  assert.equal(called, false, "SH1086: refused before connecting");
+});
+
 test("SH1080: --follow without --fields asks the stream for nothing extra", async () => {
   const requests = [];
   const controller = new AbortController();

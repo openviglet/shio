@@ -7,6 +7,10 @@ shio changes — what changed, with a cursor to resume from
   --limit <n>          Entries to print
   --fields             Name the fields each write changed
   --by <who>           agent, curator, or a session id
+  --action <kind>      CREATE, UPDATE, PUBLISH, UNPUBLISH, DELETE, RESTORE
+  --actor <name>       One person's changes
+  --subject <kind>     post, folder or site
+  --address <addr>     One page's history
   --json               Raw JSON instead of lines (a line per event with --follow)
   --follow             Stay open, printing each change; reconnects without loss
   --base-file <file>   Where the last content pull's position is kept

@@ -4303,3 +4303,17 @@ JS side, which is `ShAgentOpsContractTest`'s claim read from the surface that pu
 
 One reader, not two: `live-coverage.test.mjs` had its own copy of the op regex and now imports
 this one.
+
+## `shio changes` narrows the way `/agent/changes` does (SH1086, the CLI half)
+
+SH1005's four narrowings of the audit trail reached REST and the console and stopped there.
+`shio changes` now takes `--action`, `--actor`, `--subject` and `--address`, passed straight to the
+query. `--address post:Blog/hello` is one page's history, which is where a correction starts. The
+help text lists the values each flag takes.
+
+`--follow` refuses every narrowing (`--by` included) before connecting, naming the flag and a polled
+call that does answer. The event stream takes a site and nothing that narrows by row. Before this,
+`--by` sent with `--follow` was dropped, and every change printed as if it matched.
+
+The MCP half is still open. `shio_changes`' input schema is paid on every turn, against a
+`tools/list` ceiling, so adding `address` there waits on a measurement of that tool's headroom.

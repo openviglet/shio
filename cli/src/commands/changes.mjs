@@ -29,6 +29,14 @@ import { retryCommand } from "../report.mjs";
  */
 export const HELP = helpText("changes");
 
+/** The flags that narrow a page of the feed by row, and so mean nothing to the stream (SH1086). */
+const FILTERS = ["by", "action", "actor", "subject", "address"];
+
+/** One value each, for the refusal's example line. */
+const EXAMPLES = {
+  by: "curator", action: "PUBLISH", actor: "ana", subject: "post", address: "post:Blog/hello",
+};
+
 export async function run(flags, positionals, ctx) {
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   const client = new ShioAgentClient({ baseUrl, user, password, fetch: ctx.fetch });
@@ -41,6 +49,17 @@ export async function run(flags, positionals, ctx) {
       : flags.since ?? positionals[0] ?? undefined;
 
   if (flags.follow) {
+    // SH1086 — the stream takes a site and nothing that narrows by row, so a narrowing sent with
+    // --follow would be dropped and every change printed as if it matched. Refused before
+    // connecting, naming what does answer. `--by` was dropped the same way before this.
+    const narrowing = FILTERS.find((name) => flags[name] !== undefined);
+    if (narrowing) {
+      throw new Error(
+        `shio changes: --${narrowing} narrows a page of the feed, and --follow streams every change `
+          + `unfiltered. Drop --follow to use it. Example: shio changes --since last --${narrowing} `
+          + `${EXAMPLES[narrowing]}`,
+      );
+    }
     // SH1080 — the stream takes `include=fields` now, so --fields rides along instead of being
     // refused (SH989 refused it while the events could not carry the names).
     return follow(client, {
@@ -57,6 +76,12 @@ export async function run(flags, positionals, ctx) {
     // SH999 — `agent`, `curator` or a session. A pipeline that pulls when something moved wants
     // the half it did not write itself, and until now every row looked the same.
     by: flags.by,
+    // SH1086 — SH1005's four narrowings, which reached REST and the console and stopped there.
+    // `--address` answers "what happened to this page", which is where a correction starts.
+    action: flags.action,
+    actor: flags.actor,
+    subject: flags.subject,
+    address: flags.address,
   });
 
   if (flags.cursor) {
