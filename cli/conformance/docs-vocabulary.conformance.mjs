@@ -43,7 +43,7 @@ import { describe, test } from "node:test";
 
 import { AUDIT_RULES } from "../src/audit.mjs";
 
-import { extract, toolRows } from "./docs-examples.mjs";
+import { CLAIMS, extract, toolRows } from "./docs-examples.mjs";
 import { productVocabulary, routeExists } from "./support/product-vocabulary.mjs";
 
 // @scans prose reason: it reads the published Markdown pages for the verbs, routes, tool names
@@ -203,6 +203,52 @@ describe("SH499 conformance: the published vocabulary is this product's vocabula
       "SH499: a page shows a tools/call for a tool `tools/list` does not return. An agent that "
         + `reads the page instead of the manifest loses a turn to it.\n${report(misses)}`,
     );
+  });
+
+  /**
+   * SH1068 — three populations the gate could not see, and the first one was already extracted.
+   *
+   * <p>`docs-examples` has pulled `"op": "…"` out of documented payloads since SH499 and nothing
+   * consumed it: the subject existed, no test looked at it, and a renamed op was the one name in
+   * the protocol a page could go on spelling for ever. The other two had no reader at all until
+   * `productVocabulary` grew `mcpResources`, `batchOps` and `verifyChecks`.</p>
+   */
+  test("SH1068: every documented op name is an op this build dispatches", () => {
+    const misses = [];
+    for (const [op, where] of subjects("payload")) {
+      if (!vocabulary.batchOps.has(op)) misses.push({ subject: op, where });
+    }
+    assert.deepEqual(misses, [],
+      "SH1068: a page publishes a batch op this build does not dispatch. The whole document is "
+        + "refused by the server with `allowed`, so a reader following the page loses the write "
+        + `and the run.
+${report(misses)}`);
+  });
+
+  test("SH1068: every documented MCP resource URI is one the server registers", () => {
+    const misses = [];
+    for (const [uri, where] of subjects("resource")) {
+      // A template is registered by its prefix, which is what `ShMcpResource#matches` keys on —
+      // the same rule `live-coverage` applies when it counts one as read.
+      const known = [...vocabulary.mcpResources]
+        .some((each) => uri === each || (each.endsWith("/") && uri.startsWith(each)));
+      if (!known) misses.push({ subject: uri, where });
+    }
+    assert.deepEqual(misses, [],
+      "SH1068: a page tells a client to read a resource `resources/list` does not return. It is "
+        + `the tool-name failure one method along, and it fails the same way.
+${report(misses)}`);
+  });
+
+  test("SH1068: every documented `--checks` group is one verify accepts", () => {
+    const misses = [];
+    for (const [check, where] of subjects("checks")) {
+      if (!vocabulary.verifyChecks.has(check)) misses.push({ subject: check, where });
+    }
+    assert.deepEqual(misses, [],
+      "SH1068: a page passes a check group `verify` refuses. The refusal lists what it takes, so "
+        + `the reader is told — after their gate has already failed.
+${report(misses)}`);
   });
 
   test("every documented `shio.*` property is bound by something", () => {
@@ -438,7 +484,13 @@ SH775: ${shipped.length} section type(s) shipped, `
   });
 
   test("SH499: the counts are printed, because a gate that checks nothing passes quietly", () => {
-    const kinds = [...new Set(blocks.map((block) => block.kind))].sort();
+    // SH1068 — every kind the extractor DECLARES, not only the kinds that matched. Two of the
+    // three added here found nothing on the pages as they stand, and a report built from what
+    // matched would have printed a line that read exactly like a suite checking them: the zero is
+    // the finding (no page documents a `resources/read` or a `--checks` group), and a kind that
+    // silently stops matching is the same zero arriving later.
+    const kinds = [...new Set([...CLAIMS.map((claim) => claim.kind),
+      ...blocks.map((block) => block.kind)])].sort();
     const counted = kinds.map((kind) => `${kind} ${subjects(kind).size}`).join(", ");
     const pages = new Set(blocks.map((block) => block.file)).size;
     process.stdout.write(

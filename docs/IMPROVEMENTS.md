@@ -2904,27 +2904,6 @@ submission true, and verify gains form-destination-missing for a form whose fold
 longer exists. The assertions post a submission, find it on the Forms page and through
 MCP, and archive it.
 
-### LXXIV.6 The third gate, told about the round (SH1068)
-
-cli/conformance holds docs-vocabulary.conformance.mjs, which asks whether documented
-tool names, ops and properties still exist, docs-stack.conformance.mjs, which pins the
-product's description of its search story, and docs-coverage, which derives the coverage
-matrix's summary from its tables. This round adds MCP arguments, op names such as
-post.rollback, release.run, note.add and asset.meta, verify checks, CLI verbs,
-properties and resources. Every one is vocabulary those files read, and agents.md is
-explicit that a red gate is a stop.
-
-The likely failure is quiet in the wrong direction: a block ships green on the Maven and
-JS gates, its new names never enter the conformance vocabulary, and the docs later
-describe tools the gate never checked. So each capability task in this round adds its
-names to the conformance vocabulary sources in the same commit, and this task makes that
-checkable: a test compares the op names in ShAgentOps, the tool and resource names the
-MCP server registers, and the CLI's command table with the vocabulary sources, and fails
-on any name present in code and absent from them.
-
-It prints both sets on green. The assertion plants an op in the code only and requires
-the gate to name it.
-
 ### LXXIV.7 Documentation as a count, not a memory (SH1069)
 
 The shio-roadmap-docs process is explicit: when a block's last task ships, docs-shio,

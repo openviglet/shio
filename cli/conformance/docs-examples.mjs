@@ -26,7 +26,7 @@ import { join, relative } from "node:path";
 const DEFAULT_DOCS = "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
 
 /** A fenced block is executable when it makes a checkable claim about this instance. */
-const CLAIMS = [
+export const CLAIMS = [
   {
     kind: "cli",
     langs: ["bash", "sh", "shell", "console"],
@@ -69,6 +69,27 @@ const CLAIMS = [
     /** A request body: it asserts field names the server validates. */
     match: (body) => /"(ops|op|address|site|posts|folders|dryRun|confirm|multiselect)"\s*:/.test(body),
     subject: (body) => [...body.matchAll(/"op"\s*:\s*"([a-z.]+)"/g)].map((m) => m[1]),
+  },
+  {
+    /**
+     * SH1068 — a resource URI a page tells a client to read.
+     *
+     * Its own kind rather than another subject of `mcp`, because the two are checked against
+     * different populations: a tool name is in `tools/list` and a URI is in `resources/list`, and
+     * one test receiving both would have to guess which set to look in from the shape of a string.
+     */
+    kind: "resource",
+    langs: ["json"],
+    match: (body) => /"method"\s*:\s*"resources\//.test(body),
+    subject: (body) => [...body.matchAll(/"uri"\s*:\s*"(shio:\/\/[^"]+)"/g)].map((m) => m[1]),
+  },
+  {
+    /** SH1068 — the `verify --checks` groups a page names, which is a closed vocabulary. */
+    kind: "checks",
+    langs: ["bash", "sh", "shell", "console"],
+    match: (body) => /--checks[= ][a-z]/.test(body),
+    subject: (body) => [...body.matchAll(/--checks[= ]([a-z][a-z0-9,-]*)/g)]
+      .flatMap((m) => m[1].split(",")).filter(Boolean),
   },
   {
     kind: "properties",

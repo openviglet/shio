@@ -42,7 +42,9 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { cliVerbs, mcpResources, mcpTools } from "../conformance/support/product-vocabulary.mjs";
+import {
+  batchOps as productVocabularyOps, cliVerbs, mcpResources, mcpTools,
+} from "../conformance/support/product-vocabulary.mjs";
 import { code } from "./support/source-text.mjs";
 
 // @scans code reason: it reads the conformance suites to find which verbs are exercised, and a
@@ -74,11 +76,13 @@ const SOURCE = conformanceSources().map((f) => code(readFileSync(f, "utf8"))).jo
  * <p>Derived rather than listed, for SH697's reason: a hand-typed vocabulary is the thing that
  * rots. `render.provision` is declared elsewhere and deliberately not counted here — this is the
  * content op table, which is what Block V is about.</p>
+ *
+ * <p>SH1068 moved the regex to `support/product-vocabulary.mjs`, where the docs gate reads the
+ * same table: two readers of one table is how the two come to disagree about what an op is, and
+ * this file's count is the one that would have looked right while the other went blind.</p>
  */
 function batchOps() {
-  const source = readFileSync(BATCH_SERVICE, "utf8");
-  const found = source.matchAll(/public static final String [A-Z_]+ = "([a-z]+\.[a-z]+)";/g);
-  return new Set([...found].map((m) => m[1]));
+  return productVocabularyOps(BATCH_SERVICE);
 }
 
 /**

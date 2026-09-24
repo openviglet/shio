@@ -4277,3 +4277,29 @@ client with no filesystem can neither read one nor put one in a JSON-RPC frame, 
 message is a megabyte of tokens for one line of shell. The manifest's `elsewhere` map now names
 both halves (`shio import <file> | shio export site:<name>`), which is how an MCP client learns
 where the capability lives instead of finding out by failing.
+
+## The docs gate's vocabulary, and the three populations it did not have (SH1068)
+
+`docs-vocabulary.conformance.mjs` asks whether every name a published page spells still exists
+here: a verb in `COMMANDS`, a route some `@RequestMapping` answers, a tool the MCP server
+registers, a `shio.*` key something binds. Four populations, all derived from source by
+`conformance/support/product-vocabulary.mjs` — and the protocol has more names than four.
+
+**Ops were the sharp one.** `docs-examples.mjs` has extracted `"op": "…"` out of documented
+payloads since SH499 and *nothing consumed it*: the subject was there, no test read it, so a
+renamed op was the one name in the protocol a page could go on spelling for ever. MCP resource
+URIs and `verify --checks` groups had no reader at all. All three are now read
+(`batchOps`, `mcpResources`, `verifyChecks`), asserted against the docs, and counted in the line
+the suite prints — **including the zeros**, because two of the three match nothing on the pages
+as they stand and a report built from what matched would have looked exactly like a suite that
+was checking them.
+
+`cli/test/product-vocabulary.test.mjs` is the other half, and it is the one that survives a
+reader going quietly blind: each reader has to answer with a name **planted in a source only the
+test can see** (`post.teleport`, `shio://teleport`), and a reader that finds nothing throws
+rather than returning an empty set — an empty population is what makes every check against it
+pass. It also cross-checks `ShAgentOps`'s spec table against `ShAgentBatchService.OPS` from the
+JS side, which is `ShAgentOpsContractTest`'s claim read from the surface that publishes it.
+
+One reader, not two: `live-coverage.test.mjs` had its own copy of the op regex and now imports
+this one.

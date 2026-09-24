@@ -34,6 +34,8 @@ const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
 const JAVA_MAIN = join(REPO, "shio-app", "src", "main", "java");
 const CLI_ENTRY = join(REPO, "cli", "src", "index.mjs");
+/** SH1068 — where the CLI's own `verify` checks declare their names. */
+const CLI_SRC = join(REPO, "cli", "src");
 const APP_PROPERTIES = join(REPO, "shio-app", "src", "main", "resources", "application.properties");
 
 /** `multiTenant` → `multi-tenant`: Spring's relaxed binding, and the spelling docs use. */
@@ -213,6 +215,55 @@ export function mcpResources(dir = join(JAVA_MAIN, "com", "viglet", "shio", "api
 }
 
 /**
+ * The batch op names this build dispatches (SH1068).
+ *
+ * <p>The population the vocabulary did not have. `docs-vocabulary` could ask whether a documented
+ * verb, route, tool or property still existed and had nothing to ask about `post.move` — so a
+ * renamed op was the one name in the protocol a published page could go on spelling for ever. The
+ * reader is the constant table itself, because {@code OPS} is what a refusal lists and what
+ * `shio://ops` publishes.</p>
+ *
+ * <p>Read here rather than in `cli/test/live-coverage.test.mjs`, which had its own copy of this
+ * regex: two readers of one table is how the two come to disagree about what an op is.</p>
+ */
+export function batchOps(file = join(JAVA_MAIN, "com", "viglet", "shio", "api", "agent",
+    "ShAgentBatchService.java")) {
+  const source = readFileSync(file, "utf8");
+  const found = source.matchAll(/public static final String [A-Z_]+ = "([a-z]+\.[a-z]+)";/g);
+  const ops = new Set([...found].map((m) => m[1]));
+  if (!ops.size) throw new Error(`SH1068: no batch op names found in ${file}`);
+  return ops;
+}
+
+/**
+ * The `verify` check groups (SH1068).
+ *
+ * <p>`--checks projection,replication,content,routes,page,a11y,diagnostics,delivery` is a
+ * vocabulary a page spells and a caller passes, and it was outside every reader here. Taken from
+ * the enum's wire names, which is what the parameter accepts.</p>
+ */
+export function verifyChecks(file = join(JAVA_MAIN, "com", "viglet", "shio", "api", "agent",
+    "verify", "ShAgentCheck.java")) {
+  const source = readFileSync(file, "utf8");
+  // The constants only: a field carries a type and a modifier, so a bare NAME at the enum's own
+  // indent is the one shape that is a check. `wireName()` is `name().toLowerCase()`, which is what
+  // `?checks=` takes, so the reader ends where the parameter begins.
+  const found = source.matchAll(/^ {4}([A-Z][A-Z0-9_]*)\s*[,;]\s*$/gmu);
+  const checks = new Set([...found].map((m) => m[1].toLowerCase()));
+  // SH212's two run in the CLI over the file tree and never reach the server, so the enum is not
+  // the whole vocabulary a caller may pass or a page may document. Read from their own constants
+  // for the reason every reader here is: a list typed twice is a list that rots.
+  for (const [file, name] of [["verify-projection.mjs", "PROJECTION_CHECK"],
+    ["verify-replication.mjs", "REPLICATION_CHECK"]]) {
+    const cli = readFileSync(join(CLI_SRC, file), "utf8");
+    const declared = new RegExp(`${name}\\s*=\\s*"([a-z-]+)"`, "u").exec(cli);
+    if (declared) checks.add(declared[1]);
+  }
+  if (!checks.size) throw new Error(`SH1068: no verify check names found in ${file}`);
+  return checks;
+}
+
+/**
  * The field names a `@ConfigurationProperties` class declares.
  *
  * <p>Cut-then-split rather than one regex: a type is `[\w.<>,\s]` and a name is `\w`, so the two
@@ -323,12 +374,21 @@ export function shioProperties(dir = JAVA_MAIN, properties = APP_PROPERTIES) {
   return keys;
 }
 
-/** All four, read once — every instrument wants the same set and none should read twice. */
+/**
+ * Every population, read once — each instrument wants the same sets and none should read twice.
+ *
+ * <p>Four until SH1068, and the two it adds are the two this round kept spending: an op name and
+ * a resource URI were vocabulary no reader here had, so a page naming either was checked by
+ * nothing. `verifyChecks` is the third for the same reason, and it is the cheapest of them.</p>
+ */
 export function productVocabulary() {
   return {
     cliVerbs: cliVerbs(),
     routes: httpRoutes(),
     mcpTools: mcpTools(),
+    mcpResources: mcpResources(),
+    batchOps: batchOps(),
+    verifyChecks: verifyChecks(),
     properties: shioProperties(),
   };
 }
