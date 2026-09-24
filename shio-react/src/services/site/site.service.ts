@@ -1,5 +1,6 @@
 import type {
-  ShIndexStatus, ShSite, ShSiteCoverage, ShSiteLocaleDeclaration, ShSiteLocalePolicy,
+  ShImportOutcome, ShIndexStatus, ShSite, ShSiteCoverage, ShSiteLocaleDeclaration,
+  ShSiteLocalePolicy,
 } from "@/models/site/site";
 import axios from "axios";
 import type { ShRead } from "@/lib/read-options"
@@ -108,10 +109,11 @@ export class ShSiteService {
     return { blob: response.data, fileName: named?.[1] ?? null };
   }
 
-  async import(file: File): Promise<ShSite> {
+  /** SH1079 — the site, what arrived in it, and what the import could not do. */
+  async import(file: File): Promise<ShImportOutcome> {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await axios.post<ShSite>("/v2/import", formData);
+    const response = await axios.post<ShImportOutcome>("/v2/import", formData);
     return response.data;
   }
 }

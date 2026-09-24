@@ -13,10 +13,14 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.UUID;
 
@@ -123,6 +127,15 @@ public class ShSiteImportService {
      */
     @Transactional
     public ShSite importPackage(InputStream zipStream, String owner) {
+        return importWithOutcome(zipStream, owner).site();
+    }
+
+    /**
+     * SH1079 — {@link #importPackage(InputStream, String)}, answering with what arrived and what
+     * went wrong as well as the site. The import endpoint answers with this.
+     */
+    @Transactional
+    public ShImportOutcome importWithOutcome(InputStream zipStream, String owner) {
         Path dest = null;
         try {
             dest = ShExchangeTempDir.create("shio-import-");
@@ -132,7 +145,7 @@ public class ShSiteImportService {
                 throw new ShExchangeException(ShExchangeException.Kind.NO_SITE,
                         "Package contains no site to import");
             }
-            return cloneInto(pkg, owner).site();
+            return cloneInto(pkg, owner).outcome();
         } catch (IOException e) {
             // The upload itself: a truncated or non-zip stream. Before SH267 the message named
             // neither "manifest" nor "zip", so this reached the caller as the catch-all.
@@ -152,6 +165,12 @@ public class ShSiteImportService {
     @Transactional
     public ShSite importPackage(ShExchangePackage pkg, String owner) {
         return cloneInto(pkg, owner).site();
+    }
+
+    /** SH1079 — {@link #importPackage(ShExchangePackage, String)}, with the whole outcome. */
+    @Transactional
+    public ShImportOutcome importWithOutcome(ShExchangePackage pkg, String owner) {
+        return cloneInto(pkg, owner).outcome();
     }
 
     /**
@@ -258,17 +277,38 @@ public class ShSiteImportService {
         }
 
         // 5. Posts (data references remapped).
+        // SH1079 — what the loop already knew and dropped: a post it skipped and a post type it
+        // could not resolve. Each is reported once per post (skips) or once per type (types).
+        List<ShImportOutcome.Problem> problems = new ArrayList<>();
+        Set<String> postsArrived = new HashSet<>();
+        Set<String> postsSkipped = new HashSet<>();
+        Set<String> typesMissing = new LinkedHashSet<>();
         for (ShExchangePost exPost : pkg.posts()) {
             ShFolder folder = foldersByOldId.get(exPost.folderId());
             if (folder == null) {
-                continue; // post in a folder the package didn't carry — skip defensively
+                // A post in a folder the package didn't carry — skipped defensively, and now said.
+                // Once per post: its DRAFT and PUBLISHED rows are two entries with one id.
+                if (postsSkipped.add(exPost.id())) {
+                    problems.add(new ShImportOutcome.Problem("post-skipped", exPost.title(),
+                            "not imported: its folder is not in the package"));
+                }
+                continue;
             }
+            ShPostType type = resolvePostType(exPost.postTypeName());
+            if (type == null && exPost.postTypeName() != null
+                    && typesMissing.add(exPost.postTypeName())) {
+                problems.add(new ShImportOutcome.Problem("post-type-unresolved",
+                        exPost.postTypeName(),
+                        "posts of this type were imported without one: the package does not define "
+                                + "it and this instance has no post type by that name"));
+            }
+            postsArrived.add(exPost.id());
             ShPostUnified row = new ShPostUnified();
             row.setId(idRemap.get(exPost.id()));
             row.setState(exPost.state() != null ? ShPostState.valueOf(exPost.state()) : ShPostState.DRAFT);
             row.setShFolder(folder);
             row.setShSite(ShFolderSite.of(folder));
-            row.setShPostType(resolvePostType(exPost.postTypeName()));
+            row.setShPostType(type);
             row.setTitle(exPost.title());
             row.setSummary(exPost.summary());
             row.setFurl(exPost.furl());
@@ -284,7 +324,19 @@ public class ShSiteImportService {
             shObjectReferenceService.reindex(shPostUnifiedRepository.save(row));
         }
 
-        return new CloneResult(firstSite, postTypesCreated);
+        // The package format lists files and this import brings over none of them (SH1065 says
+        // what a package does and does not carry). Named, so an absent image is not a surprise.
+        int files = pkg.files() == null ? 0 : pkg.files().size();
+        if (files > 0) {
+            problems.add(new ShImportOutcome.Problem("files-not-imported", files + " file(s)",
+                    "the package lists files and an import does not bring them over; upload them "
+                            + "to the new site's library"));
+        }
+        ShImportOutcome outcome = new ShImportOutcome(firstSite,
+                new ShImportOutcome.Arrived(sitesByOldId.size(), foldersByOldId.size(),
+                        postsArrived.size(), postTypesCreated),
+                List.copyOf(problems));
+        return new CloneResult(firstSite, postTypesCreated, outcome);
     }
 
     /**
@@ -305,7 +357,7 @@ public class ShSiteImportService {
     }
 
     /** Outcome of a clone: the first created site (or {@code null} for a model-only package) and the number of post-types created. */
-    private record CloneResult(ShSite site, int postTypesCreated) {
+    private record CloneResult(ShSite site, int postTypesCreated, ShImportOutcome outcome) {
     }
 
     private ShFolder saveFolder(String oldId, Map<String, ShExchangeFolder> exFolders,

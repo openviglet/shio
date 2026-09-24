@@ -51,10 +51,23 @@ export async function run(flags, positionals, ctx) {
   const client = new ShioAdminClient({ baseUrl, user, password, fetch: ctx.fetch });
 
   const bytes = await (ctx.readFile ?? readFile)(file);
-  const site = await client.importPackage({ bytes, fileName: basename(file) });
+  const answer = await client.importPackage({ bytes, fileName: basename(file) });
+  // SH1079 — the answer is `{site, arrived, problems}`. An instance from before it answers with the
+  // bare site, and reading either is cheaper than a version check.
+  const site = answer?.site ?? answer;
 
   // Terse, like every other agent-facing output: the site's name is what the next command addresses
   // it by (SH79), so it is what this prints rather than the id the response leads with.
   ctx.stdout.write(`imported site:${site.name ?? site.id}\n`);
-  return site;
+  const arrived = answer?.arrived;
+  if (arrived) {
+    ctx.stdout.write(`arrived: ${arrived.folders} folder(s), ${arrived.posts} post(s), `
+      + `${arrived.postTypesCreated} new post type(s)\n`);
+  }
+  // One line each, so a skipped post or a missing type is something the caller sees rather than
+  // something it finds later with a verify run.
+  for (const problem of answer?.problems ?? []) {
+    ctx.stdout.write(`problem: ${problem.code} ${problem.subject ?? ""} — ${problem.message}\n`);
+  }
+  return answer;
 }

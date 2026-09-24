@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.viglet.shio.exchange.ShExchangeException;
+import com.viglet.shio.exchange.site.ShImportOutcome;
 import com.viglet.shio.exchange.site.ShSiteImportService;
-import com.viglet.shio.persistence.model.site.ShSite;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -62,16 +62,21 @@ public class ShExchangeImportAPI {
         this.shSiteImportService = shSiteImportService;
     }
 
+    /**
+     * SH1079 — answers with {@link ShImportOutcome}: the site, what arrived by kind, and what the
+     * import could not do. A package is the write whose contents the caller did not type, so the
+     * site row alone told it least about the call that changed most.
+     */
     @PostMapping
-    public ResponseEntity<ShSite> importPackage(@RequestParam("file") MultipartFile file,
-                                                Principal principal) {
+    public ResponseEntity<ShImportOutcome> importPackage(@RequestParam("file") MultipartFile file,
+                                                         Principal principal) {
         if (file == null || file.isEmpty()) {
             throw ShImportFailedException.noFile();
         }
         try (InputStream in = file.getInputStream()) {
-            ShSite site = shSiteImportService.importPackage(in,
+            ShImportOutcome outcome = shSiteImportService.importWithOutcome(in,
                     principal != null ? principal.getName() : null);
-            return ResponseEntity.status(HttpStatus.CREATED).body(site);
+            return ResponseEntity.status(HttpStatus.CREATED).body(outcome);
         } catch (IOException | ShExchangeException e) {
             // Classified rather than flattened: the four causes need four different next actions,
             // and the cause's own message is the part that names the offending field.

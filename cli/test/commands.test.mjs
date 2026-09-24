@@ -255,6 +255,35 @@ test("SH268: import posts the package as multipart and prints the site's address
       + "learns more from its name than from any diagnosis of the contents");
 });
 
+test("SH1079: import prints what arrived and every problem the instance named", async () => {
+  const stdout = sink();
+  const fetch = fetchScript(() => ({
+    status: 201,
+    body: {
+      site: { id: "site-1", name: "Bootstrap" },
+      arrived: { sites: 1, folders: 3, posts: 12, postTypesCreated: 2 },
+      problems: [{ code: "files-not-imported", subject: "4 file(s)", message: "upload them" }],
+    },
+  }));
+  const ctx = {
+    env: { SHIO_URL: "http://shio.test", SHIO_USER: "u", SHIO_PASSWORD: "p" },
+    cwd: "/proj",
+    stdout,
+    stderr: sink(),
+    fetch,
+    readFile: async () => new Uint8Array([0x50, 0x4b, 0x03, 0x04]),
+  };
+
+  await importCmd.run({}, ["/packages/bootstrap-site.zip"], ctx);
+
+  const lines = stdout.text.split(String.fromCharCode(10));
+  assert.equal(lines[0], "imported site:Bootstrap",
+    "SH1079: the first line is still the address the next command uses");
+  assert.equal(lines[1], "arrived: 3 folder(s), 12 post(s), 2 new post type(s)");
+  assert.equal(lines[2], "problem: files-not-imported 4 file(s) — upload them",
+    "SH1079: a problem the instance named is printed, not left for a verify run to find");
+});
+
 test("SH268: import with no file says what to pass, and never calls the instance", async () => {
   const fetch = fetchScript(() => ({ body: {} }));
   const ctx = { env: {}, cwd: "/proj", stdout: sink(), stderr: sink(), fetch };

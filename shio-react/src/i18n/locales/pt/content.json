@@ -7,6 +7,7 @@
   "content.orInstead": "Ou, em vez disso",
   "content.newSite": "Novo Site",
   "content.importSite": "Importar Site",
+  "content.importProblems": "Importado, com {{count}} problema(s). Primeiro: {{first}}",
   "content.newFolder": "Nova Pasta",
   "content.newPost": "Novo Post",
   "content.editSite": "Editar Site",

@@ -223,6 +223,14 @@ reaching for a zip because it is the thing that exists.
 ### Importing an exchange package — `POST /api/v2/import`
 
 Multipart (`file`), accepts an SH68 package zip and clones it in via `ShSiteImportService`.
+**It answers `ShImportOutcome` (SH1079):** `{site, arrived, problems}`. `arrived` counts sites,
+folders, logical posts and post types created here (a reused type is not counted). `problems` holds
+what the clone loop already knew and used to drop. `post-skipped` is a post whose folder the package
+does not carry. `post-type-unresolved` is a type the package does not define and the instance does
+not have, so its posts land typeless. `files-not-imported` is raised because an import brings over
+none of the files a package lists. The console warns with the first problem, and `shio import` prints
+an `arrived:` line and a `problem:` line for each. `importPackage` still returns the bare site for
+the bootstrap and provisioning callers.
 **Every failure teaches (SH189)** — it used to answer `ResponseEntity.badRequest().build()` for all
 of them while `ShExchangeException` knew exactly which, and bringing the 2018
 `openviglet/bootstrap-site` package forward cost seven field renames inferred by reading Java.
@@ -245,7 +253,7 @@ interpolated from `ShExchangePackageCodec.MANIFEST_ENTRY` now.
 **CSRF is session-narrowed, not exempt** (SH167's matcher, registered in
 `ShCsrfExemptionLintTest.MUST_BE_NARROWED`) — the console posts this form with a cookie, so a
 blanket exemption would let a forged request create a *site* against a curator's session.
-**`shio import <file.zip>` is the CLI half (SH268)** — multipart, printing `imported site:<name>`, and
+**`shio import <file.zip>` is the CLI half (SH268)** — multipart, printing `imported site:<name>` first, and
 the teaching body is rendered by `formatError` rather than swallowed. **There is no MCP route and that
 is a decision**: an SH68 package is a zip and this surface is JSON, so the capability is CLI-shaped by
 construction (SH186 is the precedent that makes it a decision — a REST-only capability whose input is

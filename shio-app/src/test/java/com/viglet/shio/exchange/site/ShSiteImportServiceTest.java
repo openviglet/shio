@@ -34,6 +34,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.viglet.shio.exchange.model.ShExchangeFile;
+import com.viglet.shio.exchange.model.ShExchangeFolder;
+import com.viglet.shio.exchange.model.ShExchangePackage;
+import com.viglet.shio.exchange.model.ShExchangePost;
+import com.viglet.shio.exchange.model.ShExchangeSite;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.CreateRequest;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -224,9 +229,44 @@ class ShSiteImportServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "site.zip",
                 "application/zip", exportedZip);
 
+        // SH1079 — the answer is the site and what arrived in it, not the site row alone.
         mockMvc.perform(multipart("/api/v2/import").file(file).principal(mockPrincipal))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists());
+                .andExpect(jsonPath("$.site.id").exists())
+                .andExpect(jsonPath("$.arrived.sites").value(1))
+                .andExpect(jsonPath("$.arrived.posts").value(2))
+                .andExpect(jsonPath("$.problems").isArray());
+    }
+
+    @Test
+    void sh1079AnImportNamesWhatItCouldNotDo() {
+        // A package built to trip each thing the import already knew and used to drop: a post in a
+        // folder the package does not carry, a post whose type exists nowhere, and a listed file.
+        String siteId = "sh1079-site";
+        String rootId = "sh1079-root";
+        ShExchangePackage pkg = new ShExchangePackage(ShExchangePackage.CURRENT_VERSION,
+                "2026-09-24T00:00:00Z", "test",
+                List.of(new ShExchangeSite(siteId, "SH1079 " + UUID.randomUUID(), null, null,
+                        null, null, null, null, "admin", List.of(rootId))),
+                List.of(),
+                List.of(new ShExchangeFolder(rootId, "root", null, true, siteId, null, 0, "admin")),
+                List.of(new ShExchangePost("sh1079-kept", rootId, "SH1079-NO-SUCH-TYPE", "DRAFT",
+                                "Kept Without A Type", null, "/kept", "admin", false, null, 0, null),
+                        new ShExchangePost("sh1079-stray", "sh1079-no-such-folder", null, "DRAFT",
+                                "Stray Post", null, "/stray", "admin", false, null, 0, null)),
+                List.of(new ShExchangeFile("sh1079-file", "logo.png", "image/png")));
+
+        ShImportOutcome outcome = new TransactionTemplate(transactionManager)
+                .execute(status -> shSiteImportService.importWithOutcome(pkg, "admin"));
+
+        assertThat(outcome.arrived())
+                .as("SH1079: the tally counts what landed, and the stray post did not")
+                .isEqualTo(new ShImportOutcome.Arrived(1, 1, 1, 0));
+        assertThat(outcome.problems()).extracting(ShImportOutcome.Problem::code)
+                .as("SH1079: each thing the import could not do is named, in the order it met them")
+                .containsExactly("post-type-unresolved", "post-skipped", "files-not-imported");
+        assertThat(outcome.problems().get(0).subject()).isEqualTo("SH1079-NO-SUCH-TYPE");
+        assertThat(outcome.problems().get(1).subject()).isEqualTo("Stray Post");
     }
 
     @Test

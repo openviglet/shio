@@ -1818,6 +1818,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1075** — pnpm test now runs the console lint and fails on any unsuppressed error; three of the twenty were fixed, the seventeen left are declared by name against SH1136, and CI's lint step is green (design §LXXII.14 recorded in `docs/agents/console-ui.md`).
 - **SH1077** — An open change stream reads each ACL input once per pass and tenant, so the fan-out fell from 7.05 to 2.11 statements per entry per stream, with the ceiling lowered to 3 (design §LXXII.15 recorded in `docs/agents/agent-surface.md`).
 - **SH1078** — A console move answers with the published addresses it retired and created, read before and after the write, so a caller learns what visitors lost without a verify run (design §LXXII.16 superseded: a URL is site plus furl, not the folder chain, so only a cross-site move or a first furl changes one) (design §LXXII.16 recorded in `docs/agents/content-api.md`).
+- **SH1079** — An import answers with the site, what arrived by kind and what it could not do (skipped posts, unresolved types, files it never brings), and the console and shio import show it (design §LXXII.17 recorded in `docs/agents/content-api.md`).
 
 ## Block BH — One content model, many languages
 

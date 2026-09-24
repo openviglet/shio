@@ -135,15 +135,11 @@ class ShAgentP9ConformanceTest {
                 no("ShNoteAPI.java", "digest", THE_ROW_IS_THE_ANSWER),
                 no("ShNoteAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
                 no("ShNoteAPI.java", "routes", NO_ROUTE_MOVED)));
+        // SH1079 — what arrived, by kind, and what the import itself could not do.
         byPath.put("/api/v2/import", new Proof(
-                no("ShExchangeImportAPI.java", "ChangeSet",
-                        "it answers with the site it created, and what arrived inside it is a read "
-                        + "away — an exchange package is a whole site, so the change set would be "
-                        + "the site's contents"),
+                yes("ShImportOutcome.java", "Arrived"),
                 no("ShExchangeImportAPI.java", "digest", THE_ROW_IS_THE_ANSWER),
-                no("ShExchangeImportAPI.java", "finding",
-                        "shio verify over the imported site is the finding list, and it is a call "
-                        + "the importer makes when it wants one"),
+                yes("ShImportOutcome.java", "Problem"),
                 no("ShExchangeImportAPI.java", "routes", NO_ROUTE_MOVED)));
 
         // The model, whose proposal IS a finding list — the one non-agent path that answers with one.

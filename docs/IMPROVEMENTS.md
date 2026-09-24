@@ -2454,28 +2454,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.17 An import's answer is the site, not what arrived in it (SH1079)
-
-The P9 census (SH983) asked of every mutating path whether its answer carries a change
-set, a digest, findings or a route delta. An exchange import is the write with the
-widest effect in the product — a package creates a site, its folders, its posts, its
-post types and its static files in one call — and it answers with
-`ResponseEntity<ShSite>`: the site's own row, which the caller largely already knows,
-since it named the package.
-
-The asymmetry is the point. A single-object save can answer with the row it wrote
-because the caller sent that row and can compare. An import is the opposite: nobody
-typed its contents, a package built elsewhere is what a caller cannot predict, and what
-it needs to know is what landed and whether any of it is broken. Both proofs exist and
-neither is offered here. The import walks every object it creates, so a count by kind is
-a tally it is already keeping, and `shio verify` over the new site is the finding list —
-a run somebody has to decide to make, with nothing in the response to suggest it.
-
-So: answer an import with what arrived, by kind, and with whatever the import itself
-already knows went wrong — a skipped file, an unresolved post type. A first import on a
-fresh instance is also the moment an operator has the least context to interpret
-silence, which is when a bare created site reads as success.
-
 ### LXXII.18 The eager total, from the instance that serves it (SH1112)
 
 SH1043 gave the console a number and two readers: a `pnpm` script and a gate that fails

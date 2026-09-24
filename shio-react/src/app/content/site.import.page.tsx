@@ -41,8 +41,16 @@ export default function BentoSiteImportPage() {
     if (!file) return
     setImporting(true)
     try {
-      const site = await service.import(file)
-      toast.success(t("content.importSite"))
+      const { site, problems } = await service.import(file)
+      // SH1079 — a skipped post or a missing type is said here, not left for the curator to find.
+      if (problems.length > 0) {
+        toast.warning(t("content.importProblems", {
+          count: problems.length,
+          first: `${problems[0].subject ?? ""} — ${problems[0].message}`,
+        }))
+      } else {
+        toast.success(t("content.importSite"))
+      }
       navigate(`${ROUTES.CONSOLE}/content/object/${site.id}`)
     } finally {
       setImporting(false)

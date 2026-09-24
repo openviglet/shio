@@ -74,3 +74,13 @@ export type ShSiteLocaleDeclaration = {
   enabled: string[];
   fallback: Record<string, string>;
 };
+
+/**
+ * SH1079 — what `POST /v2/import` answers: the site, what arrived in it, and what the import could
+ * not do. `code` is one of `post-skipped`, `post-type-unresolved` or `files-not-imported`.
+ */
+export type ShImportOutcome = {
+  site: ShSite;
+  arrived: { sites: number; folders: number; posts: number; postTypesCreated: number };
+  problems: { code: string; subject: string | null; message: string }[];
+};
