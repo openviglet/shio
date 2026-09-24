@@ -12,6 +12,7 @@ import type {
   ShioPost,
   ShioPostTypeSchema,
   ShioQueryParams,
+  ShioReadOptions,
   ShioRequestOptions,
   ShioSite,
 } from "./types";
@@ -77,7 +78,9 @@ export class ShioClient {
     params?: ShioPageParams,
     opts?: ShioRequestOptions
   ): Promise<ShioListing | null> {
-    const qs = buildQuery({ page: params?.page, size: params?.size, locale: params?.locale });
+    const qs = buildQuery({
+      page: params?.page, size: params?.size, locale: params?.locale, state: params?.state,
+    });
     return this.requestOrNull<ShioListing>(
       `/object/${seg(folderId)}/list${qs}`,
       opts
@@ -91,9 +94,14 @@ export class ShioClient {
 
   // --- Posts ---
 
-  /** Get a published post by id (attributes expanded), or `null` if not found / not published. */
-  getPost(postId: string, opts?: ShioRequestOptions): Promise<ShioPost | null> {
-    return this.requestOrNull<ShioPost>(`/post/${seg(postId)}`, opts);
+  /**
+   * Get a published post by id (attributes expanded), or `null` if not found / not published.
+   *
+   * SH1081 — `opts.state` asks for another version: `"draft"` or `"rev:<n>"` with a preview token.
+   */
+  getPost(postId: string, opts?: ShioReadOptions): Promise<ShioPost | null> {
+    const qs = buildQuery({ state: opts?.state });
+    return this.requestOrNull<ShioPost>(`/post/${seg(postId)}${qs}`, opts);
   }
 
   /**
@@ -103,23 +111,26 @@ export class ShioClient {
    * SH1057 — pass a `locale` as the third argument to resolve only the translation
    * in that language: `getPostByUrl(siteId, "/about", "pt-br")` is `null` when the
    * post at `/about` is in another language, and its `availableLocales` says which.
+   *
+   * SH1081 — `opts.state` asks for another version, as on {@link getPost}: a draft preview of
+   * one page is `getPostByUrl(siteId, "/about", { state: "draft" })` with a preview token.
    */
-  getPostByUrl(siteId: string, url: string, opts?: ShioRequestOptions): Promise<ShioPost | null>;
+  getPostByUrl(siteId: string, url: string, opts?: ShioReadOptions): Promise<ShioPost | null>;
   getPostByUrl(
     siteId: string,
     url: string,
     locale: string,
-    opts?: ShioRequestOptions
+    opts?: ShioReadOptions
   ): Promise<ShioPost | null>;
   getPostByUrl(
     siteId: string,
     url: string,
-    localeOrOpts?: string | ShioRequestOptions,
-    opts?: ShioRequestOptions
+    localeOrOpts?: string | ShioReadOptions,
+    opts?: ShioReadOptions
   ): Promise<ShioPost | null> {
     const locale = typeof localeOrOpts === "string" ? localeOrOpts : undefined;
     const options = typeof localeOrOpts === "string" ? opts : localeOrOpts;
-    const qs = buildQuery({ siteId, url, locale });
+    const qs = buildQuery({ siteId, url, locale, state: options?.state });
     return this.requestOrNull<ShioPost>(`/post/by-url${qs}`, options);
   }
 
@@ -151,6 +162,7 @@ export class ShioClient {
       page: params?.page,
       size: params?.size,
       locale: params?.locale,
+      state: params?.state,
     });
     return this.request<ShioListing>(`/query${qs}`, opts);
   }

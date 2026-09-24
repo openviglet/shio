@@ -180,3 +180,34 @@ test("SH1057: listChildren and query pass a locale, and send nothing when none i
     "SH1057: a listing a front end cannot narrow to one language shows every translation twice");
   assert.equal(new URL(fetchFn.calls[2].url).searchParams.has("locale"), false);
 });
+
+test("SH1081: the four CDA reads pass a state, and send none when none is given", async () => {
+  const fetchFn = fakeFetch({ body: { id: "p1", attrs: {}, availableLocales: [], folders: [], posts: [] } });
+  const client = new ShioClient({ baseUrl: BASE, fetch: fetchFn });
+
+  await client.getPost("p1", { state: "draft" });
+  await client.getPostByUrl("s1", "/about", { state: "rev:3" });
+  await client.getPostByUrl("s1", "/about", "pt-br", { state: "draft" });
+  await client.listChildren("f1", { state: "draft" });
+  await client.query({ siteId: "s1", state: "draft" });
+  await client.getPost("p1");
+
+  const states = fetchFn.calls.map((call) => new URL(call.url).searchParams.get("state"));
+  assert.deepEqual(states, ["draft", "rev:3", "draft", "draft", "draft", null],
+    "SH1081: a front end on the SDK could not build a draft preview, because no read sent a state");
+  assert.equal(new URL(fetchFn.calls[2].url).searchParams.get("locale"), "pt-br",
+    "SH1081: a locale and a state travel together on a by-URL read");
+});
+
+test("SH1081: a state the token may not read surfaces the server's problem, slug included", async () => {
+  const problem = { status: 403, slug: "state-needs-preview-token", fix: "use a preview token" };
+  const client = new ShioClient({ baseUrl: BASE, fetch: fakeFetch({ status: 403, body: problem }) });
+
+  await assert.rejects(() => client.getPost("p1", { state: "draft" }), (err) => {
+    assert.ok(err instanceof ShioHttpError);
+    assert.equal(err.status, 403);
+    assert.match(err.body ?? "", /state-needs-preview-token/,
+      "SH1081: the slug is what tells a front end to fetch a preview token, so it must survive");
+    return true;
+  });
+});

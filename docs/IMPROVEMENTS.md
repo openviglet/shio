@@ -1593,24 +1593,6 @@ changes, and gates declared as appliable checklists in the content tree.
 
 The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
 
-### LXVI.10 The client asks for the version the CDA can serve (SH1081)
-
-SH990 gave every CDA read a state parameter: published for any token, draft and rev:<n>
-for a preview token, refused with state-needs-preview-token otherwise. The REST routes
-and the GraphQL fields take it. The TypeScript client in shio-client/src/client.ts does
-not: getPost, getPostByUrl, listChildren and query build their query strings from a
-fixed set, and getPostByUrl omits locale too, although the route has taken it since
-SH53. A front end written against the SDK, which is how a Next.js site reads Shio,
-cannot build a draft preview of one page or show a revision, and cannot pin a
-translation by URL.
-
-Add an optional state to those four reads and locale to getPostByUrl, passed through
-buildQuery, which already drops undefined values. Type state as a string rather than a
-union, so rev:<n> needs no template-literal type and the server stays the one place that
-says what is allowed. The 403 comes back through the client's existing error path; its
-test should assert that the problem's slug survives. The React SDK, which wraps this
-client, needs nothing beyond the new parameters.
-
 ### LXVI.11 A calendar over the Scheduled page (SH1082)
 
 SH991 gave the console a Scheduled page: an agenda list, earliest first, each row linked

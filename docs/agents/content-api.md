@@ -1516,6 +1516,15 @@ there the locale filters the rows before `draftPreferred` pages them. A blank `?
 passes it on `listChildren`, `query` and — as a third argument, with options still accepted there —
 `getPostByUrl`. `ShCdaLocaleFilterTest` holds all three reads on both paths.
 
+**The client asks for a state too (SH1081).** SH990 gave every CDA read `state` (`published`, or
+`draft` and `rev:<n>` with a preview token). `@viglet/shio-client` now sends it: in the options of
+`getPost` and `getPostByUrl` (`ShioReadOptions`), and in the params of `listChildren` and `query`.
+It is typed as a string (`ShioContentState`), not a union, so the server stays the one place that
+says which values exist. A refused state throws `ShioHttpError` with `status` 403, and `body`
+carries the `state-needs-preview-token` slug. `@viglet/shio-react` passes it through:
+`useShioPost(id, state)` and `useShioPostByUrl(site, url, { locale, state })`. `useShioQuery` and
+`useShioChildren` now refetch when `locale` or `state` changes. Before this they ignored both.
+
 **GraphQL has the same two fields and the same argument (SH1129).** `ShContent` declares `locale`
 and `availableLocales`, and `postByUrl` and `posts` take `locale`. A `posts` page reads every row's
 translation group in one query (`findDistinctLocalesByTranslationGroupIdIn`) — the single-post reads

@@ -48,6 +48,22 @@ export interface ShioRequestOptions {
   signal?: AbortSignal;
 }
 
+/**
+ * The version of content a CDA read asks for (SH1081, over SH990's parameter).
+ *
+ * `"published"` is the default and any token may read it. `"draft"` and `"rev:<n>"` need a
+ * preview token, and without one the read throws {@link ShioHttpError} with status 403 and the
+ * problem slug `state-needs-preview-token`. A string rather than a union, so the server stays the
+ * one place that says which values exist.
+ */
+export type ShioContentState = string;
+
+/** Per-request options for a single-post read: {@link ShioRequestOptions} plus a state. */
+export interface ShioReadOptions extends ShioRequestOptions {
+  /** See {@link ShioContentState}; omitted, the published version. */
+  state?: ShioContentState;
+}
+
 /** A published site. */
 export interface ShioSite {
   id: string;
@@ -253,6 +269,8 @@ export interface ShioQueryParams {
   size?: number;
   /** Only posts written in this locale (SH1057), e.g. `"pt-br"`; omitted, every locale. */
   locale?: string;
+  /** SH1081 — which version of each post; see {@link ShioContentState}. */
+  state?: ShioContentState;
 }
 
 /** Paging parameters for listings. */
@@ -261,4 +279,6 @@ export interface ShioPageParams {
   size?: number;
   /** Only posts written in this locale (SH1057); a folder's subfolders are listed whatever it is. */
   locale?: string;
+  /** SH1081 — which version of each post; see {@link ShioContentState}. */
+  state?: ShioContentState;
 }

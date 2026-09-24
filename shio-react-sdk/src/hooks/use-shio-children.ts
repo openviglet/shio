@@ -10,7 +10,8 @@ export function useShioChildren(
   const client = useShioClient();
   return useAsync<ShioListing | null>(
     (signal) => client.listChildren(folderId!, params, { signal }),
-    [client, folderId, params?.page, params?.size],
+    // SH1081 — locale and state change what the listing holds, so they refetch it too.
+    [client, folderId, params?.page, params?.size, params?.locale, params?.state],
     !!folderId
   );
 }

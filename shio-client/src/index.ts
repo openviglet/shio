@@ -18,6 +18,9 @@ export type { GenerateTypesOptions } from "./codegen";
 export type {
   ShioClientConfig,
   ShioRequestOptions,
+  // SH1081 — which version of content a read asks for.
+  ShioContentState,
+  ShioReadOptions,
   ShioSite,
   // SH1123 — the languages a site offers, which a switcher is built from.
   ShioSiteLocales,

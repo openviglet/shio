@@ -21,6 +21,9 @@ export function useShioQuery(params?: ShioQueryParams, enabled = true) {
       params?.postType,
       params?.page,
       params?.size,
+      // SH1081 — locale and state change what the listing holds, so they refetch it too.
+      params?.locale,
+      params?.state,
     ],
     enabled
   );
