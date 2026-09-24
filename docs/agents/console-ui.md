@@ -2529,3 +2529,19 @@ read it shows is for a different query, category or page. `review.list.page.tsx`
 effect called `toggle`, which set state synchronously, so it now starts the read and sets `open`
 when the read answers. The remaining seventeen are declared by name in
 `cli/test/lint-baseline.test.mjs` against SH1136, the task that pays them off.
+
+## The Activity page's live update, seen to arrive (SH1087)
+
+`useChangeStream` (SH1005) had only source-scan assertions, and a stream that never delivers looks
+exactly like a quiet instance. `e2e/change-stream.check.mjs` (`pnpm --filter shio-react
+console:stream`) opens the Activity page against a running console and backend. It writes a site and
+a folder through `POST /agent/batch`, then asserts two things. The "something changed" line appears
+without a reload, and the rest of the page did not move while it appeared, because the page asks
+before redrawing (P7).
+
+First run, on a clean store on `:2710` with the Vite dev server on `:5173`: one stream request, and
+the line appeared 809 ms after the write. Two things to know when running it. The console redirects
+`/console/admin/activity` to `/bento/admin/activity`, and the bento shell renders a `section` with no
+`main`, so the check reads the body. The line's full text is what gets stripped before comparing, in
+both languages. What an open tab costs is SH967's `events.idle` budget: four statements per pass,
+per tab.

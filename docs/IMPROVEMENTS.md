@@ -1695,31 +1695,6 @@ The agent's side is one field on note.add, the run it answers with, which a sess
 already knows. The assertions answer a request with a run that drafts a change, then
 approve it from the dock's action and read the published result and the decision row.
 
-### LXVII.12 A stream nobody has seen deliver (SH1087)
-
-SH967 built the event stream and SH1005 gave it its first console client: the Activity
-page opens an `EventSource`, and a `changes` event raises a line offering the new rows
-rather than redrawing under the curator. Every assertion about that is a source scan —
-the file says `EventSource`, it says `withCredentials`, it does not tear the connection
-down on an error.
-
-That is the one shape this repository already knows is not evidence. A stream that never
-delivers produces no error, no log line and no failing test; it looks exactly like an
-instance where nothing has happened, which on a quiet install is most of the time. The
-same reasoning made SH460 refuse a dev-mode instance and SH579 refuse an unexplained
-red: silence is not a pass.
-
-The console has the instrument already — `e2e/*.check.mjs`, which caught SH702's dialog
-keeping a restore button for a version it was no longer showing. The check is small and
-the point is that it is end to end: open the page against a live instance, write one
-post through the API, and assert the line appears without a reload. A second one asserts
-the negative that costs more to get wrong — that the table did **not** move while it
-appeared.
-
-Worth measuring in the same run: what an open tab costs. SH967 bounded an idle pass at
-four statements, and a page that holds a connection for as long as it is open is where
-that ceiling is actually spent.
-
 ## LXVIII The authoring surface, field by field (Block BC)
 
 Almost every piece of authoring intelligence a modern CMS needs already exists in Shio's
