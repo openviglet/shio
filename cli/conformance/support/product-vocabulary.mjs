@@ -236,6 +236,23 @@ export function batchOps(file = join(JAVA_MAIN, "com", "viglet", "shio", "api", 
 }
 
 /**
+ * The keys the manifest's `features` map reports (SH1069).
+ *
+ * <p>A key is a capability the product advertises to every agent that reads the manifest, which
+ * makes it the unit the coverage matrix owes a row: `docs-coverage` counts the keys it does not
+ * name. Read from the `features.put("…")` calls because that is where a key comes into being —
+ * `ShAgentP1ConformanceTest` holds the Java side set-equal to the same map.</p>
+ */
+export function manifestFeatures(file = join(JAVA_MAIN, "com", "viglet", "shio", "api", "agent",
+    "ShAgentManifestService.java")) {
+  const source = readFileSync(file, "utf8");
+  const found = source.matchAll(/\bfeatures\.put\(\s*"([A-Za-z][A-Za-z0-9]*)"/g);
+  const keys = new Set([...found].map((m) => m[1]));
+  if (!keys.size) throw new Error(`SH1069: no manifest feature keys found in ${file}`);
+  return keys;
+}
+
+/**
  * The `verify` check groups (SH1068).
  *
  * <p>`--checks projection,replication,content,routes,page,a11y,diagnostics,delivery` is a
@@ -389,6 +406,7 @@ export function productVocabulary() {
     mcpResources: mcpResources(),
     batchOps: batchOps(),
     verifyChecks: verifyChecks(),
+    manifestFeatures: manifestFeatures(),
     properties: shioProperties(),
   };
 }

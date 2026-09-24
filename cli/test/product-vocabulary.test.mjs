@@ -32,7 +32,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import {
-  batchOps, mcpResources, mcpTools, productVocabulary, verifyChecks,
+  batchOps, manifestFeatures, mcpResources, mcpTools, productVocabulary, verifyChecks,
 } from "../conformance/support/product-vocabulary.mjs";
 import { code } from "./support/source-text.mjs";
 
@@ -53,8 +53,9 @@ test("SH1068: every population the gate judges against has a reader that found s
   process.stdout.write(`\nSH1068 product vocabulary: ${JSON.stringify(counts)}\n`);
 
   assert.deepEqual(Object.keys(vocabulary).sort(), [
-    "batchOps", "cliVerbs", "mcpResources", "mcpTools", "properties", "routes", "verifyChecks",
-  ], "SH1068: a population with no reader is a population the docs gate cannot check at all, "
+    "batchOps", "cliVerbs", "manifestFeatures", "mcpResources", "mcpTools", "properties", "routes",
+    "verifyChecks",
+  ],"SH1068: a population with no reader is a population the docs gate cannot check at all, "
     + "which is how an op name went unchecked from SH81 until this");
   for (const [name, size] of Object.entries(counts)) {
     assert.ok(size > 0, `SH1068: the ${name} reader found nothing, so every check against it `
@@ -83,6 +84,18 @@ test("SH1068: the check reader answers with a planted enum constant", () => {
   const { file } = planted("ShAgentCheck.java", "public enum ShAgentCheck {\n    TELEPORT,\n}\n");
 
   assert.ok(verifyChecks(file).has("teleport"));
+});
+
+test("SH1069: the feature reader answers with a planted manifest key, and refuses an empty read", () => {
+  const { file } = planted("ShAgentManifestService.java",
+    'class X { void m() { features.put("teleport", true);\n features.put(\n "warpDrive", false); } }');
+
+  assert.deepEqual([...manifestFeatures(file)].sort(), ["teleport", "warpDrive"],
+    "SH1069: a key the reader misses is a capability the coverage ratchet cannot count, so it "
+    + "would pass for ever with no row in the matrix");
+
+  const empty = planted("ShAgentManifestService.java", "class X { }");
+  assert.throws(() => manifestFeatures(empty.file), /SH1069: no manifest feature keys/u);
 });
 
 test("SH1068: a reader that finds nothing fails loudly rather than answering empty", () => {

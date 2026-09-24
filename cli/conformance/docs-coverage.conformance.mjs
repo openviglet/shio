@@ -44,6 +44,8 @@ import { fileURLToPath } from "node:url";
 
 import { namedIn } from "../../scripts/coverage-mirror.mjs";
 
+import { manifestFeatures } from "./support/product-vocabulary.mjs";
+
 // @scans prose reason: COVERAGE.md is Markdown and its table rows ARE the subject — the
 // summary is derived from them, so nothing here can be stripped away (SH740).
 
@@ -338,6 +340,55 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
         + "  `pnpm test` prints what is owed on every commit (SH758), so this is a queue rather "
         + "than a surprise.\n  newest unnamed: "
         + unnamed.slice(-8).join(" "),
+    );
+  });
+});
+
+/**
+ * SH1069 — a capability the manifest advertises is a row the matrix owes, counted rather than
+ * remembered.
+ *
+ * <p>SH747 counts shipped *ids*, and an id is how a contributor thinks about work. A reader of
+ * shio.viglet.org thinks in capabilities, and the manifest's `features` map is the one list of
+ * them the product itself publishes. When SH1069 landed the matrix named 1 of 63 keys (`contentAsFiles`), so this
+ * opens as SH747 did: a ratchet over a corpus meant to shrink, because a gate opening with 62
+ * findings is one nobody reads. What it closes at once is the new case — a key added to the
+ * manifest with no row fails here, which is the round's documentation debt stopped from growing
+ * while the existing debt is paid down.</p>
+ *
+ * <p>A key is named when the matrix spells it in backticks, the way a row names any identifier.</p>
+ */
+describe("SH1069 conformance: every manifest feature key reaches the coverage matrix", () => {
+  /**
+   * Feature keys the matrix does not name, on 2026-09-24. Lower it when a row names one; raising
+   * it means a capability was advertised and nothing documents it. The fix is two commits in two
+   * repositories, SH771's shape: name the key in its row in vigletdocs, then lower this here.
+   */
+  const UNNAMED_FEATURES = 62;
+
+  test("SH1069: the count of manifest feature keys the matrix does not name never rises", () => {
+    const text = matrix();
+    const keys = [...manifestFeatures()].sort();
+    const unnamed = keys.filter((key) => !text.includes(`\`${key}\``));
+
+    process.stdout.write(
+      `\nSH1069: ${keys.length} manifest feature key(s), ${unnamed.length} not named in ${MATRIX} `
+        + `(recorded ${UNNAMED_FEATURES})\n  unnamed: ${unnamed.join(" ")}\n`,
+    );
+
+    assert.ok(keys.length > 40,
+      `the manifest yielded ${keys.length} feature keys — a read that came back short would make `
+        + "every capability look documented");
+
+    assert.ok(
+      unnamed.length <= UNNAMED_FEATURES,
+      `${unnamed.length} manifest feature keys are not named in ${MATRIX}, against a recorded `
+        + `${UNNAMED_FEATURES}. A capability is advertised to every agent and documented for no `
+        + "reader, which is the defect SH1069 exists for.\n"
+        + "  It takes two commits, in two repositories:\n"
+        + `    1. vigletdocs/docs-shio/${MATRIX} — name the key, in backticks, in its cluster row\n`
+        + "    2. here — lower UNNAMED_FEATURES to the new count\n  unnamed: "
+        + unnamed.join(" "),
     );
   });
 });

@@ -123,7 +123,7 @@
 ## Block BI — The areas this round did not reach
 
 - 📋 **SH1066** (deps: SH970 ⏳, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — A submission is written as a draft into a folder a developer configured, the nav has no Forms entry, and a curator must guess the folder to find them. → §LXXIV.4
-- 📋 **SH1069** (deps: —) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — The block-completion sweep of docs-shio, the coverage matrix and the public site is required when a block's last task ships, and no block here declares one. → §LXXIV.7
+- ⏳ **SH1069** (deps: SH1072 ⏳) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — 62 manifest feature keys still need a row in vigletdocs COVERAGE.md, with UNNAMED_FEATURES lowered here as each is named. → §LXXIV.7
 - 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads a browser global and a filename as symbols this repository should define, so six ledger entries that were correct when written keep the gate permanently red. → §LXXIV.8
 - 📋 **SH1103** (deps: —) **a gate stamp stays fresh across the ship that changes what it certified, so a red commit lands unseen** — Staleness is the HEAD sha and `ship` writes the governed docs at that same HEAD — which the JS suite reads, so a ship turns `pnpm test` red after its last green run. → §LXXIV.9
 - 📋 **SH1104** (deps: SH1039 ✅) **the editable read is on no response budget, and it just grew a section that scales with the catalogue** — Sixteen responses are measured and `/agent/editable` is not one, so `include=insertable` has no ceiling and the budget fixture renders no page to measure it against. → §LXXIV.10
@@ -162,6 +162,12 @@
   pushes a submission's arrival through the stream and reads a report with tone
   attention, a caption from the title and summary, and actions to open and to archive
   it. Several arrivals in one moment are one report rather than a row each.
+
+## Done when — SH1069
+
+- **Every manifest feature key is named in COVERAGE.md** pnpm conformance:docs prints
+  the SH1069 line with 0 unnamed keys, and UNNAMED_FEATURES in
+  docs-coverage.conformance.mjs reads 0.
 
 ## Non-goals (do NOT add as tasks)
 

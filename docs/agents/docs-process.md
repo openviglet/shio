@@ -713,3 +713,21 @@ reads the authoritative file. The copy is checked against the authority, never t
 **Workflow:** name the ids in their cluster rows in `docs-shio/COVERAGE.md`, then
 `SHIO_DOCS_DIR=<path>/docs-shio pnpm run coverage:mirror`, and commit the mirror here in the same
 pass as the matrix there.
+
+## A capability is a row the matrix owes (SH1069)
+
+SH747 counts shipped **ids**, which is how a contributor sees work. A reader of the public docs sees
+**capabilities**, and the product publishes exactly one list of them: the manifest's `features`
+map. `docs-coverage.conformance.mjs` now reads every key from the `features.put("…")` calls
+(`manifestFeatures` in `conformance/support/product-vocabulary.mjs`) and counts the ones
+`COVERAGE.md` does not spell in backticks. The run prints the count and the unnamed keys.
+
+It opens as a ratchet, `UNNAMED_FEATURES`, for SH747's reason: the matrix named one key of 63 when
+this landed, and a gate that opens with 62 findings is one nobody reads. What it closes at once is
+the case that grows the debt: **a new key with no row fails**. To pay the debt down, name a key in
+its cluster row in vigletdocs, then lower the ceiling here. That is two commits in two repositories,
+SH771's shape.
+
+The block-completion half of SH1069 already existed as SH861's reader (above), so nothing new was
+built for it. The design's other population, "every surface in AY6's declaration", pointed at an
+anchor that does not exist anywhere in this tree, so nothing was built for it either.
