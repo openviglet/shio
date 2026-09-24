@@ -94,11 +94,31 @@ const BASELINE = new URL("../../shio-react/eslint-suppressions.json", import.met
  * leave visible here than to fix blind: they sit in the two largest pages in the console.</p>
  */
 const DECLARED = {
-  // Empty, and left declared rather than deleted (SH704 paid the last one off). An absent key and
-  // a key at `{}` read the same to a person and differently to this test: with the key here, a
-  // reintroduction is a *change to a declared zero* that a diff shows, rather than a new rule
-  // quietly appearing in a file somebody regenerated.
-  "react-hooks/set-state-in-effect": {},
+  // SH704 paid the last one off, and it came back to eleven while nothing local ran the lint: CI
+  // was red on it for weeks and `pnpm test` was green (SH1075). Recorded here rather than fixed in
+  // that task, because each is an effect to rework in a page nobody can drive from a Node test, and
+  // SH1075's own job was the instrument — `shio-react/test/lint-gate.test.mjs` now runs ESLint
+  // inside `pnpm test`, so the twelfth fails locally. Paying these off is SH1136. None is on the
+  // PAID list below; the two paid pages that had regressed were fixed instead, not suppressed.
+  "react-hooks/set-state-in-effect": {
+    "src/app/content/languages.page.tsx": 1,
+    "src/app/content/post-conflict.dialog.tsx": 1,
+    "src/app/content/search.page.tsx": 1,
+    "src/app/system/bento-tenant-link-notice.tsx": 1,
+    "src/app/system/bento.root.page.tsx": 1,
+    "src/components/post-history.panel.tsx": 1,
+    "src/components/post-insights.panel.tsx": 1,
+    "src/components/post-live-preview.tsx": 1,
+    "src/components/publish-preview.dialog.tsx": 1,
+    "src/hooks/use-list-state.ts": 1,
+  },
+  // SH1075 — a ref read during render, the same accrual and the same payoff task (SH1136).
+  "react-hooks/refs": {
+    "src/app/admin/activity/activity.list.page.tsx": 1,
+    "src/components/post-live-preview.tsx": 1,
+    "src/hooks/use-autosave.ts": 1,
+    "src/hooks/use-change-stream.ts": 1,
+  },
   // Also empty, and also left declared: SH1046 took the last one off. The content browser's
   // `postTypeService.query().then(...)` was an expression statement, and it went with the effect
   // that read the whole post-type catalogue once per folder.
@@ -110,6 +130,10 @@ const DECLARED = {
     "src/app/content/static-file.list.page.tsx": 2,
   },
   "react-refresh/only-export-components": {
+    // SH1075 — the two below arrived while nothing local ran the lint, and are the kind the
+    // paragraph above calls the API rather than a defect: helpers exported beside a component.
+    "src/app/content/post-conflict.dialog.tsx": 2,
+    "src/components/field-constraints.tsx": 1,
     "src/app/login/login-settings.tsx": 1,
     "src/app/routes/graphql.routes.tsx": 1,
     "src/components/theme-provider.tsx": 1,

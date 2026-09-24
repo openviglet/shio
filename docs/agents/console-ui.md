@@ -2513,3 +2513,19 @@ live is the P7 surprise this exists to avoid.
 by `post.move` on the agent surface; the console's only path to it is a rollback that restores an
 older revision's URL, which is the case this dialog handles. A rename affordance — with the inbound
 count before its button arms — is the console half SH1064 leaves open.
+
+## The console lint runs in `pnpm test` (SH1075)
+
+SH665 put `pnpm lint` in CI with the old findings in `eslint-suppressions.json`, so only new ones
+fail. Nothing local ran it, and it stayed red in CI for weeks: twenty errors over seventeen files,
+two of them on pages SH701 had paid off. `shio-react/test/lint-gate.test.mjs` now runs ESLint over
+the console inside `pnpm test`, suppressions included, and fails on any error. It costs about
+thirteen seconds.
+
+Of the twenty, three were fixed rather than recorded. A disable comment named a `jsx-a11y` rule
+that no config loads. `static-file.list.page.tsx` had its `setLoading(true)` back in the mount
+effect, and its spinner is now the comparison SH703 used elsewhere: the page is loading while the
+read it shows is for a different query, category or page. `review.list.page.tsx`'s deep-link
+effect called `toggle`, which set state synchronously, so it now starts the read and sets `open`
+when the read answers. The remaining seventeen are declared by name in
+`cli/test/lint-baseline.test.mjs` against SH1136, the task that pays them off.

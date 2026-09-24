@@ -72,22 +72,6 @@ export default function ReviewListPage() {
     void fetchSessions()
   }, [t, fetchSessions])
 
-  /**
-   * SH999 — arriving from the Activity page's agent chip, with one run named.
-   *
-   * Opened once the list is in, and only for a session the list actually holds: a link to a run
-   * that has been approved away should land on the queue rather than on an empty expander, which
-   * is the same fact the page already states by not listing it.
-   */
-  useEffect(() => {
-    const wanted = new URLSearchParams(window.location.search).get("session")
-    if (!wanted || sessions.every((each) => each.session !== wanted) || wanted in open) return
-    void toggle(wanted)
-    // `toggle` is re-created every render and `open` changes as a result of this; the guard above
-    // is what makes running once enough, so neither belongs in the dependencies.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessions])
-
   const toggle = async (session: string) => {
     if (session in open) {
       const next = { ...open }
@@ -103,6 +87,26 @@ export default function ReviewListPage() {
       reportProblem(error, t("common.error"))
     }
   }
+
+  /**
+   * SH999 — arriving from the Activity page's agent chip, with one run named.
+   *
+   * Opened once the list is in, and only for a session the list actually holds: a link to a run
+   * that has been approved away should land on the queue rather than on an empty expander, which
+   * is the same fact the page already states by not listing it.
+   */
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("session")
+    if (!wanted || sessions.every((each) => each.session !== wanted) || wanted in open) return
+    // SH1075 — the read first and the state when it answers, SH701's shape: calling `toggle` here
+    // set `open` synchronously inside the effect, which is the cascade this page was paid off for.
+    service.detail(wanted)
+      .then((detail) => setOpen((prev) => ({ ...prev, [wanted]: detail })))
+      .catch((error: unknown) => reportProblem(error, t("common.error")))
+    // `open` changes as a result of this; the guard above is what makes running once enough, so it
+    // does not belong in the dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessions])
 
   /**
    * SH1001 — carry out a per-change triage, then re-read the run.

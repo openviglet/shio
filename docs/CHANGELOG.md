@@ -1815,6 +1815,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
   checked **One page with one violation of each rule reports all five** ShHtmlAccessibilityTest drives a fixture carrying exactly one heading-skip, lang-missing, link-no-text, landmark-missing and form-label-missing, and asserts the set is all five — a subset means a rule that is declared and does not run. Each finding carries a detail naming the place and a fix.
   checked **The correct form of each of those same shapes is silent** The second fixture is the first one written properly, in the ways that most look like the defects: an icon link named by its image's alt, a control wrapped in its own label, role="main" instead of main, an anchor with no href, a fragment with no html element. It reports nothing.
   checked **The headline benchmark stays under its unchanged ceiling** buildMarketingSite went 4432 tokens against a 4000 ceiling once verify reported accessibility, because the marketing-site blueprint had no main and no h1. Repairing the layout brings it to 3972 under the same ceiling, which is the fix rather than a budget raised over our own template.
+- **SH1075** — pnpm test now runs the console lint and fails on any unsuppressed error; three of the twenty were fixed, the seventeen left are declared by name against SH1136, and CI's lint step is green (design §LXXII.14 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

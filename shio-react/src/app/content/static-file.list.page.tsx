@@ -89,7 +89,14 @@ export default function StaticFileListPage() {
    */
   const [chosenSite, setTargetSite] = useState<string>("")
   const targetSite = chosenSite || sites[0]?.id || ""
-  const [loading, setLoading] = useState(true)
+  /**
+   * SH1075 — which read the grid is showing, so the spinner is a comparison rather than a flag the
+   * mount effect sets. SH701 paid this page off by moving `setLoading(true)` out of that effect;
+   * SH1047's abort brought it back, and the lint stayed red in CI while nothing local ran it.
+   */
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
+  /** The curator asked — upload, delete, move — for the same read again (SH701). */
+  const [refreshing, setRefreshing] = useState(false)
   /**
    * SH1023 — the library's view, in its URL.
    *
@@ -126,6 +133,9 @@ export default function StaticFileListPage() {
    * array. That was correct exactly because it had all of it, and a library big enough to need
    * chips is one where downloading it to draw them is the problem.
    */
+  const requestKey = JSON.stringify([query, category, page])
+  const loading = refreshing || loadedKey !== requestKey
+
   const fetchList = useCallback((signal?: AbortSignal) =>
     service.list({
       q: query || undefined,
@@ -137,7 +147,8 @@ export default function StaticFileListPage() {
         setItems(listing.items ?? [])
         setTotalFiles(listing.totalFiles ?? 0)
         setFacets(listing.facets ?? {})
-        setLoading(false)
+        setLoadedKey(JSON.stringify([query, category, page]))
+        setRefreshing(false)
       })
       .catch((reason: unknown) => {
         // SH1047 — a superseded listing is not an empty library. The search box and the category
@@ -147,17 +158,17 @@ export default function StaticFileListPage() {
         setItems([])
         setTotalFiles(0)
         setFacets({})
-        setLoading(false)
+        setLoadedKey(JSON.stringify([query, category, page]))
+        setRefreshing(false)
       }), [category, page, query])
 
   /** The curator asked — upload, delete, move — so the spinner is a response to them (SH701). */
   const load = () => {
-    setLoading(true)
+    setRefreshing(true)
     void fetchList()
   }
 
   useEffect(() => {
-    setLoading(true)
     const abort = new AbortController()
     void fetchList(abort.signal)
     return () => abort.abort()
