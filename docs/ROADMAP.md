@@ -50,7 +50,6 @@
 ## Block BA — Releases, scheduling and the publish gate
 
 - 📋 **SH1082** (deps: SH991 ✅, a calendar component in the viglet design system) **the Scheduled page is a list only, with no month or week calendar and no drag to reschedule** — The console has no calendar component, and one built inside Shio is a copy the duplicate gate refuses. → §LXVI.11
-- 📋 **SH1083** (deps: SH992 ✅) **POST /agent/batch accepts an op field it does not know, so a misspelled cancel publishes now** — Measured on a clean instance: an op carrying cancle answered 200 and planned the write, where shio_write since SH992 refuses the same field by name. → §LXVI.12
 - 📋 **SH1084** (deps: —) **two publish paths never evaluate a gate: the review queue's Approve and the editor's PATCH with publish** — SH997 says every publish passes a gate and two do not, so a site's checks are enforced on three surfaces and silently skipped on two. → §LXVI.13
 - 📋 **SH1085** (deps: —) **nine casings use the JVM's default locale, so a Turkish instance emits publısh and mints different URLs** — P5 asks for byte-identical serialization and these make the wire value, the friendly URL and an import slug depend on where the JVM runs. → §LXVI.14
 

@@ -486,6 +486,8 @@ public class ShAgentAPI {
         // SH320 — `verify` bounds work (a whole lint pass), so it teaches rather than reading an
         // unknown value as false. `ids` deliberately stays on Spring's lenient binding: it only
         // adds a field to rows that are otherwise identical.
+        // SH1083 — the ops were checked as they arrived, before binding (ShAgentBatchBodyAdvice):
+        // a `cancle` on a post.publish used to bind away and publish the page now.
         return rendered(shAgentProofService.attach(
                 shAgentBatchService.run(batch, ids, name(principal)),
                 ShAgentFlag.of(verify, "verify"),

@@ -3226,6 +3226,17 @@ cancelling one of two, or saving both unchanged, leaves the other attributed to 
 arrived as a plain publish, and the op would have gone live instead of standing down. The refusal
 names `shio_publish` for `cancel`. `shio publish --when <instant>` and `--cancel` are the CLI leg.
 
+**The REST batch refuses one too (SH1083).** `POST /api/v2/agent/batch` bound its body with Spring's
+lenient mapper, so `cancle: true` on a `post.publish` bound away and the page went live now. On a
+clean instance it answered 200. `ShAgentBatchBodyAdvice` now reads the body as it arrived, for that
+one target type, and `ShAgentOpFields.check` refuses the first op field that is not an
+`ShAgentBatch.Op` component. The refusal carries the same `undeclared-op-field` slug, with
+`ops[<i>]`, the allowed names and a `didYouMean`. The allowed names are read from the record, so a
+new op field is accepted the day it exists. It is an advice rather than a `JsonNode` handler
+parameter, which kept two things working: SH430's interceptor still learns that `dryRun` is a body
+field from the parameter type, and a body that does not parse is still Spring's `unreadable-body`.
+Other request bodies keep lenient binding.
+
 ## A release: the unit a launch did not have (SH993, first slice)
 
 One batch call is atomic and nothing persisted a set across calls, so forty pages of a launch went live

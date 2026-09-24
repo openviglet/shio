@@ -149,6 +149,43 @@ class ShAgentUnknownParameterTest {
     }
 
     @Test
+    @DisplayName("SH1083: an op field the batch does not know is refused by name, not dropped")
+    void aMisspelledOpFieldIsRefused() throws Exception {
+        String body = refusal(post(BATCH), """
+                {"ops":[{"op":"post.publish","address":"post:no-such-site/no-such-page",\
+                "cancle":true}]}""");
+
+        assertThat(body)
+                .as("SH1083: `cancle` bound away and the publish ran now, where shio_write has "
+                        + "refused the same field since SH992; the refusal names the op, the field "
+                        + "and the spelling it meant")
+                .contains("undeclared-op-field")
+                .contains("ops[0]")
+                .contains("`cancle`")
+                .contains("\"didYouMean\":\"cancel\"");
+        assertThat(ShAgentOpFields.NAMES)
+                .as("SH1083: the allowed names are the Op record's own components, so the two "
+                        + "cannot disagree")
+                .contains("op", "address", "cancel", "revision", "expect");
+    }
+
+    @Test
+    @DisplayName("SH1083: an op that does not bind is still the caller's 400, not a 500")
+    void aValueOfTheWrongTypeIsUnreadable() throws Exception {
+        String body = refusal(post(BATCH), """
+                {"ops":[{"op":"post.rollback","address":"post:no-such-site/p",\
+                "revision":{"not":"a number"}}]}""");
+
+        assertThat(body).contains("unreadable-body");
+    }
+
+    @Test
+    @DisplayName("SH1083: a batch body that is not JSON at all is still unreadable-body")
+    void malformedJsonIsStillUnreadable() throws Exception {
+        assertThat(refusal(post(BATCH), "{\"ops\":[{\"op\":")).contains("unreadable-body");
+    }
+
+    @Test
     @DisplayName("SH430: /agent/apply has no dryRun at all, so the refusal names /agent/plan")
     void applyIsPointedAtTheRehearsal() throws Exception {
         String body = refusal(post(APPLY).queryParam("dryRun", "true"), DOCUMENT);

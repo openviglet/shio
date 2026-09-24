@@ -1613,31 +1613,6 @@ endpoint with the new instant, which records the dropper as the requester SH991 
 The zone line stays above every view. A test drives a drop and reads the change back
 through the agent's scheduled listing.
 
-### LXVI.12 The batch refuses an op field it does not know (SH1083)
-
-SH992 made shio_write refuse an op field it does not declare, since a dropped `cancel`
-would publish the page instead of standing it down. The REST batch, the other door to
-the same service, still drops what it does not know. Measured on a clean instance: a dry
-run of `site.upsert` carrying `cancle: true` answered 200 and planned the create, saying
-nothing about the ignored field. On `post.publish` the same misspelling publishes now
-and reports success.
-
-The cause is binding rather than handling. `ShAgentBatch.Op` is a record that Jackson
-fills, Spring's default mapper ignores unknown properties, and nothing between the
-controller and the service looks at what arrived.
-
-The fix refuses an unknown op field on `POST /api/v2/agent/batch` with the teaching
-shape shio_write already uses: the field named, the allowed names (the `Op` components),
-a did-you-mean, and a fix. It is scoped to the op object, not the mapper globally,
-because other request bodies may rely on lenient binding and this change should not
-decide that for them. `shio publish` and the TS client send only known fields, so no
-caller breaks.
-
-A test with the id posts a batch whose `post.publish` op carries `cancle` and asserts a
-400 naming `cancel`, with the page still unpublished. ShAgentOpsContractTest's list of
-declared keys is the natural source for the allowed names, so the vocabulary and the
-refusal cannot disagree.
-
 ### LXVI.13 A gate with two doors, and the lint that finds the next one (SH1084)
 
 SH997 put the gate "where the publish happens" so no surface could bypass it, and named
