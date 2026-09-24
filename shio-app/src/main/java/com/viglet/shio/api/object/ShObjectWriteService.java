@@ -10,8 +10,12 @@ package com.viglet.shio.api.object;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -19,6 +23,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.folder.ShFolderWriteService;
 import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -104,14 +109,23 @@ public class ShObjectWriteService {
      *
      * <p>A URL is assigned only when the object has none — the one case where a
      * move is not discarding a decision somebody made.</p>
+     *
+     * <h2>The answer says which addresses moved (SH1078)</h2>
+     *
+     * <p>The published posts the move can reach are read before and after it, and every one
+     * whose address differs is reported. Reading both ends, rather than predicting from the
+     * destination, keeps the report true about what happened even where a writer does less than
+     * expected.</p>
      */
     @Transactional
-    public List<ShObject> moveTo(String destId, List<String> ids, String actor) {
+    public ShMoveOutcome moveTo(String destId, List<String> ids, String actor) {
         ShObject dest = live(destId);
         List<ShObject> moved = new ArrayList<>();
         if (dest == null) {
-            return moved;
+            return new ShMoveOutcome(moved, List.of());
         }
+        List<String> reach = postsReachedBy(ids);
+        Map<String, String> before = publishedAddresses(reach);
         for (String id : ids) {
             ShObject object = live(id);
             if (object instanceof ShFolder) {
@@ -124,7 +138,63 @@ public class ShObjectWriteService {
                 movePost(id, destFolder, actor);
             }
         }
-        return moved;
+        Map<String, String> after = publishedAddresses(reach);
+        List<ShMoveOutcome.RouteChange> routes = new ArrayList<>();
+        for (String postId : reach) {
+            String was = before.get(postId);
+            String now = after.get(postId);
+            if (!Objects.equals(was, now)) {
+                routes.add(new ShMoveOutcome.RouteChange(was, now));
+            }
+        }
+        return new ShMoveOutcome(moved, routes);
+    }
+
+    /**
+     * SH1078 — the post ids a move of {@code ids} can relocate: each post named, and every post
+     * beneath each folder named. In request order, then tree order, so the report is stable.
+     */
+    private List<String> postsReachedBy(List<String> ids) {
+        Set<String> reach = new LinkedHashSet<>();
+        for (String id : ids == null ? List.<String>of() : ids) {
+            if (live(id) instanceof ShFolder folder) {
+                collectPosts(folder, reach, new HashSet<>());
+            } else if (id != null) {
+                reach.add(id);
+            }
+        }
+        return new ArrayList<>(reach);
+    }
+
+    private void collectPosts(ShFolder folder, Set<String> reach, Set<String> seen) {
+        if (!seen.add(folder.getId())) {
+            return;
+        }
+        for (ShPostUnified row : shPostUnifiedRepository.findByShFolderAndStateIn(folder, ALL_STATES)) {
+            reach.add(row.getId());
+        }
+        for (ShFolder child : shFolderRepository.findByParentFolder(folder)) {
+            collectPosts(child, reach, seen);
+        }
+    }
+
+    /**
+     * SH1078 — where each published post answers, keyed by post id. A post with no PUBLISHED
+     * row has no address a visitor can reach, so it is absent. The site is the post's own
+     * {@code shSite}, because that is the column delivery resolves an address against.
+     */
+    private Map<String, String> publishedAddresses(List<String> postIds) {
+        Map<String, String> addresses = new HashMap<>();
+        for (String postId : postIds) {
+            for (ShPostUnified row : shPostUnifiedRepository.findById(postId)) {
+                if (row.getState() == ShPostState.PUBLISHED && row.getShSite() != null
+                        && row.getFurl() != null && !row.getFurl().isBlank()) {
+                    addresses.put(postId,
+                            ShAddress.post(row.getShSite().getName(), row.getFurl()).toString());
+                }
+            }
+        }
+        return addresses;
     }
 
     /**

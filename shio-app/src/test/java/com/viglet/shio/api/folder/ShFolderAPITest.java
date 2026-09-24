@@ -86,6 +86,7 @@ class ShFolderAPITest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private String siteId;
+    private String siteName;
     private String rootFolderId;
     private String postTypeId;
     private String childFolderId;
@@ -106,6 +107,7 @@ class ShFolderAPITest {
             site.setOwner("admin");
             entityManager.persist(site);
             siteId = site.getId();
+            siteName = site.getName();
 
             ShFolder rootFolder = new ShFolder();
             rootFolder.setName("root");
@@ -353,6 +355,54 @@ class ShFolderAPITest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * SH1078: a move answers with the published addresses it retired and created. Inside one site
+     * a post keeps its friendly URL (SH139), so nothing a visitor uses moves and the list is empty.
+     */
+    @Test
+    void stage08fMoveWithinASiteReportsNoRouteChange() throws Exception {
+        String postId = createPublishedPost(childFolderId, "Stays Reachable");
+        setFurl(postId, "/sh1078-stays");
+
+        mockMvc.perform(put("/api/v2/object/moveto/" + rootFolderId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[\"" + postId + "\"]"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.moved").isArray())
+                .andExpect(jsonPath("$.routes.length()").value(0));
+    }
+
+    /** SH1078: crossing into another site is the move that retires an address and creates one. */
+    @Test
+    void stage08gMoveAcrossSitesReportsTheAddressItRetiredAndCreated() throws Exception {
+        String otherRootId = createSiteWithRoot("ut-sh1078-");
+        String postId = createPublishedPost(otherRootId, "Crossing Over");
+        setFurl(postId, "/sh1078-crossing");
+
+        mockMvc.perform(put("/api/v2/object/moveto/" + rootFolderId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[\"" + postId + "\"]"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.routes.length()").value(1))
+                .andExpect(jsonPath("$.routes[0].retired")
+                        .value(org.hamcrest.Matchers.startsWith("post:ut-sh1078-")))
+                .andExpect(jsonPath("$.routes[0].retired")
+                        .value(org.hamcrest.Matchers.endsWith("/sh1078-crossing")))
+                .andExpect(jsonPath("$.routes[0].created")
+                        .value("post:" + siteName + "/sh1078-crossing"));
+
+        // And delivery agrees with the answer: the page now lives in this site.
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> shPostUnifiedRepository.findById(postId)
+                .forEach(row -> assertThat(row.getShSite().getId())
+                        .as("SH1078: the created address names the site delivery now resolves")
+                        .isEqualTo(siteId)));
+    }
+
     // SH954 — `stage09ClearCacheIsOk` was here, asserting that `/clear-cache` answered 200. It did,
     // and that was the defect: the endpoint's whole body was `ResponseEntity.ok().build()` long
     // after the page cache it cleared had been removed, and the console's Clear Cache button
@@ -434,10 +484,19 @@ class ShFolderAPITest {
     }
 
     private String createPost(String folderId, String title) {
+        return createPost(folderId, title, ShPostState.DRAFT);
+    }
+
+    /** SH1078 — a page a visitor can reach, which is the only kind a route delta is about. */
+    private String createPublishedPost(String folderId, String title) {
+        return createPost(folderId, title, ShPostState.PUBLISHED);
+    }
+
+    private String createPost(String folderId, String title, ShPostState state) {
         ObjectNode data = objectMapper.createObjectNode();
         data.put(ShSystemPostTypeAttr.TITLE, title);
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         return tx.execute(status -> shPostUnifiedWriteService.create(
-                new CreateRequest(folderId, postTypeId, data, ShPostState.DRAFT, "admin", null, null)).getId());
+                new CreateRequest(folderId, postTypeId, data, state, "admin", null, null)).getId());
     }
 }

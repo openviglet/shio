@@ -120,10 +120,8 @@ class ShAgentP9ConformanceTest {
                         + "batch's change set"),
                 no("ShObjectAPI.java", "digest", THE_ROW_IS_THE_ANSWER),
                 no("ShObjectAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
-                no("ShObjectAPI.java", "routes",
-                        "a move DOES change a post's URL, and this answer says so only by returning "
-                        + "the moved objects. The route delta is what shio verify --delivery asks "
-                        + "for afterwards")));
+                // SH1078 — a move answers with the published addresses it retired and created.
+                yes("ShMoveOutcome.java", "routes")));
         // The one non-agent write whose answer already carries a digest: SH398 stamped the bytes'
         // sha256 on the item, so a replace tells the caller what it now holds without a second call.
         byPath.put("/api/v2/staticfile", new Proof(

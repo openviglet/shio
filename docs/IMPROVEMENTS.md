@@ -2454,29 +2454,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.16 A move's answer says what it touched, not what it moved (SH1078)
-
-The P9 census (SH983) classified twenty-eight mutating paths and left one row that reads
-as a gap rather than a decision. A move is the one console write that changes what a
-visitor can reach: a post's friendly URL is composed from its folder chain, so dragging
-a folder in the tree retires one set of delivery addresses and creates another. The
-answer is the list of objects it touched. Which URLs those objects now answer on, and
-which ones stopped answering, is nowhere in it.
-
-Every other absence in that census has a reason that survives being written down — the
-row is the answer, the write is not content, no route moved. This one does not: the
-route did move, and the caller is told about the objects instead. The proof exists and
-is a separate run. `shio verify --delivery` walks the site and reports what resolves,
-which is the right instrument for asking whether delivery is sound and the wrong one for
-asking what this call just changed. An agent that moved a folder has to decide, with no
-signal, whether to spend that walk.
-
-So: have the move's response carry the addresses it retired and the ones it created,
-from what the write already computed, and let `shio verify --delivery` stay the question
-about the whole site. The cheap half is that the renderer already resolves a post's
-address, so the delta is a difference over values the call holds rather than a new
-traversal.
-
 ### LXXII.17 An import's answer is the site, not what arrived in it (SH1079)
 
 The P9 census (SH983) asked of every mutating path whether its answer carries a change
@@ -2681,6 +2658,32 @@ permanent there, with the reason.
 
 Pay a file off by deleting its lines from both the suppressions file and DECLARED in the
 same diff. A page fixed for `set-state-in-effect` joins PAID.
+
+### LXXII.25 A folder that crosses sites leaves its pages behind (SH1137)
+
+Found by a run during SH1078, not by reading. A folder holding a published post was
+moved with `PUT /api/v2/object/moveto/{root}` from one site's root into another site's
+root. The move succeeded. The folder's parent is now the new site's root. The post's
+rows still carry the old site in `shSite`.
+
+Delivery resolves a page by `findByShSite_IdAndFurlAndState`, so the page keeps
+answering under the old site while the tree shows it under the new one: the split the
+`ShFolderSite` invariant exists to prevent. `requireUrlFree` never runs for posts
+beneath a folder, so the destination can also end up with two posts at one URL.
+
+`ShFolderWriteService.move` is the shared writer, so the agent's `folder.move` probably
+has the same hole. Check that with the same run before assuming it.
+
+Two ways to close it. One: refuse a folder move that crosses sites, with a teaching
+error naming `shio export` and `shio import`. Two: carry the subtree over, re-pointing
+every post row's `shSite`, checking each friendly URL against the destination, and
+treating the retired addresses as SH1064 treats a rename.
+
+Refusing is smaller and cannot surprise a curator (P7). Carrying over is what a curator
+dragging a folder between sites expects. Either way, SH1078's route delta already
+reports what delivery actually does, so it becomes the assertion: after the fix, a
+permitted cross-site folder move lists each published post's retired and created
+address.
 
 ## LXXIII One content model, many languages (Block BH)
 

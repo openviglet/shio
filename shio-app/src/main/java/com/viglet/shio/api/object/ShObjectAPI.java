@@ -142,8 +142,8 @@ public class ShObjectAPI {
      * surfaces enforce the same ACL, and whichever is stricter is the correct one.</p>
      */
     @PutMapping("/moveto/{destId}")
-    public List<ShObject> moveTo(@PathVariable String destId, @RequestBody List<String> ids,
-                                 Principal principal) {
+    public ShMoveOutcome moveTo(@PathVariable String destId, @RequestBody List<String> ids,
+                                Principal principal) {
         shContentAclService.requireWrite(destId);
         requireEach(ids, shContentAclService::requireWrite);
         return shObjectWriteService.moveTo(destId, ids,

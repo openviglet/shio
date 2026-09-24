@@ -150,6 +150,13 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
   `ShPostUnifiedWriteService#move` — the same writer `post.move` uses, so the console
   and the agent cannot diverge on what a move means. A cross-site move onto an
   occupied URL is a teaching **409**, never quietly uniquified.
+  **It answers `{moved, routes}` (SH1078).** `moved` is the folders relocated, as before.
+  `routes` has one `{retired, created}` pair of SH79 addresses per *published* post whose
+  address changed. The pairs come from reading the reachable posts' addresses before and
+  after the write. A URL is a site plus a `furl`, so a move inside one site reports nothing.
+  Crossing into another site, or being given a first `furl`, does report. A cross-site
+  *folder* move currently reports nothing, and truthfully so: the posts beneath keep the
+  old `shSite`, so delivery still serves them there. That split is SH1137.
   **The folder branch delegates to `ShFolderWriteService#move` (SH137)**, which is where
   the cycle and site-root guards live: this path had neither, and a folder re-parented
   into its own subtree does not fail — it detaches the subtree from the site root and
