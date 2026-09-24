@@ -2567,3 +2567,13 @@ takes `^2026.3.12`. The release did two things at once:
 One reader had to learn something. SH891's key scan claimed "no false positives" over the bundle,
 and 2026.3.11 broke it: `BentoActionsMenu` gives actions dotted ids (`entity.delete`), and a warning
 quotes one inside a template string. `keysIn` now skips `id:` values and template-literal text.
+
+## The design system's register of Shio, checked against Shio's source (SH943)
+
+`consumers.json` in the design system is what its guards read to decide which consumers a change
+reaches. Shio's entry once listed three of the seven entries the console imports. The package has
+since corrected it and ships `viglet-ds-consumer-entries` (VDS129).
+`shio-react/test/consumer-entries.test.mjs` runs that bin with `--consumer shio --check` from the
+console package on every `pnpm test`. Today it reports seven entries over 216 files. A scratch tree
+that imports one entry must fail, naming the missing six. The bin reports a disagreement on
+stderr, so the test reads both streams.

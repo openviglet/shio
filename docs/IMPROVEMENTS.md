@@ -976,29 +976,6 @@ discovery, then the declaration corrected on both sides. It closes by asking whe
 package should be a plugin rather than copied files — a question this repository already
 ships an answer to.
 
-### LX.4 A declaration the guards trust and the source contradicts (SH943)
-
-consumers.json is the design system's answer to a question it got wrong twice: prose
-that names a subset of consumers as though it were the whole. The file's own header says
-the membership is what the guards read, and that entries are a snapshot measured over
-product source. For Shio the snapshot is short by more than half. It lists ".",
-"./styles" and "./vite"; the console's src imports ".", "./bento", "./bento.css",
-"./styles" and "./router", since SH940 "./i18n" as well, while vite.config.ts imports
-"./vite", so four real entries are undeclared and none is spurious.
-
-The header anticipates this and still missed it. It records that shio-react's test
-directory greps for ./bento to census the pages importing it, and warns that counting a
-lint looking for a subpath as the product taking it would record the opposite of what
-SH887 says. That warning is about over-counting. What happened is the reverse: measuring
-over src once and never re-deriving left three real imports undeclared.
-
-So the fix is two-sided, and the second side is the point. Correcting Shio's entry is
-one line that drifts again the next time the console takes a subpath. What must also
-land is the guard that re-derives every consumer's entries from its source and fails
-when a declaration and an import set disagree — the discipline page-reference.mjs
-already applies to its own declaration half. SH322 is the rule being followed: when a
-task says and whatever a grep turns up, the grep is the deliverable.
-
 ### LX.5 A plugin, or files rewritten on every run (SH944)
 
 page-reference.mjs argues for copying, and the argument is good: a contract an author
