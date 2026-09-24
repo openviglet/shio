@@ -2454,29 +2454,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.15 What one change costs every open stream (SH1077)
-
-SH967's fan-out benchmark measures what a change costs once `GET /api/v2/events` is open
-on several screens: 100 entries read by 50 streams took 35,250 statements, 7.05 per
-entry per stream, and `token-budgets.properties` now holds that at a ceiling of 8.
-Nearly all of it is the per-entry read check. `ShContentAclService.canRead` loads the
-object to find where its folder chain starts, climbs one `findParentIdOf` per ancestor,
-and looks up ACL rows once per level until one level carries any; the principals are
-three more queries whenever a level does. The stream calls it once per entry, and every
-stream calls it again for the same entry.
-
-None of that answer varies inside one pass. Entries written into one folder share a
-chain, a stream's principals do not change between two entries, and ten streams held by
-one curator ask the same question ten times. So the cost grows as entries × streams,
-when what it depends on is folders × distinct principals.
-
-The fix is a pass-scoped memo, not a second ACL model: resolve the chain once per folder
-and the principals once per stream per pass, and keep `canRead` the single authority so
-the decision cannot drift from the one the REST reads make. The benchmark already
-exists, so the fix lands as a lowered ceiling in `token-budgets.properties` beside the
-measured figure — the fan-out budget falling well below 7 per entry per stream is the
-proof, and the SH967 withheld-entry test is what says the memo still denies.
-
 ### LXXII.16 A move's answer says what it touched, not what it moved (SH1078)
 
 The P9 census (SH983) classified twenty-eight mutating paths and left one row that reads

@@ -2762,10 +2762,18 @@ a page whose every entry was withheld sends nothing, so a reconnect re-reads —
 **Measured before relied on** (`ShEventStreamCostBenchmarkTest`, statements not milliseconds): an
 idle stream costs **4 statements per pass**, per open tab, every second; a fan-out costs **7.05 per
 entry per stream** for a reader who is not an administrator — 100 writes to 50 screens is 35,250
-statements in one pass, most of it the ACL's folder chain walked again per entry and per stream,
-which SH1077 memoizes per pass. Both ceilings are in `token-budgets.properties`, at the measured
-value rounded up. The benchmark needed its own
-datasource, so SH423's gauge went 66 → 67.
+statements in one pass, most of it the ACL's folder chain walked again per entry and per stream.
+Both ceilings are in `token-budgets.properties`, at the measured value rounded up. The benchmark
+needed its own datasource, so SH423's gauge went 66 → 67.
+
+**SH1077 took the fan-out to 2.11** (10,552 statements for the same 100 × 50). `pump()` keeps one
+`ShContentAclService.ReadMemo` per tenant for the pass and calls `canRead(id, memo)`. The memo holds
+the ACL's *inputs*: where an object's chain starts, each folder's parent, each level's ACL rows, and
+each username's principals. `hasPermission` still makes the decision, so the stream cannot disagree
+with a REST read. It is per tenant because every row in it is tenant-scoped, and per pass because a
+memo that lived longer would keep answering after an ACL changed. The principals are keyed by
+username, so two readers sharing a memo still get their own answer (`ShContentAclServiceTest`).
+What remains is the feed page each stream reads for itself.
 
 **`shio changes --follow`** holds the stream open over the CLI's Basic auth (a `Key` token is not
 accepted on this path, and the agent's read does not need it to be), reconnects from the last event's

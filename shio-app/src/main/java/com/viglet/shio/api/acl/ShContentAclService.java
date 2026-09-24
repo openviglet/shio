@@ -9,8 +9,11 @@
 package com.viglet.shio.api.acl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -90,18 +93,55 @@ public class ShContentAclService {
 
     @Transactional(readOnly = true)
     public boolean canRead(String objectId) {
-        return hasPermission(objectId, ShAclPermission.READ);
+        return hasPermission(objectId, ShAclPermission.READ, null);
+    }
+
+    /**
+     * SH1077 — {@link #canRead(String)}, with the lookups that cannot change inside one pass
+     * answered from {@code memo}.
+     *
+     * <p>The decision is the same method's. What the memo holds is the <b>inputs</b>: where an
+     * object's folder chain starts, each folder's parent, the ACL rows on each level, and a user's
+     * principals. So the answer cannot drift from the one a REST read gets. The change stream asks
+     * the same question for every entry on every open stream, and before this each ask re-read all
+     * of it.</p>
+     *
+     * @param memo from {@link #readMemo()}, scoped to one pass and one tenant by the caller. A memo
+     *             that outlives the pass would keep answering after an ACL changed.
+     */
+    @Transactional(readOnly = true)
+    public boolean canRead(String objectId, ReadMemo memo) {
+        return hasPermission(objectId, ShAclPermission.READ, memo);
+    }
+
+    /** SH1077 — an empty memo for {@link #canRead(String, ReadMemo)}. */
+    public ReadMemo readMemo() {
+        return new ReadMemo();
+    }
+
+    /**
+     * SH1077 — what one pass has already read, keyed so that nothing in it depends on who asked
+     * except the principals, which are keyed by username.
+     */
+    public static final class ReadMemo {
+        private final Map<String, Optional<String>> startFolders = new HashMap<>();
+        private final Map<String, Optional<String>> parents = new HashMap<>();
+        private final Map<String, List<ShContentAcl>> acls = new HashMap<>();
+        private final Map<String, Principals> principals = new HashMap<>();
+
+        private ReadMemo() {
+        }
     }
 
     @Transactional(readOnly = true)
     public boolean canWrite(String objectId) {
-        return hasPermission(objectId, ShAclPermission.WRITE);
+        return hasPermission(objectId, ShAclPermission.WRITE, null);
     }
 
     /** SH995 — whether the current user may change what visitors see. */
     @Transactional(readOnly = true)
     public boolean canPublish(String objectId) {
-        return hasPermission(objectId, ShAclPermission.PUBLISH);
+        return hasPermission(objectId, ShAclPermission.PUBLISH, null);
     }
 
     /**
@@ -169,7 +209,7 @@ public class ShContentAclService {
         }
     }
 
-    private boolean hasPermission(String objectId, ShAclPermission required) {
+    private boolean hasPermission(String objectId, ShAclPermission required, ReadMemo memo) {
         if (objectId == null) {
             return true;
         }
@@ -180,10 +220,14 @@ public class ShContentAclService {
         if (isAdmin(auth)) {
             return true;
         }
-        for (String level : aclChain(objectId)) {
-            List<ShContentAcl> acls = shContentAclRepository.findByObjectId(level);
+        for (String level : aclChain(objectId, memo)) {
+            List<ShContentAcl> acls = memo == null
+                    ? shContentAclRepository.findByObjectId(level)
+                    : memo.acls.computeIfAbsent(level, shContentAclRepository::findByObjectId);
             if (!acls.isEmpty()) {
-                Principals who = currentPrincipals(auth.getName());
+                Principals who = memo == null
+                        ? currentPrincipals(auth.getName())
+                        : memo.principals.computeIfAbsent(auth.getName(), this::currentPrincipals);
                 return acls.stream().anyMatch(a -> matches(a, who) && a.getPermission().satisfies(required));
             }
         }
@@ -224,7 +268,7 @@ public class ShContentAclService {
      * <p>The visited set is not just deduplication: a folder cycle would otherwise spin here
      * forever, in the one place an instance cannot afford to.</p>
      */
-    private List<String> aclChain(String objectId) {
+    private List<String> aclChain(String objectId, ReadMemo memo) {
         List<String> chain = new ArrayList<>();
         chain.add(objectId);
         // `visited` is separate from `chain` on purpose, and the first draft of SH225 conflated
@@ -234,9 +278,15 @@ public class ShContentAclService {
         // ACL. Deduplication and termination are two questions; `visited.add` answers only the
         // second, and a folder cycle is the one loop an authorization check cannot afford.
         Set<String> visited = new LinkedHashSet<>();
-        for (String folderId = startFolderId(objectId);
+        for (String folderId = memo == null
+                        ? startFolderId(objectId)
+                        : memo.startFolders.computeIfAbsent(objectId,
+                                id -> Optional.ofNullable(startFolderId(id))).orElse(null);
                 folderId != null && visited.add(folderId);
-                folderId = shFolderRepository.findParentIdOf(folderId).orElse(null)) {
+                folderId = (memo == null
+                        ? shFolderRepository.findParentIdOf(folderId)
+                        : memo.parents.computeIfAbsent(folderId, shFolderRepository::findParentIdOf))
+                        .orElse(null)) {
             if (!chain.contains(folderId)) {
                 chain.add(folderId);
             }

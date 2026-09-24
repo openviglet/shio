@@ -9,8 +9,10 @@
 package com.viglet.shio.api.events;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -146,26 +148,34 @@ public class ShEventStreamHub {
      * over the same stream at once, which would send its page twice.
      */
     public synchronized void pump() {
+        // SH1077 — one memo per tenant per pass. Entries written into one folder share a chain, and
+        // ten streams held by one curator share their principals, so what each stream used to re-read
+        // is read once. Per tenant because every row it holds is tenant-scoped, and per pass because
+        // a memo that lived longer would keep answering after an ACL changed.
+        Map<String, ShContentAclService.ReadMemo> memos = new HashMap<>();
         for (Subscription subscription : List.copyOf(subscriptions.values())) {
+            ShContentAclService.ReadMemo memo = memos.computeIfAbsent(
+                    Objects.toString(subscription.tenant(), ""), tenant -> aclService.readMemo());
             ShTenantHandoff.runAs(subscription.tenant(),
                     () -> withAuthentication(subscription.authentication(),
-                            () -> pass(subscription)));
+                            () -> pass(subscription, memo)));
         }
     }
 
-    private void pass(Subscription subscription) {
+    private void pass(Subscription subscription, ShContentAclService.ReadMemo memo) {
         try {
             boolean sent = false;
             for (int page = 0; page < Math.max(1, properties.getMaxPagesPerPass()); page++) {
                 ShAgentChanges changes = changesService.changes(subscription.site(),
                         subscription.cursor(), properties.getPageLimit(), true, 0);
                 List<ShAgentChanges.Change> visible = changes.changes().stream()
-                        .filter(change -> change.id() == null || aclService.canRead(change.id()))
+                        .filter(change -> change.id() == null || aclService.canRead(change.id(), memo))
                         .map(ShEventStreamHub::withoutId)
                         .toList();
                 List<ShAgentChanges.Incident> incidents = changes.incidents() == null
                         ? List.of()
-                        : changes.incidents().stream().filter(this::readable).toList();
+                        : changes.incidents().stream()
+                                .filter(incident -> readable(incident, memo)).toList();
                 if (!visible.isEmpty() || !incidents.isEmpty()) {
                     subscription.sink().send(changes.cursor(), CHANGES,
                             new Page(visible, incidents.isEmpty() ? null : incidents));
@@ -204,10 +214,10 @@ public class ShEventStreamHub {
      * the change rows were withheld for, arriving by the other array. Every other subject — a URL, a
      * request path, a tenant — is not content and passes.</p>
      */
-    private boolean readable(ShAgentChanges.Incident incident) {
+    private boolean readable(ShAgentChanges.Incident incident, ShContentAclService.ReadMemo memo) {
         String subject = incident.subject();
         return subject == null || !subject.startsWith(ID_SUBJECT)
-                || aclService.canRead(subject.substring(ID_SUBJECT.length()));
+                || aclService.canRead(subject.substring(ID_SUBJECT.length()), memo);
     }
 
     /**

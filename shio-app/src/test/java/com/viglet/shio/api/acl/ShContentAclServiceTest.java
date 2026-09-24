@@ -171,6 +171,27 @@ class ShContentAclServiceTest {
     }
 
     @Test
+    void sh1077OneMemoSharedByTwoReadersStillDeniesTheOneTheAclExcludes() {
+        // SH1077 — the change stream shares one memo across every stream in a pass. What it may share
+        // is the chain and the ACL rows; the principals are per user, and a memo that keyed them by
+        // anything coarser would hand bob's grant to alice on the second stream.
+        aclService.replaceAcl(folderId, List.of(
+                new AclEntry(ShAclPrincipalType.USER, "bob", ShAclPermission.READ)));
+        ShContentAclService.ReadMemo memo = aclService.readMemo();
+
+        authAs("bob");
+        assertThat(aclService.canRead(postId, memo)).isTrue();
+        assertThat(aclService.canRead(subFolderId, memo)).isTrue();
+
+        authAs("alice");
+        assertThat(aclService.canRead(postId, memo))
+                .as("SH1077: the memo answers what canRead answers, for the reader asking")
+                .isEqualTo(aclService.canRead(postId))
+                .isFalse();
+        assertThat(aclService.canRead(subFolderId, memo)).isFalse();
+    }
+
+    @Test
     void sh995AWriteGrantSavesAndDoesNotPublish() {
         // SH995's assertion, and the separation the product had no way to express: a curator who may
         // edit this branch of the tree is not automatically the one who decides it goes live.
