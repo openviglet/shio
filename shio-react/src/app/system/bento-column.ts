@@ -1,0 +1,31 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+import type { BentoShellColumn } from "@viglet/viglet-design-system/bento"
+
+/**
+ * SH946 — which reading column a route sits in, decided once by the shell.
+ *
+ * <p>`BentoShell` owns the width, the gutters and the vertical padding, so a page sets none of
+ * them. What a page may still need is a different column, and the shell takes that as a prop
+ * above the router. So the routes that want one are named here, as patterns, rather than each
+ * page carrying a width class. Everything else is `default` (80rem, the width home and the
+ * post-type picker used to set by hand).</p>
+ *
+ * <p>`narrow` (56rem) is for a single-question form, where a long line is harder to read: the
+ * three create and import forms, which set `max-w-4xl` themselves before this.</p>
+ */
+const NARROW: readonly RegExp[] = [
+  /^\/bento\/content\/site\/new\/?$/,
+  /^\/bento\/content\/site\/import\/?$/,
+  /^\/bento\/content\/folder\/[^/]+\/new-folder\/?$/,
+]
+
+export function columnFor(pathname: string): BentoShellColumn {
+  return NARROW.some((pattern) => pattern.test(pathname)) ? "narrow" : "default"
+}

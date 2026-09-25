@@ -183,7 +183,7 @@ export default function BentoHomePage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-6 pb-12">
+    <div className="space-y-8">
       <BentoHero
         eyebrow={t("sidebar.dashboard")}
         title={t("home.welcomeTitle")}
@@ -332,6 +332,6 @@ export default function BentoHomePage() {
           {t("home.version", { version: appVersion })}
         </p>
       )}
-    </main>
+    </div>
   )
 }

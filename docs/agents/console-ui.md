@@ -2577,3 +2577,22 @@ since corrected it and ships `viglet-ds-consumer-entries` (VDS129).
 console package on every `pnpm test`. Today it reports seven entries over 216 files. A scratch tree
 that imports one entry must fail, naming the missing six. The bin reports a disagreement on
 stderr, so the test reads both streams.
+
+## The reading column is the shell's (SH946)
+
+`bento.root.page.tsx` renders the design system's `BentoShell` (VDS131) and hands it the rail and
+the three header controls. The shell owns the rest: the rail's gutter, a sticky header, one
+labelled `main` holding the reading column, a skip link, focus moved to the page's `h1` on
+navigation, and the corner where back-to-top sits. The palette and the shortcuts dialog render
+beside it, because the shell carries no state. `columnFor` in `app/system/bento-column.ts` picks
+the column by route: `narrow` (56rem) for the three create and import forms, `default` (80rem)
+everywhere else. Those are exactly the `max-w-4xl` and `max-w-7xl` those pages set by hand. No page
+inside the shell sets `mx-auto max-w-*` or its own padding, and home and the post-type picker no
+longer render a `main` of their own. The vocabulary harness is mounted outside the shell and keeps
+its layout.
+
+Proof, as the design asked. The surface digest before and after the page edits is byte-identical
+over 48 surfaces. Probed against a running console: one `main` per page, the width the column
+names (1280px default, 896px narrow), the skip link present, and SH1087's delivery check still
+green. `bento-column.test.mjs` holds the rule, the root's composition, and that no page sets a
+width.

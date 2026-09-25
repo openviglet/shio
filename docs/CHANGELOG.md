@@ -1680,6 +1680,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH949** — A session in this tree now loads the shio@openviglet plugin a stranger installs, and the two skill sets are split by whether a session drives an instance or changes this source tree (design §LX.10 recorded in `agents.md`).
 - **SH1088** — The console takes design system 2026.3.12: the chrome switch it removed left with SH963, eleven waits it ended left the waits list, and ten lines lost their DS dep and are ordinary work (design §LX.11 recorded in `docs/agents/console-ui.md`).
 - **SH943** — The design system's register now declares Shio's seven entries, and pnpm test runs its consumer-entries check so a subpath the console gains or drops fails the day it happens (design §LX.4 superseded: the register was corrected upstream before this ran, so only the guard half was left) (design §LX.4 recorded in `docs/agents/console-ui.md`).
+- **SH946** — The console renders in the package's BentoShell, which owns the reading column; the five pages dropped their own widths, and the forms get narrow by route, verified identical by digest and in a browser (design §LX.7 recorded in `docs/agents/console-ui.md`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 

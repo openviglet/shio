@@ -7,12 +7,13 @@
  * (at your option) any later version.
  */
 import {
-  BentoBackToTop,
   BentoCommandPalette,
   BentoNavRail,
+  BentoShell,
   BentoShortcutsDialog,
   BentoUserMenu,
 } from "@viglet/viglet-design-system/bento"
+import { columnFor } from "./bento-column"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { RouteBoundary } from "@/components/route-boundary"
@@ -47,12 +48,13 @@ import { BentoTenantSwitcher } from "./bento-tenant-switcher"
  * shell loses, and it is on the roadmap precisely so the temporary state cannot become the
  * permanent one by nobody deciding.
  *
- * ## The shell is three pieces and no context between them
+ * ## The shell is the package's, and no context between its pieces
  *
- * `BentoNavRail` down the left, `BentoUserMenu` in the header, `BentoBackToTop` at the corner —
- * that is the whole contract. The routed page is wrapped in `bento-rail-gutter` so its content
- * clears the fixed rail; the rail itself is `position: fixed` and takes no space in the flow, so
- * a page that forgets that gutter renders underneath it.
+ * `BentoShell` (VDS131, SH946) takes the rail and the header's controls as props and owns the
+ * rest: the rail's gutter, the sticky header, a labelled `main` whose reading column is chosen
+ * by name, a skip link, focus moved to the page's heading on navigation, and the corner where
+ * back-to-top sits. The rail is still `position: fixed`, and the shell reserves its gutter
+ * because it was handed one — no wrapper has to remember the class.
  *
  * ## Whose UserProvider, and the thing that made it visible
  *
@@ -240,73 +242,58 @@ export default function BentoRootPage() {
         two over a page showing nothing pending is the one number a curator learns to distrust.
       */}
       <ReviewPendingProvider>
-        <div className="bg-background text-foreground min-h-svh">
+        {/*
+          SH946 — the package's shell owns the rail's gutter, the header, `main` with its reading
+          column, and the corner. It replaced a hand-composed `div`/`header`/gutter here, and with
+          it every page's own width, gutter and padding: the column is `columnFor`'s answer, and a
+          page sets none of the three. The header stays `sticky`, so `BackendStatusProvider`'s
+          sticky retry bar above this tree keeps its place instead of being covered.
+        */}
+        <BentoShell
+          rail={<BentoNavRail groups={groups} homeRoute={ROUTES.BENTO} />}
+          headerEnd={
+            <>
+              {/*
+                SH934 — the tenant switch is an identity action, so it sits beside the identity
+                menu, and renders nothing unless the reader belongs to more than one tenant.
+              */}
+              <BentoReviewPending />
+              <BentoTenantSwitcher />
+              <BentoUserMenu
+                accountRoute={ROUTES.ADMIN_USERS}
+                logoutUrl={ROUTES.LOGOUT}
+                onOpenShortcuts={() => setShortcutsOpen(true)}
+              />
+            </>
+          }
+          column={columnFor(location.pathname)}
+        >
           {/*
-            `sticky`, not `fixed`, and `z-40` under the rail's own 40 rather than over everything.
-            `BackendStatusProvider` renders "server unavailable, retrying" as a `sticky top-0
-            z-50` bar from `main.tsx`, above this tree in the flow. A fixed header sat on top of
-            it and covered its retry button with the avatar — visible only while the backend is
-            down, which is precisely when that button is the one thing on screen worth reaching.
-            Sticky keeps both: the banner takes its 53px and the header follows underneath.
-
-            The rail reserves its own top ~80px (`pt-20`) against the viewport, so the two do not
-            need to agree on a height. Nothing else lives in this header: a page's identity is in
-            its own hero, so there is no breadcrumb bar.
+            SH931 — above the Outlet, so it sits over whatever page the link led to rather than
+            inside it; it renders nothing unless the URL names a tenant that is not the session's.
           */}
-          <header className="sticky top-0 z-40 flex h-16 items-center justify-end gap-2 px-4">
-            {/*
-              SH934 — the tenant switch is an identity action, so it sits beside the identity menu.
-              It renders nothing at all unless the instance is multi-tenant AND this reader belongs
-              to more than one, which is why the header does not gate it here: a control that knows
-              when it has nothing to offer is one the shell does not have to reason about.
-            */}
-            <BentoReviewPending />
-            <BentoTenantSwitcher />
-            <BentoUserMenu
-              accountRoute={ROUTES.ADMIN_USERS}
-              logoutUrl={ROUTES.LOGOUT}
-              onOpenShortcuts={() => setShortcutsOpen(true)}
-            />
-          </header>
-
-          <BentoNavRail groups={groups} homeRoute={ROUTES.BENTO} />
-
-          <div className="bento-rail-gutter">
-            {/*
-              SH931 — inside the gutter and above the Outlet, so it clears the fixed rail and sits
-              over whatever page the link led to rather than inside it. It renders nothing unless
-              the URL names a tenant that is not the session's, which makes this the ordinary
-              silent case for everyone except the reader who needs telling.
-            */}
-            <BentoTenantLinkNotice />
-            {/*
-              SH1049 — one screen's failure stays inside that screen. `main.tsx` still mounts the
-              design system's boundary around the whole application, and it is now the last resort
-              rather than the only one: a throw under this one leaves the rail, the header and the
-              palette alive, so a curator can go somewhere else instead of reloading and losing
-              what they were doing.
-            */}
-            <RouteBoundary>
-              <Outlet />
-            </RouteBoundary>
-          </div>
-
+          <BentoTenantLinkNotice />
           {/*
-            Both read the *same* declaration the rail does — that is SH889's whole point. A
-            palette built from its own list is a second place a surface has to be added, and the
-            two disagree within a release rather than at some later reckoning.
+            SH1049 — one screen's failure stays inside that screen: a throw under this boundary
+            leaves the rail, the header and the palette alive.
           */}
-          <BentoCommandPalette
-            open={paletteOpen}
-            onOpenChange={setPaletteOpen}
-            items={items}
-            group={paletteGroup}
-            onQueryChange={onPaletteQuery}
-          />
-          <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} isMac={isMac} />
+          <RouteBoundary>
+            <Outlet />
+          </RouteBoundary>
+        </BentoShell>
 
-          <BentoBackToTop />
-        </div>
+        {/*
+          Both read the *same* declaration the rail does — that is SH889's whole point. They
+          render beside the shell, which carries no state for them.
+        */}
+        <BentoCommandPalette
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          items={items}
+          group={paletteGroup}
+          onQueryChange={onPaletteQuery}
+        />
+        <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} isMac={isMac} />
       </ReviewPendingProvider>
     </UserProvider>
   )

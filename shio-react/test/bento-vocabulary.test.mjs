@@ -128,7 +128,7 @@ const DEFERRED = {
   // SH1088 — 2026.3.11 and .12 ended eleven design-system waits, and these are what they shipped.
   // Each is a whole surface or a shell piece, so each belongs to the task that adopts it rather
   // than to a harness that fetches nothing.
-  BentoShell: "SH946 — the shell whose main carries the reading column; it recomposes the root.",
+  BentoShell: "SH946 — rendered by bento.root.page.tsx as the console's shell; a harness has no route tree to wrap.",
   BentoPaletteTrigger: "SH946 — the shell's palette control, mounted with the shell.",
   BENTO_SHELL_SHORTCUTS: "SH946 — the shell's shortcut table, read by the shell it belongs to.",
   useBentoShellShortcuts: "SH946 — the shell's shortcut hook, exercised by the shell.",

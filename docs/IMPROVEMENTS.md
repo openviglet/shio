@@ -998,25 +998,6 @@ Shio need not invent the shape. claude-plugin/ here is a working example:
 the manifest. The deliverable is the decision with its reasons, plus whichever half Shio
 can land on its own side; the package's half is the design system's own line.
 
-### LX.7 The reading column, owned once (SH946)
-
-BENTO-AUTHORING section 1 says main sets the max width, the gutters and the vertical
-rhythm once, and a page sets none of the three. The analysis measured the opposite in
-Shio: seven lines across six bento pages at three widths, max-w-6xl on the vocabulary
-page, max-w-4xl on three form pages and max-w-7xl on the post-type picker and the home
-page. Nobody reviewing one screen sees it, which is the exact failure the rule names.
-
-The package has to export the shell first, which is VDS131. On Shio's side,
-bento.root.page.tsx recomposes on BentoShell, whose main carries the column as a
-default, narrow or wide prop, and the six pages drop their own mx-auto, max-w, padding
-and spacing classes. A single-question form asks for narrow by name instead of repeating
-a class.
-
-The proof is a before-and-after surface-digest pair asserting that nothing but the width
-classes moved, which is the use the digest was built for: cheap textual evidence rather
-than asking somebody to look at six screens. It has no agent leg, and its classification
-is chrome.
-
 ### LX.8 The page lint, run where the duplicate gate already runs (SH947)
 
 The vendored SKILL.md closes on two rules it calls easy to get wrong: a page sets no

@@ -41,7 +41,7 @@ export default function BentoPostTypeSelectPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-6 pb-12">
+    <div className="space-y-8">
       {/* The package's hero directly: this page has no save bar, so `PageHero` would add nothing. */}
       <BentoHero
         eyebrow={t("content.postLabel")}
@@ -104,6 +104,6 @@ export default function BentoPostTypeSelectPage() {
           span="col-span-2"
         />
       </BentoSection>
-    </main>
+    </div>
   )
 }

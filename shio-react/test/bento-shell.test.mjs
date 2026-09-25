@@ -106,11 +106,12 @@ test("SH888: no sidebar provider anywhere under the bento tree", () => {
       + " state nothing reads — and this is the incompatibility that made a parallel tree"
       + " necessary rather than a migration in place.")
 
-  // The rail is `position: fixed` and takes no space in the flow, so a page that forgets the
-  // gutter renders underneath it. Cheap to assert, invisible until somebody looks at a screen.
-  assert.match(shellSource, /bento-rail-gutter/,
-    "SH888: the routed page is not wrapped in bento-rail-gutter, so its content renders beneath"
-      + " the fixed rail")
+  // The rail is `position: fixed` and takes no space in the flow, so content that does not clear
+  // it renders underneath. Since SH946 the package's BentoShell reserves the gutter itself when it
+  // is handed the rail, so what must hold is that the rail goes to the shell, not beside it.
+  assert.match(shellSource, /<BentoShell[\s\S]*?rail=\{<BentoNavRail\b/,
+    "SH888/SH946: the rail is not handed to BentoShell, so nothing reserves its gutter and the "
+      + "routed page renders beneath the fixed rail")
 })
 
 /**

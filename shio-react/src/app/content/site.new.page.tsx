@@ -56,7 +56,7 @@ export default function BentoSiteNewPage() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="mx-auto max-w-4xl space-y-6 px-6 pb-12">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <BentoFormHero
           eyebrow={t("content.siteLabel")}
           backTo={ROUTES.BENTO_CONTENT}
