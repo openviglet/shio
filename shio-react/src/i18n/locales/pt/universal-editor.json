@@ -53,12 +53,13 @@
   "universalEditor.urlHint": "Abra qualquer página instrumentada com atributos data-sh-* para edição visual.",
   "universalEditor.open": "Abrir",
   "universalEditor.save": "Salvar rascunho",
-  "universalEditor.saving": "Salvando...",
+  "universalEditor.saving": "Salvando suas alterações",
   "universalEditor.publish": "Publicar",
   "universalEditor.draftSaved": "Rascunho salvo",
   "universalEditor.published": "Publicado",
   "universalEditor.saveError": "Não foi possível salvar as alterações",
   "universalEditor.siteNotFound": "Nenhum site encontrado para '{{key}}'. Escolha um na lista.",
   "universalEditor.bridgeAbsent": "Esta página não devolveu a ponte do editor.",
-  "universalEditor.bridgeAbsentHint": "Você continua vendo a página, mas nada nela é editável. Ou a página não carregou, ou o front end dela ainda não suporta edição inline."
+  "universalEditor.bridgeAbsentHint": "Você continua vendo a página, mas nada nela é editável. Ou a página não carregou, ou o front end dela ainda não suporta edição inline.",
+  "universalEditor.draftSavedFields": "Rascunho salvo: {{fields}}"
 }

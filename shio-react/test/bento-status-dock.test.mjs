@@ -225,3 +225,34 @@ test("SH971: the shell loads the choice and offers it, and the kinds agree with 
   assert.deepEqual(kinds(client, /DOCK_KINDS = \[([^\]]*)\]/), kinds(server, /KINDS =\s*List\.of\(([^)]*)\)/),
     "SH971: the console offers a kind the server refuses, or the server accepts one nobody can choose")
 })
+
+/*
+ * SH972 — the Universal Editor is outside the shell, so it docks the assistant itself, in flow at
+ * the foot of its properties panel, and its saves drive it.
+ */
+test("SH972: the inline dock renders in flow, never pinned over the page", async () => {
+  const holder = dom.window.document.createElement("div")
+  dom.window.document.body.append(holder)
+  const inlineRoot = createRoot(holder)
+  await act(() => inlineRoot.render(h(BentoStatusDock, { inline: true })))
+  const box = holder.firstElementChild
+  assert.ok(box, "SH972: the inline dock rendered nothing")
+  assert.doesNotMatch(box.className, /\bfixed\b/,
+    "SH972: the inline dock is pinned to the viewport, so in the editor it would cover the preview")
+  await act(() => inlineRoot.unmount())
+  holder.remove()
+})
+
+test("SH972: the editor docks it in the properties panel, and its saves drive it", () => {
+  const editor = readFileSync(join(HERE, "..", "src", "app", "editor", "visual-editor.page.tsx"), "utf8")
+  const aside = editor.slice(editor.indexOf("<aside"), editor.indexOf("</aside>"))
+  assert.match(aside, /<BentoStatusDock inline \/>/,
+    "SH972: the dock is not in the editor's properties panel, so the one surface that saves on"
+      + " every click has no outcome channel")
+  const persist = editor.slice(editor.indexOf("const persist = async"), editor.indexOf("const refresh = () =>"))
+  assert.match(persist, /setWorking\(t\("universalEditor\.saving"\)\)/, "SH972: a save in flight moves nothing")
+  assert.match(persist, /setWorking\(null\)/, "SH972: the working state outlives the save")
+  assert.match(persist, /reportRefusal\(error,/,
+    "SH972: a refused save is the word Error again rather than the server's problem document")
+  assert.match(persist, /universalEditor\.draftSavedFields/, "SH972: a landed save does not name its fields")
+})

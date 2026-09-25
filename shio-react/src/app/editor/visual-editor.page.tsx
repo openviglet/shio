@@ -23,6 +23,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
+import { BentoStatusDock } from "@/app/system/bento-status-dock"
+import { setWorking } from "@/lib/dock-reports"
+import { reportRefusal } from "@/lib/problem"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
@@ -932,6 +935,9 @@ export default function VisualEditorPage() {
     }
 
     setSaving(true)
+    // SH972 — the dock says a patch is in flight, and the words go with it when it lands.
+    setWorking(t("universalEditor.saving"))
+    const fields = [...new Set([...byPost.values()].flatMap((attrs) => Object.keys(attrs)))]
     try {
       for (const [postId, attrs] of byPost) {
         await editorService.patch(postId, attrs, publish)
@@ -941,10 +947,16 @@ export default function VisualEditorPage() {
         await editorService.publish(selected.postId)
       }
       setChanges(new Map())
-      toast.success(publish ? t("universalEditor.published") : t("universalEditor.draftSaved"))
-    } catch {
-      toast.error(t("universalEditor.saveError"))
+      toast.success(publish
+        ? t("universalEditor.published")
+        : fields.length
+          ? t("universalEditor.draftSavedFields", { fields: fields.join(", ") })
+          : t("universalEditor.draftSaved"))
+    } catch (error) {
+      // SH972 — a refusal is the server's problem document in the dock, not the word Error.
+      reportRefusal(error, t("universalEditor.saveError"), { t: (key, options) => String(t(key, options)) })
     } finally {
+      setWorking(null)
       setSaving(false)
     }
   }
@@ -1169,127 +1181,138 @@ export default function VisualEditorPage() {
           )}
         </div>
 
-        <aside className="w-80 border-l bg-background overflow-auto p-4">
-          {/*
-            SH1038 — a section's own header. The controls are on the overlay, over the section they
-            act on, which is where a curator is already looking; what stays here is the identity,
-            the position, and the one thing a toolbar button cannot say — whether this page's
-            sections can be written at all, and what Duplicate actually does.
-          */}
-          {selectedSection ? (
-            <div className="space-y-3">
-              <div>
-                <div className="font-semibold">{selectedSection.section || t("universalEditor.section")}</div>
-                <div className="text-xs text-muted-foreground">
-                  {t("universalEditor.sectionPosition", {
-                    position: selectedSection.index + 1, of: selectedSection.of,
-                  })}
+        <aside className="w-80 border-l bg-background flex flex-col">
+          <div className="flex-1 min-h-0 overflow-auto p-4">
+            {/*
+              SH1038 — a section's own header. The controls are on the overlay, over the section they
+              act on, which is where a curator is already looking; what stays here is the identity,
+              the position, and the one thing a toolbar button cannot say — whether this page's
+              sections can be written at all, and what Duplicate actually does.
+            */}
+            {selectedSection ? (
+              <div className="space-y-3">
+                <div>
+                  <div className="font-semibold">{selectedSection.section || t("universalEditor.section")}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {t("universalEditor.sectionPosition", {
+                      position: selectedSection.index + 1, of: selectedSection.of,
+                    })}
+                  </div>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  {t("universalEditor.sectionSelected")}
+                </p>
+                {sectionArray.state === "unavailable" && (
+                  <p className="text-sm text-amber-600 dark:text-amber-500">
+                    {t("universalEditor.sectionsNotWritable")}
+                  </p>
+                )}
+                {sectionArray.state === "ready" && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("universalEditor.duplicateHint")}
+                  </p>
+                )}
+                {soleContainer && sectionArray.state === "ready" && (
+                  <SectionInserter container={soleContainer} relative busy={inserting}
+                    t={t} onInsert={insertSection} />
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">
-                {t("universalEditor.sectionSelected")}
-              </p>
-              {sectionArray.state === "unavailable" && (
-                <p className="text-sm text-amber-600 dark:text-amber-500">
-                  {t("universalEditor.sectionsNotWritable")}
-                </p>
-              )}
-              {sectionArray.state === "ready" && (
-                <p className="text-xs text-muted-foreground">
-                  {t("universalEditor.duplicateHint")}
-                </p>
-              )}
-              {soleContainer && sectionArray.state === "ready" && (
-                <SectionInserter container={soleContainer} relative busy={inserting}
-                  t={t} onInsert={insertSection} />
-              )}
-            </div>
-          ) : selected ? (
-            <div className="space-y-3">
-              <div>
-                <div className="font-semibold">
-                  {labelFor(selected.prop) || selected.label || selected.model}
+            ) : selected ? (
+              <div className="space-y-3">
+                <div>
+                  <div className="font-semibold">
+                    {labelFor(selected.prop) || selected.label || selected.model}
+                  </div>
+                  {selected.model && <div className="text-xs text-muted-foreground">{selected.model}</div>}
                 </div>
-                {selected.model && <div className="text-xs text-muted-foreground">{selected.model}</div>}
-              </div>
-              <div className="space-y-2">
-                {(selected.fields ?? []).map((f) => (
-                  <div key={f.prop} className="rounded-md border p-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-xs font-medium text-muted-foreground">
-                        {labelFor(f.prop) || f.label || f.prop}
+                <div className="space-y-2">
+                  {(selected.fields ?? []).map((f) => (
+                    <div key={f.prop} className="rounded-md border p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs font-medium text-muted-foreground">
+                          {labelFor(f.prop) || f.label || f.prop}
+                        </div>
+                        {/*
+                          SH1041 — per field, and only where there is somewhere to go back to. A v1
+                          bridge and `@viglet/shio-editor-cors` send no `was`, so that entry has no
+                          original and is not offered a control that would write `undefined` into the
+                          page — the same rule the rest of this screen follows about a button that
+                          would do the wrong thing.
+                        */}
+                        {pendingFor(f.prop)?.was !== undefined && (
+                          <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs"
+                            title={t("universalEditor.revertField")}
+                            onClick={() => revert(pendingFor(f.prop)!)}>
+                            <Undo2 className="h-3 w-3 mr-1" /> {t("universalEditor.revert")}
+                          </Button>
+                        )}
                       </div>
-                      {/*
-                        SH1041 — per field, and only where there is somewhere to go back to. A v1
-                        bridge and `@viglet/shio-editor-cors` send no `was`, so that entry has no
-                        original and is not offered a control that would write `undefined` into the
-                        page — the same rule the rest of this screen follows about a button that
-                        would do the wrong thing.
-                      */}
-                      {pendingFor(f.prop)?.was !== undefined && (
-                        <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs"
-                          title={t("universalEditor.revertField")}
-                          onClick={() => revert(pendingFor(f.prop)!)}>
-                          <Undo2 className="h-3 w-3 mr-1" /> {t("universalEditor.revert")}
-                        </Button>
+                      {f.type === "attr" && claims("field-set") ? (
+                        <Input
+                          // SH503 — the one field kind that has to be edited here. A text field is
+                          // typed into on the page; a value drawn into an attribute has no text node
+                          // to carry a caret, which is why a link's destination was readable in this
+                          // panel and editable nowhere in the editor.
+                          //
+                          // Uncontrolled, keyed by prop: `selected` is a snapshot the bridge sent, and
+                          // re-rendering the panel from it would put the curator's cursor back to the
+                          // start of the box on every keystroke.
+                          defaultValue={f.value}
+                          className="mt-1 h-8 text-sm"
+                          onChange={(event) => editAttrField(f, event.target.value)}
+                        />
+                      ) : declaredWidgetFor(f.prop) ? (
+                        /*
+                          SH1037 — the field the MODEL describes, through the console's own widget map.
+                          The panel used to draw read-only text for everything that is not an `attr`,
+                          so a Date was a string, a Check Box was "1" and a Content Select was a UUID
+                          — and the field whose caret cannot express its shape (`affordance: "panel"`)
+                          is precisely the one that ends up here. Read-only still, because writing back
+                          from the panel for every kind is the remainder of this task: what changes is
+                          that the curator sees a date as a date.
+                        */
+                        <div className="mt-1 pointer-events-none opacity-90">
+                          {(() => {
+                            const declared = declaredWidgetFor(f.prop)!
+                            const Widget = getWidget(declared.widget ?? "Text")
+                            return <Widget attr={attrFromDeclared(declared, f.value) as never}
+                              onChange={() => undefined} postId={selected.postId ?? undefined} />
+                          })()}
+                        </div>
+                      ) : (
+                        <div className="text-sm break-words">{f.value || <span className="italic text-muted-foreground">—</span>}</div>
                       )}
                     </div>
-                    {f.type === "attr" && claims("field-set") ? (
-                      <Input
-                        // SH503 — the one field kind that has to be edited here. A text field is
-                        // typed into on the page; a value drawn into an attribute has no text node
-                        // to carry a caret, which is why a link's destination was readable in this
-                        // panel and editable nowhere in the editor.
-                        //
-                        // Uncontrolled, keyed by prop: `selected` is a snapshot the bridge sent, and
-                        // re-rendering the panel from it would put the curator's cursor back to the
-                        // start of the box on every keystroke.
-                        defaultValue={f.value}
-                        className="mt-1 h-8 text-sm"
-                        onChange={(event) => editAttrField(f, event.target.value)}
-                      />
-                    ) : declaredWidgetFor(f.prop) ? (
-                      /*
-                        SH1037 — the field the MODEL describes, through the console's own widget map.
-                        The panel used to draw read-only text for everything that is not an `attr`,
-                        so a Date was a string, a Check Box was "1" and a Content Select was a UUID
-                        — and the field whose caret cannot express its shape (`affordance: "panel"`)
-                        is precisely the one that ends up here. Read-only still, because writing back
-                        from the panel for every kind is the remainder of this task: what changes is
-                        that the curator sees a date as a date.
-                      */
-                      <div className="mt-1 pointer-events-none opacity-90">
-                        {(() => {
-                          const declared = declaredWidgetFor(f.prop)!
-                          const Widget = getWidget(declared.widget ?? "Text")
-                          return <Widget attr={attrFromDeclared(declared, f.value) as never}
-                            onChange={() => undefined} postId={selected.postId ?? undefined} />
-                        })()}
-                      </div>
-                    ) : (
-                      <div className="text-sm break-words">{f.value || <span className="italic text-muted-foreground">—</span>}</div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <h3 className="font-semibold mb-1">{t("universalEditor.noSelection")}</h3>
-                <p className="text-sm text-muted-foreground">{t("universalEditor.noSelectionDescription")}</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <h3 className="font-semibold mb-1">{t("universalEditor.noSelection")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("universalEditor.noSelectionDescription")}</p>
+                </div>
+                {/*
+                  SH1039 — and the rail is here too, with nothing selected. That is the case insertion
+                  exists for: a page composing no sections has nothing to click, so a rail that only
+                  appeared beside a selection would never appear on the emptiest page.
+                */}
+                {soleContainer && sectionArray.state === "ready" && (
+                  <SectionInserter container={soleContainer} relative={false} busy={inserting}
+                    t={t} onInsert={insertSection} />
+                )}
               </div>
-              {/*
-                SH1039 — and the rail is here too, with nothing selected. That is the case insertion
-                exists for: a page composing no sections has nothing to click, so a rail that only
-                appeared beside a selection would never appear on the emptiest page.
-              */}
-              {soleContainer && sectionArray.state === "ready" && (
-                <SectionInserter container={soleContainer} relative={false} busy={inserting}
-                  t={t} onInsert={insertSection} />
-              )}
-            </div>
-          )}
+            )}
+          </div>
+          {/*
+            SH972 — the dock, in flow at the foot of the properties panel. This surface is outside
+            the shell (SH907), so the shell's corner is not here; pinned over the preview it would
+            cover the page being edited, and in the toolbar its orb would not fit. Here it can
+            only ever take the panel's own height.
+          */}
+          <div className="flex-none border-t px-2 py-1 flex justify-end">
+            <BentoStatusDock inline />
+          </div>
         </aside>
       </div>
     </div>

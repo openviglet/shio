@@ -31,7 +31,7 @@ import { dismissReport, markReportRead, useDockAmbient, useDockReports, useMuted
  * <p>Plain `.ts` with `createElement` on purpose: node's type stripping does not read JSX, and this
  * way `bento-status-dock.test.mjs` mounts the component itself rather than a copy of it.</p>
  */
-export function BentoStatusDock() {
+export function BentoStatusDock({ inline = false }: { inline?: boolean } = {}) {
   const { state, caption, activity } = useAssistantNotifications()
   const reports = useDockReports()
   const { working, bumps } = useDockAmbient()
@@ -47,5 +47,7 @@ export function BentoStatusDock() {
     messages: reports,
     onRead: markReportRead,
     onDismiss: dismissReport,
+    // SH972 — in flow, for a surface that docks it somewhere of its own (the visual editor).
+    inline,
   })
 }

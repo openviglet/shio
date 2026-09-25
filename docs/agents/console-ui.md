@@ -2719,3 +2719,19 @@ that failures always arrive.
 Quieting the mascot is the other half and waits on the design system. `VigletAvatar` has `paused`,
 but `VigletAssistant` does not pass it through, so Shio cannot freeze the dock's mascot without a
 package change.
+
+## The Universal Editor docks the assistant itself (SH972)
+
+SH907 put the visual editor outside the shell, so the shell's corner and dock are not there.
+`visual-editor.page.tsx` mounts `<BentoStatusDock inline />` in flow at the foot of its properties
+panel. The `aside` is now a flex column: its content scrolls above, and the dock takes the panel's
+own height below. It is not in the toolbar because the collapsed orb is 132 px and inline mode keeps
+that size. It is not pinned over the preview because it would cover the page being edited. The
+collapsed caption still extends to the left of the orb as `pointer-events-none` text, over the
+preview's edge, while it types.
+
+Saves drive it. `persist` sets `working` ("Saving your changes") while patches are in flight, clears
+it in `finally`, toasts the saved field names on success, and routes a refusal through
+`reportRefusal`, so the dock gets the server's problem document rather than the word Error. A
+browser probe on a fresh instance measured the preview iframe at 1046×809 with and without the
+dock, found the dock inside the panel, and logged no page errors.

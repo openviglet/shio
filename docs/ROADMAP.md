@@ -17,7 +17,6 @@
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
 - ⏳ **SH971** (deps: SH968 ✅, design system: VigletAssistant passes VigletAvatar's paused prop through) **a curator cannot choose what the dock reports or quiet the mascot** — The kinds can be muted now, but quieting the mascot needs VigletAssistant to pass VigletAvatar's paused prop through. → §LXIII.8
-- 📋 **SH972** (deps: SH964 ✅) **the Universal Editor renders outside the bento shell, so its saves would report to no dock** — SH907 moved the visual editor out of the shell to reclaim the viewport, and the dock mounts inside the shell, so the surface saving on every click has no outcome channel. → §LXIII.9
 - 📋 **SH1139** (deps: SH965 ✅) **sixteen console writes end silently on a path, so the dock never hears a delete or a refused create** — SH965's lint lists them: five deletes report nothing, and eleven writes toast success but let a failure escape or swallow it. → §LXIII.10
 
 ## Block AY — What the conformance instruments cannot see

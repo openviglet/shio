@@ -53,12 +53,13 @@
   "universalEditor.urlHint": "Open any page instrumented with data-sh-* attributes for visual editing.",
   "universalEditor.open": "Open",
   "universalEditor.save": "Save draft",
-  "universalEditor.saving": "Saving...",
+  "universalEditor.saving": "Saving your changes",
   "universalEditor.publish": "Publish",
   "universalEditor.draftSaved": "Draft saved",
   "universalEditor.published": "Published",
   "universalEditor.saveError": "Could not save changes",
   "universalEditor.siteNotFound": "No site resolved for '{{key}}'. Pick one from the list.",
   "universalEditor.bridgeAbsent": "This page did not hand back the editor bridge.",
-  "universalEditor.bridgeAbsentHint": "You can still see it, but nothing on it is editable. Either the page failed to load, or its front end does not support inline editing yet."
+  "universalEditor.bridgeAbsentHint": "You can still see it, but nothing on it is editable. Either the page failed to load, or its front end does not support inline editing yet.",
+  "universalEditor.draftSavedFields": "Draft saved: {{fields}}"
 }

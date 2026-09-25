@@ -1098,24 +1098,6 @@ This is a console preference with no agent equivalent, classified as such in the
 declaration rather than argued in prose. The assertions set a preference, drive each
 kind of event, and read which reports appear.
 
-### LXIII.9 The dock in the one surface that owns the whole viewport (SH972)
-
-SH907 routed the visual editor outside the bento shell because h-screen inside a sticky
-header pushed the preview below the fold. AX1 mounts the dock in the bento root, so the
-editor, where a curator changes content with every click on the page, is the one surface
-with no reporting channel, and its saves either toast into nothing or say nothing.
-
-Mount the dock in the editor with the package's inline mode, docked into the editor's
-own toolbar rather than pinned over the preview iframe, so it never covers the page
-being edited. Bridge saves drive it: working while a patch is in flight, success with
-the field name when it lands, error with the problem document when it is refused. The
-status light stays visible while the transcript is closed, which is what a person needs
-while editing: confirmation without a panel.
-
-The assertions render the editor, drive a bridge save through success and refusal, read
-the dock's state and caption, and assert the preview iframe's bounding box is unchanged
-by the dock's presence.
-
 ### LXIII.10 Every silent write the lint found, closed (SH1139)
 
 SH965's lint, `shio-react/test/write-outcome.test.mjs`, holds sixteen write sites under
