@@ -16,7 +16,7 @@ import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, Ch
 // SH1020 — the row actions live in the design system's menu, which is where the site list put
 // its four in its own sweep.
 import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
-import { contentFacets, fromBarValue, toBarValue } from "@/lib/filter-bar"
+import { contentFacets, fromBarValue, toBarValue, withCounts, type FacetCounts } from "@/lib/filter-bar"
 import {
   browserView, listboxClass, optionClass, stepFor, type BrowserRow,
 } from "./content-browser/browser-view"
@@ -67,6 +67,8 @@ interface ObjectListResponse {
   totalPosts: number
   /** SH1025 — how many child folders the folder holds, whether or not they were paged. */
   totalFolders: number
+  /** SH1024 — the filtered posts counted by facet; asked for on the first page only. */
+  facets?: FacetCounts
 }
 
 /** A folder row: the CDA's `{id, name, root}` plus the console's ordering axis. */
@@ -253,11 +255,17 @@ export default function ObjectChildrenPage() {
     [q, typeFilter, stateFilter, localeFilter, modifiedSince, modifiedBefore])
   const patchList = list.patch
   const onBarChange = useCallback((next: BentoFilterValue) => patchList(fromBarValue(next)), [patchList])
-  /** SH1024 — the bar's facets: this instance's types, and the locales present in what is listed. */
-  const facets = useMemo(() => contentFacets(postTypes, listData.posts.map((post) => post.locale ?? ""), {
-    type: t("content.filterType"), state: t("content.filterState"), locale: t("content.filterLocale"),
-    modified: t("content.filterModified"), draft: t("content.filterDraft"), published: t("content.filterPublished"),
-  }), [postTypes, listData.posts, t])
+  /**
+   * SH1024 — the bar's facets: this instance's types, and the locales present in what is listed,
+   * each option carrying the server's count. The locales come from the counts when there are some,
+   * because those cover the whole listing and the rows on screen are one page of it.
+   */
+  const counts = listData.facets
+  const facets = useMemo(() => withCounts(contentFacets(postTypes,
+    counts?.locale ? Object.keys(counts.locale) : listData.posts.map((post) => post.locale ?? ""), {
+      type: t("content.filterType"), state: t("content.filterState"), locale: t("content.filterLocale"),
+      modified: t("content.filterModified"), draft: t("content.filterDraft"), published: t("content.filterPublished"),
+    }), counts), [postTypes, counts, listData.posts, t])
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ObjectChild | null>(null)
@@ -314,7 +322,7 @@ export default function ObjectChildrenPage() {
    * picker's whole-set read stays correct; this list opts in, and everything below that used to
    * rely on holding them all had to be paid for in the same change.
    */
-  const fetchPage = useCallback((page: number, signal?: AbortSignal) => {
+  const fetchPage = useCallback((page: number, signal?: AbortSignal, counted = page === 0) => {
     const params = new URLSearchParams({
       page: String(page),
       size: String(PAGE_SIZE),
@@ -326,6 +334,9 @@ export default function ObjectChildrenPage() {
     // SH1023 they are the URL's own names too, so this loop is the console link turned into a
     // request without a translation step in between.
     for (const [key, value] of Object.entries(filterParams(filters))) params.set(key, value)
+    // SH1024 — the facet counts, with the first page (the next pages are the same listing) and
+    // with a re-read after a write, which is what changes them.
+    if (counted) params.set("facets", "true")
     return axios.get<ObjectListResponse>(`/v2/object/${objectId}/list?${params}`, { signal })
   }, [objectId, sortBy, filters])
 
@@ -340,6 +351,8 @@ export default function ObjectChildrenPage() {
       rememberFolders(res.data.folders)
       setListData((prev) => ({
         ...res.data,
+        // SH1024 — a later page carries no counts; they are the first page's, for the whole list.
+        facets: prev.facets,
         folders: [...prev.folders, ...(res.data.folders ?? [])],
         posts: [...prev.posts, ...(res.data.posts ?? [])],
       }))
@@ -799,7 +812,7 @@ export default function ObjectChildrenPage() {
     // SH953 — the page the curator was on, not page zero. A batch delete on page 14 used to
     // answer by scrolling them back to the top of the tree, which loses the place they were
     // working in and hides whichever rows were refused.
-    const res = await fetchPage(listData.page ?? 0)
+    const res = await fetchPage(listData.page ?? 0, undefined, true)
     setListData(res.data)
   }
 

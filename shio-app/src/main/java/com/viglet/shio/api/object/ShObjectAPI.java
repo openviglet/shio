@@ -54,6 +54,9 @@ public class ShObjectAPI {
     private static final List<String> LIST_SERVED = ShContentQuery.KEYS.stream()
             .filter(key -> !List.of("site", "folder").contains(key)).toList();
 
+    /** SH1024 — the listing's own parameter, outside the vocabulary: ask for the facet counts. */
+    private static final List<String> LIST_OWN = List.of("facets");
+
     private static final String LIST_ELSEWHERE =
             "This listing's folder is the {id} in its path. To list across folders or sites, "
                     + "use GET /api/v2/agent/find, which takes `site` and `folder` as addresses.";
@@ -97,8 +100,11 @@ public class ShObjectAPI {
     public ResponseEntity<ShConsoleListing> list(@PathVariable String id,
             @RequestParam Map<String, String> params) {
         shContentAclService.requireRead(id);
-        ShContentQuery query = ShContentQuery.of(params, LIST_SERVED, List.of(), LIST_ELSEWHERE);
-        return shObjectNavigationService.list(id, query)
+        ShContentQuery query = ShContentQuery.of(params, LIST_SERVED, LIST_OWN, LIST_ELSEWHERE);
+        // SH1024 — the facet counts are this listing's own word, and opt-in: a caller that draws
+        // no filter bar pays nothing for them.
+        boolean facets = "true".equalsIgnoreCase(params.get("facets"));
+        return shObjectNavigationService.list(id, query, facets)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

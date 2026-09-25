@@ -1102,6 +1102,14 @@ batch's per-op `expect` is where a caller who cares says it, row by row.
 folder is the `{id}` in the path, and a second one in the query string would be two answers to one
 question. The refusal names `/agent/find` as where those do work.
 
+**`facets=true` counts the filtered posts (SH1024).** It is the listing's own parameter, outside the
+vocabulary, and opt-in: two extra reads that a caller drawing no filter bar should not pay for. The
+response's `facets` holds `type` (by post-type name), `state` (`draft` for posts with a draft row,
+`published` for posts that are live; a post with both counts in each) and `locale`. Both reads are
+over `CONSOLE_ROWS`, the same JPQL string the page reads. So every count is a total under the
+request's filters, and choosing a value lists as many posts as its count said.
+`ShContentQuerySurfacesTest` asserts that per facet, with another filter held.
+
 The words are `ShContentQuery`'s, parsed from the request's **whole parameter map** so an unknown
 one is a teaching 400 rather than a silent drop, and the filters are
 `ShPostUnifiedRepository.QUERY_FILTERS` — one predicate string, appended by both this listing and

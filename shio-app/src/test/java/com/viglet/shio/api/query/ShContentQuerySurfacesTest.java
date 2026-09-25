@@ -31,6 +31,7 @@ import com.viglet.shio.api.agent.ShAgentReadService;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.object.ShObjectNavigationService;
+import com.viglet.shio.api.object.dto.ShConsoleFacets;
 import com.viglet.shio.api.object.dto.ShConsoleListing;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -189,6 +190,40 @@ class ShContentQuerySurfacesTest {
                             different folders.""", describe(filter))
                     .isEqualTo(fromAgent(filter));
         }
+    }
+
+    @Test
+    @DisplayName("SH1024: the facet counts are the filtered totals, and choosing one lists that many")
+    void theFacetCountsAreTheListingsOwn() {
+        assertThat(shObjectNavigationService.list(sectionId, ShContentQuery.ALL).orElseThrow().facets())
+                .as("SH1024: counts are opt-in, so a listing that draws no bar pays for no grouped read")
+                .isNull();
+
+        ShConsoleFacets all = facets(ShContentQuery.ALL);
+        assertThat(all.type()).isEqualTo(java.util.Map.of("QueryArticle", 4L, "QueryNote", 4L));
+        assertThat(all.locale()).isEqualTo(java.util.Map.of("en", 6L, "pt_BR", 2L));
+        assertThat(all.state())
+                .as("SH1024: a post with a live row and a newer draft is both, as choosing either says")
+                .isEqualTo(java.util.Map.of("draft", 8L, "published", 8L));
+
+        // The claim the design names: a facet's count is what choosing it lists, under the other
+        // filters already set. Asked with one filter held, so the counts are not the unfiltered ones.
+        ShContentQuery held = ShContentQuery.ALL.withAuthor("ana");
+        ShConsoleFacets narrowed = facets(held);
+        narrowed.type().forEach((type, count) -> assertThat((long) fromConsole(held.withType(type)).size())
+                .as("SH1024: type %s is counted %d under author=ana", type, count).isEqualTo(count));
+        narrowed.locale().forEach((locale, count) -> assertThat((long) fromConsole(held.withLocale(locale)).size())
+                .as("SH1024: locale %s is counted %d under author=ana", locale, count).isEqualTo(count));
+        narrowed.state().forEach((state, count) -> assertThat((long) fromConsole(held.withState(state)).size())
+                .as("SH1024: state %s is counted %d under author=ana", state, count).isEqualTo(count));
+        assertThat(narrowed.type().values().stream().mapToLong(Long::longValue).sum())
+                .as("SH1024: every post has a type, so the type counts add up to the listing")
+                .isEqualTo((long) fromConsole(held).size());
+    }
+
+    private ShConsoleFacets facets(ShContentQuery filter) {
+        return shObjectNavigationService.list(sectionId, filter.withPaging(0, 200), true)
+                .orElseThrow().facets();
     }
 
     @Test

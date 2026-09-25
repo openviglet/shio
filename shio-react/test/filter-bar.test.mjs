@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { contentFacets, fromBarValue, matchesLocally, matchesRun, runSites, toBarValue, withSiteFacet } from "../src/lib/filter-bar.ts"
+import { contentFacets, fromBarValue, matchesLocally, matchesRun, runSites, toBarValue, withCounts, withSiteFacet } from "../src/lib/filter-bar.ts"
 
 /**
  * SH1024 — the filter bar speaks the list's URL, and nothing else.
@@ -105,6 +105,26 @@ test("SH1024: the review queue filters its runs by q and site, and draws the sam
   assert.match(page, /useListState\(REVIEW_LIST\)/, "SH1024: the queue's filters are not in its URL")
   assert.match(page, /review\.noMatchHint/,
     "SH1024: a filter that matches nothing says no agent has run, which is a different fact")
+})
+
+test("SH1024: the browser's facet options carry the server's counts, asked for with the first page", () => {
+  const facets = [
+    { id: "type", kind: "choice", label: "Type", options: [{ value: "Article", label: "Article" }, { value: "Page", label: "Page" }] },
+    { id: "modified", kind: "date", label: "Changed" },
+  ]
+  const counted = withCounts(facets, { type: { Article: 12 } })
+  assert.deepEqual(counted[0].options.map((option) => option.label), ["Article · 12", "Page · 0"],
+    "SH1024: a value the listing has none of says 0 rather than leaving the menu, so a chosen one can be seen and cleared")
+  assert.equal(counted[1], facets[1], "SH1024: a date facet has no counts and is passed through untouched")
+  assert.deepEqual(withCounts(facets, undefined), facets)
+
+  const page = readFileSync(join(SRC, "app", "content", "object.children.page.tsx"), "utf8")
+  assert.match(page, /if \(counted\) params\.set\("facets", "true"\)/,
+    "SH1024: the browser never asks for the counts, so its menus offer values with no idea how many")
+  assert.match(page, /counted = page === 0/, "SH1024: the counts come with the first page, not with every page")
+  assert.match(page, /fetchPage\(listData\.page \?\? 0, undefined, true\)/,
+    "SH1024: a re-read after a write keeps the counts from before the write")
+  assert.match(page, /facets: prev\.facets/, "SH1024: loading the next page drops the counts")
 })
 
 test("SH1024: the content browser draws the bar over its URL, and / still reaches its search", () => {

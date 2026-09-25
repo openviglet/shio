@@ -406,16 +406,7 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      *               {@link #pageConsoleRows(ShFolder, String, Pageable)}, which normalizes for
      *               you (see the SH131 note on {@code FULLTEXT_PREDICATE})
      */
-    @Query("select p from ShPostUnified p where p.shFolder.id in :folderIds "
-            + "and (p.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT "
-            + "  or not exists (select 1 from ShPostUnified d where d.id = p.id "
-            + "    and d.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT)) "
-            + "and (:like is null or " + FULLTEXT_PREDICATE + ")" + QUERY_FILTERS
-            // `exists` rather than `p.state = :state`, because this listing answers one row per
-            // logical id and that row is the draft. "Published" here is a question about the
-            // post — is it live — and asking it of the row in hand would empty the listing.
-            + " and (:state is null or exists (select 1 from ShPostUnified s "
-            + "   where s.id = p.id and s.state = :state))")
+    @Query("select p " + CONSOLE_ROWS)
     Page<ShPostUnified> pageConsoleRowsLike(@Param("folderIds") Collection<String> folderIds,
                                             @Param("like") String like,
                                             @Param("typeId") String typeId,
@@ -429,6 +420,67 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                             @Param("submission") Boolean submission,
                                             @Param("agent") Boolean agent,
                                             Pageable pageable);
+
+    /**
+     * SH1024 — the facet counts of the listing {@link #pageConsoleRowsLike} pages, by post type,
+     * locale and row state: one grouped read over the same rows, so the counts are the filtered
+     * totals by construction and never a second opinion. Same parameters, raw like the page's.
+     */
+    @Query("select p.shPostType.id, p.locale, p.state, count(p) " + CONSOLE_ROWS
+            + " group by p.shPostType.id, p.locale, p.state")
+    List<Object[]> consoleFacetRowsLike(@Param("folderIds") Collection<String> folderIds,
+                                        @Param("like") String like,
+                                        @Param("typeId") String typeId,
+                                        @Param("state") ShPostState state,
+                                        @Param("locale") String locale,
+                                        @Param("since") Instant since,
+                                        @Param("before") Instant before,
+                                        @Param("author") String author,
+                                        @Param("modifier") String modifier,
+                                        @Param("missingLocale") String missingLocale,
+                                        @Param("submission") Boolean submission,
+                                        @Param("agent") Boolean agent);
+
+    /**
+     * SH1024 — how many of those rows are live, which the grouped read cannot say: the listing
+     * shows the draft row of a post that has both, so "published" is a question about a sibling.
+     */
+    @Query("select count(p) " + CONSOLE_ROWS + " and exists (select 1 from ShPostUnified l "
+            + "where l.id = p.id and l.state = com.viglet.shio.persistence.model.post.unified.ShPostState.PUBLISHED)")
+    long consoleLiveCountLike(@Param("folderIds") Collection<String> folderIds,
+                              @Param("like") String like,
+                              @Param("typeId") String typeId,
+                              @Param("state") ShPostState state,
+                              @Param("locale") String locale,
+                              @Param("since") Instant since,
+                              @Param("before") Instant before,
+                              @Param("author") String author,
+                              @Param("modifier") String modifier,
+                              @Param("missingLocale") String missingLocale,
+                              @Param("submission") Boolean submission,
+                              @Param("agent") Boolean agent);
+
+    /** {@link #consoleFacetRowsLike} with the page's own normalization (SH131). */
+    default List<Object[]> consoleFacetRows(Collection<String> folderIds, String query,
+            String typeId, ShPostState state, String locale, Instant since, Instant before,
+            String author, String modifier, String missingLocale, Boolean submission,
+            Boolean agent) {
+        return consoleFacetRowsLike(folderIds,
+                query == null || query.isBlank() ? null : fullTextPattern(query), typeId, state,
+                blankToNull(locale), since, before, lowerOrNull(author), lowerOrNull(modifier),
+                blankToNull(missingLocale), submission, agent);
+    }
+
+    /** {@link #consoleLiveCountLike} with the page's own normalization (SH131). */
+    default long consoleLiveCount(Collection<String> folderIds, String query,
+            String typeId, ShPostState state, String locale, Instant since, Instant before,
+            String author, String modifier, String missingLocale, Boolean submission,
+            Boolean agent) {
+        return consoleLiveCountLike(folderIds,
+                query == null || query.isBlank() ? null : fullTextPattern(query), typeId, state,
+                blankToNull(locale), since, before, lowerOrNull(author), lowerOrNull(modifier),
+                blankToNull(missingLocale), submission, agent);
+    }
 
     /**
      * {@link #pageConsoleRowsLike} with the caller's own spellings normalized: {@code null}/blank
@@ -835,6 +887,22 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             + " and (:missingLocale is null or (p.id = p.translationGroupId and not exists ("
             + "   select 1 from ShPostUnified t where t.translationGroupId = p.translationGroupId"
             + "     and t.locale = :missingLocale)))";
+
+    /**
+     * The console listing's rows (SH165, SH1022): one row per logical post — the draft where there
+     * is one — under the content-query filters. One string for the page and its facet counts
+     * (SH1024), so the two cannot come to answer about different rows.
+     */
+    String CONSOLE_ROWS = "from ShPostUnified p where p.shFolder.id in :folderIds "
+            + "and (p.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT "
+            + "  or not exists (select 1 from ShPostUnified d where d.id = p.id "
+            + "    and d.state = com.viglet.shio.persistence.model.post.unified.ShPostState.DRAFT)) "
+            + "and (:like is null or " + FULLTEXT_PREDICATE + ")" + QUERY_FILTERS
+            // `exists` rather than `p.state = :state`, because this listing answers one row per
+            // logical id and that row is the draft. "Published" here is a question about the
+            // post — is it live — and asking it of the row in hand would empty the listing.
+            + " and (:state is null or exists (select 1 from ShPostUnified s "
+            + "   where s.id = p.id and s.state = :state))";
 
     /**
      * Turns a user-typed term into the LIKE pattern {@link #FULLTEXT_PREDICATE} needs:

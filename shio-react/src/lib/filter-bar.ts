@@ -99,6 +99,31 @@ export function contentFacets(types: readonly { name: string; title?: string }[]
   return facets
 }
 
+/** SH1024 — a listing's counts by facet, as `GET /object/{id}/list?facets=true` answers them. */
+export interface FacetCounts {
+  type?: Record<string, number>
+  state?: Record<string, number>
+  locale?: Record<string, number>
+}
+
+/**
+ * The facets with their counts in the option labels (SH1024).
+ *
+ * The bar holds no product words, so the count is part of the label the product passes: "Article
+ * · 12". The counts are the server's, under every filter the listing carries, so choosing an
+ * option lists as many posts as it said. An option the listing has none of says 0 rather than
+ * disappearing, because the chosen value must stay in its menu to be seen and cleared.
+ */
+export function withCounts(facets: readonly BentoFilterFacet[], counts: FacetCounts | undefined): BentoFilterFacet[] {
+  if (!counts) return [...facets]
+  return facets.map((facet) => {
+    const byValue = counts[facet.id as keyof FacetCounts]
+    if (facet.kind !== "choice" || !byValue) return facet
+    return { ...facet,
+      options: facet.options.map((option) => ({ ...option, label: `${option.label} · ${byValue[option.value] ?? 0}` })) }
+  })
+}
+
 /**
  * A row against `q` and `type`, for a list that filters what it already holds (the trash, SH1024):
  * `q` as a case-insensitive substring of the title, `type` as the exact post-type name.

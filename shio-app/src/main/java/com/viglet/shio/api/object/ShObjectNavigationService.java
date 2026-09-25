@@ -9,9 +9,12 @@
 package com.viglet.shio.api.object;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Locale;
 
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.cda.dto.ShCdaPath;
+import com.viglet.shio.api.object.dto.ShConsoleFacets;
 import com.viglet.shio.api.object.dto.ShConsoleListing;
 import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.query.ShContentQuery;
@@ -29,11 +33,13 @@ import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.object.ShLiveObject;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
+import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.object.ShObjectRepository;
+import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
 /**
@@ -67,11 +73,15 @@ public class ShObjectNavigationService {
     private final ShConsoleNavigationMapper mapper;
     /** SH1022 — names to ids, in the one place that decides what {@code type=Artcle} does. */
     private final ShContentQueryResolver contentQueryResolver;
+    /** SH1024 — a facet count's type id, as the name the vocabulary filters by. */
+    private final ShPostTypeRepository shPostTypeRepository;
 
     public ShObjectNavigationService(ShObjectRepository shObjectRepository, ShFolderRepository shFolderRepository,
                                      ShPostUnifiedRepository shPostUnifiedRepository,
                                      ShConsoleNavigationMapper mapper,
-                                     ShContentQueryResolver contentQueryResolver) {
+                                     ShContentQueryResolver contentQueryResolver,
+                                     ShPostTypeRepository shPostTypeRepository) {
+        this.shPostTypeRepository = shPostTypeRepository;
         this.shObjectRepository = shObjectRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -184,6 +194,61 @@ public class ShObjectNavigationService {
      */
     @Transactional(readOnly = true)
     public Optional<ShConsoleListing> list(String objectId, ShContentQuery query) {
+        return list(objectId, query, false);
+    }
+
+    /**
+     * SH1024 — the listing, and with {@code facets} its counts by type, state and locale.
+     *
+     * <p>Over {@code CONSOLE_ROWS}, the string the page itself reads, so every count is a total
+     * under the same filters and choosing a value lists as many posts as its count said. Two reads
+     * rather than one: the grouped read sees the row the listing shows, which for a post with a
+     * newer draft is the draft, so whether it is <em>live</em> is a question about a sibling row.
+     * Only a folder has posts to count; a site or anything else answers no facets.</p>
+     */
+    @Transactional(readOnly = true)
+    public Optional<ShConsoleListing> list(String objectId, ShContentQuery query, boolean facets) {
+        Optional<ShConsoleListing> listing = page(objectId, query);
+        if (!facets) {
+            return listing;
+        }
+        return listing.map(found -> live(objectId)
+                .filter(ShFolder.class::isInstance).map(ShFolder.class::cast)
+                .map(folder -> found.withFacets(facets(folder, query)))
+                .orElse(found));
+    }
+
+    private ShConsoleFacets facets(ShFolder folder, ShContentQuery query) {
+        Collection<String> scope = folderScope(folder, query.subtree());
+        String typeId = contentQueryResolver.typeId(query);
+        ShPostState state = ShContentPerspective.parse(query.state()).row();
+        Map<String, Long> byType = new HashMap<>();
+        Map<String, Long> byLocale = new HashMap<>();
+        long drafts = 0;
+        Map<String, String> typeNames = new HashMap<>();
+        for (Object[] row : shPostUnifiedRepository.consoleFacetRows(scope, query.q(), typeId, state,
+                query.locale(), query.modifiedSince(), query.modifiedBefore(), query.author(),
+                query.modifier(), query.missingLocale(), query.submission(), query.agent())) {
+            long count = ((Number) row[3]).longValue();
+            if (row[0] != null) {
+                String name = typeNames.computeIfAbsent((String) row[0], id ->
+                        shPostTypeRepository.findById(id).map(ShPostType::getName).orElse(id));
+                byType.merge(name, count, Long::sum);
+            }
+            if (row[1] != null && !((String) row[1]).isBlank()) {
+                byLocale.merge((String) row[1], count, Long::sum);
+            }
+            if (row[2] == ShPostState.DRAFT) {
+                drafts += count;
+            }
+        }
+        long published = shPostUnifiedRepository.consoleLiveCount(scope, query.q(), typeId, state,
+                query.locale(), query.modifiedSince(), query.modifiedBefore(), query.author(),
+                query.modifier(), query.missingLocale(), query.submission(), query.agent());
+        return new ShConsoleFacets(byType, Map.of("draft", drafts, "published", published), byLocale);
+    }
+
+    private Optional<ShConsoleListing> page(String objectId, ShContentQuery query) {
         int pageIndex = Math.max(query.page() == null ? 0 : query.page(), 0);
         int pageSize = Math.max(query.size() == null ? DEFAULT_PAGE_SIZE : query.size(), 1);
         ShConsoleListingSort sort = ShConsoleListingSort.of(query.sort());

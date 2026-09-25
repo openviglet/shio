@@ -118,9 +118,10 @@ class ShConsoleShapeOverlapTest {
         }
         // Pinned by name too: these are what the pre-SH120 envelope got wrong (it said
         // shFolders/shPosts and repeated the site and the breadcrumb /path answers), what
-        // SH165 added, and what SH1025 added after them.
+        // SH165 added, and what SH1025 added after them. SH1024's `facets` is the last of the tail
+        // and absent unless asked for, so it is named here as a component, not as a key.
         assertThat(console.keySet()).containsExactly("folderId", "folders", "posts", "page",
-                "size", "totalPosts", "totalFolders");
+                "size", "totalPosts", "totalFolders", "facets");
     }
 
     /**

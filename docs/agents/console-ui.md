@@ -2878,7 +2878,15 @@ popover has a "Written by an agent" checkbox that sets the URL's `agent=true`, w
 every other filter. It is a checkbox and not a value in the author field because an agent is not
 an owner: its writes carry the credential's user, so no name typed there could match one.
 
-Still to come: facet counts from the listing, and saved views.
+**Facet counts come from the listing, when asked.** The browser adds `facets=true` to its first
+page and to a re-read after a write. The response then carries `facets`, the filtered posts counted
+by type name, state and locale. `withCounts` writes each count into its option's label ("Article ·
+12"), since the bar has no count slot and its labels are the product's. An option the listing has
+none of says 0 instead of leaving the menu, so a chosen value stays visible and clearable. With
+counts, the locale facet is built from their keys, which cover the whole listing, not from one page's
+rows. A "load more" page keeps the first page's counts.
+
+Still to come: saved views. The bar's `views` slot is where they go.
 
 ## The browser's three views (SH1026, in parts)
 

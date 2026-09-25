@@ -54,6 +54,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param totalPosts   how many posts the folder holds in total (after any {@code q} filter)
  * @param totalFolders how many child folders it holds, whether or not they were paged — which is
  *                     how a caller tells a complete answer from a page without counting the array
+ * @param facets       SH1024 — the filtered posts counted by type, state and locale, present only
+ *                     when {@code facets=true} asked for them: three grouped reads a listing that
+ *                     draws no filter bar should not pay for
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -61,9 +64,20 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public record ShConsoleListing(String folderId, List<ShConsoleFolderRow> folders,
                                List<ShConsolePostRow> posts, int page, int size,
-                               long totalPosts, long totalFolders) {
+                               long totalPosts, long totalFolders, ShConsoleFacets facets) {
     public ShConsoleListing {
         folders = folders == null ? List.of() : List.copyOf(folders);
         posts = posts == null ? List.of() : List.copyOf(posts);
+    }
+
+    public ShConsoleListing(String folderId, List<ShConsoleFolderRow> folders,
+                            List<ShConsolePostRow> posts, int page, int size,
+                            long totalPosts, long totalFolders) {
+        this(folderId, folders, posts, page, size, totalPosts, totalFolders, null);
+    }
+
+    /** SH1024 — the same listing, with its counts. */
+    public ShConsoleListing withFacets(ShConsoleFacets value) {
+        return new ShConsoleListing(folderId, folders, posts, page, size, totalPosts, totalFolders, value);
     }
 }
