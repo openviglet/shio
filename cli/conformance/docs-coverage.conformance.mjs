@@ -360,11 +360,13 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
  */
 describe("SH1069 conformance: every manifest feature key reaches the coverage matrix", () => {
   /**
-   * Feature keys the matrix does not name, on 2026-09-24. Lower it when a row names one; raising
-   * it means a capability was advertised and nothing documents it. The fix is two commits in two
-   * repositories, SH771's shape: name the key in its row in vigletdocs, then lower this here.
+   * Feature keys the matrix does not name. It opened at 62 on 2026-09-24 and SH1069 paid it to
+   * zero on 2026-09-25 with a key-by-key table in COVERAGE.md, each row naming the page that
+   * documents the capability, so from here it is not a ratchet but the rule: a key added to the
+   * manifest with no row fails. The fix is two commits in two repositories, SH771's shape: add the
+   * key's row in vigletdocs, then nothing here.
    */
-  const UNNAMED_FEATURES = 62;
+  const UNNAMED_FEATURES = 0;
 
   test("SH1069: the count of manifest feature keys the matrix does not name never rises", () => {
     const text = matrix();

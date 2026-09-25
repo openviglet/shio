@@ -722,11 +722,13 @@ map. `docs-coverage.conformance.mjs` now reads every key from the `features.put(
 (`manifestFeatures` in `conformance/support/product-vocabulary.mjs`) and counts the ones
 `COVERAGE.md` does not spell in backticks. The run prints the count and the unnamed keys.
 
-It opens as a ratchet, `UNNAMED_FEATURES`, for SH747's reason: the matrix named one key of 63 when
-this landed, and a gate that opens with 62 findings is one nobody reads. What it closes at once is
-the case that grows the debt: **a new key with no row fails**. To pay the debt down, name a key in
-its cluster row in vigletdocs, then lower the ceiling here. That is two commits in two repositories,
-SH771's shape.
+It opened as a ratchet, `UNNAMED_FEATURES`, for SH747's reason: the matrix named one key of 63 when
+this landed, and a gate that opens with 62 findings is one nobody reads. The debt is paid: COVERAGE.md
+now carries **The manifest's feature keys**, one row per key with what it says and the page that
+documents it, and the ceiling is **0**, so **a new key with no row fails**. That table's last column
+is headed *Coverage* rather than *Status* on purpose: the summary sentence counts rows under a
+*Status* header as clusters, and a key is a capability whose cluster already has a row, so counting
+it again would inflate the figure by 63.
 
 The block-completion half of SH1069 already existed as SH861's reader (above), so nothing new was
 built for it. The design's other population, "every surface in AY6's declaration", pointed at an

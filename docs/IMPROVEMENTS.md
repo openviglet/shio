@@ -2369,27 +2369,6 @@ the P1 census could classify. The conformance gate knows none of this round's ne
 vocabulary. And no task carries the documentation sweep for everything the round ships,
 which the project's own process requires when a block closes.
 
-### LXXIV.7 Documentation as a count, not a memory (SH1069)
-
-The shio-roadmap-docs process is explicit: when a block's last task ships, docs-shio,
-shio-site and README.md are brought up to date in one pass, and each task records its
-end-user documentation decision. This round files many blocks and no task mentions any
-of them. shio-site's README records that all the public site's copy lives in one file,
-which makes the omission cheap to fix and expensive to skip: the site would keep
-describing a console without releases, revisions, notes, the assistant, a translation
-workspace or publish gates.
-
-Two mechanical changes. The coverage matrix that docs-coverage.conformance.mjs reads
-gains a row for every manifest feature key and every surface in AY6's declaration, so an
-undocumented capability is a failing count rather than something a person remembers, and
-the conformance gate reports the count. And the block-completion sweep becomes a check
-rather than a habit: when roadkeep reports a block finished, the gate fails until each
-of that block's new keys and surfaces has a documented row.
-
-The honest reason this is not housekeeping is the round's own thesis that discovery is a
-product feature, which applies to a person reading shio.viglet.org as much as to an
-agent reading the manifest.
-
 ### LXXIV.8 A docs gate that can come back clean (SH1102)
 
 `roadkeep lint` reports six `code.renamed` findings on ledger entries that were correct
