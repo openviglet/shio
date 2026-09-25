@@ -1,4 +1,4 @@
-import { ArrowLeftRight, CheckCheck, Circle, Languages, Save } from "lucide-react"
+import { ArrowLeftRight, Bot, CheckCheck, Circle, Languages, Save } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useParams } from "react-router-dom"
@@ -17,6 +17,8 @@ import { ShNoteService } from "@/services/note/note.service"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import type { ShPostTypeSchemaField, ShPostUnified } from "@/models/post-unified/post-unified"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
+import { sendRequest } from "@/app/system/dock-chat-send"
+import { useAgentAvailable } from "@/app/system/use-agent-available"
 
 const service = new ShPostUnifiedService()
 const noteService = new ShNoteService()
@@ -52,6 +54,9 @@ export default function TranslatePage() {
    * the toggle is not rendered at all.
    */
   const [pane, setPane] = useState<"source" | "target">("target")
+  /** SH1062 — whether this translation carries an open request to the connected agent. */
+  const [requested, setRequested] = useState(false)
+  const agentAvailable = useAgentAvailable()
 
   const load = useCallback((signal?: AbortSignal) => {
     // One read for the pair: the translations list carries every sibling's document, so the source
@@ -67,6 +72,8 @@ export default function TranslatePage() {
         setTarget(row)
         setData({ ...(row.data ?? {}) })
         setReviewed(reviewedFields(notes))
+        // SH1062 — an open request is the same mark the Languages board shows.
+        setRequested(notes.some((note) => !note.resolved && note.kind?.toLowerCase() === "request"))
         const group = row.translationGroupId
         setSource(siblings.find((sibling) => sibling.id === group && sibling.id !== row.id) ?? null)
       })
@@ -126,6 +133,18 @@ export default function TranslatePage() {
     }
   }
 
+  /**
+   * SH1062 — the board's ask, from the page it would open: a request note on this translation,
+   * which already carries the language and the source the agent needs.
+   */
+  const askAgent = async () => {
+    if (!target?.locale) return
+    if (await sendRequest(postId, t("content.coverageAskWrite", { locale: target.locale }), t)) {
+      setRequested(true)
+      toast.success(t("content.coverageAskedMany", { count: 1 }))
+    }
+  }
+
   const save = async () => {
     setSaving(true)
     try {
@@ -168,7 +187,18 @@ export default function TranslatePage() {
               {target?.locale ?? t("content.translateTarget")}
             </Button>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            {requested ? (
+              <Badge variant="outline" className="gap-1 text-xs" title={t("content.coverageRequestedHint")}>
+                <Bot className="size-3.5" />
+                {t("content.coverageRequested")}
+              </Badge>
+            ) : agentAvailable && source && (
+              <Button type="button" size="sm" variant="outline" onClick={askAgent}>
+                <Bot className="size-4" />
+                {t("content.askAgent")}
+              </Button>
+            )}
             <GradientButton type="button" size="sm" onClick={save} loading={saving} disabled={!dirty}>
               <Save className="size-4" />
               {t("common.save")}

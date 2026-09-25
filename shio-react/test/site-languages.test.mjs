@@ -113,10 +113,22 @@ test("SH1062: the board asks the connected agent through a request on the draft 
     "SH1062: the ask is offered with nobody around to answer it — SH1019's rule, one surface along")
   assert.match(BOARD, /if \(value\.requested\)/u,
     "SH1062: a requested draft reads as current, so the board says the work is done before it starts")
+  // A row and a column are the same ask over many cells: one draft and one note each, and a cell
+  // already asked for, current, or requested is not asked again.
+  assert.match(BOARD, /if \(value\?\.requested\) return \[\]/u,
+    "SH1062: a row or column ask re-asks cells already waiting on the agent, doubling its work")
+  assert.match(BOARD, /askManyButton\(columnTargets\(locale\)/u, "SH1062: a locale column cannot be asked for")
+  assert.match(BOARD, /askManyButton\(rowTargets\(row\)/u, "SH1062: a row cannot be asked for")
+  const WORKSPACE = read("src", "app", "content", "translate.page.tsx")
+  assert.match(WORKSPACE, /sendRequest\(postId, t\("content\.coverageAskWrite"/u,
+    "SH1062: the translation workspace cannot ask the agent, so a translator has to go back to the board")
+  assert.match(WORKSPACE, /agentAvailable && source &&/u,
+    "SH1062: the workspace offers the ask with nobody around to answer it")
   for (const locale of ["en", "pt"]) {
     const strings = JSON.parse(read("src", "i18n", "locales", locale, "content.json"))
     for (const key of ["content.coverageAsk", "content.coverageAskWrite", "content.coverageAskRefresh",
-      "content.coverageAsked", "content.coverageRequested", "content.coverageRequestedHint"]) {
+      "content.coverageAskedMany_one", "content.coverageAskedMany_other", "content.coverageAskRow",
+      "content.coverageAskColumn", "content.coverageRequested", "content.coverageRequestedHint"]) {
       assert.ok(strings[key], `SH1062: ${locale} is missing ${key}`)
     }
   }

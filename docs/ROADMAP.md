@@ -82,7 +82,6 @@
 
 ## Block BH — One content model, many languages
 
-- ⏳ **SH1062** (deps: SH1060 ✅, SH1006 ✅) **a curator cannot ask the connected agent to translate a page or fill a locale's gaps** — A whole row or locale column cannot be requested at once, and the translation workspace has no ask action. → §LXXIII.7
 - 📋 **SH1125** (deps: SH1056 ✅) **the browser's locale chip does not say which row is the site's default language** — SH1059's design asked for it once a site could declare a default; the console can read the policy now and the browser never asks for it. → §LXXIII.8
 - 📋 **SH1128** (deps: SH1123 ✅) **a post's availableLocales names a translation that exists only as a draft, to a production token** — translate creates a DRAFT and the group read asks for no state, so a switcher links to a page its own token gets a 404 for while the translation is written. → §LXXIII.9
 - 📋 **SH1130** (deps: SH1057 ✅) **nothing flags a declared locale no page is written in, so every URL in it quietly serves another language** — The route accepts a declared locale and falls back along the chain, so a locale the site promises and never wrote looks served while showing none of it. → §LXXIII.10
@@ -126,13 +125,6 @@
   image-pipeline thumbnail, the table is BentoDataTable with a persisted column picker
   whose scalar edits are refused on a stale ETag, and each view mounts only its visible
   window over BD6's fixture.
-
-## Done when — SH1062
-
-- **A row, a locale column and the workspace can each ask the agent** Requesting a whole
-  row or column writes one request per draft it creates and every cell reads requested;
-  the translation workspace offers the same ask; a test fulfils one through a batch and
-  sees the cell leave requested.
 
 ## Non-goals (do NOT add as tasks)
 

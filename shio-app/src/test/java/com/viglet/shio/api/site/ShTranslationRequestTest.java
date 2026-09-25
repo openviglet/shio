@@ -23,6 +23,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.agent.ShAgentBatchService;
+import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.note.ShNoteRelay;
 import com.viglet.shio.api.note.ShNoteService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -65,6 +67,8 @@ class ShTranslationRequestTest {
     private ShNoteService noteService;
     @Autowired
     private ShNoteRelay relay;
+    @Autowired
+    private ShAgentBatchService batchService;
     @Autowired
     private ShPostUnifiedWriteService write;
     @Autowired
@@ -150,10 +154,24 @@ class ShTranslationRequestTest {
                 .contains(asked.address())
                 .contains("Translate this page from en into de.");
 
-        noteService.resolve(request.getId(), true, "agent");
-        assertThat(cell().requested())
+        // The agent's answer, as it would send it: the translation into the draft, a reply on the
+        // thread and the request resolved, in one batch.
+        batchService.run(objectMapper.readValue("""
+                {"ops":[
+                 {"op":"post.upsert","address":"post:%1$s/karriere","data":{"body":"karriere"}},
+                 {"op":"note.add","address":"id:%2$s",
+                  "data":{"kind":"reply","parent":"%3$s","body":"Translated into de, as a draft."}},
+                 {"op":"note.resolve","address":"id:%2$s","data":{"note":"%3$s"}}]}
+                """.formatted(siteName, draft.getId(), request.getId()), ShAgentBatch.class),
+                false, "ut-sh1062-agent");
+
+        ShSiteCoverage.Cell answered = cell();
+        assertThat(answered.requested())
                 .as("SH1062: an answered request still marked would keep the cell saying 'asked' forever")
                 .isNull();
+        assertThat(answered.id())
+                .as("SH1062: the agent wrote into the requested draft, not a second translation beside it")
+                .isEqualTo(draft.getId());
     }
 
     private ShSiteCoverage.Cell cell() {

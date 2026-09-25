@@ -24,6 +24,9 @@ const unifiedService = new ShPostUnifiedService()
 
 const PAGE_SIZE = 50
 
+/** SH1062 — one cell the agent is asked for: its source, the language, and the translation when it exists. */
+type AskTarget = { sourceId: string; locale: string; existing?: string }
+
 /**
  * SH1060 — the Languages board: a row per page, a column per language the site offers.
  *
@@ -81,34 +84,65 @@ export default function LanguagesPage() {
    * to write and where it comes from; its answer lands in the dock (SH1006) with the change attached
    * (SH1007). Nothing is published by asking.</p>
    */
-  const ask = async (sourceId: string, locale: string, existing?: string) => {
-    setBusy(`${sourceId}|${locale}`)
+  /**
+   * One request per cell, one after another, then one reload. Each cell is the draft when it is
+   * missing, then the note on it. A row asks for every language it is missing or behind in, a
+   * column for every page on this screen in that language: each cell stays its own draft and its
+   * own note, so each is answered, approved and marked on its own.
+   */
+  const ask = async (targets: AskTarget[], key: string) => {
+    if (targets.length === 0) return
+    setBusy(key)
+    let sent = 0
     try {
-      const target = existing ?? (await unifiedService.translate(sourceId, locale)).id
-      const body = existing
-        ? t("content.coverageAskRefresh", { locale })
-        : t("content.coverageAskWrite", { locale })
-      if (await sendRequest(target, body, t)) {
-        toast.success(t("content.coverageAsked"))
+      for (const { sourceId, locale, existing } of targets) {
+        const target = existing ?? (await unifiedService.translate(sourceId, locale)).id
+        const body = existing
+          ? t("content.coverageAskRefresh", { locale })
+          : t("content.coverageAskWrite", { locale })
+        if (await sendRequest(target, body, t)) sent++
       }
-      await load()
+      if (sent > 0) toast.success(t("content.coverageAskedMany", { count: sent }))
     } catch (error) {
       reportProblem(error, t("common.error"))
     } finally {
+      await load()
       setBusy(null)
     }
   }
 
+  /** What a row or a column can still ask for: missing or stale, and not already asked. */
+  const askable = (sourceId: string, locale: string, value: ShCoverageCell | undefined): AskTarget[] => {
+    if (value?.requested) return []
+    if (!value || value.state === "missing") return [{ sourceId, locale }]
+    return value.state === "stale" && value.id ? [{ sourceId, locale, existing: value.id }] : []
+  }
+  const rowTargets = (row: ShSiteCoverage["rows"][number]) =>
+    (board?.locales ?? []).flatMap((locale) => askable(row.id, locale, row.cells[locale]))
+  const columnTargets = (locale: string) =>
+    (board?.rows ?? []).flatMap((row) => askable(row.id, locale, row.cells[locale]))
+
   /** The ask control, shown only while an agent is around to answer (SH1019's rule). */
   const askButton = (rowId: string, locale: string, existing?: string) => agentAvailable && (
     <Button variant="ghost" size="icon" className="size-7 text-muted-foreground"
-      disabled={busy === `${rowId}|${locale}`}
-      onClick={() => ask(rowId, locale, existing)}
+      disabled={busy !== null}
+      onClick={() => ask([{ sourceId: rowId, locale, existing }], `${rowId}|${locale}`)}
       aria-label={t("content.coverageAsk", { locale })}
       title={t("content.coverageAsk", { locale })}>
       <Bot className="size-3.5" />
     </Button>
   )
+
+  /** The same ask over many cells, offered only when there is something left to ask for. */
+  const askManyButton = (targets: AskTarget[], key: string, label: string) =>
+    agentAvailable && targets.length > 0 && (
+      <Button variant="ghost" size="icon" className="size-6 text-muted-foreground"
+        disabled={busy !== null}
+        onClick={() => ask(targets, key)}
+        aria-label={label} title={label}>
+        <Bot className="size-3.5" />
+      </Button>
+    )
 
   /** The gesture the board exists for: start the missing translation from where it is missing. */
   const translate = async (sourceId: string, locale: string) => {
@@ -211,7 +245,12 @@ export default function LanguagesPage() {
                   <TableHead>{t("content.coveragePage")}</TableHead>
                   {locales.map((locale) => (
                     <TableHead key={locale} className="w-32 font-mono text-xs uppercase">
-                      {locale}
+                      <span className="inline-flex items-center gap-1">
+                        {locale}
+                        {/* SH1062 — this page's column: every page on screen missing or behind in it. */}
+                        {askManyButton(columnTargets(locale), `column|${locale}`,
+                          t("content.coverageAskColumn", { locale }))}
+                      </span>
                     </TableHead>
                   ))}
                 </TableRow>
@@ -220,10 +259,15 @@ export default function LanguagesPage() {
                 {board?.rows.map((row) => (
                   <TableRow key={row.address}>
                     <TableCell>
-                      <Link className="font-medium hover:underline"
-                        to={`${ROUTES.CONSOLE}/content/post/${row.id}`}>
-                        {row.title || row.address}
-                      </Link>
+                      <span className="inline-flex items-center gap-1">
+                        <Link className="font-medium hover:underline"
+                          to={`${ROUTES.CONSOLE}/content/post/${row.id}`}>
+                          {row.title || row.address}
+                        </Link>
+                        {/* SH1062 — this page in every language it is missing or behind in. */}
+                        {askManyButton(rowTargets(row), `row|${row.id}`,
+                          t("content.coverageAskRow", { title: row.title || row.address }))}
+                      </span>
                       <div className="text-xs text-muted-foreground">{row.address}</div>
                     </TableCell>
                     {locales.map((locale) => (

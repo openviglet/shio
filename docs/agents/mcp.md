@@ -534,7 +534,8 @@ offers to write that body into the form as it stands. Read the field and what it
 
 **A request for a translation (SH1062).** The Languages board asks for a translation by creating
 the missing draft and putting a `request` note on it (or on a stale translation, asking for it to
-be brought up to date). The page the note hangs on **is** the target: its `locale` is the language
+be brought up to date). A row or a locale column asks for each of its cells the same way, one
+draft and one note per cell, and the translation workspace puts the note on the page it has open. The page the note hangs on **is** the target: its `locale` is the language
 to write, and its translation group leads to the source. Read both, write the translated fields
 into that page with `post.upsert` as a draft, one run whose `intent` names the request, then reply
 on the thread and `note.resolve` it. Do not publish: the curator approves from the dock (SH1007) or

@@ -405,7 +405,10 @@
   "content.coverageAsk": "Ask the agent to translate into {{locale}}",
   "content.coverageAskWrite": "Translate this page into {{locale}} from its source (translationOf), as a draft.",
   "content.coverageAskRefresh": "This {{locale}} translation is behind its source. Bring it up to date with the source's changes, as a draft.",
-  "content.coverageAsked": "Asked the agent. Its answer will arrive in the dock.",
+  "content.coverageAskedMany_one": "Asked the agent for one translation. Its answer will arrive in the dock.",
+  "content.coverageAskedMany_other": "Asked the agent for {{count}} translations. Its answers will arrive in the dock.",
+  "content.coverageAskRow": "Ask the agent for {{title}} in every language it is missing or behind in",
+  "content.coverageAskColumn": "Ask the agent for every page on this screen missing or behind in {{locale}}",
   "content.coverageRequested": "Requested",
   "content.coverageRequestedHint": "The connected agent has been asked to write this translation. It stays a draft until you approve it."
 }

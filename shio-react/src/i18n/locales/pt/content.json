@@ -405,7 +405,10 @@
   "content.coverageAsk": "Pedir ao agente a tradução para {{locale}}",
   "content.coverageAskWrite": "Traduza esta página para {{locale}} a partir da origem (translationOf), como rascunho.",
   "content.coverageAskRefresh": "Esta tradução em {{locale}} está atrás da origem. Atualize-a com as mudanças da origem, como rascunho.",
-  "content.coverageAsked": "Pedido enviado ao agente. A resposta chegará no dock.",
+  "content.coverageAskedMany_one": "Pedido enviado ao agente para uma tradução. A resposta chegará no dock.",
+  "content.coverageAskedMany_other": "Pedido enviado ao agente para {{count}} traduções. As respostas chegarão no dock.",
+  "content.coverageAskRow": "Pedir ao agente {{title}} em todos os idiomas em que falta ou está atrás",
+  "content.coverageAskColumn": "Pedir ao agente todas as páginas desta tela que faltam ou estão atrás em {{locale}}",
   "content.coverageRequested": "Pedido",
   "content.coverageRequestedHint": "O agente conectado foi chamado para escrever esta tradução. Ela fica como rascunho até você aprovar."
 }
