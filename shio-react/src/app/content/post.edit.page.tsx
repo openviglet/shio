@@ -26,6 +26,9 @@ import { PostLivePreview } from "@/components/post-live-preview"
 import { fieldAnchorId } from "@/lib/field-ids"
 import { WorkingLine } from "@/components/working-line"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
+import { AskAgentDialog } from "@/components/ask-agent-dialog"
+import { useAgentAvailable } from "@/app/system/use-agent-available"
+import { useAppliedSuggestions } from "@/app/content/use-applied-suggestions"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import { PublishPreviewDialog } from "@/components/publish-preview.dialog"
 import { PostTranslationsMenu } from "@/components/post-translations.menu"
@@ -56,6 +59,9 @@ export default function PostUnifiedEditPage() {
   const [post, setPost] = useState<ShPostUnified | null>(null)
   const [state, setState] = useState<ShPostState>("DRAFT")
   const [data, setData] = useState<Record<string, unknown>>({})
+  /** SH1019 — the field whose "ask the agent" prompt is open. */
+  const [asking, setAsking] = useState<{ name: string; label: string } | null>(null)
+  const agentAvailable = useAgentAvailable()
   const [isLoading, setIsLoading] = useState(false)
   /**
    * SH955 — the field the server's last refusal was about, so the form can mark it.
@@ -224,6 +230,8 @@ export default function PostUnifiedEditPage() {
   }, [postId, post])
 
   const schema = useMemo(() => postFormSchema(post?.shPostType), [post])
+  // SH1019 — a suggestion applied from the dock lands here as an unsaved edit.
+  useAppliedSuggestions(postId, post != null, setData)
 
   /** Bring a field into view and put the cursor in it — the insights panel and a refusal both ask. */
   function goToField(name: string) {
@@ -664,6 +672,7 @@ export default function PostUnifiedEditPage() {
                 postId={postId}
                 postTypeName={postTypeName}
                 problem={refusal}
+                onAsk={agentAvailable ? setAsking : undefined}
               />
             )}
           </AdaptiveSectionCard.Content>
@@ -721,6 +730,10 @@ export default function PostUnifiedEditPage() {
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
       </div>
+
+      {asking && postId && (
+        <AskAgentDialog postId={postId} field={asking} onClose={() => setAsking(null)} />
+      )}
 
       <PostVersionsDialog
         postId={postId}

@@ -390,5 +390,11 @@
   "content.createdNoDigest": "Ela ainda não renderiza, então não há estrutura para mostrar.",
   "content.restoreField": "Restaurar {{field}}",
   "content.restoreFieldConfirm": "Restaurar {{field}}? Pressione de novo",
-  "content.restoredField": "{{field}} restaurado no rascunho"
+  "content.restoredField": "{{field}} restaurado no rascunho",
+  "content.askAgent": "Perguntar ao agente",
+  "content.askAgentTitle": "Perguntar ao agente sobre {{field}}",
+  "content.askAgentHint": "O agente conectado lê este campo, o que ele aceita e a página, e responde no dock com um valor que você pode aplicar.",
+  "content.askAgentPrompt": "Sugira um(a) {{field}} melhor para esta página.",
+  "content.askAgentSend": "Perguntar",
+  "content.askAgentSent": "Pergunta enviada. A resposta vai chegar no dock."
 }

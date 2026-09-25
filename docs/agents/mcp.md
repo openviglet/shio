@@ -525,3 +525,9 @@ So draft first and reply second, in one session. It is a resource and not a tool
 reason: read once when a session starts or resumes, not billed on every turn's `tools/list`.
 `ShAgentCapabilityJoinTest` classifies it as the read half of the notes channel that
 `batchWrites` claims.
+
+**A request about a field (SH1019).** A line on `shio://requests` whose note carries a field
+path, anchored to a post and the field the curator asked about, wants a value for that field.
+Reply with `note.add` whose `body` is the value itself, nothing around it, because the dock
+offers to write that body into the form as it stands. Read the field and what it accepts first
+(`shio_read` of the page, and its type's constraints).

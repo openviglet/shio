@@ -2803,3 +2803,16 @@ Rejecting needs the note a rejection must carry, so it happens in the queue, whi
 action opens. A chat message holds at most one action in the design system, which is why the actions
 live on a report beside it. `ShNoteRelayTest.aReplyCarriesItsRunAndApprovingItPublishes` drafts in
 a run, replies, approves, and reads the published row.
+
+## Ask the agent from a field (SH1019)
+
+`PostFormFields` shows "Ask the agent" on text-like fields (`ASKABLE`: Text, Text Area, HTML
+Editor) when the editor passes `onAsk`, which it does only while `useAgentAvailable()` says a run
+is recent. `AskAgentDialog` opens a short prompt prefilled from the field's label and sends a
+`request` note anchored to the post and that `fieldPath`. When the reply to a field request lands,
+the relay pushes a report whose action "Apply to <field>" calls `requestApply` in
+`lib/field-suggestions.ts` and navigates to the post. `useAppliedSuggestions` takes the value once
+the post has loaded (earlier, the load would overwrite it) and writes it into the form as an
+unsaved edit, so dirty state, validation, autosave and save treat it as typed. Nothing on this path
+writes to the server. For a field request the reply's body is the value, so there is no separate
+suggestion field on the note and no schema change.

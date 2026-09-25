@@ -1447,26 +1447,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.11 Ask the agent, from the field (SH1019)
-
-The design VigletAssistant was drawn from shows its most useful gesture inside the
-editor: the curator asks for a title, and the answer arrives with a button that writes
-it into the field. Shio can offer that without hosting a model, because SH1006 relays a
-curator's request to the connected agent as a note and SH1007 lets an answer carry
-actions.
-
-Each text-like field in the post form gains an ask-the-agent control, shown only while
-an agent session is active. It opens a short prompt prefilled with the field's label and
-posts a request note anchored to the post and that field path. The agent reads the
-anchored field, its constraints from BC2 and the page, and replies with a suggested
-value. The dock renders the reply with an action to apply it, which writes into the form
-as an unsaved edit, so it passes through the same dirty state, validation and review as
-typing it would.
-
-The agent's leg is the existing note vocabulary, with a suggestion field on a reply. The
-assertions ask for a title, answer through MCP with a suggestion, apply it from the
-dock, and read the form as dirty with the suggested value.
-
 ### LXVIII.12 A router that cannot be blocked (SH1090)
 
 SH1011 asked for a router blocker on the post editor. React Router 7's `useBlocker` —

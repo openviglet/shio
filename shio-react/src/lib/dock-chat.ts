@@ -23,6 +23,8 @@ export interface ChatTurn {
   requestId: string
   /** The page or folder the request hangs on, where its reply will appear. */
   objectId: string
+  /** SH1019 — the field a request is about, when it asks for a value to put in one. */
+  fieldPath?: string
   text: string
   at: number
   /** SH1007 — `run` is the agent session that wrote the reply, whose drafts answer it. */
@@ -37,8 +39,9 @@ function emit(next: readonly ChatTurn[]) {
   for (const listener of listeners) listener()
 }
 
-export function recordRequest(request: { id: string; objectId: string; body: string }) {
-  emit([...turns, { requestId: request.id, objectId: request.objectId, text: request.body, at: Date.now() }])
+export function recordRequest(request: { id: string; objectId: string; body: string; fieldPath?: string }) {
+  emit([...turns, { requestId: request.id, objectId: request.objectId, fieldPath: request.fieldPath,
+    text: request.body, at: Date.now() }])
 }
 
 /** The reply to a request among a thread's notes: the first `reply` whose parent is the request. */

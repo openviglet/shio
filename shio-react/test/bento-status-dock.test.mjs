@@ -293,7 +293,9 @@ test("SH1006: with onSend the dock opens into a chat, a question waits, and the 
 
 test("SH1006: the shell offers the chat only with an agent around and a page open", () => {
   const relay = readFileSync(join(HERE, "..", "src", "app", "system", "use-dock-chat-relay.ts"), "utf8")
-  assert.match(relay, /noteService\.relay\(\{ signal: abort\.signal \}\)/, "SH1006: nothing asks whether an agent is around")
+  const available = readFileSync(join(HERE, "..", "src", "app", "system", "use-agent-available.ts"), "utf8")
+  assert.match(available, /noteService\.relay\(\{ signal: abort\.signal \}\)/, "SH1006: nothing asks whether an agent is around")
+  assert.match(relay, /const agentActive = useAgentAvailable\(\)/, "SH1006: the dock no longer asks before offering the chat")
   assert.match(relay, /agentActive && anchor/,
     "SH1006: the composer appears with nobody behind it, or with no page for the request to hang on")
   assert.match(relay, /if \(pending === 0\) return/, "SH1006: replies are polled when nothing is waiting")
@@ -323,4 +325,42 @@ test("SH1007: a reply with a run offers the change, and approving goes through r
   const send = readFileSync(join(HERE, "..", "src", "app", "system", "dock-chat-send.ts"), "utf8")
   assert.match(send, /reviewService\.decide\(run, \[\{ postId, decision: "APPROVE" \}\]\)/,
     "SH1007: the dock's approval is not the review queue's own call, so it is a way around review")
+})
+
+/*
+ * SH1019 — ask the connected agent from a field, and apply its answer into the form. The server
+ * leg is the note vocabulary SH1006 and ShNoteRelayTest already hold, with a field on the request.
+ */
+test("SH1019: an applied suggestion waits for its post and is taken exactly once", async () => {
+  const store = await import("../src/lib/field-suggestions.ts")
+  let heard = 0
+  const off = store.onSuggestion(() => { heard += 1 })
+  store.requestApply({ postId: "p-1", field: "title", value: "First" })
+  store.requestApply({ postId: "p-1", field: "title", value: "Pricing, simply" })
+  store.requestApply({ postId: "p-2", field: "title", value: "Other page" })
+  assert.equal(heard, 3, "SH1019: the editor is not told a suggestion arrived")
+  assert.deepEqual(store.takeFor("p-1"), [{ postId: "p-1", field: "title", value: "Pricing, simply" }],
+    "SH1019: a second apply to the same field did not replace the first")
+  assert.deepEqual(store.takeFor("p-1"), [], "SH1019: a suggestion was applied twice")
+  assert.equal(store.takeFor("p-2").length, 1, "SH1019: another post's suggestion was taken by this one")
+  off()
+})
+
+test("SH1019: a field asks with its path, the answer offers to apply, and applying edits the form only", () => {
+  const read = (...path) => readFileSync(join(HERE, "..", "src", ...path), "utf8")
+  const fields = read("components", "widgets", "post-form-fields.tsx")
+  assert.match(fields, /onAsk && ASKABLE\.has\(field\.widget\)/, "SH1019: no field can ask the agent")
+  const editor = read("app", "content", "post.edit.page.tsx")
+  assert.match(editor, /onAsk=\{agentAvailable \? setAsking : undefined\}/,
+    "SH1019: the ask control shows with no agent behind it")
+  assert.match(editor, /useAppliedSuggestions\(postId, post != null, setData\)/,
+    "SH1019: an applied suggestion does not reach the form, or arrives before the load overwrites it")
+  const dialog = read("components", "ask-agent-dialog.tsx")
+  assert.match(dialog, /sendRequest\(postId, text\.trim\(\), say, field\.name\)/,
+    "SH1019: the question is not anchored to the field it is about")
+  const relay = read("app", "system", "use-dock-chat-relay.ts")
+  assert.match(relay, /requestApply\(\{ postId: turn\.objectId, field, value: reply\.body \}\)/,
+    "SH1019: the answer does not offer to apply its value to the field")
+  const hook = read("app", "content", "use-applied-suggestions.ts")
+  assert.doesNotMatch(hook, /service|axios/i, "SH1019: applying a suggestion writes to the server instead of the form")
 })

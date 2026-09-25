@@ -23,10 +23,16 @@ type Say = (key: string, options?: Record<string, unknown>) => string
  * <p>Success shows as the question itself, in the transcript the curator is typing into; a
  * refusal goes to the dock as a report with the server's words (SH966).</p>
  */
-export function sendRequest(objectId: string, text: string, say: Say) {
-  noteService.add({ objectId, kind: "request", body: text })
-    .then((note) => recordRequest({ id: note.id, objectId, body: text }))
-    .catch((error: unknown) => reportRefusal(error, say("common.error"), { t: say }))
+export function sendRequest(objectId: string, text: string, say: Say, fieldPath?: string): Promise<boolean> {
+  return noteService.add({ objectId, kind: "request", body: text, fieldPath })
+    .then((note) => {
+      recordRequest({ id: note.id, objectId, body: text, fieldPath })
+      return true
+    })
+    .catch((error: unknown) => {
+      reportRefusal(error, say("common.error"), { t: say })
+      return false
+    })
 }
 
 /**

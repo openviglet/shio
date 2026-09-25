@@ -11,7 +11,9 @@ package com.viglet.shio.api.note;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterAll;
@@ -39,6 +41,11 @@ import com.viglet.shio.persistence.model.agent.ShAgentRun;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.note.ShNote;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
+import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
+import com.viglet.shio.persistence.model.widget.ShWidget;
+import com.viglet.shio.persistence.repository.widget.ShWidgetRepository;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
+import com.viglet.shio.widget.ShSystemWidget;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -65,6 +72,8 @@ class ShNoteRelayTest {
 
     @Autowired
     private ShNoteService noteService;
+    @Autowired
+    private ShWidgetRepository widgetRepository;
     @Autowired
     private ShNoteRelay relay;
     @Autowired
@@ -107,8 +116,32 @@ class ShNoteRelayTest {
             root.setDate(then);
             root.setOwner("admin");
             entityManager.persist(root);
-            ShPostType postType = entityManager.createQuery("select t from ShPostType t", ShPostType.class)
-                    .setMaxResults(1).getResultStream().findFirst().orElse(null);
+            // Its own type, with a title and nothing required beside it: borrowing "the first type in
+            // the database" picked up another test's required field in the full suite, and the
+            // approval that publishes was refused for a field this test never heard of.
+            ShWidget text = entityManager.find(ShWidget.class,
+                    widgetRepository.findFirstByName(ShSystemWidget.TEXT).getId());
+            ShPostType postType = new ShPostType();
+            postType.setName("PT-SH1006-" + UUID.randomUUID());
+            postType.setTitle("Relay Type");
+            postType.setDescription("Post type for the relay test");
+            postType.setSystem((byte) 0);
+            postType.setDate(then);
+            postType.setOwner("admin");
+            ShPostTypeAttr title = new ShPostTypeAttr();
+            title.setName(ShSystemPostTypeAttr.TITLE);
+            title.setLabel("Title");
+            title.setDescription("Title field");
+            title.setOrdinal(1);
+            title.setRequired((byte) 0);
+            title.setIsTitle((byte) 1);
+            title.setIsSummary((byte) 0);
+            title.setShWidget(text);
+            title.setShPostType(postType);
+            Set<ShPostTypeAttr> attrs = new HashSet<>();
+            attrs.add(title);
+            postType.setShPostTypeAttrs(attrs);
+            entityManager.persist(postType);
             ShPostUnified draft = new ShPostUnified();
             draft.setId(SITE + "-pricing");
             draft.setState(ShPostState.DRAFT);
@@ -214,5 +247,16 @@ class ShNoteRelayTest {
         assertThat(unifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED))
                 .as("SH1007: an approved change from the dock is not live")
                 .isPresent();
+    }
+
+    /** SH1019 — a request about a field says which, so the agent knows the reply is its value. */
+    @Test
+    @DisplayName("SH1019: a field request is listed with its field, and a plain one without")
+    void aFieldRequestNamesItsField() {
+        ShNote field = noteService.add(postId, "title", null, null, "request", "Suggest a better title", "curator");
+        String listed = requests().read("shio://requests");
+        assertThat(listed.lines().filter(line -> line.contains("note=" + field.getId())))
+                .as("SH1019: the agent cannot tell this request wants a value for the title field")
+                .singleElement().asString().contains("field=title");
     }
 }

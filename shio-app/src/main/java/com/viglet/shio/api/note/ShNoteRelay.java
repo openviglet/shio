@@ -70,6 +70,8 @@ public class ShNoteRelay {
         for (ShNoteService.OpenNote each : requests) {
             text.append("- note=").append(each.id())
                     .append(" on ").append(each.address() != null ? each.address() : "id:" + each.objectId())
+                    // SH1019 — a request about one field wants a value for it, and the reply body is that value.
+                    .append(each.field() != null ? " field=" + each.field() : "")
                     .append(" by ").append(each.author() == null ? "?" : each.author())
                     .append(": ").append(oneLine(each.body())).append('\n');
         }

@@ -81,5 +81,7 @@
   "dock.kind.arrivals": "Envios de formulário",
   "dock.replyChange": "O agente respondeu com uma alteração para revisar.",
   "dock.openChange": "Abrir a alteração",
-  "dock.approveChange": "Aprovar e publicar"
+  "dock.approveChange": "Aprovar e publicar",
+  "dock.suggestionReady": "O agente sugeriu um valor para {{field}}.",
+  "dock.applySuggestion": "Aplicar em {{field}}"
 }

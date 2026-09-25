@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { IconSparkles } from "@tabler/icons-react"
 import { constraintHint } from "@/components/field-constraints"
 import { useTranslation } from "react-i18next"
 import { fieldAnchorId, fieldIds } from "@/lib/field-ids"
@@ -25,14 +27,22 @@ interface Props {
    * reading the message and acting on it.
    */
   problem?: { field: string; message: string }
+  /**
+   * SH1019 — ask the connected agent for a value for this field. Passed only while an agent is
+   * around (`useAgentAvailable`), and offered only on fields a sentence can fill.
+   */
+  onAsk?: (field: { name: string; label: string }) => void
 }
+
+/** The widgets whose value is text an agent can suggest; the rest are pickers and structure. */
+const ASKABLE = new Set(["Text", "Text Area", "Textarea", "HTML Editor"])
 
 interface TabGroup {
   label: string
   fields: ShPostTypeSchemaField[]
 }
 
-export function PostFormFields({ schema, data, onDataChange, postId, postTypeName, problem }: Props) {
+export function PostFormFields({ schema, data, onDataChange, postId, postTypeName, problem, onAsk }: Props) {
   const { t } = useTranslation()
   /** SH1010 — one sentence per field, built from what the model declares about it. */
   const hint = (field: ShPostTypeSchemaField) => constraintHint(field, t)
@@ -117,6 +127,12 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
             )}
           </Label>
           <div className="flex items-center gap-1.5 ml-auto">
+            {onAsk && ASKABLE.has(field.widget) && (
+              <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-xs"
+                onClick={() => onAsk({ name: field.name, label: field.label || field.name })}>
+                <IconSparkles className="mr-1 size-3.5" /> {t("content.askAgent")}
+              </Button>
+            )}
             {field.isTitle && <BadgeColorful text="Title" className="text-[10px] px-1.5 py-0 h-5" />}
             {field.isSummary && <BadgeColorful text="Summary" className="text-[10px] px-1.5 py-0 h-5" />}
             <BadgeColorful text={field.widget} className="text-[10px] px-1.5 py-0 h-5 font-medium" />
