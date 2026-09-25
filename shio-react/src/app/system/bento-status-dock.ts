@@ -8,7 +8,7 @@
  */
 import { createElement } from "react"
 import { VigletAssistant, useAssistantNotifications } from "@viglet/viglet-design-system"
-import { dismissReport, markReportRead, useDockAmbient, useDockReports } from "../../lib/dock-reports.ts"
+import { dismissReport, markReportRead, useDockAmbient, useDockReports, useMutedKinds } from "../../lib/dock-reports.ts"
 
 /**
  * SH964 — the Viglet assistant, mounted as a status surface in the shell's corner.
@@ -35,7 +35,9 @@ export function BentoStatusDock() {
   const { state, caption, activity } = useAssistantNotifications()
   const reports = useDockReports()
   const { working, bumps } = useDockAmbient()
-  const toasting = state !== "idle"
+  // SH971 — with saves muted, only a failing toast moves the mascot; the toast itself still shows.
+  const muted = useMutedKinds()
+  const toasting = state !== "idle" && (state === "error" || !muted.has("saves"))
   // A toast is the freshest thing and wins; then an agent run that is writing (SH968); then the
   // dock's own reading of its newest unread report, which it does when both are left undefined.
   return createElement(VigletAssistant, {

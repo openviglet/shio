@@ -71,5 +71,12 @@
   "dock.openSubmission": "Abrir o envio",
   "dock.openNewest": "Abrir o mais recente",
   "dock.trashSubmission": "Mover para a lixeira",
-  "dock.trashed": "Movido para a lixeira"
+  "dock.trashed": "Movido para a lixeira",
+  "dock.preferences": "O que o dock informa",
+  "dock.preferencesHint": "Desligue o que você não precisa acompanhar. Falhas sempre chegam ao dock, e nada aqui esconde um registro: a trilha de atividade guarda todos os eventos.",
+  "dock.preferencesSaved": "Preferências do dock salvas",
+  "dock.kind.saves": "Seus próprios salvamentos",
+  "dock.kind.agent-runs": "Execuções de agente",
+  "dock.kind.schedules": "Publicação agendada",
+  "dock.kind.arrivals": "Envios de formulário"
 }

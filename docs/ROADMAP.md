@@ -16,7 +16,7 @@
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
-- 📋 **SH971** (deps: SH968 ✅) **a curator cannot choose what the dock reports or quiet the mascot** — An author, a reviewer and an operator need different subsets of outcomes, agent runs, schedules and arrivals, and the only control today is the browser's reduced-motion setting. → §LXIII.8
+- ⏳ **SH971** (deps: SH968 ✅, design system: VigletAssistant passes VigletAvatar's paused prop through) **a curator cannot choose what the dock reports or quiet the mascot** — The kinds can be muted now, but quieting the mascot needs VigletAssistant to pass VigletAvatar's paused prop through. → §LXIII.8
 - 📋 **SH972** (deps: SH964 ✅) **the Universal Editor renders outside the bento shell, so its saves would report to no dock** — SH907 moved the visual editor out of the shell to reclaim the viewport, and the dock mounts inside the shell, so the surface saving on every click has no outcome channel. → §LXIII.9
 - 📋 **SH1139** (deps: SH965 ✅) **sixteen console writes end silently on a path, so the dock never hears a delete or a refused create** — SH965's lint lists them: five deletes report nothing, and eleven writes toast success but let a failure escape or swallow it. → §LXIII.10
 
@@ -125,6 +125,12 @@
 - **Every manifest feature key is named in COVERAGE.md** pnpm conformance:docs prints
   the SH1069 line with 0 unnamed keys, and UNNAMED_FEATURES in
   docs-coverage.conformance.mjs reads 0.
+
+## Done when — SH971
+
+- **A curator can freeze the dock's mascot from the preferences dialog** The design
+  system has to ship a paused prop on VigletAssistant first, and then the stored choice
+  needs a still flag beside muted.
 
 ## Non-goals (do NOT add as tasks)
 

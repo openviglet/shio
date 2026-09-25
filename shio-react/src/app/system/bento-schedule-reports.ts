@@ -70,11 +70,11 @@ export function useScheduleReports() {
     const since = readSeen() ?? `${new Date(Date.now() - FIRST_LOOK_MS).toISOString()}|`
     // Only the failures: a success nobody saw live needs nothing done about it.
     const stopReplay = replayChanges(since, (page, cursor) => {
-      for (const report of scheduleReports({ incidents: page?.incidents }, deps)) pushReport(report)
+      for (const report of scheduleReports({ incidents: page?.incidents }, deps)) pushReport(report, "schedules")
       if (cursor) writeSeen(cursor)
     })
     const off = subscribeChanges(undefined, (page, cursor) => {
-      for (const report of scheduleReports(page, deps)) pushReport(report)
+      for (const report of scheduleReports(page, deps)) pushReport(report, "schedules")
       if (cursor) writeSeen(cursor)
     })
     return () => {

@@ -45,7 +45,7 @@ export function useArrivalReports() {
     const flush = () => {
       const report = arrivalReport(gathered, deps)
       gathered = []
-      if (report) pushReport(report)
+      if (report) pushReport(report, "arrivals")
     }
     const off = subscribeChanges(undefined, (page) => {
       const arrived = arrivalsIn(page)

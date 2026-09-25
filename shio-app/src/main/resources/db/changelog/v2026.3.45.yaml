@@ -1,0 +1,31 @@
+databaseChangeLog:
+  # SH971 — `ShUser.dockPreferences`: what the console's dock reports to this person.
+  #
+  # A small JSON document ({"muted": [...]}) rather than a table of rows, because it is read whole
+  # on every shell mount and written whole from one settings page; nothing queries into it. On the
+  # user rather than per tenant, so the choice follows the curator across devices and tenants, the
+  # way `lastPostType` already does.
+  #
+  # NULLABLE FOREVER. Null means the curator never chose, and reads as "report everything", which
+  # is what the dock did before this existed.
+  #
+  # The SH26 baseline's PascalCase table with camelCase columns, matching its neighbours. Not a
+  # tenant discriminator, so no ShTenantBackfillRunner entry. Type DB-agnostic per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh971-user-dock-preferences
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShUser
+                columnName: dockPreferences
+      changes:
+        - addColumn:
+            tableName: ShUser
+            columns:
+              - column:
+                  name: dockPreferences
+                  type: VARCHAR(1024)

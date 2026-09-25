@@ -177,3 +177,51 @@ test("SH968: an agent run that is writing turns the mascot to working, with its 
   await settle()
   assert.equal(stateOf(), "idle", "SH968: the mascot kept working after the run ended")
 })
+
+/*
+ * SH971 — what the dock reports is the curator's choice, and a failure is never theirs to hide.
+ * Driven through the real store and the mounted dock.
+ */
+test("SH971: a muted kind drops its reports, except a failure, which always reaches the dock", async () => {
+  const { pushReport, setMutedKinds } = await import("../src/lib/dock-reports.ts")
+  await act(() => setMutedKinds(["arrivals", "schedules"]))
+  const before = currentReports().length
+
+  assert.equal(pushReport({ tone: "attention", text: "a lead arrived" }, "arrivals"), undefined,
+    "SH971: a report of a muted kind reached the dock")
+  const failure = pushReport({ tone: "error", text: "the launch did not happen" }, "schedules")
+  assert.ok(failure, "SH971: a muted kind's FAILURE was dropped; a failure is the report least safe to lose")
+  const unmuted = pushReport({ tone: "success", text: "agent finished" }, "agent-runs")
+  assert.ok(unmuted, "SH971: a kind nobody muted was dropped")
+  assert.equal(currentReports().length, before + 2)
+
+  await act(() => { dismissReport(failure); dismissReport(unmuted); setMutedKinds([]) })
+})
+
+test("SH971: with saves muted, a save's toast no longer moves the mascot, but a failing toast does", async () => {
+  const { setMutedKinds } = await import("../src/lib/dock-reports.ts")
+  await act(() => setMutedKinds(["saves"]))
+  await act(() => { toast.success("Saved successfully") })
+  await settle()
+  assert.equal(stateOf(), "idle", "SH971: a muted save still moved the mascot")
+
+  await act(() => { toast.error("Could not save") })
+  await settle()
+  assert.equal(stateOf(), "error", "SH971: a failing toast was muted along with the saves")
+
+  await act(() => { toast.dismiss(); setMutedKinds([]) })
+  await act(() => new Promise((resolve) => setTimeout(resolve, 600)))
+})
+
+test("SH971: the shell loads the choice and offers it, and the kinds agree with the server's", () => {
+  const shell = readFileSync(join(HERE, "..", "src", "app", "system", "bento.root.page.tsx"), "utf8")
+  assert.match(shell, /useDockPreferencesLoad\(\)/, "SH971: the curator's choice is never read")
+  assert.match(shell, /<BentoDockPreferences \/>/, "SH971: nothing lets a curator make the choice")
+
+  const client = readFileSync(join(HERE, "..", "src", "services", "dock", "dock.service.ts"), "utf8")
+  const server = readFileSync(join(HERE, "..", "..", "shio-app", "src", "main", "java", "com", "viglet",
+    "shio", "api", "auth", "dock", "ShDockPreferencesService.java"), "utf8")
+  const kinds = (text, pattern) => [...(pattern.exec(text)?.[1] ?? "").matchAll(/"([a-z-]+)"/g)].map((m) => m[1])
+  assert.deepEqual(kinds(client, /DOCK_KINDS = \[([^\]]*)\]/), kinds(server, /KINDS =\s*List\.of\(([^)]*)\)/),
+    "SH971: the console offers a kind the server refuses, or the server accepts one nobody can choose")
+})

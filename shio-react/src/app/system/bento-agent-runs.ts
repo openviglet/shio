@@ -12,10 +12,13 @@ import { useNavigate } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { subscribeChanges } from "@/hooks/use-change-stream"
 import { createRunTracker, type AgentRun } from "@/lib/agent-runs"
-import { bumpActivity, pushReport, setWorking } from "@/lib/dock-reports"
+import { bumpActivity, isMuted, pushReport, setWorking } from "@/lib/dock-reports"
 import { ShReviewService } from "@/services/review/review.service"
 
 const reviewService = new ShReviewService()
+
+/** SH971 — the kind these reports are muted by. */
+const KIND = "agent-runs"
 
 /** How long a run's session stays quiet before it counts as finished. */
 export const RUN_QUIET_MS = 20_000
@@ -60,11 +63,12 @@ export function useAgentRunReports() {
       quietMs: RUN_QUIET_MS,
       schedule: (run, ms) => setTimeout(run, ms),
       cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
-      onStart: (run) => setWorking(workingOf(run)),
-      onWrite: () => bumpActivity(),
+      // SH971 — a muted kind moves nothing: no working state, no bumps, and no success report.
+      onStart: (run) => { if (!isMuted(KIND)) setWorking(workingOf(run)) },
+      onWrite: () => { if (!isMuted(KIND)) bumpActivity() },
       onEnd: (run) => {
         const still = tracker.running()
-        setWorking(still.length ? workingOf(still[0]) : null)
+        setWorking(still.length && !isMuted(KIND) ? workingOf(still[0]) : null)
         const values = { agent: agentOf(run), site: siteOf(run), count: run.writes, pending: run.pending }
         pushReport({
           tone: run.pending ? "attention" : "success",
@@ -73,7 +77,7 @@ export function useAgentRunReports() {
             openReview(run.session),
             { label: say("dock.openActivity"), onSelect: () => live.current.navigate(`${ROUTES.ADMIN_ACTIVITY}?who=agent`) },
           ],
-        })
+        }, KIND)
       },
     })
     const off = subscribeChanges(undefined, (page) => tracker.observe(page?.changes))
@@ -83,7 +87,7 @@ export function useAgentRunReports() {
     reviewService.pending({ signal: abort.signal })
       .then(({ sessions }) => {
         if (sessions > 0) {
-          pushReport({ tone: "attention", text: say("dock.pendingAtLoad", { count: sessions }), actions: [openReview()] })
+          pushReport({ tone: "attention", text: say("dock.pendingAtLoad", { count: sessions }), actions: [openReview()] }, KIND)
         }
       })
       // Nothing to report: a count this instance cannot give is not an outcome of anything the

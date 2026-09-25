@@ -71,5 +71,12 @@
   "dock.openSubmission": "Open the submission",
   "dock.openNewest": "Open the newest",
   "dock.trashSubmission": "Move to trash",
-  "dock.trashed": "Moved to trash"
+  "dock.trashed": "Moved to trash",
+  "dock.preferences": "What the dock reports",
+  "dock.preferencesHint": "Switch off what you do not need to hear about. Failures always reach the dock, and nothing here hides a record: the activity trail keeps every event.",
+  "dock.preferencesSaved": "Dock preferences saved",
+  "dock.kind.saves": "Your own saves",
+  "dock.kind.agent-runs": "Agent runs",
+  "dock.kind.schedules": "Scheduled publishing",
+  "dock.kind.arrivals": "Form submissions"
 }

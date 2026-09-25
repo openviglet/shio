@@ -2697,3 +2697,25 @@ a post, and a post has no archive state; an inbox is Block BI's. The stream with
 actions in `app/system/submission-actions.ts` call `ShAgentFeedService.locate` first
 (`GET /v2/agent/resolve`, classified in `ShConsoleReadAclLintTest`). It is named `locate` because
 the SH965 lint keys writes by method name, and `resolve` is a POST on the note service.
+
+## What the dock reports is the curator's choice (SH971, kinds half)
+
+`ShUser.dockPreferences` (changeset `sh971-user-dock-preferences`, VARCHAR(1024), nullable) holds
+`{"muted": [...]}`. It sits on the user rather than per tenant, so the choice follows the curator
+across devices, the way `lastPostType` does. `GET`/`PUT /api/v2/user/current/dock`
+(`ShDockPreferencesAPI`) reads and replaces it whole. The kinds are a closed set, `saves`,
+`agent-runs`, `schedules` and `arrivals`, and anything else is a teaching 400 with the set, the
+nearest match and `at`. The stored list is sorted and deduplicated (P5). A refusal is not a kind,
+because it is always a failure. `surfaces.json`'s `consoleOnly` already classified this as a
+`preference`.
+
+In the console, `useDockPreferencesLoad` reads the choice at shell mount and `setMutedKinds` applies
+it. Every `pushReport` carries its kind, and a muted kind's report is dropped unless its tone is
+`error`: a failure always reaches the dock, and muting never hides the record. With `saves` muted,
+only a failing toast moves the mascot. With `agent-runs` muted, a run shows no working state and no
+bumps. The header's `BentoDockPreferences` button opens one switch per kind, and the dialog says
+that failures always arrive.
+
+Quieting the mascot is the other half and waits on the design system. `VigletAvatar` has `paused`,
+but `VigletAssistant` does not pass it through, so Shio cannot freeze the dock's mascot without a
+package change.

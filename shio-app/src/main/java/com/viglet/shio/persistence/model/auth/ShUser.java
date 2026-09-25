@@ -16,6 +16,8 @@
  */
 package com.viglet.shio.persistence.model.auth;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
@@ -53,6 +55,13 @@ public class ShUser implements Serializable {
 	private String lastName;
 
 	private String lastPostType;
+
+	/**
+	 * SH971 — what the console's dock reports to this person, as JSON ({"muted": [...]}). Served by
+	 * its own endpoint, never with the user, so it is left out of every user payload.
+	 */
+	@JsonIgnore
+	private String dockPreferences;
 
 	private int loginTimes;
 
@@ -118,6 +127,14 @@ public class ShUser implements Serializable {
 
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
+	}
+
+	public String getDockPreferences() {
+		return dockPreferences;
+	}
+
+	public void setDockPreferences(String dockPreferences) {
+		this.dockPreferences = dockPreferences;
 	}
 
 	public String getLastPostType() {

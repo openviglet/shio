@@ -28,6 +28,8 @@ import { useBentoNav, useBentoNavItems } from "./bento-nav"
 import { useAgentRunReports } from "./bento-agent-runs"
 import { useScheduleReports } from "./bento-schedule-reports"
 import { useArrivalReports } from "./bento-arrival-reports"
+import { BentoDockPreferences } from "./bento-dock-preferences"
+import { useDockPreferencesLoad } from "./use-dock-preferences"
 import { BentoStatusDock } from "./bento-status-dock"
 import { BentoTenantLinkNotice } from "./bento-tenant-link-notice"
 import { BentoTenantSwitcher } from "./bento-tenant-switcher"
@@ -99,6 +101,7 @@ export default function BentoRootPage() {
   useAgentRunReports()
   useScheduleReports()
   useArrivalReports()
+  useDockPreferencesLoad()
   const items = useBentoNavItems()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
@@ -250,6 +253,8 @@ export default function BentoRootPage() {
               SH934 — the tenant switch is an identity action, so it sits beside the identity
               menu, and renders nothing unless the reader belongs to more than one tenant.
             */}
+            {/* SH971 — what the dock reports, chosen per person. */}
+            <BentoDockPreferences />
             <BentoTenantSwitcher />
             <BentoUserMenu
               accountRoute={ROUTES.ADMIN_USERS}

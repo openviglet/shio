@@ -219,6 +219,8 @@ class ShAgentP9ConformanceTest {
         for (Map.Entry<String, String> entry : Map.of(
                 "/api/v2/api-token", "ShApiTokenAPI.java",
                 "/api/v2/user", "ShUserAPI.java",
+                // SH971 — a curator's own dock preferences; surfaces.json classifies it console-only.
+                "/api/v2/user/current/dock", "ShDockPreferencesAPI.java",
                 "/api/v2/group", "ShGroupAPI.java",
                 "/api/v2/role", "ShRoleAPI.java",
                 "/api/v2/provider/auth", "ShAuthProviderAPI.java",

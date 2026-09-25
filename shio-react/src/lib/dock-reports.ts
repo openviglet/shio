@@ -36,7 +36,32 @@ function emit(updated: readonly DockReport[]) {
 /** The newest ten; a dock is not a log, and the activity page is. */
 const KEPT = 10
 
-export function pushReport(report: Omit<DockReport, "id" | "role" | "at" | "read">): string {
+/**
+ * SH971 — the kinds this curator muted. A report of a muted kind is dropped unless it is a
+ * failure: tone error always reaches the dock, because a failure is the report least safe to lose,
+ * and muting never hides the record (the activity trail and the feed still carry it).
+ */
+let muted: ReadonlySet<string> = new Set()
+
+export function setMutedKinds(kinds: readonly string[]) {
+  muted = new Set(kinds)
+  for (const listener of listeners) listener()
+}
+
+export function isMuted(kind: string): boolean {
+  return muted.has(kind)
+}
+
+function currentMuted(): ReadonlySet<string> {
+  return muted
+}
+
+export function useMutedKinds(): ReadonlySet<string> {
+  return useSyncExternalStore(subscribe, currentMuted, currentMuted)
+}
+
+export function pushReport(report: Omit<DockReport, "id" | "role" | "at" | "read">, kind?: string): string | undefined {
+  if (kind && muted.has(kind) && report.tone !== "error") return undefined
   next += 1
   const id = `report-${Date.now().toString(36)}-${next}`
   emit([...reports, { ...report, id, role: "report" as const, at: Date.now(), read: false }].slice(-KEPT))
