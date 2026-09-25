@@ -12,14 +12,15 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.TenantId;
+import org.hibernate.type.SqlTypes;
 
 import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
@@ -110,7 +111,8 @@ public class ShPostRevision implements Serializable {
     @Column(name = "post_type_id", length = 36)
     private String postTypeId;
 
-    @Lob
+    /** Long text bound as a string, never a large object (SH1099, on {@code ShPostUnified.data}). */
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "data", nullable = false)
     private String data;
 

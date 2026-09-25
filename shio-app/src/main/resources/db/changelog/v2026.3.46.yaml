@@ -1,0 +1,49 @@
+databaseChangeLog:
+  # SH1099 — bring the documents PostgreSQL stored as large objects back into their columns.
+  #
+  # Until SH1099 four long-text fields were `@Lob String`, and pgjdbc writes that as a large object:
+  # the `text` column holds the object's OID and the document lives in pg_largeobject. The entities
+  # read correctly, and every SQL predicate over these columns matched nothing, so search found no
+  # body text on PostgreSQL. The fields are now bound as strings; this changeset converts the rows
+  # written before that, and unlinks each object, which deleting a row never did.
+  #
+  # PostgreSQL only: H2 and MariaDB never stored an OID. A value is converted only when it is a bare
+  # integer naming an existing large object, so it is idempotent, and a row already holding its
+  # document (every JSON value starts with `{`) is never touched.
+  - changeSet:
+      id: sh1099-inline-large-objects
+      author: alexandre
+      dbms: postgresql
+      changes:
+        - sql:
+            splitStatements: false
+            stripComments: false
+            sql: |
+              DO $$
+              DECLARE
+                target record;
+                r record;
+              BEGIN
+                FOR target IN
+                  SELECT * FROM (VALUES
+                    ('sh_post_unified', 'data'),
+                    ('sh_post_unified', 'summary'),
+                    ('sh_post_revision', 'data'),
+                    ('sh_publish_gate', 'definition')) AS t(tbl, col)
+                LOOP
+                  -- CASE rather than AND: a WHERE clause's conditions have no order, and the casts
+                  -- must never see a value that is not a bare integer.
+                  FOR r IN EXECUTE format(
+                    'SELECT rid, lo FROM ('
+                    || 'SELECT ctid AS rid, CASE WHEN %1$I ~ ''^[0-9]{1,10}$'' THEN '
+                    || 'CASE WHEN %1$I::bigint <= 4294967295 THEN %1$I::bigint::oid END END AS lo '
+                    || 'FROM %2$I) candidate '
+                    || 'WHERE lo IN (SELECT oid FROM pg_largeobject_metadata)',
+                    target.col, target.tbl)
+                  LOOP
+                    EXECUTE format('UPDATE %1$I SET %2$I = $1 WHERE ctid = $2', target.tbl, target.col)
+                      USING convert_from(lo_get(r.lo), 'UTF8'), r.rid;
+                    PERFORM lo_unlink(r.lo);
+                  END LOOP;
+                END LOOP;
+              END $$;

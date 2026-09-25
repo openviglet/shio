@@ -12,14 +12,15 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.TenantId;
+import org.hibernate.type.SqlTypes;
 
 import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
@@ -64,8 +65,11 @@ public class ShPublishGate implements Serializable {
     @Column(name = "site_id", length = 36, nullable = false)
     private String siteId;
 
-    /** The ordered checks, as JSON: the CLI owns the YAML and the wire is JSON. */
-    @Lob
+    /**
+     * The ordered checks, as JSON: the CLI owns the YAML and the wire is JSON. Long text bound as a
+     * string, never a large object (SH1099, on {@code ShPostUnified.data}).
+     */
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "definition", nullable = false)
     private String definition;
 

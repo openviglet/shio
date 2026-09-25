@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,7 +61,14 @@ class ShLiquibaseChangelogReferenceLintTest {
     private static final Set<String> UNDERSTOOD = Set.of("createTable", "addColumn", "createIndex",
             "addForeignKeyConstraint", "addUniqueConstraint", "dropColumn", "addDefaultValue", "update",
             "addNotNullConstraint", "dropTable", "dropIndex", "dropForeignKeyConstraint",
-            "dropUniqueConstraint");
+            "dropUniqueConstraint", "sql");
+
+    /** SH1099 — structure a raw {@code sql} change would change without this walk seeing it. */
+    private static final Pattern DDL = Pattern.compile(
+            "\\b(create|alter|drop|rename)\\s+(table|index|column|view)\\b", Pattern.CASE_INSENSITIVE);
+
+    /** SH1099 — the tables a raw {@code sql} change names, by this schema's own prefix. */
+    private static final Pattern SH_TABLE = Pattern.compile("\\b(sh_[a-z0-9_]+)\\b");
 
     /** The walk's result: what refers to nothing, what it could not read, and what it saw. */
     private record Walk(List<String> dangling, List<String> unknown, Map<String, Set<String>> tables,
@@ -179,6 +188,23 @@ class ShLiquibaseChangelogReferenceLintTest {
                         requireTable(tables, text(body, "tableName"), where, dangling)
                                 .ifPresent(table -> requireColumns(tables, table,
                                         List.of(text(body, "columnName")), where, dangling));
+                // SH1099 — raw SQL is data work only (a migration of values), so it may not change
+                // structure the walk tracks, and every `sh_` table it names must exist by then. Its
+                // columns are not parsed out of free SQL; the engine-specific IT that runs it is
+                // what proves those.
+                case "sql" -> {
+                    String sql = text(body, "sql");
+                    if (DDL.matcher(sql).find()) {
+                        dangling.add(where + " changes structure in raw SQL, which this walk cannot follow: "
+                                + "use a typed change");
+                    }
+                    Matcher named = SH_TABLE.matcher(sql);
+                    Set<String> seen = new TreeSet<>();
+                    while (named.find()) {
+                        seen.add(named.group(1));
+                    }
+                    seen.forEach(table -> requireTable(tables, table, where, dangling));
+                }
                 case "addForeignKeyConstraint" -> {
                     requireTable(tables, text(body, "baseTableName"), where, dangling)
                             .ifPresent(table -> requireColumns(tables, table,

@@ -27,14 +27,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.TenantId;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Unified post row — single table backing both DRAFT and PUBLISHED states.
@@ -115,7 +116,8 @@ public class ShPostUnified implements Serializable {
     @Column(length = 510)
     private String title;
 
-    @Lob
+    /** Long text bound as a string, never a large object: see {@link #data} (SH1099). */
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String summary;
 
     @Column(length = 510)
@@ -156,7 +158,15 @@ public class ShPostUnified implements Serializable {
     @Column(name = "schedule_requested_by")
     private String scheduleRequestedBy;
 
-    @Lob
+    /**
+     * SH1099 — long text bound as a string, not {@code @Lob}. pgjdbc writes a {@code @Lob String}
+     * as a PostgreSQL large object: the {@code text} column then holds an OID, Hibernate resolves it
+     * on read so the entity looks right, and every SQL predicate over this column (search's
+     * {@code FULLTEXT_PREDICATE} among them) matches nothing. {@code LONGVARCHAR} is bound with
+     * {@code setString} on every engine, so the document is in the column itself.
+     * {@code ShLobStringLintTest} refuses a {@code @Lob String} anywhere in the model.
+     */
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "data", nullable = false)
     private String data;
 

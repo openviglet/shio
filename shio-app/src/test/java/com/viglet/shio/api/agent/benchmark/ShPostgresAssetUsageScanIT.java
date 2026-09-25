@@ -10,18 +10,26 @@ package com.viglet.shio.api.agent.benchmark;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.List;
+import java.util.Map;
+
+import javax.sql.DataSource;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * SH1033 on PostgreSQL — <b>the engine that answered a different question than the one asked.</b>
@@ -36,11 +44,11 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * on this fixture: 5,001 rows, 5,001 large objects, every {@code data} value matching
  * {@code ^[0-9]+$}, and the entity read returning the right document.</p>
  *
- * <p>That is <b>SH1099</b>, filed rather than fixed here, and it is not confined to the asset
- * dialog: {@code FULLTEXT_PREDICATE} matches {@code lower(cast(p.data as string))}, so console and
- * CDA search find nothing in a page's body on PostgreSQL. The two column assertions below hold
- * <em>today's</em> behaviour and are written to fail when SH1099 lands — which is the point of
- * them, and how the loop closes from this end.</p>
+ * <p>That was <b>SH1099</b>, filed from here, and it was not confined to the asset dialog:
+ * {@code FULLTEXT_PREDICATE} matches {@code lower(cast(p.data as string))}, so console and CDA
+ * search found nothing in a page's body on PostgreSQL. SH1099 bound the field as a string
+ * ({@code LONGVARCHAR}) and migrated the stored objects back into their columns; the column
+ * assertions below were flipped in that commit, which is how the loop closed from this end.</p>
  *
  * <p><b>SH1034 took the usage half of it away without meaning to, and that is asserted here too.</b>
  * The reverse index is written from the entity at write time and read by an equality predicate on
@@ -84,6 +92,9 @@ class ShPostgresAssetUsageScanIT extends ShAssetUsageScanMeasurement {
         POSTGRES.start();
     }
 
+    @Autowired
+    private DataSource dataSource;
+
     @DynamicPropertySource
     static void datasource(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
@@ -125,42 +136,111 @@ class ShPostgresAssetUsageScanIT extends ShAssetUsageScanMeasurement {
     }
 
     @Test
-    @DisplayName("SH1099: data is stored as a large object here, so the scan matches nothing")
-    void theDataColumnHoldsAnOidAndNotTheDocument() {
+    @DisplayName("SH1099: data holds the document itself here, so a predicate over it matches")
+    void theDataColumnHoldsTheDocument() {
         long rows = count("select count(*) from sh_post_unified");
         long json = count("select count(*) from sh_post_unified where data like '{%'");
         long oids = count("select count(*) from sh_post_unified where data ~ '^[0-9]+$'");
         long objects = count("select count(*) from pg_largeobject_metadata");
+        long body = count("select count(*) from sh_post_unified where lower(data) like '%lorem ipsum%'");
 
         System.out.printf("""
 
-                SH1099 - what `data` actually holds on PostgreSQL:
+                SH1099 - what `data` holds on PostgreSQL:
                   %d row(s), %d holding a JSON document, %d holding a bare integer
-                  %d large object(s) in pg_largeobject_metadata
-                """, rows, json, oids, objects);
+                  %d large object(s) in pg_largeobject_metadata, %d row(s) matching a body term
+                """, rows, json, oids, objects, body);
 
+        // This asserted zero until SH1099 landed, and was written to fail when it did: pgjdbc wrote
+        // the `@Lob String` as a large object, so the column held an OID and search's
+        // FULLTEXT_PREDICATE found nothing in a page's body on this engine.
         assertThat(json)
-                .as("""
-                        SH1099: not one row's `data` is readable as text by SQL. pgjdbc writes a \
-                        `@Lob String` as a large object, so the column holds an OID and the \
-                        document lives in pg_largeobject. WHEN SH1099 LANDS THIS FAILS, and that \
-                        is how it is meant to close — flip it to expect %d.""", rows)
-                .isZero();
-        assertThat(oids).as("and every row holds one instead").isEqualTo(rows);
+                .as("SH1099: every row's `data` is the document, readable by SQL")
+                .isEqualTo(rows);
+        assertThat(oids).as("SH1099: and no row holds an OID in its place").isZero();
+        assertThat(objects).as("SH1099: and writing a post creates no large object to leak").isZero();
+        assertThat(body)
+                .as("SH1099: a body-text predicate — what search runs — matches the %d posts carrying it", ROWS)
+                .isEqualTo(ROWS);
 
-        // And the consequence SH1034 removed, which is worth an assertion of its own because it
-        // is not the fix anyone planned. `listUsage` used to read this column through SQL, so on
-        // this engine it answered "nothing uses this asset" about an asset three posts used —
-        // worse than slow, since it invites deleting a live one. The reverse index is built from
-        // the entity at write time, so the read never touches `data` and is now correct here.
-        // SH1099 is NOT closed by that: `FULLTEXT_PREDICATE` still reads this column, so console
-        // and CDA search still find nothing in a page's body on PostgreSQL.
+        // And the consequence SH1034 removed before SH1099 landed, kept because it is the boundary
+        // the defect crossed: `listUsage` used to read this column through SQL, so on this engine it
+        // answered "nothing uses this asset" about an asset three posts used. The reverse index is
+        // built from the entity at write time, so the read never depended on `data`.
         assertThat(usage())
                 .as("""
                         SH1034 at the boundary SH1099 crosses: the index is written from the entity, \
-                        so `listUsage` answers with all %d referrer(s) on an engine where every SQL \
-                        predicate over `data` still matches zero rows.""", REFERRERS)
+                        so `listUsage` answers with all %d referrer(s) whatever `data` holds.""",
+                        REFERRERS)
                 .hasSize(REFERRERS);
+    }
+
+    /**
+     * SH1099's migration, run against a row written the way every row was before it.
+     *
+     * <p>The fixture above is written by the fixed mapping, so it holds no large object; a legacy
+     * row is seeded by hand (the document moved into {@code pg_largeobject}, its OID left in the
+     * column, for {@code data} and {@code summary} alike) and the changeset's own SQL, read from the
+     * changelog rather than copied, is run over it. Twice, because a migration that is not idempotent
+     * is one that damages a database it already fixed.</p>
+     */
+    @Test
+    @DisplayName("SH1099: the changeset brings a large object back into its column and unlinks it")
+    void theChangesetInlinesALegacyLargeObject() throws Exception {
+        // Keeps the body term, so the sibling test's count holds whichever of the two runs first.
+        String document = "{\"HERO\":\"legacy\",\"BODY\":\"lorem ipsum, written before sh1099\"}";
+        String row = "select id from sh_post_unified where title = 'row 7'";
+        jdbc("update sh_post_unified set "
+                + "data = lo_from_bytea(0, convert_to('" + document + "', 'UTF8'))::text, "
+                + "summary = lo_from_bytea(0, convert_to('a legacy summary', 'UTF8'))::text "
+                + "where id = (" + row + ")");
+        assertThat(count("select count(*) from pg_largeobject_metadata"))
+                .as("the seed: one row holding two OIDs, as every row did before SH1099")
+                .isEqualTo(2);
+
+        String changeset = changesetSql();
+        jdbc(changeset);
+        jdbc(changeset);
+
+        assertThat(text("select data from sh_post_unified where id = (" + row + ")"))
+                .as("SH1099: the document is back in the column, byte for byte")
+                .isEqualTo(document);
+        assertThat(text("select summary from sh_post_unified where id = (" + row + ")"))
+                .isEqualTo("a legacy summary");
+        assertThat(count("select count(*) from pg_largeobject_metadata"))
+                .as("SH1099: and each object is unlinked, which deleting its row never did")
+                .isZero();
+        assertThat(count("select count(*) from sh_post_unified where data like '{%'"))
+                .as("SH1099: and no row that already held its document was touched")
+                .isEqualTo(count("select count(*) from sh_post_unified"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String changesetSql() throws Exception {
+        try (InputStream in = ShPostgresAssetUsageScanIT.class
+                .getResourceAsStream("/db/changelog/v2026.3.46.yaml")) {
+            Map<String, Object> root = new Yaml().load(in);
+            for (Object entry : (List<Object>) root.get("databaseChangeLog")) {
+                Map<String, Object> changeSet = (Map<String, Object>) ((Map<String, Object>) entry).get("changeSet");
+                if (changeSet != null && "sh1099-inline-large-objects".equals(changeSet.get("id"))) {
+                    Map<String, Object> change = (Map<String, Object>) ((List<Object>) changeSet.get("changes")).get(0);
+                    return (String) ((Map<String, Object>) change.get("sql")).get("sql");
+                }
+            }
+        }
+        throw new IllegalStateException("SH1099: the changeset sh1099-inline-large-objects is not in v2026.3.46.yaml");
+    }
+
+    /** Plain JDBC, because Hibernate's native-query parser reads the {@code ::} casts as parameters. */
+    private void jdbc(String sql) throws Exception {
+        try (Connection connection = dataSource.getConnection();
+                Statement statement = connection.createStatement()) {
+            statement.execute(sql);
+        }
+    }
+
+    private String text(String sql) {
+        return (String) entityManager.createNativeQuery(sql).getSingleResult();
     }
 
     /**

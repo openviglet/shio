@@ -47,7 +47,6 @@
 
 ## Block BE — Media: what the bytes mean
 
-- 📋 **SH1099** (deps: —) **on PostgreSQL no SQL predicate over post data matches: search finds no body text, each post leaks a large object** — Hibernate writes the @Lob data column through pgjdbc as a large object, so the column holds an OID and only the entity read resolves it. → §LXX.8
 - 📋 **SH1100** (deps: —) **two reference tables nothing writes are still backfilled and asserted, and readers find them first** — ShReference joins ShObject and a post is not one, so no writer can use it, yet it sits in TENANT_TABLES and in two schema ITs. → §LXX.9
 
 ## Block BF — The visual editor becomes a composer

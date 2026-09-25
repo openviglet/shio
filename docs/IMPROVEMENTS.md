@@ -1585,32 +1585,6 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.8 Data is a large object on PostgreSQL, and nothing that reads it as text works (SH1099)
-
-`ShPostUnified.data` is `@Lob String`. On H2 and MariaDB that is a text column and every
-predicate over it behaves. On PostgreSQL pgjdbc reads `@Lob` as a *large object*: the
-`text` column stores an OID, the JSON lives in `pg_largeobject`, and Hibernate resolves
-it on read so the application looks entirely correct. Measured on a 5,000-post
-PostgreSQL 16 fixture: 5,001 rows, 5,001 large objects, every `data` value matching
-`^[0-9]+$`, and the entity read returning the right document.
-
-Two shipped surfaces were wrong rather than slow, and **SH1034 removed one without
-meaning to**: `listUsage` reads `sh_object_reference` now, written from the entity at
-write time, so it never touches this column and is correct here. That is moving the read
-off `data`, not repairing it. What remains is `FULLTEXT_PREDICATE` — `lower(cast(p.data
-as string))` — so console and CDA search find nothing in a page's body, which is what
-SH240 added it to fix.
-
-It is invisible to the whole unit suite because that suite is H2, and the cross-database
-ITs assert schema shape rather than column semantics — the gap agents.md names when it
-says a green `clean test` means least on a storage change.
-
-The fix is a JDBC type, not a changeset: `@JdbcTypeCode(SqlTypes.LONGVARCHAR)` beside
-the `@Lob`, which makes pgjdbc write the text inline. Existing rows need a migration
-that resolves each OID and writes it back, plus `lo_unlink` — until then every post also
-leaks a large object that deleting its row does not reclaim.
-`ShPostgresAssetUsageScanIT` asserts both halves.
-
 ### LXX.9 The reference tables from the model before this one (SH1100)
 
 `ShReference` and `ShReferenceDraft` are pre-unified tables, and nothing in `src/main`

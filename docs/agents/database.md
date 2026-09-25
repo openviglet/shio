@@ -588,7 +588,7 @@ nullable, because a thread with no second message is by far the common case and 
 it would be a join answering "no". `body` at 4000 is a paragraph, not a document: a thread on a page
 must not become the page.
 
-## `data` is a large object on PostgreSQL, and no SQL predicate over it works (SH1099)
+## `data` was a large object on PostgreSQL, and no SQL predicate over it worked (SH1099)
 
 Found while taking SH1033's numbers, and it is the strongest argument in this file for why a green
 `clean test` means least on a storage change. `ShPostUnified.data` is `@Lob String`. On H2 and
@@ -614,11 +614,21 @@ It survived because the unit suite is H2 and the cross-DB ITs assert **schema sh
 exist, changelogs apply — and never column *semantics*. A test that writes a document and then asks
 SQL to find it is the check none of them made.
 
-The fix is a JDBC type and not a changeset: `@JdbcTypeCode(SqlTypes.LONGVARCHAR)` beside the `@Lob`,
-which makes pgjdbc write the text inline. Existing rows need a migration that resolves each OID and
-writes it back, plus `lo_unlink` — until then every post also **leaks** a large object that deleting
-its row does not reclaim. `ShPostgresAssetUsageScanIT` holds today's behaviour as assertions that
-fail when SH1099 lands, which is how that loop closes from this end.
+**How it closed.** The four long-text fields (`ShPostUnified.data` and `summary`,
+`ShPostRevision.data`, `ShPublishGate.definition`) dropped `@Lob` for
+`@JdbcTypeCode(SqlTypes.LONGVARCHAR)`, bound with `setString` on every engine. Not
+`LONG32VARCHAR`: Hibernate does not count that type as string-like, so every HQL `like` over the
+field fails validation and the context does not start. `ShLobStringLintTest` refuses a `@Lob`
+anywhere in the model, because H2 cannot show the difference.
+
+`v2026.3.46.yaml` (PostgreSQL only) converts the rows written before the fix. Each value that is a
+bare integer naming an existing large object is replaced by that object's text, and the object is
+unlinked, which deleting its row never did. It is idempotent and leaves a JSON value alone. It is
+the project's first raw `sql` change, so `ShLiquibaseChangelogReferenceLintTest` now reads that type
+too: raw SQL may not change structure, and every `sh_` table it names must exist.
+`ShPostgresAssetUsageScanIT` asserts the column holds documents, that no object is created, that a
+body-term predicate matches, and it runs the changeset's own SQL, twice, over a hand-seeded legacy
+row.
 
 ## What a leading wildcard costs, per engine (SH1033)
 
