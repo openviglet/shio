@@ -1735,6 +1735,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - 🗑 **SH1124** — superseded by SH1075: Filed twice: SH1075 already holds this red console lint, measured the day before at twenty errors, with the same instrument-first design.
 - **SH1070** — Both docs drifts are corrected, Spring Boot 4.1.1 in vigletdocs c7d67f3, and the docs gate's staleness was already reported where a commit passes: OWED in pnpm test, and CI on every push (design §LXIV.13 recorded in `docs/agents/build.md`).
 - **SH1074** — The state-ARIA lint accepts a ternary whose branches are both quoted, as its message teaches, and refuses a bare boolean; a fixture now carries the id (design §LXIV.15 superseded: SH985 had already fixed the regex and added the fixture before this was filed).
+- **SH1141** — cli/test/authoring-files-cost.test.mjs counts one rename both ways: files 4072 tokens, API 5245, and the agent writes 3.1x less through files, held by authoring.* ceilings.
 
 ## Block AZ — What the content said before
 

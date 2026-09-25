@@ -858,3 +858,27 @@ surprise P7 forbids. That widens the folder inventory the push reads and nothing
 scopes stay separate sets on purpose — folding them into `needed` makes the *bytes* loop demand a
 local file for every described asset, and "metadata pulled, bytes never fetched" is an ordinary
 tree, not a broken one.
+
+## What authoring through the files costs, measured (SH1141)
+
+P4's argument for this tree was never counted: every P4 test asserted the format or its
+determinism, and `ShAgentTaskBenchmarkTest` runs both of its paths over HTTP.
+`cli/test/authoring-files-cost.test.mjs` now counts one canonical task — rename a product in the
+body of 10 of 30 posts — both ways on one fixture, and holds the result in
+`token-budgets.properties` (`authoring.*`), whose comment carries the figures.
+- **Only what reaches the agent's context is counted**, in the two directions separately,
+  because output tokens are the dearer kind. The HTTP that `pull` and `push` make on the agent's
+  behalf is not in its context and is not counted — that is the whole of the files' argument,
+  so it is the thing the measurement has to honour.
+- **The Read is counted, because the harness demands it.** An `Edit` on a file the session has
+  not read is refused, so every file changed is read whole first. That Read is where most of
+  what the projection saves on the way in goes: the files path receives almost as much as the
+  API path does.
+- **What survives is on the way out.** Through the API the agent restates the whole body of a
+  post it changed one line of; through the files it writes the line. The files path is cheaper in
+  all, and several times cheaper in what the agent writes, which the ratio floors hold.
+- **Generous to the API on purpose.** The text `find` returns addresses only, the read and the
+  write use the scripted instance's lean shapes, and the write sends the body field alone; the
+  real endpoints carry more. A task whose Read cannot be avoided and whose edit is most of the
+  file — rewriting a post rather than a line of it — would close the gap, which is why the floor
+  is on this task's shape and not a claim about authoring in general.
