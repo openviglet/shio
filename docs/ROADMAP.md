@@ -21,7 +21,6 @@
 
 ## Block AY — What the conformance instruments cannot see
 
-- ⏳ **SH1072** (deps: the uncommitted vigletdocs docs pass) **six shipped ids are unnamed in the published coverage matrix, which is past the ceiling** — the COVERAGE.md edit is in the vigletdocs working tree and uncommitted, so a fresh clone still reads the old matrix. → §LXIV.14
 - 📋 **SH1076** (deps: viglet-core 2026.3.11 published) **every CI suite fails before it starts, because the viglet-core BOM version is not in Maven Central** — pom.xml imports viglet-core-bom 2026.3.11, which only a local ~/.m2 holds, so Maven cannot read the POM in CI while every local gate passes. → §LXIV.16
 - 📋 **SH1089** (deps: —) **a changelog can name a table that does not exist, and only a clean instance ever finds out** — The unit suite builds H2 from entity metadata with Liquibase off, so an addColumn on a misspelled table compiles, passes 2233 tests, and refuses to start a fresh store. → §LXIV.17
 - 📋 **SH1115** (deps: —) **the coverage mirror marks ids named from a working copy nobody checked was committed** — It reads COVERAGE.md from a directory rather than a revision, so an uncommitted edit names ids here forever while the published matrix never gains the sentence. → §LXIV.18
@@ -90,7 +89,7 @@
 ## Block BI — The areas this round did not reach
 
 - 📋 **SH1066** (deps: SH970 ✅, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — A submission is written as a draft into a folder a developer configured, the nav has no Forms entry, and a curator must guess the folder to find them. → §LXXIV.4
-- ⏳ **SH1069** (deps: SH1072 ⏳) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — 62 manifest feature keys still need a row in vigletdocs COVERAGE.md, with UNNAMED_FEATURES lowered here as each is named. → §LXXIV.7
+- ⏳ **SH1069** (deps: SH1072 ✅) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — 62 manifest feature keys still need a row in vigletdocs COVERAGE.md, with UNNAMED_FEATURES lowered here as each is named. → §LXXIV.7
 - 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads a browser global and a filename as symbols this repository should define, so six ledger entries that were correct when written keep the gate permanently red. → §LXXIV.8
 - 📋 **SH1103** (deps: —) **a gate stamp stays fresh across the ship that changes what it certified, so a red commit lands unseen** — Staleness is the HEAD sha and `ship` writes the governed docs at that same HEAD — which the JS suite reads, so a ship turns `pnpm test` red after its last green run. → §LXXIV.9
 - 📋 **SH1104** (deps: SH1039 ✅) **the editable read is on no response budget, and it just grew a section that scales with the catalogue** — Sixteen responses are measured and `/agent/editable` is not one, so `include=insertable` has no ceiling and the budget fixture renders no page to measure it against. → §LXXIV.10
@@ -101,13 +100,6 @@
 - 📋 **SH1135** (deps: —) **an instance cannot say what a site was replicated from, and the console cannot start a run** — Every artefact of a round lives on the CLI's disk and the instance sees only the site that came out, so the source URL behind a page is lost the moment the shell closes. → §LXXIV.15
 
 ## Priority
-
-## Done when — SH1072
-
-- **A fresh clone of vigletdocs reads a matrix that names the six ids** The COVERAGE.md
-  edit is committed in vigletdocs. Until then it exists only in that working tree, so
-  the green JS gate here rests on an uncommitted file and any other checkout still reads
-  the old matrix.
 
 ## Done when — SH1069
 

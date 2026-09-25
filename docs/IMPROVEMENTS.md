@@ -1141,31 +1141,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.14 A documentation queue that became a backlog (SH1072)
-
-SH758's reader prints rather than fails, because the fix is in another repository and a
-queue of one or two ids between a ship and the next docs pass is normal. SH799 put a
-ceiling of five on that argument: past it the thing described is not a commit owing
-something, it is a backlog.
-
-The ceiling is now reached. Six ids shipped and unnamed: SH940, SH941, SH942, SH945,
-SH949, SH950. Five of them are this round's; SH940 was already waiting when the round
-began, which is what made the sixth the one that tipped it.
-
-The fix is two commits in two repositories, and that is the whole reason this is a task
-rather than a step in somebody's next commit. First `docs-shio/COVERAGE.md` in
-`vigletdocs`, naming each id in its cluster row. Then `pnpm run coverage:mirror` here,
-which copies the matrix back so the readers in this repository agree with the published
-one.
-
-Worth doing in the same pass, since the same checkout is open: the docs gate is red at
-HEAD for its own reasons (SH1070), and one of those is that COVERAGE.md's summary counts
-57 clusters over 54 rows. A pass that names six ids and leaves the summary disagreeing
-with the tables has visited the file without fixing what it says.
-
-`red-suites.json` carries the dated exception that licenses committing over this, and it
-names this task, so the licence dies when the work does.
-
 ### LXIV.16 A dependency only this machine has (SH1076)
 
 Found reading a failed CI run while checking what the IDE sync had pushed, and confirmed

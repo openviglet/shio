@@ -1719,7 +1719,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block AY — What the conformance instruments cannot see
 
-- **SH1072 (the matrix named and mirrored)** — All six ids are named in the published matrix — SH950 and SH951 in Security, the five Block AU ones as contributor-facing — the mirror is refreshed and the JS gate is green again.
+- **SH1072** — The uncommitted docs-shio pass is committed together with this run's pages in vigletdocs 5610cdb, and COVERAGE.md now names every recent shipped id in its cluster rows or a reasoned internal row: 74 clusters, no orphan and no stale page. The mirror is regenerated and the unnamed ratchet lowered from 490 to 483, so SH758 and SH747 pass and the three red-suite exceptions that waited on this are deleted.
 - **SH973** — ShAgentReadReachabilityLintTest holds every GET-only controller root as declared in the manifest or classified with a falsifier, and its first inventory names 14 roots and one gap (design §LXIV.1 recorded in `docs/agents/agent-surface.md`).
 - **SH974** — The three P1 instruments write their counts to target/p1-inventory.json, and agents-md-figures.test.mjs refuses a figure in the index or an area doc unless its sentence cites that file and matches it (design §LXIV.2 recorded in `docs/agents/agent-surface.md`).
 - **SH975** — Reach.OPERATOR_HTTP classifies the review queue and checks the path really is stateless-writable, and every elsewhere pointer must parse as a shio command or a verb and a path (design §LXIV.3 recorded in `docs/agents/agent-surface.md`).

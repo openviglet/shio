@@ -274,7 +274,7 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
    * the queue this task asked for, and it already existed — what was missing was a gate that
    * stopped treating the gap as a failure of the commit in front of it.</p>
    */
-  const UNNAMED = 490;
+  const UNNAMED = 483;
 
   /** Every id the ledger records as SHIPPED. A `🗑` retirement has no surface to document. */
   function shippedIds() {
