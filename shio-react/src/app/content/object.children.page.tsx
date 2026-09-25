@@ -15,8 +15,12 @@ import { PermissionsDialog } from "@/components/permissions.dialog"
 import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Upload, LayoutGrid, List, Sheet, ClipboardCopy, ShieldCheck, ExternalLink, SlidersHorizontal } from "lucide-react"
 // SH1020 — the row actions live in the design system's menu, which is where the site list put
 // its four in its own sweep.
-import { BentoActionsMenu, BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
+import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { contentFacets, fromBarValue, toBarValue } from "@/lib/filter-bar"
+import {
+  browserView, listboxClass, optionClass, stepFor, type BrowserRow,
+} from "./content-browser/browser-view"
+import { BrowserItem, BrowserTableHeader } from "./content-browser/browser-views"
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -95,29 +99,8 @@ interface BreadcrumbPathItem {
   type: string
 }
 
-interface ObjectChild {
-  id: string
-  name: string
-  date: string
-  objectType: "FOLDER" | "POST"
-  position?: number
-  postTypeName?: string
-  publishStatus?: string
-  /**
-   * SH1059 — which language this row is. Two locales of one page are two rows with the same title,
-   * date and type, and without this a curator deleting "the duplicate" deletes a translation.
-   */
-  locale?: string
-}
-
-/**
- * SH1059 — how a row is named to anything that is not looking at it: the title, and the locale
- * when there is one. The checkbox, the actions trigger and the title all say this, so two
- * translations of one page are two different things to a screen reader, as they are on screen.
- */
-function rowLabel(item: ObjectChild): string {
-  return item.locale ? `${item.name} (${item.locale})` : item.name
-}
+/** SH1026 — the row every view draws; it and its label moved beside the renderers. */
+type ObjectChild = BrowserRow
 
 /** Posts per request. The folder's subfolders come whole regardless (SH165). */
 const PAGE_SIZE = 50
@@ -256,7 +239,7 @@ export default function ObjectChildrenPage() {
    */
   const list = useListState(BROWSER_LIST, { text: ["q", "author", "modifier"] })
   const sortBy = list.value.sort
-  const viewMode = list.value.view as "list" | "grid" | "spreadsheet"
+  const viewMode = browserView(list.value.view)
   const filters = browserFilters(list.value)
   /**
    * SH1024 — the bar's value and handler, stable across renders. The bar debounces typing in an
@@ -616,11 +599,16 @@ export default function ObjectChildrenPage() {
   const onListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const index = focusedRow
     const item = sortedItems[index]
+    // SH1026 — a grid is read across as well as down, so there left and right step too.
     switch (event.key) {
       case "ArrowDown":
-      case "ArrowUp": {
+      case "ArrowUp":
+      case "ArrowRight":
+      case "ArrowLeft": {
+        const step = stepFor(viewMode, event.key)
+        if (step === 0) break
         event.preventDefault()
-        const next = index + (event.key === "ArrowDown" ? 1 : -1)
+        const next = index + step
         focusRow(next)
         // Shift extends from the anchor, which is where the selection last started — the same
         // rule every file manager uses, and the reason the anchor is state rather than the
@@ -1172,13 +1160,23 @@ export default function ObjectChildrenPage() {
                   <TooltipContent>{t("content.searchHere")}</TooltipContent>
                 </Tooltip>
               )}
-              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "list" ? "bg-muted" : ""}`} onClick={() => list.set("view", "list")}>
+              {/*
+                SH1026 — the three views, named and pressed. They used to be three unnamed icons
+                whose only effect was their own colour; now each draws the list its own way.
+              */}
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "list" ? "bg-muted" : ""}`}
+                aria-label={t("content.viewAsList")} aria-pressed={viewMode === "list" ? "true" : "false"}
+                onClick={() => list.set("view", "list")}>
                 <List className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "grid" ? "bg-muted" : ""}`} onClick={() => list.set("view", "grid")}>
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "grid" ? "bg-muted" : ""}`}
+                aria-label={t("content.viewAsGrid")} aria-pressed={viewMode === "grid" ? "true" : "false"}
+                onClick={() => list.set("view", "grid")}>
                 <LayoutGrid className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "spreadsheet" ? "bg-muted" : ""}`} onClick={() => list.set("view", "spreadsheet")}>
+              <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "spreadsheet" ? "bg-muted" : ""}`}
+                aria-label={t("content.viewAsTable")} aria-pressed={viewMode === "spreadsheet" ? "true" : "false"}
+                onClick={() => list.set("view", "spreadsheet")}>
                 <Sheet className="h-4 w-4" />
               </Button>
             </div>
@@ -1213,11 +1211,19 @@ export default function ObjectChildrenPage() {
               `aria-multiselectable` because the checkbox column has always been a multi-select —
               the semantics were the part that was missing, not the behaviour.
             */}
+            {/*
+              SH1026 — the table's header sits outside the listbox: a header is not an option, and
+              the columns it names are the ones every table row lays out.
+            */}
+            {!loading && viewMode === "spreadsheet" && sortedItems.length > 0 && <BrowserTableHeader />}
             <div
               role="listbox"
               aria-multiselectable="true"
               aria-label={t("content.browserList")}
+              aria-orientation={viewMode === "grid" ? "horizontal" : "vertical"}
               onKeyDown={onListKeyDown}
+              data-view={viewMode}
+              className={listboxClass(viewMode)}
             >
             {!loading && sortedItems.map((item, index) => (
               <div
@@ -1230,89 +1236,23 @@ export default function ObjectChildrenPage() {
                 ref={(node) => { rowRefs.current[index] = node }}
                 onFocus={() => setFocusedRow(index)}
                 onClick={(event) => onRowClick(event, index)}
-                className={`group border-b last:border-b-0 hover:bg-muted/40 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${selectedItems.has(item.id) ? "bg-primary/5" : ""}`}
+                className={`group ${optionClass(viewMode)} transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${selectedItems.has(item.id) ? "bg-primary/5" : ""}`}
               >
-                <div className="flex items-start gap-3 px-4 py-3">
-                  {/* Position badge */}
-                  <span className={`mt-0.5 inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-medium text-white shrink-0 ${item.objectType === "FOLDER" ? "bg-orange-400" : "bg-blue-400"}`}>
-                    {index + 1}
-                  </span>
-
-                  {/* Checkbox */}
-                  <Checkbox
-                    className="mt-1 shrink-0"
-                    checked={selectedItems.has(item.id)}
-                    onCheckedChange={() => toggleSelect(item.id)}
-                    aria-label={`Select ${rowLabel(item)}`}
-                  />
-
-                  {/* Icon */}
-                  {item.objectType === "FOLDER" ? (
-                    <Folder className="h-4 w-4 shrink-0 mt-1 text-amber-500" />
-                  ) : (
-                    <FileText className="h-4 w-4 shrink-0 mt-1 text-blue-500" />
-                  )}
-
-                  {/* Content: name, date, badges */}
-                  <div className="flex-1 min-w-0">
-                    <button
-                      type="button"
-                      className="text-left font-medium text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate block"
-                      onClick={() => handleItemClick(item)}
-                      aria-label={rowLabel(item)}
-                    >
-                      {item.name}
-                    </button>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {formatDate(item.date)}
-                      {item.objectType === "POST" && item.postTypeName && ` - ${item.postTypeName}`}
-                    </div>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {item.objectType === "POST" && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                          {t("content.postLabel")}
-                        </Badge>
-                      )}
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                        {item.objectType === "FOLDER" ? t("content.folder") : item.postTypeName || t("content.postLabel")}
-                      </Badge>
-                      {/* SH1059 — beside the type, which is the badge two translations share. */}
-                      {item.locale && (
-                        <Badge
-                          variant="secondary"
-                          className="font-mono text-[10px] uppercase px-1.5 py-0 bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
-                          title={t("content.localeChip", { locale: item.locale })}
-                        >
-                          {item.locale}
-                        </Badge>
-                      )}
-                      {siteName && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                          {siteName}
-                        </Badge>
-                      )}
-                      {item.publishStatus && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-                          {item.publishStatus}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  {/*
-                    SH1020 — the eight actions, in a menu with a focusable trigger. They were
-                    buttons inside `hidden group-hover:flex`, which is unreachable without a
-                    pointer and invisible to a screen reader either way. The site list moved its
-                    four into exactly this component in its own sweep; the browser was not part of
-                    it.
-                  */}
-                  <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
-                    <BentoActionsMenu
-                      triggerLabel={t("content.rowActions", { name: rowLabel(item) })}
-                      actions={rowActions(item)}
-                    />
-                  </div>
-                </div>
+                {/*
+                  SH1026 — the one thing the view decides: how this row is drawn. SH1020's eight
+                  actions stay in the design system's menu with a focusable trigger in every view.
+                */}
+                <BrowserItem
+                  view={viewMode}
+                  item={item}
+                  index={index}
+                  selected={selectedItems.has(item.id)}
+                  when={formatDate(item.date)}
+                  siteName={siteName ?? undefined}
+                  actions={rowActions(item)}
+                  onToggle={() => toggleSelect(item.id)}
+                  onOpen={() => handleItemClick(item)}
+                />
               </div>
             ))}
             </div>

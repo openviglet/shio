@@ -46,7 +46,7 @@
 ## Block BD — Finding, selecting and acting on content
 
 - 🛠 **SH1024** (deps: SH1022 ✅, SH1023 ✅) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — The browser and search have the bar; trash and the review queue do not, and facet counts, the agent author option and saved views are still to build. → §LXIX.5
-- 📋 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — viewMode is read only to colour the button that set it, so the grid and table views a curator is offered do not exist, and the list below is one unconditional map. → §LXIX.7
+- ⏳ **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — Cards have no thumbnails, the table is not BentoDataTable with a column picker and ETag-guarded inline edits, nothing is virtualised, and most of the page is not yet in content-browser. → §LXIX.7
 - 📋 **SH1097** (deps: SH1028 ✅) **the shortcuts sheet advertises a key nothing binds and hides the one the shell does bind** — BentoShortcutsDialog renders a fixed list naming a global question mark, which Shio has never bound, and omits the slash SH889 added. → §LXIX.10
 
 ## Block BE — Media: what the bytes mean
@@ -118,6 +118,13 @@
 - **Search, trash and review use the bar, with counts and saved views** The browser
   adopted it first; the other three surfaces, facet counts from the listing, the agent
   author option and per-user saved views are what the design still asks.
+
+## Done when — SH1026
+
+- **Thumbnails, an editable data table and virtualised rows** Cards show an
+  image-pipeline thumbnail, the table is BentoDataTable with a persisted column picker
+  whose scalar edits are refused on a stale ETag, and each view mounts only its visible
+  window over BD6's fixture.
 
 ## Non-goals (do NOT add as tasks)
 

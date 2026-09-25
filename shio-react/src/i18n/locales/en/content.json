@@ -398,5 +398,8 @@
   "content.askAgentSent": "Asked the agent. Its answer will arrive in the dock.",
   "content.filterLocale": "Language",
   "content.filterModified": "Changed",
-  "content.moreFilters": "More filters"
+  "content.moreFilters": "More filters",
+  "content.viewAsList": "List view",
+  "content.viewAsGrid": "Grid view",
+  "content.viewAsTable": "Table view"
 }

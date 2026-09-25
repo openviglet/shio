@@ -398,5 +398,8 @@
   "content.askAgentSent": "Pergunta enviada. A resposta vai chegar no dock.",
   "content.filterLocale": "Idioma",
   "content.filterModified": "Alterado",
-  "content.moreFilters": "Mais filtros"
+  "content.moreFilters": "Mais filtros",
+  "content.viewAsList": "Ver como lista",
+  "content.viewAsGrid": "Ver como grade",
+  "content.viewAsTable": "Ver como tabela"
 }

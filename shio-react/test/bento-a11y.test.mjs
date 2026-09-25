@@ -104,7 +104,7 @@ function unnamedIconButtons() {
 const UNNAMED_DEBT = {
   "app/admin/auth-provider/auth-provider.page.tsx": ["X"],
   "app/admin/exchange-provider/exchange-provider.page.tsx": ["X"],
-  "app/content/object.children.page.tsx": ["LayoutGrid", "LayoutGrid", "List", "Sheet"],
+  "app/content/object.children.page.tsx": ["LayoutGrid"],
   "app/content/post-type.edit.page.tsx": ["Trash2"],
   "app/content/post-type.list.page.tsx": ["Pencil", "Trash2"],
   // SH922 removed the Download entry: that button lived inside the anchor that already

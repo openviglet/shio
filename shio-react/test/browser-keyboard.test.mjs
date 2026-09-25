@@ -25,6 +25,8 @@ import { fileURLToPath } from "node:url"
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const read = (...path) => readFileSync(join(ROOT, ...path), "utf8")
 const PAGE = read("src", "app", "content", "object.children.page.tsx")
+/** SH1026 — each row's markup, now drawn by one renderer per view. */
+const VIEWS = read("src", "app", "content", "content-browser", "browser-views.tsx")
 
 /** Source with comments stripped, so a rule is never asserted against the prose explaining it. */
 const code = (source) => source
@@ -45,13 +47,18 @@ test("SH1020: the list is a listbox and every row is an option", () => {
 })
 
 test("SH1020: no row action is reachable by pointer alone", () => {
-  assert.doesNotMatch(code(PAGE), /hidden group-hover:flex/u,
-    "SH1020: eight actions lived in that block. A pointer was the only way to see them, and a "
-      + "screen reader was never told they existed.")
-  assert.match(PAGE, /<BentoActionsMenu/u,
+  for (const source of [PAGE, VIEWS]) {
+    assert.doesNotMatch(code(source), /hidden group-hover:flex/u,
+      "SH1020: eight actions lived in that block. A pointer was the only way to see them, and a "
+        + "screen reader was never told they existed.")
+  }
+  assert.match(VIEWS, /<BentoActionsMenu/u,
     "SH1020: the design system's menu, which is where the site list moved its four in its own sweep")
+  // SH1026 — every view draws it: the list, the card and the table row all render <Actions>.
+  assert.equal(VIEWS.match(/<Actions item=\{item\} actions=\{actions\} \/>/gu)?.length, 3,
+    "SH1026: a view dropped the row's actions, so there they are reachable by nothing")
   // SH1059 — per row by `rowLabel`, the title plus its locale, since two translations share a title.
-  assert.match(PAGE, /triggerLabel=\{t\("content\.rowActions", \{ name: rowLabel\(item\) \}\)\}/u,
+  assert.match(VIEWS, /triggerLabel=\{t\("content\.rowActions", \{ name: rowLabel\(item\) \}\)\}/u,
     "SH1020: named per row, or a screen reader hears eight identical 'Actions' buttons")
 })
 
