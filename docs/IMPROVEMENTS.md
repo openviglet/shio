@@ -1422,32 +1422,6 @@ small once that is settled; the working command, its help and its conformance sc
 were written and reverted in one commit, so the cost of having tried is recorded here
 rather than paid twice.
 
-### LXVIII.14 A draft lint that is silent about its own gaps (SH1092)
-
-`ShAgentVerifyService.markup` scans published rows only, and says why: *a draft's broken
-link is work in progress*. That reasoning is sound for a site-wide sweep. What is wrong
-is that a caller who asks for `state=draft` is never told the rules were skipped.
-
-The response carries one note — *state=draft: the rules reported on DRAFT rows only; the
-indexes they check against still read both states* — which describes the opposite
-concern. A caller reads `errors: 0, warnings: 0` and concludes the draft is clean. It is
-not: `link-broken`, `link-unresolved`, `image-no-alt`, `image-missing-file` and
-`html-unsafe` never ran against it.
-
-SH1013 met this from the console and routed around it — the panel takes its missing-alt
-count from `/agent/render`, whose digest does inventory a draft's images. That works for
-the page in front of a curator and does nothing for `shio verify --state draft`, which
-an agent runs over a site before publishing and reads as a verdict.
-
-Two fixes, and the cheap one is not the weak one. **Say it**: name the skipped rules in
-`notes`, so a green draft report stops meaning more than it does — P6 applied to a
-report rather than to a refusal, and it cannot be wrong. **Or run them**, downgraded to
-warnings on a draft, which is a defensible reading of *work in progress* but changes
-what an existing gate reports.
-
-The note lands either way, since even a version that runs the rules has to say what its
-severity means. Start there.
-
 ### LXVIII.15 Two flakes, measured before they are fixed (SH1093)
 
 Two suites failed once each during SH1014 and passed on an unchanged re-run, in code

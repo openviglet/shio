@@ -3145,7 +3145,12 @@ per address; the filter runs after the published index is taken and before the d
 dedupe, which would otherwise keep the draft of a post whose published row was asked for.
 `/agent/verify?state=` narrows the *subjects* the rules report on and leaves the indexes they check
 against over both states, since "published depends on unpublished" and "two posts claim one URL" are
-questions about both rows whichever is the subject; the report says so in a note. Both refuse
+questions about both rows whichever is the subject; the report says so in a note. A `state=draft`
+run of `routes` carries a second note (SH1092) naming the rules that read published rows only and so
+never ran on the drafts: `url-missing`, `url-orphaned`, `html-unsafe`, `link-unresolved`,
+`link-broken`, `image-no-alt`, `asset-no-alt` and `asset-missing`, from
+`ShAgentVerifyService.PUBLISHED_ONLY_RULES`, which `ShVerifyDraftNoteTest` holds against the rules the
+service emits. Without it `errors: 0` read as a verdict on links and images nobody checked. Both refuse
 `rev:<n>` with `state-revision-not-served`: a revision is a version of one page, not a set to list or a
 site to lint, and the refusal names the read and the digest that do serve one.
 

@@ -158,6 +158,16 @@ public class ShAgentVerifyService {
      */
     private static final Set<String> MARKUP_WIDGETS = ShPostLinks.MARKUP_WIDGETS;
 
+    /**
+     * SH1092 — the rules {@code routes} runs over {@code scan.published()} alone, and so never over a
+     * draft. Named once here so the note a {@code state=draft} report carries cannot drift from what
+     * the loop actually skips; {@code ShVerifyDraftNoteTest} holds the list against the rule names the
+     * loop emits.
+     */
+    static final List<String> PUBLISHED_ONLY_RULES = List.of("url-missing", "url-orphaned",
+            "html-unsafe", "link-unresolved", "link-broken", "image-no-alt", "asset-no-alt",
+            "asset-missing");
+
     /** Widgets that hold no value of their own — never "required". */
     private static final Set<String> CONTAINER_WIDGETS =
             Set.of(ShSystemWidget.TAB, ShSystemWidget.RELATOR);
@@ -409,6 +419,15 @@ public class ShAgentVerifyService {
             notes.add("state=" + subjects.name().toLowerCase(java.util.Locale.ROOT)
                     + ": the rules reported on " + subjects.name() + " rows only; the indexes they "
                     + "check against still read both states");
+            // SH1092 — and what it did NOT run. The route and markup rules read published rows by
+            // design (a draft's broken link is work in progress), so on a draft they never ran,
+            // and "errors 0" would otherwise read as a verdict on links and images it never saw.
+            if (subjects == ShPostState.DRAFT && requested.contains(ShAgentCheck.ROUTES)) {
+                notes.add("state=draft: " + String.join(", ", PUBLISHED_ONLY_RULES) + " read published "
+                        + "rows only and did not run on these drafts, so a clean report says nothing "
+                        + "about their links, images or markup; /agent/render inventories a draft's "
+                        + "images and links, or verify again after publishing");
+            }
         }
         boolean proving = requested.contains(ShAgentCheck.DELIVERY);
 
