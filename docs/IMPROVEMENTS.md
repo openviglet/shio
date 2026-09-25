@@ -1675,6 +1675,29 @@ merely noticed — and a test holds the two against each other. Until then the s
 wrong in a way no reader can see, which is the argument for filing it rather than
 leaving it in a commit message.
 
+### LXIX.11 A table selection the page can set (SH1142)
+
+SH1026 drew the browser's table view with the design system's BentoDataTable, and the
+table owns its selection. It reports every change through onSelectionChange, which the
+page copies into selectedItems, but it takes no selection in: its props have no selected
+ids. So the flow runs one way. The toolbar's Select menu (all, folders, content) and the
+selection bar's Clear write selectedItems, and in the table view nothing on screen
+changes. The next click in the table then reports the table's own set and overwrites
+what the menu chose. A curator who picks "Select all" and then Delete in that view
+deletes whatever the table last had ticked, and the confirm dialog counts the page's
+set, so the number and the rows can disagree.
+
+The fix belongs in the design system first: a controlled selection on BentoDataTable, a
+selectedIds prop beside onSelectionChange, the way layout is already controlled beside
+onLayoutChange. The browser then passes selectedItems in, and the Select menu and Clear
+work in every view. Until the package has it, the smaller correction on this side is to
+hide the Select menu and Clear in the table view and let the table's own header checkbox
+and Escape do both, so there is only one control for the one selection.
+
+The assertion renders the table view, chooses "Select all" from the toolbar, and
+confirms the table's checked rows equal the page's selection before any bulk verb is
+offered.
+
 ## LXX Media: what the bytes mean (Block BE)
 
 Shio is strong on the bytes of an asset: an on-the-fly image transform pipeline,

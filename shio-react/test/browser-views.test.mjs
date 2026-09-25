@@ -11,7 +11,9 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { browserView, listboxClass, stepFor } from "../src/app/content/content-browser/browser-view.ts"
+import {
+  browserView, listboxClass, readTableLayout, stepFor, tableLayoutKey,
+} from "../src/app/content/content-browser/browser-view.ts"
 
 /**
  * SH1026 — three view buttons that highlighted when pressed and rendered the identical list.
@@ -47,11 +49,36 @@ test("SH1026: the chosen view reaches the render, through one renderer per view"
   // Attributes only: the keyboard handler's comment names the role in backticks.
   assert.equal(page.match(/role="listbox"(?!`)/g)?.length, 1, "SH1026: a view grew a listbox of its own")
   const views = read("app", "content", "content-browser", "browser-views.tsx")
-  for (const renderer of ["ListRow", "GridCard", "TableRow"]) {
+  for (const renderer of ["ListRow", "GridCard"]) {
     assert.match(views, new RegExp(`function ${renderer}\\(`), `SH1026: the ${renderer} renderer is gone`)
   }
-  assert.match(views, /props\.view === "grid"[\s\S]*?props\.view === "spreadsheet"/,
-    "SH1026: BrowserItem does not dispatch on the view")
+  assert.match(views, /props\.view === "grid"/, "SH1026: BrowserItem does not dispatch on the view")
+  assert.match(page, /viewMode === "spreadsheet" && sortedItems\.length > 0 && \(\s*<BrowserTable/,
+    "SH1026: the table view is not the data table")
+})
+
+test("SH1026: the table is the design system's, with its layout kept and its selection reported", () => {
+  const table = read("app", "content", "content-browser", "browser-table.tsx")
+  assert.match(table, /<BentoDataTable/, "SH1026: the table view is hand-rolled again, so nothing virtualises it")
+  assert.match(table, /layout=\{layout\}\s*\n\s*onLayoutChange=\{setLayout\}/,
+    "SH1026: the column picker's choice is not kept, so every visit shows every column again")
+  // The table makes rows selectable only when it has selection actions; without them the toolbar's
+  // verbs would see an empty selection in this view.
+  assert.match(table, /selectionActions=\{selectionActions\}/, "SH1026: the table's rows cannot be selected")
+  assert.match(table, /rowActions=\{rowActions\}/, "SH1026: the table's rows lost the eight row actions")
+  const page = read("app", "content", "object.children.page.tsx")
+  assert.match(page, /onSelectionChange=\{\(ids\) => setSelectedItems\(new Set\(ids\)\)\}/,
+    "SH1026: the table's selection never reaches the page, so its bulk verbs act on nothing")
+})
+
+test("SH1026: a stored layout is read defensively, per user", () => {
+  assert.deepEqual(readTableLayout(null), { hidden: [] })
+  assert.deepEqual(readTableLayout("null"), { hidden: [] },
+    "SH1026: the literal \"null\" parses to null and crashed the read, the widgetSettings trap")
+  assert.deepEqual(readTableLayout("{not json"), { hidden: [] })
+  assert.deepEqual(readTableLayout('{"hidden":["locale",3,"state"]}'), { hidden: ["locale", "state"] })
+  assert.notEqual(tableLayoutKey("ana"), tableLayoutKey("bruno"),
+    "SH1026: two curators on one browser hide each other's columns")
 })
 
 test("SH1026: the view buttons are named and say which is pressed", () => {

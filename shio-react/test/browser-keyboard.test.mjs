@@ -54,8 +54,9 @@ test("SH1020: no row action is reachable by pointer alone", () => {
   }
   assert.match(VIEWS, /<BentoActionsMenu/u,
     "SH1020: the design system's menu, which is where the site list moved its four in its own sweep")
-  // SH1026 — every view draws it: the list, the card and the table row all render <Actions>.
-  assert.equal(VIEWS.match(/<Actions item=\{item\} actions=\{actions\} \/>/gu)?.length, 3,
+  // SH1026 — every view draws it: the list row and the card render <Actions>; the table's rows get
+  // the same eight through BentoDataTable's rowActions, asserted in browser-views.test.mjs.
+  assert.equal(VIEWS.match(/<Actions item=\{item\} actions=\{actions\} \/>/gu)?.length, 2,
     "SH1026: a view dropped the row's actions, so there they are reachable by nothing")
   // SH1059 — per row by `rowLabel`, the title plus its locale, since two translations share a title.
   assert.match(VIEWS, /triggerLabel=\{t\("content\.rowActions", \{ name: rowLabel\(item\) \}\)\}/u,

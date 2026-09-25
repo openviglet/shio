@@ -46,8 +46,9 @@
 ## Block BD — Finding, selecting and acting on content
 
 - 🛠 **SH1024** (deps: SH1022 ✅, SH1023 ✅) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — The browser and search have the bar; trash and the review queue do not, and facet counts, the agent author option and saved views are still to build. → §LXIX.5
-- ⏳ **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — Cards have no thumbnails, the table is not BentoDataTable with a column picker and ETag-guarded inline edits, nothing is virtualised, and most of the page is not yet in content-browser. → §LXIX.7
+- 🛠 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — Cards have no thumbnails, table cells cannot be edited under an ETag, the list and grid are not virtualised, and most of the page is not yet in content-browser. → §LXIX.7
 - 📋 **SH1097** (deps: SH1028 ✅) **the shortcuts sheet advertises a key nothing binds and hides the one the shell does bind** — BentoShortcutsDialog renders a fixed list naming a global question mark, which Shio has never bound, and omits the slash SH889 added. → §LXIX.10
+- 📋 **SH1142** (deps: SH1026 🛠) **in the browser's table view, the toolbar's Select menu and Clear change nothing the table shows** — BentoDataTable reports its selection but takes none in, so the page's set and the ticked rows can differ under a bulk delete. → §LXIX.11
 
 ## Block BE — Media: what the bytes mean
 

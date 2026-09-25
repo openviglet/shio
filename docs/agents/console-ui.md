@@ -2851,18 +2851,30 @@ Still to come: trash and the review queue (both declared "no list state" in
 `list-state.test.mjs`'s census, so each moves to `null` when it gains the bar); facet counts from
 the listing; the author picker with an agent option; and saved views.
 
-## The browser's three views (SH1026, first part)
+## The browser's three views (SH1026, in parts)
 
 The list, grid and table buttons used to colour themselves and nothing else: the render below was
 one unconditional map. `content/content-browser/` now holds the views. `browser-view.ts` is pure
 (`browserView` reads the URL's `view` word, an unknown one is `list`; `stepFor`, `listboxClass`,
-`optionClass`; the row type `BrowserRow` and `rowLabel`), and `browser-views.tsx` draws one row per
-view (`ListRow`, `GridCard`, `TableRow`, plus `BrowserTableHeader` outside the listbox). The page
-keeps **one** listbox for every view, so selection, the roving focus, Shift-extend, Delete and the
-row actions (SH1020) are one implementation, not three. In the grid, Left and Right step through
-the same order as Up and Down, and `aria-orientation` says so. The buttons are named
-(`content.viewAs*`) and carry a literal `aria-pressed`. The accent debt, the SH1020 menu guard and
-the SH1059 label guards read `browser-views.tsx` now, and `browser-views.test.mjs` holds the rest.
-Still to come: card thumbnails from the image pipeline, the table as `BentoDataTable` with a column
-picker and ETag-guarded inline edits, virtualisation, and moving the rest of the page into the
-directory.
+`optionClass`; the row type `BrowserRow` and `rowLabel`; the table layout's storage key and its
+guarded parse). `browser-views.tsx` draws the list row and the card. The page keeps **one** listbox
+for both, so selection, the roving focus, Shift-extend, Delete and the row actions (SH1020) are one
+implementation. In the grid, Left and Right step through the same order as Up and Down, and
+`aria-orientation` says so. The buttons are named (`content.viewAs*`) and carry a literal
+`aria-pressed`.
+
+**The table is `BentoDataTable` (`browser-table.tsx`).** It brings the virtualised body, sortable
+headers and the column picker. The layout is kept in `localStorage` under the signed-in user's
+name. The table owns its own selection and keyboard: it reports the selection through
+`onSelectionChange`, and the page's bulk verbs are its `selectionActions`, because without them
+its rows are not selectable at all. Its row actions are the page's eight, looked up by position
+on the row they are chosen for. The selection holds within `scope`, the folder plus `list.key`. The
+page imports it **statically**: the package's bento entry is one module, so the table's code is
+eager whichever way it is imported, and `lazy()` measured *heavier* (1673.5 against 1671.1 KB raw)
+and regrouped the eager chunks. That cost (~44 KB raw, ~13 KB gzip) is recorded where the eager
+ceilings were raised, in `console-size-budget.json`.
+
+The accent debt, the SH1020 menu guard and the SH1059 label guards read the `content-browser/`
+files, and `browser-views.test.mjs` holds the rest. Still to come: card thumbnails from the image
+pipeline, ETag-guarded inline edits of scalar cells, virtualising the list and the grid, and moving
+the rest of the page into the directory.

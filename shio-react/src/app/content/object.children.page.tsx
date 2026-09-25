@@ -20,7 +20,8 @@ import { contentFacets, fromBarValue, toBarValue } from "@/lib/filter-bar"
 import {
   browserView, listboxClass, optionClass, stepFor, type BrowserRow,
 } from "./content-browser/browser-view"
-import { BrowserItem, BrowserTableHeader } from "./content-browser/browser-views"
+import { BrowserItem } from "./content-browser/browser-views"
+import { BrowserTable } from "./content-browser/browser-table"
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -766,6 +767,21 @@ export default function ObjectChildrenPage() {
     }
   }
 
+  /**
+   * SH1026 — the toolbar's verbs, handed to the table's selection bar. They read `selectedItems`,
+   * which the table's `onSelectionChange` has already set to the rows they are chosen on.
+   */
+  const tableSelectionActions = [
+    { id: "publish", label: t("content.publish"), icon: Eye, onSelect: () => planBulk("PUBLISH") },
+    { id: "unpublish", label: t("content.unpublish"), icon: Download, onSelect: () => planBulk("UNPUBLISH") },
+    { id: "copy", label: t("content.copy"), icon: Copy, onSelect: () => openFolderDialog("copy", [...selectedItems]) },
+    { id: "move", label: t("content.move"), icon: Move, onSelect: () => openFolderDialog("move", [...selectedItems]) },
+    {
+      id: "delete", label: t("common.delete"), icon: Trash2, tone: "destructive" as const,
+      onSelect: () => handleSelectAction("delete"),
+    },
+  ]
+
   const handleItemClick = (item: ObjectChild) => {
     if (item.objectType === "FOLDER") {
       navigate(`${ROUTES.CONTENT_ROOT}/object/${item.id}`)
@@ -1212,10 +1228,26 @@ export default function ObjectChildrenPage() {
               the semantics were the part that was missing, not the behaviour.
             */}
             {/*
-              SH1026 — the table's header sits outside the listbox: a header is not an option, and
-              the columns it names are the ones every table row lays out.
+              SH1026 — the table is the design system's data table: a virtualised body, sortable
+              headers and a column picker. It keeps its own selection and keyboard and reports the
+              selection here, so the toolbar's verbs and the selection bar still act on it.
+
+              A static import on purpose. The design system's bento entry is one module, so the
+              table's code lands in its eager chunk whichever way this file imports it: lazy()
+              was measured at 1673.5 KB raw against 1671.2 KB static, and it split the eager
+              load into four regrouped chunks. An empty folder says so once, below, in every view.
             */}
-            {!loading && viewMode === "spreadsheet" && sortedItems.length > 0 && <BrowserTableHeader />}
+            {!loading && viewMode === "spreadsheet" && sortedItems.length > 0 && (
+              <BrowserTable
+                rows={sortedItems}
+                scope={`${objectId}|${list.key}`}
+                actionsFor={rowActions}
+                selectionActions={tableSelectionActions}
+                onSelectionChange={(ids) => setSelectedItems(new Set(ids))}
+                onOpen={handleItemClick}
+              />
+            )}
+            {viewMode !== "spreadsheet" && (
             <div
               role="listbox"
               aria-multiselectable="true"
@@ -1256,6 +1288,7 @@ export default function ObjectChildrenPage() {
               </div>
             ))}
             </div>
+            )}
 
             {!loading && sortedItems.length === 0 && (
               <div className="px-4 py-16 text-center">

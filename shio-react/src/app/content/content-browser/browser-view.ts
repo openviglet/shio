@@ -45,6 +45,29 @@ export function optionClass(view: BrowserView): string {
   return "border-b last:border-b-0 hover:bg-muted/40"
 }
 
+/**
+ * SH1026 — where the table's column layout is kept: per user, so two curators sharing a browser
+ * do not hide each other's columns, and per browser, because a layout is a convenience of the
+ * reader's screen and not content anybody else should see.
+ */
+export function tableLayoutKey(username: string | undefined): string {
+  return `shio.browser.table.${username || "anonymous"}`
+}
+
+/**
+ * A stored layout, read defensively: storage is text anybody can have written, and `"null"` parses
+ * to `null`, which passes a truthy check and crashes on the property read (the widgetSettings rule).
+ */
+export function readTableLayout(raw: string | null): { hidden: string[] } {
+  try {
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    const hidden = parsed && typeof parsed === "object" ? (parsed as { hidden?: unknown }).hidden : undefined
+    return { hidden: Array.isArray(hidden) ? hidden.filter((id): id is string => typeof id === "string") : [] }
+  } catch {
+    return { hidden: [] }
+  }
+}
+
 export interface BrowserRow {
   id: string
   name: string
