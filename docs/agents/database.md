@@ -62,6 +62,17 @@ falls, the cheapest way to find the line is to cross it on purpose.
    suite know about it*. The comparison is by column **set**, never by index name:
    Hibernate invents its own identifier for a `@Column(unique = true)`, and the 2026.2
    baseline carries generator names like `UK8q73y8bnx7kpktylf71gcco05_INDEX_9`.
+5. **Name a table exactly as its `createTable` did (SH1089).** Two conventions coexist: the
+   SH26 baseline created PascalCase tables (`ShPostTypeAttr`, `ShSite`), and every changelog
+   since v2026.3.36 creates snake_case ones (`sh_post_unified`). A change to a baseline table
+   uses the baseline's spelling. SH1010 wrote `sh_post_type_attr`, passed 2233 tests, and a
+   clean store refused to start, because the suite never runs Liquibase and the database does
+   not fold case. `ShLiquibaseChangelogReferenceLintTest` walks the changelogs in master order
+   and fails naming the file, changeset and identifier when a change names a table or column
+   no earlier changeset created, spelled exactly, suggesting the created spelling when the two
+   fold together. SH729's lint folds on purpose and could not see this. The change types it
+   reads are listed in `UNDERSTOOD`; a new type is a failure until the walk is taught what it
+   names.
 
 ### Cross-DB schema-drift ITs (SH26)
 `ShMariaDbSchemaIT` / `ShPostgresSchemaIT` (extending `ShCrossDatabaseSchemaITBase`,
