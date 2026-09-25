@@ -7,7 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
 import { Trash2, RotateCcw, X, Folder, FileText, Globe } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { BentoFilterBar, type BentoFilterFacet, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
+import { FACET_TYPE, fromBarValue, matchesLocally, toBarValue } from "@/lib/filter-bar"
+// SH1024 — the trash's filters live in its URL, like every other list's (SH1023).
+import { useListState } from "@/hooks/use-list-state"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
@@ -44,12 +48,49 @@ type TrashRow = {
   id: string
   title: string
   label?: string
+  /** A post's type name, the word `type` filters by; a folder or a site has none. */
+  type?: string
 }
+
+/**
+ * SH1024 — the trash's filters, in its URL, in the vocabulary's own words (`q`, `type`).
+ *
+ * Applied to the rows already here rather than sent: the trash is one bounded list of three kinds
+ * read whole, and only one of those three reads speaks the vocabulary, so a server-side `q` would
+ * filter the posts and leave every deleted folder and site on screen.
+ */
+const TRASH_LIST = { q: "", type: "" }
 
 export default function TrashPage() {
   const { t } = useTranslation()
   const [items, setItems] = useState<TrashRow[]>([])
   const [loading, setLoading] = useState(true)
+  const list = useListState(TRASH_LIST)
+  const { q, type } = list.value
+
+  /*
+   * SH1024 — the design system's filter bar, as on the browser and search: its value is the URL's,
+   * and both are stable because the bar debounces typing in an effect keyed on them. The type facet
+   * offers only the post types in the trash, so a choice can never empty it by construction.
+   */
+  const barValue = useMemo(() => toBarValue({ q, type }), [q, type])
+  const patchList = list.patch
+  const onBarChange = useCallback(
+    (next: BentoFilterValue) => {
+      const { q: nextQ, type: nextType } = fromBarValue(next)
+      patchList({ q: nextQ, type: nextType })
+    },
+    [patchList])
+  const facets = useMemo<BentoFilterFacet[]>(() => {
+    const types = [...new Map(items.filter((row) => row.type)
+      .map((row) => [row.type as string, row.label || row.type as string])).entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+    return types.length > 1
+      ? [{ id: FACET_TYPE, kind: "choice", label: t("content.filterType"),
+        options: types.map(([value, label]) => ({ value, label })) }]
+      : []
+  }, [items, t])
+  const shown = useMemo(() => items.filter((row) => matchesLocally(row, q, type)), [items, q, type])
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
   const fetchTrash = useCallback((signal?: AbortSignal) => {
@@ -82,6 +123,7 @@ export default function TrashPage() {
             id: p.id,
             title: p.title || "(untitled)",
             label: p.shPostType?.title || p.shPostType?.name,
+            type: p.shPostType?.name,
           })),
         ]),
       )
@@ -143,14 +185,28 @@ export default function TrashPage() {
         subtitle={t("content.trashDescription")}
         urlBase={`${ROUTES.CONSOLE}/content`}
       />
-      <div>
+      <div className="space-y-3">
+        <BentoFilterBar
+          value={barValue}
+          onChange={onBarChange}
+          facets={facets}
+          queryLabel={t("content.filterItems")}
+        />
 
+        {/* An empty trash and a filter that matched nothing are two facts, and say two things. */}
         {!loading && items.length === 0 ? (
           <EmptyState
             icon={IconTrash}
             tone="slate"
             title={t("content.trashEmpty")}
             description={t("content.trashEmptyHint")}
+          />
+        ) : !loading && shown.length === 0 ? (
+          <EmptyState
+            icon={IconTrash}
+            tone="slate"
+            title={t("common.noResults")}
+            description={t("content.trashNoMatchHint")}
           />
         ) : (
           <Panel contentClassName="p-0">
@@ -163,7 +219,7 @@ export default function TrashPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((row) => (
+                {shown.map((row) => (
                   <TableRow key={`${row.kind}-${row.id}`}>
                     <TableCell className="font-medium">
                       <span className="flex items-center gap-2">

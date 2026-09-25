@@ -95,8 +95,8 @@ const LIST_ROUTES = {
     + "filters through useSearchParams directly, which is this hook's job done by hand. Left "
     + "alone rather than converted, because its paging is a keyset cursor with a walked-back "
     + "stack and the hook has no opinion about that.",
-  "content/trash.page.tsx": "nothing to carry: the trash is one list of everything deleted, with "
-    + "no search, sort or filter. A URL word here would be a filter invented to satisfy a rule.",
+  // SH1024 — the trash gained the filter bar, and with it `q` and `type` in its URL.
+  "content/trash.page.tsx": null,
   "admin/review/review.list.page.tsx": "the queue is what is waiting, in order, and the only "
     + "state is which session is expanded — a disclosure, not a view. Narrowing it is SH1001's "
     + "own question and not this one's.",

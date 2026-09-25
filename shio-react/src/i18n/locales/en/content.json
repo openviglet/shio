@@ -409,6 +409,7 @@
   "content.coverageAskedMany_other": "Asked the agent for {{count}} translations. Its answers will arrive in the dock.",
   "content.coverageAskRow": "Ask the agent for {{title}} in every language it is missing or behind in",
   "content.coverageAskColumn": "Ask the agent for every page on this screen missing or behind in {{locale}}",
+  "content.trashNoMatchHint": "Nothing in the trash matches these filters. Remove a chip to see more.",
   "content.formsTitle": "Forms",
   "content.formsDescription": "What arrived through a site's form, and where its form sends it.",
   "content.formsSettings": "Where this site's form sends submissions",

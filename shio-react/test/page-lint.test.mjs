@@ -85,7 +85,9 @@ test("SH947: the lint is not vacuous — a width planted on a routed page fails 
   const planted = join(dir, page)
   const source = readFileSync(planted, "utf8")
   // The same shape as twenty-seven of the findings the first run reported.
-  const dirty = source.replace(/(return \(\s*<>[\s\S]*?\/>\s*)<div>/, '$1<div className="mx-auto max-w-4xl px-6">')
+  // SH1024 gave the trash's outer <div> a spacing class of its own, so any existing class is replaced.
+  const dirty = source.replace(/(return \(\s*<>[\s\S]*?\/>\s*)<div(?: className="[^"]*")?>/,
+    '$1<div className="mx-auto max-w-4xl px-6">')
   assert.notEqual(dirty, source, "SH947: trash.page.tsx changed shape; plant the width somewhere else")
   writeFileSync(planted, dirty)
 

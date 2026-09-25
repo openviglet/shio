@@ -2847,9 +2847,17 @@ any asking key is set, not only on a typed term. `q` is not a hook text key ther
 debounces its own field. The scope stays a select beside the bar, shown only when the URL brings a
 folder, since no chip can choose a folder.
 
-Still to come: trash and the review queue (both declared "no list state" in
-`list-state.test.mjs`'s census, so each moves to `null` when it gains the bar); facet counts from
-the listing; the author picker with an agent option; and saved views.
+**Trash draws it too, and filters locally.** The trash is one bounded list of three kinds (sites,
+folders, posts) read whole, and only the post read speaks the vocabulary, so a server-side `q` would
+filter the posts and leave every deleted folder and site on screen. So `q` and `type` live in its URL
+(its census entry in `list-state.test.mjs` is now `null`) and `matchesLocally` applies them to the
+rows already held: `q` as a title substring, and `type` as the post-type name, which a folder or a
+site does not have. The type facet offers only the types in the trash, and appears only when there
+are two. A filter that matches nothing says so, not "the trash is empty".
+
+Still to come: the review queue (declared "no list state" in the census, so it moves to `null` when
+it gains the bar); facet counts from the listing; the author picker with an agent option; and saved
+views.
 
 ## The browser's three views (SH1026, in parts)
 

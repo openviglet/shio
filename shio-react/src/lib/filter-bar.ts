@@ -100,6 +100,15 @@ export function contentFacets(types: readonly { name: string; title?: string }[]
 }
 
 /**
+ * A row against `q` and `type`, for a list that filters what it already holds (the trash, SH1024):
+ * `q` as a case-insensitive substring of the title, `type` as the exact post-type name.
+ */
+export function matchesLocally(row: { title: string; type?: string }, q: string, type: string): boolean {
+  const term = q.trim().toLocaleLowerCase()
+  return (!term || row.title.toLocaleLowerCase().includes(term)) && (!type || row.type === type)
+}
+
+/**
  * The site facet, by **name** — the word `/agent/find` takes, so the search a curator shares is the
  * question an agent runs (SH1027). Offered first, and only where there is more than one site: with
  * one, every choice is the whole list.

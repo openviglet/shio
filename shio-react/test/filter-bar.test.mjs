@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { contentFacets, fromBarValue, toBarValue, withSiteFacet } from "../src/lib/filter-bar.ts"
+import { contentFacets, fromBarValue, matchesLocally, toBarValue, withSiteFacet } from "../src/lib/filter-bar.ts"
 
 /**
  * SH1024 — the filter bar speaks the list's URL, and nothing else.
@@ -65,6 +65,23 @@ test("SH1024: search draws the bar over its URL, and a filter alone is a search"
   assert.match(page, /const onBarChange = useCallback\(/, "SH1024: the bar's handler is rebuilt every render")
   assert.doesNotMatch(page, /if \(!q\.trim\(\)\)/,
     "SH1024: search runs only on a typed term, so 'every draft on Blog' from the bar asks nothing")
+})
+
+test("SH1024: the trash filters what it holds by q and type, and draws the same bar", () => {
+  const page = { title: "Pricing", type: "Article" }
+  const folder = { title: "Pricing archive" }
+  assert.ok(matchesLocally(page, "pric", ""), "SH1024: q is a case-insensitive substring of the title")
+  assert.ok(matchesLocally(folder, "PRICING", ""))
+  assert.ok(!matchesLocally(folder, "", "Article"),
+    "SH1024: a folder has no type, so a type filter must leave it out rather than keep it")
+  assert.ok(matchesLocally(page, "", "Article"))
+
+  const trash = readFileSync(join(SRC, "app", "content", "trash.page.tsx"), "utf8")
+  assert.match(trash, /<BentoFilterBar[\s\S]*?value=\{barValue\}[\s\S]*?onChange=\{onBarChange\}/,
+    "SH1024: the trash has no filter bar")
+  assert.match(trash, /const barValue = useMemo\(/, "SH1024: the bar's value is rebuilt every render")
+  assert.match(trash, /content\.trashNoMatchHint/,
+    "SH1024: a filter that matches nothing says the trash is empty, which is a different fact")
 })
 
 test("SH1024: the content browser draws the bar over its URL, and / still reaches its search", () => {
