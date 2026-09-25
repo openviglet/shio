@@ -87,6 +87,10 @@ public record ShReviewDetail(String session, String actor, List<Entry> entries,
      * @param revertable this entry has an undo the queue can actually perform. A
      *                  {@code PUBLISH} of a post since deleted does not, and offering a button
      *                  that fails is worse than not offering one
+     * @param fields    SH988 — the field names this change touched, as its audit row recorded them
+     *                  (SH989). Absent when the row recorded none, which is every create, delete
+     *                  and folder row. It is what an approved entry still has to show once there
+     *                  is no draft left to compare
      */
     @JsonInclude(Include.NON_NULL)
     public record Entry(
@@ -99,6 +103,15 @@ public record ShReviewDetail(String session, String actor, List<Entry> entries,
             boolean draft,
             boolean published,
             boolean trashed,
-            boolean revertable) {
+            boolean revertable,
+            List<String> fields) {
+
+        /** Before SH988 carried the changed field names. */
+        public Entry(String action, String postId, String address, String title, String siteId,
+                     Instant date, boolean draft, boolean published, boolean trashed,
+                     boolean revertable) {
+            this(action, postId, address, title, siteId, date, draft, published, trashed,
+                    revertable, null);
+        }
     }
 }

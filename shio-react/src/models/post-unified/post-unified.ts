@@ -143,3 +143,25 @@ function projectFieldDefs(fields: ShPostTypeFieldRef[]): ShPostTypeSchemaField[]
       children: f.fields ? projectFieldDefs(f.fields) : undefined,
     }))
 }
+
+/** SH988 — `GET /post-unified/{id}/diff`: two sides whole, and each field with whether it moved. */
+export interface ShPostDiff {
+  from: string
+  to: string
+  /** Null when that side does not exist: `published` on a page never published is a create. */
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+  fields: { name: string; changed: boolean }[]
+}
+
+/** SH987 — one captured revision, as a listing answers it (no body). */
+export interface ShRevisionRow {
+  version: number
+  state: string
+  reason?: string
+  actor?: string
+  agentSession?: string
+  capturedAt: string
+  title?: string
+  changed?: string[]
+}

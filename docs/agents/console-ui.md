@@ -2735,3 +2735,26 @@ it in `finally`, toasts the saved field names on success, and routes a refusal t
 `reportRefusal`, so the dock gets the server's problem document rather than the word Error. A
 browser probe on a fresh instance measured the preview iframe at 1046×809 with and without the
 dock, found the dock inside the panel, and logged no page errors.
+
+## One diff, answered by the server (SH988, first half)
+
+`GET /api/v2/post-unified/{id}/diff?from=&to=` (`ShPostDiffAPI` / `ShPostDiffService`,
+`requireRead`) answers `{from, to, before, after, fields: [{name, changed}]}`. A side is `draft`,
+`published` or `rev:<n>`, and the defaults are `published` → `draft`. `published` on a page never
+published is `null`, which is a create and not an error. Fields are the union of both sides' keys in
+name order, and a field is changed when its JSON differs. A bad side is a teaching 400
+(`unknown-diff-side`), and a missing revision is SH987's `no-such-revision`.
+
+The console hands the answer to the design system through `lib/version-diff.ts`: `diffFields`
+labels from the schema and keeps undeclared names, `kindOf` maps HTML widgets to `rich` and text
+to `text`, and `railVersions` lists the draft, the published page, then each revision newest
+first, with agent revisions marked. `PostVersionsDialog` is now `BentoVersionRail` plus
+`BentoDiff` over any two picks, with a restore of the older side behind a second press (the
+published page, or `POST …/revisions/{n}/restore` with the draft's If-Match). The review queue
+offers `ReviewEntryDiff` inline for every entry that still exists, so a create has one. An approved
+entry names the fields its audit row recorded (`ShReviewDetail.Entry.fields`, SH989's column)
+instead. A browser probe read a created page as all additions and an edit as a word-level change
+with the unchanged field collapsed.
+
+Not yet: a create's structural digest and preview link, restoring one field, and `shio diff`
+reading this endpoint instead of comparing on its own.

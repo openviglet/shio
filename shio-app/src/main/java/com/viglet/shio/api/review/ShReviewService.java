@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.agent.ShAddressResolver;
+import com.viglet.shio.api.history.ShChangedFields;
 import com.viglet.shio.api.history.ShContentAction;
 import com.viglet.shio.api.history.ShContentSubject;
 import com.viglet.shio.api.review.dto.ShReviewDetail;
@@ -838,7 +839,8 @@ public class ShReviewService {
                 draft.isPresent(),
                 published.isPresent(),
                 trashed,
-                revertable(action, draft.isPresent(), published.isPresent(), trashed));
+                revertable(action, draft.isPresent(), published.isPresent(), trashed),
+                ShChangedFields.decode(history.getChangedFields()));
     }
 
     /**

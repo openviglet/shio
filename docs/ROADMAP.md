@@ -31,7 +31,7 @@
 
 ## Block AZ — What the content said before
 
-- 📋 **SH988** (deps: SH987 ✅) **the version dialog compares two whole values and shows nothing at all for a created page** — The review diff is gated on a published twin existing, so a create, the commonest agent output, has no review affordance, and a changed body renders as two walls of text. → §LXV.4
+- ⏳ **SH988** (deps: SH987 ✅) **the version dialog compares two whole values and shows nothing at all for a created page** — A created page still shows no structural digest or preview link, one field cannot be restored alone, and shio diff still compares on its own. → §LXV.4
 
 ## Block BA — Releases, scheduling and the publish gate
 
@@ -130,6 +130,12 @@
 - **A curator can freeze the dock's mascot from the preferences dialog** The design
   system has to ship a paused prop on VigletAssistant first, and then the stored choice
   needs a still flag beside muted.
+
+## Done when — SH988
+
+- **A create's diff shows its digest, one field restores, shio diff reads it** The
+  comparison is on the server now; a create's render digest and preview link, a
+  single-field restore and the CLI reading the endpoint are what the design still asks.
 
 ## Non-goals (do NOT add as tasks)
 

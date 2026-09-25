@@ -1,9 +1,11 @@
 import axios from "axios"
 import type {
+  ShPostDiff,
   ShPostState,
   ShPostUnified,
   ShPublishPlan,
   ShPublishRoutes,
+  ShRevisionRow,
 } from "@/models/post-unified/post-unified"
 import type { ShRead } from "@/lib/read-options"
 
@@ -134,6 +136,31 @@ export class ShPostUnifiedService {
 
   async versions(id: string): Promise<ShPostUnified[]> {
     const response = await axios.get<ShPostUnified[]>(`/v2/post-unified/${id}/versions`)
+    return response.data
+  }
+
+  /**
+   * SH988 — two versions of a page and what changed, answered by the server. A side is `draft`,
+   * `published` or `rev:<n>`; `before` is null for a page never published, which is a create.
+   */
+  async diff(id: string, from: string, to: string, read: ShRead = {}): Promise<ShPostDiff> {
+    const response = await axios.get<ShPostDiff>(`/v2/post-unified/${id}/diff`,
+      { params: { from, to }, signal: read.signal })
+    return response.data
+  }
+
+  /** SH987 — the captured revisions, newest first, without their bodies. */
+  async revisions(id: string, read: ShRead = {}): Promise<ShRevisionRow[]> {
+    const response = await axios.get<ShRevisionRow[]>(`/v2/post-unified/${id}/revisions`,
+      { signal: read.signal })
+    return response.data
+  }
+
+  /** SH987 — put one revision back into the draft; it publishes nothing and adds a revision. */
+  async restoreRevision(id: string, version: number): Promise<ShPostUnified> {
+    const response = await axios.post<ShPostUnified>(
+      `/v2/post-unified/${id}/revisions/${version}/restore`, undefined,
+      { headers: this.ifMatch(id, "DRAFT") })
     return response.data
   }
 

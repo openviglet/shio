@@ -57,6 +57,8 @@ export interface ShReviewEntry {
   trashed: boolean
   /** Whether the queue can honestly undo this one; a button that fails is worse than none. */
   revertable: boolean
+  /** SH988 — the field names this change touched, as its audit row recorded them (SH989). */
+  fields?: string[]
 }
 
 /**

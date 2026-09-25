@@ -90,7 +90,6 @@ const UNCANCELLED = new Set([
   "src/components/post-insights.panel.tsx",
   "src/components/post-live-preview.tsx",
   "src/components/post-translations.menu.tsx",
-  "src/components/post-versions.dialog.tsx",
   "src/components/publish-preview.dialog.tsx",
   "src/components/widgets/content-browser-dialog.tsx",
   "src/components/widgets/content-select.widget.tsx",

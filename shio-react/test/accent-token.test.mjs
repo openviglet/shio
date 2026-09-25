@@ -100,7 +100,6 @@ const ORANGE_DEBT = {
   "app/setup/setup.page.tsx": ["from-orange-500", "hover:from-orange-600", "text-orange-500"],
   "components/login/login-form.tsx": ["from-orange-500", "hover:from-orange-600"],
   "components/post-schedule.dialog.tsx": ["text-orange-500"],
-  "components/post-versions.dialog.tsx": ["bg-orange-50", "border-orange-300", "dark:bg-orange-950/20", "dark:border-orange-700", "dark:text-orange-400", "text-orange-500", "text-orange-600"],
   "components/widgets/content-browser-dialog.tsx": ["dark:text-orange-400", "text-orange-500"],
   "components/widgets/content-select.widget.tsx": ["text-orange-500"],
   "components/widgets/file.widget.tsx": ["text-orange-500"],

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import type { ShReviewDecisionInput, ShReviewEntry } from "@/models/review/review.model"
+import { ReviewEntryDiff } from "@/components/review-entry-diff"
 
 /**
  * SH1001 — deciding a run one change at a time.
@@ -36,18 +37,23 @@ export function ReviewTriage({
   decided,
   busy,
   onDecide,
-  onDiff,
 }: {
   entries: ShReviewEntry[]
   /** postId → the standing decision, so a row already decided says so. */
   decided: Map<string, string>
   busy: boolean
   onDecide: (decisions: ShReviewDecisionInput[]) => Promise<void> | void
-  /** SH14's draft↔published diff, which this list has always offered per row. */
-  onDiff: (postId: string) => void
 }) {
   const { t } = useTranslation()
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  /** SH988 — the rows whose diff is open under them. */
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const toggleDiff = (postId: string) => setExpanded((open) => {
+    const next = new Set(open)
+    if (next.has(postId)) next.delete(postId)
+    else next.add(postId)
+    return next
+  })
   const [cursor, setCursor] = useState(0)
   const [note, setNote] = useState("")
   const anchor = useRef<number | null>(null)
@@ -153,12 +159,8 @@ export function ReviewTriage({
       </div>
       <ul className="divide-y">
         {entries.map((entry, index) => (
-          <li
-            key={`${entry.postId}-${entry.date}-${index}`}
-            className={`flex items-center gap-3 py-2 text-sm ${
-              index === cursor ? "bg-muted/60" : ""
-            }`}
-          >
+          <li key={`${entry.postId}-${entry.date}-${index}`} className="py-2 text-sm">
+          <div className={`flex items-center gap-3 ${index === cursor ? "bg-muted/60" : ""}`}>
             <Checkbox
               checked={!!entry.postId && selected.has(entry.postId)}
               onClick={(event) => toggle(index, (event as React.MouseEvent).shiftKey)}
@@ -182,11 +184,30 @@ export function ReviewTriage({
             {entry.postId && decided.has(entry.postId) && (
               <span className="text-xs vg-accent-text">{decided.get(entry.postId)}</span>
             )}
-            {entry.postId && entry.published && entry.draft && (
-              <Button size="sm" variant="ghost" onClick={() => onDiff(entry.postId!)}>
+            {/*
+              SH988 — a diff for every entry that still exists, not only one with a published twin:
+              a create, the commonest thing an agent writes, compares against nothing and draws as
+              additions. An approved entry has no draft left to compare, so it names the fields its
+              audit row recorded instead (SH989).
+            */}
+            {entry.postId && !entry.trashed && (entry.draft || entry.published)
+              && decided.get(entry.postId) !== "APPROVE" && (
+              <Button size="sm" variant="ghost" aria-expanded={expanded.has(entry.postId) ? "true" : "false"}
+                onClick={() => toggleDiff(entry.postId!)}>
                 <GitCompare className="mr-1 h-3.5 w-3.5" /> {t("review.diff")}
               </Button>
             )}
+          </div>
+          {entry.postId && decided.get(entry.postId) === "APPROVE" && entry.fields?.length ? (
+            <p className="mt-1 pl-7 text-xs text-muted-foreground">
+              {t("review.changedFields", { fields: entry.fields.join(", ") })}
+            </p>
+          ) : null}
+          {entry.postId && expanded.has(entry.postId) && (
+            <div className="mt-2 pl-7">
+              <ReviewEntryDiff postId={entry.postId} />
+            </div>
+          )}
           </li>
         ))}
       </ul>

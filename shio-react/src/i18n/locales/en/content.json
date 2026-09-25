@@ -383,5 +383,6 @@
   "content.searchWithheld": "and {{count}} you cannot open",
   "content.searchHere": "Search in this folder",
   "content.fieldRequired": "required",
-  "content.removeValue": "Remove {{value}}"
+  "content.removeValue": "Remove {{value}}",
+  "content.restoreRevision": "Restore revision {{version}}"
 }

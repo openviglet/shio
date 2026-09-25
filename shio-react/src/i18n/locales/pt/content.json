@@ -383,5 +383,6 @@
   "content.searchWithheld": "e {{count}} que voce nao pode abrir",
   "content.searchHere": "Buscar nesta pasta",
   "content.fieldRequired": "obrigatório",
-  "content.removeValue": "Remover {{value}}"
+  "content.removeValue": "Remover {{value}}",
+  "content.restoreRevision": "Restaurar a revisão {{version}}"
 }

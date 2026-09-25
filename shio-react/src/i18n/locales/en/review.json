@@ -24,5 +24,6 @@
   "review.diff": "Diff",
   "review.draft": "draft",
   "review.published": "published",
-  "review.trashed": "in trash"
+  "review.trashed": "in trash",
+  "review.changedFields": "Changed: {{fields}}"
 }

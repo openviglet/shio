@@ -5,11 +5,7 @@ import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ROUTES } from "@/app/routes.const"
-import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { ReviewTriage } from "@/components/review-triage"
-import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
-import { postFormSchema } from "@/models/post-unified/post-unified"
-import type { ShPostTypeSchemaField } from "@/models/post-unified/post-unified"
 import { ShReviewService } from "@/services/review/review.service"
 import type {
   ShReviewDecisionInput,
@@ -24,7 +20,6 @@ import { toast } from "@viglet/viglet-design-system"
 import { reportProblem } from "@/lib/problem"
 
 const service = new ShReviewService()
-const postService = new ShPostUnifiedService()
 
 /** Same action colours the Activity page uses — one action, one colour, wherever it appears. */
 const ACTION_BADGE: Record<string, string> = {
@@ -50,8 +45,6 @@ export default function ReviewListPage() {
   const [open, setOpen] = useState<Record<string, ShReviewDetail | null>>({})
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
-  const [diffPostId, setDiffPostId] = useState<string | null>(null)
-  const [diffSchema, setDiffSchema] = useState<ShPostTypeSchemaField[]>([])
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
   const fetchSessions = useCallback(
@@ -156,21 +149,6 @@ export default function ReviewListPage() {
       reportProblem(error, t("common.error"))
     } finally {
       setBusy(null)
-    }
-  }
-
-  /**
-   * Opens the SH14 draft↔published diff for one post. The schema comes from the post read
-   * itself, which is what SH176 made possible: before it, the post-type never reached the
-   * browser and this dialog had nothing to render.
-   */
-  const openDiff = async (postId: string) => {
-    try {
-      const post = await postService.get(postId, "DRAFT").catch(() => postService.get(postId, "PUBLISHED"))
-      setDiffSchema(postFormSchema(post.shPostType))
-      setDiffPostId(postId)
-    } catch (error) {
-      reportProblem(error, t("common.error"))
     }
   }
 
@@ -326,7 +304,6 @@ export default function ReviewListPage() {
                               [each.postId, each.decision]))}
                             busy={busy === session.session}
                             onDecide={(decisions) => triage(session.session, decisions)}
-                            onDiff={openDiff}
                           />
                           </>
                         )}
@@ -338,21 +315,6 @@ export default function ReviewListPage() {
           </Panel>
         )}
       </div>
-
-      {diffPostId && (
-        <PostVersionsDialog
-          postId={diffPostId}
-          schema={diffSchema}
-          open={Boolean(diffPostId)}
-          setOpen={(next) => {
-            if (!next) setDiffPostId(null)
-          }}
-          onRestored={() => {
-            setDiffPostId(null)
-            load()
-          }}
-        />
-      )}
     </>
   )
 }

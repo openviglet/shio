@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { History, RotateCcw, Loader2 } from "lucide-react"
 import {
@@ -9,70 +9,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
 import { toast } from "@viglet/viglet-design-system"
+import { BentoDiff, BentoVersionRail } from "@viglet/viglet-design-system/bento"
+import { reportProblem } from "@/lib/problem"
+import { isCancelled } from "@/lib/read-options"
+import { DRAFT, PUBLISHED, diffFields, railVersions, revisionOf } from "@/lib/version-diff"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
-import type { ShPostUnified, ShPostTypeSchemaField } from "@/models/post-unified/post-unified"
+import type {
+  ShPostDiff,
+  ShPostTypeSchemaField,
+  ShPostUnified,
+  ShRevisionRow,
+} from "@/models/post-unified/post-unified"
 
 const service = new ShPostUnifiedService()
-
-/** `data` may arrive as a JSON string (entity getter) or an object — coerce defensively. */
-function asDataObject(d: unknown): Record<string, unknown> {
-  if (typeof d === "string") {
-    try {
-      const parsed = JSON.parse(d)
-      return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {}
-    } catch {
-      return {}
-    }
-  }
-  return d && typeof d === "object" ? (d as Record<string, unknown>) : {}
-}
-
-function formatValue(v: unknown, emptyLabel: string): string {
-  if (v === undefined || v === null || v === "") return emptyLabel
-  if (typeof v === "string") return v
-  return JSON.stringify(v)
-}
-
-type DiffStatus = "unchanged" | "changed" | "added" | "removed"
-
-interface DiffRow {
-  name: string
-  label: string
-  published: unknown
-  draft: unknown
-  status: DiffStatus
-}
-
-function isEmptyValue(v: unknown): boolean {
-  return v === undefined || v === null || v === ""
-}
-
-function buildDiff(
-  schema: ShPostTypeSchemaField[],
-  publishedData: Record<string, unknown>,
-  draftData: Record<string, unknown>
-): DiffRow[] {
-  return schema
-    .filter((f) => f.widget !== "Tab" && f.widget !== "Hidden")
-    .map((f) => {
-      const published = publishedData[f.name]
-      const draft = draftData[f.name]
-      let status: DiffStatus = "unchanged"
-      if (JSON.stringify(published) !== JSON.stringify(draft)) {
-        if (isEmptyValue(published)) status = "added"
-        else if (isEmptyValue(draft)) status = "removed"
-        else status = "changed"
-      }
-      return { name: f.name, label: f.label || f.name, published, draft, status }
-    })
-}
 
 interface Props {
   postId: string
@@ -95,7 +46,7 @@ interface Props {
 export function PostVersionsDialog({ postId, schema, open, setOpen, onRestored }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-5xl max-h-[85vh] overflow-y-auto">
         <PostVersionsBody
           key={postId}
           postId={postId}
@@ -108,212 +59,139 @@ export function PostVersionsDialog({ postId, schema, open, setOpen, onRestored }
   )
 }
 
+/**
+ * SH988 — any two versions, compared by the server and drawn by the package.
+ *
+ * <p>It used to pick the draft and the published row and render two capped cells per field, so a
+ * long body was two walls of text and a page never published showed nothing at all. Now the rail
+ * lists the draft, the published page and every captured revision; the reader picks two; the
+ * server answers what changed (`GET /post-unified/{id}/diff`); and `BentoDiff` draws it word by
+ * word, collapsing what did not move. A page never published compares against nothing, which the
+ * package draws whole as additions. Restore puts the older side back into the draft, behind a
+ * second press.</p>
+ */
 function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "open">) {
   const { t } = useTranslation()
-  const [loading, setLoading] = useState(true)
+  const [rows, setRows] = useState<ShPostUnified[]>([])
+  const [revisions, setRevisions] = useState<ShRevisionRow[]>([])
+  const [pair, setPair] = useState<string[]>([PUBLISHED, DRAFT])
+  const [diff, setDiff] = useState<ShPostDiff | null>(null)
   const [restoring, setRestoring] = useState(false)
   const [confirming, setConfirming] = useState(false)
-  const [onlyChanges, setOnlyChanges] = useState(true)
-  const [draft, setDraft] = useState<ShPostUnified | null>(null)
-  const [published, setPublished] = useState<ShPostUnified | null>(null)
-
-  const emptyLabel = t("content.emptyValue")
-
-  /**
-   * The read. It raises no state before the request, because the mount already means "loading" —
-   * and `confirming` is false at mount for the same reason, so clearing it here would be the
-   * synchronous `setState` the mount was meant to remove. The restore path clears it itself.
-   *
-   * <p>A `.then` chain rather than `async`/`await`, and that is not style: the compiler rule does
-   * not model the suspension, so it reads every `setState` in an `async` body as synchronous and
-   * flags the effect that calls it. In a callback they are what they are — deferred.</p>
-   */
-  const load = useCallback(
-    () => service.versions(postId)
-      .then((versions) => {
-        setDraft(versions.find((v) => v.state === "DRAFT") ?? null)
-        setPublished(versions.find((v) => v.state === "PUBLISHED") ?? null)
-      })
-      .catch(() => toast.error(t("content.noVersions")))
-      .finally(() => setLoading(false)),
-    [postId, t],
-  )
 
   useEffect(() => {
-    void load()
-  }, [load])
+    const abort = new AbortController()
+    Promise.all([service.versions(postId), service.revisions(postId, { signal: abort.signal })])
+      .then(([versions, captured]) => {
+        setRows(versions)
+        setRevisions(captured)
+      })
+      .catch((error: unknown) => {
+        if (!isCancelled(error)) reportProblem(error, t("content.noVersions"))
+      })
+    return () => abort.abort()
+  }, [postId, t])
 
-  const diff = useMemo(() => {
-    if (!published && !draft) return []
-    return buildDiff(schema, asDataObject(published?.data), asDataObject(draft?.data))
-  }, [schema, published, draft])
+  const [from, to] = pair
+  useEffect(() => {
+    const abort = new AbortController()
+    service.diff(postId, from, to, { signal: abort.signal })
+      .then(setDiff)
+      .catch((error: unknown) => {
+        if (!isCancelled(error)) reportProblem(error, t("common.error"))
+      })
+    return () => abort.abort()
+  }, [postId, from, to, t])
 
-  const changedCount = useMemo(() => diff.filter((d) => d.status !== "unchanged").length, [diff])
-  const visibleRows = useMemo(
-    () => (onlyChanges ? diff.filter((d) => d.status !== "unchanged") : diff),
-    [diff, onlyChanges]
-  )
+  // Loading is derived rather than set: the answer on screen is for the pair asked, or it is not.
+  const loading = !diff || diff.from !== from || diff.to !== to
+  const draft = rows.find((row) => row.state === "DRAFT")
+  const published = rows.find((row) => row.state === "PUBLISHED")
+  const versions = useMemo(() => railVersions(revisions,
+    { draft: t("content.draftWorkingCopy"), published: t("content.publishedLive"), person: "—" },
+    { draft: draft?.modifiedDate || draft?.date, published: published?.publicationDate }),
+  [revisions, draft, published, t])
+  const fields = useMemo(() => (diff ? diffFields(diff, schema) : []), [diff, schema])
+  const changedCount = diff?.fields.filter((field) => field.changed).length ?? 0
+
+  const restoreSide = from === PUBLISHED && published ? PUBLISHED : revisionOf(from) !== null ? from : null
 
   async function handleRestore() {
+    if (!restoreSide) return
     if (!confirming) {
       setConfirming(true)
       return
     }
     setRestoring(true)
     try {
-      const updated = await service.restore(postId)
+      const revision = revisionOf(restoreSide)
+      const updated = revision === null
+        ? await service.restore(postId)
+        : await service.restoreRevision(postId, revision)
       toast.success(t("content.restored"))
       onRestored(updated)
       setOpen(false)
-    } catch {
-      toast.error(t("content.restoreError"))
+    } catch (error) {
+      reportProblem(error, t("content.restoreError"))
     } finally {
       setRestoring(false)
       setConfirming(false)
     }
   }
 
-  function fmtDate(value?: string) {
-    if (!value) return "—"
-    const d = new Date(value)
-    return isNaN(d.getTime()) ? value : d.toLocaleString()
-  }
-
-  const statusLabel: Record<DiffStatus, string> = {
-    unchanged: "",
-    changed: t("content.statusChanged"),
-    added: t("content.statusAdded"),
-    removed: t("content.statusRemoved"),
-  }
-
   return (
     <>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="size-5 text-orange-500" />
-            {t("content.versionHistory")}
-          </DialogTitle>
-          <DialogDescription>
-            {published
-              ? changedCount > 0
-                ? t("content.changesSincePublish", { count: changedCount })
-                : t("content.noChangesSincePublish")
-              : t("content.notYetPublished")}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <History className="size-5" />
+          {t("content.versionHistory")}
+        </DialogTitle>
+        <DialogDescription>
+          {diff && !diff.before
+            ? t("content.notYetPublished")
+            : changedCount > 0
+              ? t("content.changesSincePublish", { count: changedCount })
+              : t("content.noChangesSincePublish")}
+        </DialogDescription>
+      </DialogHeader>
 
+      <div className="grid gap-4 md:grid-cols-[16rem_1fr]">
+        <BentoVersionRail
+          versions={versions}
+          selected={pair}
+          onSelect={(ids) => {
+            if (ids.length === 2) {
+              setPair(ids)
+              setConfirming(false)
+            }
+          }}
+          label={t("content.versionHistory")}
+        />
         {loading ? (
           <div className="flex items-center gap-2 py-10 justify-center text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
             <span>{t("common.loading")}</span>
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* State metadata cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-lg border border-l-4 border-l-orange-500 bg-background p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold">{t("content.draftWorkingCopy")}</span>
-                  <Badge variant="secondary" className="text-xs">DRAFT</Badge>
-                </div>
-                {draft ? (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {t("content.lastModifiedBy", { name: draft.modifier || draft.owner || "—" })}
-                    {" · "}
-                    {fmtDate(draft.modifiedDate || draft.date)}
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-1">—</p>
-                )}
-              </div>
-              <div className="rounded-lg border border-l-4 border-l-green-500 bg-background p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold">{t("content.publishedLive")}</span>
-                  <Badge variant="secondary" className="text-xs">PUBLISHED</Badge>
-                </div>
-                {published ? (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {t("content.publishedBy", { name: published.publisher || "—" })}
-                    {" · "}
-                    {fmtDate(published.publicationDate)}
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-1">{t("content.noPublishedToCompare")}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Diff table */}
-            {diff.length > 0 && (
-              <>
-                <div className="flex items-center justify-end gap-2">
-                  <Switch id="only-changes" checked={onlyChanges} onCheckedChange={setOnlyChanges} />
-                  <Label htmlFor="only-changes" className="text-sm text-muted-foreground">
-                    {t("content.onlyChanges")}
-                  </Label>
-                </div>
-                <div className="rounded-lg border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-1/4">{t("content.field")}</TableHead>
-                        <TableHead>{t("content.publishedLive")}</TableHead>
-                        <TableHead>{t("content.draftWorkingCopy")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {visibleRows.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
-                            {t("content.noChangesSincePublish")}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        visibleRows.map((row) => (
-                          <TableRow
-                            key={row.name}
-                            className={cn(row.status !== "unchanged" && "bg-orange-50 dark:bg-orange-950/20")}
-                          >
-                            <TableCell className="align-top">
-                              <span className="font-medium text-sm">{row.label}</span>
-                              {row.status !== "unchanged" && (
-                                <Badge variant="outline" className="ml-2 text-[10px] border-orange-300 text-orange-600 dark:border-orange-700 dark:text-orange-400">
-                                  {statusLabel[row.status]}
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="align-top text-xs text-muted-foreground break-words max-w-[14rem]">
-                              {formatValue(row.published, emptyLabel)}
-                            </TableCell>
-                            <TableCell className="align-top text-xs break-words max-w-[14rem]">
-                              {formatValue(row.draft, emptyLabel)}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
-            )}
-          </div>
+          <BentoDiff before={diff.before} after={diff.after} fields={fields} />
         )}
+      </div>
 
-        <DialogFooter className="gap-2">
-          {published && (
-            <Button
-              variant="destructive"
-              onClick={handleRestore}
-              disabled={restoring || loading}
-            >
-              {restoring ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
-              {confirming ? t("content.restoreConfirm") : t("content.restorePublished")}
-            </Button>
-          )}
-          <Button variant="ghost" onClick={() => setOpen(false)}>
-            {t("common.cancel")}
+      <DialogFooter className="gap-2">
+        {restoreSide && (
+          <Button variant="destructive" onClick={handleRestore} disabled={restoring || loading}>
+            {restoring ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
+            {confirming
+              ? t("content.restoreConfirm")
+              : restoreSide === PUBLISHED
+                ? t("content.restorePublished")
+                : t("content.restoreRevision", { version: revisionOf(restoreSide) })}
           </Button>
-        </DialogFooter>
+        )}
+        <Button variant="ghost" onClick={() => setOpen(false)}>
+          {t("common.cancel")}
+        </Button>
+      </DialogFooter>
     </>
   )
 }

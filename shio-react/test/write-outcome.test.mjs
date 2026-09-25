@@ -60,6 +60,12 @@ const EXCEPTIONS = {
     "switching tenant reloads the console into the other tenant; the reload is the outcome.",
   "app/system/bento-tenant-switcher.tsx#switchTo.switchTo":
     "the same switch from the header.",
+  "components/note-rail.tsx#add.add":
+    "the note appears in the rail the curator is typing into, and failure reports through"
+    + " reportProblem. False if the rail stops re-reading after an add. (SH988 surfaced it: the"
+    + " lint had credited a same-named load() elsewhere that toasted.)",
+  "components/note-rail.tsx#resolve.resolve":
+    "the note moves between open and resolved in the same rail; failure reports.",
   "components/post-live-preview.tsx#render.html":
     "a POST that renders, not a write: the frame shows the result.",
   "components/publish-preview.dialog.tsx#PublishPreviewDialog.publishPlan":

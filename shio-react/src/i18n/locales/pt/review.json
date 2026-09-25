@@ -24,5 +24,6 @@
   "review.diff": "Comparar",
   "review.draft": "rascunho",
   "review.published": "publicado",
-  "review.trashed": "na lixeira"
+  "review.trashed": "na lixeira",
+  "review.changedFields": "Alterado: {{fields}}"
 }
