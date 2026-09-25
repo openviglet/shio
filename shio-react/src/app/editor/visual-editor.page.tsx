@@ -645,7 +645,8 @@ export default function VisualEditorPage() {
    * always fires is a dialog everybody clicks through. The editor's own exits ask for themselves
    * below, since this console mounts a `BrowserRouter` and `useBlocker` needs a data router.
    */
-  useUnsavedGuard(changes.size > 0)
+  // SH1090 — the router blocker asks with the editor's own words, which name how many edits.
+  useUnsavedGuard(changes.size > 0, t("universalEditor.leaveConfirm", { count: changes.size }))
 
   // SH303 — resolve the declared field labels rather than reading them off the page: one place
   // declares a label, and it is the post-type. SH305 — and it is the *selected post's* type, not
@@ -1009,13 +1010,8 @@ export default function VisualEditorPage() {
     toast.success(t("universalEditor.discarded"))
   }
 
-  /** Leaving the editor with work pending asks, because the router cannot (SH1011's note). */
-  const leave = (to: string) => {
-    if (changes.size && !globalThis.confirm(t("universalEditor.leaveConfirm", {
-      count: changes.size,
-    }))) return
-    navigate(to)
-  }
+  /** Leaving the editor with work pending asks — in useUnsavedGuard's blocker since SH1090. */
+  const leave = (to: string) => navigate(to)
 
   // A new destination is a new handshake. SH703 — that is now a property of the state rather than
   // an effect that repairs it: the handshake carries the `src` it belongs to, so navigating from a

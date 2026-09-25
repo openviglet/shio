@@ -152,18 +152,26 @@ function topLevelRoutes() {
 
   const out = []
   let depth = 0
+  // SH1090 — a pathless, non-index <Route> is a layout (the data router's providers), not a level:
+  // its children are the top-level routes. Each open records whether it counted, so its close undoes
+  // exactly that.
+  const counted = []
   for (const event of events) {
     if (!event.open) {
-      depth -= 1
+      if (counted.pop()) depth -= 1
       continue
     }
-    if (depth === 0) {
+    const layout = !/\bpath=/.test(event.attrs) && !/\bindex\b/.test(event.attrs)
+    if (depth === 0 && !layout) {
       const literal = event.attrs.match(/path="([^"]*)"/)
       const constant = event.attrs.match(/path=\{ROUTES\.(\w+)\}/)
       const path = literal ? literal[1] : constants.get(constant?.[1] ?? "")
       if (path) out.push(path)
     }
-    if (!event.selfClosing) depth += 1
+    if (!event.selfClosing) {
+      counted.push(!layout)
+      if (!layout) depth += 1
+    }
   }
 
   // SH909 — the legacy console redirect is mounted through a `.map()` over a constant, so its two

@@ -1396,30 +1396,6 @@ can ask the connected agent for a suggestion through the assistant, which is the
 the Viglet assistant's reference design was drawn around, answered by the agent rather
 than by a model Shio hosts.
 
-### LXVIII.12 A router that cannot be blocked (SH1090)
-
-SH1011 asked for a router blocker on the post editor. React Router 7's `useBlocker` —
-and `unstable_usePrompt`, which wraps it — call `useDataRouterContext`, and `main.tsx`
-mounts `<BrowserRouter>`. Outside a data router that throws, so there is no blocking
-navigation anywhere in this console, on any page, for any reason.
-
-What SH1011 shipped instead covers the case its own symptom names: `beforeunload`
-catches closing the tab, reloading and leaving the site, and the editor's own Cancel
-asks first. What is left is an in-app route change — the rail, the command palette, a
-link in the page — which walks away from unsaved work silently.
-
-The change is `createBrowserRouter` plus `<RouterProvider>` in place of
-`<BrowserRouter>` and `<Routes>`. It is mechanical and it is not small: every route
-becomes an object, the shell's `<Outlet>` stays, and anything reading `useNavigate`
-keeps working. The risk worth naming is that a data router changes when a route's
-element mounts, which is what SH888's two-shell arrangement and SH907's
-outside-the-shell editor are both sensitive to.
-
-The instrument is the deliverable here too: a lint that fails when a page imports
-`useBlocker` outside a data router would have caught this before it was written into a
-design. The cheaper version is a test that mounts the router and asserts it is a data
-router, which is one assertion and cannot go stale.
-
 ### LXVIII.13 A partial write no stateless caller can make (SH1091)
 
 SH1011's design asked the CLI for `shio post set`. It was built and then withdrawn,

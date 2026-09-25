@@ -12,6 +12,7 @@ import { dirname, join, relative } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import { stripComments } from "./support/source-text.mjs"
+import { endOfOpeningTag } from "./support/jsx-elements.mjs"
 
 /**
  * SH908 — a component that needs a provider only the shell mounts does not look wrong outside the
@@ -52,13 +53,31 @@ const NEEDS_SHELL_PROVIDER = [
   ["@/contexts/user.context", "useCurrentUser → UserProvider"],
 ]
 
-/** The bento shell's own subtree, `<Route path={ROUTES.BENTO}>` to its closing tag. */
+/**
+ * The bento shell's own subtree, `<Route path={ROUTES.BENTO}>` to **its** closing tag.
+ *
+ * SH1090 — found by depth now, not as the file's last `</Route>`: the data router wraps every route
+ * in a pathless layout `<Route>`, whose close is the last one, so the old rule swallowed the
+ * redirect and 404 routes that follow the shell and read them as inside it.
+ */
 function bentoShellBlock() {
   const open = APP.indexOf("<Route path={ROUTES.BENTO}")
   if (open < 0) return null
-  const close = APP.lastIndexOf("</Route>")
-  if (close < 0 || close < open) return null
-  return APP.slice(open, close)
+  let depth = 0
+  const tags = /<Route(?=[\s/>])|<\/Route>/g
+  tags.lastIndex = open
+  for (let match = tags.exec(APP); match; match = tags.exec(APP)) {
+    if (match[0] === "</Route>") {
+      depth -= 1
+      if (depth === 0) return APP.slice(open, match.index)
+      continue
+    }
+    const end = endOfOpeningTag(APP, match.index + "<Route".length)
+    if (end === -1) return null
+    if (!end.selfClosing) depth += 1
+    tags.lastIndex = end.index
+  }
+  return null
 }
 
 /** Every `import X from "…"` in App.tsx, as `component → module specifier`. */

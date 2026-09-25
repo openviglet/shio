@@ -4,7 +4,6 @@ import { BackendStatusProvider, ErrorBoundary } from '@viglet/viglet-design-syst
 import axios from 'axios';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { SHIO_LIGHT_BOOT_CLASS } from './theme';
 import './index.css';
@@ -39,13 +38,13 @@ if (!(globalThis as Record<string, unknown>).__SHIO_LOADING_TEST__) {
 
   createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-      <BrowserRouter>
-        <ErrorBoundary>
-          <BackendStatusProvider healthEndpoint="/api/v2/ping">
-            <App />
-          </BackendStatusProvider>
-        </ErrorBoundary>
-      </BrowserRouter>
+      {/* SH1090 — no BrowserRouter here: App renders a data router, which is what lets a page
+          block an in-app navigation (useBlocker) rather than only a tab close. */}
+      <ErrorBoundary>
+        <BackendStatusProvider healthEndpoint="/api/v2/ping">
+          <App />
+        </BackendStatusProvider>
+      </ErrorBoundary>
     </React.StrictMode>
   )
 }

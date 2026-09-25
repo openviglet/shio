@@ -576,8 +576,8 @@ renderer over one body of content at a second address. See the section on it bel
   refresh **replays** the pending edits into the reloaded frame rather than asking: asking makes a
   reload cost a decision, and replaying makes the page and the count agree without one. Discard is
   confirmed because it is the one control here that destroys work rather than writing it, and both
-  exits ask — `useUnsavedGuard` for the three the router never sees, and the screen's own buttons
-  for themselves, since this console mounts a `BrowserRouter` and `useBlocker` needs a data router.
+  exits ask — `useUnsavedGuard` for the three the router never sees and, since SH1090's data router,
+  for every route change as well, in the editor's own words naming how many edits are pending.
   **No Ctrl+Z**: a `contenteditable` already has the browser's own undo, which fires `input` and so
   is reported like any other edit, and a console-level shortcut competing with it inside a focused
   field would be two undos for one keystroke.

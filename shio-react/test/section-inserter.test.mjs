@@ -128,10 +128,12 @@ test("SH1041: throwing work away is confirmed, and leaving with it pending asks"
   assert.match(PAGE, /universalEditor\.discardConfirm/,
     "Discard is the one control here that destroys work rather than writing it (P7)")
   assert.match(PAGE, /universalEditor\.leaveConfirm/)
-  assert.match(PAGE, /useUnsavedGuard\(changes\.size > 0\)/,
+  // SH1090 — the guard now blocks the router's exits too, asking in this editor's own words.
+  assert.match(PAGE, /useUnsavedGuard\(changes\.size > 0, t\("universalEditor\.leaveConfirm"/,
     "SH1011's guard covers the three exits the router never sees - the tab closes, the page "
-    + "reloads, a link leaves the console - and registers only while something is pending, "
-    + "because a handler that always fires is a dialog everybody clicks through")
+    + "reloads, a link leaves the console - and, since SH1090, every exit the router does see, and "
+    + "registers only while something is pending, because a handler that always fires is a dialog "
+    + "everybody clicks through")
   assert.equal(PAGE.includes("onClick={() => navigate(ROUTES.UNIVERSAL_EDITOR)}"), false,
     "every one of this screen's own exits goes through the guard, or the one that does not is "
     + "the one a curator will find")

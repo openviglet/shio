@@ -1819,11 +1819,19 @@ same document with its keys in a different order, and a widget that clears its i
 not. A permanently-registered handler makes every reload of every clean page show the browser's
 dialog, which is how a guard becomes the thing people click through without reading.
 
-**There is no router blocker, and there cannot be one yet.** React Router 7's `useBlocker` — and
-`unstable_usePrompt`, which wraps it — call `useDataRouterContext`, and `main.tsx` mounts
-`<BrowserRouter>`: calling either throws rather than degrading. So the editor guards its own exit
-(Cancel asks) and the browser guards the rest, while an in-app route change still walks away
-silently. SH1090 is the change that closes it, for every page at once.
+**The router blocks too, since SH1090.** React Router 7's `useBlocker` needs a data router, and
+`main.tsx` used to mount `<BrowserRouter>`, so it threw and an in-app route change walked away from
+unsaved work silently. `App.tsx` now builds the same `<Route>` JSX into a data router with
+`createBrowserRouter(createRoutesFromElements(...))` under a pathless layout route (`AppLayout`,
+holding the theme, query and toast providers) and renders `<RouterProvider>`. `ErrorBoundary` and
+`BackendStatusProvider` stay above it in `main.tsx`; neither uses a router hook. `useUnsavedGuard`
+arms `useBlocker` while dirty and asks with `confirm`, in the page's own words when it passes a
+message (the Universal Editor names how many edits). It blocks only a change of **path**, so a list
+writing its filters to the URL is never interrupted. The pages' own hand-written confirms before
+Cancel and before leaving the editor are gone, because the blocker asks for those exits too and two
+dialogs for one click is the defect. The route scanners in `spa-contexts.test.mjs` and
+`outside-shell-chrome.test.mjs` treat a pathless, non-index `<Route>` as a layout, not a level. The
+data router cost 55 KB raw / 17 KB gzip eager, recorded in `console-size-budget.json`.
 
 ### Autosave, and the buffer behind it (SH1011)
 

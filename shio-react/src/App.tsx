@@ -1,4 +1,6 @@
-import { Navigate, Route, Routes } from "react-router-dom"
+import {
+  createBrowserRouter, createRoutesFromElements, Navigate, Outlet, Route, RouterProvider,
+} from "react-router-dom"
 import BentoHomePage from "./app/system/home.page"
 import BentoFolderEditPage from "./app/content/folder.edit.page"
 import BentoFolderNewPage from "./app/content/folder.new.page"
@@ -55,7 +57,15 @@ import { SHIO_DEFAULT_THEME, SHIO_THEME_STORAGE_KEY } from "./theme"
 import { Toaster } from "./components/ui/sonner"
 import { ShioQueryProvider } from "./contexts/query.provider"
 
-function App() {
+/**
+ * The providers every route renders inside, as the router's root layout.
+ *
+ * SH1090 — this used to wrap `<Routes>` under a `<BrowserRouter>` in `main.tsx`, which is not a data
+ * router, so `useBlocker` threw and no page could stop an in-app navigation away from unsaved work;
+ * only closing the tab was caught. The same tree is now a data router's route objects, built from the
+ * JSX below by `createRoutesFromElements`, so every `<Route>` still reads the way it did.
+ */
+function AppLayout() {
   return (
     <div className="App">
       {/* SH918 — the same two constants the boot-loader seed reads, so the splash and the app
@@ -63,7 +73,16 @@ function App() {
       <ThemeProvider defaultTheme={SHIO_DEFAULT_THEME} storageKey={SHIO_THEME_STORAGE_KEY}>
           <ShioQueryProvider>
             <Toaster />
-            <Routes>
+            <Outlet />
+          </ShioQueryProvider>
+      </ThemeProvider>
+    </div>
+  )
+}
+
+/** Created once, at module load, the way a data router is meant to be (never per render). */
+const router = createBrowserRouter(createRoutesFromElements(
+            <Route element={<AppLayout />}>
               <Route path={ROUTES.ROOT} element={<Navigate to={ROUTES.CONSOLE} replace />} />
               <Route path={ROUTES.SETUP} element={<SetupPage />} />
               <Route path={ROUTES.LOGIN} element={<LoginPage />} />
@@ -272,11 +291,11 @@ function App() {
               ))}
               {/* And outside it, for a path that is not under the console at all. */}
               <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </ShioQueryProvider>
-      </ThemeProvider>
-    </div>
-  )
+            </Route>,
+))
+
+function App() {
+  return <RouterProvider router={router} />
 }
 
 export default App

@@ -85,13 +85,31 @@ test("SH1011: the browser is asked only while there is something to lose", () =>
 test("SH1011: Cancel asks before it discards", () => {
   const page = read("src", "app", "content", "post.edit.page.tsx")
 
-  assert.match(page, /if \(dirty && !globalThis\.confirm\(t\("content\.discardUnsaved"\)\)\)/,
-    "SH1011: this page's own exit is the one in-app navigation it can still guard, and the "
-      + "alternative is Cancel meaning discard without ever saying so")
+  // SH1090 — Cancel is one in-app navigation among many, and the router blocker asks for all of them.
+  assert.match(page, /useUnsavedGuard\(dirty\)/,
+    "SH1011: the editor's unsaved work is guarded, or Cancel means discard without ever saying so")
+  assert.doesNotMatch(page, /if \(dirty && !globalThis\.confirm\(t\("content\.discardUnsaved"\)\)\)/,
+    "SH1090: a page confirming its own exit as well as the blocker asks the curator twice")
   for (const locale of ["en", "pt"]) {
     const content = JSON.parse(read("src", "i18n", "locales", locale, "content.json"))
     assert.ok(content["content.discardUnsaved"], `SH1011: ${locale} is missing the question`)
   }
+})
+
+test("SH1090: the router is a data router, so an in-app navigation can be blocked", () => {
+  // The cheaper instrument the design named: useBlocker throws outside a data router, and the
+  // console mounted <BrowserRouter> for as long as SH1011's note said it could not block a route.
+  const app = read("src", "app", "..", "App.tsx")
+  const main = read("src", "main.tsx")
+  assert.match(app, /createBrowserRouter\(createRoutesFromElements\(/,
+    "SH1090: the routes are not a data router's, so useBlocker throws on every page that asks")
+  assert.match(app, /<RouterProvider router=\{router\} \/>/)
+  assert.doesNotMatch(main, /<BrowserRouter>/,
+    "SH1090: a <BrowserRouter> above the data router makes it a router inside a router")
+  const guard = read("src", "hooks", "use-unsaved-guard.ts")
+  assert.match(guard, /useBlocker\(\(\{ currentLocation, nextLocation \}\) =>\s*dirty && currentLocation\.pathname !== nextLocation\.pathname\)/u,
+    "SH1090: the guard does not block an in-app navigation, or blocks a list writing its filters to "
+      + "the URL, which would put a dialog in front of every keystroke")
 })
 
 test("SH1011: an autosave names the changed keys and nothing else", () => {

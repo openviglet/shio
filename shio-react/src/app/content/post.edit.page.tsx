@@ -260,12 +260,8 @@ export default function PostUnifiedEditPage() {
   const hasSite = Boolean(post?.shFolder?.shSite?.id || post?.shSite?.id)
 
   const navigateBack = () => {
-    // SH1011 — this page's own exit, which is the one in-app navigation it can still guard: a
-    // router blocker needs a data router (SH1090), and the alternative to asking here is Cancel
-    // meaning "discard" without ever saying so.
-    if (dirty && !globalThis.confirm(t("content.discardUnsaved"))) {
-      return
-    }
+    // SH1090 — no confirm of its own: useUnsavedGuard's router blocker asks for this exit as it
+    // does for every other, so Cancel with unsaved work still says "discard" before it does.
     if (parentFolderId) {
       navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
     } else {
