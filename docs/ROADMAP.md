@@ -34,7 +34,7 @@
 
 ## Block BC — The authoring surface, field by field
 
-- 📋 **SH1091** (deps: —) **no stateless caller can change one field of a post without declaring the whole document** — The console's merge verb refuses a cookieless caller, the CDA's has no If-Match, and the agent's only write replaces whole state, so a CLI correction cannot be both partial and safe. → §LXVIII.13
+- ⏳ **SH1091** (deps: maintainer security call) **no stateless caller can change one field of a post without declaring the whole document** — Every route to a partial write crosses a boundary drawn on purpose, so which one is a maintainer's call. → §LXVIII.13
 - 📋 **SH1092** (deps: —) **a draft lint reports clean without saying that five markup rules never ran against it** — markup scans published rows only, deliberately, and the notes on a state=draft report describe the indexes instead, so zero errors reads as a verdict it is not. → §LXVIII.14
 - 📋 **SH1093** (deps: —) **two suite tests fail intermittently on Windows and pass on an unchanged re-run** — A blueprint install moves a directory across temp dirs and a CLI exit test bounds wall-clock at 100ms, so a held handle or a loaded machine reds a gate nothing is wrong with. → §LXVIII.15
 - 📋 **SH1094** (deps: —) **the live preview is a card under the form, so reading it means scrolling away from the fields** — SH1014 left the split view unbuilt because two panes with a remembered ratio change the editor's shape rather than adding to it, which is a design-system question first. → §LXVIII.16
@@ -115,6 +115,13 @@
   image-pipeline thumbnail, the table is BentoDataTable with a persisted column picker
   whose scalar edits are refused on a stale ETag, and each view mounts only its visible
   window over BD6's fixture.
+
+## Done when — SH1091
+
+- **A chosen boundary, and shio post set over it** A maintainer picks the route (a
+  narrowed CSRF exemption on the console merge, or If-Match on a merge an AGENT token
+  may call); shio post set then changes one field under a version and is refused when
+  the post moved.
 
 ## Non-goals (do NOT add as tasks)
 

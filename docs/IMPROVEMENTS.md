@@ -1415,11 +1415,12 @@ no `If-Match` at all, so it cannot say *refuse this if the post moved under me*.
 `post.upsert` declares whole state by design (SH168), which is the failure this verb
 exists to avoid.
 
-So the deliverable is the decision: widen the exemption to the narrowed matcher every
-other stateless path already uses and update the lint's entry, or give the CDA's merge a
-precondition and spend a token. The verb is small once that is settled; the working
-command, its help and its conformance scenario were written and reverted in one commit,
-so the cost of having tried is recorded here rather than paid twice.
+An AGENT token lacks ROLE_CDA_WRITE too, so the deliverable is the decision: widen the
+exemption to the narrowed matcher every other stateless path already uses and update the
+lint's entry, or give the CDA's merge a precondition and spend a token. The verb is
+small once that is settled; the working command, its help and its conformance scenario
+were written and reverted in one commit, so the cost of having tried is recorded here
+rather than paid twice.
 
 ### LXVIII.14 A draft lint that is silent about its own gaps (SH1092)
 
