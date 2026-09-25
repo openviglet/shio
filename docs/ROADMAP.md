@@ -35,7 +35,7 @@
 ## Block BC — The authoring surface, field by field
 
 - ⏳ **SH1091** (deps: maintainer security call) **no stateless caller can change one field of a post without declaring the whole document** — Every route to a partial write crosses a boundary drawn on purpose, so which one is a maintainer's call. → §LXVIII.13
-- 📋 **SH1094** (deps: —) **the live preview is a card under the form, so reading it means scrolling away from the fields** — SH1014 left the split view unbuilt because two panes with a remembered ratio change the editor's shape rather than adding to it, which is a design-system question first. → §LXVIII.16
+- ⏳ **SH1094** (deps: a two-pane page shape in viglet-design-system) **the live preview is a card under the form, so reading it means scrolling away from the fields** — Two pages now want two panes (this and the translation workspace), and the design system has no such page shape. → §LXVIII.16
 - 📋 **SH1095** (deps: —) **an author editing content as files cannot see the page before pushing it** — Rendering from proposed values reached MCP, REST and the console, and the files tier — the one P4 calls the agent's cheapest — has no verb for it. → §LXVIII.17
 - 📋 **SH1132** (deps: —) **the console cannot change a page's URL, so a rename is an agent-only act** — post.move is the only writer of a friendly URL; the console's form has no field for one, and its single path to a URL change is a rollback that restores an older revision's. → §LXVIII.19
 
@@ -120,6 +120,13 @@
   narrowed CSRF exemption on the console merge, or If-Match on a merge an AGENT token
   may call); shio post set then changes one field under a version and is refused when
   the post moved.
+
+## Done when — SH1094
+
+- **The editor and the workspace share a design-system split** Once the package ships a
+  two-pane page shape, the post editor shows form and preview side by side with a ratio
+  kept per curator, the translation workspace moves onto it, and a phone-width page
+  stacks with a toggle rather than dropping a pane.
 
 ## Non-goals (do NOT add as tasks)
 

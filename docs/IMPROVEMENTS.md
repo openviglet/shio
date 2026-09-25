@@ -1442,8 +1442,8 @@ curator, and `localStorage` is honest for a per-viewer convenience that is not c
 **What happens at phone width**: a split view is not one, and the answer cannot be that
 the preview vanishes silently.
 
-Worth doing after a second page wants the same shape. One page needing a layout is a
-card; two is a layout.
+A second page wants it: SH1061's translation workspace. The design system's three shapes
+have no two-pane one, so it is a package addition first.
 
 ### LXVIII.17 shio preview, the rung files did not get (SH1095)
 
