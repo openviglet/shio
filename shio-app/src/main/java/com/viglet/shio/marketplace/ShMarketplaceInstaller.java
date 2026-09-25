@@ -134,7 +134,7 @@ public class ShMarketplaceInstaller {
 
             Path destination = root.resolve(item.id());
             Files.createDirectories(root);
-            Files.move(unpacked, destination, StandardCopyOption.ATOMIC_MOVE);
+            moveInto(unpacked, destination);
             return settle(item, manifest, destination, root);
         } catch (IOException failed) {
             // SH756 — the class and the reason, not just the message. A FileSystemException's
@@ -143,6 +143,57 @@ public class ShMarketplaceInstaller {
             throw new InstallFailedException(item.id(), ShIoFailure.describe(failed));
         } finally {
             deleteQuietly(staging);
+        }
+    }
+
+    /**
+     * SH1093 — move a freshly unpacked package into place, copying when the move is refused.
+     *
+     * <p>A move across directories is a rename where the file system allows one, and on Windows a
+     * handle another process holds for a moment on the source (an indexer or a scanner looking at
+     * files that appeared a millisecond ago) makes the rename fail with {@code AccessDeniedException}
+     * instead of waiting. That is what failed {@code aPackageInstalls} once in a suite run with
+     * nothing wrong in the code. A copy only has to <em>read</em> the source, which such a handle
+     * does not prevent, so a refused move falls back to copy-then-delete. The delete is best effort:
+     * the staging directory is removed again, quietly, when the install finishes.</p>
+     *
+     * <p>A destination that already exists is still a refusal, not a copy: two installs of one id
+     * racing is a conflict, and copying over the loser would hide it.</p>
+     */
+    static void moveInto(Path from, Path to) throws IOException {
+        moveInto(from, to, (source, target) -> Files.move(source, target, StandardCopyOption.ATOMIC_MOVE));
+    }
+
+    /** The rename step, injectable so a test can refuse it the way a held handle does. */
+    @FunctionalInterface
+    interface Mover {
+        void move(Path from, Path to) throws IOException;
+    }
+
+    static void moveInto(Path from, Path to, Mover mover) throws IOException {
+        try {
+            mover.move(from, to);
+        } catch (java.nio.file.FileAlreadyExistsException taken) {
+            throw taken;
+        } catch (java.nio.file.AtomicMoveNotSupportedException | java.nio.file.AccessDeniedException refused) {
+            if (Files.exists(to)) {
+                throw new java.nio.file.FileAlreadyExistsException(to.toString());
+            }
+            copyTree(from, to);
+            deleteQuietly(from);
+        }
+    }
+
+    private static void copyTree(Path from, Path to) throws IOException {
+        try (var walk = Files.walk(from)) {
+            for (Path source : (Iterable<Path>) walk::iterator) {
+                Path target = to.resolve(from.relativize(source).toString());
+                if (Files.isDirectory(source)) {
+                    Files.createDirectories(target);
+                } else {
+                    Files.copy(source, target);
+                }
+            }
         }
     }
 

@@ -130,6 +130,26 @@ test("SH445: the request layer is disarmed, and then nothing calls process.exit"
   assert.ok(watchdog, "and a watchdog is armed for the case a loop is held by something else");
 });
 
+test("SH1093: the exit reports what it disarmed only when asked, so a slow exit says why", async () => {
+  const lines = [];
+  const proc = {
+    exit() {}, exitCode: 0, env: { SHIO_EXIT_TRACE: "1" },
+    getActiveResourcesInfo: () => ["PipeWrap"],
+    stderr: { write: (text) => lines.push(text) },
+  };
+  await finish(1, { proc, global: globalWithDispatchers([]), schedule: () => ({ unref() {} }) });
+  assert.deepEqual(lines, ["shio-exit: disarmed 2 slot(s); active PipeWrap\n"],
+    "SH1093: a red keep-alive run could not say whether the layer was disarmed or something else "
+      + "held the loop");
+
+  const quiet = [];
+  await finish(1, {
+    proc: { ...proc, env: {}, stderr: { write: (text) => quiet.push(text) } },
+    global: {}, schedule: () => ({ unref() {} }),
+  });
+  assert.deepEqual(quiet, [], "SH1093: every caller that did not ask keeps a clean stderr");
+});
+
 test("SH445: the watchdog is unref'd, so it never delays a healthy exit", async () => {
   // The whole reason it is safe to arm at all. An unref'd timer does not hold the loop, so on the
   // ordinary path the process is gone long before it fires — it exists only for the case SH440 kept
@@ -246,7 +266,8 @@ test("SH440: the real binary exits 1 for a remote failure, and does not wait out
       ["verify", "--site", "absent-xyz"],
     ]) {
       const started = process.hrtime.bigint();
-      const failure = await run(process.execPath, [ENTRY, ...argv, "--url", url, "--user", "u", "--password", "p"])
+      const failure = await run(process.execPath, [ENTRY, ...argv, "--url", url, "--user", "u", "--password", "p"],
+        { env: { ...process.env, SHIO_EXIT_TRACE: "1" } })
         .then(() => null, (error) => error);
       const ms = Number(process.hrtime.bigint() - started) / 1e6;
 
@@ -257,10 +278,20 @@ test("SH440: the real binary exits 1 for a remote failure, and does not wait out
         `\`shio ${argv.join(" ")}\` exited ${failure.code}. -1073740791 is 0xC0000409 — abort() — and `
           + "means process.exit ran while a fetch handle was still live",
       );
+      // SH1093 — two claims, asserted separately, so a red says which one broke. The disarm is
+      // observed directly, from the child's own trace; the wall clock only has to tell "closed" from
+      // "waited the 4 s keep-alive out", so its bound sits under that and far above any scheduling
+      // delay a loaded machine adds (50 idle and 30 loaded runs measured none over 2 s).
+      const trace = failure.stderr.match(/shio-exit: disarmed (\d+) slot\(s\); active (.*)/);
+      assert.ok(trace, `\`shio ${argv[0]}\` left no exit trace, so the exit path was not finish()`);
+      assert.ok(Number(trace[1]) >= 1,
+        `\`shio ${argv[0]}\` disarmed ${trace[1]} dispatcher slot(s): the request layer was never found, `
+          + "so the socket is left to undici's 4 s keepAliveTimeout");
       assert.ok(
-        ms < 2000,
-        `\`shio ${argv[0]}\` took ${Math.round(ms)}ms. Under 100ms is the disarm; ~4000ms is undici's `
-          + "keepAliveTimeout, which means the exit is waiting the socket out instead of closing it",
+        ms < 3500,
+        `\`shio ${argv[0]}\` took ${Math.round(ms)}ms with ${trace[1]} slot(s) disarmed and ${trace[2]} `
+          + "still active. ~4000ms is undici's keepAliveTimeout; with the layer disarmed, whatever is "
+          + "listed as active is what held the loop",
       );
     }
   } finally {

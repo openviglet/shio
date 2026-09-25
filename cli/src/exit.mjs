@@ -127,7 +127,16 @@ const FORCE_EXIT_AFTER_MS = 5000;
 export async function finish(code, { proc = process, global = globalThis, schedule = setTimeout } = {}) {
   // Set before the await, so a teardown that dies for its own reasons still carries the decision.
   proc.exitCode = code;
-  await disarmRequestLayer(global);
+  const disarmed = await disarmRequestLayer(global);
+  // SH1093 — what the disarm did, said where a test can read it. The exit test's one red run
+  // measured 4057 ms, undici's keep-alive to the millisecond, and nothing recorded whether the
+  // layer had been disarmed and something else held the loop, or had not been disarmed at all.
+  // Off unless asked for: every other caller keeps a clean stderr.
+  if (proc.env?.SHIO_EXIT_TRACE) {
+    const holding = typeof proc.getActiveResourcesInfo === "function"
+      ? proc.getActiveResourcesInfo().join(",") : "?";
+    proc.stderr?.write?.(`shio-exit: disarmed ${disarmed.length} slot(s); active ${holding}\n`);
+  }
   // Deliberately no `proc.exit(code)` here. See above: with a live request behind it, that call is
   // the abort. The process ends by the loop draining, which the disarm has just made immediate.
   const watchdog = schedule(() => proc.exit(code), FORCE_EXIT_AFTER_MS);

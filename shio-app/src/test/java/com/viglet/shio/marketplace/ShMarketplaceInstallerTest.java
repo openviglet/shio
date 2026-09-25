@@ -399,4 +399,43 @@ class ShMarketplaceInstallerTest {
             out.write(body);
         }
     }
+
+    @Test
+    @DisplayName("SH1093: a move a held handle refuses is completed as a copy, not failed")
+    void aRefusedMoveIsCopied(@TempDir Path scratch) throws IOException {
+        // The one red run: AccessDeniedException renaming a freshly unpacked package, because a
+        // Windows indexer held a handle on files that had appeared a millisecond earlier. The mover
+        // is refused here the way that handle refuses it, which a real handle cannot do on demand.
+        Path source = Files.createDirectories(scratch.resolve("staging/pkg/post-types"));
+        Files.writeString(source.resolve("Page.json"), "{\"name\":\"Page\"}");
+        Files.writeString(scratch.resolve("staging/pkg/blueprint.json"), "{\"name\":\"pkg\"}");
+        Path destination = scratch.resolve("installed/pkg");
+        Files.createDirectories(destination.getParent());
+
+        ShMarketplaceInstaller.moveInto(scratch.resolve("staging/pkg"), destination, (from, to) -> {
+            throw new java.nio.file.AccessDeniedException(from.toString());
+        });
+
+        assertThat(destination.resolve("blueprint.json"))
+                .as("SH1093: a refused rename failed the install outright, a flake a copy completes")
+                .hasContent("{\"name\":\"pkg\"}");
+        assertThat(destination.resolve("post-types/Page.json")).hasContent("{\"name\":\"Page\"}");
+        assertThat(scratch.resolve("staging/pkg")).as("and the source is removed after the copy")
+                .doesNotExist();
+    }
+
+    @Test
+    @DisplayName("SH1093: a taken destination is still a refusal, never a copy over it")
+    void aTakenDestinationIsNotCopiedOver(@TempDir Path scratch) throws IOException {
+        Path source = Files.createDirectories(scratch.resolve("staging/pkg"));
+        Files.writeString(source.resolve("blueprint.json"), "{\"name\":\"new\"}");
+        Path destination = Files.createDirectories(scratch.resolve("installed/pkg"));
+        Files.writeString(destination.resolve("blueprint.json"), "{\"name\":\"old\"}");
+
+        assertThatThrownBy(() -> ShMarketplaceInstaller.moveInto(source, destination, (from, to) -> {
+            throw new java.nio.file.AccessDeniedException(from.toString());
+        })).as("SH1093: two installs of one id racing is a conflict a copy would hide")
+                .isInstanceOf(java.nio.file.FileAlreadyExistsException.class);
+        assertThat(destination.resolve("blueprint.json")).hasContent("{\"name\":\"old\"}");
+    }
 }

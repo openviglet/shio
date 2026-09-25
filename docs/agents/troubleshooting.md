@@ -232,3 +232,22 @@ standing in for elapsed time. The population was **one** — this test. An instr
 population that is about to be zero, keyed on a guess at how somebody might write the mistake next
 time, is speculation with a build cost; the survey is recorded here instead, which is what makes it
 checkable if the answer ever changes.
+
+## Two Windows flakes, and what each one now says (SH1093)
+
+**The keep-alive exit test** (`cli/test/exit-path.test.mjs`, SH440's live-binary case) measured
+`shio resolve` at 4057 ms once, undici's `keepAliveTimeout` to the millisecond, and passed on an
+unchanged re-run. Fifty idle runs and thirty under eight CPU-burning processes reproduced nothing, so
+it is not scheduling noise and the rare cause is unknown. The test now asserts its two claims apart.
+`SHIO_EXIT_TRACE=1` makes `finish()` in `cli/src/exit.mjs` write
+`shio-exit: disarmed <n> slot(s); active <resources>` to stderr, and the test requires at least one
+slot disarmed and a wall clock under 3500 ms (below the 4 s keep-alive, far above any delay a loaded
+machine added). A future red names which half failed and what still held the loop.
+
+**The marketplace install** threw `AccessDeniedException` renaming a freshly unpacked package, because
+a Windows indexer or scanner held a handle on files that had just appeared. `ShMarketplaceInstaller`
+now moves through `moveInto`: an atomic move, and on `AccessDeniedException` or
+`AtomicMoveNotSupportedException` a copy then a best-effort delete. A copy only reads, which such a
+handle allows. A destination that already exists stays a refusal, so two racing installs are not
+hidden. It is tested with an injected mover refusing the rename, since a real handle cannot be
+summoned on demand; fifty Maven runs of the old flake were not measured.
