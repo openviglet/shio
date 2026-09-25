@@ -58,5 +58,11 @@
   "dock.agentFinishedReview": "{{agent}} terminou em {{site}}. Alterações aguardando sua revisão: {{pending}} de {{count}}.",
   "dock.pendingAtLoad": "Execuções de agente aguardando sua revisão: {{count}}.",
   "dock.openReview": "Abrir na revisão",
-  "dock.openActivity": "Ver a atividade"
+  "dock.openActivity": "Ver a atividade",
+  "dock.openPage": "Abrir a página",
+  "dock.retryNow": "Tentar agora",
+  "dock.scheduleFailed": "Uma alteração agendada não aconteceu: {{message}}",
+  "dock.schedulePublished": "\"{{page}}\" entrou no ar às {{time}}.",
+  "dock.scheduleUnpublished": "\"{{page}}\" saiu do site às {{time}}.",
+  "dock.retried": "Tentado de novo: {{page}}"
 }

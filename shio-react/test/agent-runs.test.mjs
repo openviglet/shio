@@ -92,7 +92,7 @@ test("SH936/SH968: the shell reads agent runs into the dock, and the header hold
 
   const hook = read("app", "system", "bento-agent-runs.ts")
   assert.match(hook, /subscribeChanges\(/, "SH968: the runs are not read off the change stream")
-  assert.match(hook, /\.pending\(\)/,
+  assert.match(hook, /\.pending\(\{ signal: abort\.signal \}\)/,
     "SH936: the pending count is no longer read at load, so a curator who arrives after the run"
       + " hears nothing about what it left")
   assert.match(hook, /ROUTES\.ADMIN_REVIEW\}\?session=/,

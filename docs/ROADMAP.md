@@ -16,7 +16,6 @@
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
-- ⏳ **SH969** (deps: SH967 ✅, SH964 ✅) **a scheduled publish that fails becomes an agent incident, and no curator surface ever reads it** — The dock still has to report a failure with open and retry actions, a success naming the page, and an unread failure for a curator who had no screen open. → §LXIII.6
 - ⏳ **SH970** (deps: SH967 ✅, SH964 ✅) **a form submission lands as an ordinary draft in a folder, and nothing tells anyone it arrived** — The dock still has to report an arrival with tone attention, a caption, open and archive actions, and one report when several arrive together. → §LXIII.7
 - 📋 **SH971** (deps: SH968 ✅) **a curator cannot choose what the dock reports or quiet the mascot** — An author, a reviewer and an operator need different subsets of outcomes, agent runs, schedules and arrivals, and the only control today is the browser's reduced-motion setting. → §LXIII.8
 - 📋 **SH972** (deps: SH964 ✅) **the Universal Editor renders outside the bento shell, so its saves would report to no dock** — SH907 moved the visual editor out of the shell to reclaim the viewport, and the dock mounts inside the shell, so the surface saving on every click has no outcome channel. → §LXIII.9
@@ -91,6 +90,7 @@
 - 📋 **SH1126** (deps: SH1043 ✅) **the console size gate measures whatever build is in public, whether or not it was built from the tree under test** — pnpm test never builds the console, so a pass can measure bytes older than the change and a fail can come from a build made outside the task. → §LXXII.23
 - 📋 **SH1136** (deps: —) **seventeen console lint findings are suppressed rather than fixed, ten of them effects that set state on mount** — SH1075 recorded them to get CI's lint green and a local gate running, and each is a render cascade or a stale ref. → §LXXII.24
 - 📋 **SH1137** (deps: —) **a folder moved into another site leaves its posts answering under the old site** — The folder's parent changes and its posts keep the old shSite, so the tree and delivery disagree and no URL check runs. → §LXXII.25
+- 📋 **SH1140** (deps: —) **SH1047's fetch guard cannot see a service built and called in one expression, so login-form's mount read escapes it** — Its FETCHES pattern needs a dot right after the class name, and new ShSetupService().status() puts () between them. → §LXXII.26
 
 ## Block BH — One content model, many languages
 
@@ -120,14 +120,6 @@
   edit is committed in vigletdocs. Until then it exists only in that working tree, so
   the green JS gate here rests on an uncommitted file and any other checkout still reads
   the old matrix.
-
-## Done when — SH969
-
-- **A planted failing schedule becomes a dock report whose retry publishes** A console
-  test drives a schedule incident with a retry through the stream and reads a report
-  with tone error and open and retry actions. Pressing retry publishes the post. A
-  success reports the page, and a failure raised while no screen was open is unread at
-  the next login.
 
 ## Done when — SH970
 

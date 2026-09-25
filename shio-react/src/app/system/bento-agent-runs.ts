@@ -15,6 +15,8 @@ import { createRunTracker, type AgentRun } from "@/lib/agent-runs"
 import { bumpActivity, pushReport, setWorking } from "@/lib/dock-reports"
 import { ShReviewService } from "@/services/review/review.service"
 
+const reviewService = new ShReviewService()
+
 /** How long a run's session stays quiet before it counts as finished. */
 export const RUN_QUIET_MS = 20_000
 
@@ -76,7 +78,9 @@ export function useAgentRunReports() {
     })
     const off = subscribeChanges(undefined, (page) => tracker.observe(page?.changes))
 
-    new ShReviewService().pending()
+    // SH1047 — a mount read, so it is cancelled with the shell rather than answering into nothing.
+    const abort = new AbortController()
+    reviewService.pending({ signal: abort.signal })
       .then(({ sessions }) => {
         if (sessions > 0) {
           pushReport({ tone: "attention", text: say("dock.pendingAtLoad", { count: sessions }), actions: [openReview()] })
@@ -87,6 +91,7 @@ export function useAgentRunReports() {
       .catch(() => undefined)
 
     return () => {
+      abort.abort()
       off()
       tracker.dispose()
       setWorking(null)

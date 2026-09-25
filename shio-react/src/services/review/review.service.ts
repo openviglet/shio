@@ -3,6 +3,7 @@
 // been imported: the CSRF header, the base URL and every shared interceptor were arriving by import
 // order. That is the SH233 defect one step from happening again.
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 import type {
   ShReviewDecisionInput,
   ShReviewDetail,
@@ -30,8 +31,8 @@ export class ShReviewService {
    * Not `sessions()`: that scans 2000 audit rows and resolves every touched post, which is fine
    * for a page somebody opened and not for something asked on every console render.
    */
-  async pending(): Promise<ShReviewPending> {
-    const response = await axios.get<ShReviewPending>("/v2/review/pending")
+  async pending(options: ShRead = {}): Promise<ShReviewPending> {
+    const response = await axios.get<ShReviewPending>("/v2/review/pending", { signal: options.signal })
     return response.data
   }
 

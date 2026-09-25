@@ -29,6 +29,19 @@ export function useChangeStream(onChanged: () => void, site?: string) {
 /** What one `changes` event carries: the rows this reader may see, as the feed shapes them. */
 export interface ChangePage {
   changes?: StreamChange[]
+  /** SH969 — what failed in the same range, such as a scheduled publish (`ShAgentChanges.Incident`). */
+  incidents?: StreamIncident[]
+}
+
+export interface StreamIncident {
+  kind: string
+  /** `id:<uuid>` when the incident is about a post. */
+  subject?: string
+  message?: string
+  fix?: string
+  at?: string
+  /** One batch op that attempts the failed transition now. */
+  retry?: { op: string; address: string }
 }
 
 /** The fields of a feed row the dock reads (`ShAgentChanges.Change`). */
@@ -47,8 +60,11 @@ export interface StreamChange {
 
 interface Shared {
   source: EventSource
-  listeners: Set<(page?: ChangePage) => void>
+  listeners: Set<ChangeListener>
 }
+
+/** A page, and the feed cursor after it (the event's id), to resume from later. */
+type ChangeListener = (page?: ChangePage, cursor?: string) => void
 
 const pool = new Map<string, Shared>()
 
@@ -57,7 +73,7 @@ const pool = new Map<string, Shared>()
  * connection. A page that does not parse still notifies, without a payload, because "something
  * changed" is true either way.
  */
-export function subscribeChanges(site: string | undefined, listener: (page?: ChangePage) => void) {
+export function subscribeChanges(site: string | undefined, listener: ChangeListener) {
   if (typeof EventSource === "undefined") return () => {}
   const key = site ?? ""
   let shared = pool.get(key)
@@ -73,7 +89,9 @@ export function subscribeChanges(site: string | undefined, listener: (page?: Cha
       } catch {
         page = undefined
       }
-      for (const each of [...created.listeners]) each(page)
+      // A copy: a listener may leave while it is being told, and the set must not move under it.
+      const cursor = (event as MessageEvent<string>).lastEventId || undefined
+      for (const each of [...created.listeners]) each(page, cursor)
     })
     pool.set(key, created)
     shared = created
@@ -87,4 +105,41 @@ export function subscribeChanges(site: string | undefined, listener: (page?: Cha
       pool.delete(key)
     }
   }
+}
+
+/**
+ * SH969 — replay the feed from a cursor, through the stream, and stop once it has caught up.
+ *
+ * <p>For what happened while no screen was open. It is a connection of its own, never the shared
+ * one, because a replayed page is old news: the shared listeners (the Activity line, the agent-run
+ * tracker) would take a week of rows for things happening now. It goes through the stream rather
+ * than `GET /agent/changes` because the hub applies the reader's content ACL to every row and
+ * incident, and the agent feed does not. The stream has no "caught up" event, so it closes after
+ * `quietMs` with nothing new, or after `maxMs` whatever happens.</p>
+ */
+export function replayChanges(since: string, listener: ChangeListener,
+  { quietMs = 3000, maxMs = 30000 }: { quietMs?: number; maxMs?: number } = {}) {
+  if (typeof EventSource === "undefined") return () => {}
+  const source = new EventSource(
+    `${import.meta.env.VITE_API_URL}/api/v2/events?since=${encodeURIComponent(since)}`,
+    { withCredentials: true })
+  let quiet = setTimeout(() => stop(), quietMs)
+  const cap = setTimeout(() => stop(), maxMs)
+  function stop() {
+    clearTimeout(quiet)
+    clearTimeout(cap)
+    source.close()
+  }
+  source.addEventListener("changes", (event) => {
+    clearTimeout(quiet)
+    quiet = setTimeout(() => stop(), quietMs)
+    let page: ChangePage | undefined
+    try {
+      page = JSON.parse((event as MessageEvent<string>).data) as ChangePage
+    } catch {
+      page = undefined
+    }
+    listener(page, (event as MessageEvent<string>).lastEventId || undefined)
+  })
+  return stop
 }

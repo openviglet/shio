@@ -2665,3 +2665,21 @@ subscriber. `ShEventStreamTest.sh968TheStreamKeepsTheAgentThatWrote` fails witho
 probe checked the whole chain: one stream connection shared between the Activity page and the
 shell, no header count, a batch sent with `Mcp-Session-Id` turning the mascot to working, and an
 attention report with its review action after the quiet period.
+
+## Schedule outcomes report in the dock (SH969)
+
+The feed half (`ShScheduleOutcomeFeedTest`) put the scheduler's outcomes on the feed. A transition
+that went through is a `PUBLISH`/`UNPUBLISH` row by `scheduler`. A failure is a `schedule`
+incident with the message, `id:<post>` and a `retry` batch op. `lib/schedule-reports.ts` maps a
+page of that feed to reports. A failure is `error` with the message and fix, "Open the page" and
+"Retry now". A success is `success`, naming the page and its time. `useScheduleReports` in
+`app/system/bento-schedule-reports.ts` feeds it from the shared stream. Retry goes through
+`ShAgentFeedService.retry`, which posts the incident's own op to `/v2/agent/batch` (P10), toasts
+on success and `reportProblem`s on failure. At load, `replayChanges` opens a separate stream with
+`?since=` this browser's last cursor (`shio.dock.feedSeen` in localStorage, a week back on a first
+visit), reports the failures in that range, and closes after 3 s of quiet. It goes through the
+stream and not `GET /v2/agent/changes`, because the hub applies the reader's content ACL to
+incidents and the agent feed does not. It is not the shared connection, because the Activity line
+and the run tracker would treat a week of replayed rows as happening now. A lost cursor re-reports a week of failures and never misses
+one. `schedule-reports.test.mjs` plants a failure and presses retry, and the Java test proves the
+op publishes exactly once.

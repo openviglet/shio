@@ -1079,25 +1079,6 @@ that agent through MCP, with its answer arriving in the transcript. That relay n
 run and intent records Block BB builds and lands there. This block builds the status
 surface, ordered mount, instrument, channel, then each kind of report.
 
-### LXIII.6 A schedule's outcome, reported to the people who set it (SH969)
-
-ShPostScheduler sweeps every minute. When a scheduled publish or unpublish throws, it
-logs a warning and records a SCHEDULE incident in ShAgentIncidentLog, which the agent's
-diagnostics read; a success is a log line. The curator who set the date sees neither. So
-a launch that did not happen is discovered by a customer, and one that did happen is
-confirmed only by opening the page.
-
-The scheduler emits its outcomes into the change feed as entries, published, unpublished
-or failed with its problem, and AX4's stream carries them to open screens. The dock
-reports a failure with tone error and actions to open the post and to retry now, and a
-success with tone success naming the post and the time it went live. A curator with no
-open screen sees the failure as an unread report at next login, because a failure that
-only reaches a live session is still a failure nobody reads.
-
-The agent side keeps its incident log, and shio diagnostics lists the same entries. The
-assertions: a planted failing transition produces a failure report with a retry action,
-and retry publishes.
-
 ### LXIII.7 The arriving lead (SH970)
 
 The design the assistant was drawn from shows its attention state for one event above
@@ -2374,6 +2355,26 @@ dragging a folder between sites expects. Either way, SH1078's route delta alread
 reports what delivery actually does, so it becomes the assertion: after the fix, a
 permitted cross-site folder move lists each published post's retired and created
 address.
+
+### LXXII.26 A fetch the guard cannot parse (SH1140)
+
+SH1047's guard in `shio-react/test/fetch-cancellation.test.mjs` finds a fetching effect
+with `FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(get|post|…)\b/`. A service constructed
+and called in one expression, `new ShSetupService().status()`, has `()` between the
+class name and the dot, so the pattern never matches it. A file that reads only that way
+is not counted as fetching at all, and neither list ever names it.
+
+`grep -rnE "new Sh\w*Service\(\)\.\w+\(" shio-react/src` finds two. `login-form.tsx`
+reads the setup status in a mount effect with no signal, which is exactly what the list
+exists to hold. `use-discovery.ts` builds a store factory, outside any effect. SH968's
+first draft of the shell's pending-count read had the same shape and passed the gate for
+the same reason; it now passes a signal.
+
+The fix is the instrument first. Widen `FETCHES` to accept `new \w*Service\(\)\.\w+\(`,
+plant a file that reads that way with no signal and require the guard to name it, then
+add `login-form.tsx` to the declared list or give it an `AbortController`. Either result
+is honest, and the first is what the list's own rule prescribes for a screen that has
+not moved yet.
 
 ## LXXIII One content model, many languages (Block BH)
 

@@ -26,6 +26,7 @@ import { ShSearchService } from "@/services/search/search.service"
 import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
 import { useAgentRunReports } from "./bento-agent-runs"
+import { useScheduleReports } from "./bento-schedule-reports"
 import { BentoStatusDock } from "./bento-status-dock"
 import { BentoTenantLinkNotice } from "./bento-tenant-link-notice"
 import { BentoTenantSwitcher } from "./bento-tenant-switcher"
@@ -95,6 +96,7 @@ const SEARCH_DEBOUNCE_MS = 200
 export default function BentoRootPage() {
   const groups = useBentoNav()
   useAgentRunReports()
+  useScheduleReports()
   const items = useBentoNavItems()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
