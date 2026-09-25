@@ -62,6 +62,9 @@ const EXCEPTIONS = {
     "the same switch from the header.",
   "components/created-page-panel.tsx#preview.mint":
     "the same preview mint as the editor: the new tab is the outcome, and failure reports.",
+  "app/system/dock-chat-send.ts#sendRequest.add":
+    "a question from the dock: it appears in the transcript the curator typed it into, and a"
+    + " refusal reports through reportRefusal. False if the transcript stops showing sent questions.",
   "components/note-rail.tsx#add.add":
     "the note appears in the rail the curator is typing into, and failure reports through"
     + " reportProblem. False if the rail stops re-reading after an add. (SH988 surfaced it: the"

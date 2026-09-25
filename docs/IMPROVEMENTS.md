@@ -1427,25 +1427,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-### LXVII.8 The dock's chat, relayed to the agent over notes (SH1006)
-
-The design the dock was drawn from called a model API from the browser, and the package
-deliberately left that out: the dock takes messages, busy and onSend, and knows no
-backend. Shio's binding non-goal forbids hosting a model or holding provider keys. So
-the conversation cannot be answered by Shio, and it does not need to be: the agent that
-already drives the instance is the one to answer.
-
-The composer's onSend writes a note of kind request, anchored to the page the curator is
-on, or to the site when none is open, and attributed to the curator. The agent reads
-open requests through shio_read include=notes and a shio://requests resource scoped to
-its tenant, and answers with note.add as a reply on the thread. SH967's stream delivers
-the reply to the dock, which renders the thread as its transcript, sets busy while a
-request is unanswered, and raises unread when an answer arrives behind a collapsed dock.
-
-The composer is shown only while an agent session has been active on the tenant within a
-window, read from BB2's run rows, and otherwise the dock stays a status surface. The
-assertions send a request, answer it through MCP, and read the reply in the transcript.
-
 ### LXVII.9 An answer that arrives with its change attached (SH1007)
 
 The reference design's chat offered a suggested title with a button to use it, and

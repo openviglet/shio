@@ -8,6 +8,7 @@
  */
 package com.viglet.shio.persistence.repository.agent;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -45,4 +46,7 @@ public interface ShAgentRunRepository extends JpaRepository<ShAgentRun, String> 
      * about somebody else's work.</p>
      */
     List<ShAgentRun> findByActor(String actor);
+
+    /** SH1006 — whether any run on this tenant started after the instant. */
+    boolean existsByStartedAtAfter(Instant instant);
 }

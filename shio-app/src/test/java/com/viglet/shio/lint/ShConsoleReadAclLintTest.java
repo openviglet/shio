@@ -121,6 +121,8 @@ class ShConsoleReadAclLintTest {
                             + "opening it went through requireRead"),
             Map.entry("/api/v2/history/working/{id}",
                     "who else is on a page, for a reader already on it (SH1008)"),
+            Map.entry("/api/v2/note/relay",
+                    "SH1006 — one boolean about the tenant's agent runs, no content in it"),
             Map.entry("/api/v2/post/xp/{id}",
                     "the Universal Editor bridge, which authenticates with its own short-lived "
                             + "preview token rather than a console session (SH13)"),

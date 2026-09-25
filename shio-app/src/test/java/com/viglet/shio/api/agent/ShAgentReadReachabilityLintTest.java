@@ -146,6 +146,11 @@ class ShAgentReadReachabilityLintTest {
                 + "this composes, and a second declaration would advertise a narrowing as a "
                 + "capability"));
 
+        byRoot.put("/api/v2/note/relay", new Read(Reach.CONSOLE_ONLY, null,
+                "SH1006 — whether an agent run started recently, asked by the console before it "
+                + "offers the dock's chat. An agent asking whether an agent is around has its "
+                + "answer already; what it reads instead is shio://requests"));
+
         byRoot.put("/api/v2/locale", new Read(Reach.CONSOLE_ONLY, null,
                 "the language picker's catalogue, labelled in two languages. Nothing validates a "
                 + "write against it — post.upsert takes the locale string (SH348) — so an agent "

@@ -1,5 +1,6 @@
 import axios from "@/lib/axios"
 import type { ShNote, ShNoteInput } from "@/models/note/note.model"
+import type { ShRead } from "@/lib/read-options"
 
 /**
  * Notes on content (SH1003).
@@ -9,8 +10,15 @@ import type { ShNote, ShNoteInput } from "@/models/note/note.model"
  */
 export class ShNoteService {
   /** One object's thread, oldest first. */
-  async of(objectId: string): Promise<ShNote[]> {
-    const response = await axios.get<ShNote[]>("/v2/note", { params: { object: objectId } })
+  async of(objectId: string, read: ShRead = {}): Promise<ShNote[]> {
+    const response = await axios.get<ShNote[]>("/v2/note", { params: { object: objectId }, signal: read.signal })
+    return response.data
+  }
+
+  /** SH1006 — whether an agent run started recently enough to answer the dock's chat. */
+  async relay(read: ShRead = {}): Promise<{ agentActive: boolean; windowHours: number }> {
+    const response = await axios.get<{ agentActive: boolean; windowHours: number }>("/v2/note/relay",
+      { signal: read.signal })
     return response.data
   }
 

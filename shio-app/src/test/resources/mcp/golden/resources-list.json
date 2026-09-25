@@ -35,6 +35,11 @@
     }, {
       "description" : "#string",
       "mimeType" : "text/plain",
+      "name" : "Questions from curators",
+      "uri" : "shio://requests"
+    }, {
+      "description" : "#string",
+      "mimeType" : "text/plain",
       "name" : "Rejections on your runs",
       "uri" : "shio://review/mine"
     }, {

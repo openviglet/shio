@@ -30,6 +30,7 @@ import { useScheduleReports } from "./bento-schedule-reports"
 import { useArrivalReports } from "./bento-arrival-reports"
 import { BentoDockPreferences } from "./bento-dock-preferences"
 import { useDockPreferencesLoad } from "./use-dock-preferences"
+import { useDockChatRelay } from "./use-dock-chat-relay"
 import { BentoStatusDock } from "./bento-status-dock"
 import { BentoTenantLinkNotice } from "./bento-tenant-link-notice"
 import { BentoTenantSwitcher } from "./bento-tenant-switcher"
@@ -102,6 +103,7 @@ export default function BentoRootPage() {
   useScheduleReports()
   useArrivalReports()
   useDockPreferencesLoad()
+  const { onSend } = useDockChatRelay()
   const items = useBentoNavItems()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
@@ -264,7 +266,7 @@ export default function BentoRootPage() {
           </>
         }
         column={columnFor(location.pathname)}
-        dock={<BentoStatusDock />}
+        dock={<BentoStatusDock onSend={onSend} />}
       >
         {/*
           SH931 — above the Outlet, so it sits over whatever page the link led to rather than

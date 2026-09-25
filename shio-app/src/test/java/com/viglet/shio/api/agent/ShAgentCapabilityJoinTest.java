@@ -128,6 +128,8 @@ class ShAgentCapabilityJoinTest {
         // `include=surfaces`. Not a flag: it says what a *curator* can do, and a `features` boolean
         // answers "does this instance do X" about this surface.
         byEntry.put("resource:shio://surfaces", MIRROR);
+        // SH1006 — the read half of the notes channel, whose write, note.add, batchWrites claims.
+        byEntry.put("resource:shio://requests", SAME_FLAG);
 
 
         byEntry.put("prompt:new-site", PROMPT);

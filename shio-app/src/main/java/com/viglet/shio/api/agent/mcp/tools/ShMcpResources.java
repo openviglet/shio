@@ -27,6 +27,7 @@ import com.viglet.shio.api.agent.verify.ShAgentVerifyTerse;
 import com.viglet.shio.api.cda.ShCdaService;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
+import com.viglet.shio.api.note.ShNoteRelay;
 import com.viglet.shio.blueprint.ShBlueprintRegistry;
 import com.viglet.shio.blueprint.ShBlueprintTerse;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -114,6 +115,25 @@ public class ShMcpResources {
                         + "the content alone cannot tell you a page was turned down.",
                 TEXT, "/api/v2/agent/review?decision=reject",
                 uri -> ShAgentVerdictTerse.render(verdictService.mine("reject", null)));
+    }
+
+    /**
+     * SH1006 — what a curator asked the agent from the console's dock.
+     *
+     * <p>Shio hosts no model, so a question typed into the dock is a {@code request} note on the
+     * page the curator was on, and this is where the agent reads the open ones. It answers with
+     * {@code note.add} as a {@code reply} on the thread, which the dock then shows. A resource and
+     * not a tool, for the reason that keeps deciding it: read once when a session starts or
+     * resumes, not billed on every turn's {@code tools/list} (P3). Scoped to the tenant by the
+     * notes' own discriminator.</p>
+     */
+    @Bean
+    ShMcpResource shMcpRequestsResource(ShNoteRelay relay) {
+        return resource("shio://requests", "Questions from curators",
+                "Open requests a curator sent from the console's dock, newest first. Answer each"
+                        + " with note.add kind reply, parent the note id, then note.resolve it.",
+                TEXT, "/api/v2/note/open?kind=request",
+                uri -> relay.render());
     }
 
     /**

@@ -82,7 +82,7 @@ test("SH964: an empty toast list returns the dock to idle", async () => {
 
 test("SH964: the shell hands the dock its corner", () => {
   const shell = readFileSync(join(HERE, "..", "src", "app", "system", "bento.root.page.tsx"), "utf8")
-  assert.match(shell, /dock=\{<BentoStatusDock \/>\}/,
+  assert.match(shell, /dock=\{<BentoStatusDock onSend=\{onSend\} \/>\}/,
     "SH964: the dock is not passed to BentoShell's dock slot. Mounted anywhere else it pins itself to"
       + " the viewport corner and covers back-to-top, which is what VDS133 moved into the shell.")
 })
@@ -255,4 +255,48 @@ test("SH972: the editor docks it in the properties panel, and its saves drive it
   assert.match(persist, /reportRefusal\(error,/,
     "SH972: a refused save is the word Error again rather than the server's problem document")
   assert.match(persist, /universalEditor\.draftSavedFields/, "SH972: a landed save does not name its fields")
+})
+
+/*
+ * SH1006 — the dock's chat reaches the connected agent over notes. ShNoteRelayTest proves the
+ * server half (the request is listed on shio://requests and the agent's note.add reply lands under
+ * it); this proves the dock half on the real store and the mounted component.
+ */
+test("SH1006: with onSend the dock opens into a chat, a question waits, and the reply reads after it", async () => {
+  const chat = await import("../src/lib/dock-chat.ts")
+  const holder = dom.window.document.createElement("div")
+  dom.window.document.body.append(holder)
+  const chatRoot = createRoot(holder)
+  const sent = []
+  await act(() => chatRoot.render(h(BentoStatusDock, { inline: true, onSend: (text) => sent.push(text) })))
+  await act(() => holder.querySelector("button[aria-expanded]").click())
+  await settle()
+  assert.ok(holder.querySelector("textarea, input"),
+    "SH1006: given onSend the dock renders no composer, so a curator cannot ask anything")
+
+  await act(() => chat.recordRequest({ id: "note-1", objectId: "post-1", body: "Shorten the intro?" }))
+  assert.equal(chat.waiting(chat.currentChat()).length, 1, "SH1006: a sent question is not waiting")
+  assert.equal(chat.replyFor("note-1", [
+    { id: "n-2", objectId: "post-1", kind: "COMMENT", body: "x", parentId: "note-1", resolved: false },
+    { id: "n-3", objectId: "post-1", kind: "REPLY", body: "Done.", parentId: "note-1", resolved: false },
+  ])?.id, "n-3", "SH1006: the reply is found by kind and parent, not by being the next note")
+
+  await act(() => chat.recordReply("note-1", { id: "n-3", body: "Done, two sentences." }))
+  await settle()
+  const text = holder.textContent
+  assert.ok(text.indexOf("Shorten the intro?") >= 0 && text.indexOf("Shorten the intro?") < text.indexOf("Done, two sentences."),
+    "SH1006: the transcript does not read the question and then its answer")
+  assert.equal(chat.waiting(chat.currentChat()).length, 0)
+  await act(() => chatRoot.unmount())
+  holder.remove()
+})
+
+test("SH1006: the shell offers the chat only with an agent around and a page open", () => {
+  const relay = readFileSync(join(HERE, "..", "src", "app", "system", "use-dock-chat-relay.ts"), "utf8")
+  assert.match(relay, /noteService\.relay\(\{ signal: abort\.signal \}\)/, "SH1006: nothing asks whether an agent is around")
+  assert.match(relay, /agentActive && anchor/,
+    "SH1006: the composer appears with nobody behind it, or with no page for the request to hang on")
+  assert.match(relay, /if \(pending === 0\) return/, "SH1006: replies are polled when nothing is waiting")
+  const send = readFileSync(join(HERE, "..", "src", "app", "system", "dock-chat-send.ts"), "utf8")
+  assert.match(send, /kind: "request"/, "SH1006: a question from the dock is not a request note")
 })

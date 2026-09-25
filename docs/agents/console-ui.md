@@ -2770,3 +2770,22 @@ id-keyed console endpoint. What keeps the two from disagreeing is
 found a real difference: the CLI's `same()` compared `JSON.stringify` output, so an object whose
 keys only moved read as a change. It now canonicalizes object keys, keeping list order, the way
 `JsonNode.equals` does.
+
+## The dock asks the connected agent (SH1006)
+
+Shio hosts no model, so a question typed into the dock is answered by the agent already driving
+the instance, over notes. `dock-chat-send.ts` writes a `request` note on the open post or folder.
+The agent reads open requests from the MCP resource `shio://requests` (`ShNoteRelay.render`, REST
+mirror `GET /v2/note/open?kind=request`), answers with `note.add` `{kind: reply, parent: <note>}` on
+`id:<object>`, and resolves the request. `lib/dock-chat.ts` keeps this session's questions and their
+replies. `BentoStatusDock` merges them with its reports by time, sets `busy` while one waits, and
+counts an unseen reply as unread. Opening the dock marks replies seen.
+
+The composer (`onSend`) is offered only when `GET /v2/note/relay` says an agent run started on
+this tenant within `ShNoteRelay.WINDOW` (8 h, from `sh_agent_run.started_at`) and a post or folder
+is open. Without an anchor there is nothing for the note to hang on, so the dock stays a status
+surface rather than guessing a site. Replies are found by re-reading a waiting request's thread
+every `REPLY_POLL_MS` (5 s), and only while one waits. Notes are not on the change feed, so SH967's
+stream never carries a reply, and bounding a poll to the seconds a curator waits costs less than
+putting notes on every subscriber's stream. `ShNoteRelayTest` drives the round trip through the
+batch that `shio_write` runs.

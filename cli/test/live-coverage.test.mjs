@@ -261,9 +261,12 @@ const UNEXERCISED = {
     // with indexing ON and a site deliberately routed nowhere, which is a deployment shape rather
     // than a content one — the conformance instance indexes nothing, so the table it would read is
     // "off" and every row empty. `ShIndexStatusTest` proves the table and the terse rendering.
+    // `shio://requests` arrives with SH1006, for the two-actor reason `review/mine` gives: a live
+    // scenario needs a curator's request from the dock and an agent credential answering it.
+    // `ShNoteRelayTest` drives that round trip through the batch shio_write runs.
     "shio://blueprint/", "shio://blueprints", "shio://context", "shio://diagnostics",
-    "shio://index", "shio://manifest", "shio://ops", "shio://review/mine", "shio://schema/",
-    "shio://surfaces",
+    "shio://index", "shio://manifest", "shio://ops", "shio://requests", "shio://review/mine",
+    "shio://schema/", "shio://surfaces",
   ],
   verbs: [
     // SH997 — `gate` joins the list on arrival: its live scenario is a pipeline that declares a
