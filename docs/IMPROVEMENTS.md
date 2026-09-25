@@ -1079,25 +1079,6 @@ that agent through MCP, with its answer arriving in the transcript. That relay n
 run and intent records Block BB builds and lands there. This block builds the status
 surface, ordered mount, instrument, channel, then each kind of report.
 
-### LXIII.2 Every write the console makes says how it ended (SH965)
-
-The package's hook documents its own failure mode: if the mascot needed a second call
-beside each toast, it would get one where somebody remembered and nowhere else, and it
-would sit at idle while a red toast slid past. Once the dock is the reporting surface,
-the same failure shifts one level down. A save that resolves and shows nothing, or a
-catch that swallows, leaves no trace in the dock, in the aria-live caption, or in the
-curator's understanding of what happened.
-
-The instrument comes before any report is added: a lint over shio-react's services and
-pages that finds each call to a mutating service method, a post, put, patch or delete,
-inside a handler, and requires the handler to reach a toast or an explicit outcome
-report on both its success and failure paths. Exceptions are held as an asserted list,
-each with a reason, in the Reason-with-a-falsifier shape the conformance gates use.
-
-Its first run is the worklist for AX3 and AV4, and it prints both counts. The
-non-vacuity case plants a handler that awaits a delete and reports nothing, and requires
-the lint to name it.
-
 ### LXIII.3 A refusal the curator can act on from the dock (SH966)
 
 AV6 gives the console a typed problem document and a reporter. This task decides where
@@ -1209,6 +1190,29 @@ while editing: confirmation without a panel.
 The assertions render the editor, drive a bridge save through success and refusal, read
 the dock's state and caption, and assert the preview iframe's bounding box is unchanged
 by the dock's presence.
+
+### LXIII.10 Every silent write the lint found, closed (SH1139)
+
+SH965's lint, `shio-react/test/write-outcome.test.mjs`, holds sixteen write sites under
+this id in its WORKLIST. Each one is a path where the dock, its live caption and the
+curator all learn nothing.
+
+Five say nothing at all. The token, auth provider, exchange provider, webhook and tenant
+editors await a delete and navigate away, with no toast on success and no catch on
+failure.
+
+Eleven toast success but leave failure unreported. Ten let it escape as an unhandled
+rejection: the user editor's create and update, the group/role create, folder create,
+post-type create, edit and list delete, site create, site import and the static file
+delete. A refused create there looks exactly like a button that did nothing. The static
+file list's bulk delete is worse: it swallows each failure with `.catch(() => {})` and
+then toasts success for the whole selection.
+
+The fix is the pattern the rest of the console already uses: a try/catch whose catch
+calls `reportProblem(error, t("common.error"))`, and a success toast wherever one is
+missing. The bulk delete counts its failures and says how many did not go. SH966 then
+upgrades what `reportProblem` says. Each fixed site leaves the WORKLIST, and the test
+fails on an entry that has stopped being silent, so the list can only shrink.
 
 ## LXIV What the conformance instruments cannot see (Block AY)
 

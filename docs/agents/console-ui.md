@@ -2634,3 +2634,22 @@ The dock costs the eager load 14.6 KB raw and 5.3 KB gzip, all of it in the desi
 `index.es.js` chunk, and `console-size-budget.json` records the raise. Importing it with `lazy()`
 was measured and saved nothing: the bundler keeps the package's whole ES entry in one shared
 eager chunk.
+
+## Every write says how it ended (SH965)
+
+The dock (SH964) hears only toasts, so a write that resolves or fails without one is invisible.
+`shio-react/test/support/write-outcome.mjs` reads the TypeScript AST. It treats a service method
+as a write when its body calls `axios.post|put|patch|delete`. Outside `src/services`, it finds every
+call to a write through a receiver named like a service, and climbs to the handler. It skips
+inline callbacks (`.then`, `.map`, `Promise.all`) but stops at a hook's argument. Success means a
+toast outside any catch. Failure means a toast inside a `catch` clause, a `.catch(…)` argument or
+an `onError`. Any `src` function whose own body toasts counts, one level deep, so `reportProblem`
+qualifies. Handlers passed to `BentoEntityShell` as `onUpdate` or `onDelete` count for both
+paths, because the shell toasts `forms.common.updated`/`notUpdated` and `deleted`/`notDeleted`
+itself.
+
+`write-outcome.test.mjs` holds the silent ones as two named lists. EXCEPTIONS covers dry runs,
+preview mints, autosave, the tenant switch and setup, each with a reason and what would falsify
+it. WORKLIST is SH1139's sixteen real gaps. The test prints both counts, fails on a new silent
+write, and fails on a held entry that is no longer silent, so the lists only shrink. A new write
+handler needs a success toast and a catch that calls `reportProblem(error, t("common.error"))`.

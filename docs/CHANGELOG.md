@@ -1711,6 +1711,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH969 (feed half)** — A failed scheduled publish carries retry {op, address} on the change feed, a retry clears the due schedule so it publishes once, and the stream withholds it from readers the ACL excludes.
 - **SH970 (feed half)** — The CREATE a site's form wrote carries submission {title, summary} on the change feed, so an arrival is told from a curator's post, and a tripped honeypot reaches no feed at all.
 - **SH964** — BentoStatusDock renders VigletAssistant from useAssistantNotifications in BentoShell's dock slot, with no onSend, so every existing toast moves the mascot and becomes an aria-live caption without an edit. A jsdom test drives it with the package's toast: idle, error with the toast's title, idle again. A browser probe at 1400px and 390px, with and without reduced motion, found back-to-top stacked above the dock and no intersection.
+- **SH965** — write-outcome.test.mjs reads every console call to a service method that posts, puts, patches or deletes, and requires its handler to reach a toast on success and on failure; BentoEntityShell's own toasts count. The first run found 86 write sites and 30 silent on a path: 14 held as exceptions with a reason and a falsifier (dry runs, preview mints, autosave, the tenant switch), and 16 real gaps on SH1139's worklist, which can only shrink. A planted silent delete must be named.
 
 ## Block AY — What the conformance instruments cannot see
 
