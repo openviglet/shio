@@ -1079,25 +1079,6 @@ that agent through MCP, with its answer arriving in the transcript. That relay n
 run and intent records Block BB builds and lands there. This block builds the status
 surface, ordered mount, instrument, channel, then each kind of report.
 
-### LXIII.3 A refusal the curator can act on from the dock (SH966)
-
-AV6 gives the console a typed problem document and a reporter. This task decides where
-that report lives, and the answer is the dock rather than a toast stack: the caption
-types the problem's detail, and the report row carries its actions.
-
-The row uses VDS134's report kind with tone error and up to three actions: go to the
-field named by at, apply the didYouMean correction, and open the allowed list. The toast
-for the same failure is suppressed so the curator reads one message, not two, and the
-aria-live caption announces the detail once. A success keeps its brief toast-driven
-reaction and caption, because a success needs no action.
-
-The post editor is the first consumer because it is where the teaching errors are
-richest: an undeclared field, a missing required value, a stale expectation. The
-assertions: a planted 400 carrying at and didYouMean produces a report whose first
-action focuses that field and whose second applies the suggestion, and no second toast
-appears. A refusal with no problem document still reports, with its HTTP status, because
-the lint from AX2 does not accept silence.
-
 ### LXIII.5 What the agent did, told where the curator already looks (SH968)
 
 The console's only ambient signal about agent work is bento-review-pending.tsx, the

@@ -16,7 +16,6 @@
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
-- 📋 **SH966** (deps: SH964 ✅, SH955 ✅) **a refused save reaches the dock as the word Error, with the server's fix left behind** — Once the console reads problem documents, the dock can speak the detail and offer fix, didYouMean and a jump to the failing field instead of a toast. → §LXIII.3
 - 📋 **SH968** (deps: SH967 ✅) **agent runs and review arrivals surface only as a header count the curator cannot open** — SH936 put the pending count beside the account menu, while the contract says a count belongs to the surface that owns it, and the dock is where the system reports. → §LXIII.5
 - ⏳ **SH969** (deps: SH967 ✅, SH964 ✅) **a scheduled publish that fails becomes an agent incident, and no curator surface ever reads it** — The dock still has to report a failure with open and retry actions, a success naming the page, and an unread failure for a curator who had no screen open. → §LXIII.6
 - ⏳ **SH970** (deps: SH967 ✅, SH964 ✅) **a form submission lands as an ordinary draft in a folder, and nothing tells anyone it arrived** — The dock still has to report an arrival with tone attention, a caption, open and archive actions, and one report when several arrive together. → §LXIII.7

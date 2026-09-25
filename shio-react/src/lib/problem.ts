@@ -7,6 +7,7 @@
  * (at your option) any later version.
  */
 import { toast } from "@viglet/viglet-design-system"
+import { pushReport } from "./dock-reports.ts"
 
 /**
  * SH955 — errors are instructions, on both sides of the wall.
@@ -117,5 +118,50 @@ export function adviceOf(problem: Problem, allowedLimit = 6): string | undefined
 export function reportProblem(error: unknown, fallback: string): Problem {
   const problem = problemOf(error)
   toast.error(headlineOf(problem, fallback), { description: adviceOf(problem) })
+  return problem
+}
+
+/** What a page can do about a refusal, handed to {@link reportRefusal}. Labels arrive translated. */
+export interface RefusalActions {
+  t: (key: string, options?: Record<string, unknown>) => string
+  /** Bring the named field into view and focus it. */
+  goToField?: (field: string) => void
+  /** Put the server's `didYouMean` into the named field. */
+  applySuggestion?: (field: string, value: string) => void
+}
+
+/**
+ * SH966 — report a refusal to the dock, where it stays and can be acted on, instead of a toast.
+ *
+ * <p>The report's text is what `reportProblem` would have toasted: the headline, then the advice
+ * (fix, didYouMean, allowed). Its actions are the two the server's document makes possible: go to
+ * the field `at` names, and take the `didYouMean` correction into that field. There is no toast, so
+ * the curator reads the refusal once, and the dock's live caption announces it once.</p>
+ *
+ * <p>A refusal with no problem document still reports, carrying its HTTP status, because SH965's
+ * lint does not accept a silent failure and "An error occurred" alone is not a fact.</p>
+ */
+export function reportRefusal(error: unknown, fallback: string, actions: RefusalActions): Problem {
+  const problem = problemOf(error)
+  const bare = !problem.detail && !problem.fix && !problem.at
+  const headline = bare && problem.status
+    ? actions.t("common.refusalStatus", { message: headlineOf(problem, fallback), status: problem.status })
+    : headlineOf(problem, fallback)
+  const field = fieldOf(problem)
+  const offered = []
+  if (field && actions.goToField) {
+    const go = actions.goToField
+    offered.push({ label: actions.t("common.refusalGoToField", { field }), onSelect: () => go(field) })
+  }
+  if (field && problem.didYouMean && actions.applySuggestion) {
+    const apply = actions.applySuggestion
+    const value = problem.didYouMean
+    offered.push({ label: actions.t("common.refusalApply", { value }), onSelect: () => apply(field, value) })
+  }
+  pushReport({
+    tone: "error",
+    text: [headline, adviceOf(problem)].filter(Boolean).join(" — "),
+    actions: offered,
+  })
   return problem
 }

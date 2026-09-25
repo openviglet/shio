@@ -48,5 +48,8 @@
   "palette.applyBlueprint": "Aplicar um blueprint",
   "palette.newPostType": "Criar um tipo de conteudo",
   "common.previous": "Anterior",
-  "common.next": "Proximo"
+  "common.next": "Proximo",
+  "common.refusalGoToField": "Ir para {{field}}",
+  "common.refusalApply": "Usar \"{{value}}\"",
+  "common.refusalStatus": "{{message}} (HTTP {{status}})"
 }

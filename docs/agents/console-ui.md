@@ -2653,3 +2653,21 @@ preview mints, autosave, the tenant switch and setup, each with a reason and wha
 it. WORKLIST is SH1139's sixteen real gaps. The test prints both counts, fails on a new silent
 write, and fails on a held entry that is no longer silent, so the lists only shrink. A new write
 handler needs a success toast and a catch that calls `reportProblem(error, t("common.error"))`.
+
+## A refusal is a dock report (SH966)
+
+`src/lib/dock-reports.ts` is a module-level store: `pushReport`, `markReportRead`,
+`dismissReport` and `useDockReports`. It keeps the newest ten VDS134 `report` messages. It is a
+store rather than a context because a page reports and the dock renders in different subtrees,
+and a store has no provider to forget. `BentoStatusDock` hands the reports to `VigletAssistant`
+as `messages`. While a toast is on screen the toast drives state and caption. Otherwise both are
+left to the dock, which follows its newest unread report and goes idle when none remain.
+
+`reportRefusal(error, fallback, { t, goToField, applySuggestion })` in `lib/problem.ts`
+replaces `reportProblem` wherever a page can act on the refusal. It raises no toast. The report
+text is the headline plus the advice (fix, didYouMean, allowed). Its actions are "Go to <field>"
+for `at`, and "Use "<didYouMean>"", which writes the suggestion into that field. A refusal with no
+problem document still reports, as `common.refusalStatus` with its HTTP status. The allowed list
+is part of the text rather than a third action, since the console has no surface to open for it.
+The post editor is the first consumer: save, conflict resolution, publish and unpublish. The SH965
+lint counts `pushReport` as a report, so a handler that reaches it is not silent.

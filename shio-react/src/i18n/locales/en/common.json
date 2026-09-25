@@ -48,5 +48,8 @@
   "palette.applyBlueprint": "Apply a blueprint",
   "palette.newPostType": "Create a post type",
   "common.previous": "Previous",
-  "common.next": "Next"
+  "common.next": "Next",
+  "common.refusalGoToField": "Go to {{field}}",
+  "common.refusalApply": "Use \"{{value}}\"",
+  "common.refusalStatus": "{{message}} (HTTP {{status}})"
 }

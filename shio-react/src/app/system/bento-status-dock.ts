@@ -8,6 +8,7 @@
  */
 import { createElement } from "react"
 import { VigletAssistant, useAssistantNotifications } from "@viglet/viglet-design-system"
+import { dismissReport, markReportRead, useDockReports } from "../../lib/dock-reports.ts"
 
 /**
  * SH964 — the Viglet assistant, mounted as a status surface in the shell's corner.
@@ -22,10 +23,24 @@ import { VigletAssistant, useAssistantNotifications } from "@viglet/viglet-desig
  * region, so each outcome is announced once. The shell renders this in its `dock` slot, in the
  * corner stack below back-to-top (VDS133), so neither covers the other.</p>
  *
+ * <p>SH966 — and the reports `lib/dock-reports.ts` keeps, which is where a refusal goes instead of
+ * a toast. While a toast is on screen it drives the mascot and caption. Otherwise state and caption
+ * are left to the dock, which follows its newest unread report and is idle when there is none. So
+ * a refused save turns the mascot to error, types the server's detail, and stays until read.</p>
+ *
  * <p>Plain `.ts` with `createElement` on purpose: node's type stripping does not read JSX, and this
  * way `bento-status-dock.test.mjs` mounts the component itself rather than a copy of it.</p>
  */
 export function BentoStatusDock() {
   const { state, caption, activity } = useAssistantNotifications()
-  return createElement(VigletAssistant, { state, caption, activity })
+  const reports = useDockReports()
+  const toasting = state !== "idle"
+  return createElement(VigletAssistant, {
+    state: toasting ? state : undefined,
+    caption: toasting ? caption : undefined,
+    activity: activity + reports.length,
+    messages: reports,
+    onRead: markReportRead,
+    onDismiss: dismissReport,
+  })
 }

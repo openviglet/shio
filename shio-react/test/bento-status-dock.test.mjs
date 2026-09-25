@@ -86,3 +86,82 @@ test("SH964: the shell hands the dock its corner", () => {
     "SH964: the dock is not passed to BentoShell's dock slot. Mounted anywhere else it pins itself to"
       + " the viewport corner and covers back-to-top, which is what VDS133 moved into the shell.")
 })
+
+/*
+ * SH966 — a refusal goes to the dock as a report the curator can act on, and not also as a toast.
+ * `reportRefusal` is imported from the real `lib/problem.ts` and fed an axios-shaped 400 carrying a
+ * problem document, the same shape the backend's teaching errors have.
+ */
+const { reportRefusal } = await import("../src/lib/problem.ts")
+const { currentReports, dismissReport } = await import("../src/lib/dock-reports.ts")
+
+const translate = (key, options = {}) => `${key}:${JSON.stringify(options)}`
+
+test("SH966: a refusal with at and didYouMean becomes a report whose actions go to the field and apply the fix", async () => {
+  const went = []
+  const applied = []
+  const toastsBefore = toast.getToasts().length
+  const refusal = {
+    message: "Request failed with status code 400",
+    response: {
+      status: 400,
+      data: {
+        type: "https://shio.viglet.org/problems/unknown-field", title: "Unknown field",
+        detail: "The post type Article has no field 'titel'.", fix: "Use one of the declared fields.",
+        at: "data.titel", didYouMean: "title",
+      },
+    },
+  }
+
+  await act(() => {
+    reportRefusal(refusal, "An error occurred", {
+      t: translate,
+      goToField: (field) => went.push(field),
+      applySuggestion: (field, value) => applied.push([field, value]),
+    })
+  })
+  await settle()
+
+  assert.equal(toast.getToasts().length, toastsBefore,
+    "SH966: the refusal was toasted as well as reported, so the curator reads it twice and the"
+      + " live region announces it twice")
+  const report = currentReports().at(-1)
+  assert.equal(report.role, "report")
+  assert.equal(report.tone, "error")
+  assert.match(report.text, /has no field 'titel'.*Use one of the declared fields/,
+    "SH966: the report does not carry the server's detail and fix")
+  assert.equal(report.actions.length, 2, "SH966: expected go-to-field and apply-suggestion")
+
+  report.actions[0].onSelect()
+  assert.deepEqual(went, ["titel"], "SH966: the first action does not go to the field `at` names")
+  report.actions[1].onSelect()
+  assert.deepEqual(applied, [["titel", "title"]], "SH966: the second action does not apply didYouMean")
+
+  assert.equal(stateOf(), "error", "SH966: an unread refusal did not turn the mascot to error")
+  assert.match(container.textContent, /has no field 'titel'/,
+    "SH966: the dock's caption is not the refusal's detail")
+  await act(() => dismissReport(report.id))
+})
+
+test("SH966: a refusal with no problem document still reports, carrying its HTTP status", async () => {
+  await act(() => {
+    reportRefusal({ message: "Request failed", response: { status: 502, data: "<html>Bad Gateway</html>" } },
+      "An error occurred", { t: translate })
+  })
+  const report = currentReports().at(-1)
+  assert.match(report.text, /common\.refusalStatus.*"status":502/,
+    "SH966: a bare refusal reported without its status, which is the one fact it has")
+  assert.deepEqual(report.actions, [], "SH966: a refusal with no `at` offers no field actions")
+  await act(() => dismissReport(report.id))
+  await settle()
+  assert.equal(stateOf(), "idle", "SH966: with every report dismissed the dock is not idle again")
+})
+
+test("SH966: the post editor reports its refusals to the dock, not as toasts", () => {
+  const page = readFileSync(join(HERE, "..", "src", "app", "content", "post.edit.page.tsx"), "utf8")
+  assert.doesNotMatch(page, /reportProblem\(/,
+    "SH966: the post editor toasts a refusal again. Its save, publish and unpublish refusals go to"
+      + " the dock through reportRefusal, which keeps them until read and offers the field and fix.")
+  assert.ok((page.match(/reportRefusal\(error, t\("common\.error"\), refusalActions\)/g) ?? []).length >= 4,
+    "SH966: fewer than four of the editor's refusal paths report through reportRefusal")
+})

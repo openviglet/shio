@@ -93,10 +93,11 @@ function handlerOf(node) {
   return fn
 }
 
+/** A toast, or (SH966) a report pushed to the dock, which is the other outcome channel it reads. */
 function isToast(node) {
   if (!ts.isCallExpression(node)) return false
   const callee = node.expression
-  if (ts.isIdentifier(callee)) return callee.text === "toast"
+  if (ts.isIdentifier(callee)) return callee.text === "toast" || callee.text === "pushReport"
   return ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression)
     && callee.expression.text === "toast"
 }

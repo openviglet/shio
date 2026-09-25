@@ -32,7 +32,7 @@ import { PostTranslationsMenu } from "@/components/post-translations.menu"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
-import { fieldOf, headlineOf, problemOf, reportProblem } from "@/lib/problem"
+import { fieldOf, headlineOf, problemOf, reportRefusal, type RefusalActions } from "@/lib/problem"
 import { LoadProvider } from "@viglet/viglet-design-system/router"
 import { changedAttrs, isDirty } from "@/lib/dirty"
 import { bufferDraft, clearBuffer, readBuffer } from "@/lib/draft-buffer"
@@ -224,6 +224,24 @@ export default function PostUnifiedEditPage() {
   }, [postId, post])
 
   const schema = useMemo(() => postFormSchema(post?.shPostType), [post])
+
+  /** Bring a field into view and put the cursor in it — the insights panel and a refusal both ask. */
+  function goToField(name: string) {
+    const anchor = document.getElementById(fieldAnchorId(name))
+    anchor?.scrollIntoView({ behavior: "smooth", block: "center" })
+    anchor?.querySelector<HTMLElement>("input, textarea, select, [contenteditable]")?.focus()
+  }
+
+  /*
+   * SH966 — a refusal goes to the dock, not a toast: it stays until read, types the server's
+   * detail as the caption, and offers what the problem document makes possible — the field `at`
+   * names, and the `didYouMean` correction put into it.
+   */
+  const refusalActions: RefusalActions = {
+    t: (key, options) => String(t(key, options)),
+    goToField,
+    applySuggestion: (field, value) => setData((current) => ({ ...current, [field]: value })),
+  }
   const postTypeName = post?.shPostType?.title || post?.shPostType?.name
 
   const visibleFieldCount = useMemo(
@@ -282,8 +300,8 @@ export default function PostUnifiedEditPage() {
       }
     } catch (error) {
       if (await openConflict(error)) return
-      // SH955 — the toast says what happened; `at` says where, so the field is marked too.
-      const problem = reportProblem(error, t("common.error"))
+      // SH955 — the report says what happened; `at` says where, so the field is marked too.
+      const problem = reportRefusal(error, t("common.error"), refusalActions)
       const field = fieldOf(problem)
       setRefusal(field ? { field, message: headlineOf(problem, t("common.error")) } : undefined)
     } finally {
@@ -325,7 +343,7 @@ export default function PostUnifiedEditPage() {
       setConflict(undefined)
       toast.success(t("common.saved"))
     } catch (error) {
-      if (!(await openConflict(error))) reportProblem(error, t("common.error"))
+      if (!(await openConflict(error))) reportRefusal(error, t("common.error"), refusalActions)
     } finally {
       setIsLoading(false)
     }
@@ -353,8 +371,8 @@ export default function PostUnifiedEditPage() {
       toast.success(t("content.publishSuccess"))
     } catch (error) {
       if (await openConflict(error)) return
-      // SH955 — the toast says what happened; `at` says where, so the field is marked too.
-      const problem = reportProblem(error, t("common.error"))
+      // SH955 — the report says what happened; `at` says where, so the field is marked too.
+      const problem = reportRefusal(error, t("common.error"), refusalActions)
       // SH998 — a gate is the one refusal this dialog can do something about, so it stays open and
       // asks for the reason instead of closing over a toast. Matched on the problem's `type`, never
       // on its sentence: the sentence is for the curator and is meant to be improvable.
@@ -379,8 +397,8 @@ export default function PostUnifiedEditPage() {
       setIsLive(false)
       toast.success(t("content.unpublishSuccess"))
     } catch (error) {
-      // SH955 — the toast says what happened; `at` says where, so the field is marked too.
-      const problem = reportProblem(error, t("common.error"))
+      // SH955 — the report says what happened; `at` says where, so the field is marked too.
+      const problem = reportRefusal(error, t("common.error"), refusalActions)
       const field = fieldOf(problem)
       setRefusal(field ? { field, message: headlineOf(problem, t("common.error")) } : undefined)
     } finally {
@@ -698,11 +716,7 @@ export default function PostUnifiedEditPage() {
             <PostInsightsPanel
               address={`id:${postId}`}
               revision={insightsAt}
-              onGoToField={(name) => {
-                const anchor = document.getElementById(fieldAnchorId(name))
-                anchor?.scrollIntoView({ behavior: "smooth", block: "center" })
-                anchor?.querySelector<HTMLElement>("input, textarea, select, [contenteditable]")?.focus()
-              }}
+              onGoToField={goToField}
             />
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
