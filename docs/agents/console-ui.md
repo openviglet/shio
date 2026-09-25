@@ -2836,5 +2836,17 @@ memoized on the six primitives and `onBarChange` is a `useCallback` over `list.p
 `filter-bar.test.mjs` pins both. A probe typed "pricing" (`?q=pricing`, two rows of three), picked
 state draft (`&state=draft`), and reloaded into the same rows, field and chip.
 
-Still to come: search, trash and the review queue; facet counts from the listing; the author
-picker with an agent option; and saved views.
+**Search draws the same bar.** `search.page.tsx` holds the whole vocabulary in its URL (`q`,
+`site`, `type`, `state`, `locale`, the modified range, and the `folder`/`subtree` scope), and the
+bar replaced its text box, site select, state select and submit button. `site` is the one key only
+search offers: `withSiteFacet` puts it first, by **name** (the word `/agent/find` takes), and only
+when the instance has more than one site. It lives in `BarKey` anyway, because a list's `patch`
+drops a key its defaults do not declare, so the browser never sees it. The locale facet is built
+from the rows found. A filter alone is now a question ("every draft on Blog"): the search runs when
+any asking key is set, not only on a typed term. `q` is not a hook text key there, because the bar
+debounces its own field. The scope stays a select beside the bar, shown only when the URL brings a
+folder, since no chip can choose a folder.
+
+Still to come: trash and the review queue (both declared "no list state" in
+`list-state.test.mjs`'s census, so each moves to `null` when it gains the bar); facet counts from
+the listing; the author picker with an agent option; and saved views.

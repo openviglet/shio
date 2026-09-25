@@ -46,7 +46,7 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- ⏳ **SH1024** (deps: SH1022 ✅, SH1023 ✅) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — The browser has the bar; search, trash and the review queue do not, and facet counts, the agent author option and saved views are still to build. → §LXIX.5
+- 🛠 **SH1024** (deps: SH1022 ✅, SH1023 ✅) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — The browser and search have the bar; trash and the review queue do not, and facet counts, the agent author option and saved views are still to build. → §LXIX.5
 - 📋 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — viewMode is read only to colour the button that set it, so the grid and table views a curator is offered do not exist, and the list below is one unconditional map. → §LXIX.7
 - 📋 **SH1097** (deps: SH1028 ✅) **the shortcuts sheet advertises a key nothing binds and hides the one the shell does bind** — BentoShortcutsDialog renders a fixed list naming a global question mark, which Shio has never bound, and omits the slash SH889 added. → §LXIX.10
 

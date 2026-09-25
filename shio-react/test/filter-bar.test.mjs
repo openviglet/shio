@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { contentFacets, fromBarValue, toBarValue } from "../src/lib/filter-bar.ts"
+import { contentFacets, fromBarValue, toBarValue, withSiteFacet } from "../src/lib/filter-bar.ts"
 
 /**
  * SH1024 — the filter bar speaks the list's URL, and nothing else.
@@ -23,7 +23,7 @@ import { contentFacets, fromBarValue, toBarValue } from "../src/lib/filter-bar.t
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src")
 
 test("SH1024: a URL read into the bar and written back is the same URL", () => {
-  const url = { q: "pricing", type: "Article", state: "draft", locale: "pt-br",
+  const url = { q: "pricing", site: "Blog", type: "Article", state: "draft", locale: "pt-br",
     modifiedSince: "2026-09-01", modifiedBefore: "2026-09-08" }
   assert.deepEqual(fromBarValue(toBarValue(url)), url,
     "SH1024: the bar changed the request it was handed, so a shared link no longer reloads the same view")
@@ -44,6 +44,27 @@ test("SH1024: facets offer only values that exist", () => {
     "SH1024: a single-language list offered a language filter, which can only ever empty it")
   const two = contentFacets([], ["en", "pt-br", "en"], words)
   assert.deepEqual(two.find((facet) => facet.id === "locale").options.map((option) => option.value), ["en", "pt-br"])
+})
+
+test("SH1024: the site facet is by name, first, and only where there is a choice", () => {
+  const rest = [{ id: "state", kind: "choice", label: "State", options: [] }]
+  assert.deepEqual(withSiteFacet(rest, [{ name: "Blog" }], "Site").map((facet) => facet.id), ["state"],
+    "SH1024: one site offered as a filter, which can only ever return the whole list")
+  const two = withSiteFacet(rest, [{ name: "Shop" }, { name: "Blog" }], "Site")
+  assert.equal(two[0].id, "site")
+  assert.deepEqual(two[0].options.map((option) => option.value), ["Blog", "Shop"],
+    "SH1024: the site facet must say the name /agent/find takes, so a shared search is the agent's question")
+})
+
+test("SH1024: search draws the bar over its URL, and a filter alone is a search", () => {
+  const page = readFileSync(join(SRC, "app", "content", "search.page.tsx"), "utf8")
+  assert.match(page, /<BentoFilterBar[\s\S]*?value=\{barValue\}[\s\S]*?onChange=\{onBarChange\}/,
+    "SH1024: search's filters are not the bar over its URL state")
+  assert.match(page, /const barValue = useMemo\(\s*\(\) => toBarValue\(/,
+    "SH1024: the bar's value is rebuilt every render, which restarts its debounce and drops the query")
+  assert.match(page, /const onBarChange = useCallback\(/, "SH1024: the bar's handler is rebuilt every render")
+  assert.doesNotMatch(page, /if \(!q\.trim\(\)\)/,
+    "SH1024: search runs only on a typed term, so 'every draft on Blog' from the bar asks nothing")
 })
 
 test("SH1024: the content browser draws the bar over its URL, and / still reaches its search", () => {

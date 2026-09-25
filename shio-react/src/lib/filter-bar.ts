@@ -21,15 +21,21 @@ export const FACET_TYPE = "type"
 export const FACET_STATE = "state"
 export const FACET_LOCALE = "locale"
 export const FACET_MODIFIED = "modified"
+export const FACET_SITE = "site"
 
-/** The keys this bar reads and writes. Anything else in the URL is left alone. */
-export type BarKey = "q" | "type" | "state" | "locale" | "modifiedSince" | "modifiedBefore"
+/**
+ * The keys this bar reads and writes. Anything else in the URL is left alone, and a key a list does
+ * not declare is dropped by its `patch` — which is why `site` can live here although only the
+ * search page, which has no folder of its own, offers it.
+ */
+export type BarKey = "q" | "site" | "type" | "state" | "locale" | "modifiedSince" | "modifiedBefore"
 
 export function toBarValue(value: Partial<Record<BarKey, string>>): BentoFilterValue {
   const one = (text: string | undefined) => (text ? [text] : undefined)
   return {
     query: value.q ?? "",
     facets: {
+      [FACET_SITE]: one(value.site),
       [FACET_TYPE]: one(value.type),
       [FACET_STATE]: one(value.state),
       [FACET_LOCALE]: one(value.locale),
@@ -53,6 +59,7 @@ export function fromBarValue(bar: BentoFilterValue): Record<BarKey, string> {
   const dates = range && !Array.isArray(range) ? range as { from?: string; to?: string } : {}
   return {
     q: bar.query.trim(),
+    site: first(FACET_SITE),
     type: first(FACET_TYPE),
     state: first(FACET_STATE),
     locale: first(FACET_LOCALE),
@@ -90,4 +97,18 @@ export function contentFacets(types: readonly { name: string; title?: string }[]
   }
   facets.push({ id: FACET_MODIFIED, kind: "date", label: words.modified })
   return facets
+}
+
+/**
+ * The site facet, by **name** — the word `/agent/find` takes, so the search a curator shares is the
+ * question an agent runs (SH1027). Offered first, and only where there is more than one site: with
+ * one, every choice is the whole list.
+ */
+export function withSiteFacet(facets: readonly BentoFilterFacet[],
+  sites: readonly { name: string }[], label: string): BentoFilterFacet[] {
+  const names = [...new Set(sites.map((site) => site.name).filter(Boolean))]
+    .sort((left, right) => left.localeCompare(right))
+  if (names.length < 2) return [...facets]
+  return [{ id: FACET_SITE, kind: "choice", label,
+    options: names.map((name) => ({ value: name, label: name })) }, ...facets]
 }

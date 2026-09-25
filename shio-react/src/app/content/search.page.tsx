@@ -2,26 +2,23 @@ import { IconSearch } from "@tabler/icons-react"
 import { EmptyState } from "@/components/empty-state"
 import { PageHero } from "@/components/page-hero"
 import { Panel } from "@/components/panel"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
 import { Search as SearchIcon } from "lucide-react"
-import { useEffect, useState, type FormEvent } from "react"
+import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { contentFacets, fromBarValue, toBarValue, withSiteFacet } from "@/lib/filter-bar"
 // SH1023 — the search term and the site live in the URL, so a search can be sent to somebody.
 import { useListState } from "@/hooks/use-list-state"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { ShSearchService, type ShConsoleSearchRow } from "@/services/search/search.service"
-import { useSites } from "@/hooks/use-catalogue"
+import { usePostTypes, useSites } from "@/hooks/use-catalogue"
 import { isCancelled } from "@/lib/read-options"
 
 const searchService = new ShSearchService()
-
-const ALL_SITES = "__all__"
-const ANY_STATE = "__any__"
 
 /**
  * SH1023/SH1027 — what this page's URL says, in the words the server says them in.
@@ -36,25 +33,53 @@ const ANY_STATE = "__any__"
  * word: this page called the delivery API before, which is published-only, so a curator could not
  * find the drafts an agent had just written.
  */
-const SEARCH_LIST = { q: "", site: "", state: "", folder: "", subtree: "" }
+const SEARCH_LIST = {
+  q: "", site: "", type: "", state: "", locale: "", modifiedSince: "", modifiedBefore: "",
+  folder: "", subtree: "",
+}
+
+/** The keys a search is asked with. `subtree` only qualifies `folder`, so it alone asks nothing. */
+const ASKING = ["q", "site", "type", "state", "locale", "modifiedSince", "modifiedBefore", "folder"] as const
+
+/** SH1024 — stable empties, so the facets' memo does not recompute on every render. */
+const NO_SITES: { name: string }[] = []
+const NO_TYPES: { name: string; title?: string }[] = []
 
 export default function SearchPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   // SH1046 — one cached read of the site list, shared with every other picker.
-  const sites = useSites().data ?? []
+  const sites = useSites().data ?? NO_SITES
+  const postTypes = usePostTypes().data ?? NO_TYPES
   const [results, setResults] = useState<ShConsoleSearchRow[]>([])
   const [total, setTotal] = useState(0)
   /** SH1027 — how many matched and were removed because this reader may not open them. */
   const [withheld, setWithheld] = useState(0)
-  const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
-  const list = useListState(SEARCH_LIST, { text: ["q", "folder"] })
-  const q = list.value.q
-  const siteName = list.value.site
-  const scope = list.value.folder
-    ? (list.value.subtree === "true" ? "subtree" : "folder")
-    : "site"
+  // `q` is not a text key here: the bar debounces its own field, and a second debounce would
+  // only delay the URL behind what the curator already stopped typing.
+  const list = useListState(SEARCH_LIST, { text: ["folder"] })
+  const { q, site, type, state, locale, modifiedSince, modifiedBefore, folder, subtree } = list.value
+  const scope = folder ? (subtree === "true" ? "subtree" : "folder") : "site"
+  /** Whether anything is being asked. A filter alone is a question: "every draft on Blog". */
+  const asking = ASKING.some((key) => list.value[key] !== "")
+
+  /*
+   * SH1024 — the design system's filter bar over the same URL, the way the content browser draws
+   * it. Both stable, for the reason the browser found in a browser: the bar debounces typing in an
+   * effect keyed on `value` and `onChange`, and a fresh one per render restarts its timer.
+   */
+  const barValue = useMemo(
+    () => toBarValue({ q, site, type, state, locale, modifiedSince, modifiedBefore }),
+    [q, site, type, state, locale, modifiedSince, modifiedBefore])
+  const patchList = list.patch
+  const onBarChange = useCallback((next: BentoFilterValue) => patchList(fromBarValue(next)), [patchList])
+  /** The locales offered are the ones in what was found, so a language chip can only narrow. */
+  const facets = useMemo(() => withSiteFacet(
+    contentFacets(postTypes, results.map((row) => row.locale ?? ""), {
+      type: t("content.filterType"), state: t("content.filterState"), locale: t("content.filterLocale"),
+      modified: t("content.filterModified"), draft: t("content.filterDraft"), published: t("content.filterPublished"),
+    }), sites, t("content.filterSite")), [postTypes, results, sites, t])
 
   /**
    * The search runs from the URL, not from the button.
@@ -69,7 +94,7 @@ export default function SearchPage() {
    * `/agent/find` takes.</p>
    */
   useEffect(() => {
-    if (!q.trim()) {
+    if (!asking) {
       setResults([])
       setTotal(0)
       setWithheld(0)
@@ -82,19 +107,13 @@ export default function SearchPage() {
      * work for a search the curator has already typed past.
      */
     const abort = new AbortController()
-    setLoading(true)
     searchService.search({
-      q: q.trim(),
-      site: siteName,
-      state: list.value.state,
-      folder: list.value.folder,
-      subtree: list.value.subtree,
+      q: q.trim(), site, type, state, locale, modifiedSince, modifiedBefore, folder, subtree,
     }, 50, { signal: abort.signal })
       .then((found) => {
         setResults(found.results)
         setTotal(found.count)
         setWithheld(found.withheld)
-        setLoading(false)
         setSearched(true)
       })
       .catch((reason: unknown) => {
@@ -104,16 +123,10 @@ export default function SearchPage() {
         setResults([])
         setTotal(0)
         setWithheld(0)
-        setLoading(false)
         setSearched(true)
       })
     return () => abort.abort()
-  }, [q, siteName, list.value.state, list.value.folder, list.value.subtree])
-
-  const runSearch = (e?: FormEvent) => {
-    e?.preventDefault()
-    list.set("q", list.draft.q)
-  }
+  }, [asking, q, site, type, state, locale, modifiedSince, modifiedBefore, folder, subtree])
 
   return (
     <>
@@ -125,75 +138,50 @@ export default function SearchPage() {
       />
       <div>
 
-        <form onSubmit={runSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end mb-6">
+        {/*
+          SH1024 — the bar, over the URL's keys in the server's words. `state` empty still means
+          BOTH (SH1027): this page called the delivery API before, which is published-only, so a
+          curator could not find the drafts an agent had just written.
+        */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start mb-6">
           <div className="flex-1">
-            <Input
-              value={list.draft.q}
-              onChange={(e) => list.set("q", e.target.value)}
-              placeholder={t("content.searchPlaceholder")}
-              autoFocus
+            <BentoFilterBar
+              value={barValue}
+              onChange={onBarChange}
+              facets={facets}
+              queryLabel={t("content.searchPlaceholder")}
             />
           </div>
-          <Select value={siteName || ALL_SITES}
-            onValueChange={(value) => list.set("site", value === ALL_SITES ? "" : value)}>
-            <SelectTrigger className="sm:w-56">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_SITES}>{t("content.searchAllSites")}</SelectItem>
-              {sites.map((s) => (
-                <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {/*
-            SH1027 — `state` empty means BOTH, and that default is the task in one word: this page
-            called the delivery API before, which is published-only, so a curator could not find
-            the drafts an agent had just written.
-          */}
-          <Select value={list.value.state || ANY_STATE}
-            onValueChange={(value) => list.set("state", value === ANY_STATE ? "" : value)}>
-            <SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ANY_STATE}>{t("content.searchAnyState")}</SelectItem>
-              <SelectItem value="draft">{t("content.filterDraft")}</SelectItem>
-              <SelectItem value="published">{t("content.filterPublished")}</SelectItem>
-            </SelectContent>
-          </Select>
           {/*
             The scope, as the three questions a curator actually asks — spelled in the two words
             the server takes. "This folder and below" is the agent's own default for `folder`, and
             it is the one the CDA's filter could not answer at all: its scope was direct children.
+            It stays a select beside the bar, not a facet: its options depend on a folder the URL
+            brings, which no chip can choose.
           */}
-          <Select value={scope} onValueChange={(value) => list.patch(
-            value === "site"
-              ? { folder: "", subtree: "" }
-              : { subtree: value === "subtree" ? "true" : "" })}>
-            <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="site">{t("content.scopeSite")}</SelectItem>
-              <SelectItem value="folder" disabled={!list.value.folder}>
-                {t("content.scopeFolder")}
-              </SelectItem>
-              <SelectItem value="subtree" disabled={!list.value.folder}>
-                {t("content.scopeSubtree")}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Button type="submit" disabled={loading || !list.draft.q.trim()}>
-            <SearchIcon className="mr-2 h-4 w-4" />
-            {t("common.search")}
-          </Button>
-        </form>
+          {folder && (
+            <Select value={scope} onValueChange={(value) => list.patch(
+              value === "site"
+                ? { folder: "", subtree: "" }
+                : { subtree: value === "subtree" ? "true" : "" })}>
+              <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="site">{t("content.scopeSite")}</SelectItem>
+                <SelectItem value="folder">{t("content.scopeFolder")}</SelectItem>
+                <SelectItem value="subtree">{t("content.scopeSubtree")}</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
 
         {/*
           SH1027 — the folder this search is scoped to, when it is. It arrives in the URL: the
           content browser links here with its own path already in it, which is what makes the two
           scoped options reachable at all on a page that has no folder of its own.
         */}
-        {list.value.folder && (
+        {folder && (
           <p className="text-xs text-muted-foreground -mt-4 mb-6 font-mono">
-            {list.value.folder}
+            {folder}
           </p>
         )}
 
