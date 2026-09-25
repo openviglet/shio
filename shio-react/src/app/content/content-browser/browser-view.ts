@@ -68,6 +68,25 @@ export function readTableLayout(raw: string | null): { hidden: string[] } {
   }
 }
 
+/** The widgets whose value is one line of text, which is all a table cell can edit honestly. */
+const SCALAR_WIDGETS = new Set(["Text", "Text Area"])
+
+/**
+ * SH1026 — the one field a table cell may edit as the title, or `undefined`.
+ *
+ * A title is whatever the type's `isTitle` fields join to, so a cell can only stand in for it when
+ * there is exactly one such field, at the top level, holding plain text. Two title fields, or a
+ * rich-text one, is a title the cell would write half of or flatten, so it is not offered.
+ */
+export function editableTitleField(
+  fields: readonly { name: string; isTitle?: boolean; widget?: string; fields?: unknown[] }[] | undefined,
+): string | undefined {
+  const titles = (fields ?? []).filter((field) => field.isTitle)
+  if (titles.length !== 1) return undefined
+  const [title] = titles
+  return SCALAR_WIDGETS.has(title.widget ?? "Text") && !title.fields?.length ? title.name : undefined
+}
+
 export interface BrowserRow {
   id: string
   name: string

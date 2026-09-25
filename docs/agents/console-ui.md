@@ -2882,10 +2882,18 @@ eager whichever way it is imported, and `lazy()` measured *heavier* (1673.5 agai
 and regrouped the eager chunks. That cost (~44 KB raw, ~13 KB gzip) is recorded where the eager
 ceilings were raised, in `console-size-budget.json`.
 
+**A row's title edits in place (`title-cell.tsx`).** The listing carries neither field names nor
+versions, so an edit starts with a read of the draft. That read supplies the post type's title field
+(`editableTitleField`: exactly one top-level `isTitle` field with a Text or Text Area widget,
+otherwise the cell says the title is edited in the post). It also leaves its ETag in
+`ShPostUnifiedService`, so the save is the merge verb (`PATCH`, SH335) with `If-Match` (SH985). A
+write by somebody else since the edit opened is a 409 whose problem says to read again; the cell
+forgets the stale version so the next try reads afresh. Enter and Escape inside the input belong to
+the edit, not to the table's row keys. `ShPostUnifiedAPITest` asserts the refusal on `PATCH`.
+
 The accent debt, the SH1020 menu guard and the SH1059 label guards read the `content-browser/`
 files, and `browser-views.test.mjs` holds the rest. Still to come: card thumbnails from the image
-pipeline, ETag-guarded inline edits of scalar cells, virtualising the list and the grid, and moving
-the rest of the page into the directory.
+pipeline, virtualising the list and the grid, and moving the rest of the page into the directory.
 
 ## The Forms page (SH1066)
 

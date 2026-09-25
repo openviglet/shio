@@ -12,7 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import {
-  browserView, listboxClass, readTableLayout, stepFor, tableLayoutKey,
+  browserView, editableTitleField, listboxClass, readTableLayout, stepFor, tableLayoutKey,
 } from "../src/app/content/content-browser/browser-view.ts"
 
 /**
@@ -69,6 +69,31 @@ test("SH1026: the table is the design system's, with its layout kept and its sel
   const page = read("app", "content", "object.children.page.tsx")
   assert.match(page, /onSelectionChange=\{\(ids\) => setSelectedItems\(new Set\(ids\)\)\}/,
     "SH1026: the table's selection never reaches the page, so its bulk verbs act on nothing")
+})
+
+test("SH1026: a table cell edits the title only where one plain-text field is the title", () => {
+  assert.equal(editableTitleField([{ name: "headline", isTitle: true, widget: "Text" }, { name: "body" }]),
+    "headline")
+  assert.equal(editableTitleField([{ name: "first", isTitle: true }, { name: "last", isTitle: true }]),
+    undefined, "SH1026: a title joined from two fields would be written half by one cell")
+  assert.equal(editableTitleField([{ name: "title", isTitle: true, widget: "HTML Editor" }]), undefined,
+    "SH1026: a rich-text title flattened by a plain input loses its markup")
+  assert.equal(editableTitleField([]), undefined)
+})
+
+test("SH1026: an inline title edit reads the draft first and merges under its version", () => {
+  const cell = read("app", "content", "content-browser", "title-cell.tsx")
+  // The read is what makes the write conditional: the service keeps the ETag it answered with and
+  // sends it as If-Match on the merge, so a write in between is refused rather than overwritten.
+  assert.match(cell, /await postService\.get\(row\.id, "DRAFT"\)/u,
+    "SH1026: the edit opens on the listing's value, so the merge carries no version and overwrites")
+  assert.match(cell, /await postService\.patch\(row\.id, \{ \[editing\.field\]: editing\.value \}\)/u,
+    "SH1026: the inline edit is not the merge verb, so it writes the whole state")
+  assert.match(cell, /postService\.forgetVersion\(row\.id\)/u,
+    "SH1026: a refused edit keeps the stale version, so the next try is refused the same way")
+  const table = read("app", "content", "content-browser", "browser-table.tsx")
+  assert.match(table, /cell: \(row\) => <TitleCell row=\{row\} onSaved=\{afterEdit\} \/>/u,
+    "SH1026: the table's title column is not the editable cell")
 })
 
 test("SH1026: a stored layout is read defensively, per user", () => {

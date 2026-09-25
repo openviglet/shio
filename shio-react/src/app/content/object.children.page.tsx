@@ -1245,6 +1245,7 @@ export default function ObjectChildrenPage() {
                 selectionActions={tableSelectionActions}
                 onSelectionChange={(ids) => setSelectedItems(new Set(ids))}
                 onOpen={handleItemClick}
+                onEdited={() => void refreshList()}
               />
             )}
             {viewMode !== "spreadsheet" && (

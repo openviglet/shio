@@ -10,6 +10,7 @@ package com.viglet.shio.api.post.unified;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -332,6 +333,16 @@ class ShPostUnifiedAPITest {
         mockMvc.perform(post("/api/v2/post-unified/" + newPostId + "/publish")
                         .principal(mockPrincipal)
                         .header(HttpHeaders.IF_MATCH, held))
+                .andExpect(status().isConflict());
+
+        // SH1026 — and the merge a table cell's inline title edit sends, under the version its own
+        // read answered with: a cell edit composed before somebody else's write is refused too.
+        mockMvc.perform(patch("/api/v2/post-unified/" + newPostId)
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, held)
+                        .content("{\"attrs\":{\"" + ShSystemPostTypeAttr.TITLE + "\":\"Edited In A Cell\"}}"))
                 .andExpect(status().isConflict());
 
         // The unconditional write still works, which is what keeps every caller written before

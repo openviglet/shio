@@ -6,14 +6,14 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   BentoDataTable, type BentoActionsMenuItem, type BentoDataTableAction, type BentoDataTableColumn,
   type BentoDataTableLayout,
 } from "@viglet/viglet-design-system/bento"
 import { formatDistanceToNow } from "date-fns"
-import { FileText, Folder } from "lucide-react"
+import { TitleCell } from "./title-cell"
 import { useCurrentUser } from "@/contexts/user.context"
 import { readTableLayout, rowLabel, tableLayoutKey, type BrowserRow } from "./browser-view"
 
@@ -40,6 +40,8 @@ export interface BrowserTableProps {
   selectionActions: readonly BentoDataTableAction<BrowserRow>[]
   onSelectionChange: (ids: string[]) => void
   onOpen: (row: BrowserRow) => void
+  /** After an inline edit saved: the page reads its rows again, so the listing shows the new title. */
+  onEdited: () => void
 }
 
 /** When a row changed, as the list says it ("3 days ago"). A module function, so the columns hold. */
@@ -65,24 +67,23 @@ function useStoredLayout(key: string): [BentoDataTableLayout, (layout: BentoData
 }
 
 export function BrowserTable({
-  rows, scope, actionsFor, selectionActions, onSelectionChange, onOpen,
+  rows, scope, actionsFor, selectionActions, onSelectionChange, onOpen, onEdited,
 }: BrowserTableProps) {
   const { t } = useTranslation()
   const { user } = useCurrentUser()
   const [layout, setLayout] = useStoredLayout(tableLayoutKey(user?.username))
+  // The page's reload is a new function each render; the columns must not be, or the table would
+  // rebuild them on every keystroke of an edit. So the columns call the latest one through a ref.
+  const edited = useRef(onEdited)
+  useEffect(() => { edited.current = onEdited })
+  const afterEdit = useCallback(() => edited.current(), [])
 
   const columns = useMemo<BentoDataTableColumn<BrowserRow>[]>(() => [
     {
       id: "title", header: t("common.title"), width: "minmax(16rem, 3fr)", hideable: false,
       sortValue: (row) => row.name.toLocaleLowerCase(),
-      cell: (row) => (
-        <span className="flex min-w-0 items-center gap-2">
-          {row.objectType === "FOLDER"
-            ? <Folder className="h-4 w-4 shrink-0 text-amber-500" />
-            : <FileText className="h-4 w-4 shrink-0 text-blue-500" />}
-          <span className="truncate font-medium">{row.name}</span>
-        </span>
-      ),
+      // SH1026 — the title edits in place, under the version its own read answered with.
+      cell: (row) => <TitleCell row={row} onSaved={afterEdit} />,
     },
     {
       id: "type", header: t("content.postType"), width: "minmax(8rem, 1.5fr)",
@@ -108,7 +109,7 @@ export function BrowserTable({
       sortValue: (row) => (row.date ? new Date(row.date) : null),
       cell: (row) => <span className="truncate text-xs text-muted-foreground">{when(row)}</span>,
     },
-  ], [t])
+  ], [t, afterEdit])
 
   /** The page's actions, one entry per name, each resolved against the row it is chosen for. */
   const rowActions = useMemo<BentoDataTableAction<BrowserRow>[]>(() => {
