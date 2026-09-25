@@ -43,11 +43,11 @@ public class ShFindTool implements ShMcpTool {
 
     @Override
     public String description() {
-        // The filters are named by the schema below, `missingLocale` among them: a description
-        // restating its own parameters is what `max-per-tool` exists to catch, and the room it
-        // would cost is room the coverage word needs (SH1060).
-        return "Find posts by site, type, folder, state, locale, date or author. Addresses "
-                + "and titles, never bodies: read only what you pick.";
+        // The filters are named by the schema below: a description restating its own parameters is
+        // what `max-per-tool` exists to catch. SH1066 cut the list of seven it still carried, which
+        // paid for most of `submission` (SH1060 had made the same argument and kept the list).
+        return "Find posts by the filters below. Addresses and titles, never bodies: read only "
+                + "what you pick.";
     }
 
     @Override
@@ -57,7 +57,7 @@ public class ShFindTool implements ShMcpTool {
         // reservation by trimming the nine that were already here, not by raising the ceiling:
         // a schema is read on every turn of every session, which is what P3 is about.
         Map<String, Object> properties = new LinkedHashMap<>();
-        properties.put("site", ShMcpTool.string("Site name; omit for all readable."));
+        properties.put("site", ShMcpTool.string("Site name; omit for all."));
         properties.put("type", ShMcpTool.string("Post-type name, e.g. Article."));
         properties.put("folder", ShMcpTool.string("/blog or folder:<site>/<path>; its subtree."));
         properties.put("subtree", ShMcpTool.string("false: that folder only."));
@@ -75,6 +75,8 @@ public class ShFindTool implements ShMcpTool {
         properties.put("modifiedBefore", ShMcpTool.string("ISO date/instant; exclusive."));
         properties.put("author", ShMcpTool.string("Created by."));
         properties.put("modifier", ShMcpTool.string("Last changed by."));
+        // SH1066 — what arrived through a site's form: a submission is a post, found like one.
+        properties.put("submission", ShMcpTool.string("true: form submissions only."));
         // SH991 — within this tool's SH977 reservation, which named a schedule predicate.
         properties.put("scheduled", ShMcpTool.string("any, or from..to in ISO instants."));
         // SH993 — the read half of the release ops, inside the same reservation.
@@ -100,7 +102,8 @@ public class ShFindTool implements ShMcpTool {
                 .withModifiedSince(ShMcpArgs.string(arguments, "modifiedSince"))
                 .withModifiedBefore(ShMcpArgs.string(arguments, "modifiedBefore"))
                 .withAuthor(ShMcpArgs.string(arguments, "author"))
-                .withModifier(ShMcpArgs.string(arguments, "modifier"));
+                .withModifier(ShMcpArgs.string(arguments, "modifier"))
+                .withSubmission(ShContentQuery.submissionOf(ShMcpArgs.string(arguments, "submission")));
         return ShAgentReadTerse.found(shAgentReadService.find(query,
                 ShMcpArgs.integer(arguments, "limit"), false,
                 ShMcpArgs.string(arguments, "after"), false,

@@ -43,7 +43,7 @@ export const HELP = helpText("find");
  */
 export const QUERY_FLAGS = [
   "site", "folder", "subtree", "type", "state", "locale", "missingLocale",
-  "modifiedSince", "modifiedBefore", "author", "modifier", "q",
+  "modifiedSince", "modifiedBefore", "author", "modifier", "submission", "q",
 ];
 
 export async function run(flags, positionals, ctx) {

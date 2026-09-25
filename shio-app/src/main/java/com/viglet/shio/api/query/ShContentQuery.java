@@ -67,6 +67,8 @@ import com.viglet.shio.api.post.ShContentPerspective;
  * @param modifiedBefore exclusive upper bound on the last change
  * @param author         who created the post — the {@code owner} column, matched case-insensitively
  * @param modifier       who last changed it
+ * @param submission     SH1066 — {@code true} for only what a site's form wrote, {@code false} for
+ *                       none of it; absent is both
  * @param q              full text over title, summary and the attribute data
  * @param sort           {@code title}, {@code date} or {@code modifiedDate}
  * @param page           zero-based page index
@@ -82,12 +84,12 @@ import com.viglet.shio.api.post.ShContentPerspective;
 public record ShContentQuery(String site, String folder, Boolean subtree, String type,
         String state, String locale, Instant modifiedSince, Instant modifiedBefore, String author,
         String modifier, String q, String sort, Integer page, Integer size, Integer folderPage,
-        Integer folderSize, String missingLocale) {
+        Integer folderSize, String missingLocale, Boolean submission) {
 
     /** The vocabulary, in the order the design names it — the {@code allowed} set of a refusal. */
     public static final List<String> KEYS = List.of("site", "folder", "subtree", "type", "state",
             "locale", "missingLocale", "modifiedSince", "modifiedBefore", "author", "modifier",
-            "q", "sort", "page", "size", "folderPage", "folderSize");
+            "submission", "q", "sort", "page", "size", "folderPage", "folderSize");
 
     /** The words that page or order rather than filter — every listing has its own answer. */
     public static final List<String> PAGING =
@@ -99,7 +101,7 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
 
     /** No filter at all: every readable row. */
     public static final ShContentQuery ALL = new ShContentQuery(null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null, null, null);
 
     /** The most common starting point, and the one a test writes. */
     public static ShContentQuery ofSite(String site) {
@@ -108,77 +110,90 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
 
     public ShContentQuery withSite(String value) {
         return new ShContentQuery(value, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withFolder(String value) {
         return new ShContentQuery(site, value, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withSubtree(Boolean value) {
         return new ShContentQuery(site, folder, value, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withType(String value) {
         return new ShContentQuery(site, folder, subtree, value, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withState(String value) {
         return new ShContentQuery(site, folder, subtree, type, value, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withLocale(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, value, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     /** SH1060 — the groups with no translation in this locale, answered on the source. */
     public ShContentQuery withMissingLocale(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
                 modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize,
-                value);
+                value, submission);
+    }
+
+    /**
+     * SH1066 — only what a site's form wrote ({@code true}), or none of it ({@code false}).
+     *
+     * <p>A submission is a post (SH633), so it is found by the words every post is found by; this
+     * is the one word that says <em>which</em> posts arrived through a form, read off the owner the
+     * form endpoint writes ({@code ShFormSubmitter}) rather than a column of its own.</p>
+     */
+    public ShContentQuery withSubmission(Boolean value) {
+        return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize,
+                missingLocale, value);
     }
 
     public ShContentQuery withModifiedSince(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale,
                 instant("modifiedSince", value), modifiedBefore, author, modifier, q, sort, page,
-                size, folderPage, folderSize, missingLocale);
+                size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withModifiedBefore(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
                 instant("modifiedBefore", value), author, modifier, q, sort, page, size,
-                folderPage, folderSize, missingLocale);
+                folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withAuthor(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, value, modifier, q, sort, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, value, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withModifier(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, value, q, sort, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, author, value, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withQ(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, value, sort, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, author, modifier, value, sort, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withSort(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, value, page, size, folderPage, folderSize, missingLocale);
+                modifiedBefore, author, modifier, q, value, page, size, folderPage, folderSize, missingLocale, submission);
     }
 
     public ShContentQuery withPaging(Integer pageValue, Integer sizeValue) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
                 modifiedBefore, author, modifier, q, sort, pageValue, sizeValue, folderPage,
-                folderSize, missingLocale);
+                folderSize, missingLocale, submission);
     }
 
     /**
@@ -191,7 +206,7 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
      */
     public ShContentQuery withFolderPaging(Integer pageValue, Integer sizeValue) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, pageValue, sizeValue, missingLocale);
+                modifiedBefore, author, modifier, q, sort, page, size, pageValue, sizeValue, missingLocale, submission);
     }
 
     /** Whether the caller asked for a page of folders rather than all of them. */
@@ -250,6 +265,7 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
             case "modifiedBefore" -> withModifiedBefore(text(value));
             case "author" -> withAuthor(text(value));
             case "modifier" -> withModifier(text(value));
+            case "submission" -> withSubmission(bool("submission", value));
             case "q" -> withQ(text(value));
             case "sort" -> withSort(text(value));
             case "page" -> withPaging(number("page", value, 0), size);
@@ -280,6 +296,33 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
             return Boolean.FALSE;
         }
         throw new ShInvalidQueryValueException("subtree", text, "true or false");
+    }
+
+    /**
+     * SH1066 — {@code submission} as a caller outside the REST parse sends it (MCP's arguments are
+     * text), refused with the same teaching error so the two transports cannot disagree.
+     */
+    public static Boolean submissionOf(String value) {
+        return bool("submission", value);
+    }
+
+    /**
+     * A yes or a no, and nothing for an unset field. Unlike {@code subtree}, a bare key is not a
+     * yes: {@code submission} narrows in both directions, and guessing which was meant would answer
+     * with the wrong half of a site.
+     */
+    private static Boolean bool(String key, String value) {
+        String text = text(value);
+        if (text == null) {
+            return null;
+        }
+        if ("true".equalsIgnoreCase(text)) {
+            return Boolean.TRUE;
+        }
+        if ("false".equalsIgnoreCase(text)) {
+            return Boolean.FALSE;
+        }
+        throw new ShInvalidQueryValueException(key, text, "true or false");
     }
 
     private static String validState(String value) {

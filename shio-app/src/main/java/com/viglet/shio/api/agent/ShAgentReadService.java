@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
+import com.viglet.shio.api.form.ShFormSubmitter;
 import com.viglet.shio.api.post.ShContentPerspective;
 import com.viglet.shio.api.post.ShScheduleWindow;
 import com.viglet.shio.api.query.ShContentQuery;
@@ -310,7 +311,7 @@ public class ShAgentReadService {
                     wanted == null ? BOTH_STATES : List.of(wanted),
                     folderIds, query.q(), contentQueryResolver.typeId(query), query.locale(),
                     query.modifiedSince(), query.modifiedBefore(), query.author(),
-                    query.modifier(), query.missingLocale());
+                    query.modifier(), query.missingLocale(), query.submission());
         }
 
         // SH545 — free while both rows are in hand, and one id-only projection when `state`
@@ -1251,7 +1252,11 @@ public class ShAgentReadService {
                         || (changed != null && changed.isBefore(query.modifiedBefore())))
                 && (query.author() == null || query.author().equalsIgnoreCase(post.getOwner()))
                 && (query.modifier() == null
-                        || query.modifier().equalsIgnoreCase(post.getModifier()));
+                        || query.modifier().equalsIgnoreCase(post.getModifier()))
+                // SH1066 — the trash answers the word too, asked of the owner the same way the
+                // predicate asks it, because a filter this listing dropped would answer every row.
+                && (query.submission() == null
+                        || query.submission() == ShFormSubmitter.isSubmitter(post.getOwner()));
     }
 
     /**

@@ -25,8 +25,13 @@ import com.viglet.shio.spring.security.auth.ShApiTokenContext;
  */
 public final class ShFormSubmitter {
 
-    private static final String TOKEN_PREFIX = "form-token:";
-    private static final String UNTOKENED = "form";
+    /**
+     * SH1066 — public, and compile-time constants, because the content query's JPQL is built from
+     * them: a {@code submission=true} predicate spelled with its own copy of these is a third place
+     * the spelling can change without the other two.
+     */
+    public static final String TOKEN_PREFIX = "form-token:";
+    public static final String UNTOKENED = "form";
 
     private ShFormSubmitter() {
         // utility

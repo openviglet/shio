@@ -3670,9 +3670,15 @@ own.
 
 `/agent/find` filters by **the words every content listing filters by**: `site`, `folder`,
 `subtree`, `type`, `state`, `locale`, `missingLocale`, `modifiedSince`, `modifiedBefore`, `author`,
-`modifier` and `q`, parsed by `ShContentQuery`. The same twelve are served by `shio_find`, by
-`shio find` and — minus the two the path already answers — by the console's
+`modifier`, `submission` and `q`, parsed by `ShContentQuery`. The same words are served by
+`shio_find`, by `shio find` and — minus the two the path already answers — by the console's
 `GET /api/v2/object/{id}/list`, and they mean the same thing on each.
+
+**`submission` is what arrived through a site's form (SH1066):** `true` for only the posts the form
+endpoint wrote, `false` for none of them, absent for both. A submission is a post (SH633) and has no
+column of its own, so the word reads the owner the endpoint records — `form`, or `form-token:<id>`
+when a FORM token sent it — through `ShFormSubmitter`'s constants, which the JPQL predicate is built
+from rather than copying. A value that is neither `true` nor `false` is refused, not guessed.
 
 **`missingLocale` is the coverage question (SH1060):** the pages whose translation group has *no*
 member in that tag — "what is still to translate into pt-br" as a predicate rather than a scan

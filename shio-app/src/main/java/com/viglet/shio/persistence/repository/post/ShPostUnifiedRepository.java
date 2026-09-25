@@ -426,6 +426,7 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                             @Param("author") String author,
                                             @Param("modifier") String modifier,
                                             @Param("missingLocale") String missingLocale,
+                                            @Param("submission") Boolean submission,
                                             Pageable pageable);
 
     /**
@@ -438,17 +439,21 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             String typeId, ShPostState state, String locale, Instant since, Instant before,
             String author, String modifier, Pageable pageable) {
         return pageConsoleRows(folderIds, query, typeId, state, locale, since, before, author,
-                modifier, null, pageable);
+                modifier, null, null, pageable);
     }
 
-    /** As above, narrowed to the groups missing a locale (SH1060); null is every group. */
+    /**
+     * As above, narrowed to the groups missing a locale (SH1060) and to form submissions or none
+     * (SH1066); null is no narrowing.
+     */
     default Page<ShPostUnified> pageConsoleRows(Collection<String> folderIds, String query,
             String typeId, ShPostState state, String locale, Instant since, Instant before,
-            String author, String modifier, String missingLocale, Pageable pageable) {
+            String author, String modifier, String missingLocale, Boolean submission,
+            Pageable pageable) {
         return pageConsoleRowsLike(folderIds,
                 query == null || query.isBlank() ? null : fullTextPattern(query), typeId, state,
                 blankToNull(locale), since, before, lowerOrNull(author), lowerOrNull(modifier),
-                blankToNull(missingLocale), pageable);
+                blankToNull(missingLocale), submission, pageable);
     }
 
     /**
@@ -486,7 +491,8 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                          @Param("before") Instant before,
                                          @Param("author") String author,
                                          @Param("modifier") String modifier,
-                                         @Param("missingLocale") String missingLocale);
+                                         @Param("missingLocale") String missingLocale,
+                                         @Param("submission") Boolean submission);
 
     /** {@link #findByQueryLower} with the term and the two people columns normalized once. */
     default List<ShPostUnified> findByQuery(Collection<String> siteIds,
@@ -494,20 +500,23 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             String typeId, String locale, Instant since, Instant before, String author,
             String modifier) {
         return findByQuery(siteIds, states, folderIds, term, typeId, locale, since, before, author,
-                modifier, null);
+                modifier, null, null);
     }
 
-    /** As above, narrowed to the groups missing a locale (SH1060); null is every group. */
+    /**
+     * As above, narrowed to the groups missing a locale (SH1060) and to form submissions or none
+     * (SH1066); null is no narrowing.
+     */
     default List<ShPostUnified> findByQuery(Collection<String> siteIds,
             Collection<ShPostState> states, Collection<String> folderIds, String term,
             String typeId, String locale, Instant since, Instant before, String author,
-            String modifier, String missingLocale) {
+            String modifier, String missingLocale, Boolean submission) {
         boolean anyFolder = folderIds == null || folderIds.isEmpty();
         return findByQueryLower(siteIds, states, anyFolder,
                 anyFolder ? List.of("") : folderIds,
                 term == null || term.isBlank() ? null : fullTextPattern(term),
                 blankToNull(typeId), blankToNull(locale), since, before,
-                lowerOrNull(author), lowerOrNull(modifier), blankToNull(missingLocale));
+                lowerOrNull(author), lowerOrNull(modifier), blankToNull(missingLocale), submission);
     }
 
     static String blankToNull(String value) {
@@ -787,6 +796,10 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      * answer nobody means. The lower bound is inclusive and the upper exclusive, so two adjacent
      * windows partition the timeline instead of overlapping on one instant.</p>
      */
+    /** SH1066 — a row a site's form wrote, spelled from ShFormSubmitter's own constants. */
+    String SUBMITTED = "(p.owner = '" + com.viglet.shio.api.form.ShFormSubmitter.UNTOKENED
+            + "' or p.owner like '" + com.viglet.shio.api.form.ShFormSubmitter.TOKEN_PREFIX + "%')";
+
     String QUERY_FILTERS =
             " and (:typeId is null or p.shPostType.id = :typeId)"
             + " and (:locale is null or p.locale = :locale)"
@@ -794,6 +807,12 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             + " and (:before is null or coalesce(p.modifiedDate, p.date) < :before)"
             + " and (:author is null or lower(p.owner) = :author)"
             + " and (:modifier is null or lower(p.modifier) = :modifier)"
+            // SH1066 — what a site's form wrote, recognised by the owner the form endpoint records
+            // (ShFormSubmitter), in both directions. A submission is a post, so this is a filter on
+            // posts and not a table of its own.
+            + " and (:submission is null"
+            + "   or (:submission = true and " + SUBMITTED + ")"
+            + "   or (:submission = false and (p.owner is null or not " + SUBMITTED + ")))"
             // SH1060 — "what is missing in pt-br", as a predicate rather than a scan. A group with
             // no member in that locale, answered on the group's SOURCE alone (`p.id =
             // p.translationGroupId`, SH383's anchor): reporting every member would answer one gap

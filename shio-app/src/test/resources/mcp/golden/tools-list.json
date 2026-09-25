@@ -260,6 +260,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "submission" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "subtree" : {
             "description" : "#string",
             "type" : "string"

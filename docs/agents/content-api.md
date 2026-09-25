@@ -1096,8 +1096,8 @@ batch's per-op `expect` is where a caller who cares says it, row by row.
 ## The console listing takes the agent's filters (SH1022)
 
 `GET /api/v2/object/{id}/list` serves the whole content-query vocabulary — `type`, `state`,
-`locale`, `missingLocale` (SH1060), `modifiedSince`, `modifiedBefore`, `author`, `modifier` and
-`subtree` — beside the
+`locale`, `missingLocale` (SH1060), `modifiedSince`, `modifiedBefore`, `author`, `modifier`,
+`submission` (SH1066) and `subtree` — beside the
 `page`/`size`/`sort`/`q` it has had since SH165. `site` and `folder` are the two it refuses: the
 folder is the `{id}` in the path, and a second one in the query string would be two answers to one
 question. The refusal names `/agent/find` as where those do work.
