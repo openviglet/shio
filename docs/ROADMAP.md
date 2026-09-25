@@ -16,14 +16,13 @@
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
-- 📋 **SH964** (deps: —) **the console mounts no Viglet assistant, so its 106 toasts reach no mascot and no dock** — VigletAvatar, VigletAssistant and useAssistantNotifications shipped in the design system's Block E, but 2026.3.10 is installed here and VDS133 gave them the shell's corner after it. → §LXIII.1
-- 📋 **SH965** (deps: SH964) **nothing checks that a console write reports an outcome, so a silent save leaves the mascot idle** — useAssistantNotifications reads toasts, so a mutation that resolves without one is invisible to the dock, its announcer and the curator at the same moment. → §LXIII.2
-- 📋 **SH966** (deps: SH964, SH955 ✅) **a refused save reaches the dock as the word Error, with the server's fix left behind** — Once the console reads problem documents, the dock can speak the detail and offer fix, didYouMean and a jump to the failing field instead of a toast. → §LXIII.3
+- 📋 **SH965** (deps: SH964 ✅) **nothing checks that a console write reports an outcome, so a silent save leaves the mascot idle** — useAssistantNotifications reads toasts, so a mutation that resolves without one is invisible to the dock, its announcer and the curator at the same moment. → §LXIII.2
+- 📋 **SH966** (deps: SH964 ✅, SH955 ✅) **a refused save reaches the dock as the word Error, with the server's fix left behind** — Once the console reads problem documents, the dock can speak the detail and offer fix, didYouMean and a jump to the failing field instead of a toast. → §LXIII.3
 - 📋 **SH968** (deps: SH967 ✅) **agent runs and review arrivals surface only as a header count the curator cannot open** — SH936 put the pending count beside the account menu, while the contract says a count belongs to the surface that owns it, and the dock is where the system reports. → §LXIII.5
-- ⏳ **SH969** (deps: SH967 ✅, SH964) **a scheduled publish that fails becomes an agent incident, and no curator surface ever reads it** — The dock still has to report a failure with open and retry actions, a success naming the page, and an unread failure for a curator who had no screen open. → §LXIII.6
-- ⏳ **SH970** (deps: SH967 ✅, SH964) **a form submission lands as an ordinary draft in a folder, and nothing tells anyone it arrived** — The dock still has to report an arrival with tone attention, a caption, open and archive actions, and one report when several arrive together. → §LXIII.7
+- ⏳ **SH969** (deps: SH967 ✅, SH964 ✅) **a scheduled publish that fails becomes an agent incident, and no curator surface ever reads it** — The dock still has to report a failure with open and retry actions, a success naming the page, and an unread failure for a curator who had no screen open. → §LXIII.6
+- ⏳ **SH970** (deps: SH967 ✅, SH964 ✅) **a form submission lands as an ordinary draft in a folder, and nothing tells anyone it arrived** — The dock still has to report an arrival with tone attention, a caption, open and archive actions, and one report when several arrive together. → §LXIII.7
 - 📋 **SH971** (deps: SH968) **a curator cannot choose what the dock reports or quiet the mascot** — An author, a reviewer and an operator need different subsets of outcomes, agent runs, schedules and arrivals, and the only control today is the browser's reduced-motion setting. → §LXIII.8
-- 📋 **SH972** (deps: SH964) **the Universal Editor renders outside the bento shell, so its saves would report to no dock** — SH907 moved the visual editor out of the shell to reclaim the viewport, and the dock mounts inside the shell, so the surface saving on every click has no outcome channel. → §LXIII.9
+- 📋 **SH972** (deps: SH964 ✅) **the Universal Editor renders outside the bento shell, so its saves would report to no dock** — SH907 moved the visual editor out of the shell to reclaim the viewport, and the dock mounts inside the shell, so the surface saving on every click has no outcome channel. → §LXIII.9
 
 ## Block AY — What the conformance instruments cannot see
 
@@ -46,7 +45,7 @@
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
-- 📋 **SH1006** (deps: SH1003 ✅, SH1000 ✅, SH967 ✅, SH964) **a curator cannot ask the connected agent anything from the assistant dock** — VigletAssistant opens into a chat only when a product supplies onSend, and Shio hosts no model, so the chat must reach the external agent and nothing relays to it. → §LXVII.8
+- 📋 **SH1006** (deps: SH1003 ✅, SH1000 ✅, SH967 ✅, SH964 ✅) **a curator cannot ask the connected agent anything from the assistant dock** — VigletAssistant opens into a chat only when a product supplies onSend, and Shio hosts no model, so the chat must reach the external agent and nothing relays to it. → §LXVII.8
 - 📋 **SH1007** (deps: SH1006, SH1001 ✅) **an agent's answer in the dock cannot carry the change it proposes** — A reply that says it drafted a new hero leaves the curator searching for the draft, while each dock message can offer an action and review already groups changes by run. → §LXVII.9
 
 ## Block BC — The authoring surface, field by field
@@ -84,7 +83,7 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
-- 📋 **SH1053** (deps: DS VDS141, SH964) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
+- 📋 **SH1053** (deps: DS VDS141, SH964 ✅) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
 - 📋 **SH1054** (deps: SH1052 ✅, SH1053) **no accessibility check runs against a rendered console page** — The existing rules scan source for four patterns, there is no axe run, no jsx-a11y plugin and one viewport, so a violation composed across components ships unseen. → §LXXII.12
 - 📋 **SH1112** (deps: SH1043 ✅) **an agent cannot ask a running instance what its console costs to load** — The budget's two readers are a pnpm script and a build gate, so checking a console change needs this checkout, its toolchain and a build — which is P1 on the surface P1 is about. → §LXXII.18
 - 📋 **SH1113** (deps: SH1043 ✅) **nothing measures what one console route costs, so a screen's own fetches hide inside a total** — SH1043 counts the bytes every route pays before the first row, which is blind to a page that then fetches three collections to draw two figures. → §LXXII.19

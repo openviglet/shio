@@ -27,6 +27,7 @@ import { ReviewPendingProvider } from "@/contexts/review-pending.context"
 import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
 import { BentoReviewPending } from "./bento-review-pending"
+import { BentoStatusDock } from "./bento-status-dock"
 import { BentoTenantLinkNotice } from "./bento-tenant-link-notice"
 import { BentoTenantSwitcher } from "./bento-tenant-switcher"
 
@@ -267,6 +268,7 @@ export default function BentoRootPage() {
             </>
           }
           column={columnFor(location.pathname)}
+          dock={<BentoStatusDock />}
         >
           {/*
             SH931 — above the Outlet, so it sits over whatever page the link led to rather than

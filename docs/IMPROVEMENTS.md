@@ -1079,26 +1079,6 @@ that agent through MCP, with its answer arriving in the transcript. That relay n
 run and intent records Block BB builds and lands there. This block builds the status
 surface, ordered mount, instrument, channel, then each kind of report.
 
-### LXIII.1 The dock, mounted as a status surface (SH964)
-
-Shio calls toast.success fifty-two times, toast.error fifty-one, warning twice and info
-once, and mounts the package's Toaster in App.tsx. With 2026.3.10 installed,
-VigletAssistant and useAssistantNotifications are importable, and the hook's contract is
-that it reads the live toast list rather than patching toast, so every existing call
-moves the mascot without being touched.
-
-Mount VigletAssistant once in the bento root with no onSend, which makes it a status
-surface: state, caption and activity come from useAssistantNotifications, and the
-transcript is closed. The mascot is decorative and aria-hidden, and the dock's caption
-is an aria-live region, so a screen-reader user hears each outcome once, which is the
-announcer Block BG would otherwise have to build.
-
-It depends on VDS133 because the dock and BentoBackToTop are both fixed to the
-bottom-right corner and the dock covers the button. The assertions: a toast.error moves
-the dock to error with the toast's title as caption, an empty toast list returns it to
-idle, reduced motion draws a still frame, and the dock's box does not intersect the
-back-to-top control at mobile or desktop width.
-
 ### LXIII.2 Every write the console makes says how it ended (SH965)
 
 The package's hook documents its own failure mode: if the mascot needed a second call

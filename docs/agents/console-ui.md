@@ -2612,3 +2612,25 @@ providers, webhooks, tenants, email config) now read `narrow` from `columnFor`. 
 `viglet-ds-allow-page-column -- <reason>` because they render outside the shell: the vocabulary
 harness, and `not-found`, which also serves the bare `*` route. A page wanting another width names
 it in `bento-column.ts`, never on its own element.
+
+## The assistant dock is a status surface (SH964)
+
+`app/system/bento-status-dock.ts` renders the package's `VigletAssistant` from
+`useAssistantNotifications`, and `bento.root.page.tsx` passes it to `BentoShell` as `dock`. The
+hook reads the live toast list rather than patching `toast`, so the console's existing calls
+(every one imports the package's `toast`) move the mascot and become the caption with no edits.
+There is no `onSend`, so there is no composer: Shio hosts no model. The caption is a live region
+and the mascot is `aria-hidden`. The labels come from the package's own `assistant` namespace,
+which `registerVigTranslations` already loads.
+
+It is `.ts` with `createElement` so `bento-status-dock.test.mjs` can mount it in jsdom and drive
+it with the real `toast`. `renderToStaticMarkup` runs no effects and would prove nothing here. The
+test asserts idle, then `error` with the toast's title, then idle once the toast is dismissed. It
+reads the state from the canvas's `data-state`. The corner was probed in a browser at 1400px and
+390px, with and without reduced motion: back-to-top stacks above the dock, the two boxes do not
+intersect, and the page logs no errors.
+
+The dock costs the eager load 14.6 KB raw and 5.3 KB gzip, all of it in the design system's
+`index.es.js` chunk, and `console-size-budget.json` records the raise. Importing it with `lazy()`
+was measured and saved nothing: the bundler keeps the package's whole ES entry in one shared
+eager chunk.
