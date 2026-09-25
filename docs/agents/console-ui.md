@@ -2878,3 +2878,19 @@ The accent debt, the SH1020 menu guard and the SH1059 label guards read the `con
 files, and `browser-views.test.mjs` holds the rest. Still to come: card thumbnails from the image
 pipeline, ETag-guarded inline edits of scalar cells, virtualising the list and the grid, and moving
 the rest of the page into the directory.
+
+## The Forms page (SH1066)
+
+`content/forms.page.tsx`, on the rail as **Forms** (`surfaces.json` id `forms`, agent counterpart
+`shio_find` with `submission=true`). It lists one site's submissions through `/content/search` with
+`submission: "true"`, the same question an agent asks, and edits that site's one row on
+`/api/v2/site-form` (`services/site-form/site-form.service.ts`): folder path, allowed post types and
+allowed origins, each stored comma-separated, and the enabled switch. Saving creates the row the
+first time and updates it after, because SH632 refuses a second configuration for a site with 409.
+The site is in the URL (`?site=<name>`).
+
+**Trash is the only row action.** The design asked for archive and mark-as-spam, but a post has no
+archive state. SH970 already chose trash for the arrival report, and the trash is where a submission
+can be restored from. The arrival's caption is still the post type's title and summary fields, not a
+setting of the form. `GET /api/v2/site-form` is declared in `ShConsoleReadAclLintTest`'s `UNCHECKED`:
+it is operator configuration, not content.

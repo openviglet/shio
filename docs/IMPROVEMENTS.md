@@ -2369,27 +2369,6 @@ the P1 census could classify. The conformance gate knows none of this round's ne
 vocabulary. And no task carries the documentation sweep for everything the round ships,
 which the project's own process requires when a block closes.
 
-### LXXIV.4 A forms surface for the arrivals the dock reports (SH1066)
-
-ShFormSubmissionAPI's javadoc argues that a submission is a post, so trash, export, ACL,
-review and the agent surface already apply to it. That is true of storage and false of
-attention. bento-nav.ts has no Forms entry, the site form configuration has no console
-page, and a curator's only route to submissions is to find the folder a developer
-configured, where each looks like an ordinary draft. SH970 makes an arrival visible in
-the dock; there is still nowhere to go from it.
-
-The endpoint's abuse controls already exist, a CDA rate-limit token, a honeypot and an
-allowed-origins check, and this task does not re-open them. It builds the surface. A
-Forms page lists submissions per site through SH1022's query vocabulary with a
-submission flag, with per-row archive and mark-as-spam that write ordinary states, and a
-settings panel for a site's form: destination folder, allowed origins, and which fields
-supply the arrival's caption.
-
-The agent's leg is nearly free because a submission is a post: shio_find gains
-submission true, and verify gains form-destination-missing for a form whose folder no
-longer exists. The assertions post a submission, find it on the Forms page and through
-MCP, and archive it.
-
 ### LXXIV.7 Documentation as a count, not a memory (SH1069)
 
 The shio-roadmap-docs process is explicit: when a block's last task ships, docs-shio,

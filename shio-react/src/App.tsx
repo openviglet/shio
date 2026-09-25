@@ -40,6 +40,7 @@ import PostTypeNewPage from "./app/content/post-type.new.page"
 import SearchPage from "./app/content/search.page"
 import StaticFileListPage from "./app/content/static-file.list.page"
 import TrashPage from "./app/content/trash.page"
+import FormsPage from "./app/content/forms.page"
 import LanguagesPage from "./app/content/languages.page"
 import ScheduledPage from "./app/content/scheduled.page"
 import TranslatePage from "./app/content/translate.page"
@@ -142,6 +143,11 @@ function App() {
                 <Route
                   path="content/scheduled"
                   element={<ScheduledPage />}
+                />
+                {/* SH1066 — the inbox for what a site's form wrote, and the form's settings. */}
+                <Route
+                  path="content/forms"
+                  element={<FormsPage />}
                 />
                 {/* SH1060 — one site's translation coverage, reached from its Languages card. */}
                 <Route

@@ -9,6 +9,7 @@
   "nav.desc.postTypes": "The fields each kind of content carries.",
   "nav.desc.files": "Images, documents and anything else delivered as bytes.",
   "nav.desc.trash": "Deleted content, still restorable.",
+  "nav.desc.forms": "What arrived through a site's form.",
   "nav.desc.scheduled": "What goes live or comes down, and when.",
   "nav.desc.universalEditor": "Edit a page on the page itself, where a reader sees it.",
   "nav.desc.admin": "Users, groups and the roles that decide who may do what.",

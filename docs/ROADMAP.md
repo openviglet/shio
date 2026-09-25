@@ -88,7 +88,6 @@
 
 ## Block BI — The areas this round did not reach
 
-- 🛠 **SH1066** (deps: SH970 ✅, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — The console has no Forms page listing a site's submissions and no panel for a site's form settings, so a curator still has to guess the folder. → §LXXIV.4
 - ⏳ **SH1069** (deps: SH1072 ✅) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — 62 manifest feature keys still need a row in vigletdocs COVERAGE.md, with UNNAMED_FEATURES lowered here as each is named. → §LXXIV.7
 - 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads a browser global and a filename as symbols this repository should define, so six ledger entries that were correct when written keep the gate permanently red. → §LXXIV.8
 - 📋 **SH1103** (deps: —) **a gate stamp stays fresh across the ship that changes what it certified, so a red commit lands unseen** — Staleness is the HEAD sha and `ship` writes the governed docs at that same HEAD — which the JS suite reads, so a ship turns `pnpm test` red after its last green run. → §LXXIV.9
@@ -125,13 +124,6 @@
   image-pipeline thumbnail, the table is BentoDataTable with a persisted column picker
   whose scalar edits are refused on a stale ETag, and each view mounts only its visible
   window over BD6's fixture.
-
-## Done when — SH1066
-
-- **A Forms page and settings panel, and verify names a missing destination** A Forms
-  nav entry lists a site's submissions through submission=true with archive and spam
-  actions, a panel edits folder, origins and caption fields, and verify reports
-  form-destination-missing; a test posts one, finds it on the page and archives it.
 
 ## Non-goals (do NOT add as tasks)
 

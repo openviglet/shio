@@ -78,6 +78,8 @@ export const ROUTES = {
   POST_TYPE_NEW: `${CONSOLE_BASE}/content/post-type/new`,
   SEARCH: `${CONSOLE_BASE}/content/search`,
   TRASH: `${CONSOLE_BASE}/content/trash`,
+  /** SH1066 — a site's form submissions, and where its form sends them. */
+  FORMS: `${CONSOLE_BASE}/content/forms`,
   /** SH991 — what goes live or comes down, in the order it will happen. */
   SCHEDULED: `${CONSOLE_BASE}/content/scheduled`,
   FILES: `${CONSOLE_BASE}/content/files`,

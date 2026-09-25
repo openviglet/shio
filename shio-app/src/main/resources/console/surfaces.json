@@ -113,6 +113,16 @@
       }
     },
     {
+      "id": "forms",
+      "section": "content",
+      "route": "/bento/content/forms",
+      "capability": "read what arrived through a site's form, and where it lands",
+      "agent": {
+        "kind": "tool",
+        "target": "shio_find"
+      }
+    },
+    {
       "id": "scheduled",
       "section": "content",
       "route": "/bento/content/scheduled",
