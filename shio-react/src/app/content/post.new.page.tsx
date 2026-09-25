@@ -63,7 +63,7 @@ export default function PostUnifiedNewPage() {
     return (
       <>
         <PageHero icon={IconFileText} title={t("content.newPost")} urlBase={ROUTES.CONTENT_ROOT} />
-        <div className="p-6 flex items-center gap-2 text-muted-foreground">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>{t("common.loading")}</span>
         </div>
@@ -108,7 +108,7 @@ export default function PostUnifiedNewPage() {
             </>
           }
       />
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
 
         {/*
           SH901 — the same header rule the editor learned in SH892: the adapter's bento branch

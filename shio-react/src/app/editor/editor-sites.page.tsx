@@ -39,7 +39,7 @@ export default function EditorSitesPage() {
         subtitle={t("universalEditor.description")}
         urlBase={ROUTES.CONTENT_ROOT}
       />
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         {/* Sites */}
         <div>
           <h3 className="text-sm font-semibold mb-2">{t("universalEditor.selectSite")}</h3>

@@ -998,25 +998,6 @@ Shio need not invent the shape. claude-plugin/ here is a working example:
 the manifest. The deliverable is the decision with its reasons, plus whichever half Shio
 can land on its own side; the package's half is the design system's own line.
 
-### LX.8 The page lint, run where the duplicate gate already runs (SH947)
-
-The vendored SKILL.md closes on two rules it calls easy to get wrong: a page sets no
-width, gutters or rhythm, and a product claims --primary through the base inputs rather
-than by setting --vg-primary, which would key the dark ground to the light value. Shio
-broke the first six times. It is clean on the second only by luck, since nothing would
-notice a write to --vg-primary if one appeared.
-
-VDS132 ships viglet-ds-page-lint. Shio's half is shio-react/test/page-lint.test.mjs,
-modelled line for line on no-duplicate-components.test.mjs: spawn the bin resolved
-through the installed package against the repository root with --check, assert a clean
-exit, and carry a non-vacuity case that plants a width class on a routed page in a
-temporary copy and asserts the gate goes red naming the file.
-
-That places the check inside pnpm test, which is the argument the duplicate gate already
-makes: a check reachable only by a second command runs when somebody remembers. It
-depends on AU7 because the first rule has no correct alternative until the shell owns
-the column.
-
 ### LX.9 The local loop, resolved from the register (SH948)
 
 SH895 made copy-ds.cmd forward to the design system's own use:local so the consumer and

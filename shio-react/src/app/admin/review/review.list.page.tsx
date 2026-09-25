@@ -201,7 +201,7 @@ export default function ReviewListPage() {
           </Button>
         }
       />
-      <div className="p-6">
+      <div>
         {sessions.length === 0 ? (
           <EmptyState
             icon={IconRobot}

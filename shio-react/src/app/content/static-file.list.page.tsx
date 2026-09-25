@@ -301,7 +301,7 @@ export default function StaticFileListPage() {
         urlBase={ROUTES.CONTENT_ROOT}
       />
       <div
-        className="relative p-6"
+        className="relative"
         onDrop={onDrop}
         onDragOver={(e) => e.preventDefault()}
         onDragEnter={onDragEnter}

@@ -118,7 +118,7 @@ export default function LanguagesPage() {
         subtitle={t("content.coverageDescription")}
         urlBase={`${ROUTES.CONSOLE}/content`}
       />
-      <div className="space-y-3 p-6">
+      <div className="space-y-3">
         {/* The totals are the site's, so they do not move as the reader pages. */}
         {board && (
           <div className="flex flex-wrap gap-2">

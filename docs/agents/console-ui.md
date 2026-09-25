@@ -2596,3 +2596,19 @@ over 48 surfaces. Probed against a running console: one `main` per page, the wid
 names (1280px default, 896px narrow), the skip link present, and SH1087's delivery check still
 green. `bento-column.test.mjs` holds the rule, the root's composition, and that no page sets a
 width.
+
+## The page lint runs in `pnpm test` (SH947)
+
+`shio-react/test/page-lint.test.mjs` spawns the design system's `viglet-ds-page-lint` (VDS132),
+resolved through the installed package, over `src` with `--check`. It enforces the contract's two
+named rules: `page.column` (a routed page's outermost element sets no `max-w-*`, gutter `p*-`
+or rhythm `py`/`mt`/`mb` class) and `primary.direct` (nothing writes `--vg-primary`). A
+planted `max-w-4xl` on a copy of `trash.page.tsx` must turn it red naming the file.
+
+Its first run found 29 findings that SH946's own check could not see, because it looked only for
+`mx-auto max-w-*`: a bare `p-6` inside the gutter the shell already draws. Twenty-seven were
+removed. The six infrastructure editors that set `max-w-2xl` (tokens, auth and exchange
+providers, webhooks, tenants, email config) now read `narrow` from `columnFor`. Two pages carry
+`viglet-ds-allow-page-column -- <reason>` because they render outside the shell: the vocabulary
+harness, and `not-found`, which also serves the bare `*` route. A page wanting another width names
+it in `bento-column.ts`, never on its own element.

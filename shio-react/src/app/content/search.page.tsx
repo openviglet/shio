@@ -123,7 +123,7 @@ export default function SearchPage() {
         subtitle={t("content.searchDescription")}
         urlBase={`${ROUTES.CONSOLE}/content`}
       />
-      <div className="p-6">
+      <div>
 
         <form onSubmit={runSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end mb-6">
           <div className="flex-1">

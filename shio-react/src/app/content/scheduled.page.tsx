@@ -55,7 +55,7 @@ export default function ScheduledPage() {
         subtitle={t("content.scheduledDescription")}
         urlBase={`${ROUTES.CONSOLE}/content`}
       />
-      <div className="p-6 space-y-3">
+      <div className="space-y-3">
         <p className="text-sm text-muted-foreground">{t("content.scheduledZone", { zone: ZONE })}</p>
         {!loading && entries.length === 0 ? (
           <EmptyState

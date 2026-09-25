@@ -44,7 +44,7 @@ export default function PostTypeNewPage() {
         title={t("content.newPostType")}
         urlBase={ROUTES.CONTENT_ROOT}
       />
-      <div className="p-6">
+      <div>
         {/* SH902 — the hero above says "New Post Type", so this section says what it holds. */}
         <AdaptiveSectionCard>
           <AdaptiveSectionCard.StaticHeader icon={IconFileText} title={t("content.postType")} />

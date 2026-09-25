@@ -39,6 +39,7 @@ export default function NotFoundPage() {
         title={t("common.notFoundTitle")}
         subtitle={t("common.notFoundDescription")}
       />
+      {/* viglet-ds-allow-page-column -- also the bare `*` route outside BentoShell (SH947), where nothing pads it */}
       <div className="p-6">
         <Panel contentClassName="flex flex-col items-center gap-4 p-8 text-center">
           <code className="text-xs bg-muted rounded px-2 py-1 break-all">{location.pathname}</code>

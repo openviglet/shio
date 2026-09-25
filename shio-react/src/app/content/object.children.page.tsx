@@ -970,7 +970,7 @@ export default function ObjectChildrenPage() {
           </>
         ) : undefined}
       />
-      <div className="p-4 md:p-6 space-y-4">
+      <div className="space-y-4">
 
         {/* Stats bar */}
         <Panel contentClassName="flex items-center gap-8 py-3 px-6 text-sm text-muted-foreground">

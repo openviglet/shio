@@ -158,7 +158,7 @@ export default function MarketplaceListPage() {
   )
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       {/*
         SH906 — the marketplace is the one of these three that genuinely is a mosaic, so its
         grid stays a grid. The refresh moves into the hero beside the filters it belongs with.

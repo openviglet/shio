@@ -197,7 +197,7 @@ export default function ActivityListPage() {
           </div>
         }
       />
-      <div className="p-6 space-y-4">
+      <div className="space-y-4">
         {/*
           SH1005 — SH967's stream, as a line the curator acts on rather than a table that moves
           under them. Redrawing on every event would take the row they were reading off the screen,

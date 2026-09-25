@@ -88,7 +88,7 @@ export default function GraphiQLPage() {
 
     if (tokens === null) {
         return (
-            <div className="flex flex-1 items-center justify-center py-24">
+            <div className="flex flex-1 items-center justify-center min-h-64">
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
                     <IconBrandGraphql className="h-8 w-8 animate-pulse" />
                     <span className="text-sm">{t("graphql.loading")}</span>
@@ -110,7 +110,7 @@ export default function GraphiQLPage() {
         return (
             <>
                 {header}
-                <div className="p-6">
+                <div>
                     <EmptyState
                         icon={IconKey}
                         tone="violet"

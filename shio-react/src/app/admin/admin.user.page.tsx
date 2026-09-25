@@ -54,7 +54,7 @@ export default function AdminUserPage() {
         subtitle={t("admin.usersSubtitle")}
         urlBase={ROUTES.ADMIN_ROOT}
       />
-      <div className="p-6">
+      <div>
         <Panel contentClassName="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

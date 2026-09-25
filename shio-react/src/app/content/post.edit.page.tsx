@@ -399,7 +399,7 @@ export default function PostUnifiedEditPage() {
           replaced ran for ever on a 500, because the load settles every promise and had nowhere
           to put the rejection.
         */}
-        <div className="p-6">
+        <div>
           <LoadProvider
             checkIsNotUndefined={loadFailure ? null : undefined}
             error={loadFailure
@@ -554,7 +554,7 @@ export default function PostUnifiedEditPage() {
             </>
           }
       />
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
 
         {/*
           SH1011 — the offer, never the restore. It says when the buffer was kept, because "restore

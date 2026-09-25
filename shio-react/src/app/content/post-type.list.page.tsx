@@ -41,7 +41,7 @@ export default function PostTypeListPage() {
         title={t("content.postTypes")}
         urlBase={ROUTES.CONTENT_ROOT}
       />
-      <div className="p-6">
+      <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{t("content.postTypes")}</h2>
           <Button onClick={() => navigate(`${ROUTES.POST_TYPE_ROOT}/new`)} size="sm">

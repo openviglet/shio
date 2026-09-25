@@ -104,7 +104,7 @@ export default function ApiTokenPage() {
         subtitle={t("apiToken.description")}
         urlBase={ROUTES.ADMIN_ROOT}
       />
-      <div className="p-6 max-w-2xl">
+      <div>
         {/* Sticky save bar */}
         <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
           <div className="flex items-center gap-3">

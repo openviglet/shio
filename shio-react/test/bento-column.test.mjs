@@ -42,6 +42,17 @@ test("SH946: the single-question forms read narrow, and everything else the defa
   assert.equal(column("/bento/content/folder/abc-123"), "default")
 })
 
+test("SH947: the infrastructure editors that set max-w-2xl read narrow, and their lists do not", async () => {
+  const column = await columnFor()
+  for (const editor of ["tokens/t-1", "auth-providers/new", "exchange-providers/x", "webhooks/w", "tenants/acme"]) {
+    assert.equal(column(`/bento/admin/${editor}`), "narrow", `SH947: /bento/admin/${editor}`)
+  }
+  assert.equal(column("/bento/admin/email-config"), "narrow")
+  assert.equal(column("/bento/admin/tokens"), "default",
+    "SH947: the list is a mosaic and wants the default column; only its editor is a form")
+  assert.equal(column("/bento/admin/users/u-1"), "default")
+})
+
 test("SH946: the root composes the package's shell and hands it the column", () => {
   const root = stripComments(readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8"))
   assert.match(root, /<BentoShell\b/, "SH946: the root no longer composes BentoShell")

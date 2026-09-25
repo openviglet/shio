@@ -898,7 +898,7 @@ export default function PostTypeEditPage() {
             </>
           }
       />
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
 
         {managed && (
           <div className="flex items-start gap-3 rounded-lg border border-violet-200 bg-violet-50 p-4 text-sm dark:border-violet-900 dark:bg-violet-950/30">

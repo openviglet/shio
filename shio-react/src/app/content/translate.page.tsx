@@ -148,7 +148,7 @@ export default function TranslatePage() {
         subtitle={t("content.translateDescription")}
         urlBase={`${ROUTES.CONSOLE}/content`}
       />
-      <div className="space-y-3 p-6">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs uppercase">
             {source?.locale ?? "—"}

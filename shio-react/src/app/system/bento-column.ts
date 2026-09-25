@@ -18,12 +18,16 @@ import type { BentoShellColumn } from "@viglet/viglet-design-system/bento"
  * post-type picker used to set by hand).</p>
  *
  * <p>`narrow` (56rem) is for a single-question form, where a long line is harder to read: the
- * three create and import forms, which set `max-w-4xl` themselves before this.</p>
+ * three create and import forms, which set `max-w-4xl` themselves before this, and (SH947) the
+ * six infrastructure editors that set `max-w-2xl`, which the design system's page lint now
+ * refuses on a page.</p>
  */
 const NARROW: readonly RegExp[] = [
   /^\/bento\/content\/site\/new\/?$/,
   /^\/bento\/content\/site\/import\/?$/,
   /^\/bento\/content\/folder\/[^/]+\/new-folder\/?$/,
+  /^\/bento\/admin\/(?:tokens|auth-providers|exchange-providers|webhooks|tenants)\/[^/]+\/?$/,
+  /^\/bento\/admin\/email-config\/?$/,
 ]
 
 export function columnFor(pathname: string): BentoShellColumn {

@@ -143,7 +143,7 @@ export default function TrashPage() {
         subtitle={t("content.trashDescription")}
         urlBase={`${ROUTES.CONSOLE}/content`}
       />
-      <div className="p-6">
+      <div>
 
         {!loading && items.length === 0 ? (
           <EmptyState

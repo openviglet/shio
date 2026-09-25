@@ -100,6 +100,8 @@ export default function BentoVocabularyPage() {
      * app read one declaration, and the boot class is cleared once React replaces the splash),
      * and these classes stay anyway: they were never the fix, and a shell-less page that does
      * not paint its own ground is one theme change away from the same symptom.
+     *
+     * viglet-ds-allow-page-column -- routed outside BentoShell (SH947), so nothing else sets a column
      */
     <main className="bg-background text-foreground mx-auto min-h-screen max-w-6xl space-y-8 p-6">
       <BentoHero

@@ -99,7 +99,7 @@ export default function EmailConfigPage() {
           </Button>
         }
       />
-      <div className="p-6 max-w-2xl">
+      <div>
         {/* Server section */}
         <AdaptiveSectionCard className="mb-6">
           <AdaptiveSectionCard.StaticHeader
