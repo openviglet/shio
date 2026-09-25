@@ -25,5 +25,8 @@
   "review.draft": "draft",
   "review.published": "published",
   "review.trashed": "in trash",
-  "review.changedFields": "Changed: {{fields}}"
+  "review.changedFields": "Changed: {{fields}}",
+  "review.filterRuns": "Filter runs by intent, agent or who ran them...",
+  "review.noMatchTitle": "No run matches",
+  "review.noMatchHint": "No agent run in the queue matches these filters. Remove a chip to see more."
 }

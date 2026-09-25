@@ -2865,8 +2865,15 @@ rows already held: `q` as a title substring, and `type` as the post-type name, w
 site does not have. The type facet offers only the types in the trash, and appears only when there
 are two. A filter that matches nothing says so, not "the trash is empty".
 
-Still to come: the review queue (declared "no list state" in the census, so it moves to `null` when
-it gains the bar); facet counts from the listing; the author picker with an agent option; and saved
+**The review queue filters its runs, locally.** A run is not a post, so the post vocabulary's
+server filters do not reach it, and the queue is one bounded read. Its URL holds `q` and `site`
+(census entry now `null`). `matchesRun` reads `q` against what a curator knows a run by: its
+premise, the agent's name, who ran it, and the session id, since a run with no premise still has
+that. `site` keeps runs whose `bySite` names it. `runSites` builds the facet from the listed runs,
+and `withSiteFacet` offers it only when there are two sites. The `?session=` deep link still opens
+its run: the hook drops that key only on the curator's next filter change, after it has been used.
+
+Still to come: facet counts from the listing; the author picker with an agent option; and saved
 views.
 
 ## The browser's three views (SH1026, in parts)

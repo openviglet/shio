@@ -14,12 +14,23 @@ import type {
 } from "@/models/review/review.model"
 import { formatDistanceToNow } from "date-fns"
 import { Bot, Check, ChevronDown, ChevronRight, RefreshCw, Undo2 } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
+import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { reportProblem } from "@/lib/problem"
+import { fromBarValue, matchesRun, runSites, toBarValue, withSiteFacet } from "@/lib/filter-bar"
+// SH1024 — the queue's filters live in its URL, like every other list's (SH1023).
+import { useListState } from "@/hooks/use-list-state"
 
 const service = new ShReviewService()
+
+/**
+ * SH1024 — the review queue's filters, in its URL: `q` over what a curator knows a run by, `site`
+ * over the sites it touched. Applied to the runs already read, as the trash's are: the queue is one
+ * bounded read, and a run is not a post, so the post vocabulary's server filters do not reach it.
+ */
+const REVIEW_LIST = { q: "", site: "" }
 
 /** Same action colours the Activity page uses — one action, one colour, wherever it appears. */
 const ACTION_BADGE: Record<string, string> = {
@@ -45,6 +56,23 @@ export default function ReviewListPage() {
   const [open, setOpen] = useState<Record<string, ShReviewDetail | null>>({})
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
+  const list = useListState(REVIEW_LIST)
+  const { q, site } = list.value
+
+  /*
+   * SH1024 — the design system's bar, as on the browser, search and trash. Its value is the URL's
+   * and both are memoised, because the bar debounces typing in an effect keyed on them. The site
+   * facet offers only sites a listed run touched, and only when there are two.
+   */
+  const barValue = useMemo(() => toBarValue({ q, site }), [q, site])
+  const patchList = list.patch
+  const onBarChange = useCallback((next: BentoFilterValue) => {
+    const { q: nextQ, site: nextSite } = fromBarValue(next)
+    patchList({ q: nextQ, site: nextSite })
+  }, [patchList])
+  const facets = useMemo(() => withSiteFacet([], runSites(sessions), t("content.filterSite")),
+    [sessions, t])
+  const shown = useMemo(() => sessions.filter((run) => matchesRun(run, q, site)), [sessions, q, site])
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
   const fetchSessions = useCallback(
@@ -175,7 +203,14 @@ export default function ReviewListPage() {
           </Button>
         }
       />
-      <div>
+      <div className="space-y-3">
+        <BentoFilterBar
+          value={barValue}
+          onChange={onBarChange}
+          facets={facets}
+          queryLabel={t("review.filterRuns")}
+        />
+        {/* An empty queue and a filter that matched nothing are two facts, and say two things. */}
         {sessions.length === 0 ? (
           <EmptyState
             icon={IconRobot}
@@ -183,9 +218,16 @@ export default function ReviewListPage() {
             title={t("review.blankTitle")}
             description={t("review.blankDescription")}
           />
+        ) : shown.length === 0 ? (
+          <EmptyState
+            icon={IconRobot}
+            tone="slate"
+            title={t("review.noMatchTitle")}
+            description={t("review.noMatchHint")}
+          />
         ) : (
           <Panel contentClassName="p-0 divide-y">
-              {sessions.map((session) => {
+              {shown.map((session) => {
                 const expanded = session.session in open
                 const detail = open[session.session]
                 return (

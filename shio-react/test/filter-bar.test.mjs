@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { contentFacets, fromBarValue, matchesLocally, toBarValue, withSiteFacet } from "../src/lib/filter-bar.ts"
+import { contentFacets, fromBarValue, matchesLocally, matchesRun, runSites, toBarValue, withSiteFacet } from "../src/lib/filter-bar.ts"
 
 /**
  * SH1024 — the filter bar speaks the list's URL, and nothing else.
@@ -82,6 +82,29 @@ test("SH1024: the trash filters what it holds by q and type, and draws the same 
   assert.match(trash, /const barValue = useMemo\(/, "SH1024: the bar's value is rebuilt every render")
   assert.match(trash, /content\.trashNoMatchHint/,
     "SH1024: a filter that matches nothing says the trash is empty, which is a different fact")
+})
+
+test("SH1024: the review queue filters its runs by q and site, and draws the same bar", () => {
+  const run = { session: "s-1", intent: "Refresh the pricing pages", agentName: "claude",
+    actor: "ana", bySite: { Blog: 2, Shop: 1 } }
+  const bare = { session: "s-2", intent: null, bySite: null }
+  assert.ok(matchesRun(run, "PRICING", ""), "SH1024: q reads the run's premise, whatever its case")
+  assert.ok(matchesRun(run, "claude", "") && matchesRun(run, "ana", ""),
+    "SH1024: q reads the agent and who ran it, the other two names a curator knows a run by")
+  assert.ok(matchesRun(bare, "s-2", ""), "SH1024: a run with no premise is still found by its id")
+  assert.ok(matchesRun(run, "", "Shop") && !matchesRun(run, "", "Docs"),
+    "SH1024: site keeps a run that touched it, and only those")
+  assert.ok(!matchesRun(bare, "", "Blog"), "SH1024: a run that touched no site is not on any site")
+  assert.deepEqual(runSites([run, bare, { session: "s-3", bySite: { Blog: 1 } }]).map((each) => each.name),
+    ["Blog", "Shop"], "SH1024: the site facet offers the sites the listed runs touched, once each")
+
+  const page = readFileSync(join(SRC, "app", "admin", "review", "review.list.page.tsx"), "utf8")
+  assert.match(page, /<BentoFilterBar[\s\S]*?value=\{barValue\}[\s\S]*?onChange=\{onBarChange\}/,
+    "SH1024: the review queue has no filter bar")
+  assert.match(page, /const barValue = useMemo\(/, "SH1024: the bar's value is rebuilt every render")
+  assert.match(page, /useListState\(REVIEW_LIST\)/, "SH1024: the queue's filters are not in its URL")
+  assert.match(page, /review\.noMatchHint/,
+    "SH1024: a filter that matches nothing says no agent has run, which is a different fact")
 })
 
 test("SH1024: the content browser draws the bar over its URL, and / still reaches its search", () => {

@@ -97,9 +97,8 @@ const LIST_ROUTES = {
     + "stack and the hook has no opinion about that.",
   // SH1024 — the trash gained the filter bar, and with it `q` and `type` in its URL.
   "content/trash.page.tsx": null,
-  "admin/review/review.list.page.tsx": "the queue is what is waiting, in order, and the only "
-    + "state is which session is expanded — a disclosure, not a view. Narrowing it is SH1001's "
-    + "own question and not this one's.",
+  // SH1024 — the review queue gained the filter bar, and with it `q` and `site` in its URL.
+  "admin/review/review.list.page.tsx": null,
   "content/scheduled.page.tsx": "one list in time order, and the order is the point of the page.",
   "content/post-type.list.page.tsx": "the model, which is a handful of rows on every instance "
     + "this ships to — a search box over twelve types is chrome, not navigation.",

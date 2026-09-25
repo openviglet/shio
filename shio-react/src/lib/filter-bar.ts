@@ -108,6 +108,33 @@ export function matchesLocally(row: { title: string; type?: string }, q: string,
   return (!term || row.title.toLocaleLowerCase().includes(term)) && (!type || row.type === type)
 }
 
+/** What the review queue's bar reads off one agent run (SH1024). */
+export interface RunRow {
+  session: string
+  intent?: string | null
+  agentName?: string | null
+  actor?: string | null
+  bySite?: Record<string, number> | null
+}
+
+/**
+ * A run against `q` and `site`, for the review queue (SH1024): `q` as a case-insensitive substring of
+ * what a curator recognises a run by (its premise, the agent's name, who ran it, its session id),
+ * `site` as a site the run touched. Local, like the trash's: the queue is one bounded read of runs,
+ * and a run is not a post, so the post vocabulary's server-side filters do not apply to it.
+ */
+export function matchesRun(run: RunRow, q: string, site: string): boolean {
+  const term = q.trim().toLocaleLowerCase()
+  const said = [run.intent, run.agentName, run.actor, run.session]
+    .some((text) => (text ?? "").toLocaleLowerCase().includes(term))
+  return (!term || said) && (!site || Object.hasOwn(run.bySite ?? {}, site))
+}
+
+/** Every site any listed run touched, the only values a site facet over the queue can offer. */
+export function runSites(runs: readonly RunRow[]): { name: string }[] {
+  return [...new Set(runs.flatMap((run) => Object.keys(run.bySite ?? {})))].map((name) => ({ name }))
+}
+
 /**
  * The site facet, by **name** — the word `/agent/find` takes, so the search a curator shares is the
  * question an agent runs (SH1027). Offered first, and only where there is more than one site: with

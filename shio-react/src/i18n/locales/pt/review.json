@@ -25,5 +25,8 @@
   "review.draft": "rascunho",
   "review.published": "publicado",
   "review.trashed": "na lixeira",
-  "review.changedFields": "Alterado: {{fields}}"
+  "review.changedFields": "Alterado: {{fields}}",
+  "review.filterRuns": "Filtrar execuções por intenção, agente ou quem executou...",
+  "review.noMatchTitle": "Nenhuma execução corresponde",
+  "review.noMatchHint": "Nenhuma execução de agente na fila corresponde a estes filtros. Remova um filtro para ver mais."
 }
