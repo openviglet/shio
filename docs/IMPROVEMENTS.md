@@ -1544,31 +1544,6 @@ The declared table dependency either earns its place here or leaves the manifest
 assertions render each view over BD6's fixture, confirm only the visible window of rows
 is mounted, and edit a scalar cell whose stale ETag is refused.
 
-### LXIX.10 The shortcuts sheet takes the bound keymap (SH1097)
-
-BentoShortcutsDialog takes open, onOpenChange and isMac, and renders a fixed sheet
-naming the shortcuts the package believes a bento shell binds. Shio binds Ctrl/Cmd+K
-and, since SH889, a bare slash; it has never bound the question mark the sheet
-advertises as global. The one reference a curator is pointed at is wrong both ways: it
-promises a key that does nothing and hides the key that opens what they are reading
-about.
-
-The fix is a keymap the product passes as data, which makes the sheet a projection of
-what is bound rather than a second declaration of it — the shape this console already
-uses for its rail and its palette, where the surface declaration is the one list and
-everything else reads it.
-
-That is a design-system change, not a Shio one: the component takes no such prop, and a
-Shio-local copy would be the fork the package exists to prevent. SH1028 shipped the
-palette half and left this, because a console shipping its own sheet has two the moment
-the package grows one.
-
-What lands here once the prop exists: the shell passes its own bindings — the same array
-its keydown handler reads, so a binding added without a row is impossible rather than
-merely noticed — and a test holds the two against each other. Until then the sheet is
-wrong in a way no reader can see, which is the argument for filing it rather than
-leaving it in a commit message.
-
 ### LXIX.11 A table selection the page can set (SH1142)
 
 SH1026 drew the browser's table view with the design system's BentoDataTable, and the

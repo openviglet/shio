@@ -939,10 +939,12 @@ than assumed — typing `restorable` (a word that appears only in `nav.desc.tras
 **Trash**, `credentials` returns **API Tokens**, and a nonsense term returns nothing. That is
 what a description buys, and it is why they are worth writing well.
 
-The palette's keybinding is the product's — the package takes `open`/`onOpenChange` and nothing
-else. Ctrl/Cmd+K toggles, and a bare `/` opens **only when the reader is not already typing**: a
-`/` swallowed inside an input is the one way a search shortcut makes a product worse than not
-having one.
+**The shell's keys are the package's, bound once (SH1097).** `useBentoShellShortcuts` binds
+`BENTO_SHELL_SHORTCUTS` (VDS149) — Ctrl/Cmd+K toggles the palette, a bare `/` opens it only
+outside a field, `?` opens the shortcuts sheet — and `BentoShortcutsDialog` lists that same set.
+SH889 bound the palette by hand, and the sheet then advertised a `?` nothing bound and omitted
+`/`. Never add a `keydown` handler for these keys in the shell: `shell-shortcuts.test.mjs` fails
+on one, because a second keymap is a sheet that lies.
 
 ## The bento chrome's strings, and the reader that keeps them resolving (SH891)
 

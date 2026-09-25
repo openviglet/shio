@@ -12,6 +12,7 @@ import {
   BentoShell,
   BentoShortcutsDialog,
   BentoUserMenu,
+  useBentoShellShortcuts,
 } from "@viglet/viglet-design-system/bento"
 import { columnFor } from "./bento-column"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -109,30 +110,16 @@ export default function BentoRootPage() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   /*
-   * SH889 — the palette's keybinding is the product's, because the package takes `open` and
-   * `onOpenChange` and nothing else. Ctrl/Cmd+K, and `/` when the reader is not already typing:
-   * a bare `/` inside an input would swallow the character, which is the one way a search
-   * shortcut makes the product worse than not having it.
+   * SH1097 — the shell's keys are the package's one binding set (VDS149), bound by the hook that
+   * the shortcuts sheet lists from. SH889 bound Ctrl/Cmd+K and `/` here by hand while the sheet
+   * advertised a `?` nothing bound and never listed `/`: two declarations of one keymap, wrong both
+   * ways. Now the sheet cannot name a key this shell does not answer, and `?` opens it. The
+   * platform is the package's to detect, in the hook and the sheet alike.
    */
-  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform)
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const typing = event.target instanceof HTMLElement
-        && (event.target.isContentEditable
-          || ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName))
-
-      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault()
-        setPaletteOpen((open) => !open)
-      } else if (event.key === "/" && !typing && !event.metaKey && !event.ctrlKey) {
-        event.preventDefault()
-        setPaletteOpen(true)
-      }
-    }
-    globalThis.addEventListener("keydown", onKey)
-    return () => globalThis.removeEventListener("keydown", onKey)
-  }, [])
+  useBentoShellShortcuts({
+    onPalette: () => setPaletteOpen((open) => !open),
+    onShortcuts: () => setShortcutsOpen((open) => !open),
+  })
 
   /*
    * SH1028 — what the palette answers with, and why it is one group and not three.
@@ -293,7 +280,7 @@ export default function BentoRootPage() {
         group={paletteGroup}
         onQueryChange={onPaletteQuery}
       />
-      <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} isMac={isMac} />
+      <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
     </UserProvider>
   )
 }
