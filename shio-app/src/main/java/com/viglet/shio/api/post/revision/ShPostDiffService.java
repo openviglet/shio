@@ -93,7 +93,8 @@ public class ShPostDiffService {
                 .map(ShConsolePost::data).orElse(null);
     }
 
-    private static List<Field> fields(JsonNode before, JsonNode after) {
+    /** Package-visible so the agreement fixture can hold this rule and the CLI's to one answer. */
+    static List<Field> fields(JsonNode before, JsonNode after) {
         TreeSet<String> names = new TreeSet<>();
         if (before != null) names.addAll(before.propertyNames());
         if (after != null) names.addAll(after.propertyNames());

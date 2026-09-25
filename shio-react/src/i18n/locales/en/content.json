@@ -384,5 +384,11 @@
   "content.searchHere": "Search in this folder",
   "content.fieldRequired": "required",
   "content.removeValue": "Remove {{value}}",
-  "content.restoreRevision": "Restore revision {{version}}"
+  "content.restoreRevision": "Restore revision {{version}}",
+  "content.createdPage": "A new page, not yet published",
+  "content.createdDigest": "Words: {{words}} · headings: {{headings}} · links: {{links}} · images: {{images}}",
+  "content.createdNoDigest": "It does not render yet, so there is no outline to show.",
+  "content.restoreField": "Restore {{field}}",
+  "content.restoreFieldConfirm": "Restore {{field}}? Press again",
+  "content.restoredField": "Restored {{field}} in the draft"
 }

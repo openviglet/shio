@@ -384,5 +384,11 @@
   "content.searchHere": "Buscar nesta pasta",
   "content.fieldRequired": "obrigatório",
   "content.removeValue": "Remover {{value}}",
-  "content.restoreRevision": "Restaurar a revisão {{version}}"
+  "content.restoreRevision": "Restaurar a revisão {{version}}",
+  "content.createdPage": "Uma página nova, ainda não publicada",
+  "content.createdDigest": "Palavras: {{words}} · títulos: {{headings}} · links: {{links}} · imagens: {{images}}",
+  "content.createdNoDigest": "Ela ainda não renderiza, então não há estrutura para mostrar.",
+  "content.restoreField": "Restaurar {{field}}",
+  "content.restoreFieldConfirm": "Restaurar {{field}}? Pressione de novo",
+  "content.restoredField": "{{field}} restaurado no rascunho"
 }

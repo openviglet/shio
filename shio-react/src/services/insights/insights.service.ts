@@ -1,4 +1,5 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 
 /** One thing the linter found, as `/agent/verify` returns it. */
 export interface ShInsightFinding {
@@ -69,9 +70,9 @@ export class ShInsightsService {
    * The page's shape. Absent rather than thrown when it cannot render — a post with no layout has
    * no digest, which is a fact about the page and not an error the curator has to dismiss.
    */
-  async digest(address: string): Promise<ShPageDigest | null> {
+  async digest(address: string, read: ShRead = {}): Promise<ShPageDigest | null> {
     return axios
-      .get<ShPageDigest>("/v2/agent/render", { params: { address, state: "draft" } })
+      .get<ShPageDigest>("/v2/agent/render", { params: { address, state: "draft" }, signal: read.signal })
       .then((response) => response.data ?? null)
       .catch(() => null)
   }

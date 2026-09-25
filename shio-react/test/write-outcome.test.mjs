@@ -60,6 +60,8 @@ const EXCEPTIONS = {
     "switching tenant reloads the console into the other tenant; the reload is the outcome.",
   "app/system/bento-tenant-switcher.tsx#switchTo.switchTo":
     "the same switch from the header.",
+  "components/created-page-panel.tsx#preview.mint":
+    "the same preview mint as the editor: the new tab is the outcome, and failure reports.",
   "components/note-rail.tsx#add.add":
     "the note appears in the rail the curator is typing into, and failure reports through"
     + " reportProblem. False if the rail stops re-reading after an add. (SH988 surfaced it: the"

@@ -72,3 +72,19 @@ test("SH988: the dialog and the review queue draw the server's diff, and the que
   assert.match(triage, /<ReviewEntryDiff postId=/, "SH988: the queue's diff is not inline")
   assert.match(triage, /review\.changedFields/, "SH988: an approved entry no longer names what it changed")
 })
+
+test("SH988: a create shows its rendered outline and a preview, and one field restores alone", () => {
+  const dialog = read("components", "post-versions.dialog.tsx")
+  assert.match(dialog, /\{!diff\.before && <CreatedPagePanel postId=\{postId\} \/>\}/,
+    "SH988: a created page's diff is only additions again, with no outline and no preview")
+  assert.match(dialog, /service\.patch\(postId, \{ \[name\]: diff\.before\[name\] \?\? null \}\)/,
+    "SH988: restoring one field no longer writes just that field's older value into the draft")
+  assert.match(dialog, /confirmingField !== name/, "SH988: a field restore acts on the first press")
+
+  const panel = read("components", "created-page-panel.tsx")
+  assert.match(panel, /insightsService\.digest\(`id:\$\{postId\}`, \{ signal: abort\.signal \}\)/,
+    "SH988: the panel does not read the render digest, or reads it without a signal (SH1047)")
+  assert.match(panel, /previewService\.mint\(postId\)/, "SH988: the panel offers no preview")
+  assert.match(read("components", "review-entry-diff.tsx"), /<CreatedPagePanel postId=/,
+    "SH988: the review queue's inline diff of a create has no outline")
+})

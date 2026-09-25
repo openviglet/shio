@@ -2756,5 +2756,17 @@ entry names the fields its audit row recorded (`ShReviewDetail.Entry.fields`, SH
 instead. A browser probe read a created page as all additions and an edit as a word-level change
 with the unchanged field collapsed.
 
-Not yet: a create's structural digest and preview link, restoring one field, and `shio diff`
-reading this endpoint instead of comparing on its own.
+**Second half.** A create's diff (`before` null) opens with `CreatedPagePanel`: the render digest
+from `/agent/render` (words, headings, links and images, plus the outline) and a preview button
+that mints a token. It appears in the dialog and in the review queue's inline diff. When the newer
+side is the draft, each changed field gets a "Restore <field>" button. It patches just that field's
+older value into the draft, behind a second press and the draft's If-Match. A browser probe restored
+Title and left Body's change standing.
+
+`shio diff` still composes over the agent read surface (SH619, P10) rather than calling this
+id-keyed console endpoint. What keeps the two from disagreeing is
+`shio-app/src/test/resources/diff/agreement.json`, one set of cases that both
+`ShPostDiffAgreementTest` and `cli/test/diff-agreement.test.mjs` must answer alike. Its first run
+found a real difference: the CLI's `same()` compared `JSON.stringify` output, so an object whose
+keys only moved read as a change. It now canonicalizes object keys, keeping list order, the way
+`JsonNode.equals` does.

@@ -10,6 +10,7 @@ import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Loader2 } from "lucide-react"
 import { BentoDiff, type BentoDiffField } from "@viglet/viglet-design-system/bento"
+import { CreatedPagePanel } from "@/components/created-page-panel"
 import { reportProblem } from "@/lib/problem"
 import { isCancelled } from "@/lib/read-options"
 import { DRAFT, PUBLISHED, diffFields } from "@/lib/version-diff"
@@ -50,5 +51,10 @@ export function ReviewEntryDiff({ postId }: { postId: string }) {
       </div>
     )
   }
-  return <BentoDiff before={answer.diff.before} after={answer.diff.after} fields={answer.fields} />
+  return (
+    <div className="space-y-3">
+      {!answer.diff.before && <CreatedPagePanel postId={postId} />}
+      <BentoDiff before={answer.diff.before} after={answer.diff.after} fields={answer.fields} />
+    </div>
+  )
 }

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { toast } from "@viglet/viglet-design-system"
 import { BentoDiff, BentoVersionRail } from "@viglet/viglet-design-system/bento"
+import { CreatedPagePanel } from "@/components/created-page-panel"
 import { reportProblem } from "@/lib/problem"
 import { isCancelled } from "@/lib/read-options"
 import { DRAFT, PUBLISHED, diffFields, railVersions, revisionOf } from "@/lib/version-diff"
@@ -78,6 +79,8 @@ function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "
   const [diff, setDiff] = useState<ShPostDiff | null>(null)
   const [restoring, setRestoring] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  /** SH988 — the one field whose restore is waiting for its second press. */
+  const [confirmingField, setConfirmingField] = useState<string | null>(null)
 
   useEffect(() => {
     const abort = new AbortController()
@@ -139,6 +142,35 @@ function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "
     }
   }
 
+  /**
+   * SH988 — put one field's older value back into the draft, leaving every other field as it is.
+   * A patch rather than a rollback, because a rollback replaces the whole body; like a rollback it
+   * publishes nothing, and the draft's If-Match refuses it if somebody has moved on.
+   */
+  async function restoreField(name: string, label: string) {
+    if (!diff?.before) return
+    if (confirmingField !== name) {
+      setConfirmingField(name)
+      return
+    }
+    setRestoring(true)
+    try {
+      const updated = await service.patch(postId, { [name]: diff.before[name] ?? null })
+      toast.success(t("content.restoredField", { field: label }))
+      onRestored(updated)
+      setOpen(false)
+    } catch (error) {
+      reportProblem(error, t("content.restoreError"))
+    } finally {
+      setRestoring(false)
+      setConfirmingField(null)
+    }
+  }
+
+  const changedFields = diff && diff.before && to === DRAFT
+    ? fields.filter((field) => diff.fields.some((each) => each.name === field.id && each.changed))
+    : []
+
   return (
     <>
       <DialogHeader>
@@ -163,6 +195,7 @@ function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "
             if (ids.length === 2) {
               setPair(ids)
               setConfirming(false)
+              setConfirmingField(null)
             }
           }}
           label={t("content.versionHistory")}
@@ -173,7 +206,23 @@ function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "
             <span>{t("common.loading")}</span>
           </div>
         ) : (
-          <BentoDiff before={diff.before} after={diff.after} fields={fields} />
+          <div className="space-y-3">
+            {!diff.before && <CreatedPagePanel postId={postId} />}
+            <BentoDiff before={diff.before} after={diff.after} fields={fields} />
+            {changedFields.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {changedFields.map((field) => (
+                  <Button key={field.id} size="sm" variant="outline" disabled={restoring}
+                    onClick={() => restoreField(field.id, field.label)}>
+                    <RotateCcw className="size-3.5" />
+                    {confirmingField === field.id
+                      ? t("content.restoreFieldConfirm", { field: field.label })
+                      : t("content.restoreField", { field: field.label })}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 

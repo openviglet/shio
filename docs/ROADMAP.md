@@ -29,10 +29,6 @@
 - 📋 **SH1119** (deps: SH1052 ✅) **two committed regexes hold a literal backspace where a word boundary was meant, so both assert nothing** — A heredoc expanded the escape before the file was written, and the check that internal task ids do not ship has matched nothing since. → §LXIV.20
 - 📋 **SH1120** (deps: —) **shio verify --delivery runs fewer checks than shio verify, silently dropping page and a11y** — withDelivery hand-copies the server's default as content,routes,diagnostics, so the flag asking for the stronger proof sends the narrower run. → §LXIV.21
 
-## Block AZ — What the content said before
-
-- ⏳ **SH988** (deps: SH987 ✅) **the version dialog compares two whole values and shows nothing at all for a created page** — A created page still shows no structural digest or preview link, one field cannot be restored alone, and shio diff still compares on its own. → §LXV.4
-
 ## Block BA — Releases, scheduling and the publish gate
 
 - 📋 **SH1082** (deps: SH991 ✅, a calendar component in the viglet design system) **the Scheduled page is a list only, with no month or week calendar and no drag to reschedule** — The console has no calendar component, and one built inside Shio is a copy the duplicate gate refuses. → §LXVI.11
@@ -130,12 +126,6 @@
 - **A curator can freeze the dock's mascot from the preferences dialog** The design
   system has to ship a paused prop on VigletAssistant first, and then the stored choice
   needs a still flag beside muted.
-
-## Done when — SH988
-
-- **A create's diff shows its digest, one field restores, shio diff reads it** The
-  comparison is on the server now; a create's render digest and preview link, a
-  single-field restore and the CLI reading the endpoint are what the design still asks.
 
 ## Non-goals (do NOT add as tasks)
 

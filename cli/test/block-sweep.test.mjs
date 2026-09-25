@@ -81,6 +81,16 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  AZ: {
+    swept: false,
+    why: "six tasks giving a page a revision history an agent and a curator can read, roll back and "
+      + "compare (SH985-SH989 and SH1080). README says nothing about versions, and shio-site's one sentence, "
+      + "'draft-published diff and restore', stayed true and only became truer: the diff now spans "
+      + "any two revisions and a created page. The outward prose that does describe revisions and "
+      + "rollback is docs-shio's content-lifecycle page, written by another session's docs pass that "
+      + "is still uncommitted in vigletdocs (see SH1072, set aside for that same pass), so the coverage "
+      + "mirror moves when that lands rather than here; `docs/agents/console-ui.md` carries SH988",
+  },
   AW: {
     swept: false,
     why: "seven tasks retiring the console's second chrome, closed by SH963 deleting the root "

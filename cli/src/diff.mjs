@@ -955,10 +955,25 @@ function publishedFields(doc) {
   return data && typeof data === "object" && !Array.isArray(data) ? data : {};
 }
 
-/** Verbatim, and structural for anything that is not a string. */
+/**
+ * Verbatim, and structural for anything that is not a string.
+ *
+ * <p>SH988 — structural means what the server's `JsonNode.equals` means: an object's keys are
+ * compared as a set, so a value whose keys only moved is not a change, and a list keeps its order.
+ * `JSON.stringify` alone compared key order, and `diff/agreement.json` caught the two disagreeing.</p>
+ */
 function same(left, right) {
   if (typeof left === "string" && typeof right === "string") return left === right;
-  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
+  return JSON.stringify(canonical(left ?? null)) === JSON.stringify(canonical(right ?? null));
+}
+
+/** The value with every object's keys in name order, so two spellings of one value print alike. */
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+  }
+  return value;
 }
 
 function sizeOf(value) {

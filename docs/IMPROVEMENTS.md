@@ -1342,28 +1342,6 @@ transaction, the reads and a rollback verb over it, a diff that works for a crea
 page, and audit rows that name the fields they changed. Releases, review and translation
 all read what this block stores.
 
-### LXV.4 A diff that reads a created page and a changed sentence (SH988)
-
-The dialog picks the draft row and the published row and renders per-field cells capped
-in height, so a long body is two blocks of text with nothing marking the sentence that
-moved. The review queue shows its diff button only when an entry has a post id, a
-published row and a draft, so a CREATE, which is what the publish gate makes an agent
-produce, has no diff at all.
-
-Answer once on the server rather than twice in the client: a diff endpoint returning
-before, after and a field list, where before is null for a create and the published row
-or a chosen revision otherwise, so the console and shio diff cannot disagree about what
-changed. The console renders it with VDS140's BentoDiff and BentoVersionRail: any two
-revisions selectable, word-level highlight inside a field, unchanged fields collapsed
-behind a count, and for a create, the rendered page's structural digest and a preview
-link instead of an empty column. Restore-whole and restore-one-field call AZ3's rollback
-behind a confirm.
-
-The review queue's diff then appears on every entry that still exists, inline rather
-than as a modal, since a modal per entry is a click per entry on a long run. An approved
-entry has no live comparison left, so it lists the names SH989 stored on its audit row
-instead.
-
 ## LXVI Releases, scheduling and the publish gate (Block BA)
 
 Publishing in Shio is one post at a time. ShPostScheduler fires each due row in its own

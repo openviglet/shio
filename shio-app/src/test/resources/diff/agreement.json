@@ -1,0 +1,12 @@
+{
+  "_comment": "SH988 — what counts as a changed field, held once for both comparisons: ShPostDiffService (the console's diff) and the CLI's comparePublished (shio diff). Each case is two sides of one page's data and the field names that changed; before null is a create, where every field is new.",
+  "cases": [
+    { "name": "a create", "before": null, "after": { "title": "Launch", "body": "<p>Hi</p>" }, "changed": ["body", "title"] },
+    { "name": "one sentence changed", "before": { "title": "Launch", "body": "<p>One.</p>" }, "after": { "title": "Launch", "body": "<p>Two.</p>" }, "changed": ["body"] },
+    { "name": "a field removed", "before": { "title": "Launch", "summary": "Short" }, "after": { "title": "Launch" }, "changed": ["summary"] },
+    { "name": "a field added", "before": { "title": "Launch" }, "after": { "title": "Launch", "summary": "Short" }, "changed": ["summary"] },
+    { "name": "an object whose keys moved but not its values", "before": { "hero": { "image": "a.png", "alt": "A" } }, "after": { "hero": { "alt": "A", "image": "a.png" } }, "changed": [] },
+    { "name": "a number that stayed", "before": { "order": 3, "title": "T" }, "after": { "order": 3, "title": "U" }, "changed": ["title"] },
+    { "name": "a list reordered", "before": { "tags": ["a", "b"] }, "after": { "tags": ["b", "a"] }, "changed": ["tags"] }
+  ]
+}
