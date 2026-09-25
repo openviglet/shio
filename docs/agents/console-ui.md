@@ -2683,3 +2683,17 @@ incidents and the agent feed does not. It is not the shared connection, because 
 and the run tracker would treat a week of replayed rows as happening now. A lost cursor re-reports a week of failures and never misses
 one. `schedule-reports.test.mjs` plants a failure and presses retry, and the Java test proves the
 op publishes exactly once.
+
+## Form submissions report in the dock (SH970)
+
+The feed half (`ShFormSubmissionAPITest`) gave a form submission's `CREATE` row a
+`submission: { title, summary }`, and a tripped honeypot writes nothing, so it never reaches the
+feed. `lib/arrival-reports.ts` picks those rows out of a stream page. One arrival is an
+`attention` report with the title and summary as its caption, "Open the submission" and "Move to
+trash". Several gathered within `ARRIVAL_GATHER_MS` (2 s) of each other become one report naming
+the count and the newest three, with only "Open the newest", because one click in the corner must
+not discard a campaign's leads (P7). It says "trash" rather than "archive" because a submission is
+a post, and a post has no archive state; an inbox is Block BI's. The stream withholds ids, so the
+actions in `app/system/submission-actions.ts` call `ShAgentFeedService.locate` first
+(`GET /v2/agent/resolve`, classified in `ShConsoleReadAclLintTest`). It is named `locate` because
+the SH965 lint keys writes by method name, and `resolve` is a POST on the note service.

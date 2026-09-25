@@ -27,6 +27,7 @@ import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
 import { useAgentRunReports } from "./bento-agent-runs"
 import { useScheduleReports } from "./bento-schedule-reports"
+import { useArrivalReports } from "./bento-arrival-reports"
 import { BentoStatusDock } from "./bento-status-dock"
 import { BentoTenantLinkNotice } from "./bento-tenant-link-notice"
 import { BentoTenantSwitcher } from "./bento-tenant-switcher"
@@ -97,6 +98,7 @@ export default function BentoRootPage() {
   const groups = useBentoNav()
   useAgentRunReports()
   useScheduleReports()
+  useArrivalReports()
   const items = useBentoNavItems()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)

@@ -64,5 +64,12 @@
   "dock.scheduleFailed": "Uma alteração agendada não aconteceu: {{message}}",
   "dock.schedulePublished": "\"{{page}}\" entrou no ar às {{time}}.",
   "dock.scheduleUnpublished": "\"{{page}}\" saiu do site às {{time}}.",
-  "dock.retried": "Tentado de novo: {{page}}"
+  "dock.retried": "Tentado de novo: {{page}}",
+  "dock.arrived": "Chegou um envio em {{site}}: {{title}}",
+  "dock.arrivedWithSummary": "Chegou um envio em {{site}}: {{title}} — {{summary}}",
+  "dock.arrivedMany": "Envios recebidos em {{site}}: {{count}}. Últimos: {{titles}}",
+  "dock.openSubmission": "Abrir o envio",
+  "dock.openNewest": "Abrir o mais recente",
+  "dock.trashSubmission": "Mover para a lixeira",
+  "dock.trashed": "Movido para a lixeira"
 }

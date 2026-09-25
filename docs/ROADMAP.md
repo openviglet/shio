@@ -16,7 +16,6 @@
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
-- ⏳ **SH970** (deps: SH967 ✅, SH964 ✅) **a form submission lands as an ordinary draft in a folder, and nothing tells anyone it arrived** — The dock still has to report an arrival with tone attention, a caption, open and archive actions, and one report when several arrive together. → §LXIII.7
 - 📋 **SH971** (deps: SH968 ✅) **a curator cannot choose what the dock reports or quiet the mascot** — An author, a reviewer and an operator need different subsets of outcomes, agent runs, schedules and arrivals, and the only control today is the browser's reduced-motion setting. → §LXIII.8
 - 📋 **SH972** (deps: SH964 ✅) **the Universal Editor renders outside the bento shell, so its saves would report to no dock** — SH907 moved the visual editor out of the shell to reclaim the viewport, and the dock mounts inside the shell, so the surface saving on every click has no outcome channel. → §LXIII.9
 - 📋 **SH1139** (deps: SH965 ✅) **sixteen console writes end silently on a path, so the dock never hears a delete or a refused create** — SH965's lint lists them: five deletes report nothing, and eleven writes toast success but let a failure escape or swallow it. → §LXIII.10
@@ -101,7 +100,7 @@
 
 ## Block BI — The areas this round did not reach
 
-- 📋 **SH1066** (deps: SH970 ⏳, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — A submission is written as a draft into a folder a developer configured, the nav has no Forms entry, and a curator must guess the folder to find them. → §LXXIV.4
+- 📋 **SH1066** (deps: SH970 ✅, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — A submission is written as a draft into a folder a developer configured, the nav has no Forms entry, and a curator must guess the folder to find them. → §LXXIV.4
 - ⏳ **SH1069** (deps: SH1072 ⏳) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — 62 manifest feature keys still need a row in vigletdocs COVERAGE.md, with UNNAMED_FEATURES lowered here as each is named. → §LXXIV.7
 - 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads a browser global and a filename as symbols this repository should define, so six ledger entries that were correct when written keep the gate permanently red. → §LXXIV.8
 - 📋 **SH1103** (deps: —) **a gate stamp stays fresh across the ship that changes what it certified, so a red commit lands unseen** — Staleness is the HEAD sha and `ship` writes the governed docs at that same HEAD — which the JS suite reads, so a ship turns `pnpm test` red after its last green run. → §LXXIV.9
@@ -120,13 +119,6 @@
   edit is committed in vigletdocs. Until then it exists only in that working tree, so
   the green JS gate here rests on an uncommitted file and any other checkout still reads
   the old matrix.
-
-## Done when — SH970
-
-- **An arriving submission becomes a dock report a curator can open** A console test
-  pushes a submission's arrival through the stream and reads a report with tone
-  attention, a caption from the title and summary, and actions to open and to archive
-  it. Several arrivals in one moment are one report rather than a row each.
 
 ## Done when — SH1069
 

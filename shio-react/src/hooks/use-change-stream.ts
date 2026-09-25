@@ -56,6 +56,8 @@ export interface StreamChange {
   what?: string
   site?: string
   review?: { decision: string }
+  /** SH970 — present only on the `CREATE` a site's form wrote. */
+  submission?: { title?: string; summary?: string }
 }
 
 interface Shared {

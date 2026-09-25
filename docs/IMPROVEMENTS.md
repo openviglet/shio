@@ -1079,24 +1079,6 @@ that agent through MCP, with its answer arriving in the transcript. That relay n
 run and intent records Block BB builds and lands there. This block builds the status
 surface, ordered mount, instrument, channel, then each kind of report.
 
-### LXIII.7 The arriving lead (SH970)
-
-The design the assistant was drawn from shows its attention state for one event above
-all: a lead arriving from the site's form, typed into the caption as a name, an
-organisation and a source. Shio has the event and not the report. ShFormSubmissionAPI is
-a public POST that spends a CDA rate-limit token, refuses a filled honeypot, and writes
-the submission as a draft post into the folder the site's form configuration names.
-After that it is indistinguishable from any other draft, and nothing tells anyone.
-
-A submission joins the change feed as its own entry kind, and the dock reports it with
-tone attention, a caption built from the fields the form marks as its title and summary,
-and actions to open the submission and to archive it. Reports are grouped when several
-arrive together, so a campaign does not become fifty rows.
-
-The inbox view, the per-site destination settings and what an agent can do with a
-submission are a separate line in Block BI. The assertions post a submission, read the
-arrival report and its caption, and confirm a refused honeypot produces no report.
-
 ### LXIII.8 What the dock reports, chosen per person (SH971)
 
 Once AX3 to AX7 land, every kind of event reaches one surface. That is the point, and it

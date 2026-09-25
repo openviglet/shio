@@ -106,6 +106,10 @@ class ShConsoleReadAclLintTest {
                             + "applied by that composition rather than inside a shape (P10)"),
             Map.entry("/api/v2/agent/read",
                     "same surface, same scoping — an address it will not resolve is a 404 there"),
+            Map.entry("/api/v2/agent/resolve",
+                    "SH970 — an address the stream already handed this reader, turned into the id"
+                            + " a console route needs; the stream applied the ACL to the row, and"
+                            + " the page the id opens goes through requireRead"),
             Map.entry("/api/v2/agent/verify",
                     "a report about a site, not a row of content: it names findings, and the site "
                             + "itself is already allow-listed"),

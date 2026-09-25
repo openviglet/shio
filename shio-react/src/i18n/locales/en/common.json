@@ -64,5 +64,12 @@
   "dock.scheduleFailed": "A scheduled change did not happen: {{message}}",
   "dock.schedulePublished": "\"{{page}}\" went live at {{time}}.",
   "dock.scheduleUnpublished": "\"{{page}}\" was taken off the site at {{time}}.",
-  "dock.retried": "Retried: {{page}}"
+  "dock.retried": "Retried: {{page}}",
+  "dock.arrived": "A submission arrived on {{site}}: {{title}}",
+  "dock.arrivedWithSummary": "A submission arrived on {{site}}: {{title}} — {{summary}}",
+  "dock.arrivedMany": "Submissions arrived on {{site}}: {{count}}. Latest: {{titles}}",
+  "dock.openSubmission": "Open the submission",
+  "dock.openNewest": "Open the newest",
+  "dock.trashSubmission": "Move to trash",
+  "dock.trashed": "Moved to trash"
 }
