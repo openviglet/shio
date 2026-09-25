@@ -396,5 +396,8 @@
   "content.askAgentHint": "O agente conectado lê este campo, o que ele aceita e a página, e responde no dock com um valor que você pode aplicar.",
   "content.askAgentPrompt": "Sugira um(a) {{field}} melhor para esta página.",
   "content.askAgentSend": "Perguntar",
-  "content.askAgentSent": "Pergunta enviada. A resposta vai chegar no dock."
+  "content.askAgentSent": "Pergunta enviada. A resposta vai chegar no dock.",
+  "content.filterLocale": "Idioma",
+  "content.filterModified": "Alterado",
+  "content.moreFilters": "Mais filtros"
 }

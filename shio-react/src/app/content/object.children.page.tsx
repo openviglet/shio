@@ -12,10 +12,11 @@ import { ROUTES } from "@/app/routes.const"
 import { IconFileText } from "@tabler/icons-react"
 import { DialogDelete } from "@/components/dialog.delete"
 import { PermissionsDialog } from "@/components/permissions.dialog"
-import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Search, Upload, LayoutGrid, List, Sheet, ClipboardCopy, ShieldCheck, ExternalLink, SlidersHorizontal } from "lucide-react"
+import { Folder, FileText, Plus, Download, FolderPlus, Eye, Pencil, Settings, ChevronDown, Copy, Move, Trash2, Upload, LayoutGrid, List, Sheet, ClipboardCopy, ShieldCheck, ExternalLink, SlidersHorizontal } from "lucide-react"
 // SH1020 — the row actions live in the design system's menu, which is where the site list put
 // its four in its own sweep.
-import { BentoActionsMenu } from "@viglet/viglet-design-system/bento"
+import { BentoActionsMenu, BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
+import { contentFacets, fromBarValue, toBarValue } from "@/lib/filter-bar"
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -164,6 +165,9 @@ const unifiedService = new ShPostUnifiedService()
  * request. `sort` and `view` are the console's own — `sort` because the browser's three options
  * map onto the listing's axes, `view` because a grid and a list are the same rows.
  */
+/** What the "more filters" badge does not count: the bar shows its own chips for these. */
+const MORE_IGNORES = ["sort", "view", "q", "type", "state", "locale", "modifiedSince", "modifiedBefore"] as const
+
 const BROWSER_LIST = {
   q: "", sort: "order", view: "list",
   type: "", state: "", locale: "", missingLocale: "", modifiedSince: "", modifiedBefore: "",
@@ -241,7 +245,6 @@ export default function ObjectChildrenPage() {
    * the paint that showed the stale rows.</p>
    */
   const [loadedQuery, setLoadedQuery] = useState<string | null>(null)
-  const [searchOpen, setSearchOpen] = useState(false)
   /**
    * SH1023 — the browser's whole view, in its URL.
    *
@@ -255,6 +258,22 @@ export default function ObjectChildrenPage() {
   const sortBy = list.value.sort
   const viewMode = list.value.view as "list" | "grid" | "spreadsheet"
   const filters = browserFilters(list.value)
+  /**
+   * SH1024 — the bar's value and handler, stable across renders. The bar debounces typing in an
+   * effect that depends on both, so a fresh object each render restarts its timer and the query is
+   * never sent; measured in a browser, where the page re-renders faster than the 300 ms pause.
+   */
+  const { q, type: typeFilter, state: stateFilter, locale: localeFilter, modifiedSince, modifiedBefore } = list.value
+  const barValue = useMemo(
+    () => toBarValue({ q, type: typeFilter, state: stateFilter, locale: localeFilter, modifiedSince, modifiedBefore }),
+    [q, typeFilter, stateFilter, localeFilter, modifiedSince, modifiedBefore])
+  const patchList = list.patch
+  const onBarChange = useCallback((next: BentoFilterValue) => patchList(fromBarValue(next)), [patchList])
+  /** SH1024 — the bar's facets: this instance's types, and the locales present in what is listed. */
+  const facets = useMemo(() => contentFacets(postTypes, listData.posts.map((post) => post.locale ?? ""), {
+    type: t("content.filterType"), state: t("content.filterState"), locale: t("content.filterLocale"),
+    modified: t("content.filterModified"), draft: t("content.filterDraft"), published: t("content.filterPublished"),
+  }), [postTypes, listData.posts, t])
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ObjectChild | null>(null)
@@ -575,7 +594,7 @@ export default function ObjectChildrenPage() {
   const [focusedRow, setFocusedRow] = useState(0)
   const [anchorRow, setAnchorRow] = useState(0)
   const rowRefs = useRef<(HTMLDivElement | null)[]>([])
-  const searchRef = useRef<HTMLInputElement>(null)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   const focusRow = useCallback((index: number) => {
     const bounded = Math.max(0, Math.min(index, sortedItems.length - 1))
@@ -670,10 +689,8 @@ export default function ObjectChildrenPage() {
         || (active as HTMLElement | null)?.isContentEditable
       if (editing) return
       event.preventDefault()
-      // Opened as well as focused: the field is behind a toggle, so a binding that only focused it
-      // would do nothing on a page where nobody had clicked the magnifier first.
-      setSearchOpen(true)
-      searchRef.current?.focus()
+      // SH1024 — the bar's own text field, which is always on screen now.
+      searchRef.current?.querySelector("input")?.focus()
     }
     globalThis.addEventListener("keydown", onSlash)
     return () => globalThis.removeEventListener("keydown", onSlash)
@@ -1038,60 +1055,15 @@ export default function ObjectChildrenPage() {
           <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" data-testid="sh-filters">
-                <SlidersHorizontal className="mr-2 h-4 w-4" /> {t("content.filters")}
-                {list.narrowed(["sort", "view", "q"]) > 0 && (
+                <SlidersHorizontal className="mr-2 h-4 w-4" /> {t("content.moreFilters")}
+                {list.narrowed(MORE_IGNORES) > 0 && (
                   <Badge variant="secondary" className="ml-2 text-[10px]">
-                    {list.narrowed(["sort", "view", "q"])}
+                    {list.narrowed(MORE_IGNORES)}
                   </Badge>
                 )}
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-80 space-y-3">
-              <div className="space-y-1">
-                <Label className="text-xs">{t("content.filterType")}</Label>
-                <Select value={list.value.type || "*"}
-                  onValueChange={(value) => list.set("type", value === "*" ? "" : value)}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="*">{t("content.filterAny")}</SelectItem>
-                    {postTypes.map((postType) => (
-                      <SelectItem key={postType.name} value={postType.name}>
-                        {postType.title || postType.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">{t("content.filterState")}</Label>
-                <Select value={list.value.state || "*"}
-                  onValueChange={(value) => list.set("state", value === "*" ? "" : value)}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="*">{t("content.filterAny")}</SelectItem>
-                    <SelectItem value="published">{t("content.filterPublished")}</SelectItem>
-                    <SelectItem value="draft">{t("content.filterDraft")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs" htmlFor="sh-filter-since">
-                    {t("content.filterModifiedSince")}
-                  </Label>
-                  <Input id="sh-filter-since" type="date" className="h-8 text-xs"
-                    value={list.value.modifiedSince}
-                    onChange={(event) => list.set("modifiedSince", event.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs" htmlFor="sh-filter-before">
-                    {t("content.filterModifiedBefore")}
-                  </Label>
-                  <Input id="sh-filter-before" type="date" className="h-8 text-xs"
-                    value={list.value.modifiedBefore}
-                    onChange={(event) => list.set("modifiedBefore", event.target.value)} />
-                </div>
-              </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs" htmlFor="sh-filter-author">
@@ -1200,9 +1172,6 @@ export default function ObjectChildrenPage() {
                   <TooltipContent>{t("content.searchHere")}</TooltipContent>
                 </Tooltip>
               )}
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSearchOpen(!searchOpen); list.set("q", "") }}>
-                <Search className="h-4 w-4" />
-              </Button>
               <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "list" ? "bg-muted" : ""}`} onClick={() => list.set("view", "list")}>
                 <List className="h-4 w-4" />
               </Button>
@@ -1215,21 +1184,20 @@ export default function ObjectChildrenPage() {
             </div>
         </Panel>
 
-        {/* Search bar (toggleable) */}
-        {searchOpen && (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              // SH1020 — `/` focuses this from anywhere on the page.
-              ref={searchRef}
-              className="w-full pl-10 pr-4 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder={t("content.filterItems")}
-              value={list.draft.q}
-              onChange={e => list.set("q", e.target.value)}
-              autoFocus
-            />
-          </div>
-        )}
+        {/*
+          SH1024 — the design system's filter bar, over the words this list already puts in its URL
+          (SH1022, SH1023). It owns nothing: its value is read from the address and every change is
+          one patch back to it, so a filtered view is a link the moment it is built. SH1020's `/`
+          focuses its text field.
+        */}
+        <div ref={searchRef}>
+          <BentoFilterBar
+            value={barValue}
+            onChange={onBarChange}
+            facets={facets}
+            queryLabel={t("content.filterItems")}
+          />
+        </div>
 
         {/* Content list */}
         <Panel className="overflow-hidden" contentClassName="p-0">

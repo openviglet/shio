@@ -1800,6 +1800,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1025** — The browser asks for a page of folders, and the select-all walk, the move dialog's blocked set and the folder sort were all paid for in the same change (design §LXIX.6 recorded in `docs/agents/console-ui.md`).
 - **SH1027** — Console search composes the agent's find — drafts included, the folder scope recursive, each row checked against the reader's ACL and what was hidden counted (design §LXIX.8 recorded in `docs/agents/content-api.md`).
 - **SH1028** — The palette answers with content and verbs compiled from the surface declaration, ranked by context, match and recency — and every write routes to the flow that asks (design §LXIX.9 recorded in `docs/agents/console-ui.md`).
+- **SH1024 (the content browser's bar)** — The content browser draws BentoFilterBar over the words its URL already holds: filter-bar.ts reads q, type, state, locale and the modified range into the bar and writes every key back, so a removed chip leaves the address, and facets offer only values that exist. It replaced the search toggle and the popover's type, state and date fields, and slash focuses its field. A browser probe typed, picked a facet and reloaded into the same rows and chips, after finding that an unstable bar value restarted its debounce and dropped every query.
 
 ## Block BE — Media: what the bytes mean
 

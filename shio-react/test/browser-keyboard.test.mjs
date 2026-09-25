@@ -86,9 +86,10 @@ test("SH1020: slash focuses search, and never steals a keystroke from a field", 
   assert.match(binding, /active instanceof HTMLInputElement/u)
   assert.match(binding, /isContentEditable/u,
     "SH1020: the rich-text fields are contenteditable, and they are exactly where a slash gets typed")
-  assert.match(binding, /setSearchOpen\(true\)/u,
-    "SH1020: the field is behind a toggle, so focusing without opening does nothing on a page "
-      + "where nobody clicked the magnifier first")
+  // SH1024 took the toggle away: the search is the filter bar's own text field, always on screen,
+  // so the binding focuses it in place and there is nothing to open first.
+  assert.match(binding, /searchRef\.current\?\.querySelector\("input"\)\?\.focus\(\)/u,
+    "SH1020: slash no longer reaches the list's search field")
 })
 
 test("SH1020: every string the new surface asks for exists in both locales", () => {

@@ -2816,3 +2816,25 @@ the post has loaded (earlier, the load would overwrite it) and writes it into th
 unsaved edit, so dirty state, validation, autosave and save treat it as typed. Nothing on this path
 writes to the server. For a field request the reply's body is the value, so there is no separate
 suggestion field on the note and no schema change.
+
+## The filter bar over the list's URL (SH1024, content browser)
+
+The content browser draws the design system's `BentoFilterBar` over the same words its URL already
+holds (SH1022's vocabulary, SH1023's `useListState`). `lib/filter-bar.ts` is the only translation:
+`toBarValue` reads `q`, `type`, `state`, `locale` and the `modifiedSince`/`modifiedBefore` range
+into the bar. `fromBarValue` writes every one of those keys back, empty when cleared, so a removed
+chip leaves the address. `contentFacets` offers only values that exist: this instance's post types,
+and a language facet only when the listed rows carry more than one locale. The bar replaced the
+magnifier toggle and the popover's type, state and date fields. The popover ("More filters") keeps
+author, modifier and subtree, and its badge ignores what the bar shows as chips. SH1020's `/`
+focuses the bar's text field.
+
+**The bar's value and handler must be stable.** It debounces typing in an effect keyed on `value`
+and `onChange`, so a fresh object per render restarts the timer and the query is never sent. That
+showed up only in a browser, where the page re-renders faster than the 300 ms pause. `barValue` is
+memoized on the six primitives and `onBarChange` is a `useCallback` over `list.patch`, and
+`filter-bar.test.mjs` pins both. A probe typed "pricing" (`?q=pricing`, two rows of three), picked
+state draft (`&state=draft`), and reloaded into the same rows, field and chip.
+
+Still to come: search, trash and the review queue; facet counts from the listing; the author
+picker with an agent option; and saved views.
