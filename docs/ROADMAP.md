@@ -27,6 +27,7 @@
 - 📋 **SH1118** (deps: SH1049 ✅) **the shared comment stripper silently deletes half a file, and every scan over it passes** — A slash and two stars in any string opens a block comment to it, so one Playwright pattern cut 43,389 characters out of what thirty-one suites read. → §LXIV.19
 - 📋 **SH1119** (deps: SH1052 ✅) **two committed regexes hold a literal backspace where a word boundary was meant, so both assert nothing** — A heredoc expanded the escape before the file was written, and the check that internal task ids do not ship has matched nothing since. → §LXIV.20
 - 📋 **SH1120** (deps: —) **shio verify --delivery runs fewer checks than shio verify, silently dropping page and a11y** — withDelivery hand-copies the server's default as content,routes,diagnostics, so the flag asking for the stronger proof sends the narrower run. → §LXIV.21
+- 📋 **SH1141** (deps: —) **no benchmark measures authoring through the content files against the API, so P4's claim is argued and never counted** — Every P4 test asserts the format or its determinism, and the task benchmark runs both paths over HTTP, so the cheaper of the two authoring paths is unknown. → §LXIV.23
 
 ## Block BA — Releases, scheduling and the publish gate
 

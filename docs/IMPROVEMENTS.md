@@ -1296,6 +1296,27 @@ run. The durable half is an assertion that the CLI names no check group of its o
 anywhere: a wired list here is a second vocabulary that drifts from the one the server
 publishes.
 
+### LXIV.23 Files against the API, in tokens (SH1141)
+
+P4 says files beat APIs for authoring, and content-files.mjs argues it in its header: an
+HTTP edit is two round trips and a full JSON body in and out, a file edit is one Edit.
+Nothing measures it. ShAgentTaskBenchmarkTest and ShAgentSourceAttributionTest run both
+paths over HTTP, SH164's projection pair projects fields rather than files, and every P4
+test asserts the format or its determinism, never its cost. The claude-code-first
+specification now records the claim as an open question because no commit here settles
+it.
+
+The measurement is one canonical authoring task, the same fixture both ways: replace a
+phrase in the body of the posts that carry it, on a site where most posts do not. The
+file path pays what reaches the agent's context and nothing else: pull's stdout, a Grep
+of the tree, a Read of every file it will change, because the harness refuses an Edit on
+a file the session has not read, each Edit's old and new strings, and push's stdout. The
+HTTP the CLI makes on the agent's behalf is not in the context and is not counted. The
+API path pays find, the batched reads and the write it composes. Both are counted with
+the CHARS_PER_TOKEN estimator the Node budgets already use, against the content-commands
+fake server, and held as a ceiling and a ratio floor in token-budgets.properties. The
+number is the deliverable, whichever side it favours.
+
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key
