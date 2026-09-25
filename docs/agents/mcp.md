@@ -511,3 +511,17 @@ not act on and it measured 184 either side, which is what the reservation system
 assertions are the pair that matters — the cursor is emitted, and it is read back as `after`. A
 cursor a tool advertises and does not read is worse than none: the caller walks and gets page one
 for ever.
+
+## `shio://requests` is what a curator asked from the dock (SH1006, SH1007)
+
+Shio hosts no model, so a question typed into the console's dock is a `request` note on the page
+the curator is on. `shio://requests` (`ShNoteRelay`, REST mirror `GET /api/v2/note/open?kind=request`)
+lists the open ones, newest first, one line each, with the note id, its anchor as `id:<object>`,
+the author and the body. The answer is `note.add` on that anchor with
+`data: {kind: "reply", parent: <note>, body}`, then `note.resolve`. A reply written in the same run
+that drafted the change names that run (`agentSessionId`, SH106), and the dock then offers the
+curator "open the change" and "approve and publish" through the review queue's own decisions call.
+So draft first and reply second, in one session. It is a resource and not a tool, for the usual
+reason: read once when a session starts or resumes, not billed on every turn's `tools/list`.
+`ShAgentCapabilityJoinTest` classifies it as the read half of the notes channel that
+`batchWrites` claims.

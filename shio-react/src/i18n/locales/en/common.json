@@ -78,5 +78,8 @@
   "dock.kind.saves": "Your own saves",
   "dock.kind.agent-runs": "Agent runs",
   "dock.kind.schedules": "Scheduled publishing",
-  "dock.kind.arrivals": "Form submissions"
+  "dock.kind.arrivals": "Form submissions",
+  "dock.replyChange": "The agent answered with a change to review.",
+  "dock.openChange": "Open the change",
+  "dock.approveChange": "Approve and publish"
 }

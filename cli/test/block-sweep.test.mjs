@@ -81,6 +81,16 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  BB: {
+    swept: false,
+    why: "twelve tasks building the curator's return channel: notes anchored to a page, per-change "
+      + "triage and verdicts an agent can read, the Activity trail's live line, and the dock's "
+      + "conversation with the agent. README and shio-site make no "
+      + "claim about notes, triage or the dock, so no outward sentence became untrue. docs-shio is "
+      + "where this block's story belongs, and the ids it has not named yet are on the coverage "
+      + "reader's list and in the vigletdocs pass still waiting to be committed (see SH1072); "
+      + "`docs/agents/console-ui.md` and `mcp.md` carry the decisions",
+  },
   AZ: {
     swept: false,
     why: "six tasks giving a page a revision history an agent and a curator can read, roll back and "

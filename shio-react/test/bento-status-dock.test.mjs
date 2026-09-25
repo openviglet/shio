@@ -300,3 +300,27 @@ test("SH1006: the shell offers the chat only with an agent around and a page ope
   const send = readFileSync(join(HERE, "..", "src", "app", "system", "dock-chat-send.ts"), "utf8")
   assert.match(send, /kind: "request"/, "SH1006: a question from the dock is not a request note")
 })
+
+/*
+ * SH1007 — an answer that arrives with its change attached. ShNoteRelayTest holds the server half
+ * (the reply names the run that drafted the change, and approving that page in the run publishes
+ * it); this holds the console half.
+ */
+test("SH1007: a reply names its run only when an agent session wrote it", async () => {
+  const chat = await import("../src/lib/dock-chat.ts")
+  const note = (agentSession) => ({ id: "n", objectId: "p", kind: "REPLY", body: "b", resolved: false, agentSession })
+  assert.equal(chat.runOf(note("run-7")), "run-7")
+  assert.equal(chat.runOf(note("console:ana:2026-09-25")), undefined,
+    "SH1007: a curator's own console reply offered to approve a run that is not an agent's")
+  assert.equal(chat.runOf(note(null)), undefined)
+})
+
+test("SH1007: a reply with a run offers the change, and approving goes through review's decisions", () => {
+  const relay = readFileSync(join(HERE, "..", "src", "app", "system", "use-dock-chat-relay.ts"), "utf8")
+  assert.match(relay, /const run = runOf\(reply\)/, "SH1007: the reply's run is never read")
+  assert.match(relay, /ROUTES\.ADMIN_REVIEW\}\?session=/, "SH1007: the change cannot be opened from the answer")
+  assert.match(relay, /approveFromDock\(run, turn\.objectId/, "SH1007: the change cannot be approved from the answer")
+  const send = readFileSync(join(HERE, "..", "src", "app", "system", "dock-chat-send.ts"), "utf8")
+  assert.match(send, /reviewService\.decide\(run, \[\{ postId, decision: "APPROVE" \}\]\)/,
+    "SH1007: the dock's approval is not the review queue's own call, so it is a way around review")
+})

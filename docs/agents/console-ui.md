@@ -2789,3 +2789,17 @@ every `REPLY_POLL_MS` (5 s), and only while one waits. Notes are not on the chan
 stream never carries a reply, and bounding a poll to the seconds a curator waits costs less than
 putting notes on every subscriber's stream. `ShNoteRelayTest` drives the round trip through the
 batch that `shio_write` runs.
+
+## An answer can carry its change (SH1007)
+
+A reply note already names the run that wrote it (`ShNote.agentSessionId`, SH106, filled by
+`note.add` from the session), so the agent's "one field" is the session it is already in: draft
+the change, then reply, in the same run. `runOf` in `lib/dock-chat.ts` reads it and ignores a
+`console:` session. When a reply names a run, the relay pushes a report with two actions: "Open
+the change" (the review queue at `?session=<run>`) and "Approve and publish"
+(`approveFromDock`, the queue's own `POST /review/sessions/{run}/decisions` with `APPROVE` for the
+anchored page, so the queue's permissions apply and the dock is never a way around review).
+Rejecting needs the note a rejection must carry, so it happens in the queue, which the first
+action opens. A chat message holds at most one action in the design system, which is why the actions
+live on a report beside it. `ShNoteRelayTest.aReplyCarriesItsRunAndApprovingItPublishes` drafts in
+a run, replies, approves, and reads the published row.

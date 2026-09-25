@@ -8,12 +8,14 @@
  */
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useLocation } from "react-router-dom"
-import { currentChat, recordReply, replyFor, useDockChat, waiting } from "@/lib/dock-chat"
+import { useLocation, useNavigate } from "react-router-dom"
+import { ROUTES } from "@/app/routes.const"
+import { pushReport } from "@/lib/dock-reports"
+import { currentChat, recordReply, replyFor, runOf, useDockChat, waiting } from "@/lib/dock-chat"
 import { isCancelled } from "@/lib/read-options"
 import { ShNoteService } from "@/services/note/note.service"
 import { contextOf } from "./bento-commands"
-import { sendRequest } from "./dock-chat-send"
+import { approveFromDock, sendRequest } from "./dock-chat-send"
 
 const noteService = new ShNoteService()
 
@@ -36,6 +38,11 @@ export const REPLY_POLL_MS = 5000
 export function useDockChatRelay(): { onSend?: (text: string) => void } {
   const { t } = useTranslation()
   const location = useLocation()
+  const navigate = useNavigate()
+  const go = useRef(navigate)
+  useEffect(() => {
+    go.current = navigate
+  }, [navigate])
   const [agentActive, setAgentActive] = useState(false)
   const say = useRef((key: string, options?: Record<string, unknown>) => String(t(key, options)))
   useEffect(() => {
@@ -62,7 +69,25 @@ export function useDockChatRelay(): { onSend?: (text: string) => void } {
         noteService.of(turn.objectId, { signal: abort.signal })
           .then((notes) => {
             const reply = replyFor(turn.requestId, notes)
-            if (reply) recordReply(turn.requestId, { id: reply.id, body: reply.body })
+            if (!reply) return
+            const run = runOf(reply)
+            recordReply(turn.requestId, { id: reply.id, body: reply.body, run })
+            // SH1007 — an answer that drafted something arrives with the change attached: open it
+            // in review, or approve it here. Approve goes through the queue's own decisions call
+            // and its permissions, so the dock is never a way around review; rejecting needs the
+            // reason a rejection must carry, which is written in the queue.
+            if (run) {
+              pushReport({
+                tone: "attention",
+                text: say.current("dock.replyChange"),
+                actions: [
+                  { label: say.current("dock.openChange"),
+                    onSelect: () => go.current(`${ROUTES.ADMIN_REVIEW}?session=${encodeURIComponent(run)}`) },
+                  { label: say.current("dock.approveChange"),
+                    onSelect: () => approveFromDock(run, turn.objectId, say.current) },
+                ],
+              })
+            }
           })
           // A missed poll is the next poll's job; nothing here is the curator's to act on.
           .catch(() => undefined)

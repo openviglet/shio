@@ -25,7 +25,8 @@ export interface ChatTurn {
   objectId: string
   text: string
   at: number
-  reply?: { id: string; text: string; at: number; seen: boolean }
+  /** SH1007 — `run` is the agent session that wrote the reply, whose drafts answer it. */
+  reply?: { id: string; text: string; at: number; seen: boolean; run?: string }
 }
 
 let turns: readonly ChatTurn[] = []
@@ -45,10 +46,19 @@ export function replyFor(requestId: string, notes: readonly ShNote[]): ShNote | 
   return notes.find((note) => note.parentId === requestId && note.kind.toUpperCase() === "REPLY")
 }
 
-export function recordReply(requestId: string, reply: { id: string; body: string }) {
+export function recordReply(requestId: string, reply: { id: string; body: string; run?: string }) {
   emit(turns.map((turn) => (turn.requestId === requestId && !turn.reply
-    ? { ...turn, reply: { id: reply.id, text: reply.body, at: Date.now(), seen: false } }
+    ? { ...turn, reply: { id: reply.id, text: reply.body, at: Date.now(), seen: false, run: reply.run } }
     : turn)))
+}
+
+/**
+ * SH1007 — the run a reply answers with, or nothing. A reply written by an agent session carries
+ * it (SH106); one written from a console session, or with none, is plain text.
+ */
+export function runOf(reply: ShNote): string | undefined {
+  const session = reply.agentSession ?? undefined
+  return session && !session.startsWith("console:") ? session : undefined
 }
 
 export function markRepliesSeen() {

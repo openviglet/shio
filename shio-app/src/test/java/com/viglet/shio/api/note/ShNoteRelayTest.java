@@ -26,6 +26,13 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.ShAgentBatchService;
+import com.viglet.shio.api.agent.ShAgentSessionContext;
+import com.viglet.shio.api.review.ShReviewService;
+import com.viglet.shio.api.review.dto.ShReviewOutcome;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService.UpdateRequest;
+import com.viglet.shio.persistence.model.review.ShReviewDecision;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.persistence.model.agent.ShAgentRun;
@@ -70,6 +77,12 @@ class ShNoteRelayTest {
     private ShAgentBatchService batchService;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private ShPostUnifiedWriteService writeService;
+    @Autowired
+    private ShReviewService reviewService;
+    @Autowired
+    private ShPostUnifiedRepository unifiedRepository;
     @Autowired
     private PlatformTransactionManager transactionManager;
     @PersistenceContext
@@ -117,6 +130,10 @@ class ShNoteRelayTest {
     void tearDown() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             noteRepository.findByObjectIdOrderByCreatedAtAsc(postId).forEach(noteRepository::delete);
+            entityManager.createQuery("delete from ShHistory h where h.shObject = :id")
+                    .setParameter("id", postId).executeUpdate();
+            entityManager.createQuery("delete from ShReviewDecision d where d.postId = :id")
+                    .setParameter("id", postId).executeUpdate();
             entityManager.createQuery("delete from ShPostUnified p where p.id = :id")
                     .setParameter("id", postId).executeUpdate();
             if (runId != null) runRepository.deleteById(runId);
@@ -164,5 +181,38 @@ class ShNoteRelayTest {
                 .as("SH1006: a run that just started does not open the chat")
                 .isTrue();
         assertThat(ShNoteRelay.WINDOW.toHours()).isEqualTo(relay.status().windowHours());
+    }
+
+    /**
+     * SH1007 — an answer that arrives with its change attached. The agent drafts the change and
+     * replies in the same session, so the reply names that run (SH106's column, which note.add
+     * already fills); approving the anchored page in that run, the call the dock's action makes,
+     * publishes it and leaves a decision.
+     */
+    @Test
+    @DisplayName("SH1007: a reply names the run that drafted the change, and approving it publishes")
+    void aReplyCarriesItsRunAndApprovingItPublishes() {
+        String run = "sh1007-run-" + UUID.randomUUID().toString().substring(0, 8);
+        ShNote request = noteService.add(postId, null, null, null, "request", "New hero, please", "curator");
+        ShNote reply;
+        ShAgentSessionContext.set(run);
+        try {
+            writeService.update(postId, new UpdateRequest(
+                    objectMapper.readTree("{\"title\":\"Pricing, simply\"}"), ShPostState.DRAFT, "agent"));
+            reply = noteService.add(postId, null, null, request.getId(), "reply",
+                    "Drafted a new hero; approve it from the dock.", "agent");
+        } finally {
+            ShAgentSessionContext.clear();
+        }
+        assertThat(reply.getAgentSessionId())
+                .as("SH1007: the reply does not name the run whose drafts answer it, so the dock has no change to attach")
+                .isEqualTo(run);
+
+        ShReviewOutcome outcome = reviewService.decide(run,
+                List.of(new ShReviewService.Decision(postId, ShReviewDecision.Kind.APPROVE, null)), "curator");
+        assertThat(outcome.changed()).as("SH1007: approving the run's change to the page changed nothing").isEqualTo(1);
+        assertThat(unifiedRepository.findByIdAndState(postId, ShPostState.PUBLISHED))
+                .as("SH1007: an approved change from the dock is not live")
+                .isPresent();
     }
 }

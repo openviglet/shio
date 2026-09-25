@@ -1427,24 +1427,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-### LXVII.9 An answer that arrives with its change attached (SH1007)
-
-The reference design's chat offered a suggested title with a button to use it, and
-VigletAssistantMessage carries an action for exactly that. In Shio an agent answering a
-request usually does more than suggest: it writes drafts, which land in the review queue
-under its run. Without a link between the reply and those changes, the curator reads
-that the work is done and then has to find it.
-
-A reply note may reference the run whose changes answer it. The dock renders such a
-reply with actions, up to three through VDS134's actions array: open the diff for that
-run's changes to the anchored page, approve them, and reject them with a note. Approve
-and reject go through BB3's decisions call and require its permissions, so the dock
-never becomes a way around review. A reply that references no run is plain text.
-
-The agent's side is one field on note.add, the run it answers with, which a session
-already knows. The assertions answer a request with a run that drafts a change, then
-approve it from the dock's action and read the published result and the decision row.
-
 ## LXVIII The authoring surface, field by field (Block BC)
 
 Almost every piece of authoring intelligence a modern CMS needs already exists in Shio's
