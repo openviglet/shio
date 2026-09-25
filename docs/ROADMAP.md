@@ -88,7 +88,7 @@
 
 ## Block BI — The areas this round did not reach
 
-- ⏳ **SH1066** (deps: SH970 ✅, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — The console has no Forms page or form settings panel, and verify does not flag a form whose destination folder is gone. → §LXXIV.4
+- 🛠 **SH1066** (deps: SH970 ✅, SH1022 ✅) **form submissions have no inbox and a site's form destination has no settings screen** — The console has no Forms page listing a site's submissions and no panel for a site's form settings, so a curator still has to guess the folder. → §LXXIV.4
 - ⏳ **SH1069** (deps: SH1072 ✅) **no task carries the documentation sweep for this round, so the public docs will describe a console that has changed** — 62 manifest feature keys still need a row in vigletdocs COVERAGE.md, with UNNAMED_FEATURES lowered here as each is named. → §LXXIV.7
 - 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads a browser global and a filename as symbols this repository should define, so six ledger entries that were correct when written keep the gate permanently red. → §LXXIV.8
 - 📋 **SH1103** (deps: —) **a gate stamp stays fresh across the ship that changes what it certified, so a red commit lands unseen** — Staleness is the HEAD sha and `ship` writes the governed docs at that same HEAD — which the JS suite reads, so a ship turns `pnpm test` red after its last green run. → §LXXIV.9

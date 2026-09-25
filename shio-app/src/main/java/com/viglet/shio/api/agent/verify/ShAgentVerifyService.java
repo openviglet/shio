@@ -206,6 +206,9 @@ public class ShAgentVerifyService {
      * whole library was one nobody could run. It is now one indexed query for the whole set.</p>
      */
     private final ShObjectReferenceService shObjectReferenceService;
+    /** SH1066 — a site's form configuration, and the one resolver the submission endpoint uses. */
+    private final com.viglet.shio.persistence.repository.form.ShSiteFormRepository shSiteFormRepository;
+    private final com.viglet.shio.api.form.ShFormDestination shFormDestination;
     private final ShAgentMemoryService shAgentMemoryService;
     private final ShTemplateFieldLint templateFieldLint;
     private final ShTemplateGraph templateGraph;
@@ -264,8 +267,12 @@ public class ShAgentVerifyService {
                                 ShTranslationStaleness shTranslationStaleness,
                                 com.viglet.shio.turing.ShTuringIndexService shTuringIndexService,
                                 ShPostRevisionRepository shPostRevisionRepository,
+                                com.viglet.shio.persistence.repository.form.ShSiteFormRepository shSiteFormRepository,
+                                com.viglet.shio.api.form.ShFormDestination shFormDestination,
                                 PlatformTransactionManager transactionManager) {
         this.shPostRevisionRepository = shPostRevisionRepository;
+        this.shSiteFormRepository = shSiteFormRepository;
+        this.shFormDestination = shFormDestination;
         this.shTuringIndexService = shTuringIndexService;
         this.shTranslationStaleness = shTranslationStaleness;
         this.shObjectReferenceService = shObjectReferenceService;
@@ -810,6 +817,7 @@ public class ShAgentVerifyService {
         duplicateTemplateTitles(check, scan, findings);
         untitledTemplates(check, scan, findings);
         missingThemes(check, scan, findings);
+        formDestinations(check, scan, findings);
         // SH572 — the relation-literal twin of the rule above, run beside it because the two
         // answer one question about two spellings of the same reference.
         danglingRelations(check, scan, findings);
@@ -1463,6 +1471,34 @@ public class ShAgentVerifyService {
                                 + "that exists, or clear it if this layout brings its own styles. "
                                 + "A theme is addressed by title, and matched exactly."));
             }
+        }
+    }
+
+    /**
+     * SH1066 — a site whose form sends its submissions to a folder that is not there.
+     *
+     * <p>An <b>error</b>: the submission endpoint refuses every post to such a site with a 500 that
+     * only the visitor sees, so the form looks broken on the page and the site reports nothing.
+     * Checked for an <em>enabled</em> form only — a switched-off configuration is an operator still
+     * setting it up, and naming its folder as missing would be a finding about work in progress.
+     * Resolved by {@code ShFormDestination}, the endpoint's own resolver, so the two cannot come to
+     * disagree about whether the destination exists.</p>
+     */
+    private void formDestinations(String check, Scan scan, List<Finding> findings) {
+        for (ShSite site : scan.siteById().values()) {
+            shSiteFormRepository.findFirstBySiteIdOrderByIdAsc(site.getId())
+                    .filter(com.viglet.shio.persistence.model.form.ShSiteForm::isEnabled)
+                    .filter(form -> shFormDestination.resolve(site, form.getFolderUrl()) == null)
+                    .ifPresent(form -> findings.add(Finding.error(check, "form-destination-missing",
+                            ShAddress.site(site.getName()).toString(), null,
+                            "Site '" + site.getName() + "' accepts form submissions into '"
+                                    + form.getFolderUrl() + "', and no folder has that path, so "
+                                    + "every submission is refused and the visitor is the only one "
+                                    + "who sees it.",
+                            "Create the folder (folder.upsert on POST /api/v2/agent/batch), or "
+                                    + "point the form at one that exists: PUT /api/v2/site-form/"
+                                    + form.getId() + " with folderUrl. A submission never creates a "
+                                    + "folder of its own.")));
         }
     }
 

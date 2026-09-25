@@ -3679,6 +3679,10 @@ endpoint wrote, `false` for none of them, absent for both. A submission is a pos
 column of its own, so the word reads the owner the endpoint records — `form`, or `form-token:<id>`
 when a FORM token sent it — through `ShFormSubmitter`'s constants, which the JPQL predicate is built
 from rather than copying. A value that is neither `true` nor `false` is refused, not guessed.
+`verify` reports **`form-destination-missing`** (an error, on `site:<name>`) when a site's form is
+enabled and its folder does not resolve: the endpoint refuses every submission to such a site with a
+500 only the visitor sees. It resolves through `ShFormDestination`, the endpoint's own resolver, and a
+switched-off form is not reported, since an operator may still be setting it up.
 
 **`missingLocale` is the coverage question (SH1060):** the pages whose translation group has *no*
 member in that tag — "what is still to translate into pt-br" as a predicate rather than a scan

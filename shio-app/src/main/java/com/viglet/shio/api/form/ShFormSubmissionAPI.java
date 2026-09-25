@@ -9,7 +9,6 @@
 package com.viglet.shio.api.form;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,6 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
-import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.form.ShSiteFormRepository;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
@@ -102,20 +100,20 @@ public class ShFormSubmissionAPI {
 
     private final ShSiteFormRepository shSiteFormRepository;
     private final ShSiteRepository shSiteRepository;
-    private final ShFolderRepository shFolderRepository;
+    private final ShFormDestination shFormDestination;
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostUnifiedWriteService writeService;
     private final ObjectMapper objectMapper;
 
     public ShFormSubmissionAPI(ShSiteFormRepository shSiteFormRepository,
                                ShSiteRepository shSiteRepository,
-                               ShFolderRepository shFolderRepository,
+                               ShFormDestination shFormDestination,
                                ShPostTypeRepository shPostTypeRepository,
                                ShPostUnifiedWriteService writeService,
                                ObjectMapper objectMapper) {
         this.shSiteFormRepository = shSiteFormRepository;
         this.shSiteRepository = shSiteRepository;
-        this.shFolderRepository = shFolderRepository;
+        this.shFormDestination = shFormDestination;
         this.shPostTypeRepository = shPostTypeRepository;
         this.writeService = writeService;
         this.objectMapper = objectMapper;
@@ -177,7 +175,7 @@ public class ShFormSubmissionAPI {
                             + "oversight.");
         }
 
-        ShFolder folder = folderOf(site, config.getFolderUrl());
+        ShFolder folder = shFormDestination.resolve(site, config.getFolderUrl());
         if (folder == null) {
             return refuse(500, "This site's form folder does not exist",
                     "'" + config.getFolderUrl() + "' is configured on /api/v2/site-form and no "
@@ -290,27 +288,6 @@ public class ShFormSubmissionAPI {
             }
         }
         return names.isEmpty() ? List.of("(nothing — this site's allow-list names no usable type)") : names;
-    }
-
-    /** The configured folder, by name chain within the site, or {@code null}. */
-    private ShFolder folderOf(ShSite site, String path) {
-        if (path == null || path.isBlank()) {
-            return null;
-        }
-        List<String> names = Arrays.stream(path.split("/")).filter(part -> !part.isBlank()).toList();
-        Optional<ShFolder> current = shFolderRepository.findRootFolder(site);
-        if (current.isEmpty()) {
-            return null;
-        }
-        ShFolder folder = current.get();
-        for (String name : names) {
-            ShFolder child = shFolderRepository.findByParentFolderAndName(folder, name);
-            if (child == null) {
-                return null;
-            }
-            folder = child;
-        }
-        return folder;
     }
 
     /** A refusal that teaches (P6) — every field an operator needs to fix their configuration. */
