@@ -882,3 +882,16 @@ body of 10 of 30 posts — both ways on one fixture, and holds the result in
   real endpoints carry more. A task whose Read cannot be avoided and whose edit is most of the
   file — rewriting a post rather than a line of it — would close the gap, which is why the floor
   is on this task's shape and not a claim about authoring in general.
+
+## Seeing a page before pushing it — `shio preview <file>` (SH1095)
+
+Every other surface could render proposed values (SH1014); the files tier could not, so an author
+editing `shio/content/**` found out what a change looked like only after `push` had saved it.
+`shio preview <file>` reads the file the way `push` does (frontmatter, body, sidecars), sends its
+fields as `data` to `POST /api/v2/agent/render?format=html`, prints the digest's outline and hash,
+and writes the markup to a file (`--out`, or a temp path it prints). Nothing is stored.
+- **The address is the file's own**, from its path or `site:`/`url:`; `--address` overrides it.
+- **A page the instance does not have is refused, not faked.** A render needs a friendly URL, a
+  layout and a site, which are facts about the instance: push once, or render at `--address`.
+- **File fields go as written.** A path whose asset is not pushed yet will not resolve, which the
+  help says rather than the command guessing an id.

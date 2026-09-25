@@ -1795,6 +1795,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1090** — The console runs on a data router, so useUnsavedGuard now also blocks an in-app route change away from unsaved work in the post editor and the Universal Editor, asking once and never on a URL-only change (design §LXVIII.12 recorded in `docs/agents/console-ui.md`).
 - **SH1092** — A state=draft verify of routes now names the eight rules that read published rows only and never ran on the drafts, so a clean draft report no longer reads as a verdict on links, images and markup (design §LXVIII.14 recorded in `docs/agents/agent-surface.md`).
 - **SH1093** — A refused package rename now completes as a copy, and the keep-alive exit test asserts the disarm from the child's own trace apart from a looser clock, so each flake either passes or says which half broke (design §LXVIII.15 recorded in `docs/agents/troubleshooting.md`).
+- **SH1095** — shio preview <file> renders a content file's fields and sidecars at its own page through the proposed render, prints the outline and writes the markup, storing nothing.
 
 ## Block BD — Finding, selecting and acting on content
 

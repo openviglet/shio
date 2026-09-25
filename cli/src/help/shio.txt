@@ -28,6 +28,7 @@ Commands:
   report         What changed, preview links, open questions
   remember       Write down a decision for the next session
   digest <page>  Structural digest of one page: outline, landmarks, links, images
+  preview <file> A content file's page, rendered before you push it
   snapshot <page> PNG of a page, and whether it looks different (playwright)
   audit <page>   What is wrong with a rendered page, as text with a selector each
   annotations <page>

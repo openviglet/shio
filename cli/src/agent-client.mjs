@@ -228,8 +228,9 @@ export class ShioAgentClient {
     return this.apply({ ...document, confirm: plan.confirm }, options);
   }
 
-  async #post(verb, document, { ids = false } = {}) {
-    const url = `${this.baseUrl}/api/v2/agent/${verb}${ids ? "?ids=true" : ""}`;
+  async #post(verb, document, { ids = false, query = "" } = {}) {
+    const params = [ids ? "ids=true" : "", query].filter(Boolean).join("&");
+    const url = `${this.baseUrl}/api/v2/agent/${verb}${params ? `?${params}` : ""}`;
     const res = await this.fetch(url, {
       method: "POST",
       headers: {
@@ -282,6 +283,17 @@ export class ShioAgentClient {
    */
   async digest(query = {}) {
     return this.#get("render", query);
+  }
+
+  /**
+   * POST /api/v2/agent/render (SH1014) — a page rendered from proposed field values, saving
+   * nothing. SH1095's `shio preview` is the caller: the files tier's own way to see a page first.
+   *
+   * @param {{ address: string, state?: string, data: object }} proposal
+   * @param {{ html?: boolean }} [options] `html` adds the rendered markup to the digest
+   */
+  async renderProposed(proposal, { html = false } = {}) {
+    return this.#post("render", proposal, { query: html ? "format=html" : "" });
   }
 
   /** GET /api/v2/agent/diagnostics (SH103) — recent asynchronous failures. */

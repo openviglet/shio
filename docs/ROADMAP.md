@@ -36,8 +36,8 @@
 
 - ⏳ **SH1091** (deps: maintainer security call) **no stateless caller can change one field of a post without declaring the whole document** — Every route to a partial write crosses a boundary drawn on purpose, so which one is a maintainer's call. → §LXVIII.13
 - ⏳ **SH1094** (deps: a two-pane page shape in viglet-design-system) **the live preview is a card under the form, so reading it means scrolling away from the fields** — Two pages now want two panes (this and the translation workspace), and the design system has no such page shape. → §LXVIII.16
-- 📋 **SH1095** (deps: —) **an author editing content as files cannot see the page before pushing it** — Rendering from proposed values reached MCP, REST and the console, and the files tier — the one P4 calls the agent's cheapest — has no verb for it. → §LXVIII.17
 - 📋 **SH1132** (deps: —) **the console cannot change a page's URL, so a rename is an agent-only act** — post.move is the only writer of a friendly URL; the console's form has no field for one, and its single path to a URL change is a rollback that restores an older revision's. → §LXVIII.19
+- 📋 **SH1143** (deps: —) **shio preview sends a file field as its tree path, so an image not yet pushed renders broken** — Push maps a tree path to an asset id as it uploads; a preview stores nothing, so a new image has no id to render under. → §LXVIII.20
 
 ## Block BD — Finding, selecting and acting on content
 

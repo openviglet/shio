@@ -310,6 +310,9 @@ const UNEXERCISED = {
     // second back. The composition is asserted in `patterns.test.mjs`; the outcome is not.
     "annotations", "apply", "assets", "audit", "build", "deploy", "dev", "impact", "import",
     "judge", "patterns",
+    // `preview` arrives with SH1095 and is unwritten rather than out of scope: its outcome is a
+    // render of values the instance never stored, which only a live page can prove.
+    "preview",
     // `schedule` arrives with SH991, and for `versions`' reason: it needs a live instance holding a
     // scheduled post, which a live scenario has and a scripted fetch invents.
     // `status` arrives with SH1050 and is unwritten rather than out of scope. Its numbers are

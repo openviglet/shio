@@ -1,0 +1,17 @@
+shio preview <file> — a content file's page, rendered before you push it
+
+Reads the file the way push does (frontmatter, body, sidecars), renders its fields through
+POST /api/v2/agent/render without saving anything, prints the page's outline and structural
+hash, and writes the rendered markup to a file you can open.
+
+  --address <addr>     The page to render at (default: the one the file names)
+  --state <state>      Render against published or draft (default: the draft)
+  --out <path>         Where to write the markup (default: a temp file, printed)
+
+The page must already exist on the instance: a render needs a friendly URL, a layout and a
+site. For a brand-new file, push it once, or pass --address with the page it will replace.
+File fields are sent as written; a path an asset has not been pushed under yet will not
+resolve in the preview.
+
+Example:
+  shio preview shio/content/Acme/about.md

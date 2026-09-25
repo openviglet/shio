@@ -124,6 +124,8 @@ const COMMANDS = {
   report: () => import("./commands/report.mjs"),
   remember: () => import("./commands/remember.mjs"),
   digest: () => import("./commands/digest.mjs"),
+  // SH1095 — the files tier's way to see a page before `push`, over SH1014's proposed render.
+  preview: () => import("./commands/preview.mjs"),
   snapshot: () => import("./commands/snapshot.mjs"),
   audit: () => import("./commands/audit.mjs"),
   annotations: () => import("./commands/annotations.mjs"),

@@ -1445,30 +1445,6 @@ the preview vanishes silently.
 A second page wants it: SH1061's translation workspace. The design system's three shapes
 have no two-pane one, so it is a package addition first.
 
-### LXVIII.17 shio preview, the rung files did not get (SH1095)
-
-Block I's claim is that `shio/content/**` is a complete description of a site and that
-files beat APIs for authoring (P4). An agent edits `index.md`, runs `shio push`, and the
-page changes. What it cannot do is see the page **first**.
-
-SH1014 built the half that makes this cheap: `POST /api/v2/agent/render` takes an
-address and a document and renders through the real page render service without
-persisting. `shio preview <file>` is that call with the projection in front of it — read
-the Markdown and its sidecars, turn them into the same `data` map `push` would send,
-post it, and write the markup somewhere the author can open.
-
-Three decisions it should make rather than inherit. **Which address**: the file's own
-front matter names the post it projects, so no flag is needed for the common case, and a
-`--address` override is for the file that has not been pushed anywhere yet. **What it
-prints**: a path to an HTML file by default, because a terminal is not a browser, with
-`--digest` for the structural answer an agent wants and `--open` for a person. **What it
-does with an unpushed file**: refuse, and say that the render needs a page to render
-*at* — a friendly URL, a layout and a site — which is a fact about the instance, not
-about the file.
-
-It is the one rung of P1's ladder this capability is missing: MCP has it, REST has it,
-the console has it, and files do not.
-
 ### LXVIII.19 A rename the curator can do (SH1064's other half) (SH1132)
 
 SH1064 went looking for the console's rename dialog and found there is none. A post's
@@ -1491,6 +1467,27 @@ a console writer that would define a move twice. The open question is whether it
 the draft alone or both rows: the op moves both and the live URL changes immediately,
 which is right for an agent applying a plan and is the surprise P7 forbids for a curator
 who has not published.
+
+### LXVIII.20 shio preview and the asset that is not pushed yet (SH1143)
+
+SH1095 gave the files tier a preview: `shio preview <file>` reads a content file as
+`push` reads it and renders its fields through `POST /api/v2/agent/render` without
+storing anything. It sends a file field exactly as the file spells it. For an asset
+already on the instance that is right, because push wrote the address back. For an image
+the author has just dropped under `shio/assets/**`, the field names a path the instance
+has never seen, so the preview shows a broken image where the page will show a picture.
+The author learns the wrong thing about the page, which is the one thing a preview must
+not do.
+
+Two shapes are possible. The render endpoint could accept inline bytes for a file field,
+a data URI the render service resolves only for this request. Or the CLI could stage the
+asset under a disposable name and clean it up afterwards. The first keeps P7's promise
+that a preview stores nothing; the second reuses the upload path but writes, and a write
+needs sweeping. The first is preferred, and it needs a size ceiling so a render request
+cannot carry a video.
+
+Done when a preview of a file whose image is not pushed yet renders that image, and a
+test at the CLI boundary asserts it, naming this id.
 
 ## LXIX Finding, selecting and acting on content (Block BD)
 
