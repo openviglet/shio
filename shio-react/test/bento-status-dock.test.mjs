@@ -165,3 +165,15 @@ test("SH966: the post editor reports its refusals to the dock, not as toasts", (
   assert.ok((page.match(/reportRefusal\(error, t\("common\.error"\), refusalActions\)/g) ?? []).length >= 4,
     "SH966: fewer than four of the editor's refusal paths report through reportRefusal")
 })
+
+test("SH968: an agent run that is writing turns the mascot to working, with its caption", async () => {
+  const { setWorking } = await import("../src/lib/dock-reports.ts")
+  await act(() => setWorking("claude-code is working on acme"))
+  await settle()
+  assert.equal(stateOf(), "working", "SH968: a running agent did not move the mascot to working")
+  assert.match(container.textContent, /claude-code is working on acme/,
+    "SH968: the caption does not say which agent is working where")
+  await act(() => setWorking(null))
+  await settle()
+  assert.equal(stateOf(), "idle", "SH968: the mascot kept working after the run ended")
+})

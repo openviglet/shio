@@ -1393,38 +1393,12 @@ so the line stays rather than being deleted.
 
 ## The rail was never the only place a signal can live (SH936)
 
-The sidebar badged Agent Review when runs were waiting (SH207). After the cutover the rail draws
-**sections**, so there was no entry to badge, and `ReviewPendingProvider` was left unmounted with a
-reason written beside it: *"the badge has nowhere to appear until a hub does; mounting it now would
-be a fetch nothing reads."*
-
-That sentence was right about the rail and wrong about the conclusion. Two of the three homes it
-implied are still unavailable — `BentoNavSection` carries **no badge field**, so a section badge is
-a design-system change and a release; and the hub `areaRoute` is meant to open does not exist here,
-since `/bento/admin` redirects to the user list. Waiting for either meant waiting for a page nobody
-had scheduled while an agent wrote drafts nothing told a curator about.
-
-**The header is the third home, and it is the right one rather than the leftover one.** The signal
-is *work is waiting for you*: ambient, personal, and the vocabulary of a notification rather than of
-navigation. It is visible from every surface, which is what makes it ambient at all, and it sits
-beside the account menu and the tenant switch, which are the other two things in that header.
-
-### Absent, not zero — and a 403 that looks like an empty queue
-
-`pending <= 0` renders nothing, which is SH207's rule kept. A dimmed `0` in the header of every
-screen is a number a reader learns to skip, and skipping it is what the badge existed to prevent.
-
-A curator who may not open the queue also sees nothing, and gets there without a permission check:
-the provider swallows the read error and reports 0, so a 403 on the count is indistinguishable from
-an empty one. That is correct for an indicator and would be wrong for a page.
-
-### Where the provider goes, and why that is the assertion
-
-`ReviewPendingProvider` wraps both the header and the `Outlet`. The count is **read** by the badge
-and **invalidated** by the review queue after an approve or a revert, and two subtrees can only
-reach each other through a common ancestor — which is why the count was written as a context rather
-than a fetch inside the indicator. `bento-review-pending.test.mjs` asserts the ordering by index
-rather than by presence: a provider that wraps only the header would still contain the string.
+SH936 gave agent work an ambient signal after the sidebar went: a pending-review count in the header,
+read by a badge and invalidated by the review queue through `ReviewPendingProvider`. SH968 replaced
+it with the dock, and the badge, the provider and `bento-review-pending.test.mjs` are gone. What
+SH936 was for still holds and is asserted in `agent-runs.test.mjs`: an agent that writes must be
+told to the curator, and the pending count is still read once at load, so a curator who arrives
+after a run hears about it. See "Agent runs report in the dock" below.
 
 ## The check was walking another product's console (SH927, probe half)
 
@@ -2671,3 +2645,23 @@ problem document still reports, as `common.refusalStatus` with its HTTP status. 
 is part of the text rather than a third action, since the console has no surface to open for it.
 The post editor is the first consumer: save, conflict resolution, publish and unpublish. The SH965
 lint counts `pushReport` as a report, so a handler that reaches it is not silent.
+
+## Agent runs report in the dock (SH968)
+
+The shell calls `useAgentRunReports` (`app/system/bento-agent-runs.ts`). It reads SH967's stream
+through `subscribeChanges`, which now shares one `EventSource` per scope across every caller, because
+each open stream is a subscription the server polls every second. `lib/agent-runs.ts` is the pure
+tracker: a run starts at the first write this screen sees carrying an `agent` session, each write
+bumps the dock's activity, and it ends after `RUN_QUIET_MS` (20 s) of quiet, since an agent never
+says it is done. A curator's own writes carry no `agent` and are ignored. While a run writes, the
+dock is `working` with "<agent> is working on <site>". At the end it gets a report: `attention`
+when the run left undecided writes, `success` otherwise, with "Open in review" (the run, via
+`?session=`) and "See the activity" (`?who=agent`). The pending count is read once at load and
+becomes one report when it is not zero. The header count and its provider are gone.
+
+The stream had been dropping the fields this needs. `ShEventStreamHub.withoutId` rebuilt each
+row through the pre-SH999 constructor, so `agent`, `agentName` and `review` never reached a
+subscriber. `ShEventStreamTest.sh968TheStreamKeepsTheAgentThatWrote` fails without the fix. A live
+probe checked the whole chain: one stream connection shared between the Activity page and the
+shell, no header count, a batch sent with `Mcp-Session-Id` turning the mascot to working, and an
+attention report with its review action after the quiet period.

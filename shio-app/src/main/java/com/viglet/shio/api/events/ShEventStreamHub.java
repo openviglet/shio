@@ -235,9 +235,12 @@ public class ShEventStreamHub {
      * does not show ids unless a caller asks (SH121), and this stream does not take that request.
      */
     private static ShAgentChanges.Change withoutId(ShAgentChanges.Change change) {
+        // SH968 — the canonical constructor. The pre-SH999 one this used dropped agent, agentName
+        // and review, so every pushed row read as a person's write.
         return new ShAgentChanges.Change(change.action(), change.subject(), change.address(),
-                change.at(), change.by(), change.what(), change.site(), null, change.affects(),
-                change.submission(), change.fields());
+                change.at(), change.by(), change.agent(), change.agentName(), change.what(),
+                change.site(), null, change.affects(), change.submission(), change.review(),
+                change.fields());
     }
 
     private static void withAuthentication(Authentication authentication, Runnable body) {

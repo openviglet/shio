@@ -105,11 +105,6 @@
       "count": 1
     }
   },
-  "src/contexts/review-pending.context.tsx": {
-    "react-refresh/only-export-components": {
-      "count": 1
-    }
-  },
   "src/contexts/user.context.tsx": {
     "react-refresh/only-export-components": {
       "count": 1

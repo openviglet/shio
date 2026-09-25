@@ -65,7 +65,10 @@ test("SH1001: the page sends one call and re-reads the run", () => {
   assert.match(page, /const detail = await service\.detail\(session\)/,
     "SH207: a page that showed the old answer after an action is the one number a curator learns "
       + "to distrust")
-  assert.match(page, /refreshPending\(\)/)
+  // SH968 removed the header count this used to refresh: the dock reports what a run did, so an
+  // approval here has no second number to keep in step, and a refresh would be a fetch nobody reads.
+  assert.doesNotMatch(page, /refreshPending\(\)/,
+    "SH968: the review page refreshes a pending count again, and nothing displays one")
 })
 
 test("SH1001: both locales name the three decisions and the keys", () => {

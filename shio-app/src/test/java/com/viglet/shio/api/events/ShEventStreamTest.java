@@ -39,6 +39,7 @@ import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.acl.ShContentAclService.AclEntry;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentChangeCursor;
+import com.viglet.shio.api.agent.ShAgentSessionContext;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChanges;
 import com.viglet.shio.persistence.model.acl.ShAclPermission;
@@ -200,6 +201,34 @@ class ShEventStreamTest {
         assertThat(sink.pages)
                 .as("SH967: a second pass with nothing new sends nothing, or a page repeats")
                 .hasSize(before);
+    }
+
+    /**
+     * SH968 — the stream keeps who wrote a change. It rebuilt each entry through the constructor
+     * from before SH999, which has no {@code agent}, {@code agentName} or {@code review}, so every
+     * pushed row read as a person's own write and the dock could not tell an agent run had started.
+     */
+    @Test
+    void sh968TheStreamKeepsTheAgentThatWrote() {
+        authAs("curator", "ROLE_ADMIN");
+        RecordingSink sink = new RecordingSink();
+        open(sink, now());
+
+        String folder = "agent-" + UUID.randomUUID().toString().substring(0, 8);
+        String run = "sh968-run-" + UUID.randomUUID().toString().substring(0, 8);
+        ShAgentSessionContext.set(run);
+        try {
+            writeFolder(folder);
+        } finally {
+            ShAgentSessionContext.clear();
+        }
+        hub.pump();
+
+        assertThat(sink.pages.stream().flatMap(page -> page.changes().stream())
+                .filter(change -> ("folder:" + siteName + "/" + folder).equals(change.address()))
+                .map(ShAgentChanges.Change::agent))
+                .as("SH968: the stream dropped the agent session the feed records for this write")
+                .containsExactly(run);
     }
 
     @Test

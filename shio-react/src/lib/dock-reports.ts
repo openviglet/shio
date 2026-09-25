@@ -65,3 +65,37 @@ function subscribe(listener: () => void) {
 export function useDockReports(): readonly DockReport[] {
   return useSyncExternalStore(subscribe, currentReports, currentReports)
 }
+
+/**
+ * SH968 — what the system is doing right now, as opposed to what it reports afterwards. An agent
+ * run that is writing sets `working` with its caption; each write it makes bumps `bumps`, so the
+ * mascot reacts to smaller events than a state change. `null` when nothing is running.
+ */
+export interface DockAmbient {
+  working: string | null
+  bumps: number
+}
+
+let ambient: DockAmbient = { working: null, bumps: 0 }
+
+function emitAmbient(next: DockAmbient) {
+  ambient = next
+  for (const listener of listeners) listener()
+}
+
+export function setWorking(caption: string | null) {
+  if (ambient.working === caption) return
+  emitAmbient({ ...ambient, working: caption })
+}
+
+export function bumpActivity() {
+  emitAmbient({ ...ambient, bumps: ambient.bumps + 1 })
+}
+
+export function currentAmbient(): DockAmbient {
+  return ambient
+}
+
+export function useDockAmbient(): DockAmbient {
+  return useSyncExternalStore(subscribe, currentAmbient, currentAmbient)
+}

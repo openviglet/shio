@@ -23,10 +23,9 @@ import { ROUTES } from "@/app/routes.const"
 import { commandsFor, contextOf } from "./bento-commands"
 import { rank, remember } from "@/lib/command-match"
 import { ShSearchService } from "@/services/search/search.service"
-import { ReviewPendingProvider } from "@/contexts/review-pending.context"
 import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
-import { BentoReviewPending } from "./bento-review-pending"
+import { useAgentRunReports } from "./bento-agent-runs"
 import { BentoStatusDock } from "./bento-status-dock"
 import { BentoTenantLinkNotice } from "./bento-tenant-link-notice"
 import { BentoTenantSwitcher } from "./bento-tenant-switcher"
@@ -72,14 +71,10 @@ import { BentoTenantSwitcher } from "./bento-tenant-switcher"
  * and republishes its value as `ShCurrentUser`, so one mount satisfies both hooks from one
  * fetch. This file imports Shio's again and needs to know nothing about it.
  *
- * `ReviewPendingProvider` is mounted since **SH936**, and the sentence that used to stand here is
- * worth keeping because it was right about the rail and wrong about the conclusion: "the rail
- * renders sections only, so SH207's badge has nowhere to appear until a hub does; mounting it now
- * would be a fetch nothing reads." The rail still renders sections only and the hub still does not
- * exist. What that reasoning missed is that the *rail* was never the only place an ambient signal
- * can live — the header is, it is visible from every surface, and `BentoReviewPending` reads the
- * count there. Waiting for a hub meant waiting for a page nobody had scheduled, while an agent
- * wrote drafts nothing told a curator about.
+ * SH936 put the review queue's pending count in the header, because the rail carries no badge.
+ * SH968 moved it to where the system reports: `useAgentRunReports` reads the change stream and
+ * tells the dock when an agent run starts and what it left when it ends, and turns the count read at
+ * load into one report. The header holds the tenant switcher and the account menu, and no count.
  */
 /** One row the palette offers, whichever half it came from. */
 interface PaletteRow {
@@ -99,6 +94,7 @@ const SEARCH_DEBOUNCE_MS = 200
 
 export default function BentoRootPage() {
   const groups = useBentoNav()
+  useAgentRunReports()
   const items = useBentoNavItems()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
@@ -236,67 +232,57 @@ export default function BentoRootPage() {
   return (
     <UserProvider>
       {/*
-        SH936 — mounted here, above both the header and the Outlet, and that placement is the
-        whole reason this is a context rather than a fetch inside the indicator. The count is
-        READ by the header badge and INVALIDATED by the review queue when a run is approved or
-        reverted; two subtrees can only reach each other from a common ancestor. A badge saying
-        two over a page showing nothing pending is the one number a curator learns to distrust.
+        SH946 — the package's shell owns the rail's gutter, the header, `main` with its reading
+        column, and the corner. It replaced a hand-composed `div`/`header`/gutter here, and with
+        it every page's own width, gutter and padding: the column is `columnFor`'s answer, and a
+        page sets none of the three. The header stays `sticky`, so `BackendStatusProvider`'s
+        sticky retry bar above this tree keeps its place instead of being covered.
       */}
-      <ReviewPendingProvider>
+      <BentoShell
+        rail={<BentoNavRail groups={groups} homeRoute={ROUTES.BENTO} />}
+        headerEnd={
+          <>
+            {/*
+              SH934 — the tenant switch is an identity action, so it sits beside the identity
+              menu, and renders nothing unless the reader belongs to more than one tenant.
+            */}
+            <BentoTenantSwitcher />
+            <BentoUserMenu
+              accountRoute={ROUTES.ADMIN_USERS}
+              logoutUrl={ROUTES.LOGOUT}
+              onOpenShortcuts={() => setShortcutsOpen(true)}
+            />
+          </>
+        }
+        column={columnFor(location.pathname)}
+        dock={<BentoStatusDock />}
+      >
         {/*
-          SH946 — the package's shell owns the rail's gutter, the header, `main` with its reading
-          column, and the corner. It replaced a hand-composed `div`/`header`/gutter here, and with
-          it every page's own width, gutter and padding: the column is `columnFor`'s answer, and a
-          page sets none of the three. The header stays `sticky`, so `BackendStatusProvider`'s
-          sticky retry bar above this tree keeps its place instead of being covered.
+          SH931 — above the Outlet, so it sits over whatever page the link led to rather than
+          inside it; it renders nothing unless the URL names a tenant that is not the session's.
         */}
-        <BentoShell
-          rail={<BentoNavRail groups={groups} homeRoute={ROUTES.BENTO} />}
-          headerEnd={
-            <>
-              {/*
-                SH934 — the tenant switch is an identity action, so it sits beside the identity
-                menu, and renders nothing unless the reader belongs to more than one tenant.
-              */}
-              <BentoReviewPending />
-              <BentoTenantSwitcher />
-              <BentoUserMenu
-                accountRoute={ROUTES.ADMIN_USERS}
-                logoutUrl={ROUTES.LOGOUT}
-                onOpenShortcuts={() => setShortcutsOpen(true)}
-              />
-            </>
-          }
-          column={columnFor(location.pathname)}
-          dock={<BentoStatusDock />}
-        >
-          {/*
-            SH931 — above the Outlet, so it sits over whatever page the link led to rather than
-            inside it; it renders nothing unless the URL names a tenant that is not the session's.
-          */}
-          <BentoTenantLinkNotice />
-          {/*
-            SH1049 — one screen's failure stays inside that screen: a throw under this boundary
-            leaves the rail, the header and the palette alive.
-          */}
-          <RouteBoundary>
-            <Outlet />
-          </RouteBoundary>
-        </BentoShell>
+        <BentoTenantLinkNotice />
+        {/*
+          SH1049 — one screen's failure stays inside that screen: a throw under this boundary
+          leaves the rail, the header and the palette alive.
+        */}
+        <RouteBoundary>
+          <Outlet />
+        </RouteBoundary>
+      </BentoShell>
 
-        {/*
-          Both read the *same* declaration the rail does — that is SH889's whole point. They
-          render beside the shell, which carries no state for them.
-        */}
-        <BentoCommandPalette
-          open={paletteOpen}
-          onOpenChange={setPaletteOpen}
-          items={items}
-          group={paletteGroup}
-          onQueryChange={onPaletteQuery}
-        />
-        <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} isMac={isMac} />
-      </ReviewPendingProvider>
+      {/*
+        Both read the *same* declaration the rail does — that is SH889's whole point. They
+        render beside the shell, which carries no state for them.
+      */}
+      <BentoCommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        items={items}
+        group={paletteGroup}
+        onQueryChange={onPaletteQuery}
+      />
+      <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} isMac={isMac} />
     </UserProvider>
   )
 }

@@ -5,7 +5,6 @@ import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ROUTES } from "@/app/routes.const"
-import { useReviewPending } from "@/contexts/review-pending.context"
 import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { ReviewTriage } from "@/components/review-triage"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
@@ -47,7 +46,6 @@ const ACTION_BADGE: Record<string, string> = {
  */
 export default function ReviewListPage() {
   const { t } = useTranslation()
-  const { refresh: refreshPending } = useReviewPending()
   const [sessions, setSessions] = useState<ShReviewSession[]>([])
   const [open, setOpen] = useState<Record<string, ShReviewDetail | null>>({})
   const [loading, setLoading] = useState(true)
@@ -126,7 +124,6 @@ export default function ReviewListPage() {
       const detail = await service.detail(session)
       setOpen((prev) => ({ ...prev, [session]: detail }))
       load()
-      refreshPending()
     } catch (error) {
       reportProblem(error, t("common.error"))
     } finally {
@@ -155,7 +152,6 @@ export default function ReviewListPage() {
       load()
       // SH207 — the navigation badge counts what this just changed, and a badge that disagrees
       // with the page it opens is the one number a curator learns to distrust.
-      refreshPending()
     } catch (error) {
       reportProblem(error, t("common.error"))
     } finally {

@@ -51,5 +51,12 @@
   "common.next": "Proximo",
   "common.refusalGoToField": "Ir para {{field}}",
   "common.refusalApply": "Usar \"{{value}}\"",
-  "common.refusalStatus": "{{message}} (HTTP {{status}})"
+  "common.refusalStatus": "{{message}} (HTTP {{status}})",
+  "dock.anAgent": "Um agente",
+  "dock.agentWorking": "{{agent}} está trabalhando em {{site}}",
+  "dock.agentFinished": "{{agent}} terminou em {{site}}. Alterações: {{count}}.",
+  "dock.agentFinishedReview": "{{agent}} terminou em {{site}}. Alterações aguardando sua revisão: {{pending}} de {{count}}.",
+  "dock.pendingAtLoad": "Execuções de agente aguardando sua revisão: {{count}}.",
+  "dock.openReview": "Abrir na revisão",
+  "dock.openActivity": "Ver a atividade"
 }

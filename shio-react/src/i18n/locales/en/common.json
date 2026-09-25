@@ -51,5 +51,12 @@
   "common.next": "Next",
   "common.refusalGoToField": "Go to {{field}}",
   "common.refusalApply": "Use \"{{value}}\"",
-  "common.refusalStatus": "{{message}} (HTTP {{status}})"
+  "common.refusalStatus": "{{message}} (HTTP {{status}})",
+  "dock.anAgent": "An agent",
+  "dock.agentWorking": "{{agent}} is working on {{site}}",
+  "dock.agentFinished": "{{agent}} finished on {{site}}. Changes: {{count}}.",
+  "dock.agentFinishedReview": "{{agent}} finished on {{site}}. Changes waiting for your review: {{pending}} of {{count}}.",
+  "dock.pendingAtLoad": "Agent runs waiting for your review: {{count}}.",
+  "dock.openReview": "Open in review",
+  "dock.openActivity": "See the activity"
 }

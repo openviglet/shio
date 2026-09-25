@@ -1079,25 +1079,6 @@ that agent through MCP, with its answer arriving in the transcript. That relay n
 run and intent records Block BB builds and lands there. This block builds the status
 surface, ordered mount, instrument, channel, then each kind of report.
 
-### LXIII.5 What the agent did, told where the curator already looks (SH968)
-
-The console's only ambient signal about agent work is bento-review-pending.tsx, the
-count SH936 placed in the header because the rail carries no badge. BENTO-AUTHORING
-section 1 names that exact case as what a header is not for, and it tells the curator a
-number without telling them what happened.
-
-With AX4's stream, the dock reports agent activity as it happens. A run that starts
-moves the mascot to working, with the actor and the site in the caption. A run that ends
-becomes a report, tone attention when it produced entries for review and success when it
-did not, with actions to open the review queue filtered to that run and to open its
-change set. An approval or a revert reports success to the curator who made it. Each
-agent write in view bumps the dock's activity, so the mascot reacts to smaller events
-than a state change.
-
-The header count is removed in the same commit and the dock's unread count takes its
-place, which is also what lets the tenant switcher stand alone in the header. The
-assertions drive a run through the stream and read the report and its actions.
-
 ### LXIII.6 A schedule's outcome, reported to the people who set it (SH969)
 
 ShPostScheduler sweeps every minute. When a scheduled publish or unpublish throws, it
