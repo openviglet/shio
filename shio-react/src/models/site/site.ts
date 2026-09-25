@@ -50,6 +50,8 @@ export type ShCoverageCell = {
   state: "current" | "stale" | "missing";
   address?: string;
   id?: string;
+  /** SH1062 — the translation carries an open request to the connected agent. Absent otherwise. */
+  requested?: boolean;
 };
 
 export type ShCoverageCount = { current: number; stale: number; missing: number };

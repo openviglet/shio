@@ -100,3 +100,24 @@ test("SH1056: every string the card and the menu ask for exists in both locales"
     for (const key of keys) assert.ok(strings[key], `SH1056: ${locale} is missing ${key}`)
   }
 })
+
+test("SH1062: the board asks the connected agent through a request on the draft it creates", () => {
+  const BOARD = read("src", "app", "content", "languages.page.tsx")
+  // The two existing moves, in order: the missing draft, then the request note on it. The draft is
+  // what carries the locale and the translation group to the agent, so no new note kind is needed.
+  assert.match(BOARD, /existing \?\? \(await unifiedService\.translate\(sourceId, locale\)\)\.id/u,
+    "SH1062: a missing cell must create its draft before asking, or the request has no page to hang on")
+  assert.match(BOARD, /sendRequest\(target, body, t\)/u,
+    "SH1062: the ask is not the dock's own request note, so the answer would not arrive in the dock")
+  assert.match(BOARD, /const askButton = [^\n]*agentAvailable &&/u,
+    "SH1062: the ask is offered with nobody around to answer it — SH1019's rule, one surface along")
+  assert.match(BOARD, /if \(value\.requested\)/u,
+    "SH1062: a requested draft reads as current, so the board says the work is done before it starts")
+  for (const locale of ["en", "pt"]) {
+    const strings = JSON.parse(read("src", "i18n", "locales", locale, "content.json"))
+    for (const key of ["content.coverageAsk", "content.coverageAskWrite", "content.coverageAskRefresh",
+      "content.coverageAsked", "content.coverageRequested", "content.coverageRequestedHint"]) {
+      assert.ok(strings[key], `SH1062: ${locale} is missing ${key}`)
+    }
+  }
+})

@@ -401,5 +401,11 @@
   "content.moreFilters": "More filters",
   "content.viewAsList": "List view",
   "content.viewAsGrid": "Grid view",
-  "content.viewAsTable": "Table view"
+  "content.viewAsTable": "Table view",
+  "content.coverageAsk": "Ask the agent to translate into {{locale}}",
+  "content.coverageAskWrite": "Translate this page into {{locale}} from its source (translationOf), as a draft.",
+  "content.coverageAskRefresh": "This {{locale}} translation is behind its source. Bring it up to date with the source's changes, as a draft.",
+  "content.coverageAsked": "Asked the agent. Its answer will arrive in the dock.",
+  "content.coverageRequested": "Requested",
+  "content.coverageRequestedHint": "The connected agent has been asked to write this translation. It stays a draft until you approve it."
 }

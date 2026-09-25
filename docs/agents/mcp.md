@@ -531,3 +531,12 @@ path, anchored to a post and the field the curator asked about, wants a value fo
 Reply with `note.add` whose `body` is the value itself, nothing around it, because the dock
 offers to write that body into the form as it stands. Read the field and what it accepts first
 (`shio_read` of the page, and its type's constraints).
+
+**A request for a translation (SH1062).** The Languages board asks for a translation by creating
+the missing draft and putting a `request` note on it (or on a stale translation, asking for it to
+be brought up to date). The page the note hangs on **is** the target: its `locale` is the language
+to write, and its translation group leads to the source. Read both, write the translated fields
+into that page with `post.upsert` as a draft, one run whose `intent` names the request, then reply
+on the thread and `note.resolve` it. Do not publish: the curator approves from the dock (SH1007) or
+the review queue. The board shows the cell as *requested* while the note is open
+(`ShSiteCoverage.Cell.requested`), so a request left unresolved keeps saying nobody has answered.

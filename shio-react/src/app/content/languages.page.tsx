@@ -1,5 +1,5 @@
 import { IconLanguage } from "@tabler/icons-react"
-import { AlertTriangle, Check, Languages, Plus } from "lucide-react"
+import { AlertTriangle, Bot, Check, Languages, Plus } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
@@ -16,6 +16,8 @@ import { reportProblem } from "@/lib/problem"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { ShCoverageCell, ShSiteCoverage } from "@/models/site/site"
+import { sendRequest } from "@/app/system/dock-chat-send"
+import { useAgentAvailable } from "@/app/system/use-agent-available"
 
 const siteService = new ShSiteService()
 const unifiedService = new ShPostUnifiedService()
@@ -42,6 +44,7 @@ export default function LanguagesPage() {
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
+  const agentAvailable = useAgentAvailable()
 
   const load = useCallback((signal?: AbortSignal) => {
     setLoading(true)
@@ -68,6 +71,45 @@ export default function LanguagesPage() {
     return () => abort.abort()
   }, [load])
 
+  /**
+   * SH1062 — ask the connected agent for a translation instead of writing it.
+   *
+   * <p>Shio hosts no model, so the board asks. It is the board's own two moves in sequence: a
+   * missing cell's draft is created first (SH1060), then a `request` note on the draft asks for it
+   * to be written or, for a stale one, brought up to date with its source. The draft carries the
+   * target locale and its translation group, so the agent reading `shio://requests` gets the page
+   * to write and where it comes from; its answer lands in the dock (SH1006) with the change attached
+   * (SH1007). Nothing is published by asking.</p>
+   */
+  const ask = async (sourceId: string, locale: string, existing?: string) => {
+    setBusy(`${sourceId}|${locale}`)
+    try {
+      const target = existing ?? (await unifiedService.translate(sourceId, locale)).id
+      const body = existing
+        ? t("content.coverageAskRefresh", { locale })
+        : t("content.coverageAskWrite", { locale })
+      if (await sendRequest(target, body, t)) {
+        toast.success(t("content.coverageAsked"))
+      }
+      await load()
+    } catch (error) {
+      reportProblem(error, t("common.error"))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /** The ask control, shown only while an agent is around to answer (SH1019's rule). */
+  const askButton = (rowId: string, locale: string, existing?: string) => agentAvailable && (
+    <Button variant="ghost" size="icon" className="size-7 text-muted-foreground"
+      disabled={busy === `${rowId}|${locale}`}
+      onClick={() => ask(rowId, locale, existing)}
+      aria-label={t("content.coverageAsk", { locale })}
+      title={t("content.coverageAsk", { locale })}>
+      <Bot className="size-3.5" />
+    </Button>
+  )
+
   /** The gesture the board exists for: start the missing translation from where it is missing. */
   const translate = async (sourceId: string, locale: string) => {
     setBusy(`${sourceId}|${locale}`)
@@ -85,25 +127,43 @@ export default function LanguagesPage() {
   const cell = (rowId: string, locale: string, value: ShCoverageCell | undefined) => {
     if (!value || value.state === "missing") {
       return (
-        <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-          disabled={busy === `${rowId}|${locale}`}
-          onClick={() => translate(rowId, locale)}
-          title={t("content.coverageTranslate", { locale })}>
-          <Plus className="size-3.5" />
-          {t("content.coverageMissing")}
-        </Button>
+        <span className="inline-flex items-center gap-0.5">
+          <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+            disabled={busy === `${rowId}|${locale}`}
+            onClick={() => translate(rowId, locale)}
+            title={t("content.coverageTranslate", { locale })}>
+            <Plus className="size-3.5" />
+            {t("content.coverageMissing")}
+          </Button>
+          {askButton(rowId, locale)}
+        </span>
+      )
+    }
+    // SH1062 — asked and not yet answered: the draft exists, but nobody has written it yet, and
+    // "current" there would say the work is done.
+    if (value.requested) {
+      return (
+        <Link className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:underline"
+          to={`${ROUTES.CONSOLE}/content/post/${value.id}`}
+          title={t("content.coverageRequestedHint")}>
+          <Bot className="size-3.5 text-sky-600 dark:text-sky-400" />
+          {t("content.coverageRequested")}
+        </Link>
       )
     }
     const stale = value.state === "stale"
     return (
-      <Link className="inline-flex items-center gap-1 text-xs hover:underline"
-        to={`${ROUTES.CONSOLE}/content/post/${value.id}`}
-        title={stale ? t("content.translationStaleHint") : undefined}>
-        {stale
-          ? <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" />
-          : <Check className="size-3.5 text-green-600 dark:text-green-400" />}
-        {stale ? t("content.translationStale") : t("content.coverageCurrent")}
-      </Link>
+      <span className="inline-flex items-center gap-0.5">
+        <Link className="inline-flex items-center gap-1 text-xs hover:underline"
+          to={`${ROUTES.CONSOLE}/content/post/${value.id}`}
+          title={stale ? t("content.translationStaleHint") : undefined}>
+          {stale
+            ? <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" />
+            : <Check className="size-3.5 text-green-600 dark:text-green-400" />}
+          {stale ? t("content.translationStale") : t("content.coverageCurrent")}
+        </Link>
+        {stale && askButton(rowId, locale, value.id)}
+      </span>
     )
   }
 

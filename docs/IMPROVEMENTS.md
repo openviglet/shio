@@ -2285,17 +2285,19 @@ curator's request to the connected agent as a note, post.upsert writes a linked 
 with locale and translationOf, BH5's board lists what is missing, and shio verify proves
 the result.
 
-The board and the workspace gain a request action on a missing or stale cell, a row, or
-a whole locale column. It writes a request note of kind translate, anchored to the
-translation groups, carrying the target locale and whether stale translations should be
-refreshed. The agent reads it, writes the translations as drafts in one run with an
-intent naming the request, and replies on the thread referencing that run, so SH1007's
-actions let the curator open the diff and approve from the dock.
+The request needs no note kind of its own. A missing cell first creates its draft, as
+the board already does, and a request note on that draft asks for it to be written; a
+stale cell's request goes on the existing translation and asks for it to be brought up
+to date. The page the note hangs on carries the target locale and the translation group,
+so shio://requests hands the agent everything, and the coverage cell reads requested
+while the note is open. The agent writes the translation as a draft in one run whose
+intent names the request and replies on the thread, so SH1007's actions let the curator
+open the diff and approve from the dock.
 
-Nothing is published by the request, and a stale cell becomes current only when its new
-draft is approved. The assertions request a missing translation, fulfil it through MCP,
-read the draft with its translationOf, and watch the board cell move from missing to
-pending review.
+What is left is scale and a second place to ask from: a whole row or a whole locale
+column requested at once, as one note per draft it creates, and the same action in the
+translation workspace. Nothing is published by a request, and a stale cell becomes
+current only when its new draft is approved.
 
 ### LXXIII.8 The chip that cannot say which language is the original (SH1125)
 

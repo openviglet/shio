@@ -20,9 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.ShAddress;
+import com.viglet.shio.api.note.ShNoteService;
 import com.viglet.shio.api.site.ShSiteCoverage.Cell;
 import com.viglet.shio.api.site.ShSiteCoverage.Count;
 import com.viglet.shio.api.site.ShSiteCoverage.Group;
+import com.viglet.shio.persistence.model.note.ShNote;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
@@ -56,13 +58,15 @@ public class ShSiteCoverageService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShSiteLocaleService shSiteLocaleService;
     private final ObjectMapper objectMapper;
+    private final ShNoteService shNoteService;
 
     public ShSiteCoverageService(ShPostUnifiedRepository shPostUnifiedRepository,
                                  ShSiteLocaleService shSiteLocaleService,
-                                 ObjectMapper objectMapper) {
+                                 ObjectMapper objectMapper, ShNoteService shNoteService) {
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shSiteLocaleService = shSiteLocaleService;
         this.objectMapper = objectMapper;
+        this.shNoteService = shNoteService;
     }
 
     /**
@@ -106,8 +110,41 @@ public class ShSiteCoverageService {
         tally.forEach((locale, counts) ->
                 totals.put(locale, new Count(counts[0], counts[1], counts[2])));
         return new ShSiteCoverage(site.getName(), List.copyOf(locales),
-                List.copyOf(groups.subList(from, to)), totals, Math.max(page, 0), Math.max(size, 1),
+                asked(groups.subList(from, to)), totals, Math.max(page, 0), Math.max(size, 1),
                 groups.size());
+    }
+
+    /**
+     * SH1062 — the page's cells, each marked when its translation carries an open request.
+     *
+     * <p>A request to the connected agent is an ordinary {@code request} note on the translation it
+     * is about, so "has somebody asked for this" is one read of the notes on the page's cells — one
+     * query for the page, never one per cell, and only for the rows actually returned.</p>
+     */
+    private List<Group> asked(List<Group> page) {
+        Set<String> ids = new LinkedHashSet<>();
+        page.forEach(group -> group.cells().values().forEach(cell -> {
+            if (cell.id() != null) {
+                ids.add(cell.id());
+            }
+        }));
+        Set<String> requested = new LinkedHashSet<>();
+        shNoteService.openOn(ids).forEach((id, notes) -> {
+            if (notes.stream().anyMatch(note -> ShNote.Kind.REQUEST.name().equals(note.getKind()))) {
+                requested.add(id);
+            }
+        });
+        if (requested.isEmpty()) {
+            return List.copyOf(page);
+        }
+        List<Group> marked = new ArrayList<>(page.size());
+        for (Group group : page) {
+            Map<String, Cell> cells = new LinkedHashMap<>();
+            group.cells().forEach((locale, cell) ->
+                    cells.put(locale, cell.id() != null && requested.contains(cell.id()) ? cell.asked() : cell));
+            marked.add(new Group(group.address(), group.id(), group.title(), cells));
+        }
+        return List.copyOf(marked);
     }
 
     /** The site's rows, draft-preferred, as group → locale → row. */

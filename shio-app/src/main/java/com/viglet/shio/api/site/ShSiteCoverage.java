@@ -11,6 +11,8 @@ package com.viglet.shio.api.site;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * SH1131 — a site's translation coverage: a row per page, a cell per language.
  *
@@ -56,11 +58,25 @@ public record ShSiteCoverage(String site, List<String> locales, List<Group> rows
      * {@code post:<site>/<url>}. A board carrying only one of them sends the other reader back for
      * a lookup per cell.</p>
      *
-     * @param state   {@code current}, {@code stale} (SH1058) or {@code missing}
-     * @param address the translation's own address, absent when there is nothing to open
-     * @param id      the translation's id, absent for the same reason
+     * @param state     {@code current}, {@code stale} (SH1058) or {@code missing}
+     * @param address   the translation's own address, absent when there is nothing to open
+     * @param id        the translation's id, absent for the same reason
+     * @param requested SH1062 — {@code true} while the translation carries an open request note,
+     *                  which is how the board asks the connected agent to write or refresh it; absent
+     *                  otherwise, so a board with no requests costs no bytes for the word
      */
-    public record Cell(String state, String address, String id) {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Cell(String state, String address, String id, Boolean requested) {
+
+        /** A cell nobody has asked about. */
+        public Cell(String state, String address, String id) {
+            this(state, address, id, null);
+        }
+
+        /** The same cell, marked as asked for. */
+        Cell asked() {
+            return new Cell(state, address, id, Boolean.TRUE);
+        }
     }
 
     /** How many groups are in each state, for one language. */
