@@ -11,6 +11,8 @@ shio find — the posts matching a query, as addresses and titles
   --modified-before <t>  ISO date/instant; exclusive
   --author <user>        Created by
   --modifier <user>      Last changed by
+  --submission <bool>    true: what a site's form wrote; false: none of it
+  --agent <bool>         true: what an agent run wrote; false: none of it
   --q <text>             Full text: title, summary, fields
   --limit <n>            Rows per page; the walk still runs to the end
   --json                 Raw JSON instead of lines

@@ -371,6 +371,7 @@
   "content.filterAuthor": "Created by",
   "content.filterModifier": "Changed by",
   "content.filterSubtree": "Include subfolders",
+  "content.filterAgent": "Written by an agent",
   "content.filterClear": "Clear",
   "content.filterPublished": "Published",
   "content.filterDraft": "Draft",

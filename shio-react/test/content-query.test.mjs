@@ -63,6 +63,14 @@ test("SH1022: the console spells the server's words, not its own", () => {
       + "longer ask what an agent can")
 })
 
+test("SH1024: the author filters offer 'an agent', sent as the vocabulary's own word", () => {
+  assert.deepEqual(filterParams({ agent: "true" }), { agent: "true" },
+    "SH1024: the agent option narrows on the server, like every filter here")
+  assert.match(PAGE, /checked=\{list\.value\.agent === "true"\}[\s\S]*?list\.set\("agent", checked \? "true" : ""\)/u,
+    "SH1024: the browser's filters have no agent option, so a curator cannot ask what `shio find --agent true` asks")
+  assert.match(PAGE, /agent: value\.agent/u, "SH1024: the option is in the URL and never reaches the request")
+})
+
 test("SH1022: a blank filter is not asked for, and the badge counts what is", () => {
   assert.deepEqual(filterParams({ type: "Article", author: "  ", state: undefined }),
     { type: "Article" })

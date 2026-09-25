@@ -427,6 +427,7 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                             @Param("modifier") String modifier,
                                             @Param("missingLocale") String missingLocale,
                                             @Param("submission") Boolean submission,
+                                            @Param("agent") Boolean agent,
                                             Pageable pageable);
 
     /**
@@ -439,21 +440,21 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             String typeId, ShPostState state, String locale, Instant since, Instant before,
             String author, String modifier, Pageable pageable) {
         return pageConsoleRows(folderIds, query, typeId, state, locale, since, before, author,
-                modifier, null, null, pageable);
+                modifier, null, null, null, pageable);
     }
 
     /**
-     * As above, narrowed to the groups missing a locale (SH1060) and to form submissions or none
-     * (SH1066); null is no narrowing.
+     * As above, narrowed to the groups missing a locale (SH1060), to form submissions or none
+     * (SH1066) and to what an agent wrote or none (SH1024); null is no narrowing.
      */
     default Page<ShPostUnified> pageConsoleRows(Collection<String> folderIds, String query,
             String typeId, ShPostState state, String locale, Instant since, Instant before,
             String author, String modifier, String missingLocale, Boolean submission,
-            Pageable pageable) {
+            Boolean agent, Pageable pageable) {
         return pageConsoleRowsLike(folderIds,
                 query == null || query.isBlank() ? null : fullTextPattern(query), typeId, state,
                 blankToNull(locale), since, before, lowerOrNull(author), lowerOrNull(modifier),
-                blankToNull(missingLocale), submission, pageable);
+                blankToNull(missingLocale), submission, agent, pageable);
     }
 
     /**
@@ -492,7 +493,8 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                          @Param("author") String author,
                                          @Param("modifier") String modifier,
                                          @Param("missingLocale") String missingLocale,
-                                         @Param("submission") Boolean submission);
+                                         @Param("submission") Boolean submission,
+                                         @Param("agent") Boolean agent);
 
     /** {@link #findByQueryLower} with the term and the two people columns normalized once. */
     default List<ShPostUnified> findByQuery(Collection<String> siteIds,
@@ -500,23 +502,24 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             String typeId, String locale, Instant since, Instant before, String author,
             String modifier) {
         return findByQuery(siteIds, states, folderIds, term, typeId, locale, since, before, author,
-                modifier, null, null);
+                modifier, null, null, null);
     }
 
     /**
-     * As above, narrowed to the groups missing a locale (SH1060) and to form submissions or none
-     * (SH1066); null is no narrowing.
+     * As above, narrowed to the groups missing a locale (SH1060), to form submissions or none
+     * (SH1066) and to what an agent wrote or none (SH1024); null is no narrowing.
      */
     default List<ShPostUnified> findByQuery(Collection<String> siteIds,
             Collection<ShPostState> states, Collection<String> folderIds, String term,
             String typeId, String locale, Instant since, Instant before, String author,
-            String modifier, String missingLocale, Boolean submission) {
+            String modifier, String missingLocale, Boolean submission, Boolean agent) {
         boolean anyFolder = folderIds == null || folderIds.isEmpty();
         return findByQueryLower(siteIds, states, anyFolder,
                 anyFolder ? List.of("") : folderIds,
                 term == null || term.isBlank() ? null : fullTextPattern(term),
                 blankToNull(typeId), blankToNull(locale), since, before,
-                lowerOrNull(author), lowerOrNull(modifier), blankToNull(missingLocale), submission);
+                lowerOrNull(author), lowerOrNull(modifier), blankToNull(missingLocale), submission,
+                agent);
     }
 
     static String blankToNull(String value) {
@@ -800,6 +803,10 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     String SUBMITTED = "(p.owner = '" + com.viglet.shio.api.form.ShFormSubmitter.UNTOKENED
             + "' or p.owner like '" + com.viglet.shio.api.form.ShFormSubmitter.TOKEN_PREFIX + "%')";
 
+    /** SH1024 — a post an agent run wrote at least once. */
+    String AGENT_WROTE = "exists (select 1 from ShHistory h where h.shObject = p.id and "
+            + com.viglet.shio.persistence.repository.history.ShHistoryRepository.AGENT_SESSION + ")";
+
     String QUERY_FILTERS =
             " and (:typeId is null or p.shPostType.id = :typeId)"
             + " and (:locale is null or p.locale = :locale)"
@@ -813,6 +820,13 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             + " and (:submission is null"
             + "   or (:submission = true and " + SUBMITTED + ")"
             + "   or (:submission = false and (p.owner is null or not " + SUBMITTED + ")))"
+            // SH1024 — what an agent run wrote, read off the audit trail with the feed's own
+            // spelling of "an agent session" (ShHistoryRepository.AGENT_SESSION), so a console
+            // session, which is a curator's, never counts. `h.shObject` is a plain id column, so
+            // the subquery has no join and no SH22 hazard.
+            + " and (:agent is null"
+            + "   or (:agent = true and " + AGENT_WROTE + ")"
+            + "   or (:agent = false and not " + AGENT_WROTE + "))"
             // SH1060 — "what is missing in pt-br", as a predicate rather than a scan. A group with
             // no member in that locale, answered on the group's SOURCE alone (`p.id =
             // p.translationGroupId`, SH383's anchor): reporting every member would answer one gap

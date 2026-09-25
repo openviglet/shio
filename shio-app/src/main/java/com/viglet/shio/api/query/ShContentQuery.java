@@ -69,6 +69,8 @@ import com.viglet.shio.api.post.ShContentPerspective;
  * @param modifier       who last changed it
  * @param submission     SH1066 — {@code true} for only what a site's form wrote, {@code false} for
  *                       none of it; absent is both
+ * @param agent          SH1024 — {@code true} for only what an agent run wrote, {@code false} for
+ *                       nothing it did; a {@code console:} session is a curator's and never counts
  * @param q              full text over title, summary and the attribute data
  * @param sort           {@code title}, {@code date} or {@code modifiedDate}
  * @param page           zero-based page index
@@ -84,12 +86,12 @@ import com.viglet.shio.api.post.ShContentPerspective;
 public record ShContentQuery(String site, String folder, Boolean subtree, String type,
         String state, String locale, Instant modifiedSince, Instant modifiedBefore, String author,
         String modifier, String q, String sort, Integer page, Integer size, Integer folderPage,
-        Integer folderSize, String missingLocale, Boolean submission) {
+        Integer folderSize, String missingLocale, Boolean submission, Boolean agent) {
 
     /** The vocabulary, in the order the design names it — the {@code allowed} set of a refusal. */
     public static final List<String> KEYS = List.of("site", "folder", "subtree", "type", "state",
             "locale", "missingLocale", "modifiedSince", "modifiedBefore", "author", "modifier",
-            "submission", "q", "sort", "page", "size", "folderPage", "folderSize");
+            "submission", "agent", "q", "sort", "page", "size", "folderPage", "folderSize");
 
     /** The words that page or order rather than filter — every listing has its own answer. */
     public static final List<String> PAGING =
@@ -101,7 +103,7 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
 
     /** No filter at all: every readable row. */
     public static final ShContentQuery ALL = new ShContentQuery(null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
     /** The most common starting point, and the one a test writes. */
     public static ShContentQuery ofSite(String site) {
@@ -110,39 +112,39 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
 
     public ShContentQuery withSite(String value) {
         return new ShContentQuery(value, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withFolder(String value) {
         return new ShContentQuery(site, value, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withSubtree(Boolean value) {
         return new ShContentQuery(site, folder, value, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withType(String value) {
         return new ShContentQuery(site, folder, subtree, value, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withState(String value) {
         return new ShContentQuery(site, folder, subtree, type, value, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withLocale(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, value, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     /** SH1060 — the groups with no translation in this locale, answered on the source. */
     public ShContentQuery withMissingLocale(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
                 modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize,
-                value, submission);
+                value, submission, agent);
     }
 
     /**
@@ -155,45 +157,59 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
     public ShContentQuery withSubmission(Boolean value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
                 modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize,
-                missingLocale, value);
+                missingLocale, value, agent);
+    }
+
+    /**
+     * SH1024 — only what an agent run wrote ({@code true}), or nothing it did ({@code false}).
+     *
+     * <p>Read off the audit trail's {@code agent_session_id} (SH106), the column the review queue
+     * and the activity page's attribution filter already read, and never a {@code console:} session:
+     * that is a curator publishing their own work (SH996), and filing it under the machines is the
+     * one mistake this word must not make.</p>
+     */
+    public ShContentQuery withAgent(Boolean value) {
+        return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
+                modifiedBefore, author, modifier, q, sort, page, size, folderPage, folderSize,
+                missingLocale, submission, value);
     }
 
     public ShContentQuery withModifiedSince(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale,
                 instant("modifiedSince", value), modifiedBefore, author, modifier, q, sort, page,
-                size, folderPage, folderSize, missingLocale, submission);
+                size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withModifiedBefore(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
                 instant("modifiedBefore", value), author, modifier, q, sort, page, size,
-                folderPage, folderSize, missingLocale, submission);
+                folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withAuthor(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, value, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, value, modifier, q, sort, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withModifier(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, value, q, sort, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, author, value, q, sort, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withQ(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, value, sort, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, author, modifier, value, sort, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withSort(String value) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, value, page, size, folderPage, folderSize, missingLocale, submission);
+                modifiedBefore, author, modifier, q, value, page, size, folderPage, folderSize, missingLocale, submission, agent);
     }
 
     public ShContentQuery withPaging(Integer pageValue, Integer sizeValue) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
                 modifiedBefore, author, modifier, q, sort, pageValue, sizeValue, folderPage,
-                folderSize, missingLocale, submission);
+                folderSize, missingLocale, submission, agent);
     }
 
     /**
@@ -206,7 +222,7 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
      */
     public ShContentQuery withFolderPaging(Integer pageValue, Integer sizeValue) {
         return new ShContentQuery(site, folder, subtree, type, state, locale, modifiedSince,
-                modifiedBefore, author, modifier, q, sort, page, size, pageValue, sizeValue, missingLocale, submission);
+                modifiedBefore, author, modifier, q, sort, page, size, pageValue, sizeValue, missingLocale, submission, agent);
     }
 
     /** Whether the caller asked for a page of folders rather than all of them. */
@@ -266,6 +282,7 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
             case "author" -> withAuthor(text(value));
             case "modifier" -> withModifier(text(value));
             case "submission" -> withSubmission(bool("submission", value));
+            case "agent" -> withAgent(bool("agent", value));
             case "q" -> withQ(text(value));
             case "sort" -> withSort(text(value));
             case "page" -> withPaging(number("page", value, 0), size);
@@ -304,6 +321,11 @@ public record ShContentQuery(String site, String folder, Boolean subtree, String
      */
     public static Boolean submissionOf(String value) {
         return bool("submission", value);
+    }
+
+    /** SH1024 — {@code agent} as MCP sends it, refused the way the REST parse refuses it. */
+    public static Boolean agentOf(String value) {
+        return bool("agent", value);
     }
 
     /**

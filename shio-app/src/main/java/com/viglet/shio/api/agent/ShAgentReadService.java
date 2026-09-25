@@ -117,6 +117,8 @@ public class ShAgentReadService {
     private final com.viglet.shio.turing.ShTuringIndexService shTuringIndexService;
     /** SH1063 — where a failed push is recorded, which is the only trace one leaves. */
     private final com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog incidentLog;
+    /** SH1024 — whether an agent run wrote a trashed row, which the `agent` predicate cannot see. */
+    private final com.viglet.shio.persistence.repository.history.ShHistoryRepository shHistoryRepository;
 
     /**
      * How far back an {@code include=index} read looks for a failure.
@@ -144,7 +146,9 @@ public class ShAgentReadService {
                               ShContentQueryResolver contentQueryResolver,
                               com.viglet.shio.post.ShTranslationStaleness shTranslationStaleness,
                               com.viglet.shio.turing.ShTuringIndexService shTuringIndexService,
-                              com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog incidentLog) {
+                              com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog incidentLog,
+                              com.viglet.shio.persistence.repository.history.ShHistoryRepository shHistoryRepository) {
+        this.shHistoryRepository = shHistoryRepository;
         this.shTuringIndexService = shTuringIndexService;
         this.incidentLog = incidentLog;
         this.shTranslationStaleness = shTranslationStaleness;
@@ -304,6 +308,9 @@ public class ShAgentReadService {
                     // use the predicate: a filter the query accepts and a listing quietly drops
                     // answers 200 with every row, which is what the vocabulary exists to prevent.
                     .filter(post -> matchesMissingLocale(post, query.missingLocale()))
+                    // SH1024 — and `agent` for the same reason, asked of the trail a row at a time.
+                    .filter(post -> query.agent() == null
+                            || query.agent() == shHistoryRepository.existsAgentWrite(post.getId()))
                     .toList();
         } else {
             matches = shPostUnifiedRepository.findByQuery(
@@ -311,7 +318,7 @@ public class ShAgentReadService {
                     wanted == null ? BOTH_STATES : List.of(wanted),
                     folderIds, query.q(), contentQueryResolver.typeId(query), query.locale(),
                     query.modifiedSince(), query.modifiedBefore(), query.author(),
-                    query.modifier(), query.missingLocale(), query.submission());
+                    query.modifier(), query.missingLocale(), query.submission(), query.agent());
         }
 
         // SH545 — free while both rows are in hand, and one id-only projection when `state`

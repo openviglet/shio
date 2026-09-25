@@ -2873,8 +2873,12 @@ that. `site` keeps runs whose `bySite` names it. `runSites` builds the facet fro
 and `withSiteFacet` offers it only when there are two sites. The `?session=` deep link still opens
 its run: the hook drops that key only on the curator's next filter change, after it has been used.
 
-Still to come: facet counts from the listing; the author picker with an agent option; and saved
-views.
+**The agent option is a vocabulary word, not a console feature.** The browser's "More filters"
+popover has a "Written by an agent" checkbox that sets the URL's `agent=true`, which travels like
+every other filter. It is a checkbox and not a value in the author field because an agent is not
+an owner: its writes carry the credential's user, so no name typed there could match one.
+
+Still to come: facet counts from the listing, and saved views.
 
 ## The browser's three views (SH1026, in parts)
 

@@ -208,6 +208,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "agent" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "author" : {
             "description" : "#string",
             "type" : "string"

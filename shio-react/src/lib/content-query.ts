@@ -39,6 +39,8 @@ export interface ShContentFilters {
   modifier?: string
   /** SH1066 — `true` for only what a site's form wrote, `false` for none of it. */
   submission?: string
+  /** SH1024 — `true` for only what an agent run wrote, `false` for nothing it did. */
+  agent?: string
   subtree?: string
 }
 
@@ -52,7 +54,7 @@ export interface ShContentFilters {
  */
 export const CONTENT_FILTERS = [
   "q", "type", "state", "locale", "missingLocale", "modifiedSince", "modifiedBefore", "author",
-  "modifier", "submission", "subtree",
+  "modifier", "submission", "agent", "subtree",
 ] as const
 
 /** The filters that carry a value, as query parameters — blank means "not asked for". */

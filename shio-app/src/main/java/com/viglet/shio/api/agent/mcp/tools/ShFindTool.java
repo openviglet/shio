@@ -57,18 +57,18 @@ public class ShFindTool implements ShMcpTool {
         // reservation by trimming the nine that were already here, not by raising the ceiling:
         // a schema is read on every turn of every session, which is what P3 is about.
         Map<String, Object> properties = new LinkedHashMap<>();
-        properties.put("site", ShMcpTool.string("Site name; omit for all."));
-        properties.put("type", ShMcpTool.string("Post-type name, e.g. Article."));
+        properties.put("site", ShMcpTool.string("Site name."));
+        properties.put("type", ShMcpTool.string("Post-type name."));
         properties.put("folder", ShMcpTool.string("/blog or folder:<site>/<path>; its subtree."));
         properties.put("subtree", ShMcpTool.string("false: that folder only."));
-        properties.put("q", ShMcpTool.string("Full text: title, summary, fields."));
+        properties.put("q", ShMcpTool.string("Full text."));
         properties.put("limit", ShMcpTool.integer("Max rows (default 25)."));
         // Worth its schema (P3): without it an MCP-only client is back to the dead end
         // SH146 removed — a result past the cap it can see is truncated and cannot finish.
         properties.put("after", ShMcpTool.string("Cursor from a truncated result."));
         // SH990 — REST's state=, within this tool's SH977 reservation.
         properties.put("state", ShMcpTool.string("published or draft."));
-        properties.put("locale", ShMcpTool.string("Locale tag, e.g. pt_BR."));
+        properties.put("locale", ShMcpTool.string("e.g. pt_BR."));
         // SH1060 — the coverage question as a filter: what is still to translate.
         properties.put("missingLocale", ShMcpTool.string("Pages lacking that translation."));
         properties.put("modifiedSince", ShMcpTool.string("ISO date/instant; inclusive."));
@@ -77,8 +77,11 @@ public class ShFindTool implements ShMcpTool {
         properties.put("modifier", ShMcpTool.string("Last changed by."));
         // SH1066 — what arrived through a site's form: a submission is a post, found like one.
         properties.put("submission", ShMcpTool.string("true: form submissions only."));
+        // SH1024 — what an agent run wrote, or with false what none did: the console's author
+        // picker has this option, and a console-only filter is the thing P1 forbids.
+        properties.put("agent", ShMcpTool.string("true: agent-written only."));
         // SH991 — within this tool's SH977 reservation, which named a schedule predicate.
-        properties.put("scheduled", ShMcpTool.string("any, or from..to in ISO instants."));
+        properties.put("scheduled", ShMcpTool.string("any, or ISO from..to."));
         // SH993 — the read half of the release ops, inside the same reservation.
         properties.put("release", ShMcpTool.string("Release name: its posts; needs site."));
         return ShMcpTool.schema(properties, List.of());
@@ -103,7 +106,8 @@ public class ShFindTool implements ShMcpTool {
                 .withModifiedBefore(ShMcpArgs.string(arguments, "modifiedBefore"))
                 .withAuthor(ShMcpArgs.string(arguments, "author"))
                 .withModifier(ShMcpArgs.string(arguments, "modifier"))
-                .withSubmission(ShContentQuery.submissionOf(ShMcpArgs.string(arguments, "submission")));
+                .withSubmission(ShContentQuery.submissionOf(ShMcpArgs.string(arguments, "submission")))
+                .withAgent(ShContentQuery.agentOf(ShMcpArgs.string(arguments, "agent")));
         return ShAgentReadTerse.found(shAgentReadService.find(query,
                 ShMcpArgs.integer(arguments, "limit"), false,
                 ShMcpArgs.string(arguments, "after"), false,

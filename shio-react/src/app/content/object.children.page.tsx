@@ -155,7 +155,7 @@ const MORE_IGNORES = ["sort", "view", "q", "type", "state", "locale", "modifiedS
 const BROWSER_LIST = {
   q: "", sort: "order", view: "list",
   type: "", state: "", locale: "", missingLocale: "", modifiedSince: "", modifiedBefore: "",
-  author: "", modifier: "", subtree: "",
+  author: "", modifier: "", agent: "", subtree: "",
 }
 
 /** The list state, as the filter shape the request builder and the popover both read. */
@@ -165,7 +165,7 @@ function browserFilters(value: Record<keyof typeof BROWSER_LIST, string>): ShCon
     // SH1060 — the coverage question, asked of a folder: which pages here have no pt-br yet.
     missingLocale: value.missingLocale,
     modifiedSince: value.modifiedSince, modifiedBefore: value.modifiedBefore,
-    author: value.author, modifier: value.modifier, subtree: value.subtree,
+    author: value.author, modifier: value.modifier, agent: value.agent, subtree: value.subtree,
   }
 }
 
@@ -1086,6 +1086,18 @@ export default function ObjectChildrenPage() {
                     onChange={(event) => list.set("modifier", event.target.value)} />
                 </div>
               </div>
+              {/*
+                SH1024 — the author picker's agent option: what an agent run wrote, read off the
+                audit trail by the vocabulary's `agent` word, so this is the question `shio find
+                --agent true` asks. A checkbox rather than a value in the author field, because an
+                agent is not an owner: its writes carry the credential's user, and a name typed
+                there would never match one.
+              */}
+              <label className="flex items-center gap-2 text-xs">
+                <Checkbox checked={list.value.agent === "true"}
+                  onCheckedChange={(checked) => list.set("agent", checked ? "true" : "")} />
+                {t("content.filterAgent")}
+              </label>
               <div className="flex items-center justify-between">
                 {/* The subtree word, spelled as the server spells it: unsaid means this folder. */}
                 <label className="flex items-center gap-2 text-xs">

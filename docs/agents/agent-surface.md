@@ -3689,6 +3689,16 @@ enabled and its folder does not resolve: the endpoint refuses every submission t
 500 only the visitor sees. It resolves through `ShFormDestination`, the endpoint's own resolver, and a
 switched-off form is not reported, since an operator may still be setting it up.
 
+**`agent` is what an agent run wrote (SH1024):** `true` for only the posts with an audit row carrying
+an agent session, `false` for none of them, absent for both. It exists because the console's author
+filters offer "written by an agent", and a console-only filter is what P1 forbids. So it landed on
+every surface: `shio_find`'s `agent`, `shio find --agent`, REST, and the browser's checkbox. It reads
+`ShHistory.agent_session_id` through `ShHistoryRepository.AGENT_SESSION`. That is one spelling, used
+by the activity feed's attribution filter, the presence marks and this predicate, and it excludes a
+`console:` session, which is a curator publishing their own work (SH996). The trash asks it a row at
+a time (`existsAgentWrite`), since its rows are outside the predicate. The `shio_find` argument was
+paid for by trimming five of the tool's descriptions, not by raising a reservation.
+
 **`missingLocale` is the coverage question (SH1060):** the pages whose translation group has *no*
 member in that tag — "what is still to translate into pt-br" as a predicate rather than a scan
 whose cost grows with the site. It answers on the group's **source** (`p.id =

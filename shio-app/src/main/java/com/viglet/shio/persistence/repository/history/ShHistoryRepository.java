@@ -63,10 +63,19 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 			+ "  where d.session = h.agentSessionId and d.postId = h.shObject "
 			+ "  and d.decision = :decision)) ";
 
+	/**
+	 * SH1024 — a row an agent run wrote, over alias {@code h}: a session, and not a console one.
+	 *
+	 * <p>One spelling for the three readers that ask it — this feed's attribution filter, the
+	 * content vocabulary's {@code agent} word ({@code ShPostUnifiedRepository.QUERY_FILTERS}) and
+	 * the trash's row-at-a-time check below — because a second copy that forgot the console arm
+	 * would file a curator's own publish under the machines (SH996).</p>
+	 */
+	String AGENT_SESSION = "(h.agentSessionId is not null and h.agentSessionId not like 'console:%')";
+
 	String WROTE_IT = "and (:session is null or h.agentSessionId = :session) "
 			+ "and (:kind is null "
-			+ "  or (:kind = 'agent' and h.agentSessionId is not null "
-			+ "      and h.agentSessionId not like 'console:%') "
+			+ "  or (:kind = 'agent' and " + AGENT_SESSION + ") "
 			+ "  or (:kind = 'curator' and (h.agentSessionId is null "
 			+ "      or h.agentSessionId like 'console:%'))) ";
 
@@ -119,6 +128,13 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	List<ShHistory> findByShObjectOrderByDateDesc(String shObject, Pageable pageable);
 
 	/**
+	 * Whether an agent run ever wrote this object (SH1024), for a listing that cannot use the
+	 * {@code agent} predicate: the trash, whose rows are outside the index it reads.
+	 */
+	@Query("select count(h) > 0 from ShHistory h where h.shObject = :object and " + AGENT_SESSION)
+	boolean existsAgentWrite(String object);
+
+	/**
 	 * Which of these objects a run has written to since {@code since} (SH1008).
 	 *
 	 * <p>Not the duplication SH1005 removed, and the difference is the question rather than the
@@ -132,7 +148,7 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	 * because a person pressed Publish is the one thing this mark must not say.</p>
 	 */
 	@Query("select h from ShHistory h where h.date >= :since and h.shObject in :objectIds "
-			+ "and h.agentSessionId is not null and h.agentSessionId not like 'console:%' "
+			+ "and " + AGENT_SESSION + " "
 			+ "order by h.date desc, h.id desc")
 	List<ShHistory> findWorkingMarks(Instant since, Collection<String> objectIds, Pageable pageable);
 

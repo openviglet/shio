@@ -371,6 +371,7 @@
   "content.filterAuthor": "Criado por",
   "content.filterModifier": "Alterado por",
   "content.filterSubtree": "Incluir subpastas",
+  "content.filterAgent": "Escrito por um agente",
   "content.filterClear": "Limpar",
   "content.filterPublished": "Publicado",
   "content.filterDraft": "Rascunho",
