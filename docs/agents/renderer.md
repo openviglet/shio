@@ -617,6 +617,18 @@ renderer over one body of content at a second address. See the section on it bel
   is, so a second list would be written into by a guess; and a declared type this instance has not
   provisioned is **shown and not offered**, for the same reason the server reports it rather than
   dropping it.
+- **And the rail shows the shape, not a sentence (SH1105)** — each offered type carries a thumbnail
+  from `GET /api/v2/render/section-preview?page=&field=&type=`, which is
+  `ShPageRenderService.sectionPreview`: the page rendered through **`renderPage`, the preview path
+  and never a second one**, with `field` proposed as one transient section of that type. The section
+  post exists only for that render — `ShRenderHelpers.withTransient` lets `resolveReference` find it
+  without a row — and its text fields (`Text`, `Text Area`, `HTML Editor`) carry their own labels as
+  placeholder text; a File or combo field stays empty, since a label there is a broken image or a
+  choice that does not exist. The answer is the page's `<head>` plus the one `data-shio-section`
+  element, scripts removed; the console draws it at a quarter scale in an `<iframe sandbox="">`, so
+  the site's stylesheet cannot restyle the console and the thumbnail runs nothing. HTML, not a
+  raster — the instance runs no browser. Console-only in `ShAgentReadReachabilityLintTest`: the same
+  choice is data at `include=insertable`. The drag caret between sections is the part still open.
 - **The panel draws the field the model declares (SH1037)** — it used to be a bare `<Input>` for an
   `attr` field and read-only text for everything else, so a `Date` was a string, a `Check Box` was
   `"1"` and a `Content Select` was a UUID — and `affordance="panel"`, the field a caret cannot

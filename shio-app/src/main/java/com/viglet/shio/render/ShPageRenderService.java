@@ -266,6 +266,87 @@ public class ShPageRenderService {
     }
 
     /**
+     * SH1105 — what one section of {@code typeName} looks like on this page, as HTML.
+     *
+     * <p>A curator choosing between a hero and a rich-text block is choosing a shape, and a sentence
+     * is the worst way to show one. So the page renders through its own layout (the preview path,
+     * never a second one) with {@code field} proposed as one section: a transient post of that type
+     * whose fields carry their own labels as placeholder text. Nothing is stored, and the section
+     * exists only for this render ({@link ShRenderHelpers#withTransient}).</p>
+     *
+     * <p>What comes back is the page's {@code <head>} (its theme, so the section is styled as the
+     * site styles it) and the one element marked {@code data-shio-section} that holds the transient
+     * post, scripts removed: a thumbnail runs nothing. HTML, not a raster, which keeps it inside the
+     * non-goal that the instance does not run a browser.</p>
+     *
+     * @return empty when the page or the type is unknown, or the template marks no section element
+     */
+    @Transactional(readOnly = true,
+        noRollbackFor = { ShTeachingException.class, ShPageRedirectException.class })
+    public Optional<String> sectionPreview(String pageId, String field, String typeName) {
+        List<ShPostUnified> rows = shPostUnifiedRepository.findById(pageId);
+        ShPostType type = typeName == null ? null : shPostTypeRepository.findByName(typeName);
+        if (rows.isEmpty() || type == null || field == null || field.isBlank()) {
+            return Optional.empty();
+        }
+        ShPostUnified stored = rows.stream().filter(row -> row.getState() == ShPostState.DRAFT)
+                .findFirst().orElse(rows.getFirst());
+        ShSite site = stored.getShSite();
+        if (site == null) {
+            return Optional.empty();
+        }
+        ObjectNode placeholder = objectMapper.createObjectNode();
+        type.getShPostTypeAttrs().stream()
+                .sorted(java.util.Comparator.comparing(
+                        (com.viglet.shio.persistence.model.post.type.ShPostTypeAttr attr) -> attr.getOrdinal())
+                        .thenComparing(com.viglet.shio.persistence.model.post.type.ShPostTypeAttr::getName))
+                // Only text reads as a label. A label in a File field is a broken image and in a
+                // combo box a choice that does not exist, so those render as the template's empty case.
+                .filter(attr -> attr.getShWidget() != null
+                        && PLACEHOLDER_WIDGETS.contains(attr.getShWidget().getName()))
+                .forEach(attr -> placeholder.put(attr.getName(),
+                        attr.getLabel() == null || attr.getLabel().isBlank() ? attr.getName() : attr.getLabel()));
+        ShPostUnified section = new ShPostUnified();
+        section.setId("sh-preview-" + java.util.UUID.randomUUID());
+        section.setState(stored.getState());
+        section.setShSite(site);
+        section.setShFolder(stored.getShFolder());
+        section.setShPostType(type);
+        section.setTitle(type.getTitle() == null ? type.getName() : type.getTitle());
+        section.setFurl("/" + section.getId());
+        section.setData(placeholder.toString());
+        ObjectNode proposed = objectMapper.createObjectNode();
+        proposed.putArray(field).add(section.getId());
+        String html = ShRenderHelpers.withTransient(Map.of(section.getId(), section),
+                () -> renderPage(site, proposedCopy(stored, proposed), stored.getState(), Map.of(), null).html());
+        return Optional.ofNullable(cropToSection(html, section.getId()));
+    }
+
+    /** The widgets whose placeholder is the field's own label. */
+    private static final java.util.Set<String> PLACEHOLDER_WIDGETS =
+            java.util.Set.of("Text", "Text Area", "HTML Editor");
+
+    /** The page's head and the one section element holding {@code postId}, or null if none is marked. */
+    static String cropToSection(String html, String postId) {
+        org.jsoup.nodes.Document page = org.jsoup.Jsoup.parse(html);
+        org.jsoup.select.Elements marked = page.select("[" + ShRegionComposer.ANNOTATION_SECTION + "]");
+        org.jsoup.nodes.Element section = marked.stream()
+                .filter(element -> !element.select("[data-shio-post=\"" + postId + "\"]").isEmpty()
+                        || postId.equals(element.attr("data-shio-post")))
+                .findFirst()
+                // A template that marks its section element but annotates no field inside it: the
+                // proposed page holds this one section, so a lone marked element is it.
+                .orElse(marked.size() == 1 ? marked.first() : null);
+        if (section == null) {
+            return null;
+        }
+        page.select("script").remove();
+        section.select("script").remove();
+        return "<!doctype html><html><head>" + page.head().html() + "</head><body>"
+                + section.outerHtml() + "</body></html>";
+    }
+
+    /**
      * A transient page carrying the caller's values over the stored ones.
      *
      * <p>Everything that is a fact about <em>where</em> the page lives comes from the stored row, so

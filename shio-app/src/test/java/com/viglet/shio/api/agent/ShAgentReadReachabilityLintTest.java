@@ -156,6 +156,11 @@ class ShAgentReadReachabilityLintTest {
                 + "write against it — post.upsert takes the locale string (SH348) — so an agent "
                 + "reading it would learn what a person should be offered, not what it may write"));
 
+        byRoot.put("/api/v2/render/section-preview", new Read(Reach.CONSOLE_ONLY, null,
+                "SH1105 — a picture of one section type on this page, for the editor's rail. The "
+                + "choice it illustrates is data at /agent/editable?include=insertable, which is "
+                + "the read an agent makes, and a picture of placeholder text teaches it nothing"));
+
         byRoot.put("/", notAgentFacing("the console's index page: HTML for a browser"));
         byRoot.put("/*/console", notAgentFacing("the console shell, per site"));
         byRoot.put("/*/console/**", notAgentFacing("the console shell's own routes, served as HTML"));

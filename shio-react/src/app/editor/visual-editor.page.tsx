@@ -78,6 +78,24 @@ type SectionArray =
  * section. Only the toolbar takes the pointer back.
  */
 /**
+ * SH1105 — one section type drawn at a quarter of its size, the way this page's theme draws it.
+ *
+ * A frame and not markup inlined into the rail: the section carries the site's stylesheet, which
+ * would restyle the console it was dropped into. `sandbox` with no permissions runs nothing and
+ * gives the document an opaque origin, so a thumbnail can read nothing of the console either. The
+ * frame is four times the box and scaled down, so the section lays out at a width it was written for.
+ */
+function SectionThumbnail({ src, title }: { src: string | null; title: string }) {
+  if (!src) return null
+  return (
+    <div className="relative h-24 overflow-hidden rounded-sm border bg-background mb-2" aria-hidden="true">
+      <iframe src={src} title={title} sandbox="" loading="lazy" tabIndex={-1}
+        className="pointer-events-none absolute left-0 top-0 h-[400%] w-[400%] origin-top-left scale-25 border-0" />
+    </div>
+  )
+}
+
+/**
  * The catalogue, as something to place (SH1039).
  *
  * The rail is the whole of the answer's point: the section types used to reach the console as
@@ -89,11 +107,13 @@ type SectionArray =
  * to be relative to, and the section goes last — which on the empty page this exists for is also
  * first.
  */
-function SectionInserter({ container, relative, busy, t, onInsert }: {
+function SectionInserter({ container, relative, busy, t, onInsert, thumbnail }: {
   container: InsertableContainer
   /** Whether a section is selected, and the placement is relative to it. */
   relative: boolean
   busy: boolean
+  /** SH1105 — where the type is drawn on this page, or null where there is no page to draw it on. */
+  thumbnail: (type: InsertableType) => string | null
   t: (key: string, options?: Record<string, unknown>) => string
   onInsert: (type: InsertableType, after: boolean) => void
 }) {
@@ -116,6 +136,7 @@ function SectionInserter({ container, relative, busy, t, onInsert }: {
       </div>
       {container.accepts.map((type) => (
         <div key={type.type} className="rounded-md border p-2">
+          {type.provisioned && <SectionThumbnail src={thumbnail(type)} title={type.title || type.type} />}
           <div className="text-sm font-medium">{type.title || type.type}</div>
           {type.description && (
             <p className="text-xs text-muted-foreground mt-0.5">{type.description}</p>
@@ -738,6 +759,10 @@ export default function VisualEditorPage() {
       ? catalogue.containers[0]
       : null
 
+  // SH1105 — the rail draws each type on the page being edited, through that page's own layout.
+  const sectionThumbnail = (type: InsertableType) =>
+    pageOfFrame ? editorService.sectionPreviewUrl(pageOfFrame, SECTIONS_FIELD, type.type) : null
+
   // SH1039 — the page the array belongs to is the selection's when there is one and the frame's
   // otherwise, because an empty page has nothing to select and is exactly where an insert is
   // wanted. `of` and the container's `holds` are the same number wherever both exist.
@@ -1244,7 +1269,7 @@ export default function VisualEditorPage() {
                 )}
                 {soleContainer && sectionArray.state === "ready" && (
                   <SectionInserter container={soleContainer} relative busy={inserting}
-                    t={t} onInsert={insertSection} />
+                    t={t} onInsert={insertSection} thumbnail={sectionThumbnail} />
                 )}
               </div>
             ) : selected ? (
@@ -1329,7 +1354,7 @@ export default function VisualEditorPage() {
                 */}
                 {soleContainer && sectionArray.state === "ready" && (
                   <SectionInserter container={soleContainer} relative={false} busy={inserting}
-                    t={t} onInsert={insertSection} />
+                    t={t} onInsert={insertSection} thumbnail={sectionThumbnail} />
                 )}
               </div>
             )}

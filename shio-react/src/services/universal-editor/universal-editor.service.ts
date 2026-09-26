@@ -64,6 +64,17 @@ export class ShUniversalEditorService {
   }
 
   /**
+   * SH1105 — where one section of `type` is drawn as it would look on this page.
+   *
+   * A URL and not a fetch: the answer is a document for a sandboxed frame, and the frame loading it
+   * is what carries the session. It is the preview path cropped to one section, so the rail shows
+   * the shape the page will draw rather than a second rendering of it.
+   */
+  sectionPreviewUrl(pageId: string, field: string, type: string): string {
+    return axios.getUri({ url: "/v2/render/section-preview", params: { page: pageId, field, type } })
+  }
+
+  /**
    * The row a write would be composed against: the draft, or the live one where there is no draft.
    *
    * SH1038 needs the Page's own ordered section array before it can replace it, and the preview in

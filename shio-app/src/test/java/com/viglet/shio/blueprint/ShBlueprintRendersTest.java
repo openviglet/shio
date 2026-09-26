@@ -25,6 +25,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.render.ShPageRenderService;
 
@@ -96,14 +97,13 @@ class ShBlueprintRendersTest {
             root.setOwner("admin");
             entityManager.persist(root);
         });
+        shBlueprintService.apply("marketing-site", siteName,
+                new ObjectMapper().readTree("{\"brand\":\"Acme\"}"), "admin");
     }
 
     @Test
     @DisplayName("SH518: applying a section package leaves a page that renders, annotated")
     void aSectionPackageIsVisible() {
-        shBlueprintService.apply("marketing-site", siteName,
-                new ObjectMapper().readTree("{\"brand\":\"Acme\"}"), "admin");
-
         String html = shPageRenderService.render(siteName, "/", ShPostState.PUBLISHED).html();
 
         assertThat(html)
@@ -156,5 +156,49 @@ class ShBlueprintRendersTest {
                         inventing a visible element to make a field reachable.""")
                 .contains("data-shio-prop=\"title\"")
                 .contains("data-shio-prop=\"description\"");
+    }
+
+    // --- SH1105: the inserter rail's thumbnail, on the page this package builds ---
+    // Here and not in a class of its own: an apply needs its own database (SH315), the suite has no
+    // context slot left (SH423), and two classes on one database is what ShBenchmarkIsolationLintTest
+    // refuses.
+
+    private String aPageId() {
+        return new TransactionTemplate(transactionManager).execute(status -> entityManager
+                .createQuery("select p from ShPostUnified p where p.shPostType.id in "
+                        + "(select t.id from ShPostType t where t.name = 'Page')", ShPostUnified.class)
+                .getResultList().stream()
+                .filter(post -> post.getShSite() != null && siteName.equals(post.getShSite().getName()))
+                .map(ShPostUnified::getId).findFirst().orElseThrow());
+    }
+
+    @Test
+    @DisplayName("SH1105: a thumbnail renders the type through the page's own layout, cropped to it")
+    void aThumbnailIsThePreviewPathCropped() {
+        String html = shPageRenderService.sectionPreview(aPageId(), "sections", "SectionHero").orElseThrow();
+
+        assertThat(html)
+                .as("""
+                        one section, of the type asked for, carrying its fields' labels as placeholder \
+                        text — the shape a curator is choosing, not a sentence about it (SH1105)""")
+                .contains("data-shio-section=\"SectionHero\"")
+                .contains("Heading")
+                .contains("Subheading");
+        assertThat(html)
+                .as("and the page's theme came with it: the layout rendered it, not a second renderer")
+                .contains("--accent");
+        assertThat(html)
+                .as("a thumbnail runs nothing: it is drawn in a frame beside the page being edited")
+                .doesNotContainIgnoringCase("<script");
+        assertThat(html.split("data-shio-section=\"", -1))
+                .as("the other sections of the page are cropped away")
+                .hasSize(2);
+    }
+
+    @Test
+    @DisplayName("SH1105: an unknown type or page answers nothing rather than a guess")
+    void anUnknownThumbnailIsEmpty() {
+        assertThat(shPageRenderService.sectionPreview(aPageId(), "sections", "NoSuchType")).isEmpty();
+        assertThat(shPageRenderService.sectionPreview("no-such-page", "sections", "SectionHero")).isEmpty();
     }
 }

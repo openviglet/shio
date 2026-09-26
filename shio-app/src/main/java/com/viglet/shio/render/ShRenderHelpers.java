@@ -631,8 +631,38 @@ public class ShRenderHelpers {
     }
 
     /** By id, then by friendly URL within this site — SH181's order. */
+    /**
+     * SH1105 — posts that exist only for the render in progress, resolved before the database.
+     *
+     * <p>A section thumbnail renders a page with one section of a type the page has never placed,
+     * whose fields carry placeholder values. That section is not stored and must not be: a preview
+     * writes nothing (SH1014's rule). A render-scoped registry rather than a key in the template
+     * model, because the model is what templates read, and a transient post a template could print
+     * would be a second way to reach content that bypasses every read rule.</p>
+     */
+    private static final ThreadLocal<Map<String, ShPostUnified>> TRANSIENT = new ThreadLocal<>();
+
+    /** Run one render with these transient posts resolvable by their id, and never beyond it. */
+    public static <T> T withTransient(Map<String, ShPostUnified> posts, java.util.function.Supplier<T> render) {
+        Map<String, ShPostUnified> previous = TRANSIENT.get();
+        TRANSIENT.set(posts);
+        try {
+            return render.get();
+        } finally {
+            if (previous == null) {
+                TRANSIENT.remove();
+            } else {
+                TRANSIENT.set(previous);
+            }
+        }
+    }
+
     private Optional<ShPostUnified> resolveReference(String siteId, String reference,
                                                      ShPostState state) {
+        Map<String, ShPostUnified> transients = TRANSIENT.get();
+        if (transients != null && transients.containsKey(reference)) {
+            return Optional.of(transients.get(reference));
+        }
         List<ShPostState> states = statesFor(state);
         Optional<ShPostUnified> byId = preferDraft(
                 shPostUnifiedRepository.findById(reference).stream().toList(), state).stream()
