@@ -238,8 +238,17 @@ registered after `BasicAuthenticationFilter` while CORS runs at the head of the 
   `ShBlueprintRendersTest` mints a link for `/pricing` through the real endpoint, exchanges it,
   renders the page whole (banner, stylesheet, every `/preview/` sub-resource) and gets 404 on `/`,
   `/about`, `/menu/home` and on another site — the site bound SH1042 claimed and nothing had
-  asserted. `ShPreviewSharePathTest` holds the rule. SH1111 is the remaining absence: nothing lists
-  the live links, because the token screen hides ephemeral rows by design.
+  asserted. `ShPreviewSharePathTest` holds the rule.
+  **And every live link can be read and stopped (SH1111).** The token screen hides ephemeral rows by
+  design, so a sent link was visible nowhere. `GET /api/v2/preview-token` (`ShShareLinksAPI`) lists
+  the live SHARE rows — tenant-scoped by the repository's derived query, narrowed to sites the
+  caller may read by the content ACL — each with its site, page, expiry and owner, by **row id and
+  never the credential**; `DELETE /api/v2/preview-token/{id}` disables one, which the filter already
+  refuses. On the mint's authenticated route rather than `GET /api/v2/preview-share`, as the design
+  had it: that path is `permitAll` for the anonymous exchange, and carving an authenticated exception
+  out of it would make one path answer to two rules. `shio share <address>` prints the link (the
+  same mint), `--list` and `--revoke <id>` beside it. `ShBlueprintRendersTest` lists, revokes and
+  gets 401 on the reader's next request; `ShTenantCdaDeliveryIT` holds the listing to one tenant.
 - **The general rule this is an instance of:** an allow-list entry outlives the route it was
   written for. Both halves read correctly on their own — the entry names a path that once meant
   something else, the new controller's comment names the rule it believes it inherits — and

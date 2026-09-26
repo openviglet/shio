@@ -1839,6 +1839,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1108** — shio patterns push copies a pattern file to the instance, and the visual editor's rail places it through the document and apply the CLI uses (design §LXXI.11 superseded: the marketplace installer it would reuse downloads by catalogue id and takes no upload) (design §LXXI.11 recorded in `docs/agents/blueprints.md`).
 - **SH1109** — A visual editor save reports in the dock which fields it wrote and whether the structure and appearance digests moved, flagging a text-only edit that moved the appearance.
 - **SH1110** — A share link renders only the page it was minted for: a path prefix on the token, checked in the preview route, with the site's assets still served so the page renders whole.
+- **SH1111** — Live share links are listed and revoked on the mint's authenticated route, by row id, and shio share prints a link, lists them and revokes one (design §LXXI.14 superseded: the listing's own route, GET /api/v2/preview-share, is permitAll for the anonymous exchange) (design §LXXI.14 recorded in `docs/agents/security.md`).
 
 ## Block BG — The console as an application: cost, resilience and access
 

@@ -1594,30 +1594,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.14 Which links are live, and `shio share` (SH1111)
-
-A share link is created and then nobody can see it. The token listing hides ephemeral
-rows on purpose, so a curator's token screen is not a list of fifteen-minute credentials
-— and a share link is ephemeral by construction, so the screen for looking at
-credentials is the one place this one never appears.
-
-That is the wrong half of the trade for a link that was **sent to somebody**. An expiry
-bounds the damage and answers neither question a person has after sending one: what is
-live now, and can I stop that one. Revocation already works — `enabled = false` is what
-the filter checks first — so the reading is what is missing.
-
-So the listing takes a side: `GET /api/v2/preview-share` answers the live share rows for
-sites the caller may read, each with its site, what it was minted for, when it expires
-and who made it; `DELETE` on one disables it. The filter is unchanged.
-
-The other half is the sentence at the end of an agent's run. `shio share <address>`
-prints a URL, the most useful thing an agent can hand a person after building something
-unseen, and it calls the mint the console calls so there is one idea of what a share
-link is. `--list` and `--revoke` put the reading and the stopping in the same place.
-
-The assertion is a revoked link refused at the preview, and a listing showing one
-curator's live links and not another tenant's.
-
 ## LXXII The console as an application: cost, resilience and access (Block BG)
 
 Shio measures what an agent costs to the token, per endpoint, with the reasoning for

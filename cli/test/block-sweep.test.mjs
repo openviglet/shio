@@ -81,6 +81,16 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  BF: {
+    swept: true,
+    why: "the visual editor as a composer: an independent Duplicate, rail thumbnails and a drop caret, "
+      + "section-not-accepted in verify, patterns pushed and placed from the rail, a save that names "
+      + "what moved, and share links narrowed to one page and listable. docs-shio moved: the Universal "
+      + "Editor page gained composing, patterns and the save line, content-lifecycle gained the share "
+      + "link section, the verify table gained section-not-accepted, and COVERAGE names every id and "
+      + "the block. README moved (47 verbs, for shio share). shio-site did NOT move: its verb list is a "
+      + "sample, and nothing it claims about the editor or preview changed",
+  },
   BE: {
     swept: true,
     why: "ten tasks on media: what an asset costs to list, where it is used, its alt text, its words in "

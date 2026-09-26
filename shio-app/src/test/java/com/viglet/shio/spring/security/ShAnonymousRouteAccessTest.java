@@ -157,6 +157,8 @@ class ShAnonymousRouteAccessTest {
 			// content ACL for every read and write. Reaching the route still takes a credential.
 			new Route("/api/v2/note/**", "/api/v2/note", Access.AUTHENTICATED),
 			new Route("/api/v2/preview-token", "/api/v2/preview-token", Access.AUTHENTICATED),
+			// SH1111 — revoking a share link: authenticated, like the mint and the listing beside it.
+			new Route("/api/v2/preview-token/{id}", "/api/v2/preview-token/x", Access.AUTHENTICATED),
 			new Route("/api/v2/provider/**", "/api/v2/provider/auth", Access.AUTHENTICATED),
 			new Route("/api/v2/render/**", "/api/v2/render/post-types", Access.AUTHENTICATED),
 			new Route("/api/v2/review/**", "/api/v2/review/sessions", Access.AUTHENTICATED),

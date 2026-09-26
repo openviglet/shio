@@ -79,6 +79,8 @@ class ShTenantCdaDeliveryIT {
     private ShTenantRepository shTenantRepository;
     @Autowired
     private PlatformTransactionManager txManager;
+    @Autowired
+    private com.viglet.shio.api.token.ShShareLinksAPI shShareLinksAPI;
 
     private MockMvc mockMvc;
 
@@ -118,6 +120,40 @@ class ShTenantCdaDeliveryIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].name", hasItem("Beta Site")))
                 .andExpect(jsonPath("$[*].name", not(hasItem("Alpha Site"))));
+    }
+
+    /**
+     * SH1111 — the live share links are one tenant's, which is the repository's derived query being
+     * tenant-scoped rather than anything the listing does: a curator on alpha must not be able to
+     * read, and so revoke, beta's links.
+     */
+    @Test
+    void theShareLinksListedAreTheTenantsOwn() {
+        asTenant(ALPHA, () -> { seedShare("alpha-share", "Alpha Site"); return null; });
+        asTenant(BETA, () -> { seedShare("beta-share", "Beta Site"); return null; });
+
+        java.util.List<String> alpha = asTenant(ALPHA, () -> shShareLinksAPI.live().stream()
+                .map(com.viglet.shio.api.token.ShShareLinksAPI.ShShareLink::site).toList());
+        org.assertj.core.api.Assertions.assertThat(alpha)
+                .as("SH1111: one tenant's live links, and not another tenant's")
+                .contains("Alpha Site").doesNotContain("Beta Site");
+    }
+
+    private void seedShare(String value, String siteName) {
+        ShSite site = shSiteRepository.findAll().stream().filter(each -> siteName.equals(each.getName()))
+                .findFirst().orElseThrow();
+        ShApiToken token = new ShApiToken();
+        token.setTitle(value);
+        token.setToken(value);
+        token.setEnabled(true);
+        token.setScope(ShApiTokenScope.SHARE);
+        token.setOwner("curator");
+        token.setCreatedDate(Instant.now());
+        token.setExpiresAt(Instant.now().plusSeconds(600));
+        token.setEphemeral(true);
+        token.setSiteIds(java.util.Set.of(site.getId()));
+        token.setPathPrefix("/about");
+        shApiTokenRepository.save(token);
     }
 
     private void seedSite(String name) {

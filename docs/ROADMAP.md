@@ -44,10 +44,6 @@
 - 📋 **SH1142** (deps: SH1026 ✅) **in the browser's table view, the toolbar's Select menu and Clear change nothing the table shows** — BentoDataTable reports its selection but takes none in, so the page's set and the ticked rows can differ under a bulk delete. → §LXIX.11
 - 📋 **SH1145** (deps: —) **the content browser page is still 1300 lines, so its next feature lands somewhere nobody can review** — SH1026 moved the views, the table and the window into content-browser; the listing reads, the keyboard and the dialogs are still in one file. → §LXIX.12
 
-## Block BF — The visual editor becomes a composer
-
-- 📋 **SH1111** (deps: SH1042 ✅) **a share link is sent and then nobody can see it, because the token screen hides ephemeral rows** — Revocation works and the reading does not: nothing lists the live links, and an agent that just built a site has no verb that prints one. → §LXXI.14
-
 ## Block BG — The console as an application: cost, resilience and access
 
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9

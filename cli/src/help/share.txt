@@ -1,0 +1,7 @@
+shio share <address> — an expiring link to that one page, for someone with no account
+
+  --ttl <seconds>   How long it lives
+  --list            Live links you may see
+  --revoke <id>     Stop one
+
+Example: shio share post:Acme/pricing

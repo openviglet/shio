@@ -353,6 +353,21 @@ export class ShioAdminClient {
     return this.#marketplace(`/${encodeURIComponent(id)}`, "DELETE");
   }
 
+  /** SH1111 — POST /api/v2/preview-token: the mint the console's Share button calls. */
+  mintShare(postId, ttlSeconds) {
+    return this.#at("/api/v2/preview-token", "POST", { postId, ...(ttlSeconds ? { ttlSeconds } : {}) });
+  }
+
+  /** SH1111 — GET /api/v2/preview-token: the live share links on sites this caller may read. */
+  async shareLinks() {
+    return (await this.#at("/api/v2/preview-token", "GET")) ?? [];
+  }
+
+  /** SH1111 — DELETE /api/v2/preview-token/{id}: stop one; null when there is none to stop. */
+  revokeShare(id) {
+    return this.#at(`/api/v2/preview-token/${encodeURIComponent(id)}`, "DELETE");
+  }
+
   /** SH1108 — GET /api/v2/agent/patterns: what this instance holds, with each copy's digest. */
   async patterns() {
     return (await this.#at("/api/v2/agent/patterns", "GET")) ?? [];

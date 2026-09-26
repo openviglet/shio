@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.servlet.http.Cookie;
@@ -36,6 +37,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.token.ShPreviewTokenAPI;
 import com.viglet.shio.api.token.ShPreviewTokenResponse;
+import com.viglet.shio.api.token.ShShareLinksAPI;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -93,6 +95,8 @@ class ShBlueprintRendersTest {
     private WebApplicationContext webApplicationContext;
     @Autowired
     private ShPreviewTokenAPI shPreviewTokenAPI;
+    @Autowired
+    private ShShareLinksAPI shShareLinksAPI;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -277,6 +281,47 @@ class ShBlueprintRendersTest {
                 .andExpect(result -> assertThat(result.getResponse().getStatus())
                         .as("SH1042: and on another site entirely, which nothing had asserted")
                         .isEqualTo(404));
+    }
+
+    /**
+     * SH1111 — a live link is listed, and a revoked one is refused at the preview.
+     *
+     * <p>Revocation already worked in the filter; what was missing was a way to reach it. So the
+     * assertion is the loop a person runs: find the link they sent in the listing, stop it, and the
+     * reader's next request is refused.</p>
+     */
+    @Test
+    @DisplayName("SH1111: a live share link is listed, and once revoked it is refused at the preview")
+    void aRevokedShareLinkIsRefused() throws Exception {
+        MockMvc secured = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+        String about = pageAt("/about");
+        ShPreviewTokenResponse minted = new TransactionTemplate(transactionManager).execute(status ->
+                (ShPreviewTokenResponse) shPreviewTokenAPI
+                        .mint(new ShPreviewTokenAPI.MintRequest(about, 600L), () -> "admin").getBody());
+        assertThat(minted).isNotNull();
+        MvcResult exchanged = secured.perform(get(URI.create(minted.previewUrl()))).andReturn();
+        Cookie share = exchanged.getResponse().getCookie(ShApiTokenFilter.SHARE_COOKIE);
+        String landing = exchanged.getResponse().getHeader(HttpHeaders.LOCATION);
+        secured.perform(get(landing).cookie(share)).andExpect(status().isOk());
+
+        List<ShShareLinksAPI.ShShareLink> live = shShareLinksAPI.live();
+        ShShareLinksAPI.ShShareLink link = live.stream()
+                .filter(each -> siteName.equals(each.site()) && "/about".equals(each.page()))
+                .findFirst().orElseThrow();
+        assertThat(link.owner()).isEqualTo("admin");
+        assertThat(new ObjectMapper().writeValueAsString(live))
+                .as("the listing names a link by its row id and never carries the credential")
+                .doesNotContain(minted.token());
+
+        shShareLinksAPI.revoke(link.id());
+
+        secured.perform(get(landing).cookie(share))
+                .andExpect(result -> assertThat(result.getResponse().getStatus())
+                        .as("SH1111: a revoked link is refused at the preview, from the next request")
+                        .isEqualTo(401));
+        assertThat(shShareLinksAPI.live()).extracting(ShShareLinksAPI.ShShareLink::id)
+                .as("and it is no longer live")
+                .doesNotContain(link.id());
     }
 
     private String pageAt(String furl) {

@@ -313,6 +313,10 @@ const UNEXERCISED = {
     // `preview` arrives with SH1095 and is unwritten rather than out of scope: its outcome is a
     // render of values the instance never stored, which only a live page can prove.
     "preview",
+    // `share` arrives with SH1111 and is unwritten rather than out of scope: what only a live run can
+    // prove is that the printed link, opened by a browser with no session, lands on the page and
+    // refuses its neighbours - the exchange and the render, which a scripted fetch invents.
+    "share",
     // `schedule` arrives with SH991, and for `versions`' reason: it needs a live instance holding a
     // scheduled post, which a live scenario has and a scripted fetch invents.
     // `status` arrives with SH1050 and is unwritten rather than out of scope. Its numbers are

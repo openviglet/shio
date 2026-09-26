@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.persistence.model.token.ShApiToken;
+import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 
 /**
  * @author Alexandre Oliveira
@@ -39,6 +40,14 @@ public interface ShApiTokenRepository extends JpaRepository<ShApiToken, String> 
     Optional<ShApiToken> findByTokenAcrossTenants(@Param("token") String token);
 
     List<ShApiToken> findAllByOrderByTitleAsc();
+
+    /**
+     * SH1110/SH1111 — the live credentials of one scope, soonest to expire first. Tenant-scoped like
+     * every derived query here (`@TenantId`), which is what keeps one tenant's links off another's
+     * listing; {@link #findByTokenAcrossTenants} is the one read that is not.
+     */
+    List<ShApiToken> findByScopeAndEnabledTrueAndExpiresAtAfterOrderByExpiresAtAsc(ShApiTokenScope scope,
+                                                                                 Instant now);
 
     /**
      * Management list (SH13): durable tokens only, so short-lived preview tokens
