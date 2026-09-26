@@ -50,13 +50,21 @@ function sink() {
 }
 
 /** Answers `/agent/read` for whatever addresses were asked, and records every write. */
-function ctxWith({ files = {}, dirs = {} } = {}) {
+function ctxWith({ files = {}, dirs = {}, pushed = [] } = {}) {
   const posted = [];
   const written = [];
+  const puts = [];
   const fetchImpl = async (url, init) => {
     const href = String(url);
     let body;
-    if (href.includes("/agent/read")) {
+    if (href.includes("/agent/patterns")) {
+      if (init?.method === "PUT") {
+        puts.push({ href, body: init.body });
+        body = { name: href.split("/").pop(), digest: "sha256:stored" };
+      } else {
+        body = pushed;
+      }
+    } else if (href.includes("/agent/read")) {
       const asked = [...new URL(href).searchParams.getAll("address")];
       body = asked.map((address) => (address === PAGE.address ? PAGE : SECTIONS[address]))
         .filter(Boolean);
@@ -80,6 +88,7 @@ function ctxWith({ files = {}, dirs = {} } = {}) {
     fetch: fetchImpl,
     posted,
     written,
+    puts,
     fs: {
       async readFile(path) {
         const key = Object.keys(files).find((name) => norm(path).endsWith(name));
@@ -281,4 +290,57 @@ test("SH1040: list says what each pattern would place, and an empty tree says so
   const { flags, positionals } = args("list");
   await patterns.run(flags, positionals, ctx);
   assert.match(ctx.stdout.text(), /promo\s+2 section\(s\)\s+SectionHero, SectionCta/);
+});
+
+// --- SH1108: the copy the console places ---
+
+test("SH1108: push sends the file as it is on disk, so the instance's digest is the file's", async () => {
+  // Two spaces of indentation and a trailing newline the way `save` writes it: a client that parsed
+  // and re-serialized would send other bytes, and every later `list --remote` would read stale.
+  const ctx = ctxWith({ files: { "shio/patterns/promo.json": `${STORED}\n` } });
+  const { flags, positionals } = args("push promo");
+
+  await patterns.run(flags, positionals, ctx);
+
+  assert.equal(ctx.puts.length, 1);
+  assert.match(ctx.puts[0].href, /\/api\/v2\/agent\/patterns\/promo$/);
+  assert.equal(ctx.puts[0].body, `${STORED}\n`, "SH1108: the body is the file, byte for byte");
+  assert.match(ctx.stdout.text(), /Pushed shio\/patterns\/promo\.json/);
+});
+
+test("SH1108: a file the reader refuses is never pushed", async () => {
+  const ctx = ctxWith({ files: { "shio/patterns/promo.json": '{"formatVersion":1,"sections":[]}' } });
+  const { flags, positionals } = args("push promo");
+
+  await assert.rejects(() => patterns.run(flags, positionals, ctx), /nothing to place/);
+  assert.deepEqual(ctx.puts, []);
+});
+
+test("SH1108: list --remote says which copies are current, stale, missing or orphaned", async () => {
+  const { createHash } = await import("node:crypto");
+  const digest = (text) => `sha256:${createHash("sha256").update(text).digest("hex")}`;
+  const edited = STORED.replace('"Go"', '"Go now"').replace('"promo"', '"edited"');
+  const ctx = ctxWith({
+    files: {
+      "shio/patterns/promo.json": STORED,
+      "shio/patterns/edited.json": edited,
+      "shio/patterns/fresh.json": STORED.replace('"promo"', '"fresh"'),
+    },
+    dirs: { "shio/patterns": ["edited.json", "fresh.json", "promo.json"] },
+    pushed: [
+      { name: "promo", digest: digest(STORED) },
+      { name: "edited", digest: digest(STORED) },
+      { name: "gone", digest: "sha256:x" },
+    ],
+  });
+  const { flags, positionals } = args("list --remote");
+
+  await patterns.run(flags, positionals, ctx);
+
+  const out = ctx.stdout.text();
+  assert.match(out, /promo .*  pushed\n/, "SH1108: the same bytes on both sides");
+  assert.match(out, /edited .*stale — push it again/, "SH1108: edited since the push");
+  assert.match(out, /fresh .*not pushed/);
+  assert.match(out, /gone {2}pushed, with no file here/,
+    "SH1108: a copy the project no longer has is still offered to curators, which is worth saying");
 });

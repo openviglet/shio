@@ -1835,6 +1835,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1101** — copyto answers with the posts it made, id and address included, and the visual editor's Duplicate copies the section and places the copy, so the two no longer share one heading.
 - **SH1105** — A rail card drags onto a caret between sections, placed through the one index arithmetic the Above and Below buttons use.
 - **SH1106** — shio verify warns section-not-accepted once per type when a page composes a section its layout's sh-accepts does not name, with the accepted list.
+- **SH1108** — shio patterns push copies a pattern file to the instance, and the visual editor's rail places it through the document and apply the CLI uses (design §LXXI.11 superseded: the marketplace installer it would reuse downloads by catalogue id and takes no upload) (design §LXXI.11 recorded in `docs/agents/blueprints.md`).
 
 ## Block BG — The console as an application: cost, resilience and access
 

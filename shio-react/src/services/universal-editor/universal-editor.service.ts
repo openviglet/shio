@@ -2,6 +2,18 @@ import axios from "@/lib/axios"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
 import type { InsertableContainer } from "@/models/universal-editor/universal-editor.model"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
+import type { Pattern, PlacementPage } from "@/app/editor/pattern-placement"
+
+/** SH1108 — one pushed pattern, as `GET /agent/patterns` lists it. */
+export type PatternSummary = {
+  name: string
+  title: string | null
+  from: string | null
+  sections: string[]
+  params: string[]
+  digest: string
+  pushed: string
+}
 
 /**
  * Universal Editor save-back service — on the console surface, on the curator's session.
@@ -143,6 +155,41 @@ export class ShUniversalEditorService {
     // to be conditional on, and inventing one here would be a round trip spent on a promise nobody
     // could keep.
     return this.posts.patch(postId, attrs, publish)
+  }
+
+  /** SH1108 — the patterns pushed to this instance; a failure is an empty rail, not a broken panel. */
+  async patterns(): Promise<PatternSummary[]> {
+    try {
+      const response = await axios.get<PatternSummary[]>("/v2/agent/patterns")
+      return Array.isArray(response.data) ? response.data : []
+    } catch {
+      return []
+    }
+  }
+
+  /** SH1108 — one pushed pattern, whole. */
+  async pattern(name: string): Promise<Pattern> {
+    const response = await axios.get<{ pattern: Pattern }>(`/v2/agent/patterns/${encodeURIComponent(name)}`)
+    return response.data.pattern
+  }
+
+  /** SH1108 — the page as `/agent/read` answers it, which is what the placement document is built on. */
+  async agentRead(postId: string): Promise<PlacementPage> {
+    const response = await axios.get<PlacementPage[]>("/v2/agent/read", { params: { address: `id:${postId}` } })
+    const [page] = response.data ?? []
+    if (!page) throw new Error(`nothing at id:${postId}`)
+    return page
+  }
+
+  /**
+   * SH1108 — make a desired-state document true: the endpoint `shio patterns apply` uses.
+   *
+   * A pattern's document declares no `prune`, so it can delete nothing and needs no confirm token
+   * (SH108) — which is the same reason the CLI sends it in one call.
+   */
+  async applyDocument(document: object): Promise<{ changed?: number }> {
+    const response = await axios.post<{ changed?: number }>("/v2/agent/apply", document)
+    return response.data
   }
 
   /** Promote the post's draft to published. */

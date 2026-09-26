@@ -213,6 +213,13 @@ public class ShSecurityConfig {
     private static final String MARKETPLACE_PATH = "/api/v2/marketplace/**";
 
     /**
+     * SH1108 — pushing a pattern, admin-gated for the marketplace's reason: it writes into the same
+     * operator directory, and what it writes is offered to every curator on the instance. Reads stay
+     * `authenticated()` via the blanket rule, since the console's rail is what reads them.
+     */
+    private static final String PATTERNS_PATH = "/api/v2/agent/patterns/**";
+
+    /**
      * The SH109 review queue. Console-authenticated, and reached by both kinds of caller: the
      * browser (session + XSRF cookie) and a script or CI job with HTTP Basic and no session.
      * So it gets SH117's narrowed exemption rather than a blanket one — the same discriminator,
@@ -418,6 +425,8 @@ public class ShSecurityConfig {
                         mvc.matcher(HttpMethod.POST, MARKETPLACE_PATH),
                         mvc.matcher(HttpMethod.DELETE, MARKETPLACE_PATH))
                         .hasRole("ADMIN");
+                authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.PUT, PATTERNS_PATH))
+                        .hasRole("ADMIN");
                 // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                 authorizeRequests.requestMatchers(
                         mvc.matcher(HttpMethod.POST, TENANT_PATH),
@@ -525,6 +534,8 @@ public class ShSecurityConfig {
                         authorizeRequests.requestMatchers(
                                 mvc.matcher(HttpMethod.POST, MARKETPLACE_PATH),
                                 mvc.matcher(HttpMethod.DELETE, MARKETPLACE_PATH))
+                                .hasRole("ADMIN");
+                        authorizeRequests.requestMatchers(mvc.matcher(HttpMethod.PUT, PATTERNS_PATH))
                                 .hasRole("ADMIN");
                         // Tenant catalog writes (SH22) are admin-only; GET /current + listing stay authenticated.
                         authorizeRequests.requestMatchers(

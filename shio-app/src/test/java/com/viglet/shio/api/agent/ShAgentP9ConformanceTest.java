@@ -172,6 +172,13 @@ class ShAgentP9ConformanceTest {
                 no("ShMarketplaceAPI.java", "digest", THE_ROW_IS_THE_ANSWER),
                 no("ShMarketplaceAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
                 no("ShMarketplaceAPI.java", "routes", NO_ROUTE_MOVED)));
+        byPath.put("/api/v2/agent/patterns", new Proof(
+                no("ShPatternAPI.java", "ChangeSet", ONE_OBJECT_NO_SET),
+                // SH1108 — the proof is the stored file's digest, which `shio patterns list --remote`
+                // compares with the one on disk: the textual answer to "did my copy land".
+                yes("ShPatternAPI.java", "digest"),
+                no("ShPatternAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
+                no("ShPatternAPI.java", "routes", NO_ROUTE_MOVED)));
         byPath.put("/api/v2/cda/form", new Proof(
                 no("ShFormSubmissionAPI.java", "ChangeSet", ONE_OBJECT_NO_SET),
                 no("ShFormSubmissionAPI.java", "digest",

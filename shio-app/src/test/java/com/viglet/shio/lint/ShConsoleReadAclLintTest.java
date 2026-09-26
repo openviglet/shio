@@ -138,6 +138,11 @@ class ShConsoleReadAclLintTest {
             Map.entry("/api/v2/site/{id}/locales", "SH1056 — the languages a site offers, a setting "
                     + "of the site like its record above; the tags it derives from content are the "
                     + "ones every post row already shows, never a post's title or body"),
+            Map.entry("/api/v2/agent/patterns", "SH1108 — the patterns pushed to this instance: "
+                    + "copies of project files an operator pushed, offered to every curator, and "
+                    + "no site's content until one is placed, which is an apply the ACL governs"),
+            Map.entry("/api/v2/agent/patterns/{id}", "SH1108 — one of those copies, whole; the same "
+                    + "operator file, read the same way"),
             Map.entry("/api/v2/agent/index", "SH1063 — the search-indexing routing table: site "
                     + "names, where each routes and how many pages it has published. Deployment "
                     + "configuration and counts, never a page's content, and the counts are of "

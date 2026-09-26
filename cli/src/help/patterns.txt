@@ -9,11 +9,13 @@ its array.
     --section <n>                Only this position, repeatable; omit for all
     --title <text>               A human name for the pattern
   list                           Every pattern in the tree
+    --remote                     And whether the instance's copy is current
   apply <name> --at <address>    Place it in a page
     --after <n>                  After n sections; 0 first, omit for last
     --as <name>                  Name this placement, so one page can hold two
     --param name=value           Fill a {{name}}, repeatable
     --dry-run                    Plan it and write nothing
+  push <name>                    Copy it to the instance, for the visual editor (admin)
 
 Names are derived from --as, so applying twice writes the same posts rather than a copy.
 

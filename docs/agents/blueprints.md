@@ -899,9 +899,23 @@ reachable, which is the one case P1's order does not oblige, and it is also why 
 `shio_apply --at --mode insert` is not here: that would need the *server* to hold the pattern, which
 means uploading a project file, which is the marketplace's job.
 
-**The console's half is SH1108, and finding out why is what closed SH1040.** A Patterns tab in the
-inserter rail has nothing to list, because the console is a browser and a pattern is a project file.
-The way through is already built and was mistaken for a blocker in the paragraphs above: the
-marketplace installer expands an uploaded zip into `shio.blueprint.path` and reloads the registry,
-rolling back a package that will not load — so a pattern reaches the server the way every
-third-party package does, packaged as a minimal blueprint, and nothing new has to store anything.
+**The console's half is SH1108.** A pattern rail has nothing to list while a pattern is only a
+project file, so `shio patterns push <name>` (admin) copies the file to `PUT
+/api/v2/agent/patterns/{name}`, which stores it **byte for byte** in `shio.blueprint.path/.patterns/`
+(`ShPatternStore`) — the marketplace's operator directory and its refusal without one, but not its
+installer: that downloads by catalogue id and takes no upload, which the paragraph SH1040 closed on
+had assumed it did. The registry skips the directory, since it holds no `blueprint.json`. The store
+validates what `parsePattern` validates, so a pushed file the rail could not place is refused.
+
+- **The file stays the authority.** `GET /agent/patterns` answers each copy's `sha256:` digest over
+  the stored bytes, and `shio patterns list --remote` compares it with the file's: `pushed`, `stale —
+  push it again`, `not pushed`, or `pushed, with no file here`. The rail cannot see the project, so it
+  says when a copy was pushed and never that it is current.
+- **One document, one write path.** The rail builds the document `shio patterns apply` sends —
+  `placementDocument` moved into `patterns-store.mjs` for that reason, and
+  `shio-react/src/app/editor/pattern-placement.ts` mirrors it — and sends it to the same `POST
+  /agent/apply`. `pattern-placement.test.mjs` holds the mirror to the definition on the same page and
+  pattern at every position, which is the assertion that the rail writes the CLI's array.
+- The rail fills **declared defaults only**; a placeholder without one is named in a toast with the
+  CLI line that places it. It passes a free `--as` (`name`, then `name-2`…), since Insert pressed
+  twice means two blocks and the same instance twice would splice the same posts in again.

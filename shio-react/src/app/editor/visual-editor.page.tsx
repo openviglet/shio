@@ -28,7 +28,8 @@ import { setWorking } from "@/lib/dock-reports"
 import { reportRefusal } from "@/lib/problem"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
-import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
+import { ShUniversalEditorService, type PatternSummary } from "@/services/universal-editor/universal-editor.service"
+import { fillFromDefaults, freeInstance, placementDocument, unfilled } from "./pattern-placement"
 import { copyReference } from "./section-reference"
 import { buttonIndex, caretY, gapIndex, placeAt } from "./section-placement"
 import {
@@ -176,6 +177,42 @@ function SectionInserter({ container, relative, busy, t, onInsert, thumbnail, dr
               {t("universalEditor.typeNotProvisioned", { type: type.type })}
             </p>
           )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * SH1108 — the patterns pushed to this instance, placed as one block where Below would put a section.
+ *
+ * A pushed pattern is a **copy** of a file in somebody's project, and this screen cannot see the
+ * project, so it says when the copy was pushed rather than claiming it is current: `shio patterns
+ * list --remote` is where a stale copy is found. Nothing is listed until something is pushed, and
+ * the empty state says how, because a tab that is simply empty reads as broken.
+ */
+function PatternRail({ patterns, busy, t, onInsert }: {
+  patterns: PatternSummary[]
+  busy: boolean
+  t: (key: string, options?: Record<string, unknown>) => string
+  onInsert: (pattern: PatternSummary) => void
+}) {
+  return (
+    <div className="space-y-2 pt-2">
+      <div className="text-xs font-medium text-muted-foreground">{t("universalEditor.patterns")}</div>
+      {patterns.length === 0 ? (
+        <p className="text-xs text-muted-foreground">{t("universalEditor.noPatterns")}</p>
+      ) : patterns.map((pattern) => (
+        <div key={pattern.name} className="rounded-md border p-2">
+          <div className="text-sm font-medium">{pattern.title || pattern.name}</div>
+          <p className="text-xs text-muted-foreground mt-0.5">{pattern.sections.join(", ")}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("universalEditor.patternPushed", { when: new Date(pattern.pushed).toLocaleString() })}
+          </p>
+          <Button variant="outline" size="sm" className="h-7 text-xs mt-2" disabled={busy}
+            onClick={() => onInsert(pattern)}>
+            <Plus className="h-3 w-3 mr-1" />{t("universalEditor.insertPattern")}
+          </Button>
         </div>
       ))}
     </div>
@@ -386,9 +423,11 @@ export default function VisualEditorPage() {
    * exists for is a page that composes no sections: there is nothing to click, so a catalogue that
    * arrived with a selection would never arrive at all on the emptiest page.
    */
-  const [catalogue, setCatalogue] = useState<{ key: string; containers: InsertableContainer[] }>(
-    { key: "", containers: [] },
-  )
+  const [catalogue, setCatalogue] = useState<{
+    key: string; containers: InsertableContainer[]
+    /** SH1108 — the patterns pushed to this instance, read beside the catalogue. */
+    patterns: PatternSummary[]
+  }>({ key: "", containers: [], patterns: [] })
   const [inserting, setInserting] = useState(false)
   // Why the site failed to resolve, if it did (SH181): a page that spins forever instead of
   // saying so is what let `GET /api/v2/site/{furl}` 404 twice and look like slow loading.
@@ -755,9 +794,10 @@ export default function VisualEditorPage() {
   useEffect(() => {
     if (!pageOfFrame || catalogue.key === pageOfFrame) return
     let current = true
-    editorService.insertable(pageOfFrame).then((containers) => {
-      if (current) setCatalogue({ key: pageOfFrame, containers })
-    })
+    Promise.all([editorService.insertable(pageOfFrame), editorService.patterns()])
+      .then(([containers, patterns]) => {
+        if (current) setCatalogue({ key: pageOfFrame, containers, patterns })
+      })
     return () => { current = false }
   }, [pageOfFrame, catalogue.key])
 
@@ -925,6 +965,39 @@ export default function VisualEditorPage() {
   const caretEnabled = sectionBoxes.length > 0 && sectionArray.state === "ready" && !inserting
   const dropGap = (event: React.DragEvent<HTMLDivElement>) =>
     gapIndex(sectionBoxes, event.clientY - event.currentTarget.getBoundingClientRect().top)
+
+  /**
+   * SH1108 — place a pushed pattern where Below (or At end) would place one section.
+   *
+   * The document is the one `shio patterns apply` sends, built by the mirror of its builder and
+   * sent to the same `POST /agent/apply`, so the rail and the CLI write one array. The page is read
+   * through `/agent/read` first because that document re-declares it whole (SH168).
+   */
+  const insertPattern = async (summary: PatternSummary) => {
+    const pageId = selectedSection?.pagePostId ?? pageOfFrame
+    if (!pageId || sectionArray.state !== "ready" || inserting) return
+    setInserting(true)
+    try {
+      const pattern = await editorService.pattern(summary.name)
+      const missing = unfilled(pattern)
+      if (missing.length) {
+        toast.error(t("universalEditor.patternNeedsValues", { name: summary.name, params: missing.join(", ") }))
+        return
+      }
+      const page = await editorService.agentRead(pageId)
+      const at = buttonIndex(selectedSection?.index ?? null, true, sectionArray.entries.length)
+      const { document } = placementDocument({
+        pattern: fillFromDefaults(pattern), page, instance: freeInstance(summary.name, page), after: at,
+      })
+      await editorService.applyDocument(document)
+      toast.success(t("universalEditor.patternInserted", { name: summary.title || summary.name }))
+      refresh()
+    } catch {
+      toast.error(t("universalEditor.sectionInsertError"))
+    } finally {
+      setInserting(false)
+    }
+  }
 
   const insertSection = async (type: InsertableType, at: number) => {
     const pageId = selectedSection?.pagePostId ?? pageOfFrame
@@ -1323,6 +1396,9 @@ export default function VisualEditorPage() {
                     t={t} onInsert={insertByButton} thumbnail={sectionThumbnail}
                     draggable={caretEnabled} onDrag={(type) => setDragging(type ? { type, at: null } : null)} />
                 )}
+                {soleContainer && sectionArray.state === "ready" && (
+                  <PatternRail patterns={catalogue.patterns} busy={inserting} t={t} onInsert={insertPattern} />
+                )}
               </div>
             ) : selected ? (
               <div className="space-y-3">
@@ -1408,6 +1484,9 @@ export default function VisualEditorPage() {
                   <SectionInserter container={soleContainer} relative={false} busy={inserting}
                     t={t} onInsert={insertByButton} thumbnail={sectionThumbnail}
                     draggable={caretEnabled} onDrag={(type) => setDragging(type ? { type, at: null } : null)} />
+                )}
+                {soleContainer && sectionArray.state === "ready" && (
+                  <PatternRail patterns={catalogue.patterns} busy={inserting} t={t} onInsert={insertPattern} />
                 )}
               </div>
             )}

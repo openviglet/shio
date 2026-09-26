@@ -172,6 +172,15 @@ class ShAgentP7ConformanceTest {
                 no("ShMarketplaceAPI.java", "findAgentEntries",
                         "installing a package writes no content by itself; what it then applies "
                         + "goes through the batch, which is reviewed")));
+        byPath.put("/api/v2/agent/patterns", new Guards(
+                no("ShPatternAPI.java", "dryRun",
+                        "SH1108: a push copies one file the caller already holds; there is nothing "
+                        + "a plan could show that the file does not"),
+                no("ShPatternAPI.java", "confirm", NOT_DESTRUCTIVE),
+                no("ShPatternAPI.java", "shContentAuditService", NOT_CONTENT),
+                no("ShPatternAPI.java", "findAgentEntries",
+                        "a pushed pattern writes no content; placing one is an apply, which is "
+                        + "reviewed")));
         byPath.put("/api/v2/tenant", new Guards(
                 yes("ShTenantAPI.java", "dryRun"),
                 no("ShTenantAPI.java", "confirm", NOT_DESTRUCTIVE),

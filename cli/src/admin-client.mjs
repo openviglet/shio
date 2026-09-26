@@ -352,4 +352,31 @@ export class ShioAdminClient {
   uninstallPackage(id) {
     return this.#marketplace(`/${encodeURIComponent(id)}`, "DELETE");
   }
+
+  /** SH1108 — GET /api/v2/agent/patterns: what this instance holds, with each copy's digest. */
+  async patterns() {
+    return (await this.#at("/api/v2/agent/patterns", "GET")) ?? [];
+  }
+
+  /**
+   * SH1108 — PUT /api/v2/agent/patterns/{name}, admin-gated.
+   *
+   * The file's text is sent as it is on disk and never re-serialized: the server stores the bytes
+   * it receives, and the digest it answers is then the digest of this file, which is the whole of
+   * how a stale copy is told from a current one.
+   */
+  async pushPattern(name, text) {
+    const url = `${this.baseUrl}/api/v2/agent/patterns/${encodeURIComponent(name)}`;
+    const res = await this.fetch(url, {
+      method: "PUT",
+      headers: {
+        Authorization: this.#authHeader(), Accept: "application/json", "Content-Type": "application/json",
+      },
+      body: text,
+    });
+    if (!res.ok) {
+      throw new ShioHttpError(res.status, url, await bodyOf(res));
+    }
+    return res.json();
+  }
 }

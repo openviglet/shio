@@ -1616,31 +1616,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.11 A pattern the console can see (SH1108)
-
-A pattern is `shio/patterns/<name>.json` in the project, and the console is a browser
-talking to an instance. It cannot read that file, so the Patterns tab SH1040's design
-put beside the section types has nothing to list and Save as pattern has nowhere to
-write. Capture and placement are a CLI verb, while the person most likely to know a
-block is worth keeping is the curator who just composed it.
-
-The way through is already built and was mistaken for a blocker. The marketplace
-installer expands an uploaded zip into `shio.blueprint.path` — an operator directory the
-registry loads beside the classpath — and reloads, rolling back a package that will not
-load. So a pattern reaches the server the way every third-party package does: `shio
-patterns push <name>` packages the file as a minimal blueprint and installs it. Nothing
-new stores anything.
-
-Two decisions the build makes rather than inherits. A package is **named**, so a pushed
-pattern needs a prefix keeping it out of the catalogue a curator scrolls, and the
-console needs a way to ask for patterns rather than for every package. And a pushed
-pattern is a **copy**: the file stays the authority, and one edited on disk and not
-pushed is stale on the instance, which the tab says rather than letting a curator find
-out.
-
-The assertion is a pattern captured, pushed and then placed from the rail, with the
-resulting section array matching the one the CLI writes for the same pattern.
-
 ### LXXI.12 A save that says what moved (SH1109)
 
 A save in the visual editor returns a toast. Every other surface closes its loop with

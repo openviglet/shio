@@ -72,7 +72,7 @@ class ShSilentCatchInventoryTest {
      * {@code token-budgets.properties} has. Raising one without saying why in the commit message is
      * the mechanism defeated.</p>
      */
-    private static final Map<String, Integer> DECLARED = Map.of(
+    private static final Map<String, Integer> DECLARED = Map.ofEntries(
             // 51 since SH329: `Declared.withSitesFrom` swallows an unparseable address, because the
             // op that owns it raises the teaching error when it runs — and throwing from the
             // pre-pass would kill the whole dry run before it planned anything, which is the one
@@ -227,7 +227,7 @@ class ShSilentCatchInventoryTest {
             // SH1084 — 82: ShReviewService.approveOne catches a gate refusal and returns it as the
             // post's `skipped` row, which the curator reads in the approval's answer. It is reported
             // to the person who can act on it, just not as the whole call's failure.
-            "api", 82,
+            Map.entry("api", 82),
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.
@@ -249,7 +249,7 @@ class ShSilentCatchInventoryTest {
             // debugging a meter that reads low will already be looking; `persist` deliberately does
             // not, because losing the insert race is the normal path on more than one node and a
             // line per concurrent flush would be noise about a mechanism working.
-            "tenant", 9,
+            Map.entry("tenant", 9),
             // 4 since SH217, and the two are different judgements filed under one number.
             //
             // The first is a catch that DOES record — the registry refuses one local package and
@@ -263,8 +263,8 @@ class ShSilentCatchInventoryTest {
             // building a report ABOUT a broken package, so an incident there would be a failure to
             // describe a failure — and the fallback still names the package well enough for an
             // operator to find it, which is the whole job.
-            "blueprint", 4,
-            "exchange", 2,
+            Map.entry("blueprint", 4),
+            Map.entry("exchange", 2),
             // 1 since SH646, and it is the third shape this list has met: the catch is neither a
             // swallow nor control flow, it is a *conversion into the answer*. `ShMarketplaceCatalog`
             // catches an unreachable or malformed catalogue and returns it as
@@ -282,7 +282,11 @@ class ShSilentCatchInventoryTest {
             // real outcome — installed, or refused with the reason — with the OS's opinion about a
             // temp directory. The bytes are in the system temp dir either way, which is somebody
             // else's cleanup by construction.
-            "marketplace", 2,
+            Map.entry("marketplace", 2),
+            // SH1108: a pushed pattern file that no longer parses reads as absent, so the rail and
+            // `list --remote` report it as not pushed and the fix is the push that replaces it. A
+            // diagnostics entry would name an operator file the operator already owns the fix for.
+            Map.entry("pattern", 1),
             // 3 since SH384: a bad `page=` falls back to page one, beside the bad `limit=` that
             // falls back to the default. Deliberately not recorded — that value comes off a URL a
             // *reader* types, so a diagnostics entry per `?page=abc` would fill the window with
@@ -312,7 +316,7 @@ class ShSilentCatchInventoryTest {
             // a 302 (SH385's row, at a second address) and `UnknownAssetException` to fall back to
             // the page's 404 (SH437's). Two routes making the same two choices is one judgement,
             // not two — which is also why they read as duplicates here and are counted anyway.
-            "render", 9,
+            Map.entry("render", 9),
             // SH939 removed the `utils` row entirely, from 2 to none. Both catches were the two
             // arms of `ShUtils.isJSONValid` — try `JSONObject`, fall back to `JSONArray`, answer
             // false — and nothing called the method. So this is the one way the population is
@@ -330,14 +334,14 @@ class ShSilentCatchInventoryTest {
             // with a different remedy, already reported by verify's own rule and by the
             // read that surfaces it. Refusing here would answer one problem with a message
             // about another, sending whoever read it to fill in a value that is there.
-            "migration", 3,
+            Map.entry("migration", 3),
             // 1 since SH1058: `ShDocumentDigest.of` hashes a document that does not parse as its
             // raw text instead of its canonical form. That is the correct digest, not a degraded one:
             // the only property the value has to keep is that it changes exactly when the content
             // does, and raw text still does. The malformed post is already reported by verify's own
             // rule and by the render path's CONTENT incident, so recording it here would put one
             // broken post in the diagnostics window once per translation measured against it.
-            "post", 1,
+            Map.entry("post", 1),
             // 1 since SH84: `ShTuringDocumentMapper.readData` reads a post whose `data` is not JSON
             // as "no text", and does not record it. The render path already reports that exact post
             // as a CONTENT degradation, which is the branch of SH270's own rule this falls under —
@@ -385,7 +389,7 @@ class ShSilentCatchInventoryTest {
             // and the SDK throwing — count as the single answer they are. That is the whole of
             // SH917: this figure now counts decisions rather than catch blocks, so a refactor that
             // merges two identical handlers no longer looks like paying the debt down.
-            "turing", 7,
+            Map.entry("turing", 7),
             // 1 since SH459, and it is the SH385/SH437 kind rather than a degradation: the
             // authentication entry point asks every RequestMappingHandlerMapping whether any
             // controller claims the URI, so that a path none of them serves answers 404 instead of
@@ -396,7 +400,7 @@ class ShSilentCatchInventoryTest {
             // before the check existed, and an incident per wrong-verb probe would fill the window
             // with what SH103 refused for 4xx. Counted rather than exempted, so the population stays
             // a diff.
-            "spring", 1);
+            Map.entry("spring", 1));
 
     private static final Pattern CATCH = Pattern.compile("catch\\s*\\(([^)]*)\\)\\s*\\{");
 

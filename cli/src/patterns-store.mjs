@@ -181,6 +181,77 @@ export function sectionUrlsFor({ instance, count, folder }) {
   return Array.from({ length: count }, (unused, index) => `${base}/${instance}-${index + 1}`);
 }
 
+/**
+ * SH1108 — the desired-state document that places a filled pattern into a page.
+ *
+ * Pure, and exported for the console's sake: the rail places a pushed pattern by sending this same
+ * document, and `section-placement.test.mjs` in shio-react holds its mirror to this one, so "the
+ * array the console writes is the array the CLI writes" is an assertion rather than a hope.
+ *
+ * @param {object} args
+ * @param {object} args.pattern  a pattern already through {@link fillPattern}
+ * @param {object} args.page     the target as `/agent/read` answers it: `{type, data}`
+ * @param {string} args.at       the target's address, `post:<site>/<url>`
+ * @param {string} args.instance the name its sections are derived from
+ * @param {number|string} [args.after] sections to skip; absent is the end
+ */
+export function placementDocument({ pattern, page, at, instance, after }) {
+  const site = siteOf(at);
+  const held = referencesOf(page.data?.sections);
+  const folder = folderOf(held[0]) ?? DEFAULT_SECTIONS_FOLDER;
+  const urls = sectionUrlsFor({ instance, count: pattern.sections.length, folder });
+  const where = placementIndex(after, held.length);
+  const next = [...held];
+  next.splice(where, 0, ...urls);
+  return {
+    urls,
+    where,
+    document: {
+      site,
+      folders: [{ path: folder }],
+      posts: [
+        ...pattern.sections.map((section, index) => ({
+          url: urls[index],
+          type: section.type,
+          folder,
+          data: section.data,
+        })),
+        // SH168 — whole state, so the page is re-declared with everything it had and one field
+        // changed. Sending `sections` alone would clear its title.
+        { url: urlOf(at, site), type: page.type, data: { ...page.data, sections: next } },
+      ],
+    },
+  };
+}
+
+/** `after: 2` places after the second section; absent is the end, which is the common ask. */
+export function placementIndex(after, held) {
+  if (after === undefined || after === null || after === "") return held;
+  const asked = Number(after);
+  if (!Number.isInteger(asked) || asked < 0) {
+    throw new Error(`shio patterns apply: --after takes a whole number of sections to skip, `
+      + `got ${JSON.stringify(after)}. 0 places it first; omit it to place it last.`);
+  }
+  return Math.min(asked, held);
+}
+
+/** A reference field is one string or a list of them, which is the shape `getRelation` takes. */
+export function referencesOf(value) {
+  if (Array.isArray(value)) return value.filter((item) => typeof item === "string" && item);
+  return typeof value === "string" && value ? [value] : [];
+}
+
+export function siteOf(address) {
+  const rest = String(address).replace(/^post:/, "");
+  const cut = rest.indexOf("/");
+  return cut < 0 ? rest : rest.slice(0, cut);
+}
+
+function urlOf(address, site) {
+  const rest = String(address).replace(/^post:/, "");
+  return rest.slice(site.length) || "/";
+}
+
 /** The folder part of a section's friendly URL, or `null` when it has none. */
 export function folderOf(url) {
   if (typeof url !== "string" || !url.startsWith("/")) return null;

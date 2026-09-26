@@ -26,19 +26,21 @@
  * The read is also what makes the insert position meaningful: `--after` counts the array the page
  * actually has, not the one the caller remembers.
  */
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 
+import { ShioAdminClient } from "../admin-client.mjs";
 import { ShioAgentClient } from "../agent-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { helpText } from "../help.mjs";
 import {
-  DEFAULT_SECTIONS_FOLDER, PATTERNS_DIR, fillPattern, folderOf, parsePattern, patternPathFor,
-  renderPattern, sectionUrlsFor, validPatternName,
+  PATTERNS_DIR, fillPattern, parsePattern, patternPathFor, placementDocument, referencesOf,
+  renderPattern, siteOf, validPatternName,
 } from "../patterns-store.mjs";
 
 export const HELP = helpText("patterns");
 
-const ACTIONS = ["save", "list", "apply"];
+const ACTIONS = ["save", "list", "apply", "push"];
 
 export async function run(flags, positionals, ctx) {
   const action = positionals[0];
@@ -48,7 +50,7 @@ export async function run(flags, positionals, ctx) {
         `One of: ${ACTIONS.join(", ")}. Example: shio patterns list`,
     );
   }
-  if (action === "list") return listPatterns(ctx);
+  if (action === "list") return listPatterns(flags, ctx);
   const name = positionals[1];
   if (!validPatternName(name)) {
     throw new Error(
@@ -58,11 +60,38 @@ export async function run(flags, positionals, ctx) {
         `${action} pricing-block`,
     );
   }
+  if (action === "push") return pushPattern(name, flags, ctx);
   return action === "save" ? savePattern(name, flags, ctx) : applyPattern(name, flags, ctx);
 }
 
-/** Every pattern in the tree, with what it would place. */
-async function listPatterns(ctx) {
+/** `sha256:<hex>` over the file's bytes — what the instance answers for the copy it holds. */
+function digestOf(text) {
+  return `sha256:${createHash("sha256").update(Buffer.from(text, "utf8")).digest("hex")}`;
+}
+
+/**
+ * SH1108 — copies a pattern file to the instance, where the console's rail can place it.
+ *
+ * The file stays the authority. The instance holds a copy, and a copy can go stale: `list --remote`
+ * says which, by comparing this file's digest with the one the instance answers.
+ */
+async function pushPattern(name, flags, ctx) {
+  const path = patternPathFor(name);
+  const text = await ctx.fs.readFile(join(ctx.cwd, path), "utf8").catch(() => {
+    throw new Error(`shio patterns push: no ${path}. List them: shio patterns list`);
+  });
+  parsePattern(text, path);
+  const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
+  const client = new ShioAdminClient({ baseUrl, user, password, fetch: ctx.fetch });
+  const stored = await client.pushPattern(name, text);
+  ctx.stdout.write(`Pushed ${path} to ${baseUrl} — ${stored?.digest ?? digestOf(text)}. `
+    + "The visual editor's rail offers it now; the file stays the one you edit.\n");
+  return 0;
+}
+
+/** Every pattern in the tree, with what it would place — and, with --remote, where each stands. */
+async function listPatterns(flags, ctx) {
+  const remote = flags.remote ? await remoteDigests(flags, ctx) : null;
   const dir = join(ctx.cwd, PATTERNS_DIR);
   let files = [];
   try {
@@ -80,12 +109,31 @@ async function listPatterns(ctx) {
   }
   for (const file of files) {
     const path = join(dir, file);
-    const pattern = parsePattern(await ctx.fs.readFile(path, "utf8"), `${PATTERNS_DIR}/${file}`);
+    const text = await ctx.fs.readFile(path, "utf8");
+    const pattern = parsePattern(text, `${PATTERNS_DIR}/${file}`);
     const types = pattern.sections.map((section) => section.type).join(", ");
     ctx.stdout.write(`${pattern.name}  ${pattern.sections.length} section(s)  ${types}`
-      + `${pattern.from ? `  from ${pattern.from}` : ""}\n`);
+      + `${pattern.from ? `  from ${pattern.from}` : ""}`
+      + `${remote ? `  ${standing(remote.get(pattern.name), digestOf(text))}` : ""}\n`);
+  }
+  if (remote) {
+    for (const name of [...remote.keys()].filter((key) => !files.includes(`${key}.json`))) {
+      ctx.stdout.write(`${name}  pushed, with no file here\n`);
+    }
   }
   return 0;
+}
+
+/** Where a local file stands against the instance's copy. */
+export function standing(pushed, local) {
+  if (!pushed) return "not pushed";
+  return pushed === local ? "pushed" : "stale — push it again";
+}
+
+async function remoteDigests(flags, ctx) {
+  const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
+  const client = new ShioAdminClient({ baseUrl, user, password, fetch: ctx.fetch });
+  return new Map((await client.patterns()).map((entry) => [entry.name, entry.digest]));
 }
 
 /**
@@ -166,28 +214,8 @@ async function applyPattern(name, flags, ctx) {
   const [page] = await client.read([at]);
   if (!page) throw new Error(`shio patterns apply: nothing at ${at}.`);
 
-  const site = siteOf(at);
-  const held = referencesOf(page.data?.sections);
   const instance = typeof flags.as === "string" && flags.as ? flags.as : name;
-  const folder = folderOf(held[0]) ?? DEFAULT_SECTIONS_FOLDER;
-  const urls = sectionUrlsFor({ instance, count: pattern.sections.length, folder });
-  const where = position(flags.after, held.length);
-
-  const document = {
-    site,
-    folders: [{ path: folder }],
-    posts: [
-      ...pattern.sections.map((section, index) => ({
-        url: urls[index],
-        type: section.type,
-        folder,
-        data: section.data,
-      })),
-      // SH168 — whole state, so the page is re-declared with everything it had and one field
-      // changed. Sending `sections` alone would clear its title.
-      { url: urlOf(at, site), type: page.type, data: { ...page.data, sections: spliced(held, urls, where) } },
-    ],
-  };
+  const { document, urls, where } = placementDocument({ pattern, page, at, instance, after: flags.after });
 
   const planOnly = Boolean(flags.dryRun);
   const result = await (planOnly
@@ -197,23 +225,6 @@ async function applyPattern(name, flags, ctx) {
     + `from ${name} into ${at} at position ${where + 1}: ${urls.join(", ")}\n`);
   ctx.stdout.write(`${planOnly ? "planned" : "changed"}: ${result?.changed ?? 0}\n`);
   return 0;
-}
-
-/** `--after 2` places after the second section; absent is the end, which is the common ask. */
-function position(after, held) {
-  if (after === undefined || after === null || after === "") return held;
-  const asked = Number(after);
-  if (!Number.isInteger(asked) || asked < 0) {
-    throw new Error(`shio patterns apply: --after takes a whole number of sections to skip, `
-      + `got ${JSON.stringify(after)}. 0 places it first; omit it to place it last.`);
-  }
-  return Math.min(asked, held);
-}
-
-function spliced(held, urls, where) {
-  const next = [...held];
-  next.splice(where, 0, ...urls);
-  return next;
 }
 
 /** The selection, by position, refusing a number the page does not have. */
@@ -242,21 +253,4 @@ function paramsFrom(flags) {
     out[String(pair).slice(0, cut)] = String(pair).slice(cut + 1);
   }
   return out;
-}
-
-/** A reference field is one string or a list of them, which is the shape `getRelation` takes. */
-function referencesOf(value) {
-  if (Array.isArray(value)) return value.filter((item) => typeof item === "string" && item);
-  return typeof value === "string" && value ? [value] : [];
-}
-
-function siteOf(address) {
-  const rest = String(address).replace(/^post:/, "");
-  const cut = rest.indexOf("/");
-  return cut < 0 ? rest : rest.slice(0, cut);
-}
-
-function urlOf(address, site) {
-  const rest = String(address).replace(/^post:/, "");
-  return rest.slice(site.length) || "/";
 }
