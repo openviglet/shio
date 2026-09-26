@@ -13,6 +13,7 @@ import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import {
   browserView, editableTitleField, listboxClass, readTableLayout, stepFor, tableLayoutKey, thumbnailSrc,
+  fullWindow, visibleWindow, WINDOW_THRESHOLD,
 } from "../src/app/content/content-browser/browser-view.ts"
 
 /**
@@ -123,4 +124,30 @@ test("SH1026: a grid card shows the image the listing named, through the transfo
     "SH1026: the card draws the kind's icon even when the listing names an image")
   assert.match(read("app", "content", "object.children.page.tsx"), /thumbnail: post\.thumbnail,/,
     "SH1026: the row mapping drops the thumbnail the listing sent")
+})
+
+test("SH1026: past the threshold only the rows a viewport shows are mounted, with space for the rest", () => {
+  assert.deepEqual(fullWindow(40), { start: 0, end: 40, before: 0, after: 0 })
+  // 1000 rows of 50px, scrolled 5000px into the list: rows 100..~116 are on screen, 4 either side.
+  const list = visibleWindow({ count: 1000, columns: 1, rowHeight: 50, top: -5000, viewportHeight: 800 })
+  assert.deepEqual(list, { start: 96, end: 120, before: 4800, after: 44000 },
+    "SH1026: a thousand-row list mounted a thousand rows, which is the cost virtualising removes")
+  assert.equal(list.before + (list.end - list.start) * 50 + list.after, 1000 * 50,
+    "SH1026: the spacers and the mounted rows must add up to the list, or the scrollbar lies")
+  // A grid lays three to a row, so a window is whole rows of cards.
+  const grid = visibleWindow({ count: 1000, columns: 3, rowHeight: 200, top: 0, viewportHeight: 800 })
+  assert.deepEqual([grid.start, grid.end % 3, grid.before], [0, 0, 0])
+  assert.equal(visibleWindow({ count: 10, columns: 1, rowHeight: 50, top: 2000, viewportHeight: 800 }).end, 4,
+    "SH1026: a list below the fold still mounts its first rows, so it is there when scrolled to")
+  assert.ok(WINDOW_THRESHOLD >= 100, "SH1026: a folder of a couple of pages mounts whole, as it did")
+
+  const page = read("app", "content", "object.children.page.tsx")
+  assert.match(page, /sortedItems\.slice\(rowWindow\.start, rowWindow\.end\)/,
+    "SH1026: the listbox maps every row, so the window the hook measured is never used")
+  assert.match(page, /aria-setsize=\{sortedItems\.length\}[\s\S]*?aria-posinset=\{index \+ 1\}/,
+    "SH1026: a windowed listbox must state its size, or a screen reader counts only the mounted rows")
+  assert.match(page, /pendingFocus\.current = bounded\s*reveal\(bounded\)/,
+    "SH1026: an arrow to a row outside the window focuses nothing, so the keyboard stops at the window's edge")
+  assert.match(page, /tabIndex=\{index === tabStop \? 0 : -1\}/,
+    "SH1026: with the focused row scrolled away the list must keep a tab stop, or Tab skips it")
 })

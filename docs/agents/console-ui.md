@@ -2941,8 +2941,22 @@ rule verify's alt-text check also uses. The card asks the transform pipeline for
 (`thumbnailSrc`: 320×192, cropped, webp) and falls back to the kind's icon. The image is decorative,
 since the title below names the row.
 
-Still to come: virtualising the list and the grid, and moving the rest of the page into the
-directory.
+**The list and the grid are windowed past 150 rows.** `useRowWindow` (in `content-browser/`)
+mounts only the rows the viewport shows, plus four either side. Spacers stand in for the rest, so
+the scrollbar stays true. A smaller folder mounts whole, as before. Geometry is measured, not
+declared: a row's height is the first mounted option's plus the row gap, and the grid's columns are
+its computed tracks. It re-measures on any scroll (a capturing document listener, since the shell
+may scroll its own element) and on resize, and it only sets state from those callbacks. The
+arithmetic is `visibleWindow`, which is pure and never returns an empty window: a list below the
+fold keeps its first rows, which is also what the next measure reads a row height from.
+
+The keyboard still reaches every row. An arrow to an unmounted row scrolls it into the window
+(`reveal`) and focuses it once it renders. With the focused row scrolled away, the first mounted row
+holds the tab stop. Options carry `aria-setsize` and `aria-posinset`, so a screen reader counts the
+list and not the window. `browser-views.test.mjs` checks the arithmetic and the wiring. Nothing has
+driven it in a browser over a large folder yet.
+
+Still to come: moving the rest of the page into the directory.
 
 ## The Forms page (SH1066)
 

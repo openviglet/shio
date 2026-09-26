@@ -114,6 +114,52 @@ export function thumbnailSrc(path: string, width = 320, height = 192): string {
 }
 
 /**
+ * SH1026 — above this many rows the list and the grid mount only the window a reader can see. Below
+ * it every row mounts, which keeps a small folder exactly as it was: nothing to measure, nothing to
+ * scroll into range, and the whole list in the accessibility tree.
+ */
+export const WINDOW_THRESHOLD = 150
+
+/** Which rows to mount, and how much space the unmounted ones above and below stand in for. */
+export interface RowWindow {
+  start: number
+  end: number
+  before: number
+  after: number
+}
+
+/** Every row, no spacers: the answer below the threshold and before anything is measured. */
+export function fullWindow(count: number): RowWindow {
+  return { start: 0, end: count, before: 0, after: 0 }
+}
+
+/**
+ * SH1026 — the rows a viewport shows, from where the list sits in it.
+ *
+ * `top` is the list's top edge relative to the viewport (negative once scrolled past it), rows are
+ * `rowHeight` tall including their gap, and a grid lays `columns` to a row. `overscan` rows either
+ * side keep a fast scroll from showing blank space before the next measure. Pure, so
+ * `browser-views.test.mjs` checks the arithmetic without a browser.
+ */
+export function visibleWindow({ count, columns, rowHeight, top, viewportHeight, overscan = 4 }: {
+  count: number; columns: number; rowHeight: number; top: number; viewportHeight: number; overscan?: number
+}): RowWindow {
+  if (count <= 0 || rowHeight <= 0 || columns <= 0) return fullWindow(Math.max(count, 0))
+  const rows = Math.ceil(count / columns)
+  const firstRow = Math.min(rows, Math.max(0, Math.floor(-top / rowHeight) - overscan))
+  // Never an empty window: a list below the fold keeps its first rows mounted, and the measure
+  // that sizes a row needs one to read. With none, the next measure would mount every row again.
+  const lastRow = Math.min(rows, Math.max(firstRow + overscan,
+    Math.ceil((viewportHeight - top) / rowHeight) + overscan))
+  return {
+    start: firstRow * columns,
+    end: Math.min(count, lastRow * columns),
+    before: firstRow * rowHeight,
+    after: (rows - lastRow) * rowHeight,
+  }
+}
+
+/**
  * SH1059 — how a row is named to anything that is not looking at it: the title, and the locale
  * when there is one. The checkbox, the actions trigger and the title all say this, so two
  * translations of one page are two different things to a screen reader, as they are on screen.

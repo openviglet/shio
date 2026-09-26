@@ -21,6 +21,7 @@ import {
   browserView, listboxClass, optionClass, stepFor, type BrowserRow,
 } from "./content-browser/browser-view"
 import { BrowserItem } from "./content-browser/browser-views"
+import { useRowWindow } from "./content-browser/use-row-window"
 import { BrowserTable } from "./content-browser/browser-table"
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useTranslation } from "react-i18next"
@@ -596,12 +597,35 @@ export default function ObjectChildrenPage() {
   const [anchorRow, setAnchorRow] = useState(0)
   const rowRefs = useRef<(HTMLDivElement | null)[]>([])
   const searchRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  /*
+   * SH1026 — past a few pages the list and the grid mount only the rows a reader can see. The
+   * keyboard can still reach any row: focusing one that is not mounted scrolls it into the window
+   * first, and the effect below focuses it once it has rendered.
+   */
+  const { window: rowWindow, reveal } = useRowWindow(listRef, sortedItems.length, viewMode)
+  const tabStop = focusedRow >= rowWindow.start && focusedRow < rowWindow.end ? focusedRow : rowWindow.start
+  const pendingFocus = useRef<number | null>(null)
+  useEffect(() => {
+    const pending = pendingFocus.current
+    if (pending !== null && rowRefs.current[pending]) {
+      rowRefs.current[pending]?.focus()
+      pendingFocus.current = null
+    }
+  })
 
   const focusRow = useCallback((index: number) => {
     const bounded = Math.max(0, Math.min(index, sortedItems.length - 1))
     setFocusedRow(bounded)
-    rowRefs.current[bounded]?.focus()
-  }, [sortedItems.length])
+    const row = rowRefs.current[bounded]
+    if (row) {
+      row.focus()
+    } else {
+      pendingFocus.current = bounded
+      reveal(bounded)
+    }
+  }, [sortedItems.length, reveal])
 
   /** Every id from the anchor to here — what makes a bulk verb a gesture rather than N clicks. */
   const selectRange = useCallback((from: number, to: number) => {
@@ -1286,16 +1310,28 @@ export default function ObjectChildrenPage() {
               aria-orientation={viewMode === "grid" ? "horizontal" : "vertical"}
               onKeyDown={onListKeyDown}
               data-view={viewMode}
+              ref={listRef}
               className={listboxClass(viewMode)}
             >
-            {!loading && sortedItems.map((item, index) => (
+            {/* SH1026 — the unmounted rows above the window, as the space they would take. */}
+            {!loading && rowWindow.before > 0 && (
+              <div aria-hidden="true" style={{ height: rowWindow.before, gridColumn: "1 / -1" }} />
+            )}
+            {!loading && sortedItems.slice(rowWindow.start, rowWindow.end).map((item, offset) => {
+              const index = rowWindow.start + offset
+              return (
               <div
                 key={item.id}
                 // One row is in the tab order at a time (a roving tabindex), so Tab moves past the
-                // list rather than through every row of a hundred-row page.
+                // list rather than through every row of a hundred-row page. When the focused row is
+                // outside the window, the first mounted row holds the tab stop instead.
                 role="option"
                 aria-selected={selectedItems.has(item.id) ? "true" : "false"}
-                tabIndex={index === focusedRow ? 0 : -1}
+                // The whole list's size and this row's place in it, which a windowed listbox has to
+                // state because the rows a screen reader could count are only the mounted ones.
+                aria-setsize={sortedItems.length}
+                aria-posinset={index + 1}
+                tabIndex={index === tabStop ? 0 : -1}
                 ref={(node) => { rowRefs.current[index] = node }}
                 onFocus={() => setFocusedRow(index)}
                 onClick={(event) => onRowClick(event, index)}
@@ -1317,7 +1353,11 @@ export default function ObjectChildrenPage() {
                   onOpen={() => handleItemClick(item)}
                 />
               </div>
-            ))}
+              )
+            })}
+            {!loading && rowWindow.after > 0 && (
+              <div aria-hidden="true" style={{ height: rowWindow.after, gridColumn: "1 / -1" }} />
+            )}
             </div>
             )}
 

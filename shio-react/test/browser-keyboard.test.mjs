@@ -41,7 +41,8 @@ test("SH1020: the list is a listbox and every row is an option", () => {
   assert.match(PAGE, /role="option"/u)
   assert.match(PAGE, /aria-selected=\{selectedItems\.has\(item\.id\) \? "true" : "false"\}/u,
     "SH1020: a row that is selected and does not say so is selected for the pointer only")
-  assert.match(PAGE, /tabIndex=\{index === focusedRow \? 0 : -1\}/u,
+  // SH1026 — the tab stop is the focused row, or the window's first row when it has scrolled away.
+  assert.match(PAGE, /tabIndex=\{index === tabStop \? 0 : -1\}/u,
     "SH1020: a roving tabindex, so Tab moves past the list rather than through a hundred rows — "
       + "which is the contract `role=\"listbox\"` announces")
 })
