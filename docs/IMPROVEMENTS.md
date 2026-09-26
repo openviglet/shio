@@ -1168,34 +1168,6 @@ a state the mirror can express rather than one it forgets.
 The assertion is a refresh from a dirty docs checkout refused or marked, and a clean one
 unchanged.
 
-### LXIV.20 A control character where an escape was meant (SH1119)
-
-Two committed regexes contain a literal backspace, U+0008, where `\b` was meant. Found
-by `grep -P '\x08'` over the tree after SH1052 made the same mistake and caught it in
-review.
-
-`claude-plugin/test/plugin.test.mjs:196` reads `text.match(/<BS>SH\d{2,}<BS>/g)` and
-asserts the result is empty — it always is, since no source file contains a backspace.
-That check exists because five internal task ids once shipped in the published README,
-package description, fragment and a skill, and it has been asserting nothing since.
-`shio-react/test/unsaved-work.test.mjs:80` is a `doesNotMatch` for `useBlocker(` and
-`usePrompt(`, so it also always passes; SH1090 says calling either throws against this
-console's router.
-
-Both repair to green, checked before filing: the plugin's published files carry no
-`SH<n>` today, and the guard names both hooks only inside backticks, with no call. The
-fix is two characters; the value is that the gates start working — and it is a task
-because the repair is what finds out whether anything drifted while they were blind.
-
-The cause belongs with them: a shell heredoc expands `\b` before the file is written, so
-a scripted edit inserting a regex corrupts it silently where an editor tool would not.
-Same family as the stripper in the sibling line — an instrument that reads as working
-and checks nothing — reached by another route.
-
-The assertion is a repo-wide scan: no tracked source file contains a control character
-in the C0 range other than tab and newline. Three files named on the first run; a fourth
-is the finding.
-
 ### LXIV.21 `--delivery` asks for more and sends less (SH1120)
 
 `withDelivery` in `cli/src/commands/verify.mjs` composes the check list when

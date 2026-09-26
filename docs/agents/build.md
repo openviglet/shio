@@ -537,6 +537,41 @@ skipped itself in the walk *and* shipped with the literal bytes in its own chara
 self-exclusion hiding precisely the thing it exists to find. Both declarations are `\u` escapes now
 and both fixtures are built from character codes, so it passes its own rule honestly.
 
+#### And then it was green for its whole life over files it never opened (SH1119)
+
+Two more literal backspaces were found by `grep -P '\x08'` over the tree — not by the lint above,
+which was running and passing. Its walk was an **allow-list of ten trees**, and it had
+`shio-react/src` but not `shio-react/test`, and no `claude-plugin/` at all. Both defects were in
+exactly those two places. Measured: the ten trees reach **1,890** files, a walk from the repository
+root reaches **2,220**, and the 330 unread held both.
+
+So the walk starts at the root and names what is *not* ours instead — dependencies, build output,
+git's store, the vendored `.roadkeep` engine, an instance's `store/`. **A deny-list cannot miss a
+package that does not exist yet**, which is the property the tree list did not have: an allow-list
+also has to be extended by whoever adds a package, and a scan that silently stops covering a new one
+is indistinguishable from one that never ran. SH814's shape again, where a flag was removed from one
+script of nine.
+
+`SH1119: the walk reaches the trees an allow-list of ten left out` names seven files — the two that
+held a defect, one per tree that had no representative, and one that *was* listed so a pass is not
+the walk agreeing with itself. Verified in the direction that matters: narrow the walk back to `cli`
+and the byte scan goes **green** while that assertion fails, which is this defect exactly.
+
+**What the two repairs found, which is why this was a task and not a two-character fix.** The
+published-files check (`claude-plugin/test/plugin.test.mjs`) came back clean — no `SH<n>` ships
+today, so nothing drifted while it was blind, though nothing could have said so. The other did not:
+`unsaved-work.test.mjs` asserted that `use-unsaved-guard.ts` must **not** call `useBlocker(`, on the
+grounds that it throws outside a data router — and SH1090 had since given the console
+`createBrowserRouter` and this guard that very call, which **the next test in the same file
+asserts is there**. Two assertions in one file requiring opposite things, and only the corrupt one
+could pass. The premise is real and is kept where it belongs: held against `App.tsx`, the file that
+decides it, rather than by forbidding the call at the one place that has to make it.
+
+The cause belongs with the bytes: a **shell heredoc resolves `\b` before the file is written**, so a
+scripted edit inserting a regex corrupts it silently where an editor tool would not. Worth knowing
+while fixing this, because the same hazard is one layer up — the doc comment first written for the
+widened walk contained `` `*/src` `` and closed its own block comment.
+
 ### A reserved range protects an id you type, not one you compose (SH801)
 
 SH787 reserved everything from the nine-thousandth id up for fixtures and asserted it from both

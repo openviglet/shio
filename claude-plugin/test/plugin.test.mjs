@@ -191,9 +191,15 @@ test("the AGENTS.md fragment states the rules that are expensive to learn by mis
   // roadmap, so an `SH<n>` there reads as a term of art the reader is missing rather than
   // as the bookkeeping it is. This assertion used to require one, which is how five of them
   // survived in the published README, package description, fragment and a skill.
+  //
+  // SH1119 — and then it asserted nothing at all for its whole life. The pattern held two literal
+  // backspaces, U+0008, where `\b` was written: a shell heredoc resolved the escape before the file
+  // was written, and no source file contains a backspace, so `match` returned null every run. The
+  // three published files carry no id today, checked when this was repaired, so nothing drifted
+  // while it was blind — but nothing here could have said so.
   for (const file of ["README.md", "AGENTS.fragment.md", "package.json"]) {
     const text = await readFile(join(plugin, file), "utf8");
-    const leaked = text.match(/SH\d{2,}/g) ?? [];
+    const leaked = text.match(/\bSH\d{2,}\b/g) ?? [];
     assert.deepEqual(leaked, [], `${file}: internal task ids do not ship — found ${leaked.join(" ")}`);
   }
 });

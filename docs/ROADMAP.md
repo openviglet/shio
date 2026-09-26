@@ -22,7 +22,6 @@
 ## Block AY — What the conformance instruments cannot see
 
 - 📋 **SH1115** (deps: —) **the coverage mirror marks ids named from a working copy nobody checked was committed** — It reads COVERAGE.md from a directory rather than a revision, so an uncommitted edit names ids here forever while the published matrix never gains the sentence. → §LXIV.18
-- 📋 **SH1119** (deps: SH1052 ✅) **two committed regexes hold a literal backspace where a word boundary was meant, so both assert nothing** — A heredoc expanded the escape before the file was written, and the check that internal task ids do not ship has matched nothing since. → §LXIV.20
 - 📋 **SH1120** (deps: —) **shio verify --delivery runs fewer checks than shio verify, silently dropping page and a11y** — withDelivery hand-copies the server's default as content,routes,diagnostics, so the flag asking for the stronger proof sends the narrower run. → §LXIV.21
 - 📋 **SH1147** (deps: SH1118 ✅) **six more comment strippers can each delete the rest of a file from one string literal** — SH1118 fixed the shared helper and its lint names six re-implementations, two of which hide 656 and 508 lines behind a fixture string. → §LXIV.25
 

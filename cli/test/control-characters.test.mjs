@@ -49,9 +49,36 @@ import { test } from "node:test";
 
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
-/** Where this repository's own source and prose live. */
-const TREES = ["cli/src", "cli/test", "cli/conformance", "scripts", "shio-sections/src",
-  "shio-model/src", "shio-react/src", "shio-app/src", "shio-site/src", "docs"];
+/**
+ * Where this repository's own source and prose live: **everywhere it is not somebody else's**.
+ *
+ * <h2>SH1119 — this was a list of ten trees, and the two live defects were outside it</h2>
+ *
+ * <p>The list read `cli/src`, `cli/test`, `cli/conformance`, `scripts`, four package `src`
+ * directories, `shio-app/src` and `docs`. It had `shio-react/src` and not `shio-react/test`; no
+ * `claude-plugin` at all. Both backspaces SH1119 repaired were in exactly those two places —
+ * `claude-plugin/test/plugin.test.mjs` and `shio-react/test/unsaved-work.test.mjs` — so the
+ * instrument for this defect was running, green, and not reading the files that had it.</p>
+ *
+ * <p>Measured: the ten trees reach **1,890** files and a walk from the root reaches **2,220**. The
+ * 330 unread held both. An allow-list of trees also has to be extended by whoever adds a package,
+ * and a scan that silently stops covering a new one is the same failure as one that never ran —
+ * SH814's shape again, where a flag was removed from one script of nine.</p>
+ *
+ * <p>So the walk starts at the repository root and names what is <b>not</b> ours instead. A
+ * deny-list cannot miss a package that does not exist yet, which is the property the list did not
+ * have; the extension filter keeps binaries out, and {@link SKIP} is short enough to read.</p>
+ */
+/**
+ * Directories that are not this repository's text, by name at any depth.
+ *
+ * <p>Dependencies and build output (`node_modules`, `target`, `dist`, `build`, `coverage`, `.vite`),
+ * git's own store, the editor's, and two that are vendored the way `node_modules` is: `.roadkeep`
+ * is the docs engine reproduced by `install-roadkeep`, and `store/` is an instance's runtime data —
+ * an H2 database and logs, neither written by hand nor tracked.</p>
+ */
+const SKIP = ["node_modules", "target", "dist", "build", "coverage", ".vite", ".git", ".idea",
+  ".roadkeep", "store"];
 
 const READ = new Set([".mjs", ".js", ".ts", ".tsx", ".java", ".md", ".json", ".yml", ".yaml"]);
 
@@ -106,11 +133,19 @@ function walk(dir, out = []) {
   }
   for (const entry of entries) {
     const path = join(dir, entry);
-    if (["node_modules", "target", "dist", ".git"].includes(entry)) continue;
+    if (SKIP.includes(entry)) continue;
     if (statSync(path).isDirectory()) walk(path, out);
     else if (READ.has(path.slice(path.lastIndexOf(".")))) out.push(path);
   }
   return out;
+}
+
+/** Every file this rule applies to, from the root down, minus the built console. */
+function scanned() {
+  return walk(ROOT).filter((file) => {
+    const relative = file.slice(ROOT.length).replace(/\\/g, "/");
+    return !BUILT.some((prefix) => relative.startsWith(prefix));
+  });
 }
 
 /**
@@ -134,15 +169,13 @@ export function offences(relative, text) {
 
 test("SH804: no source or document holds a control byte no rendering will show you", () => {
   const offenders = [];
-  let scanned = 0;
-  for (const file of TREES.flatMap((tree) => walk(join(ROOT, tree)))) {
+  const files = scanned();
+  for (const file of files) {
     const relative = file.slice(ROOT.length).replace(/\\/g, "/");
-    if (BUILT.some((prefix) => relative.startsWith(prefix))) continue;
-    scanned += 1;
     offenders.push(...offences(relative, readFileSync(file, "utf8")));
   }
 
-  console.log(`SH804: ${scanned} file(s) read for control bytes`);
+  console.log(`SH804: ${files.length} file(s) read for control bytes`);
   assert.deepEqual(
     offenders,
     [],
@@ -188,15 +221,46 @@ test("SH804: the reader is not vacuous — it finds the two bytes that were actu
     "and the three a source file may hold stay allowed, or this would report every file");
 });
 
+/**
+ * SH1119 — the walk reaches the places the allow-list did not, asserted by name.
+ *
+ * <p>SH804's scan was green for its whole life while two literal backspaces sat in files it never
+ * opened. Widening the walk fixes that once; this is what stops it narrowing again, and it is the
+ * assertion the repair owes its own id (SH527). A file named here is not a sample — it is one of the
+ * two that actually held a defect, or a tree that had no representative in the ten.</p>
+ */
+test("SH1119: the walk reaches the trees an allow-list of ten left out", () => {
+  const files = new Set(scanned().map((file) => file.slice(ROOT.length).replace(/\\/g, "/")));
+
+  const missed = {
+    "shio-react/test/unsaved-work.test.mjs":
+      "held a backspace for its whole life; `shio-react/src` was listed and `shio-react/test` was not",
+    "claude-plugin/test/plugin.test.mjs":
+      "held the other one, and `claude-plugin/` — everything this repository publishes — was on no list",
+    "shio-react/e2e/console-check.mjs": "the browser probe, in a third directory of the same package",
+    "shio-client/src/index.ts": "a published package whose src was never a tree here",
+    "scripts/run-gate.mjs": "the gate runner, which was listed — so a pass here is not the walk agreeing with itself",
+    "agents.md": "a root file, and the one every session reads",
+    ".github/workflows/suites.yml": "what CI runs, where an escape resolved by YAML looks identical",
+  };
+
+  const absent = Object.keys(missed).filter((path) => !files.has(path)).sort();
+  assert.deepEqual(absent, [],
+    "SH1119: this rule is about a byte no rendering shows, so a file it does not read is a file "
+    + "nobody will ever see the byte in. Each path below is here because an allow-list of ten trees "
+    + "missed it and something was wrong inside:\n  "
+    + absent.map((path) => `${path} — ${missed[path]}`).join("\n  ")
+    + "\nIf a file was renamed, move the entry. If the walk was narrowed, that is the defect.");
+});
+
 test("SH859: no file the walk reads is binary to a grep", () => {
   // The property the escape buys, asked of the artefact rather than of the rule: ripgrep's own test
   // for binary is a NUL in the bytes it read, and `git grep` and GitHub's code search agree. Asserted
   // separately from the byte scan above because it is a different claim — that one is about what a
   // person can SEE, this one about what a tool can READ, and SH804 had only the first.
   const binary = [];
-  for (const file of TREES.flatMap((tree) => walk(join(ROOT, tree)))) {
+  for (const file of scanned()) {
     const relative = file.slice(ROOT.length).replace(/\\/g, "/");
-    if (BUILT.some((prefix) => relative.startsWith(prefix))) continue;
     if (readFileSync(file).includes(0)) binary.push(relative);
   }
 
