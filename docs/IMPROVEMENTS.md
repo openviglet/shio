@@ -1141,28 +1141,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.16 A dependency only this machine has (SH1076)
-
-Found reading a failed CI run while checking what the IDE sync had pushed, and confirmed
-from the job logs. Every `Suites` run on a push to 2026.3 since at least 2026-09-06
-concludes failure, and all four jobs fail. `mvnw clean test` cannot read the POM:
-`Non-resolvable import POM: com.viglet.core:viglet-core-bom:pom:2026.3.11 ... could not
-find artifact ... in central`. The version was raised in `pom.xml` by SH110. On this
-machine `~/.m2` holds 2026.3.11 because viglet-core is built locally, so every local
-gate passes. The Java suite reported 2050 green today while CI could not start it.
-
-This is the state SH579 says does not exist, arrived at by the route it names: a red
-suite nobody mentioned. It is also worse than a red test. Maven stops before the
-reactor, so CI reports no count and no failing name, and the three other jobs fail
-downstream of the same missing artifact.
-
-The fix is outside this backlog: publish viglet-core 2026.3.11, or pin the last
-published version until it is. The part inside it is the instrument. A version bump that
-points at an artifact the central repository does not have is detectable at the commit,
-by resolving the BOM with an empty local repository, or offline against a list of
-published versions. Without that check, the next bump fails the same way and is seen a
-week later.
-
 ### LXIV.18 A mirror taken from a directory, not a revision (SH1115)
 
 `coverage-mirror.mjs` reads `COVERAGE.md` from a checkout directory — `SHIO_DOCS_DIR`,

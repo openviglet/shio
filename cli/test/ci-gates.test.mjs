@@ -324,3 +324,21 @@ test("SH241: no workflow claims a branch this repository does not develop on", (
     "a push filter that does not name the default branch is a workflow that never runs, and it "
       + "looks exactly like one that does (SH241)");
 });
+
+test("SH1076: the Java job checks the viglet-core pin is published before it runs the suite", async () => {
+  // SH110 pinned a version only one ~/.m2 held: every local gate passed and every CI run failed
+  // before the reactor, with no count and no failing name, for a month. The check that would have
+  // caught it runs first, so a missing artifact fails with the version and the fix.
+  const suites = read("suites.yml");
+  const check = suites.indexOf("node scripts/check-published-deps.mjs");
+  const suite = suites.indexOf("clean test -Dskip.npm=true");
+  assert.ok(check > 0, "SH1076: the Java job no longer checks the pin against Maven Central");
+  assert.ok(check < suite, "SH1076: the check runs before the suite, or the suite's failure hides it");
+
+  const { pinnedVersion, bomUrl } = await import(new URL("../../scripts/check-published-deps.mjs", import.meta.url));
+  const pom = readFileSync(join(ROOT, "pom.xml"), "utf8");
+  assert.match(pinnedVersion(pom) ?? "", /^\d{4}\.\d+\.\d+$/,
+    "SH1076: the reader finds the pin in pom.xml, or the check is checking nothing");
+  assert.equal(bomUrl("2026.3.12"),
+    "https://repo1.maven.org/maven2/com/viglet/core/viglet-core-bom/2026.3.12/viglet-core-bom-2026.3.12.pom");
+});

@@ -2105,3 +2105,17 @@ and the slug an export and an import each derive. `ShLocaleCasingLintTest` fails
 call in `shio-app`, and every one found so far is `Locale.ROOT`: none of them is text for a person
 to read. The task counted nine and the scan found eleven. The lint's third test sets a Turkish
 default and asserts the webhook's wire value and a minted URL are unchanged.
+
+## A pin only this machine could resolve (SH1076)
+
+SH110 raised `<viglet-core.version>` to 2026.3.11, a version only a local `~/.m2` held because
+viglet-core is built on this machine. Every local gate passed; every CI run failed before the
+reactor — `Non-resolvable import POM`, no test count, no failing name — for a month. The pin is now
+2026.3.12, published to Maven Central.
+
+The instrument is `scripts/check-published-deps.mjs`, the first step of the Java job: it reads the
+pin from `pom.xml` and asks Central for that BOM (`HEAD`), failing with the version, the URL and the
+fix. It needs the network, so it is never part of `pnpm test`; `ci-gates.test.mjs` asserts the step
+exists and runs before the suite, and that the reader still finds the pin. **Before bumping
+viglet-core, run `node scripts/check-published-deps.mjs`** — a local build proves nothing about
+what CI can download.

@@ -148,6 +148,11 @@ jobs:
           distribution: "zulu"
           cache: maven
 
+      # SH1076 — a pin CI cannot resolve fails here, naming the version and the fix, rather than as a
+      # POM Maven cannot read with no count and no failing name (which is how it went a month unseen).
+      - name: The pinned viglet-core is on Maven Central
+        run: node scripts/check-published-deps.mjs
+
       # `-Dskip.npm=true` because the console build is the `js` job's question, and paying for it
       # here would make this the slowest job for a reason unrelated to what it asserts.
       # `tee` rather than a pipe: SH354 — a filter that reads the total discards the `<<< FAILURE!`

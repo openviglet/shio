@@ -1737,6 +1737,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1074** — The state-ARIA lint accepts a ternary whose branches are both quoted, as its message teaches, and refuses a bare boolean; a fixture now carries the id (design §LXIV.15 superseded: SH985 had already fixed the regex and added the fixture before this was filed).
 - **SH1141** — cli/test/authoring-files-cost.test.mjs counts one rename both ways: files 4072 tokens, API 5245, and the agent writes 3.1x less through files, held by authoring.* ceilings.
 - **SH1089** — ShLiquibaseChangelogReferenceLintTest walks the changelogs in master order and fails naming the changeset when one names a table or column no earlier change created, spelled exactly, and fails on a change type it was never taught (design §LXIV.17 recorded in `docs/agents/database.md`).
+- **SH1076** — pom.xml pins viglet-core 2026.3.12, which is on Maven Central, and the Java CI job now checks the pin is published before it runs the suite.
 
 ## Block AZ — What the content said before
 
