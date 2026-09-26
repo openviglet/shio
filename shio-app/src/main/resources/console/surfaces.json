@@ -302,6 +302,11 @@
       "id": "dock-preferences",
       "kind": "preference",
       "why": "what a curator lets the dock report, and how loudly (SH971). The agent's own outcomes are on the change feed whatever a person chose to be shown"
+    },
+    {
+      "id": "saved-views",
+      "kind": "preference",
+      "why": "a curator's names for filtered lists, which are URLs (SH1024). An agent states its query every time on shio_find, and the words a view saves are those same words"
     }
   ]
 }

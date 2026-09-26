@@ -46,6 +46,7 @@ import { filterParams, type ShContentFilters } from "@/lib/content-query"
 import { useListState } from "@/hooks/use-list-state"
 import { usePostTypes } from "@/hooks/use-catalogue"
 import { isCancelled } from "@/lib/read-options"
+import { SavedViews } from "@/components/saved-views"
 
 const siteService = new ShSiteService()
 const previewService = new ShPreviewTokenService()
@@ -1234,6 +1235,7 @@ export default function ObjectChildrenPage() {
             value={barValue}
             onChange={onBarChange}
             facets={facets}
+            views={<SavedViews list="browser" />}
             queryLabel={t("content.filterItems")}
           />
         </div>

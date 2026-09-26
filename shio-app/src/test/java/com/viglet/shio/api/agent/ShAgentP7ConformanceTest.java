@@ -197,6 +197,12 @@ class ShAgentP7ConformanceTest {
                     no(entry.getValue(), "shContentAuditService", NOT_CONTENT),
                     no(entry.getValue(), "findAgentEntries", NOT_CONTENT)));
         }
+        // SH1024 — a curator's own saved views, the dock's kind (Map.of holds ten pairs, hence here).
+        byPath.put("/api/v2/user/current/views", new Guards(
+                no("ShSavedViewAPI.java", "dryRun", PLAN_IS_THE_CALL),
+                no("ShSavedViewAPI.java", "confirm", DELETE_IS_THE_CONSOLE_GESTURE),
+                no("ShSavedViewAPI.java", "shContentAuditService", NOT_CONTENT),
+                no("ShSavedViewAPI.java", "findAgentEntries", NOT_CONTENT)));
 
         // The rest: surfaces that write something other than content.
         byPath.put("/api/v2/cda", new Guards(

@@ -1,0 +1,84 @@
+databaseChangeLog:
+  # SH1024 — `sh_saved_view`: a named filtered list, which is a named URL.
+  #
+  # The console's lists keep their whole state in the address (SH1023), so a view worth keeping is
+  # a path and a query string under a name. Per person, with `shared` offering it to everyone in the
+  # tenant: a curator's own bookmarks, and the ones a team agrees on.
+  #
+  # `list_key` names which list the view belongs to (browser, search, trash, review), so each bar
+  # offers only its own. `owner` is the username the console resolves, as `ShUser` spells it.
+  # Unique on (owner, list_key, name) so saving a name twice replaces it instead of duplicating (P5).
+  #
+  # `tenant_id`, lowercase, as every tenant table carries (SH22); no backfill, since the table is
+  # new. Types DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1024-create-sh-saved-view
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_saved_view
+      changes:
+        - createTable:
+            tableName: sh_saved_view
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: PK_sh_saved_view
+              - column:
+                  name: owner
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: list_key
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: path
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: query
+                  type: VARCHAR(2048)
+              - column:
+                  name: shared
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: sh1024-unique-sh-saved-view-owner-list-name
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - indexExists:
+                indexName: UK_sh_saved_view_owner_list_name
+      changes:
+        - addUniqueConstraint:
+            tableName: sh_saved_view
+            columnNames: owner, list_key, name, tenant_id
+            constraintName: UK_sh_saved_view_owner_list_name

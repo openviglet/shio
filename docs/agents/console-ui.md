@@ -2886,7 +2886,17 @@ none of says 0 instead of leaving the menu, so a chosen value stays visible and 
 counts, the locale facet is built from their keys, which cover the whole listing, not from one page's
 rows. A "load more" page keeps the first page's counts.
 
-Still to come: saved views. The bar's `views` slot is where they go.
+**The lists that hold their rows count them too.** The trash, the review queue and search pass
+`countLocally` counts through `withCounts`: over the rows the other filters leave, with a row
+counted once per value. A run counts once per site it touched, and a live draft counts as both
+draft and published, as choosing either would list it.
+
+**Saved views sit in every bar's `views` slot.** `<SavedViews list="browser|search|trash|review">`
+saves `location.pathname` and `location.search` under a name, which is the list's whole state
+(SH1023). Opening one navigates to `viewHref`. A view is its owner's, and optionally offered to the
+tenant. Saving the same name again replaces it, and only the owner deletes it. The store is
+`/api/v2/user/current/views` (`ShSavedViewService`, `sh_saved_view`), classified in
+`surfaces.json` as a console-only preference like the dock: an agent states its query every time.
 
 ## The browser's three views (SH1026, in parts)
 

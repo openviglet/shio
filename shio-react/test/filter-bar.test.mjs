@@ -11,7 +11,8 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { contentFacets, fromBarValue, matchesLocally, matchesRun, runSites, toBarValue, withCounts, withSiteFacet } from "../src/lib/filter-bar.ts"
+import { contentFacets, countLocally, fromBarValue, matchesLocally, matchesRun, runSites, toBarValue, withCounts, withSiteFacet } from "../src/lib/filter-bar.ts"
+import { viewHref } from "../src/lib/saved-view.ts"
 
 /**
  * SH1024 — the filter bar speaks the list's URL, and nothing else.
@@ -125,6 +126,42 @@ test("SH1024: the browser's facet options carry the server's counts, asked for w
   assert.match(page, /fetchPage\(listData\.page \?\? 0, undefined, true\)/,
     "SH1024: a re-read after a write keeps the counts from before the write")
   assert.match(page, /facets: prev\.facets/, "SH1024: loading the next page drops the counts")
+})
+
+test("SH1024: the lists that hold their rows count them, and a row counts once per value", () => {
+  const runs = [{ bySite: { Blog: 2, Shop: 1 } }, { bySite: { Blog: 1 } }, { bySite: null }]
+  assert.deepEqual(countLocally(runs, (run) => Object.keys(run.bySite ?? {})), { Blog: 2, Shop: 1 },
+    "SH1024: a site's count is the runs that touched it, not the changes they made there")
+  assert.deepEqual(countLocally([{ s: "draft", live: true }], (row) => [row.s, row.live ? "published" : null, "draft"]),
+    { draft: 1, published: 1 }, "SH1024: a row carrying a value twice is one row, and a draft that is live is both")
+  for (const page of [["app", "content", "trash.page.tsx"], ["app", "content", "search.page.tsx"],
+    ["app", "admin", "review", "review.list.page.tsx"]]) {
+    const source = readFileSync(join(SRC, ...page), "utf8")
+    assert.ok(source.includes("withCounts(") && source.includes("countLocally("),
+      `SH1024: ${page.at(-1)} offers facets with no idea how many each would list`)
+  }
+})
+
+test("SH1024: every bar offers saved views, and a view opens the URL it saved", () => {
+  assert.equal(viewHref({ path: "/console/content/search", query: "state=draft" }),
+    "/console/content/search?state=draft")
+  assert.equal(viewHref({ path: "/console/content/search", query: "?state=draft" }),
+    "/console/content/search?state=draft", "SH1024: a query stored with its ? must not open as ??")
+  assert.equal(viewHref({ path: "/console/content/trash", query: "" }), "/console/content/trash",
+    "SH1024: the unfiltered list is a view too, and opens with no dangling ?")
+
+  for (const [page, list] of [
+    [["app", "content", "object.children.page.tsx"], "browser"],
+    [["app", "content", "search.page.tsx"], "search"],
+    [["app", "content", "trash.page.tsx"], "trash"],
+    [["app", "admin", "review", "review.list.page.tsx"], "review"],
+  ]) {
+    assert.match(readFileSync(join(SRC, ...page), "utf8"), new RegExp(`views=\\{<SavedViews list="${list}" />\\}`),
+      `SH1024: the ${list} bar offers no saved views, so a filtered ${list} list cannot be kept by name`)
+  }
+  const component = readFileSync(join(SRC, "components", "saved-views.tsx"), "utf8")
+  assert.match(component, /service\.save\(list, name, location\.pathname, location\.search, shared\)/,
+    "SH1024: a view saves the address as it stands, which is the whole state of the list (SH1023)")
 })
 
 test("SH1024: the content browser draws the bar over its URL, and / still reaches its search", () => {

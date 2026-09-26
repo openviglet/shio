@@ -19,9 +19,10 @@ import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { reportProblem } from "@/lib/problem"
-import { fromBarValue, matchesRun, runSites, toBarValue, withSiteFacet } from "@/lib/filter-bar"
+import { countLocally, fromBarValue, matchesRun, runSites, toBarValue, withCounts, withSiteFacet } from "@/lib/filter-bar"
 // SH1024 — the queue's filters live in its URL, like every other list's (SH1023).
 import { useListState } from "@/hooks/use-list-state"
+import { SavedViews } from "@/components/saved-views"
 
 const service = new ShReviewService()
 
@@ -70,8 +71,10 @@ export default function ReviewListPage() {
     const { q: nextQ, site: nextSite } = fromBarValue(next)
     patchList({ q: nextQ, site: nextSite })
   }, [patchList])
-  const facets = useMemo(() => withSiteFacet([], runSites(sessions), t("content.filterSite")),
-    [sessions, t])
+  // SH1024 — each site counts the runs `q` leaves that touched it, which is what choosing it lists.
+  const facets = useMemo(() => withCounts(withSiteFacet([], runSites(sessions), t("content.filterSite")),
+    { site: countLocally(sessions.filter((run) => matchesRun(run, q, "")), (run) => Object.keys(run.bySite ?? {})) }),
+  [sessions, q, t])
   const shown = useMemo(() => sessions.filter((run) => matchesRun(run, q, site)), [sessions, q, site])
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
@@ -208,6 +211,7 @@ export default function ReviewListPage() {
           value={barValue}
           onChange={onBarChange}
           facets={facets}
+          views={<SavedViews list="review" />}
           queryLabel={t("review.filterRuns")}
         />
         {/* An empty queue and a filter that matched nothing are two facts, and say two things. */}

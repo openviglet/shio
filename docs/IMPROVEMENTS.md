@@ -1508,23 +1508,6 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.5 The filter bar over the shared vocabulary (SH1024)
-
-BD3 makes the questions answerable and BD4 makes a view addressable. What a curator
-still lacks is a way to ask without editing a URL.
-
-The browser, search, trash and the review queue render VDS139's BentoFilterBar over
-BD3's vocabulary: a free-text field, facets for type, state and locale as menus of the
-values present in scope, a date range for modified, and author as a picker over users
-with an agent option that filters to agent-written content through SH999's attribution.
-Active filters render as removable chips and mirror into the URL through BD4's hook, so
-a filtered view is shareable the moment it is built. Facet counts come from the listing
-response rather than a second request.
-
-A saved view is a named stored URL, per user with an option to share with the tenant,
-listed beside the bar. The assertions build a filter from the bar, read the URL, reload
-it into an identical result set, and confirm the facet counts equal the filtered totals.
-
 ### LXIX.7 Grid, table and list views, virtualised (SH1026)
 
 A grep of the browser for viewMode returns its declaration and the three buttons' own

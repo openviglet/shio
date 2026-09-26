@@ -9,15 +9,13 @@
 package com.viglet.shio.api.auth.dock;
 
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.viglet.shio.api.auth.ShCurrentUsername;
 import com.viglet.shio.api.auth.dock.ShDockPreferencesService.ShDockPreferences;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,15 +52,6 @@ public class ShDockPreferencesAPI {
 
     /** The same name `ShUserAPI.current` resolves the user record by, for both sign-in kinds. */
     private static String username() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication.getPrincipal() instanceof OAuth2User user) {
-            for (String key : new String[] { "preferred_username", "login", "email" }) {
-                Object value = user.getAttribute(key);
-                if (value != null) {
-                    return value.toString();
-                }
-            }
-        }
-        return authentication.getName();
+        return ShCurrentUsername.get();
     }
 }

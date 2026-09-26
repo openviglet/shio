@@ -178,6 +178,9 @@ class ShStatelessReachabilityLintTest {
         byPath.put("/api/v2/user/current/dock", new Requirement(Reason.CONSOLE_ADMIN,
                 "SH971 — what a person's own dock reports; an agent has no dock, and surfaces.json"
                 + " classifies it as a console-only preference"));
+        byPath.put("/api/v2/user/current/views", new Requirement(Reason.CONSOLE_ADMIN,
+                "SH1024 — a person's own names for filtered lists; an agent states its query every"
+                + " time, and surfaces.json classifies it as a console-only preference"));
         byPath.put("/api/v2/provider/auth", new Requirement(Reason.CONSOLE_ADMIN,
                 "authentication providers — an operator decision about how humans log in"));
         byPath.put("/api/v2/provider/exchange", new Requirement(Reason.CONSOLE_ADMIN,

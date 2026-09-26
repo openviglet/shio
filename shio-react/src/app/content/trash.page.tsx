@@ -9,7 +9,7 @@ import { ROUTES } from "@/app/routes.const"
 import { Trash2, RotateCcw, X, Folder, FileText, Globe } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { BentoFilterBar, type BentoFilterFacet, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
-import { FACET_TYPE, fromBarValue, matchesLocally, toBarValue } from "@/lib/filter-bar"
+import { FACET_TYPE, countLocally, fromBarValue, matchesLocally, toBarValue, withCounts } from "@/lib/filter-bar"
 // SH1024 — the trash's filters live in its URL, like every other list's (SH1023).
 import { useListState } from "@/hooks/use-list-state"
 import { useTranslation } from "react-i18next"
@@ -21,6 +21,7 @@ import { isCancelled } from "@/lib/read-options"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
 import type { ShFolder } from "@/models/folder/folder"
 import type { ShSite } from "@/models/site/site"
+import { SavedViews } from "@/components/saved-views"
 
 /**
  * One read failing must not hide the other two, and a cancellation must not read as a failure.
@@ -85,11 +86,13 @@ export default function TrashPage() {
     const types = [...new Map(items.filter((row) => row.type)
       .map((row) => [row.type as string, row.label || row.type as string])).entries()]
       .sort(([left], [right]) => left.localeCompare(right))
+    // SH1024 — counted over the rows `q` leaves, so a type's count is what choosing it lists.
+    const counts = { type: countLocally(items.filter((row) => matchesLocally(row, q, "")), (row) => [row.type]) }
     return types.length > 1
-      ? [{ id: FACET_TYPE, kind: "choice", label: t("content.filterType"),
-        options: types.map(([value, label]) => ({ value, label })) }]
+      ? withCounts([{ id: FACET_TYPE, kind: "choice", label: t("content.filterType"),
+        options: types.map(([value, label]) => ({ value, label })) }], counts)
       : []
-  }, [items, t])
+  }, [items, q, t])
   const shown = useMemo(() => items.filter((row) => matchesLocally(row, q, type)), [items, q, type])
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
@@ -190,6 +193,7 @@ export default function TrashPage() {
           value={barValue}
           onChange={onBarChange}
           facets={facets}
+          views={<SavedViews list="trash" />}
           queryLabel={t("content.filterItems")}
         />
 

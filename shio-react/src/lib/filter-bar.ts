@@ -101,6 +101,8 @@ export function contentFacets(types: readonly { name: string; title?: string }[]
 
 /** SH1024 — a listing's counts by facet, as `GET /object/{id}/list?facets=true` answers them. */
 export interface FacetCounts {
+  /** Counted locally only: the server listing is one folder, so it has one site. */
+  site?: Record<string, number>
   type?: Record<string, number>
   state?: Record<string, number>
   locale?: Record<string, number>
@@ -122,6 +124,21 @@ export function withCounts(facets: readonly BentoFilterFacet[], counts: FacetCou
     return { ...facet,
       options: facet.options.map((option) => ({ ...option, label: `${option.label} · ${byValue[option.value] ?? 0}` })) }
   })
+}
+
+/**
+ * Counts for a list that holds its rows (the trash, the review queue, search's results): how many
+ * rows carry each value, where `valuesOf` says which values a row carries. Counted over the rows
+ * the other filters leave, so each count is what choosing that value would list.
+ */
+export function countLocally<T>(rows: readonly T[], valuesOf: (row: T) => readonly (string | null | undefined)[]): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const row of rows) {
+    for (const value of new Set(valuesOf(row))) {
+      if (value) counts[value] = (counts[value] ?? 0) + 1
+    }
+  }
+  return counts
 }
 
 /**

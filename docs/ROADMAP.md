@@ -41,7 +41,6 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- 🛠 **SH1024** (deps: SH1022 ✅, SH1023 ✅) **the console has no filter bar, so the query vocabulary is reachable only by typing parameters** — The browser, search, trash and review queue have the bar, the agent option and the listing's facet counts; saved views are still to build. → §LXIX.5
 - 🛠 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — Cards have no thumbnails, the list and grid are not virtualised, and most of the page is not yet in content-browser. → §LXIX.7
 - 📋 **SH1142** (deps: SH1026 🛠) **in the browser's table view, the toolbar's Select menu and Clear change nothing the table shows** — BentoDataTable reports its selection but takes none in, so the page's set and the ticked rows can differ under a bulk delete. → §LXIX.11
 
@@ -98,12 +97,6 @@
 - **A curator can freeze the dock's mascot from the preferences dialog** The design
   system has to ship a paused prop on VigletAssistant first, and then the stored choice
   needs a still flag beside muted.
-
-## Done when — SH1024
-
-- **Search, trash and review use the bar, with counts and saved views** The browser
-  adopted it first; the other three surfaces, facet counts from the listing, the agent
-  author option and per-user saved views are what the design still asks.
 
 ## Done when — SH1026
 

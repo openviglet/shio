@@ -9,7 +9,7 @@ import { ROUTES } from "@/app/routes.const"
 import { Search as SearchIcon } from "lucide-react"
 import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { contentFacets, fromBarValue, toBarValue, withSiteFacet } from "@/lib/filter-bar"
+import { contentFacets, countLocally, fromBarValue, toBarValue, withCounts, withSiteFacet } from "@/lib/filter-bar"
 // SH1023 — the search term and the site live in the URL, so a search can be sent to somebody.
 import { useListState } from "@/hooks/use-list-state"
 import { useTranslation } from "react-i18next"
@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom"
 import { ShSearchService, type ShConsoleSearchRow } from "@/services/search/search.service"
 import { usePostTypes, useSites } from "@/hooks/use-catalogue"
 import { isCancelled } from "@/lib/read-options"
+import { SavedViews } from "@/components/saved-views"
 
 const searchService = new ShSearchService()
 
@@ -75,11 +76,17 @@ export default function SearchPage() {
   const patchList = list.patch
   const onBarChange = useCallback((next: BentoFilterValue) => patchList(fromBarValue(next)), [patchList])
   /** The locales offered are the ones in what was found, so a language chip can only narrow. */
-  const facets = useMemo(() => withSiteFacet(
+  // SH1024 — the counts are over what was found, which is the question every facet narrows.
+  const facets = useMemo(() => withCounts(withSiteFacet(
     contentFacets(postTypes, results.map((row) => row.locale ?? ""), {
       type: t("content.filterType"), state: t("content.filterState"), locale: t("content.filterLocale"),
       modified: t("content.filterModified"), draft: t("content.filterDraft"), published: t("content.filterPublished"),
-    }), sites, t("content.filterSite")), [postTypes, results, sites, t])
+    }), sites, t("content.filterSite")), searched ? {
+      site: countLocally(results, (row) => [row.address.replace(/^post:/, "").split("/")[0]]),
+      type: countLocally(results, (row) => [row.type]),
+      state: countLocally(results, (row) => [row.state?.toLowerCase(), row.live ? "published" : null]),
+      locale: countLocally(results, (row) => [row.locale]),
+    } : undefined), [postTypes, results, sites, searched, t])
 
   /**
    * The search runs from the URL, not from the button.
@@ -149,6 +156,7 @@ export default function SearchPage() {
               value={barValue}
               onChange={onBarChange}
               facets={facets}
+              views={<SavedViews list="search" />}
               queryLabel={t("content.searchPlaceholder")}
             />
           </div>

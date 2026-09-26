@@ -683,3 +683,12 @@ Maintenance has no choke point (`ShPostUnifiedWriteService` saves from fifteen p
 classes bypass it), so **`ShReferenceIndexMaintenanceLintTest` is the guard** — a class that writes
 `setData` and persists must name `ShObjectReferenceService`, or the build fails. A stale derived
 index is silent, and that is the whole argument for a lint over a convention.
+
+## `sh_saved_view` — a curator's names for filtered lists (SH1024)
+
+`v2026.3.47.yaml`: `owner`, `list_key` (browser, search, trash, review), `name`, `path`, `query`,
+`shared`, `created_at`, lowercase `tenant_id` (`@TenantId`, no backfill since the table is new).
+Unique on (owner, list_key, name, tenant_id), declared on the entity as well, so a save under a name
+already used replaces the row instead of adding one, and the H2 unit suite sees the constraint.
+Nothing reads the query string server-side: the list that opens a view validates it, as it does a
+pasted link.

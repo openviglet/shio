@@ -234,6 +234,12 @@ class ShAgentP9ConformanceTest {
                     no(entry.getValue(), "finding", NOT_CONTENT_NO_FINDINGS),
                     no(entry.getValue(), "routes", NO_ROUTE_MOVED)));
         }
+        // SH1024 — a curator's own saved views, the dock's kind (Map.of holds ten pairs, hence here).
+        byPath.put("/api/v2/user/current/views", new Proof(
+                no("ShSavedViewAPI.java", "ChangeSet", ONE_OBJECT_NO_SET),
+                no("ShSavedViewAPI.java", "digest", IDENTITY_OR_CONFIG),
+                no("ShSavedViewAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
+                no("ShSavedViewAPI.java", "routes", NO_ROUTE_MOVED)));
 
         return byPath;
     }
