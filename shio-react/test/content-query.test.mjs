@@ -13,6 +13,7 @@ import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 
 import { CONTENT_FILTERS, activeFilterCount, filterParams } from "../src/lib/content-query.ts"
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH1022 — the console's half of "one query vocabulary, four surfaces".
@@ -24,7 +25,7 @@ import { CONTENT_FILTERS, activeFilterCount, filterParams } from "../src/lib/con
  * one SH165 already paid for once, with `sort`.
  */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
-const PAGE = readFileSync(join(ROOT, "src", "app", "content", "object.children.page.tsx"), "utf8")
+const PAGE = browserSource()
 const QUERY_JAVA = join(ROOT, "..", "shio-app", "src", "main", "java", "com", "viglet", "shio",
   "api", "query", "ShContentQuery.java")
 
@@ -37,7 +38,8 @@ test("SH1022: every filter is sent to the server, none applied to the page in ha
     "SH1022: `filters` is in the fetch's dependencies, so changing one re-queries")
   // SH1023 folded the search term's own debounce into the list state, so the query identity is
   // the folder plus what the URL says rather than four pieces joined by hand.
-  assert.match(PAGE, /const queryKey = `\$\{objectId\}\|\$\{list\.key\}`/u,
+  // SH1145 — the reads are `use-browser-listing`, which takes the committed query as `listKey`.
+  assert.match(PAGE, /const queryKey = `\$\{objectId\}\|\$\{listKey\}`/u,
     "SH1022: and it is part of the query identity, so the spinner belongs to this filter's answer")
 })
 

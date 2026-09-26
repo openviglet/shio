@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { deleteEach, problemOf, refusalSummary } from "../src/lib/batch-delete.ts";
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH953 — a count is the number acted on, not the number selected.
@@ -118,7 +119,7 @@ test("SH953: a long list of refusals is capped and says how many it is not showi
  * and the refresh must return to the page the curator was on.
  */
 test("SH953: the page reports the outcome's count and refreshes where it was", () => {
-  const page = readFileSync(new URL("../src/app/content/object.children.page.tsx", import.meta.url), "utf8");
+  const page = browserSource();
 
   assert.match(page, /count:\s*outcome\.deleted/,
     "SH953: the toast must count what went, not `selectedItems.size` — that substitution IS the "

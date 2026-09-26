@@ -36,7 +36,6 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- 📋 **SH1145** (deps: —) **the content browser page is still 1300 lines, so its next feature lands somewhere nobody can review** — SH1026 moved the views, the table and the window into content-browser; the listing reads, the keyboard and the dialogs are still in one file. → §LXIX.12
 - 📋 **SH1148** (deps: design system: BentoDataTable gains a controlled selectedIds beside onSelectionChange) **the table view has no select-everything and no invert, because the table takes no selection in** — SH1142 removed the two rather than leave them inert; they return when the table can be told. → §LXIX.13
 
 ## Block BG — The console as an application: cost, resilience and access

@@ -7,6 +7,8 @@
  * (at your option) any later version.
  */
 
+import { formatDistanceToNow } from "date-fns"
+
 /**
  * SH1026 — the content browser's three views, as data. Pure, so `browser-views.test.mjs` reads it
  * without a browser; the renderers are `browser-views.tsx`.
@@ -166,4 +168,39 @@ export function visibleWindow({ count, columns, rowHeight, top, viewportHeight, 
  */
 export function rowLabel(item: BrowserRow): string {
   return item.locale ? `${item.name} (${item.locale})` : item.name
+}
+
+/**
+ * SH1027/SH1145 — "search this folder", as the search page's own address.
+ *
+ * <p>The browser's box and the console's search are different questions, and this is the wider one:
+ * it hands the search page a `folder:` address it can scope by, which is what makes its "this
+ * folder" and "this folder and below" options reachable at all — that page has no folder of its own
+ * to offer.</p>
+ *
+ * <p>A path from the breadcrumb, not an id: the search takes the vocabulary's own addressing (SH79),
+ * and an id in that parameter would be a fourth spelling of where content is. Null before the
+ * breadcrumb has landed, because there is no honest address until it has.</p>
+ */
+export function searchHereFor(
+  siteName: string | null,
+  breadcrumbPath: readonly { name: string; type: string }[],
+  searchRoute = "/search",
+): string | null {
+  if (!siteName) return null
+  const chain = breadcrumbPath.filter((crumb) => crumb.type === "FOLDER").map((crumb) => crumb.name)
+  return `${searchRoute}?${new URLSearchParams({
+    folder: `folder:${siteName}/${chain.join("/")}`,
+    subtree: "true",
+  })}`
+}
+
+/** SH1145 — "3 days ago", or nothing at all for a date the row does not carry or cannot parse. */
+export function relativeDate(dateStr: string | undefined): string {
+  if (!dateStr) return ""
+  try {
+    return formatDistanceToNow(new Date(dateStr), { addSuffix: true })
+  } catch {
+    return ""
+  }
 }

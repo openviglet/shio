@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH1059 — two languages of one page are two different rows.
@@ -24,7 +25,7 @@ import { fileURLToPath } from "node:url"
  */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const read = (...path) => readFileSync(join(ROOT, ...path), "utf8")
-const PAGE = read("src", "app", "content", "object.children.page.tsx")
+const PAGE = browserSource()
 // SH1026 — the row's markup and its label moved beside the three view renderers.
 const VIEW = read("src", "app", "content", "content-browser", "browser-view.ts")
 const VIEWS = read("src", "app", "content", "content-browser", "browser-views.tsx")

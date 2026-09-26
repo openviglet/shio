@@ -12,6 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import { stripComments } from "./support/source-text.mjs"
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH1020 — a list a curator can operate without a mouse.
@@ -25,7 +26,7 @@ import { stripComments } from "./support/source-text.mjs"
  */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const read = (...path) => readFileSync(join(ROOT, ...path), "utf8")
-const PAGE = read("src", "app", "content", "object.children.page.tsx")
+const PAGE = browserSource()
 /** SH1026 — each row's markup, now drawn by one renderer per view. */
 const VIEWS = read("src", "app", "content", "content-browser", "browser-views.tsx")
 
@@ -77,9 +78,15 @@ test("SH1020: arrows move, Space selects, Shift extends, Enter opens, Delete con
   assert.match(handler, /if \(event\.shiftKey\) selectRange\(anchorRow, next\)/u,
     "SH1020: Shift extends from the anchor — where the selection last started, which is the rule "
       + "every file manager uses and the reason the anchor is state rather than the previous row")
-  assert.match(handler, /setDeleteTarget\(item\)\s*\n\s*setDeleteDialogOpen\(true\)/u,
-    "SH1020: Delete goes through the confirm flow, never straight to the server — it is one "
-      + "keystroke away from every other key on this list")
+  // SH1145 — the listbox is a hook now, so the key calls `onDelete` and the page decides what that
+  // is. Both halves are asserted: a hook that called the server directly, or a page that wired the
+  // key to anything but the confirm flow, is the defect this has always been about.
+  assert.match(handler, /if \(item\) onDelete\(item\)/u,
+    "SH1020: Delete goes through the handler the page supplies, never straight to the server")
+  assert.match(browserSource(),
+    /onDelete: \(item\) => \{ setDeleteTarget\(item as ObjectChild\); setDeleteDialogOpen\(true\) \}/u,
+    "SH1020: and what the page supplies is the confirm flow — it is one keystroke away from every "
+      + "other key on this list")
 })
 
 test("SH1020: Shift-click extends the same range Shift-arrow does", () => {

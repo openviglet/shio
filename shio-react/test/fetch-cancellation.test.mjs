@@ -100,7 +100,8 @@ const UNCANCELLED = new Set([
 /** The five the task's own design names, held apart so the list above cannot absorb them. */
 const MIGRATED = [
   "src/app/admin/activity/activity.list.page.tsx",
-  "src/app/content/object.children.page.tsx",
+  // SH1145 — the browser's reads moved into this hook; the page holds none of its own.
+  "src/app/content/content-browser/use-browser-listing.ts",
   "src/app/content/search.page.tsx",
   "src/app/content/static-file.list.page.tsx",
   "src/app/content/trash.page.tsx",

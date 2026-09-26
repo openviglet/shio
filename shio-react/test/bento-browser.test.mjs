@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url"
 import { survey } from "../scripts/surface-digest.mjs"
 import { findElements } from "./support/jsx-elements.mjs"
 import { stripComments } from "./support/source-text.mjs"
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH900 — the content browser migrates by adapter, not by copy, and that is the finding.
@@ -36,8 +37,14 @@ import { stripComments } from "./support/source-text.mjs"
 const HERE = dirname(fileURLToPath(import.meta.url))
 const SRC = join(HERE, "..", "src")
 
-const BROWSER = stripComments(
-  readFileSync(join(SRC, "app", "content", "object.children.page.tsx"), "utf8"))
+/*
+ * SH1145 — the browser is a directory. The page was 1,593 lines when these assertions were written
+ * and is 592 now: the toolbar (with two of the three Panels), the listing's reads, the listbox and
+ * four dialogs are modules beside it. A reader left on the page alone would go on passing while
+ * asserting nothing about the code it names, which is the failure this file's own vacuity check
+ * exists to catch — so the subject is the whole of it.
+ */
+const BROWSER = stripComments(browserSource())
 const FOLDER_EDIT = stripComments(
   readFileSync(join(SRC, "app", "content", "folder.edit.page.tsx"), "utf8"))
 const APP = stripComments(readFileSync(join(SRC, "App.tsx"), "utf8"))
@@ -102,7 +109,9 @@ test("SH900: the survey sees the browser's seams, and the two folder surfaces", 
 
 test("SH900: the reader is not vacuous — it reads a real browser and a real survey", () => {
   assert.ok(BROWSER.length > 20_000,
-    `SH900: object.children.page.tsx read as ${BROWSER.length} characters, which is not the 965-line`
-      + " browser — every assertion above is checking a file that is not there")
+    `SH900: the browser read as ${BROWSER.length} characters, which is not the browser — every `
+      + "assertion above is checking source that is not there. Since SH1145 that means the page "
+      + "AND `content-browser/`, so a module dropped from the walk shows up here rather than as a "
+      + "suite that quietly stopped checking.")
   assert.ok(Object.keys(survey()).length > 40, "SH900: the survey is reading an empty tree")
 })

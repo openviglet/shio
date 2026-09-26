@@ -15,6 +15,7 @@ import {
   browserView, editableTitleField, listboxClass, readTableLayout, stepFor, tableLayoutKey, thumbnailSrc,
   fullWindow, visibleWindow, WINDOW_THRESHOLD,
 } from "../src/app/content/content-browser/browser-view.ts"
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH1026 — three view buttons that highlighted when pressed and rendered the identical list.
@@ -25,6 +26,8 @@ import {
  */
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src")
 const read = (...path) => readFileSync(join(SRC, ...path), "utf8")
+/** SH1145 — the browser is a directory; a scan whose subject is the browser reads all of it. */
+const browser = () => browserSource()
 
 test("SH1026: the URL's view word is read as a view, and an unknown one is the list", () => {
   for (const view of ["list", "grid", "spreadsheet"]) assert.equal(browserView(view), view)
@@ -42,7 +45,7 @@ test("SH1026: a grid steps across as well as down; the list and the table do not
 })
 
 test("SH1026: the chosen view reaches the render, through one renderer per view", () => {
-  const page = read("app", "content", "object.children.page.tsx")
+  const page = browser()
   assert.match(page, /<BrowserItem[\s\S]*?view=\{viewMode\}/,
     "SH1026: the browser's rows are not drawn by the chosen view — the buttons colour themselves again")
   assert.match(page, /className=\{listboxClass\(viewMode\)\}/, "SH1026: the listbox ignores the view")
@@ -67,7 +70,7 @@ test("SH1026: the table is the design system's, with its layout kept and its sel
   // verbs would see an empty selection in this view.
   assert.match(table, /selectionActions=\{selectionActions\}/, "SH1026: the table's rows cannot be selected")
   assert.match(table, /rowActions=\{rowActions\}/, "SH1026: the table's rows lost the eight row actions")
-  const page = read("app", "content", "object.children.page.tsx")
+  const page = browser()
   assert.match(page, /onSelectionChange=\{\(ids\) => setSelectedItems\(new Set\(ids\)\)\}/,
     "SH1026: the table's selection never reaches the page, so its bulk verbs act on nothing")
 })
@@ -108,7 +111,7 @@ test("SH1026: a stored layout is read defensively, per user", () => {
 })
 
 test("SH1026: the view buttons are named and say which is pressed", () => {
-  const page = read("app", "content", "object.children.page.tsx")
+  const page = browser()
   for (const key of ["viewAsList", "viewAsGrid", "viewAsTable"]) {
     assert.match(page, new RegExp(`aria-label=\\{t\\("content\\.${key}"\\)\\} aria-pressed=`),
       `SH1026: the ${key} button is an unnamed icon again`)
@@ -122,7 +125,7 @@ test("SH1026: a grid card shows the image the listing named, through the transfo
   const views = read("app", "content", "content-browser", "browser-views.tsx")
   assert.match(views, /item\.thumbnail \? \(\s*<img src=\{thumbnailSrc\(item\.thumbnail\)\} alt="" loading="lazy"/,
     "SH1026: the card draws the kind's icon even when the listing names an image")
-  assert.match(read("app", "content", "object.children.page.tsx"), /thumbnail: post\.thumbnail,/,
+  assert.match(browser(), /thumbnail: post\.thumbnail,/,
     "SH1026: the row mapping drops the thumbnail the listing sent")
 })
 
@@ -141,7 +144,7 @@ test("SH1026: past the threshold only the rows a viewport shows are mounted, wit
     "SH1026: a list below the fold still mounts its first rows, so it is there when scrolled to")
   assert.ok(WINDOW_THRESHOLD >= 100, "SH1026: a folder of a couple of pages mounts whole, as it did")
 
-  const page = read("app", "content", "object.children.page.tsx")
+  const page = browser()
   assert.match(page, /sortedItems\.slice\(rowWindow\.start, rowWindow\.end\)/,
     "SH1026: the listbox maps every row, so the window the hook measured is never used")
   assert.match(page, /aria-setsize=\{sortedItems\.length\}[\s\S]*?aria-posinset=\{index \+ 1\}/,
@@ -153,8 +156,9 @@ test("SH1026: past the threshold only the rows a viewport shows are mounted, wit
 })
 
 test("SH1026: the listing's filters change only when the query does, or page 0 is re-read on every render", () => {
-  const page = read("app", "content", "object.children.page.tsx")
-  assert.match(page, /const filters = useMemo\(\s*\(\) => browserFilters\(JSON\.parse\(list\.key\)[^)]*\),\s*\[list\.key\]\)/,
+  const page = browser()
+  // SH1145 — the memo moved into `use-browser-listing`, which takes the committed query as `listKey`.
+  assert.match(page, /const filters = useMemo\(\s*\(\) => browserFilters\(JSON\.parse\(listKey\)[^)]*\),\s*\[listKey\]\)/,
     "SH1026: `filters` rebuilt per render makes `fetchPage` new per render, and the listing effect then "
       + "re-reads page 0 after every render — a stream of requests that also discards every load-more")
   assert.match(page, /\}, \[objectId, sortBy, filters\]\)/, "SH1026: fetchPage keys on the memoised filters")
@@ -183,7 +187,9 @@ test("SH1026: the listing's filters change only when the query does, or page 0 i
  * read this. The two known ones are also named, so the failure says which.</p>
  */
 test("SH1142: no control outside the table writes the selection in the table view", () => {
-  const raw = read("app", "content", "object.children.page.tsx")
+  // SH1145 — the browser is a directory: the Select menu is in `browser-toolbar.tsx` and the
+  // selection bar is still on the page, so the subject of this rule is both files.
+  const raw = browser()
 
   /*
    * Comment lines blanked in place — equal length, so the prose above (which quotes
@@ -232,8 +238,15 @@ test("SH1142: no control outside the table writes the selection in the table vie
 
   const inside = (at) => guarded.some(([from, to]) => at > from && at < to)
 
-  // A JSX control that writes the selection: an `onClick` naming either writer.
-  const WRITER = /onClick=\{[^}]*\b(?:setSelectedItems|handleSelectAction)\b[^}]*\}/g
+  /*
+   * A JSX control that writes the selection: an `onClick` naming any of the three ways to do it.
+   *
+   * SH1145 — `onSelectAction` is the third, and leaving it out is what this reader did for one run
+   * after the toolbar moved into its own component: the menu items call the prop there, so five of
+   * the six controls became invisible and only the page's own Clear was left. The count floor below
+   * is what said so rather than a green run over one control.
+   */
+  const WRITER = /onClick=\{[^}]*\b(?:setSelectedItems|handleSelectAction|onSelectAction)\b[^}]*\}/g
   const writers = [...source.matchAll(WRITER)]
   assert.ok(writers.length >= 6,
     `SH1142: ${writers.length} selection-writing control(s) found; the Select menu alone has five `
@@ -258,5 +271,59 @@ test("SH1142: no control outside the table writes the selection in the table vie
     assert.ok(at > 0, `SH1142: ${label} is gone from this page; update this assertion or the id it names`)
     assert.ok(inside(at), `SH1142: ${label} renders in the table view again — the control SH1142 `
       + "removed from it, because it writes a selection the table never hears about")
+  }
+})
+
+/**
+ * SH1145 — the browser stays a directory, and the page stays reviewable.
+ *
+ * <p>SH1026's design asked for this split "because at that size the next feature makes it
+ * unreviewable", and moved what each view draws. The page kept three concerns tangled in one
+ * component and stood at 1,593 lines. The cost was never only size: SH1026's own live check found
+ * the listing effect re-reading page 0 after every render, from a value built in the component
+ * body, and nothing in a file that size made it visible.</p>
+ *
+ * <p>A line ceiling is a blunt instrument and it is the one the design named, so it is asserted —
+ * but the half that matters is the second: each concern is a module a reviewer can read whole, and
+ * the page must not quietly take one back.</p>
+ */
+test("SH1145: the browser page is under 600 lines, and its concerns are modules", () => {
+  const page = read("app", "content", "object.children.page.tsx").split("\n").length
+  assert.ok(page < 600,
+    `SH1145: the browser page is ${page} lines, over the 600 this task set. It was 1,593 when the `
+    + "reads, the listbox, the verbs and four dialogs were all inside it, which is where a "
+    + "re-read-per-render hid in plain sight. Put the new work in `content-browser/` beside the "
+    + "rest, not back in the page.")
+
+  // Each concern the design named, and what it is for — so a failure says which one came back.
+  const OWNS = {
+    "use-browser-listing.ts": "the listing's reads: the page, the next page, the re-read after a write",
+    "use-browser-keyboard.ts": "the listbox: roving focus, ranges, Space, Enter, Delete",
+    "use-bulk-verbs.ts": "the three verbs a selection takes, planned before they are carried out",
+    "use-browser-open.ts": "duplicate a row, open the site, open a page",
+    "browser-toolbar.tsx": "both toolbars",
+    "folder-picker.dialog.tsx": "where a copy or a move is going",
+    "bulk-plan.dialog.tsx": "the plan sheet",
+    "row-actions.ts": "the seven verbs a row offers",
+    "browser-listing.ts": "the envelope, its rows and the constants that shape a request",
+  }
+  const missing = Object.keys(OWNS).filter((name) => {
+    try {
+      return read("app", "content", "content-browser", name).length === 0
+    } catch {
+      return true
+    }
+  })
+  assert.deepEqual(missing, [],
+    "SH1145: a module the split created is gone. If it was renamed, rename it here; if its code "
+      + "went back into the page, that is the defect — each of these is "
+      + missing.map((name) => `${name} (${OWNS[name]})`).join(", "))
+
+  // And the page does not simply re-export them: it renders them.
+  const source = read("app", "content", "object.children.page.tsx")
+  for (const hook of ["useBrowserListing", "useBrowserKeyboard", "useBulkVerbs", "useBrowserOpen"]) {
+    assert.match(source, new RegExp(`${hook}\\(`),
+      `SH1145: the page does not call ${hook}, so whatever that module holds is not what the `
+        + "browser runs")
   }
 })

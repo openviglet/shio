@@ -1383,31 +1383,6 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.12 The browser page, split by concern (SH1145)
-
-SH1026's design asked for the browser page to be split into the content-browser
-directory "because at that size the next feature makes it unreviewable". It moved what
-each view draws (browser-views.tsx, browser-table.tsx, title-cell.tsx), the pure view
-logic (browser-view.ts) and the window (use-row-window.ts). What stayed in
-object.children.page.tsx is three concerns tangled in one component: the listing's reads
-(first page, load more, the re-read after a write, the facet counts), the listbox
-keyboard (roving focus, ranges, the window's reveal) and seven dialogs with their state.
-
-The cost is not only size. SH1026's live check found the listing effect re-reading page
-0 after every render, because a value built in the component body fed a callback the
-effect depended on. Nothing in a file that size makes that visible, and the lint that
-could have seen it was answering about a different line. A `use-browser-listing` hook
-that owns the reads, and a `use-browser-keyboard` hook that owns the listbox, would each
-be small enough that their dependencies are the whole of their inputs.
-
-Source-reading tests (content-query, filter-bar, browser-keyboard, browser-views, the
-list-state census) match regexes against this file; each moves with the code it asserts,
-not left behind reading a file that no longer holds it.
-
-Done when the page renders the three concerns from hooks and dialog components in
-content-browser, the page is under 600 lines, and e2e/browser-window.check.mjs still
-passes, naming this id.
-
 ### LXIX.13 A selection the page can set, from the component's side (SH1148)
 
 SH1142 took the correction available on this side: the toolbar's Select menu and the

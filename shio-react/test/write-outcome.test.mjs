@@ -36,9 +36,9 @@ const SRC = join(HERE, "..", "src")
 const EXCEPTIONS = {
   "app/admin/marketplace/marketplace.list.page.tsx#preview.install":
     "a dry run: the plan renders in the preview dialog. False if the dialog stops showing it.",
-  "app/content/object.children.page.tsx#planBulk.bulk":
+  "app/content/content-browser/use-bulk-verbs.ts#planBulk.bulk":
     "a bulk plan, rendered for confirmation before anything is applied. False if it applies.",
-  "app/content/object.children.page.tsx#handleViewPage.mint":
+  "app/content/content-browser/use-browser-open.ts#handleViewPage.mint":
     "mints a preview token and opens the page: the new tab is the outcome.",
   "app/content/post.edit.page.tsx#handlePreview.mint":
     "the same preview mint; the preview window is the outcome.",

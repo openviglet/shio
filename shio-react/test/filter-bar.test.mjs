@@ -13,6 +13,7 @@ import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import { contentFacets, countLocally, fromBarValue, matchesLocally, matchesRun, runSites, toBarValue, withCounts, withSiteFacet } from "../src/lib/filter-bar.ts"
 import { viewHref } from "../src/lib/saved-view.ts"
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH1024 — the filter bar speaks the list's URL, and nothing else.
@@ -119,7 +120,7 @@ test("SH1024: the browser's facet options carry the server's counts, asked for w
   assert.equal(counted[1], facets[1], "SH1024: a date facet has no counts and is passed through untouched")
   assert.deepEqual(withCounts(facets, undefined), facets)
 
-  const page = readFileSync(join(SRC, "app", "content", "object.children.page.tsx"), "utf8")
+  const page = browserSource()
   assert.match(page, /if \(counted\) params\.set\("facets", "true"\)/,
     "SH1024: the browser never asks for the counts, so its menus offer values with no idea how many")
   assert.match(page, /counted = page === 0/, "SH1024: the counts come with the first page, not with every page")
@@ -165,7 +166,7 @@ test("SH1024: every bar offers saved views, and a view opens the URL it saved", 
 })
 
 test("SH1024: the content browser draws the bar over its URL, and / still reaches its search", () => {
-  const page = readFileSync(join(SRC, "app", "content", "object.children.page.tsx"), "utf8")
+  const page = browserSource()
   assert.match(page, /<BentoFilterBar[\s\S]*?value=\{barValue\}[\s\S]*?onChange=\{onBarChange\}/,
     "SH1024: the browser's filters are not the bar over its URL state")
   // Found in a browser, not by reading: the bar debounces typing in an effect keyed on `value` and

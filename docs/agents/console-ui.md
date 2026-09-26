@@ -2939,6 +2939,54 @@ tenant. Saving the same name again replaces it, and only the owner deletes it. T
 
 ## The browser's three views (SH1026, in parts)
 
+### The browser is a directory, and the page is 592 lines (SH1145)
+
+SH1026's design asked for this split "because at that size the next feature makes it unreviewable",
+and moved what each view *draws*. The page kept three concerns tangled in one component and stood at
+**1,593 lines**. The cost was never only size, which is the part worth keeping: SH1026's own live
+check found the listing effect **re-reading page 0 after every render**, because a value built in
+the component body fed a callback the effect depended on. Nothing in a file that size makes that
+visible, and the lint that could have seen it was answering about a different line.
+
+What that argues for is units whose **dependencies are the whole of their inputs**:
+
+| Module | What it owns |
+|---|---|
+| `use-browser-listing.ts` | every read: the page, the next page, the re-read after a write, the facet counts, the breadcrumb, the select-everything walks. Takes the folder, the committed query and the sort. |
+| `use-browser-keyboard.ts` | the listbox: roving focus, ranges, Space, Enter, Delete, and `/`. Takes the rows and what a key ends up doing. |
+| `use-bulk-verbs.ts` | the plan, the run, and the two pieces of state between them. |
+| `use-browser-open.ts` | the three verbs that leave the list: duplicate, open the site, open a page. |
+| `browser-toolbar.tsx` | both toolbars — markup, no state. |
+| `folder-picker.dialog.tsx` · `bulk-plan.dialog.tsx` | the two dialogs the page used to hold inline. |
+| `row-actions.ts` · `browser-listing.ts` | the seven verbs a row offers; the envelope, its rows and the request constants. |
+
+**Fourteen suites read this page by name, and that is the part that could have gone wrong quietly.**
+A test left matching regexes against a 592-line page that no longer holds the code it names keeps
+**passing** — SH1118's failure shape, reached by relocation instead of by a stripper. So
+`test/support/browser-source.mjs` gives a scan whose subject is *the browser* the page plus every
+module under `content-browser/`, read from the directory so tomorrow's module is in the subject
+without anybody remembering. A scan whose subject is one file — every `doesNotMatch` saying a
+particular module must not do a particular thing — keeps naming that file, because widening those
+would weaken them.
+
+Four assertions needed their **spelling** updated rather than their subject, and each says so at the
+call: the delete key now calls the `onDelete` the page supplies (both halves asserted), the plan
+sheet reads a non-null `plan`, the query identity is built from `listKey`, and the picker's blocked
+set is computed by the page and handed over in the request.
+
+Three things the split turned up that were not size:
+
+- **The picker's own read did not cancel.** It walks folders that are clickable while the read is in
+  flight, so a curator going down two quickly could have the first answer land after the second.
+  SH1047's rule applied to it the moment it became a file that rule walks.
+- **An unnamed icon stopped being a page's debt.** The post-type grid button carried a Tooltip and no
+  accessible name, which SH893 tolerated as declared debt *on a page*; in a shared component that
+  rule says fix it, and it is right — a Tooltip needs hover or focus to exist at all.
+- **`SH1142`'s own lint went blind for one run.** The Select menu's items call `onSelectAction` in
+  the toolbar rather than `handleSelectAction`, so five of its six controls vanished from the scan
+  and only the page's Clear was left. Its **count floor** is what said so — the assertion that a
+  reader finding suspiciously little has stopped reading, not started agreeing.
+
 The list, grid and table buttons used to colour themselves and nothing else: the render below was
 one unconditional map. `content/content-browser/` now holds the views. `browser-view.ts` is pure
 (`browserView` reads the URL's `view` word, an unknown one is `list`; `stepFor`, `listboxClass`,
