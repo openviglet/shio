@@ -138,9 +138,27 @@ public enum ShAgentCheck {
         EnumSet<ShAgentCheck> checks = EnumSet.noneOf(ShAgentCheck.class);
         for (String token : raw.split(",")) {
             String name = token.trim();
-            if (!name.isEmpty()) {
-                checks.add(resolve(name));
+            if (name.isEmpty()) {
+                continue;
             }
+            // SH1120 — `all` is a token, not only a whole value, the way it already is for
+            // a context section (SH157). The measured need is `all,delivery`: "every group
+            // that can run, and I am asking for delivery by name". Those two halves cannot
+            // both be expressed otherwise, and the CLI was composing the set itself to get
+            // them — a client-side copy of this default that had been missing `page` since
+            // SH516 and `a11y` since it shipped, so `shio verify --delivery` ran FEWER
+            // checks than `shio verify`. Naming a group must not narrow the run.
+            //
+            // Note the asymmetry with the whole-value case above, and that it is the point:
+            // a bare `all` yields `defaults`, which drops DELIVERY where fetching is off. A
+            // `delivery` token anywhere in the list is a request by name, so it still meets
+            // the teaching 400 below — a flag that asked for a proof and silently got none
+            // is worse than an error (SH141).
+            if ("all".equalsIgnoreCase(name)) {
+                checks.addAll(defaults(deliveryEnabled));
+                continue;
+            }
+            checks.add(resolve(name));
         }
         if (checks.isEmpty()) {
             return defaults(deliveryEnabled);

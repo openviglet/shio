@@ -1168,31 +1168,6 @@ a state the mirror can express rather than one it forgets.
 The assertion is a refresh from a dirty docs checkout refused or marked, and a clean one
 unchanged.
 
-### LXIV.21 `--delivery` asks for more and sends less (SH1120)
-
-`withDelivery` in `cli/src/commands/verify.mjs` composes the check list when
-`--delivery` is passed without `--checks`. Its fallback is the literal
-`content,routes,diagnostics`, and the comment above it argues — correctly — that sending
-`delivery` alone "would quietly drop the rules that do not need a network". That list is
-the bug the comment warns about: the server's default is every group, and this
-hand-written copy has been missing `page` since SH516 and now misses `a11y` too. So
-`shio verify --delivery` runs *fewer* checks than `shio verify`, which is the opposite
-of what the flag promises, and `verify.test.mjs` pins the narrower list as if it were
-correct.
-
-A client-side copy of a server-side default is the shape, not the two group names. The
-server already answers `all`, and already adds `delivery` to the default set when
-fetching is on (`ShAgentCheck.defaults`), so the CLI needs to name nothing: with no
-`--checks`, `--delivery` can send `all` and let the server compose the set. That removes
-the list from the client permanently, which is the point — a fourth group will be added
-and this line would be missed again.
-
-The fix is `withDelivery` sending `all` when the caller named no checks, keeping the
-explicit list when they did, and the test asserting the request no longer narrows the
-run. The durable half is an assertion that the CLI names no check group of its own
-anywhere: a wired list here is a second vocabulary that drifts from the one the server
-publishes.
-
 ### LXIV.25 Six more strippers, and one already knew (SH1147)
 
 SH1118 fixed the shared stripper and measured what the pattern it replaced was doing:
