@@ -2178,29 +2178,6 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline.
 
-### LXXIV.10 A ceiling on the catalogue (SH1104)
-
-`ShAgentResponseBudgetTest` measures sixteen responses and treats a measured one with no
-declared ceiling as a breach in itself. `/agent/editable` is not among them. It never
-was: SH809 shipped it and the only trace in `token-budgets.properties` is a note raising
-the *manifest* ceiling because the endpoint index grew by a line.
-
-That mattered less while the answer was a field list. SH1039 gave it
-`include=insertable`, whose size is the declared catalogue — every accepted type with
-the fields a properties panel would draw — so the response now scales with what a layout
-declares rather than with what the page has. The precedent for exactly this shape is
-already in that file twice, SH987's `read.terse.revisions` and SH989's
-`changes.terse.fields`, both given their own key on the same argument: a shared ceiling
-lets the default grow into the room the option was given.
-
-The obstacle is the fixture rather than the rule. That test's pages have no layout
-binding, so `editable` there answers the `source: content` fallback and a measurement of
-it would be thirty tokens of envelope — a number that passes forever and says nothing.
-So the budget needs a page that renders: a layout, a container declaring what it
-accepts, and a couple of section types provisioned. The assertion is two keys, one for
-the plain read and one for the catalogue, each measured against a page that actually
-composes.
-
 ### LXXIV.11 A blueprint nobody applies is a blueprint nothing checks (SH1121)
 
 `checks=a11y` found two rules broken by `marketing-site`'s layout — no `<main>`, and a

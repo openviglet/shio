@@ -134,6 +134,12 @@ class ShAgentResponseBudgetTest {
     private Principal principal;
     private String siteName;
     private String postTypeName;
+    /** SH1104 — the layout the budget pages render through, so the editable read composes. */
+    private String layoutName;
+    private String siteId;
+    private String rootId;
+    private String widgetId;
+    private String fixtureSuffix;
 
     @BeforeAll
     void setup() throws Exception {
@@ -169,10 +175,14 @@ class ShAgentResponseBudgetTest {
             root.setDate(when);
             root.setOwner("admin");
             entityManager.persist(root);
+            rootId = root.getId();
+            siteId = site.getId();
+            fixtureSuffix = suffix;
 
             ShWidget widget = new ShWidget();
             widget.setName("Text");
             entityManager.persist(widget);
+            widgetId = widget.getId();
 
             ShPostType type = new ShPostType();
             postTypeName = "BudgetPage" + suffix;
@@ -207,6 +217,89 @@ class ShAgentResponseBudgetTest {
                 post.setData("{\"headline\":\"Budget page " + i + "\"}");
                 entityManager.persist(post);
             }
+        });
+    }
+
+
+    /**
+     * SH1104 — the page the editable budgets measure, seeded AFTER every other response is measured.
+     *
+     * <p>Post types are instance-wide, and the context pack lists them: seeding a layout and two
+     * section types beside the rest moved {@code context.json} from 182 to 212 without the product
+     * changing at all. Measuring first keeps every other budget's fixture the one it was set against.</p>
+     */
+    private void seedComposingPage() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            String suffix = fixtureSuffix;
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite site = entityManager.find(ShSite.class, siteId);
+            ShFolder root = entityManager.find(ShFolder.class, rootId);
+            ShWidget widget = entityManager.find(ShWidget.class, widgetId);
+            // SH1104 — a page that composes, so `/agent/editable` has something to answer. Without a
+            // layout binding the read falls back to `source: content`, and a measurement of that is
+            // envelope: a number that passes forever and says nothing about the catalogue. So the
+            // page type is bound to a layout whose <main> declares two section types it accepts,
+            // each with the fields a properties panel draws.
+            layoutName = "BUDGET_LAYOUT_" + suffix;
+            site.setPostTypeLayout("{\"" + postTypeName + "\":\"" + layoutName + "\"}");
+            ShPostType layoutType = entityManager
+                    .createQuery("select t from ShPostType t where t.name = :name", ShPostType.class)
+                    .setParameter("name", com.viglet.shio.post.type.ShSystemPostType.PAGE_LAYOUT)
+                    .getResultList().stream().findFirst().orElseGet(() -> {
+                        ShPostType created = new ShPostType();
+                        created.setName(com.viglet.shio.post.type.ShSystemPostType.PAGE_LAYOUT);
+                        created.setTitle("Page Layout");
+                        created.setSystem((byte) 1);
+                        created.setDate(when);
+                        created.setOwner("admin");
+                        entityManager.persist(created);
+                        ShPostTypeAttr html = new ShPostTypeAttr();
+                        html.setId(UUID.randomUUID().toString());
+                        html.setName("HTML");
+                        html.setLabel("HTML");
+                        html.setOrdinal(1);
+                        html.setShWidget(widget);
+                        html.setShPostType(created);
+                        entityManager.persist(html);
+                        return created;
+                    });
+            List<String> sectionTypes = new ArrayList<>();
+            for (String section : List.of("Hero", "Text")) {
+                ShPostType sectionType = new ShPostType();
+                sectionType.setName("Budget" + section + suffix);
+                sectionType.setTitle("Budget " + section);
+                sectionType.setSystem((byte) 0);
+                sectionType.setDate(when);
+                sectionType.setOwner("admin");
+                entityManager.persist(sectionType);
+                int ordinal = 1;
+                for (String field : List.of("heading", "body", "cta")) {
+                    ShPostTypeAttr sectionAttr = new ShPostTypeAttr();
+                    sectionAttr.setId(UUID.randomUUID().toString());
+                    sectionAttr.setName(field);
+                    sectionAttr.setLabel(field);
+                    sectionAttr.setOrdinal(ordinal++);
+                    sectionAttr.setShWidget(widget);
+                    sectionAttr.setShPostType(sectionType);
+                    entityManager.persist(sectionAttr);
+                }
+                sectionTypes.add(sectionType.getName());
+            }
+            ShPostUnified layout = new ShPostUnified();
+            layout.setId(UUID.randomUUID().toString());
+            layout.setState(ShPostState.DRAFT);
+            layout.setShSite(site);
+            layout.setShFolder(root);
+            layout.setShPostType(layoutType);
+            layout.setTitle(layoutName);
+            layout.setFurl("/budget-layout");
+            layout.setDate(when);
+            layout.setData("{\"HTML\":\"<html><body><h1>{{post.title}}</h1><main sh-accepts=\\\""
+                    + String.join(" ", sectionTypes) + "\\\"><p>{{headline}}</p></main></body></html>\"}");
+            entityManager.persist(layout);
+
+            // The budget pages are the base seed's; binding their type to the layout is what makes
+            // them compose, so the read has fields and a catalogue to answer with.
         });
     }
 
@@ -256,6 +349,37 @@ class ShAgentResponseBudgetTest {
                 .param("site", siteName).param("format", "terse").param("include", "fields"));
         measure("memory", get("/api/v2/agent/memory").param("site", siteName));
         measureTypeRow();
+        seedComposingPage();
+        // SH1104 — the editable read, and its catalogue on its own row for SH987's reason: the
+        // catalogue scales with what a layout declares, and a shared ceiling would let the plain
+        // read grow into the room the option was given.
+        measure("editable", get("/api/v2/agent/editable")
+                .param("address", "post:" + siteName + "/page-1"));
+        measure("editable.insertable", get("/api/v2/agent/editable")
+                .param("address", "post:" + siteName + "/page-1").param("include", "insertable"));
+    }
+
+    /**
+     * SH1104 — the editable budget measures a page that renders, or it measures nothing.
+     *
+     * <p>A page with no layout binding answers {@code source: content} with no fields and no
+     * containers, and that envelope passes any ceiling forever. So the budget pages are bound to a
+     * layout, and this holds the binding: rendered, with the two declared section types in the
+     * catalogue.</p>
+     */
+    @Test
+    @org.junit.jupiter.api.DisplayName("SH1104: the editable budgets measure a page that renders, with a catalogue")
+    void theEditableBudgetMeasuresAPageThatComposes() throws Exception {
+        assertThat(measured)
+                .as("SH1104: /agent/editable was on no budget, and its catalogue scales with the layout")
+                .containsKeys("editable", "editable.insertable");
+        mockMvc.perform(get("/api/v2/agent/editable").principal(principal)
+                        .param("address", "post:" + siteName + "/page-1").param("include", "insertable"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .jsonPath("$.source").value("rendered"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .jsonPath("$.containers[0].accepts.length()").value(2));
     }
 
     @Test

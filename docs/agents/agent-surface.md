@@ -3963,3 +3963,15 @@ attach a paragraph about the estate to a task about one page.
 **What it cannot see**: a rename on an instance that captures no revisions, and a page deleted
 before any revision existed. The rule reports what it can prove and is silent otherwise, which is
 the direction SH410 points.
+
+## The editable read is on a budget (SH1104)
+
+`/agent/editable` had no response budget from SH809 onward, and SH1039's `include=insertable` made it
+scale with what a layout declares. `ShAgentResponseBudgetTest` now measures it twice, as
+`response.editable` (22) and `response.editable.insertable` (192). The catalogue has its own row for
+SH987's reason: a shared ceiling would let the plain read grow into the option's room. It measures a
+page that renders: the budget pages' type is bound to a layout whose `<main>` accepts two section
+types. `theEditableBudgetMeasuresAPageThatComposes` holds that binding, because an unbound page
+answers `source: content`, envelope that passes any ceiling. That fixture is seeded **after** every
+other response is measured. Post types are instance-wide and the context pack lists them, so seeding
+them first moved `context.json` from 182 to 212 with no product change.
