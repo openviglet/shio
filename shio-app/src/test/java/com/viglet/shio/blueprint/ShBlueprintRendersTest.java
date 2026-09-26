@@ -73,6 +73,8 @@ class ShBlueprintRendersTest {
     private ShPageRenderService shPageRenderService;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private com.viglet.shio.api.agent.verify.ShAgentRenderService shAgentRenderService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -156,6 +158,47 @@ class ShBlueprintRendersTest {
                         inventing a visible element to make a field reachable.""")
                 .contains("data-shio-prop=\"title\"")
                 .contains("data-shio-prop=\"description\"");
+    }
+
+    /**
+     * SH1109 — what the visual editor's save proof costs, measured before it is spent.
+     *
+     * <p>A save that names what moved takes a digest of the page before the write and another after,
+     * which is two renders on the curator's clock. This is the composed home page the marketing
+     * package builds — ten sections through a layout and its regions — digested through the same
+     * path the console asks. The median is printed and recorded in docs/agents/renderer.md; it is
+     * what decided that the pair is taken on every save rather than on request.</p>
+     */
+    @Test
+    @DisplayName("SH1109: the digest pair a save takes is measured on a composed page")
+    void aSaveProofIsMeasured() {
+        String address = "id:" + aHomePageId();
+        for (int warm = 0; warm < 5; warm++) {
+            shAgentRenderService.digest(address, null, null);
+        }
+        long[] nanos = new long[21];
+        String first = null;
+        for (int run = 0; run < nanos.length; run++) {
+            long start = System.nanoTime();
+            String digest = shAgentRenderService.digest(address, null, null).digest();
+            nanos[run] = System.nanoTime() - start;
+            first = first == null ? digest : first;
+            assertThat(digest).as("the digest is stable across reads, or a delta would invent a move")
+                    .isEqualTo(first);
+        }
+        java.util.Arrays.sort(nanos);
+        System.out.printf("SH1109: one digest of the composed home page: median %.1f ms, max %.1f ms%n",
+                nanos[nanos.length / 2] / 1e6, nanos[nanos.length - 1] / 1e6);
+        assertThat(nanos[nanos.length / 2]).isPositive();
+    }
+
+    private String aHomePageId() {
+        return new TransactionTemplate(transactionManager).execute(status -> entityManager
+                .createQuery("select p from ShPostUnified p where p.furl = '/' and p.shPostType.id in "
+                        + "(select t.id from ShPostType t where t.name = 'Page')", ShPostUnified.class)
+                .getResultList().stream()
+                .filter(post -> post.getShSite() != null && siteName.equals(post.getShSite().getName()))
+                .map(ShPostUnified::getId).findFirst().orElseGet(this::aPageId));
     }
 
     // --- SH1105: the inserter rail's thumbnail, on the page this package builds ---

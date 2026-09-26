@@ -3,6 +3,7 @@ import type { ShPostUnified } from "@/models/post-unified/post-unified"
 import type { InsertableContainer } from "@/models/universal-editor/universal-editor.model"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { Pattern, PlacementPage } from "@/app/editor/pattern-placement"
+import type { PageDigests } from "@/lib/save-delta"
 
 /** SH1108 — one pushed pattern, as `GET /agent/patterns` lists it. */
 export type PatternSummary = {
@@ -155,6 +156,21 @@ export class ShUniversalEditorService {
     // to be conditional on, and inventing one here would be a round trip spent on a promise nobody
     // could keep.
     return this.posts.patch(postId, attrs, publish)
+  }
+
+  /**
+   * SH1109 — the page's two render digests, draft-preferred: what a save is proved against.
+   *
+   * Null on failure rather than a throw: the proof is what the save reports on top of a write that
+   * worked, and a digest that could not be read must not turn a good save into an error.
+   */
+  async digests(pageId: string): Promise<PageDigests | null> {
+    try {
+      const response = await axios.get<PageDigests>("/v2/agent/render", { params: { address: `id:${pageId}` } })
+      return { digest: response.data?.digest ?? null, appearanceDigest: response.data?.appearanceDigest ?? null }
+    } catch {
+      return null
+    }
   }
 
   /** SH1108 — the patterns pushed to this instance; a failure is an empty rail, not a broken panel. */

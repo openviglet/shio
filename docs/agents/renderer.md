@@ -636,6 +636,16 @@ renderer over one body of content at a second address. See the section on it bel
   `section-placement.ts`'s `placeAt`, so a drop under section `i` writes the array Below writes with
   `i` selected — `section-placement.test.mjs` asserts exactly that. The caret needs a selection,
   since the boxes ride on it.
+- **A save says what moved (SH1109)** — the editor takes the page's `digest` and `appearanceDigest`
+  from `GET /agent/render?address=id:<page>` (draft-preferred) before the write and again after,
+  and `src/lib/save-delta.ts` turns the pair and the change log into one line in the dock (kind
+  `saves`): the fields written, whether the structure moved, whether the appearance moved. A
+  **text-only** edit that moved the appearance is reported with an attention tone — a reflow nobody
+  asked for, the defect inline editing is likeliest to cause. A digest that could not be read is
+  `not checked`, never `unchanged`. The log also serialises as `{changed:[{id, fields}]}`, the
+  change-set shape the agent path answers with. **Measured first**: one digest of the marketing
+  package's composed home page is a median of about 41 ms (`ShBlueprintRendersTest`'s SH1109 test
+  prints it), so the pair is taken on every save rather than on request.
 - **The panel draws the field the model declares (SH1037)** — it used to be a bare `<Input>` for an
   `attr` field and read-only text for everything else, so a `Date` was a string, a `Check Box` was
   `"1"` and a `Content Select` was a UUID — and `affordance="panel"`, the field a caret cannot

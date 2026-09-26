@@ -24,7 +24,8 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { BentoStatusDock } from "@/app/system/bento-status-dock"
-import { setWorking } from "@/lib/dock-reports"
+import { pushReport, setWorking } from "@/lib/dock-reports"
+import { saveDelta, type SaveDelta } from "@/lib/save-delta"
 import { reportRefusal } from "@/lib/problem"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
@@ -1084,6 +1085,26 @@ export default function VisualEditorPage() {
     postToIframe("sh:field-set", { postId, prop: field.prop, value })
   }
 
+  /**
+   * SH1109 — the save's proof, in the dock where a console surface reports (SH972).
+   *
+   * One line: the fields written, and whether the structure and the appearance moved. A text-only
+   * edit that moved the appearance is reported as something to look at rather than a success, since
+   * that is a reflow nobody asked for.
+   */
+  const reportSaveDelta = (delta: SaveDelta) => {
+    const moved = (value: boolean | null, yes: string, no: string) =>
+      t(value === null ? "universalEditor.deltaUnchecked" : value ? yes : no)
+    pushReport({
+      tone: delta.unexpected ? "attention" : "success",
+      text: t("universalEditor.saveDelta", {
+        fields: delta.fields.join(", "),
+        structure: moved(delta.structureMoved, "universalEditor.structureMoved", "universalEditor.structureSame"),
+        appearance: moved(delta.appearanceMoved, "universalEditor.appearanceMoved", "universalEditor.appearanceSame"),
+      }) + (delta.unexpected ? ` ${t("universalEditor.textMovedAppearance")}` : ""),
+    }, "saves")
+  }
+
   const persist = async (publish: boolean) => {
     // SH335 — no token check. Saving is a console write on the curator's own session now; the
     // token that used to gate this authorized nothing the cookie did not already.
@@ -1101,6 +1122,10 @@ export default function VisualEditorPage() {
     // SH972 — the dock says a patch is in flight, and the words go with it when it lands.
     setWorking(t("universalEditor.saving"))
     const fields = [...new Set([...byPost.values()].flatMap((attrs) => Object.keys(attrs)))]
+    // SH1109 — the page's digests before the write, so the save can say what moved.
+    const pageId = pageOfFrame
+    const saved = [...changes.values()]
+    const before = pageId && saved.length ? await editorService.digests(pageId) : null
     try {
       for (const [postId, attrs] of byPost) {
         await editorService.patch(postId, attrs, publish)
@@ -1115,6 +1140,9 @@ export default function VisualEditorPage() {
         : fields.length
           ? t("universalEditor.draftSavedFields", { fields: fields.join(", ") })
           : t("universalEditor.draftSaved"))
+      if (pageId && saved.length) {
+        reportSaveDelta(saveDelta({ changes: saved, before, after: await editorService.digests(pageId) }))
+      }
     } catch (error) {
       // SH972 — a refusal is the server's problem document in the dock, not the word Error.
       reportRefusal(error, t("universalEditor.saveError"), { t: (key, options) => String(t(key, options)) })

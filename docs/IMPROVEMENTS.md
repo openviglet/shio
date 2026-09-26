@@ -1594,28 +1594,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.12 A save that says what moved (SH1109)
-
-A save in the visual editor returns a toast. Every other surface closes its loop with
-cheap textual proof — P9 is the law — and the one where a person just changed content by
-hand ends with the word *saved* and a page they have to look at to believe.
-
-The parts are built and unjoined. `/agent/render` answers a structural and an appearance
-digest for any address, SH1041's change log holds an ordered set of edits keyed by post
-and field, and SH972's dock is where a console surface reports. What nothing does is
-take a digest pair before the write and another after it, and say what moved.
-
-The delta is the deliverable, not the digests. Two hashes side by side tell a reader
-only that something differs, which they knew — they pressed Save. One line naming what
-changed, and whether the appearance moved when only text was edited, catches the defect
-this editor is most likely to produce: an inline edit that reflows a layout nobody meant
-to touch. Measured first, because two extra renders on a large page is a save a curator
-waits for, and that number decides whether the pair is taken always or on request.
-
-The log also serialises into the change-set shape the agent path answers with, so what a
-curator did reads like what an agent did. The assertion is a save whose delta names the
-field that moved, and a text-only edit reported as leaving the appearance alone.
-
 ### LXXI.13 A share link that is one page wide (SH1110)
 
 A share link is minted for one page and bounded to that page's **site**, so the
