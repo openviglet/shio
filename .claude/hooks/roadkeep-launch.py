@@ -116,11 +116,18 @@ REGISTRY = ("plugins", "installed_plugins.json")
 
 
 def _valid(root: Path | None) -> Path | None:
-    """The engine path under *root*, if the file is actually there."""
+    """The engine path under *root*, if the file is actually there.
+
+    At the top of *root*, or under its ``plugin/`` (RK1699): a checkout of roadkeep carries the
+    plugin one level down since then, so the marketplace copies the payload alone, while a
+    vendored ``.roadkeep/`` and an older checkout still carry it at the top.
+    """
     if root is None:
         return None
-    engine = root / ENGINE_REL
-    return engine if engine.is_file() else None
+    for engine in (root / ENGINE_REL, root / "plugin" / ENGINE_REL):
+        if engine.is_file():
+            return engine
+    return None
 
 
 def _config_home() -> Path:
