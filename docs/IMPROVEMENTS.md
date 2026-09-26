@@ -1270,6 +1270,27 @@ run. The durable half is an assertion that the CLI names no check group of its o
 anywhere: a wired list here is a second vocabulary that drifts from the one the server
 publishes.
 
+### LXIV.24 A held socket that Linux closes for us (SH698 on the runner) (SH1146)
+
+SH698 asserts that closing a fixture server with a live socket outstanding does not
+finish quietly: the teardown waits, the deadline fires, and the reason names the
+connection count. SH725 fixed its precondition by waiting for the server's own
+connection event, and it has since been green on Windows every run.
+
+On the GitHub runner, Ubuntu with Node 26, it fails on every run of the Suites workflow:
+the close resolves, no error comes back, and the assertion reports the silence this test
+exists to catch. The precondition assertion, one connection open, passes first, so the
+socket is accepted when the close starts.
+
+The likely cause is that closing now also closes idle connections, and a connection that
+has sent no request is idle, so on Linux the teardown genuinely finishes. If so, the
+fixture is right and the test's premise has moved. The work is to measure it on Linux
+first (a container reproduces the runner), then either hold the socket in a state close
+cannot reclaim, such as a request in flight, or restate what SH698 guards.
+
+This surfaced when the JS job's shallow clone was fixed and the job was read failure by
+failure; it is one of the three red suites that were not the checkout.
+
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key
