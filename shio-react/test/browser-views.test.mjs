@@ -159,3 +159,104 @@ test("SH1026: the listing's filters change only when the query does, or page 0 i
       + "re-reads page 0 after every render — a stream of requests that also discards every load-more")
   assert.match(page, /\}, \[objectId, sortBy, filters\]\)/, "SH1026: fetchPage keys on the memoised filters")
 })
+
+/**
+ * SH1142 — in the table view, the table is the only thing that writes the selection.
+ *
+ * <h2>What was wrong, and why the assertion is not the one the design named</h2>
+ *
+ * <p>`BentoDataTable` owns its selection and reports it through `onSelectionChange`, which the page
+ * copies into `selectedItems`. It takes none in: its props have no `selectedIds`, where `layout`
+ * <em>is</em> controlled beside `onLayoutChange`. So the toolbar's Select menu and the selection
+ * bar's Clear wrote the page's set, nothing on screen changed, and the next click in the table
+ * reported its own set and overwrote the choice. Pick "Select all", then Delete, and the rows
+ * deleted were whatever the table last had ticked while the confirm dialog counted the page's set.</p>
+ *
+ * <p>§LXIX.11's assertion was to choose "Select all" and compare the table's checked rows with the
+ * page's selection. That describes the <b>design system's</b> fix — a controlled `selectedIds` — and
+ * it cannot be written against the correction available on this side, because after it there is no
+ * "Select all" in the toolbar to choose. Restated to the property that correction actually
+ * establishes: <b>no control outside the table writes the selection in the table view.</b></p>
+ *
+ * <p>Held as a rule over every writer rather than as two spot-checks on the two controls that were
+ * wrong, because the recurrence is a <i>third</i> control added to that toolbar by somebody who never
+ * read this. The two known ones are also named, so the failure says which.</p>
+ */
+test("SH1142: no control outside the table writes the selection in the table view", () => {
+  const raw = read("app", "content", "object.children.page.tsx")
+
+  /*
+   * Comment lines blanked in place — equal length, so the prose above (which quotes
+   * `setSelectedItems` and the guard) is not read as code and every offset below is still an offset
+   * into the real file. `stripComments` would be wrong here for SH786's reason: it deletes lines, so
+   * an index into its result means nothing in the original, and this reader needs to know what
+   * *encloses* what.
+   *
+   * `{/*` is in the list, and leaving it out is what the first draft did. A JSX comment's closing
+   * `*&#47;}` line starts with `*`, so it was blanked and took its `}` with it, while the opening
+   * `{/*` line was not — three comments in this page, three unbalanced braces, and the brace walk
+   * below ran to the end of the file. Blanking both ends keeps the depth honest. (The shared
+   * stripper gets this right by another route: SH1118's `opensALine` accepts `{/*` as an opener.)
+   */
+  const source = raw.split("\n")
+    .map((line) => {
+      const text = line.trim()
+      return text.startsWith("//") || text.startsWith("*") || text.startsWith("/*")
+        || text.startsWith("{/*")
+        ? " ".repeat(line.length)
+        : line
+    })
+    .join("\n")
+
+  const GUARD = /\{viewMode !== "spreadsheet" &&/g
+  /** Every `{viewMode !== "spreadsheet" && … }` region, as [start, end) offsets. */
+  const guarded = []
+  for (const match of source.matchAll(GUARD)) {
+    let depth = 0
+    let at = match.index
+    for (; at < source.length; at += 1) {
+      if (source[at] === "{") depth += 1
+      else if (source[at] === "}") {
+        depth -= 1
+        if (depth === 0) break
+      }
+    }
+    assert.ok(depth === 0, "SH1142: a viewMode guard's braces do not balance, so this reader cannot "
+      + "tell what it covers — which would make every assertion below vacuous")
+    guarded.push([match.index, at])
+  }
+  assert.ok(guarded.length >= 3,
+    `SH1142: ${guarded.length} table-view guard(s) found. The listbox is one and the two selection `
+    + "controls are the others, so fewer than three means this reader stopped matching and would "
+    + "pass by finding nothing to check")
+
+  const inside = (at) => guarded.some(([from, to]) => at > from && at < to)
+
+  // A JSX control that writes the selection: an `onClick` naming either writer.
+  const WRITER = /onClick=\{[^}]*\b(?:setSelectedItems|handleSelectAction)\b[^}]*\}/g
+  const writers = [...source.matchAll(WRITER)]
+  assert.ok(writers.length >= 6,
+    `SH1142: ${writers.length} selection-writing control(s) found; the Select menu alone has five `
+    + "items and Clear is the sixth, so a smaller number means the pattern no longer matches")
+
+  const unguarded = writers
+    .filter((match) => !inside(match.index))
+    .map((match) => `${source.slice(0, match.index).split("\n").length}: ${match[0].slice(0, 90)}`)
+
+  assert.deepEqual(unguarded, [],
+    "SH1142: this control writes the page's selection and renders in the table view, where the "
+      + "table will go on showing whatever it had ticked. The two sets then differ under a bulk "
+      + "verb: the confirm dialog counts this one and the delete takes the table's. Either gate it "
+      + "on `viewMode !== \"spreadsheet\"`, or — better — pass the selection INTO BentoDataTable "
+      + "once the design system ships a controlled `selectedIds` beside `onSelectionChange`, and "
+      + "then every view can have these controls again.\n  " + unguarded.join("\n  "))
+
+  // And the two that were wrong, by name, so a regression is not merely "a rule broke".
+  for (const [label, key] of [["the Select menu", "content.select"],
+    ["the selection bar's Clear", "content.clearSelection"]]) {
+    const at = source.indexOf(`t("${key}")`)
+    assert.ok(at > 0, `SH1142: ${label} is gone from this page; update this assertion or the id it names`)
+    assert.ok(inside(at), `SH1142: ${label} renders in the table view again — the control SH1142 `
+      + "removed from it, because it writes a selection the table never hears about")
+  }
+})

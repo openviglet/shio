@@ -1383,29 +1383,6 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.11 A table selection the page can set (SH1142)
-
-SH1026 drew the browser's table view with the design system's BentoDataTable, and the
-table owns its selection. It reports every change through onSelectionChange, which the
-page copies into selectedItems, but it takes no selection in: its props have no selected
-ids. So the flow runs one way. The toolbar's Select menu (all, folders, content) and the
-selection bar's Clear write selectedItems, and in the table view nothing on screen
-changes. The next click in the table then reports the table's own set and overwrites
-what the menu chose. A curator who picks "Select all" and then Delete in that view
-deletes whatever the table last had ticked, and the confirm dialog counts the page's
-set, so the number and the rows can disagree.
-
-The fix belongs in the design system first: a controlled selection on BentoDataTable, a
-selectedIds prop beside onSelectionChange, the way layout is already controlled beside
-onLayoutChange. The browser then passes selectedItems in, and the Select menu and Clear
-work in every view. Until the package has it, the smaller correction on this side is to
-hide the Select menu and Clear in the table view and let the table's own header checkbox
-and Escape do both, so there is only one control for the one selection.
-
-The assertion renders the table view, chooses "Select all" from the toolbar, and
-confirms the table's checked rows equal the page's selection before any bulk verb is
-offered.
-
 ### LXIX.12 The browser page, split by concern (SH1145)
 
 SH1026's design asked for the browser page to be split into the content-browser
@@ -1430,6 +1407,33 @@ not left behind reading a file that no longer holds it.
 Done when the page renders the three concerns from hooks and dialog components in
 content-browser, the page is under 600 lines, and e2e/browser-window.check.mjs still
 passes, naming this id.
+
+### LXIX.13 A selection the page can set, from the component's side (SH1148)
+
+SH1142 took the correction available on this side: the toolbar's Select menu and the
+selection bar's Clear do not render in the table view, so the table's header checkbox
+and Escape are the one control for the one selection. That is right and it is a
+subtraction — a curator in the table view has no "select every post in this folder",
+which the list view has had since SH237, and no invert.
+
+The cause is a prop that is missing rather than anything wrong here. `BentoDataTable`
+reports its selection through `onSelectionChange` and takes none in, where the same
+component's column `layout` **is** controlled beside `onLayoutChange`. One of the two
+was finished.
+
+So the package gains `selectedIds` beside `onSelectionChange`, the browser passes
+`selectedItems` in, and the two controls come back in every view — with `SH1142`'s lint
+then holding the stronger property it cannot state today: that the page's set and the
+ticked rows are the same object rather than two that agree by habit. the assertion
+SH1142 could not write becomes writable at that point — choose "Select all", and the
+table's checked rows are the page's selection.
+
+Not by remounting the table with a `key`: it mounts only the visible rows of a folder of
+four thousand, and remounting to communicate a checkbox throws that window away on every
+click.
+
+The assertion is the restored menu selecting every row in the table view, and the count
+in the confirm dialog equal to the ticked rows.
 
 ## LXX Media: what the bytes mean (Block BE)
 

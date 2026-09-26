@@ -1171,6 +1171,24 @@ export default function ObjectChildrenPage() {
             </SelectContent>
           </Select>
 
+          {/*
+            SH1142 — not in the table view, because there it would lie.
+
+            `BentoDataTable` owns its selection and reports it through `onSelectionChange`, which
+            this page copies into `selectedItems`. It takes no selection IN: its props have no
+            `selectedIds`, where `layout` *is* controlled beside `onLayoutChange`. So the flow runs
+            one way, and every item in this menu writes `selectedItems` without the table hearing
+            it — nothing on screen changed, and the next click in the table reported its own set and
+            overwrote the choice. A curator who picked "Select all" and then Delete deleted whatever
+            the table last had ticked, while the confirm dialog counted this page's set: the number
+            and the rows could disagree.
+
+            One control for one selection, then: in the table view the table's own header checkbox
+            selects all and Escape clears, and this menu is absent rather than inert. The real fix
+            is a controlled `selectedIds` on the component, and this comes back the moment the
+            design system ships it.
+          */}
+          {viewMode !== "spreadsheet" && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">{t("content.select")} <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
@@ -1184,6 +1202,7 @@ export default function ObjectChildrenPage() {
               <DropdownMenuItem onClick={() => handleSelectAction("nothing")}>{t("content.selectNothing")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1396,8 +1415,13 @@ export default function ObjectChildrenPage() {
             )}
         </Panel>
 
-        {/* Selection info bar */}
-        {selectedItems.size > 0 && (
+        {/*
+          Selection info bar — SH1142: not in the table view, for the same reason as the menu above.
+          Its Clear writes `selectedItems` and the table would go on showing the rows ticked, and the
+          count beside it would be a second count next to the one the table's own selection bar
+          draws. Escape clears there.
+        */}
+        {viewMode !== "spreadsheet" && selectedItems.size > 0 && (
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <span>{t("content.itemsSelected", { count: selectedItems.size })}</span>
             <Separator orientation="vertical" className="h-4" />

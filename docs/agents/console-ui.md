@@ -2972,6 +2972,41 @@ the edit, not to the table's row keys. `ShPostUnifiedAPITest` asserts the refusa
 The accent debt, the SH1020 menu guard and the SH1059 label guards read the `content-browser/`
 files, and `browser-views.test.mjs` holds the rest.
 
+### One control for one selection, because the table takes none in (SH1142)
+
+The table **reports** its selection and cannot be told one: `BentoDataTableProps` has
+`onSelectionChange` and no `selectedIds`, where the same component's column `layout` *is* controlled
+beside `onLayoutChange`. One of the two was finished.
+
+So the flow ran one way, and two controls wrote the page's set behind the table's back — the
+toolbar's Select menu (content, folders, everything, invert, nothing) and the selection bar's Clear.
+In the table view nothing on screen changed, and the next click in the table reported its own set and
+overwrote the choice. **Pick "Select all", then Delete, and the rows deleted were whatever the table
+last had ticked while the confirm dialog counted the page's set** — the number and the rows could
+disagree, on a destructive verb.
+
+Both are now absent in the table view rather than inert: the table's own header checkbox selects all
+and Escape clears. `SH1148` is the other half, on the package's side, and this comes back in every
+view the moment it lands — a curator in the table view has no select-everything until then, which is
+a real subtraction and the reason that line exists.
+
+**The assertion is not §LXIX.11's, and the substitution is the point.** That one was to choose
+"Select all" and compare the table's checked rows with the page's selection, which describes the
+*design system's* fix and cannot be written once there is no "Select all" in that view to choose.
+`SH1142: no control outside the table writes the selection in the table view` states what this
+correction actually establishes, and holds it as a **rule over every writer** rather than as two
+spot-checks on the two that were wrong — because the recurrence is a third control added to that
+toolbar by somebody who never read this. It walks braces from each `{viewMode !== "spreadsheet" &&`
+guard and asserts every JSX `onClick` naming `setSelectedItems` or `handleSelectAction` falls inside
+one. Verified both ways: ungating the menu fails it, and so does a newly added ungated button.
+
+One trap worth keeping, met while writing that reader. It blanks comment lines in place to keep its
+offsets, and the first draft's predicate was `//`, `*`, `/*` — so a JSX comment's closing `*&#47;}`
+line was blanked (it starts with `*`) and took its `}` with it, while the opening `{/*` line was not.
+Three such comments on the page, three unbalanced braces, and the brace walk ran to the end of the
+file. `{/*` is in the predicate now. It is SH1118's class again: a per-line comment test that is
+right about the shapes it was written for and silently wrong about one more.
+
 **Cards show an image.** Each listing row carries `thumbnail`, the byte path of an image. A `File`
 post holding an image is its own thumbnail. Any other post uses the first image it references, from
 SH1034's reference index. `ShConsoleThumbnails` answers for a whole page in two statements (its
