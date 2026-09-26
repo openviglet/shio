@@ -2443,24 +2443,9 @@ public class ShAgentVerifyService {
                         + "leaving blank — an empty alt and no alt mean different things."));
     }
 
-    /**
-     * Whether a {@code File} post holds an image, by the stamp first and the name second.
-     *
-     * <p>The stamped content type is what SH1030 writes at upload; the extension is what covers
-     * everything written before it. Asking the disk would make this rule pay a syscall per asset
-     * to answer a question the row already knows, which is the difference between a check that is
-     * on by default and one nobody turns on.</p>
-     */
+    /** Whether a {@code File} post holds an image: {@code ShAssetKind}'s one rule (SH1026). */
     private boolean isImageAsset(JsonNode data, String fileName) {
-        String contentType = text(data, "CONTENT_TYPE");
-        if (!contentType.isBlank()) {
-            return contentType.toLowerCase(java.util.Locale.ROOT).startsWith("image/");
-        }
-        String name = fileName.toLowerCase(java.util.Locale.ROOT);
-        return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")
-                || name.endsWith(".gif") || name.endsWith(".webp") || name.endsWith(".avif")
-                || name.endsWith(".svg") || name.endsWith(".bmp") || name.endsWith(".tif")
-                || name.endsWith(".tiff");
+        return com.viglet.shio.api.staticfile.ShAssetKind.isImage(data, fileName);
     }
 
     private void imageFindings(String check, String address, String field,

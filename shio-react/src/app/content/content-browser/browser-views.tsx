@@ -12,7 +12,7 @@ import { BentoActionsMenu, type BentoActionsMenuItem } from "@viglet/viglet-desi
 import { FileText, Folder } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { rowLabel, type BrowserRow, type BrowserView } from "./browser-view"
+import { rowLabel, thumbnailSrc, type BrowserRow, type BrowserView } from "./browser-view"
 
 /**
  * SH1026 — the content browser's list and grid views, one renderer each.
@@ -130,16 +130,22 @@ function ListRow({ item, index, selected, when, siteName, actions, onToggle, onO
 }
 
 /**
- * A card: the same row, read at a glance. The thumbnail from the image pipeline is SH1026's next
- * part; until then the kind's icon stands in the space it will take, tinted by kind as the list's
- * position badge is.
+ * A card: the same row, read at a glance. SH1026 — its image is the one the listing named (the
+ * post's own, or the first it references), through the transform pipeline; with none, the kind's
+ * icon holds the same space, tinted by kind as the list's position badge is. Decorative: the title
+ * below names the row, so the image carries an empty alt.
  */
 function GridCard({ item, selected, when, siteName, actions, onToggle, onOpen }: BrowserItemProps) {
   return (
     <div className="flex h-full flex-col rounded-lg border bg-card">
-      <div className={`flex h-24 items-center justify-center rounded-t-lg ${item.objectType === "FOLDER" ? "bg-[var(--vg-accent-surface)]" : "bg-blue-50 dark:bg-blue-950/20"}`}>
-        <KindIcon item={item} className="h-8 w-8" />
-      </div>
+      {item.thumbnail ? (
+        <img src={thumbnailSrc(item.thumbnail)} alt="" loading="lazy"
+          className="h-24 w-full rounded-t-lg object-cover" />
+      ) : (
+        <div className={`flex h-24 items-center justify-center rounded-t-lg ${item.objectType === "FOLDER" ? "bg-[var(--vg-accent-surface)]" : "bg-blue-50 dark:bg-blue-950/20"}`}>
+          <KindIcon item={item} className="h-8 w-8" />
+        </div>
+      )}
       <div className="flex flex-1 flex-col gap-1 p-3">
         <div className="flex items-start gap-2">
           <Select item={item} selected={selected} onToggle={onToggle} className="mt-1 shrink-0" />

@@ -95,6 +95,8 @@ interface ConsolePostRow {
   published?: boolean
   publishStatus?: string
   state?: string
+  /** SH1026 — the byte path of the image its card shows. */
+  thumbnail?: string
 }
 
 interface BreadcrumbPathItem {
@@ -442,6 +444,7 @@ export default function ObjectChildrenPage() {
     postTypeName: post.postTypeTitle || post.postType,
     publishStatus: post.publishStatus,
     locale: post.locale,
+    thumbnail: post.thumbnail,
   }))
 
   const combinedItems: ObjectChild[] = [...folderItems, ...postItems]

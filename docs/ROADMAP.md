@@ -41,7 +41,7 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- 🛠 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — Cards have no thumbnails, the list and grid are not virtualised, and most of the page is not yet in content-browser. → §LXIX.7
+- 🛠 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — Cards show thumbnails now; the list and grid are not virtualised, and most of the page is not yet in content-browser. → §LXIX.7
 - 📋 **SH1142** (deps: SH1026 🛠) **in the browser's table view, the toolbar's Select menu and Clear change nothing the table shows** — BentoDataTable reports its selection but takes none in, so the page's set and the ticked rows can differ under a bulk delete. → §LXIX.11
 
 ## Block BE — Media: what the bytes mean

@@ -281,6 +281,9 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     /** The window's rows, loaded whole, in one statement rather than one per row (SH419). */
     List<ShPostUnified> findByIdInAndState(Collection<String> ids, ShPostState state);
 
+    /** SH1026 — these posts in either state, in one statement: the images a listing page points at. */
+    List<ShPostUnified> findByIdIn(Collection<String> ids);
+
     /**
      * One page of a listing, decided <b>in the query</b> (SH634).
      *

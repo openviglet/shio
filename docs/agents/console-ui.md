@@ -2931,8 +2931,18 @@ forgets the stale version so the next try reads afresh. Enter and Escape inside 
 the edit, not to the table's row keys. `ShPostUnifiedAPITest` asserts the refusal on `PATCH`.
 
 The accent debt, the SH1020 menu guard and the SH1059 label guards read the `content-browser/`
-files, and `browser-views.test.mjs` holds the rest. Still to come: card thumbnails from the image
-pipeline, virtualising the list and the grid, and moving the rest of the page into the directory.
+files, and `browser-views.test.mjs` holds the rest.
+
+**Cards show an image.** Each listing row carries `thumbnail`, the byte path of an image. A `File`
+post holding an image is its own thumbnail. Any other post uses the first image it references, from
+SH1034's reference index. `ShConsoleThumbnails` answers for a whole page in two statements (its
+edges, then their targets), never one per card. What counts as an image is `ShAssetKind`, the one
+rule verify's alt-text check also uses. The card asks the transform pipeline for its own size
+(`thumbnailSrc`: 320×192, cropped, webp) and falls back to the kind's icon. The image is decorative,
+since the title below names the row.
+
+Still to come: virtualising the list and the grid, and moving the rest of the page into the
+directory.
 
 ## The Forms page (SH1066)
 

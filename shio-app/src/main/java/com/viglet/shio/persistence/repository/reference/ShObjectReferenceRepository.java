@@ -52,6 +52,15 @@ public interface ShObjectReferenceRepository extends JpaRepository<ShObjectRefer
      * <p>The inverse question in one query rather than one per candidate, which is the whole
      * complaint SH1034's line makes: finding unused assets used to mean a full scan per asset.</p>
      */
+    /**
+     * SH1026 — what a page of posts points at, as {@code [fromPostId, toObjectId]} pairs in field
+     * then target order: one read for a whole listing page, which is how its cards find a thumbnail
+     * without a query per card. Ordered so one post always offers the same image first (P5).
+     */
+    @Query("select r.fromPostId, r.toObjectId from ShObjectReference r where r.fromPostId in :ids "
+            + "order by r.fromPostId, r.fieldName, r.toObjectId")
+    List<Object[]> findEdgesFrom(@Param("ids") Collection<String> ids);
+
     @Query("select distinct r.toObjectId from ShObjectReference r where r.toObjectId in :ids")
     List<String> findReferencedAmong(@Param("ids") Collection<String> ids);
 

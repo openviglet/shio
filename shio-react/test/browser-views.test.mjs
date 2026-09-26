@@ -12,7 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import {
-  browserView, editableTitleField, listboxClass, readTableLayout, stepFor, tableLayoutKey,
+  browserView, editableTitleField, listboxClass, readTableLayout, stepFor, tableLayoutKey, thumbnailSrc,
 } from "../src/app/content/content-browser/browser-view.ts"
 
 /**
@@ -112,4 +112,15 @@ test("SH1026: the view buttons are named and say which is pressed", () => {
     assert.match(page, new RegExp(`aria-label=\\{t\\("content\\.${key}"\\)\\} aria-pressed=`),
       `SH1026: the ${key} button is an unnamed icon again`)
   }
+})
+
+test("SH1026: a grid card shows the image the listing named, through the transform pipeline", () => {
+  assert.equal(thumbnailSrc("/file_source/abc/hero%20image.png"),
+    "/file_source/abc/hero%20image.png?w=320&h=192&crop=fill&format=webp",
+    "SH1026: a card asks the pipeline for its own size, as the media library's thumbnails do")
+  const views = read("app", "content", "content-browser", "browser-views.tsx")
+  assert.match(views, /item\.thumbnail \? \(\s*<img src=\{thumbnailSrc\(item\.thumbnail\)\} alt="" loading="lazy"/,
+    "SH1026: the card draws the kind's icon even when the listing names an image")
+  assert.match(read("app", "content", "object.children.page.tsx"), /thumbnail: post\.thumbnail,/,
+    "SH1026: the row mapping drops the thumbnail the listing sent")
 })

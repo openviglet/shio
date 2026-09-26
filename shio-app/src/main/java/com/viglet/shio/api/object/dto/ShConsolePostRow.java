@@ -32,6 +32,10 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * addition — the CDA carries the post-type's API name because that is what a front end
  * routes on, and the browser shows the human label next to it.</p>
  *
+ * <p>{@code thumbnail} (SH1026) is the byte path of the image a grid card shows: the post itself
+ * when it is a {@code File} holding one, or else the first image it references. Absent when there
+ * is none, and the card draws the kind's icon instead.</p>
+ *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
@@ -39,5 +43,5 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 public record ShConsolePostRow(String id, String title, String summary, String furl,
                                String postType, String locale, Instant date, Instant modifiedDate,
                                String postTypeTitle, boolean published, String publishStatus,
-                               String state) {
+                               String state, String thumbnail) {
 }

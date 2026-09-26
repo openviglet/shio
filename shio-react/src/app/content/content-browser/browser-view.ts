@@ -100,6 +100,17 @@ export interface BrowserRow {
    * date and type, and without this a curator deleting "the duplicate" deletes a translation.
    */
   locale?: string
+  /** SH1026 — the byte path of the image a card shows, from the listing; absent when there is none. */
+  thumbnail?: string
+}
+
+/**
+ * SH1026 — a card's image, through the transform pipeline the media library's thumbnails use:
+ * cropped to the card, as webp. The listing gives the byte path and the screen decides the size.
+ */
+export function thumbnailSrc(path: string, width = 320, height = 192): string {
+  const params = new URLSearchParams({ w: String(width), h: String(height), crop: "fill", format: "webp" })
+  return `${path}?${params}`
 }
 
 /**

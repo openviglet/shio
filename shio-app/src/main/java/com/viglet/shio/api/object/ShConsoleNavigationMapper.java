@@ -9,6 +9,7 @@
 package com.viglet.shio.api.object;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -45,9 +46,12 @@ import com.viglet.shio.persistence.model.site.ShSite;
 public class ShConsoleNavigationMapper {
 
     private final ShCdaMapper cdaMapper;
+    /** SH1026 — the image each card of a page shows, read for the page at once. */
+    private final ShConsoleThumbnails thumbnails;
 
-    public ShConsoleNavigationMapper(ShCdaMapper cdaMapper) {
+    public ShConsoleNavigationMapper(ShCdaMapper cdaMapper, ShConsoleThumbnails thumbnails) {
         this.cdaMapper = cdaMapper;
+        this.thumbnails = thumbnails;
     }
 
     /**
@@ -64,8 +68,10 @@ public class ShConsoleNavigationMapper {
     public ShConsoleListing listing(String folderId, List<ShFolder> folders,
                                     List<ShPostUnified> posts, int page, int size,
                                     long totalPosts, long totalFolders) {
+        Map<String, String> images = posts.isEmpty() ? Map.of() : thumbnails.of(posts);
         return new ShConsoleListing(folderId, folders.stream().map(this::folderRow).toList(),
-                posts.stream().map(this::postRow).toList(), page, size, totalPosts, totalFolders);
+                posts.stream().map(post -> postRow(post, images.get(post.getId()))).toList(), page, size,
+                totalPosts, totalFolders);
     }
 
     /** The breadcrumb, in the CDA's own shape. */
@@ -82,14 +88,15 @@ public class ShConsoleNavigationMapper {
                 folder.getDate(), folder.getPosition());
     }
 
-    private ShConsolePostRow postRow(ShPostUnified post) {
+    private ShConsolePostRow postRow(ShPostUnified post, String thumbnail) {
         var shared = cdaMapper.toSummary(post);
         return new ShConsolePostRow(shared.id(), shared.title(), shared.summary(), shared.furl(),
                 shared.postType(), shared.locale(), shared.date(), shared.modifiedDate(),
                 post.getShPostType() != null ? post.getShPostType().getTitle() : null,
                 post.isPublished() || post.getState() == ShPostState.PUBLISHED,
                 post.getPublishStatus(),
-                post.getState() != null ? post.getState().name() : null);
+                post.getState() != null ? post.getState().name() : null,
+                thumbnail);
     }
 
     /**
