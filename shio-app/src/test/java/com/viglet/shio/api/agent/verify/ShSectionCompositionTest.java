@@ -34,6 +34,9 @@ import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.type.ShPostTypeAttr;
+import com.viglet.shio.persistence.model.post.unified.ShPostState;
+import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
+import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.widget.ShWidget;
 import com.viglet.shio.widget.ShSystemWidget;
@@ -70,6 +73,8 @@ class ShSectionCompositionTest {
     private ShAgentRenderService shAgentRenderService;
     @Autowired
     private ShAgentBatchService shAgentBatchService;
+    @Autowired
+    private com.viglet.shio.render.ShRenderPostTypes shRenderPostTypes;
     @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
@@ -263,6 +268,78 @@ class ShSectionCompositionTest {
                         + "different mistakes would hash the same")
                 .anySatisfy(text -> assertThat(text).contains("missing section"));
         assertThat(broken.digest()).isNotEqualTo(digest("/pricing").digest());
+    }
+
+    // --- SH1106: the allow-list read by something that is not a screen ---
+
+    /**
+     * SH1106 — a page composing a type its own layout's {@code sh-accepts} does not name.
+     *
+     * <p>A second page type, bound to a layout whose {@code <main>} accepts two types this fixture
+     * never writes, and a page of it naming two {@code SectionBlock}s. The console offered only the
+     * declared types and nothing else consulted the list, so a write past that screen composed the
+     * page against a declaration no instrument read.</p>
+     */
+    @Test
+    @DisplayName("SH1106: a section of a type the layout does not accept is reported once, with the list")
+    void anUndeclaredSectionTypeIsReported() {
+        shRenderPostTypes.ensure();
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String layoutName = "SH1106_LAYOUT_" + suffix;
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        String acceptingType = tx.execute(status -> {
+            ShPostType accepting = postType("AcceptingPage");
+            attr(accepting, ShSystemWidget.TEXT, "title", 1, (byte) 1, null);
+            attr(accepting, ShSystemWidget.MULTI_SELECT, "sections", 2, (byte) 0, REFERENCES_POSTS);
+            ShSite site = entityManager
+                    .createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                    .setParameter("name", siteName).getSingleResult();
+            site.setPostTypeLayout("{\"" + accepting.getName() + "\":\"" + layoutName + "\"}");
+            ShFolder root = entityManager
+                    .createQuery("select f from ShFolder f where f.shSite.id = :site and f.rootFolder = 1",
+                            ShFolder.class)
+                    .setParameter("site", site.getId()).getSingleResult();
+            ShPostUnified layout = new ShPostUnified();
+            layout.setId(UUID.randomUUID().toString());
+            layout.setState(ShPostState.DRAFT);
+            layout.setShSite(site);
+            layout.setShFolder(root);
+            layout.setShPostType(entityManager
+                    .createQuery("select t from ShPostType t where t.name = :name", ShPostType.class)
+                    .setParameter("name", ShSystemPostType.PAGE_LAYOUT).getSingleResult());
+            layout.setTitle(layoutName);
+            layout.setFurl("/sh1106-layout-" + suffix);
+            layout.setData(objectMapper.writeValueAsString(Map.of("HTML",
+                    "<html><body><h1>{{post.title}}</h1>"
+                            + "<main sh-accepts=\"Sh1106Hero Sh1106Cta\"></main></body></html>")));
+            layout.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            layout.setOwner("admin");
+            entityManager.persist(layout);
+            return accepting.getName();
+        });
+        String url = base + "/sh1106-" + suffix;
+        tx.executeWithoutResult(status -> shAgentBatchService.run(new ShAgentBatch(false, List.of(
+                new Op(ShAgentBatchService.POST_UPSERT, "post:" + siteName + url, acceptingType, base,
+                        objectMapper.valueToTree(Map.of("title", "Composed",
+                                "sections", List.of(base + "/hero", base + "/faq")))))),
+                false, "tester"));
+
+        List<ShAgentReport.Finding> reported = findings("section-not-accepted");
+        assertThat(reported.stream().filter(finding -> finding.address().endsWith(url)).toList())
+                .as("""
+                        two sections of one undeclared type are one decision, so one finding — and \
+                        it names the type and the list the layout does accept, which is the whole \
+                        of what the author needs to fix either side (SH1106)""")
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.field()).isEqualTo("sections");
+                    assertThat(finding.message()).contains(sectionType).contains("Sh1106Hero, Sh1106Cta");
+                    assertThat(finding.fix()).contains("sh-accepts");
+                });
+        assertThat(reported)
+                .as("a page type bound to no layout declares nothing, which is 'nobody said' and "
+                        + "never 'nothing fits' — the home page composes the same sections unreported")
+                .noneSatisfy(finding -> assertThat(finding.address()).endsWith(base + "/home"));
     }
 
     // --- SH773: the model that went blind, and the reader that now says so ---

@@ -261,6 +261,29 @@ public class ShRegionComposer {
     }
 
     /**
+     * SH1106 — the section types a template's containers declare, read off the unrendered HTML.
+     *
+     * <p>Static for the reason {@link #slotsOf} is: {@code sh-accepts} is an attribute an author
+     * writes, not content. A blank declaration contributes nothing, as it does in the render pass.</p>
+     *
+     * @return the declared type names in document order, each once; empty when nothing declares
+     */
+    public List<String> acceptsOf(String templateHtml) {
+        if (templateHtml == null || templateHtml.isBlank()) {
+            return List.of();
+        }
+        LinkedHashSet<String> types = new LinkedHashSet<>();
+        for (Element container : parse(templateHtml).select("[" + ACCEPTS_ATTR + "]")) {
+            for (String type : container.attr(ACCEPTS_ATTR).trim().split("\\s+")) {
+                if (!type.isEmpty()) {
+                    types.add(type);
+                }
+            }
+        }
+        return new ArrayList<>(types);
+    }
+
+    /**
      * Fills every slot in {@code layoutHtml} from {@code regions}, keyed by region name.
      *
      * @param layoutHtml the layout's markup, already rendered as a template

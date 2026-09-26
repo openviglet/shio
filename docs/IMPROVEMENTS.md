@@ -1595,31 +1595,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.10 The allow-list read by something that is not a screen (SH1106)
-
-`sh-accepts` is read by the console, which offers only the types it names, and by
-nothing else. An agent writes a Page's sections array through `post.upsert` and no check
-consults the layout, so a page can name a section of a type its own template says does
-not belong there — and the page still renders, because the template draws whatever the
-array resolves to.
-
-SH1039's design proposed refusing that write, with the allowed list. **That is the wrong
-instrument**, and the reason is what a narrowing costs: the allow-list lives in a
-layout, and layouts are edited. Refusing on write would make an existing page unwritable
-the moment somebody narrowed its template — a content change refused because of an edit
-nobody connected to it. It also misreads the declaration: it is a *template's statement
-about composition*, not an authorization boundary, and nothing about the agent path is
-less trusted than the console's.
-
-So it is a finding rather than a 400, beside `dangling-reference`, which is the same
-shape one field over: content that resolves and should not have been pointed at. `shio
-verify` already walks a site's pages and already resolves their references; what it does
-not do is read the layout the page renders through, which is a static resolve through
-`site.postTypeLayout` and needs no render.
-
-The assertion is a page naming a section of an undeclared type, reported once, with the
-accepted list in the finding.
-
 ### LXXI.11 A pattern the console can see (SH1108)
 
 A pattern is `shio/patterns/<name>.json` in the project, and the console is a browser

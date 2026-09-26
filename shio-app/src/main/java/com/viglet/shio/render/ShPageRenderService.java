@@ -584,6 +584,21 @@ public class ShPageRenderService {
     }
 
     /**
+     * SH1106 — the section types a page of {@code typeName} may compose, per its own templates.
+     *
+     * <p>The union of every {@code sh-accepts} in the layout and its regions, read statically: no
+     * render, since a declaration is an attribute and not content. Empty means nobody declared,
+     * which is "nothing is known", never "nothing fits" — the same reading SH1039 gives it.</p>
+     */
+    public List<String> acceptedSections(ShSite site, String typeName) {
+        return templatesFor(site, typeName)
+                .map(templates -> templates.all().stream()
+                        .flatMap(template -> composer.acceptsOf(template.html()).stream())
+                        .distinct().toList())
+                .orElse(List.of());
+    }
+
+    /**
      * {@code site.postTypeLayout} as the flat post-type → layout-title map, for a caller that
      * needs to know <em>which</em> types are pages (SH251) rather than to render one.
      */

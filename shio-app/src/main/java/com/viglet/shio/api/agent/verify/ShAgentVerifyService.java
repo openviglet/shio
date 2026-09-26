@@ -770,7 +770,10 @@ public class ShAgentVerifyService {
                 claimantsByUrl, publishedLocales,
                 folders(siteById.keySet(), scope.folderIds()),
                 shFolderRepository.findParentFolderIds(),
-                shPostUnifiedRepository.findFolderIdsWithPosts());
+                shPostUnifiedRepository.findFolderIdsWithPosts(),
+                // SH1106 — filled as pages are read: every page of one type on one site resolves to
+                // the same templates, so a thousand pages read their layout once.
+                new HashMap<>());
     }
 
     /**
@@ -3226,6 +3229,8 @@ public class ShAgentVerifyService {
         }
         String siteId = post.getShSite() == null ? null : post.getShSite().getId();
         String wantedType = ShPostReferenceFields.referencedPostType(attr, objectMapper);
+        List<String> accepted = acceptedSections(post, scan);
+        Set<String> undeclared = new LinkedHashSet<>();
         for (String url : urls) {
             Optional<ShPostUnified> target = referenced(siteId, url);
             if (target.isEmpty()) {
@@ -3246,6 +3251,10 @@ public class ShAgentVerifyService {
                         "Point it at a " + wantedType + ", or widen the field's postType setting."));
                 continue;
             }
+            if (!accepted.isEmpty() && section.getShPostType() != null
+                    && !accepted.contains(section.getShPostType().getName())) {
+                undeclared.add(section.getShPostType().getName());
+            }
             if (scan.publishedIds().contains(post.getId())
                     && !scan.publishedIds().contains(section.getId())) {
                 findings.add(Finding.error(check, "unpublished-dependency", address, field,
@@ -3254,6 +3263,34 @@ public class ShAgentVerifyService {
                         "Publish it with a post.publish op, or take this page down until it is."));
             }
         }
+        // SH1106 — once per type, not per entry: three FAQ blocks on a page that declares none is
+        // one decision somebody has to make, and three findings would read as three.
+        for (String type : undeclared) {
+            findings.add(Finding.warning(check, "section-not-accepted", address, field,
+                    "Field '" + field + "' composes a " + type + ", and this page's layout accepts "
+                            + String.join(", ", accepted) + " — the page renders it anyway, "
+                            + "against its own template's declaration.",
+                    "Replace it with one of " + String.join(", ", accepted) + ", or add " + type
+                            + " to the sh-accepts of the element that composes the sections."));
+        }
+    }
+
+    /**
+     * SH1106 — what this page's own templates say may be composed on it, read once per site and type.
+     *
+     * <p>A <b>warning</b> and not a refusal on write: the list lives in a layout, and layouts are
+     * edited. Refusing would make an existing page unwritable the moment somebody narrowed its
+     * template — a content change refused over an edit nobody connected to it. The declaration is a
+     * template's statement about composition, not an authorization boundary.</p>
+     */
+    private List<String> acceptedSections(ShPostUnified post, Scan scan) {
+        ShSite site = post.getShSite();
+        ShPostType type = post.getShPostType();
+        if (site == null || type == null) {
+            return List.of();
+        }
+        return scan.acceptedByType().computeIfAbsent(site.getId() + "|" + type.getName(),
+                key -> pageRenderService.acceptedSections(site, type.getName()));
     }
 
     /**
@@ -3626,7 +3663,8 @@ public class ShAgentVerifyService {
                         Map<String, Map<String, List<String>>> claimantsByUrl,
                         Map<String, String> publishedLocales,
                         List<Scanned> folders, Set<String> folderParents,
-                        Set<String> foldersWithPosts) {
+                        Set<String> foldersWithPosts,
+                        Map<String, List<String>> acceptedByType) {
 
         int checked() {
             return posts.size() + folders.size();

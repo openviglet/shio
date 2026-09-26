@@ -1834,6 +1834,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1042** — A stakeholder can be sent an expiring link to a draft Shio renders itself. A new `SHARE` scope grants one role no rule outside the renderer accepts — `FORM`'s reasoning, because reusing `PREVIEW` would have handed the recipient that site's whole delivery API through a `Key` header — and the confinement runs both ways: only `SHARE` authenticates the preview, and `SHARE` authenticates nowhere else. The link is exchanged once at a public sibling of the mint for an `HttpOnly`, `SameSite=Lax`, `Path=/preview` cookie, so the credential leaves the URL before it can reach a `Referer` or a paste; the site is enforced at the renderer where the site is already resolved, the editor bridge is forced off whatever the query says, and the banner stays. `/preview/**` did not join the allow-list and `ShPreviewIsNotPublicTest` is unchanged: no cookie is still no preview (design §LXXI.7 recorded in `docs/agents/security.md`).
 - **SH1101** — copyto answers with the posts it made, id and address included, and the visual editor's Duplicate copies the section and places the copy, so the two no longer share one heading.
 - **SH1105** — A rail card drags onto a caret between sections, placed through the one index arithmetic the Above and Below buttons use.
+- **SH1106** — shio verify warns section-not-accepted once per type when a page composes a section its layout's sh-accepts does not name, with the accepted list.
 
 ## Block BG — The console as an application: cost, resilience and access
 

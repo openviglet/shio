@@ -1709,6 +1709,13 @@ vocabulary for the agent, the console and the front end.
 - `shio verify`'s **`dangling-reference`** rule resolves each declared URL in the post's own site
   and reports the ones that are not there — the same rule that already knew an id-shaped
   `Content Select`/`File` reference. `multiselect.postType`, when present, narrows it.
+- **`section-not-accepted`** (SH1106, a warning) reads the other declaration: a resolved section
+  whose type is not in the union of `sh-accepts` across the page's layout and its regions —
+  `ShPageRenderService.acceptedSections`, a static read through `site.postTypeLayout` via
+  `ShRegionComposer.acceptsOf`, no render, cached per site and type for the run. Once per type per
+  field, naming the accepted list. **A warning and not a refusal on write**, because the list lives in
+  a layout and layouts are edited: refusing would make an existing page unwritable the moment
+  somebody narrowed its template. An empty union is "nobody declared", which reports nothing.
 - `/agent/render`'s digest **composes** the page: each referenced section contributes its title as
   an `<h2>` and its markup/text fields to the outline, in the order the page names them, so two
   pages built from different sections no longer share `e3b0c442…` (the hash of nothing). A URL
