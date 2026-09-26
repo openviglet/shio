@@ -2953,8 +2953,15 @@ fold keeps its first rows, which is also what the next measure reads a row heigh
 The keyboard still reaches every row. An arrow to an unmounted row scrolls it into the window
 (`reveal`) and focuses it once it renders. With the focused row scrolled away, the first mounted row
 holds the tab stop. Options carry `aria-setsize` and `aria-posinset`, so a screen reader counts the
-list and not the window. `browser-views.test.mjs` checks the arithmetic and the wiring. Nothing has
-driven it in a browser over a large folder yet.
+list and not the window. `browser-views.test.mjs` checks the arithmetic and the wiring.
+`e2e/browser-window.check.mjs` drives it over a folder of 200 posts on a live console. It
+confirmed 19 of 200 rows mounted in the list and 39 in the grid, End and Home reaching the last and
+first rows, and an idle page making no reads.
+
+**That run found a request loop.** `filters` was rebuilt from `list.value` on every render, so
+`fetchPage` was new every render, and the listing effect re-read page 0 after each one. The result
+was a continuous stream of `/list?page=0` that also threw away every "load more". `filters` is now
+memoised on `list.key`, the committed query string. The check's idle-read claim holds that.
 
 Still to come: moving the rest of the page into the directory.
 

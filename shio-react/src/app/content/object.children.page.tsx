@@ -247,7 +247,15 @@ export default function ObjectChildrenPage() {
   const list = useListState(BROWSER_LIST, { text: ["q", "author", "modifier"] })
   const sortBy = list.value.sort
   const viewMode = browserView(list.value.view)
-  const filters = browserFilters(list.value)
+  /*
+   * SH1026 — derived from `list.key`, the committed query as a string, so it is a new object only
+   * when the query is. Built from `list.value` on every render it was new every render, which made
+   * `fetchPage` new every render and the listing effect re-read page 0 after each one: measured in
+   * a browser, a continuous stream of `/list?page=0` that also threw away every "load more".
+   */
+  const filters = useMemo(
+    () => browserFilters(JSON.parse(list.key) as Record<keyof typeof BROWSER_LIST, string>),
+    [list.key])
   /**
    * SH1024 — the bar's value and handler, stable across renders. The bar debounces typing in an
    * effect that depends on both, so a fresh object each render restarts its timer and the query is

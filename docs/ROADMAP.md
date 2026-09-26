@@ -41,7 +41,7 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- 🛠 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — The windowed list and grid are untried in a browser over a large folder, and most of the page is not yet in content-browser. → §LXIX.7
+- 🛠 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — Every view is built, thumbnailed and windowed; most of the 1300-line page is still not in content-browser. → §LXIX.7
 - 📋 **SH1142** (deps: SH1026 🛠) **in the browser's table view, the toolbar's Select menu and Clear change nothing the table shows** — BentoDataTable reports its selection but takes none in, so the page's set and the ticked rows can differ under a bulk delete. → §LXIX.11
 
 ## Block BE — Media: what the bytes mean
@@ -89,6 +89,7 @@
 - 📋 **SH1133** (deps: —) **a redirect on a site with its own front end routes nobody, and the lint still demands one** — Redirect posts are served by the instance's renderer; a Next.js site's URLs are served by the front end, which the CDA and the SDK never tell which addresses moved. → §LXXIV.13
 - 📋 **SH1134** (deps: —) **an exported site carries no asset bytes, so every File post arrives pointing at nothing** — The format has a files/ directory and the import restores from it; the site export passes an empty list, so the pages render with broken images and neither side says so. → §LXXIV.14
 - 📋 **SH1135** (deps: —) **an instance cannot say what a site was replicated from, and the console cannot start a run** — Every artefact of a round lives on the CLI's disk and the instance sees only the site that came out, so the source URL behind a page is lost the moment the shell closes. → §LXXIV.15
+- 📋 **SH1144** (deps: —) **the console smoke check's provisioning cannot fill a fresh instance: marketing-site's Page is refused** — A fresh instance already has Page with title and content, the blueprint's Page adds description and sections, and provision.mjs applies without the merge opt-in. → §LXXIV.16
 
 ## Priority
 

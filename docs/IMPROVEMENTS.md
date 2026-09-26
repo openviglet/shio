@@ -2383,3 +2383,28 @@ notes already do for other hand-offs.
 
 Open question this must answer first: whether the record belongs in instance memory
 (SH161, which already travels with an export) or in a table of its own.
+
+### LXXIV.16 A fresh instance refuses the marketing-site blueprint (SH1144)
+
+Found by running SH1026's browser check against a clean store (2026-09-26). `node
+e2e/provision.mjs` set the admin password, minted the CDA token and created the site,
+then `POST /api/v2/agent/blueprints/marketing-site/apply` answered 400
+`undeclared-field`: "'Page' does not declare fields named description, sections",
+allowed `title, content`, at `ops[20]`.
+
+The blueprint carries its own `post-types/Page.json` with `description` and `sections`.
+A fresh instance already has a `Page` with only `title` and `content`, so the apply
+keeps the existing type, as SH151 says it must unless asked, and then refuses the
+content that needs the blueprint's fields. SH151's opt-in (`merge-post-types`) is the
+documented way through, and `provision.mjs` never sends it. The console smoke check
+(`console-check.mjs`) and every e2e check that provisions first therefore start from a
+site with no pages on a clean instance, and CI's clean store is exactly that instance.
+
+Two things to decide, in this order. First, where the seeded `Page` comes from, and
+whether a blueprint named for a site shape should declare a type under a name the
+instance already owns; a namespaced type would remove the collision instead of papering
+over it. Second, whether provisioning should pass the merge opt-in, which is additive
+and the reason SH151 exists.
+
+Done when a clean instance provisions and applies marketing-site with no error, and a
+test at the provisioning boundary asserts it, naming this id.

@@ -151,3 +151,11 @@ test("SH1026: past the threshold only the rows a viewport shows are mounted, wit
   assert.match(page, /tabIndex=\{index === tabStop \? 0 : -1\}/,
     "SH1026: with the focused row scrolled away the list must keep a tab stop, or Tab skips it")
 })
+
+test("SH1026: the listing's filters change only when the query does, or page 0 is re-read on every render", () => {
+  const page = read("app", "content", "object.children.page.tsx")
+  assert.match(page, /const filters = useMemo\(\s*\(\) => browserFilters\(JSON\.parse\(list\.key\)[^)]*\),\s*\[list\.key\]\)/,
+    "SH1026: `filters` rebuilt per render makes `fetchPage` new per render, and the listing effect then "
+      + "re-reads page 0 after every render — a stream of requests that also discards every load-more")
+  assert.match(page, /\}, \[objectId, sortBy, filters\]\)/, "SH1026: fetchPage keys on the memoised filters")
+})
