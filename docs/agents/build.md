@@ -1884,6 +1884,48 @@ both directions rather than a comment asserting them, and the general rule is wo
 instance: **before merging two functions that look identical, ask what each is handed** — these
 differ only in the input's shape, which no amount of reading the bodies reveals.
 
+#### The console's copy was the other kind of stripper, and it deleted code (SH1118)
+
+Everything above is the **CLI** side, where SH630 had already established the line-oriented rule.
+The console's `shio-react/test/support/source-text.mjs` was a regex over the whole file —
+`source.replace(/\/\*[\s\S]*?\*\//g, "")` — which opens on a slash and two stars **anywhere**,
+string literals included, and closes on the next star-slash. Thirty-one suites across two packages
+read source through it, and any one of them could be silenced by a string in a file it does not own.
+
+**The measurement came first and it is the reason the design's own fix was not taken.** Across this
+repository's JS sources: **19 spans, 77,285 characters** removed by a strip that began mid-line.
+`cli/test/clone.test.mjs` hid **656 lines** behind a `robots.txt` fixture's `Disallow: /*`;
+`theme.test.mjs` 508 behind a CSS selector; the console's own `routes.const.ts` lost its route table
+to `` `${consolePath}/*` ``. §LXIV.19 proposed throwing when the strip *removes too large a
+fraction*, and the same walk refutes it: files here are legitimately up to **91 %** comment
+(`app/routes/index.ts`, `theme.ts`, `index.css`), so any ceiling low enough to catch the defect
+rejects the honest files. What separates them is not how much was removed but **where the removal
+began**, which is decidable per line. A cost that is argued rather than measured fails the same way
+in somebody else's tree.
+
+So the console's copy now reads the way the CLI's does — an opener counts at the start of a line
+(`/*`, `/**`, `{/*`), a `/*` anywhere else is a trailing comment or a string, and the two are told
+apart by blanking the line's quoted spans first. Two details that are not obvious and were each
+measured: a line that *is* a comment is **not** quote-blanked, because an apostrophe pair in prose
+would swallow the closer and the comment would read as unclosed; and a `/* c */ code` line keeps the
+code after the closer, which the first attempt dropped and `fetch-cancellation.test.mjs` caught in
+one run, since its planted file is exactly that shape.
+
+**One case stays genuinely undecidable, and it throws.** An opener at a line start that never
+closes means the file ends inside a comment, and returning the tail as an empty string is agreeing
+with every assertion over it. That raises an error naming SH1118 and the line, because *a reader
+that cannot see the file should say so rather than agree with everything.*
+
+**And ten call sites wrote those two lines, not one — which is the part worth keeping.**
+`cli/src/theme.mjs` already carried a comment explaining in as many words why the pattern is wrong,
+and the safe reading was already exported beside it. The knowledge was in the tree and nine readers
+did not have it. A silenced scan is invisible by construction, so nothing could count them from
+inside a suite the silence had already made green: `cli/test/comment-stripper.test.mjs` is that
+count, printing it on every run and holding the **six** that remain as a named list under SH1147
+rather than a ceiling, because a ceiling lets one task pay it down and the next spend it. Verified
+in both directions — a planted seventh copy fails it, and the two assertions in
+`shio-react/test/source-text.test.mjs` both fail against the body they replaced.
+
 The population is **files that scan this repository's own source or docs**, not every suite that
 reads a file: `"foo.mjs"` is usually a fixture filename in JS, and taking every read gives 66,
 mostly temp trees a suite wrote itself. A suite that reads back a tree it just wrote cannot be

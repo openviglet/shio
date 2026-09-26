@@ -22,9 +22,9 @@
 ## Block AY — What the conformance instruments cannot see
 
 - 📋 **SH1115** (deps: —) **the coverage mirror marks ids named from a working copy nobody checked was committed** — It reads COVERAGE.md from a directory rather than a revision, so an uncommitted edit names ids here forever while the published matrix never gains the sentence. → §LXIV.18
-- 📋 **SH1118** (deps: SH1049 ✅) **the shared comment stripper silently deletes half a file, and every scan over it passes** — A slash and two stars in any string opens a block comment to it, so one Playwright pattern cut 43,389 characters out of what thirty-one suites read. → §LXIV.19
 - 📋 **SH1119** (deps: SH1052 ✅) **two committed regexes hold a literal backspace where a word boundary was meant, so both assert nothing** — A heredoc expanded the escape before the file was written, and the check that internal task ids do not ship has matched nothing since. → §LXIV.20
 - 📋 **SH1120** (deps: —) **shio verify --delivery runs fewer checks than shio verify, silently dropping page and a11y** — withDelivery hand-copies the server's default as content,routes,diagnostics, so the flag asking for the stronger proof sends the narrower run. → §LXIV.21
+- 📋 **SH1147** (deps: SH1118 ✅) **six more comment strippers can each delete the rest of a file from one string literal** — SH1118 fixed the shared helper and its lint names six re-implementations, two of which hide 656 and 508 lines behind a fixture string. → §LXIV.25
 
 ## Block BA — Releases, scheduling and the publish gate
 

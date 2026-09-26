@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
+import { stripComments } from "./support/source-text.mjs"
 
 /**
  * SH1020 — a list a curator can operate without a mouse.
@@ -29,9 +30,10 @@ const PAGE = read("src", "app", "content", "object.children.page.tsx")
 const VIEWS = read("src", "app", "content", "content-browser", "browser-views.tsx")
 
 /** Source with comments stripped, so a rule is never asserted against the prose explaining it. */
-const code = (source) => source
-  .replace(/\/\*[\s\S]*?\*\//gu, "")
-  .replace(/^\s*\/\/.*$/gmu, "")
+// SH1118 — the shared helper, not a local regex. The two-line version this replaced opened a
+// block comment on a `/*` inside a string literal and deleted the rest of the file, so a scan for
+// an absence passed by seeing nothing at all.
+const code = (source) => stripComments(source)
 
 test("SH1020: the list is a listbox and every row is an option", () => {
   assert.match(PAGE, /role="listbox"/u)

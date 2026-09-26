@@ -1168,33 +1168,6 @@ a state the mirror can express rather than one it forgets.
 The assertion is a refresh from a dirty docs checkout refused or marked, and a clean one
 unchanged.
 
-### LXIV.19 A stripper that says when it could not read (SH1118)
-
-`stripComments` opens a block comment on a slash and two stars wherever it finds them,
-string literals included, and closes on the next star-slash — hundreds of lines later,
-or never. Everything between is deleted from the scanned text, and every assertion over
-that region then matches an empty string and passes.
-
-Measured during SH1049: adding a Playwright wildcard route to `console-check.mjs` cut
-the stripped view from 79,612 characters to 36,223 and turned four assertions green over
-nothing. The comment written to explain the hazard quoted the pattern and caused it a
-second time, an hour later.
-
-The file says it is not a parser, which is honest about the *stripping* and silent about
-the consequence. Thirty-one suites across two packages read source through it, and any
-one can be silenced by a string in a file it does not own.
-
-The narrow fix is an invariant the helper enforces itself: a strip that removes too
-large a fraction, or leaves an opener unclosed, throws rather than returning. A reader
-that cannot see the file should say so rather than agree with everything. SH1049's shape
-test anchors on its script's last statement — the same idea, by hand, once.
-
-The wider question is whether the two copies should have stayed separate. SH823 kept
-them apart on purpose, and a bug in both is what that decision quietly costs.
-
-The assertion is a planted opener in a string failing the strip by name, and the
-thirty-one suites green after.
-
 ### LXIV.20 A control character where an escape was meant (SH1119)
 
 Two committed regexes contain a literal backspace, U+0008, where `\b` was meant. Found
@@ -1247,6 +1220,33 @@ explicit list when they did, and the test asserting the request no longer narrow
 run. The durable half is an assertion that the CLI names no check group of its own
 anywhere: a wired list here is a second vocabulary that drifts from the one the server
 publishes.
+
+### LXIV.25 Six more strippers, and one already knew (SH1147)
+
+SH1118 fixed the shared stripper and measured what the pattern it replaced was doing:
+**19 spans, 77,285 characters** deleted across this repository's JS sources by a strip
+that began mid-line. Only three of the call sites were the shared helper's. **Six
+re-implement the same two lines**, and each can delete the rest of a file from one
+string literal:
+
+- `shio-react/scripts/surface-digest.mjs` — a script, so it cannot reach the console's test support
+- `cli/test/audit.test.mjs`, `instance-assumptions.test.mjs`, `flag-meaning.test.mjs`,
+  `exit-path.test.mjs`, `source-corpus.test.mjs`
+
+The CLI half is the worse half and the measurement says so: `clone.test.mjs` hides **656
+lines** behind a `robots.txt` fixture's `Disallow: /*`, and `theme.test.mjs` 508 behind
+a CSS selector — so a scan over either reads mostly nothing.
+`cli/test/support/source-text.mjs` already exports the safe line-oriented reading
+(SH740, SH630), and `cli/src/theme.mjs` already carries a comment explaining in as many
+words why a `/\*[\s\S]*?\*\/` over a raw file is wrong. The knowledge was in the tree;
+six readers did not have it.
+
+The work is one shared reading per package and then the six call sites onto it, which is
+a migration with its own red risk per scan — `code` keeps a trailing comment where the
+naive strip removed it, and a scan asserting an absence can notice.
+`comment-stripper.test.mjs` holds the six as a named list, so the count only goes down.
+
+The assertion is the declared list emptied, and the lint red on a seventh.
 
 ## LXV What the content said before (Block AZ)
 
