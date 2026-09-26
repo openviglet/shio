@@ -280,11 +280,12 @@ public class ShObjectWriteService {
      * between them was the wrong simplification.</p>
      */
     @Transactional
-    public List<ShObject> copyTo(String destId, List<String> ids) {
+    public Copied copyTo(String destId, List<String> ids) {
         ShObject dest = live(destId);
-        List<ShObject> copies = new ArrayList<>();
+        List<ShObject> folders = new ArrayList<>();
+        List<ShPostUnified> posts = new ArrayList<>();
         if (dest == null) {
-            return copies;
+            return new Copied(folders, posts);
         }
         for (String id : ids) {
             ShObject object = live(id);
@@ -294,12 +295,23 @@ public class ShObjectWriteService {
                 // children, so a destination inside the source makes the walk descend into
                 // the copies it is still making, and it never returns.
                 shFolderWriteService.checkCopyable(id, dest);
-                copies.add(copyFolder(folder, dest, freeFolderName(folder.getName(), dest), false));
+                folders.add(copyFolder(folder, dest, freeFolderName(folder.getName(), dest), false));
             } else if (dest instanceof ShFolder destFolder) {
-                copyPost(id, destFolder);
+                copyPost(id, destFolder).ifPresent(posts::add);
             }
         }
-        return copies;
+        return new Copied(folders, posts);
+    }
+
+    /**
+     * What a copy made (SH1101): the folders, and the posts copied directly — one row per logical
+     * post, the draft where there is one.
+     *
+     * <p>The posts are here because a caller that copies one has to be able to address it next.
+     * Answering only the folders meant a post copy answered {@code []}, so the visual editor's
+     * Duplicate could not place a copy and repeated the reference instead.</p>
+     */
+    public record Copied(List<ShObject> folders, List<ShPostUnified> posts) {
     }
 
     /**
@@ -425,15 +437,17 @@ public class ShObjectWriteService {
         return saved;
     }
 
-    private void copyPost(String postId, ShFolder destFolder) {
-        copyPost(postId, destFolder, false);
+    private Optional<ShPostUnified> copyPost(String postId, ShFolder destFolder) {
+        return copyPost(postId, destFolder, false);
     }
 
-    private void copyPost(String postId, ShFolder destFolder, boolean asDrafts) {
+    /** The copy's preferred row — its draft where it has one — or empty when nothing was copied. */
+    private Optional<ShPostUnified> copyPost(String postId, ShFolder destFolder, boolean asDrafts) {
         List<ShPostUnified> sources = shPostUnifiedRepository.findById(postId);
         if (sources.isEmpty()) {
-            return;
+            return Optional.empty();
         }
+        List<ShPostUnified> made = new ArrayList<>();
         String newId = UUID.randomUUID().toString();
         // One name for the logical post, not one per state row: DRAFT and PUBLISHED are two
         // rows of the same post, and letting them be numbered independently would produce a
@@ -458,13 +472,16 @@ public class ShObjectWriteService {
             copy.setData(source.getData());
             copy.setDate(Instant.now());
             copy.setPublished(false);
-            shObjectReferenceService.reindex(shPostUnifiedRepository.save(copy));
+            ShPostUnified saved = shPostUnifiedRepository.save(copy);
+            shObjectReferenceService.reindex(saved);
+            made.add(saved);
         }
         // SH749 — the row is keyed by a fresh UUID and so is the storage, so a copy without this
         // line is a `File` post pointing at a directory nobody wrote: every surface reports
         // success and the bytes 404 at delivery. A no-op for a post that stores nothing, which is
         // why it is asked of the storage rather than of the post-type.
         shFileStorageService.copy(postId, newId);
+        return Optional.of(preferredRow(made));
     }
 
     /** What a copy will be called, and where it will answer. */

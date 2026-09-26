@@ -105,7 +105,15 @@ is refused whole. The rule to keep is symmetrical: **the two surfaces enforce th
 whichever is stricter is the correct one** — the agent path has checked both ends since
 SH134/SH137, and where the console is looser the console is the hole, not the bar.
 
-- `PUT /api/v2/object/copyto/{destFolderId}` — Copy objects (body: `[id1, id2]`).
+- `PUT /api/v2/object/copyto/{destFolderId}` — Copy objects (body: `[id1, id2]`). Answers
+  `{folders, posts}` since SH1101. `folders` is the array it always returned. `posts` holds each post
+  copied directly, as `{id, title, furl, address}`: the title and friendly URL SH202 may have
+  numbered, and the address `ShAddressResolver` gives it. A post copy used to answer `[]`, so nothing
+  could address it next, and the visual editor's Duplicate repeated the reference instead of placing
+  a copy. Duplicate now copies the section into its own folder and names the copy in the Page's
+  array in the neighbour's spelling (`section-reference.ts`: a path keeps its folder and takes the
+  copy's friendly URL, an id becomes the copy's id). The frame reloads afterwards, because the
+  bridge would tag an optimistically drawn copy with the original's post.
   **A copy takes names that are free (SH202).** It used to re-slug the copy's `furl` from the
   source's title — the same title, so the same slug — and since "clone" is copy-to-the-same-folder,
   the curator's most casual action put two posts in one site on one URL: a `duplicate-url`

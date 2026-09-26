@@ -232,7 +232,15 @@ class ShFolderAPITest {
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("[\"" + postId + "\"]"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                // SH1101 — the copy answers with what it made, so the caller can address it next.
+                // It used to answer `[]` for a post, which is why the visual editor's Duplicate
+                // could only place the same section twice.
+                .andExpect(jsonPath("$.posts.length()").value(1))
+                .andExpect(jsonPath("$.posts[0].id").isNotEmpty())
+                .andExpect(jsonPath("$.posts[0].id").value(org.hamcrest.Matchers.not(postId)))
+                .andExpect(jsonPath("$.posts[0].address").isNotEmpty())
+                .andExpect(jsonPath("$.folders").isArray());
 
         mockMvc.perform(get("/api/v2/object/" + childFolderId + "/list").principal(mockPrincipal))
                 .andExpect(status().isOk())

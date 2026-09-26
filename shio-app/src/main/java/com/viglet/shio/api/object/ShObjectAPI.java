@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.cda.dto.ShCdaPath;
+import com.viglet.shio.api.agent.ShAddressResolver;
 import com.viglet.shio.api.object.dto.ShConsoleListing;
+import com.viglet.shio.api.object.dto.ShCopyResult;
 import com.viglet.shio.api.query.ShContentQuery;
 import com.viglet.shio.api.acl.ShContentAclService.AclEntry;
 import com.viglet.shio.persistence.model.acl.ShContentAcl;
@@ -64,10 +66,14 @@ public class ShObjectAPI {
     private final ShObjectNavigationService shObjectNavigationService;
     private final ShObjectWriteService shObjectWriteService;
     private final ShContentAclService shContentAclService;
+    /** SH1101 — how a copied post is named in the answer, the same way every agent read names it. */
+    private final ShAddressResolver shAddressResolver;
 
     public ShObjectAPI(ShObjectNavigationService shObjectNavigationService,
                        ShObjectWriteService shObjectWriteService,
-                       ShContentAclService shContentAclService) {
+                       ShContentAclService shContentAclService,
+                       ShAddressResolver shAddressResolver) {
+        this.shAddressResolver = shAddressResolver;
         this.shObjectNavigationService = shObjectNavigationService;
         this.shObjectWriteService = shObjectWriteService;
         this.shContentAclService = shContentAclService;
@@ -128,10 +134,16 @@ public class ShObjectAPI {
      * granted read on, and the copy is then theirs to keep.</p>
      */
     @PutMapping("/copyto/{destId}")
-    public List<ShObject> copyTo(@PathVariable String destId, @RequestBody List<String> ids) {
+    public ShCopyResult copyTo(@PathVariable String destId, @RequestBody List<String> ids) {
         shContentAclService.requireWrite(destId);
         requireEach(ids, shContentAclService::requireRead);
-        return shObjectWriteService.copyTo(destId, ids);
+        ShObjectWriteService.Copied copied = shObjectWriteService.copyTo(destId, ids);
+        // SH1101 — the posts too, addressed the way every agent read addresses them, so the caller
+        // that copied one can write about it next (the visual editor's Duplicate, first).
+        return new ShCopyResult(copied.folders(), copied.posts().stream()
+                .map(post -> new ShCopyResult.Post(post.getId(), post.getTitle(), post.getFurl(),
+                        shAddressResolver.addressOf(post).toString()))
+                .toList());
     }
 
     /**

@@ -1595,27 +1595,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.8 A copy that can be addressed (SH1101)
-
-Duplicate in the visual editor repeats the reference rather than the post, because the
-array holds addresses and one replacement of it can only say "place this again". The
-console names that in the control's own title, so nobody is surprised by it, and it is
-still not what a curator means: they want a second hero they can edit without touching
-the first.
-
-An independent copy needs a post copy whose id the caller can read, and no surface
-answers one. `PUT /api/v2/object/copyto/{dest}` builds the copy correctly, bytes and a
-free title and furl included, and then returns only the folders it made: `copyPost` adds
-nothing to that list, so the endpoint answers `[]` for a post. Anything that copies one
-and then has to write about it is blocked the same way, which is why this is filed
-against the write path rather than against the panel.
-
-So the copy verb answers with what it made, in the shape a create does, and the editor
-duplicates a section as two writes: copy the section post into its own folder, then
-replace the Page's array with the new address beside the old one. The address is the
-copy's own, which keeps the entry in the format the rest of the array uses. The
-assertion is that two placements of one section share a heading and two copies do not.
-
 ### LXXI.9 A rail you can see, and something to drop onto (SH1105)
 
 The rail names each accepted type and describes it, which is already the difference

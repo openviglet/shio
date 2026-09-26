@@ -29,6 +29,7 @@ import { reportRefusal } from "@/lib/problem"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
+import { copyReference } from "./section-reference"
 import {
   attrFromDeclared, labelSource, labelSourceKey, labelsFrom, type DeclaredWidgetField,
 } from "./field-labels"
@@ -788,12 +789,14 @@ export default function VisualEditorPage() {
    */
   const runSectionOp = async (op: SectionOp, to?: number) => {
     if (!selectedSection?.pagePostId || sectionArray.state !== "ready" || reordering) return
+    if (op === "duplicate") {
+      await duplicateSection()
+      return
+    }
     const index = selectedSection.index
     const next = [...sectionArray.entries]
     if (op === "remove") {
       next.splice(index, 1)
-    } else if (op === "duplicate") {
-      next.splice(index + 1, 0, next[index])
     } else {
       const target = Math.max(0, Math.min(to ?? index, next.length - 1))
       const [moved] = next.splice(index, 1)
@@ -812,6 +815,37 @@ export default function VisualEditorPage() {
       toast.error(t("universalEditor.sectionSaveError"))
       // The page now shows an order the content does not have, and there is no way to put one
       // element back without knowing what else changed. A reload is the honest repair.
+      refresh()
+    } finally {
+      setReordering(false)
+    }
+  }
+
+  /**
+   * SH1101 — Duplicate places an independent copy of the section, not the same one again.
+   *
+   * Two writes, ordered as an insert's are: copy the section post into its own folder, then name the
+   * copy in the Page's array right after the original. A failure between them leaves a copy nobody
+   * places, which the content browser shows, rather than a page naming nothing.
+   *
+   * The reference keeps the entry's own spelling. A path entry becomes the same path with the copy's
+   * friendly URL as its last segment, since the copy lands beside the original; an id entry becomes
+   * the copy's id. The frame reloads rather than drawing the copy optimistically: the bridge would
+   * tag the drawn copy with the original's post, and an edit made there would edit the original.
+   */
+  const duplicateSection = async () => {
+    const section = selectedSection
+    if (!section?.pagePostId || !section.postId || sectionArray.state !== "ready") return
+    setReordering(true)
+    try {
+      const copy = await editorService.copy(section.postId, await folderForSection(section.pagePostId))
+      const entries = [...sectionArray.entries]
+      entries.splice(section.index + 1, 0, copyReference(entries[section.index], copy))
+      await editorService.patch(section.pagePostId, { [SECTIONS_FIELD]: entries })
+      toast.success(t("universalEditor.sectionDuplicated"))
+      refresh()
+    } catch {
+      toast.error(t("universalEditor.sectionSaveError"))
       refresh()
     } finally {
       setReordering(false)

@@ -105,6 +105,21 @@ export class ShUniversalEditorService {
    * cookie already authorized, and carried publish authority SH107 never saw. The merge itself did
    * not move — `ShPostDraftMergeService` is one implementation with two guards.
    */
+  /**
+   * SH1101 — an independent copy of one post, in `folderId`, and what it is called now.
+   *
+   * The object copy the content browser's Clone uses, which since SH1101 answers with the posts it
+   * made. SH202 may have numbered the title and the friendly URL, so the caller reads both back
+   * rather than assuming the source's.
+   */
+  async copy(postId: string, folderId: string): Promise<{ id: string; title?: string; furl?: string; address?: string }> {
+    const response = await axios.put<{ posts?: { id: string; title?: string; furl?: string; address?: string }[] }>(
+      `/v2/object/copyto/${folderId}`, [postId])
+    const [made] = response.data?.posts ?? []
+    if (!made) throw new Error(`copy of ${postId} answered with no post`)
+    return made
+  }
+
   async patch(
     postId: string,
     attrs: Record<string, unknown>,
