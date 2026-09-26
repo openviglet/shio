@@ -75,11 +75,18 @@ public enum ShAgentManifestSection {
      * drops would appear in every default read's report, which is the cost this avoids, said
      * backwards. The endpoint index is where a caller learns it exists.</p>
      */
-    SURFACES;
+    SURFACES,
+
+    /**
+     * SH1112 — what the console this instance serves costs to load. <b>Opt-in</b>, for SURFACES'
+     * reason: it describes the console, and it is the question an agent asks after changing a
+     * console file, not on every session.
+     */
+    CONSOLE;
 
     /** Whether a caller has to name this section for it to be served (SH979). */
     public boolean optIn() {
-        return this == SURFACES;
+        return this == SURFACES || this == CONSOLE;
     }
 
     /** What a caller gets when they ask for nothing, or for everything by name. */
@@ -137,7 +144,7 @@ public enum ShAgentManifestSection {
      * absent from the wire rather than {@code null}.</p>
      */
     public static ShAgentManifest project(ShAgentManifest manifest, Set<ShAgentManifestSection> sections) {
-        if (sections.equals(byDefault()) && manifest.surfaces() == null) {
+        if (sections.equals(byDefault()) && manifest.surfaces() == null && manifest.console() == null) {
             return manifest;
         }
         return new ShAgentManifest(
@@ -153,7 +160,8 @@ public enum ShAgentManifestSection {
                 sections.contains(ENDPOINTS) ? manifest.endpoints() : null,
                 sections.contains(START_HERE) ? manifest.startHere() : null,
                 omitted(manifest, sections),
-                sections.contains(SURFACES) ? manifest.surfaces() : null);
+                sections.contains(SURFACES) ? manifest.surfaces() : null,
+                sections.contains(CONSOLE) ? manifest.console() : null);
     }
 
     /**

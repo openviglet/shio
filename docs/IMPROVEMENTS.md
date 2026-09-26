@@ -1672,32 +1672,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.18 The eager total, from the instance that serves it (SH1112)
-
-SH1043 gave the console a number and two readers: a `pnpm` script and a gate that fails
-a build. Neither is reachable from an instance, so an agent that changed a console file
-and wants to know what it cost needs this checkout, this toolchain and a build — the
-shape P1 exists to refuse, one surface along from where it usually bites.
-
-The instance already serves the artefact. `index.html` and its chunks sit under the
-Spring Boot static root, so the reading the script makes is available to the server with
-no build step and no browser: the entry, the preload links, the stylesheets, their
-bytes.
-
-Where it belongs is the open question. SH1043's design said `/agent/diagnostics`, and
-diagnostics reports **incidents** — something went wrong, with a count and a fix — while
-an eager total is a standing fact about what is deployed. The manifest is where standing
-facts live; `verify` is where one becomes a finding by crossing a line. And that line
-lives in the repository, so a server reporting a breach needs the ceiling shipped with
-the build.
-
-That decides it: a number the caller compares is honest, a verdict needs the ceiling to
-travel with the artefact. The cheap version puts the number on the manifest; the
-complete one ships the budget into the build and lets `verify` judge it.
-
-The assertion is an agent reading the eager total from a running instance and getting
-the bytes the script prints for the same build.
-
 ### LXXII.19 A budget per route, from the probe that already walks them (SH1113)
 
 SH1043's gate measures one number for the whole console: what every route pays before

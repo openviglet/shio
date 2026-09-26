@@ -67,6 +67,7 @@ public class ShAgentManifestService {
     private final ShAgentBuildIdentity shAgentBuildIdentity;
     private final ShMarketplaceProperties shMarketplaceProperties;
     private final ShConsoleSurfaces shConsoleSurfaces;
+    private final ShConsoleCost shConsoleCost;
 
     public ShAgentManifestService(ShAppProperties shAppProperties,
                                  ShCdaProperties shCdaProperties,
@@ -77,7 +78,8 @@ public class ShAgentManifestService {
                                  ShTuringIndexService shTuringIndexService,
                                  ShAgentBuildIdentity shAgentBuildIdentity,
                                  ShMarketplaceProperties shMarketplaceProperties,
-                                 ShConsoleSurfaces shConsoleSurfaces) {
+                                 ShConsoleSurfaces shConsoleSurfaces,
+                                 ShConsoleCost shConsoleCost) {
         this.shAgentBuildIdentity = shAgentBuildIdentity;
         this.shAppProperties = shAppProperties;
         this.shCdaProperties = shCdaProperties;
@@ -88,6 +90,7 @@ public class ShAgentManifestService {
         this.shTuringIndexService = shTuringIndexService;
         this.shMarketplaceProperties = shMarketplaceProperties;
         this.shConsoleSurfaces = shConsoleSurfaces;
+        this.shConsoleCost = shConsoleCost;
     }
 
     /**
@@ -99,13 +102,18 @@ public class ShAgentManifestService {
      */
     public ShAgentManifest manifest(Set<ShAgentManifestSection> sections) {
         ShAgentManifest manifest = manifest();
-        if (!sections.contains(ShAgentManifestSection.SURFACES)) {
+        boolean surfaces = sections.contains(ShAgentManifestSection.SURFACES);
+        boolean console = sections.contains(ShAgentManifestSection.CONSOLE);
+        if (!surfaces && !console) {
             return manifest;
         }
+        // SH1112 — the console's cost, measured from the build this instance serves, attached the
+        // way SH979's surfaces are: only when asked, so every other read keeps its bytes and its ETag.
         return new ShAgentManifest(manifest.product(), manifest.version(), manifest.protocol(),
                 manifest.apiBase(), manifest.commit(), manifest.builtAt(), manifest.features(),
                 manifest.elsewhere(), manifest.limits(), manifest.endpoints(), manifest.startHere(),
-                manifest.omitted(), shConsoleSurfaces.surfaces());
+                manifest.omitted(), surfaces ? shConsoleSurfaces.surfaces() : null,
+                console ? shConsoleCost.cost() : null);
     }
 
     public ShAgentManifest manifest() {

@@ -1,0 +1,26 @@
+{
+  "raw": 54708,
+  "gzip": 9726,
+  "assets": [
+    {
+      "asset": "/assets/index-Ab12Cd34.js",
+      "raw": 32147,
+      "gzip": 6647
+    },
+    {
+      "asset": "/assets/index-Mn34Op56.css",
+      "raw": 9490,
+      "gzip": 1550
+    },
+    {
+      "asset": "/assets/index.es-Ef56Gh78.js",
+      "raw": 13030,
+      "gzip": 1468
+    },
+    {
+      "asset": "/assets/rolldown-runtime-Ij90Kl12.js",
+      "raw": 41,
+      "gzip": 61
+    }
+  ]
+}

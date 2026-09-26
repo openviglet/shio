@@ -227,7 +227,10 @@ class ShSilentCatchInventoryTest {
             // SH1084 — 82: ShReviewService.approveOne catches a gate refusal and returns it as the
             // post's `skipped` row, which the curator reads in the approval's answer. It is reported
             // to the person who can act on it, just not as the whole call's failure.
-            Map.entry("api", 82),
+            // SH1112 — 83: ShConsoleCost answers a console it could not read as `unavailable` with the
+            // reason, in the manifest section the caller asked for. Reported to the one reader who
+            // asked, like 82's skipped row, and a build that cannot be read is not an incident.
+            Map.entry("api", 83),
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

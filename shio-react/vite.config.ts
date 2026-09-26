@@ -1,6 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { vigletBootLoader } from "@viglet/viglet-design-system/vite";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import { SHIO_THEME_STORAGE_KEY, shioThemeSeedScript } from "./src/theme";
@@ -26,9 +27,35 @@ function shioThemeSeed(): Plugin {
   };
 }
 
+/**
+ * SH1112 — the console's budget travels with the console.
+ *
+ * `console-size-budget.json` holds the eager ceilings the build is gated on, and it used to live
+ * only in this checkout, so an instance serving the build could report what it costs but not what it
+ * was allowed to cost. Emitted beside `index.html` in the static root, where `ShConsoleCost` reads
+ * both, so a running instance answers the number and the line it is measured against together.
+ */
+function shioConsoleBudget(): Plugin {
+  return {
+    name: "shio-console-budget",
+    apply: "build",
+    generateBundle() {
+      const budget = JSON.parse(readFileSync(path.resolve(import.meta.dirname, "console-size-budget.json"), "utf8"));
+      // The ceilings only: the file's notes are the repository's history, not the build's.
+      this.emitFile({
+        type: "asset",
+        fileName: "console-size-budget.json",
+        source: `${JSON.stringify({ eager: budget.eager, chunks: budget.chunks }, null, 2)}
+`,
+      });
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
     shioThemeSeed(),
+    shioConsoleBudget(),
     vigletBootLoader({
       title: "Viglet Shio CMS",
       subtitle: "Content Management System",

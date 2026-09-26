@@ -94,7 +94,17 @@ public record ShAgentManifest(
         List<ShAgentEndpoint> endpoints,
         List<String> startHere,
         Map<String, Integer> omitted,
-        List<ShConsoleSurface> surfaces) {
+        List<ShConsoleSurface> surfaces,
+        ShAgentConsoleCost console) {
+
+    /** The form before SH1112, with no console cost section. */
+    public ShAgentManifest(String product, String version, int protocol, String apiBase, String commit,
+                           String builtAt, Map<String, Boolean> features, Map<String, String> elsewhere,
+                           ShAgentLimits limits, List<ShAgentEndpoint> endpoints, List<String> startHere,
+                           Map<String, Integer> omitted, List<ShConsoleSurface> surfaces) {
+        this(product, version, protocol, apiBase, commit, builtAt, features, elsewhere, limits, endpoints,
+                startHere, omitted, surfaces, null);
+    }
 
     /** A whole manifest — nothing was narrowed, so there is nothing to report as gone. */
     public ShAgentManifest(String product, String version, int protocol, String apiBase,

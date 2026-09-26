@@ -2119,3 +2119,24 @@ fix. It needs the network, so it is never part of `pnpm test`; `ci-gates.test.mj
 exists and runs before the suite, and that the reader still finds the pin. **Before bumping
 viglet-core, run `node scripts/check-published-deps.mjs`** — a local build proves nothing about
 what CI can download.
+
+## The console's cost, from the instance that serves it (SH1112)
+
+SH1043's number had two readers, `pnpm --filter shio-react run size` and the build gate, and neither
+was reachable from an instance. `GET /api/v2/agent/manifest?include=console` now answers it:
+`ShConsoleCost` reads the `index.html` the instance serves from `classpath:public/`, takes the entry
+module, every `modulepreload` and every stylesheet — the script's three patterns — and reports each
+asset and the totals, raw and gzipped at level 9, computed once. The section is **opt-in**, like
+SH979's `surfaces`, so no ordinary manifest read pays for it; an instance started with
+`-Dskip.npm=true` serves no console and answers no section rather than a zero.
+
+The ceiling travels with the build: `vite.config.ts`'s `shio-console-budget` plugin emits the
+`eager` and `chunks` ceilings of `console-size-budget.json` beside `index.html`, so the answer
+carries `ceiling` next to the number it is judged against.
+
+**Raw is exact and gzip is within 1%.** `src/test/resources/console-cost/` is a small built console
+and `expected.json` is what the script measured on it; `ShConsoleCostTest` and
+`shio-react/test/console-cost-parity.test.mjs` hold both readers to that file. Raw bytes match to
+the byte. Gzip does not, and cannot be made to: Node ships Chromium's zlib and the JVM its own, and
+neither promises the same stream at level 9 — measured on the fixture, 9787 against 9726 (0.6%). A
+comparison against the build gate's ceilings should use `raw`.

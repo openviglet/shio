@@ -1860,6 +1860,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1077** — An open change stream reads each ACL input once per pass and tenant, so the fan-out fell from 7.05 to 2.11 statements per entry per stream, with the ceiling lowered to 3 (design §LXXII.15 recorded in `docs/agents/agent-surface.md`).
 - **SH1078** — A console move answers with the published addresses it retired and created, read before and after the write, so a caller learns what visitors lost without a verify run (design §LXXII.16 superseded: a URL is site plus furl, not the folder chain, so only a cross-site move or a first furl changes one) (design §LXXII.16 recorded in `docs/agents/content-api.md`).
 - **SH1079** — An import answers with the site, what arrived by kind and what it could not do (skipped posts, unresolved types, files it never brings), and the console and shio import show it (design §LXXII.17 recorded in `docs/agents/content-api.md`).
+- **SH1112** — GET /agent/manifest?include=console answers the console's eager load from the build the instance serves, with the ceiling the build now ships beside it; raw matches the script exactly.
 
 ## Block BH — One content model, many languages
 
