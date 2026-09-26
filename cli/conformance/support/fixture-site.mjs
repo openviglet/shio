@@ -276,10 +276,17 @@ export function closeFixture(server, deadlineMs = CLOSE_DEADLINE_MS) {
     return server[CLOSING];
   }
   // **Idle only, never all.** `closeAllConnections()` also destroys a socket somebody is holding on
-  // purpose — and SH698's deadline test holds one, to prove the deadline fires and names the state.
-  // Reaching for it made that test go red, which is this defect's own shape a second time: an
-  // instrument that can no longer fire. An idle keep-alive socket is by definition one no test is
-  // using, so closing those removes the wait without removing the thing being waited for.
+  // purpose, and reaching for it once made SH698's own deadline test go red — this defect's shape a
+  // second time: an instrument that can no longer fire. An idle keep-alive socket is by definition
+  // one no test is using, so closing those removes the wait without removing the thing being waited
+  // for.
+  //
+  // **What this line does NOT leave holdable, which is SH1146.** An *accepted socket that has sent
+  // nothing* is idle by this definition too, so this call reclaims it — measured on Node 26 Linux,
+  // `close` then completes in 0ms with the socket outstanding. SH698's deadline test used to hold
+  // exactly that and passed only on Windows, reporting on every Linux runner the silence it exists
+  // to catch. A socket that holds this close open has to be **active**: a request in flight, which
+  // is what that test now holds and what `SH1146:` beside it asserts an idle one is not.
   //
   // Node 18.2+. Optional-called because this module is also imported by the conformance harness,
   // and a fixture helper that throws on an older runtime would turn a teardown into the failure.

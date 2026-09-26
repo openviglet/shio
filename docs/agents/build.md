@@ -402,6 +402,30 @@ libuv a handle that is already closing. That is **not** what removed the flake �
 exit now — but closing twice is a thing a teardown should survive, and the old behaviour answered the
 second caller with `ERR_SERVER_NOT_RUNNING`.
 
+#### The socket it held was not the state it meant (SH1146)
+
+SH698's deadline test held a raw connection that **sent nothing** and asserted that `closeFixture`
+could not finish. It was green on Windows every run and red on every Linux runner for as long as the
+JS job was read, reporting the silence it exists to catch — which is this instrument's own failure
+shape for the third time in its history.
+
+The cause is in `closeFixture` itself: it calls `closeIdleConnections()` on purpose (see above), and
+**an accepted socket that has sent no request is idle by that definition.** Measured on Node 26
+Linux: `close` completes in **0 ms** with the socket outstanding and `getConnections()` back to 0.
+The precondition — one connection open — passes first, so the run looks like it is measuring
+something.
+
+The fix is the second of the two the section proposed: hold the socket in a state `close` cannot
+reclaim. The test now writes a complete request the handler never answers and waits for the server's
+own `request` event, which makes the connection **active** on every platform. That premise does not
+move with the runtime, where "accepted but silent" moved under it.
+
+**And the premise is now a test rather than a comment.** `SH1146: an idle accepted socket does not
+hold the close` asserts that the close does *not* reject — the opposite direction to the test beside
+it — so if `closeIdleConnections()` ever stops reaching such a socket, that is a named failure and a
+deliberate decision, not SH698 passing for a reason nobody checked. Removing the in-flight request
+fails the held-socket test in one run, which is how the pair was verified.
+
 ### A stamp taken against another commit is not a colour (SH770)
 
 The comparison above is between a **claim** and a **measurement**, and nothing asked whether the

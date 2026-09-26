@@ -1738,6 +1738,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1141** — cli/test/authoring-files-cost.test.mjs counts one rename both ways: files 4072 tokens, API 5245, and the agent writes 3.1x less through files, held by authoring.* ceilings.
 - **SH1089** — ShLiquibaseChangelogReferenceLintTest walks the changelogs in master order and fails naming the changeset when one names a table or column no earlier change created, spelled exactly, and fails on a change type it was never taught (design §LXIV.17 recorded in `docs/agents/database.md`).
 - **SH1076** — pom.xml pins viglet-core 2026.3.12, which is on Maven Central, and the Java CI job now checks the pin is published before it runs the suite.
+- **SH1146** — SH698's held socket now carries a request in flight, so the deadline fires on Linux as well as Windows: measured on Node 26 Linux, `closeFixture`'s own `closeIdleConnections()` reclaims an accepted socket that has sent nothing in 0ms, which is why the test reported the silence it exists to catch on every runner — and `SH1146: an idle accepted socket does not hold the close` now asserts that premise in the opposite direction so it cannot move again unnoticed (design §LXIV.24 recorded in `docs/agents/build.md`).
 
 ## Block AZ — What the content said before
 
