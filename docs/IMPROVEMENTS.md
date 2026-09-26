@@ -1320,29 +1320,6 @@ the preview vanishes silently.
 A second page wants it: SH1061's translation workspace. The design system's three shapes
 have no two-pane one, so it is a package addition first.
 
-### LXVIII.19 A rename the curator can do (SH1064's other half) (SH1132)
-
-SH1064 went looking for the console's rename dialog and found there is none. A post's
-friendly URL is its identity (SH81), and the only writer that changes one is `post.move`
-on the agent surface: `ShPostUnifiedWriteService.setFurl` has exactly two callers, both
-inside the batch service, and the console's own `PUT /post-unified/{id}` takes `data`
-and a state and nothing else. A curator who wants `/pricing` to become `/plans` has to
-ask an agent, or create a second post and delete the first, which is the data-loss path
-`post.move` exists to prevent.
-
-The one case where the console does see a URL change is a rollback: restoring a revision
-puts that revision's `furl` on the draft, so the live row and the draft disagree until
-the next publish. That is why SH996's publish plan reports `moves` and `stops` at all,
-and it is where SH1064's redirect offer landed.
-
-The shape is the one the batch already has: a dialog on the post editor carrying the new
-URL, the inbound count `ShPostLinks` computes, and SH1064's redirect offer — composed
-onto `post.move` through `ShAgentBatchService` as SH1021 composed the bulk verbs, never
-a console writer that would define a move twice. The open question is whether it renames
-the draft alone or both rows: the op moves both and the live URL changes immediately,
-which is right for an agent applying a plan and is the surprise P7 forbids for a curator
-who has not published.
-
 ## LXIX Finding, selecting and acting on content (Block BD)
 
 The content browser is where a curator spends the day, and it is the console's weakest

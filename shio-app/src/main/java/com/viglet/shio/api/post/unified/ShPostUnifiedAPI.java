@@ -75,6 +75,7 @@ public class ShPostUnifiedAPI {
     private final ShPostUnifiedBulkService shPostUnifiedBulkService;
     /** SH1064 — the redirect a rename leaves behind, through the agent's own op. */
     private final ShConsoleRedirects shPostUnifiedRedirects;
+    private final ShPostUnifiedMoveService shPostUnifiedMoveService;
     /** SH997 — what this site says about content before it reaches visitors. */
     private final ShPublishGateService shPublishGateService;
 
@@ -89,8 +90,10 @@ public class ShPostUnifiedAPI {
                             ShConsolePublishPlan shConsolePublishPlan,
                             ShPublishGateService shPublishGateService,
                             ShPostUnifiedBulkService shPostUnifiedBulkService,
-                            ShConsoleRedirects shPostUnifiedRedirects) {
+                            ShConsoleRedirects shPostUnifiedRedirects,
+                            ShPostUnifiedMoveService shPostUnifiedMoveService) {
         this.shPostUnifiedRedirects = shPostUnifiedRedirects;
+        this.shPostUnifiedMoveService = shPostUnifiedMoveService;
         this.shPostUnifiedWriteService = shPostUnifiedWriteService;
         this.shConsolePostReadService = shConsolePostReadService;
         this.shTenantQuotaService = shTenantQuotaService;
@@ -292,6 +295,49 @@ public class ShPostUnifiedAPI {
      */
     public record BulkPayload(ShPostUnifiedBulkService.Op op, java.util.List<String> ids,
                               Boolean dryRun, String confirm, String when) {
+    }
+
+    /**
+     * SH1132 — rename this page, through the writer the agent's {@code post.move} runs through.
+     *
+     * <p>A post's friendly URL is its identity (SH81) and the console had no writer for one: a
+     * curator who wanted {@code /pricing} to become {@code /plans} had to ask an agent, or create a
+     * second post and delete the first — the silently destructive path {@code post.move} exists to
+     * prevent.</p>
+     *
+     * <p>{@code dryRun} defaults to <b>true</b>, for the reason a bulk verb's does (SH1021) and one
+     * more that is specific to this: both state rows move together, so <b>a rename of a published
+     * page changes the live URL at once, with no publish step</b>. The plan is how that stops being
+     * the surprise P7 forbids — it says whether the page is live, which address is being vacated,
+     * and how many pages link to it.</p>
+     */
+    @PostMapping("/{id}/move")
+    public ResponseEntity<Object> move(@PathVariable String id,
+                                       @RequestBody MovePayload payload,
+                                       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+                                       Principal principal) {
+        boolean dryRun = payload.dryRun() == null || payload.dryRun();
+        // SH985 — conditional, and SH1132 is a write that needs it: a curator renaming a page an
+        // agent has already moved would otherwise take the address back without either knowing. A
+        // rename is about the post rather than one snapshot, so the draft answers when there is one
+        // and the live row otherwise — the same pair `delete` requires, for the same reason.
+        //
+        // Only on a real run: a plan writes nothing, so there is nothing for a version to protect,
+        // and demanding one would make the harmless step the one that needs a fresh read.
+        if (!dryRun) {
+            shConsolePostVersion.require(ifMatch, id, ShPostState.DRAFT, ShPostState.PUBLISHED);
+        }
+        return ResponseEntity.ok(shPostUnifiedMoveService.run(id, payload.url(),
+                Boolean.TRUE.equals(payload.redirect()), dryRun,
+                principal != null ? principal.getName() : null));
+    }
+
+    /**
+     * @param url      the address the page should answer at
+     * @param redirect keep the vacated address answering, through SH1064's writer
+     * @param dryRun   absent means true: a rename of a live page moves the live URL at once
+     */
+    public record MovePayload(String url, Boolean redirect, Boolean dryRun) {
     }
 
     @PostMapping("/{id}/unpublish")

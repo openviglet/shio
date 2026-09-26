@@ -38,6 +38,10 @@ const EXCEPTIONS = {
     "a dry run: the plan renders in the preview dialog. False if the dialog stops showing it.",
   "app/content/content-browser/use-bulk-verbs.ts#planBulk.bulk":
     "a bulk plan, rendered for confirmation before anything is applied. False if it applies.",
+  "components/post-rename.dialog.tsx#askForPlan.move":
+    "SH1132's dry run: the plan renders in the dialog — live or not, the address vacated, the "
+    + "inbound count — and is the step that makes a rename two steps. False if it stops rendering "
+    + "the plan, or if `dryRun: true` ever leaves this call.",
   "app/content/content-browser/use-browser-open.ts#handleViewPage.mint":
     "mints a preview token and opens the page: the new tab is the outcome.",
   "app/content/post.edit.page.tsx#handlePreview.mint":

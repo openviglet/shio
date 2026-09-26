@@ -440,5 +440,16 @@
   "content.formsUntitled": "(untitled submission)",
   "content.formsTrash": "Move {{title}} to trash",
   "content.coverageRequested": "Requested",
-  "content.coverageRequestedHint": "The connected agent has been asked to write this translation. It stays a draft until you approve it."
+  "content.coverageRequestedHint": "The connected agent has been asked to write this translation. It stays a draft until you approve it.",
+  "content.renameTitle": "Change this page's address",
+  "content.renameUrl": "New URL",
+  "content.renameRedirect": "Keep the old address answering, as a redirect",
+  "content.renamePlan": "Check first",
+  "content.renameApply": "Rename",
+  "content.renameGoesLiveNow": "This page is live: the new address takes effect immediately, with no publish step.",
+  "content.renameDraftOnly": "This page is not published yet, so nothing changes for a reader.",
+  "content.renameVacates": "{{url}} stops answering.",
+  "content.renameInbound_one": "{{count}} page links to that address.",
+  "content.renameInbound_other": "{{count}} pages link to that address.",
+  "content.renamed": "Renamed to {{url}}"
 }

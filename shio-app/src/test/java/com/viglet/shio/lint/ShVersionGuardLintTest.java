@@ -92,6 +92,10 @@ class ShVersionGuardLintTest {
             // SH987 — a rollback is a write, and one onto a draft somebody has moved on from is
             // the same surprise as any other stale save.
             Map.entry("ShPostUnifiedAPI#restoreRevision", ""),
+            // SH1132 — a rename is a write to a page that exists, and the lost update is concrete:
+            // a curator renaming a page an agent has already moved takes the address back without
+            // either of them knowing. Required on the real run only, since a plan writes nothing.
+            Map.entry("ShPostUnifiedAPI#move", ""),
 
             // SH1021 — a bulk verb acts on a selection, and `If-Match` is one header carrying one
             // row's version: there is no spelling of it that means "these forty, each at the

@@ -2493,10 +2493,46 @@ the op is refused, the refusal says the publish already happened (`redirect-not-
 publish committed in its own transaction, and a curator told "this failed" about a page that is
 live is the P7 surprise this exists to avoid.
 
-**What the console still has no screen for is the rename itself.** A post's friendly URL is changed
-by `post.move` on the agent surface; the console's only path to it is a rollback that restores an
-older revision's URL, which is the case this dialog handles. A rename affordance — with the inbound
-count before its button arms — is the console half SH1064 leaves open.
+### And the rename itself, which the console could not do at all (SH1132)
+
+A post's friendly URL is its identity (SH81) and `post.move` on the agent surface was its **only**
+writer: `PUT /post-unified/{id}` takes `data` and a state and nothing else, so the console's single
+path to a URL change was a rollback that restores an older revision's. A curator who wanted
+`/pricing` to become `/plans` had to ask an agent, or create a second post and delete the first —
+the silently destructive workaround `post.move` exists to prevent, which takes the original's id,
+its SH51 audit trail, its SH14 history and every inbound reference with it.
+
+`POST /api/v2/post-unified/{id}/move` composes that op, the way the bulk verbs compose theirs
+(SH1021). Three things it had to get right, and one the design left open:
+
+- **Addressed by `post:`, never `id:`.** The batch refuses a bare `id:` for a *write* — a folder
+  path and a friendly URL are separate namespaces, and guessing which was meant would create
+  content in the wrong place (the SH79 rule in `agents.md`). The bulk verbs may use `id:` because
+  publish, unpublish and delete address no destination; a move does, so it resolves the address
+  where the id and the row are both to hand rather than asking the batch to relax a guard that is
+  right. **The guard caught the first draft**, which is what it is for.
+- **The destination goes in `to`, as an address** — the same field a folder move uses, because
+  moving between folders and moving between URLs are one verb.
+- **The redirect is offered, never assumed**, through SH1064's `ShConsoleRedirects` above. It reads
+  the live row's URL as the destination, which after the move *is* the new address, so the
+  composition is exact. Offered because a redirect is a published object at the old address and a
+  page may be moving precisely so that nothing answers there.
+
+**The open question, and why the answer was already written down.** §LXVIII.19 asked whether a
+console rename should move the draft alone or both rows. `ShPostUnifiedWriteService.move`'s own note
+answers it: moving only the draft would leave the live page at the old URL while every read — which
+is draft-preferred — reported the new one, so *the post's identity would depend on who was asking*.
+Both rows move. The consequence is real and is the surprise P7 forbids: **a rename of a published
+page changes the live URL immediately, with no publish step.**
+
+So it is not sprung. `dryRun` defaults to **true**, and the plan says the three things a curator
+cannot otherwise know — that the page is live and the new address takes effect now, which address
+stops answering, and how many pages link to it (SH140's scanner, the one `post.move` reports with,
+because two counts of "who links here" would eventually disagree). `PostRenameDialog` renders that
+plan and its confirm button does not exist until there is one; editing the URL drops the plan,
+because a plan answers a question about one address and showing it beside another is worse than
+showing none. A curator who reads it and presses Rename has not been surprised; one shown a text
+field and a Save button has.
 
 ## The console lint runs in `pnpm test` (SH1075)
 

@@ -11,7 +11,7 @@ import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconEye, IconFileText, IconHistory, IconMessage, IconSparkles } from "@tabler/icons-react"
-import { Clock, Eye, EyeOff, History, Save, Sparkles, Upload } from "lucide-react"
+import { Clock, Eye, EyeOff, History, Link2, Save, Sparkles, Upload } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -29,6 +29,7 @@ import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { AskAgentDialog } from "@/components/ask-agent-dialog"
 import { useAgentAvailable } from "@/app/system/use-agent-available"
 import { useAppliedSuggestions } from "@/app/content/use-applied-suggestions"
+import { PostRenameDialog } from "@/components/post-rename.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import { PublishPreviewDialog } from "@/components/publish-preview.dialog"
 import { PostTranslationsMenu } from "@/components/post-translations.menu"
@@ -82,6 +83,8 @@ export default function PostUnifiedEditPage() {
   const [isPublishing, setIsPublishing] = useState(false)
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
   const [versionsOpen, setVersionsOpen] = useState(false)
+  // SH1132 — the console's first writer of a friendly URL, which `post.move` was alone in being.
+  const [renameOpen, setRenameOpen] = useState(false)
   /**
    * SH995 — publishing is a permission above writing, so the two controls that change what visitors
    * see are disabled when this curator does not hold it, carrying the server's own sentence. Asked
@@ -517,6 +520,21 @@ export default function PostUnifiedEditPage() {
                 <History className="size-4" />
                 {t("content.versionHistory")}
               </GradientButton>
+              {/*
+                SH1132 — a rename a curator can do. Only where the page has a URL to change: a post
+                with none has nothing to move FROM, which the service refuses rather than guesses.
+              */}
+              {post.furl && (
+                <GradientButton
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRenameOpen(true)}
+                >
+                  <Link2 className="size-4" />
+                  {t("content.renameTitle")}
+                </GradientButton>
+              )}
               <GradientButton
                 type="button"
                 size="sm"
@@ -752,6 +770,13 @@ export default function PostUnifiedEditPage() {
         onConfirm={handlePublish}
         publishing={isPublishing}
         gateRefusal={gateRefusal}
+      />
+      <PostRenameDialog
+        postId={postId}
+        currentUrl={post.furl ?? ""}
+        open={renameOpen}
+        setOpen={setRenameOpen}
+        onRenamed={(url) => setPost((prev) => (prev ? { ...prev, furl: url } : prev))}
       />
       <PostScheduleDialog
         postId={postId}

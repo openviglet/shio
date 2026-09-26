@@ -440,5 +440,16 @@
   "content.formsUntitled": "(envio sem título)",
   "content.formsTrash": "Mover {{title}} para a lixeira",
   "content.coverageRequested": "Pedido",
-  "content.coverageRequestedHint": "O agente conectado foi chamado para escrever esta tradução. Ela fica como rascunho até você aprovar."
+  "content.coverageRequestedHint": "O agente conectado foi chamado para escrever esta tradução. Ela fica como rascunho até você aprovar.",
+  "content.renameTitle": "Alterar o endereço desta página",
+  "content.renameUrl": "Nova URL",
+  "content.renameRedirect": "Manter o endereço antigo respondendo, como um redirecionamento",
+  "content.renamePlan": "Verificar antes",
+  "content.renameApply": "Renomear",
+  "content.renameGoesLiveNow": "Esta página está publicada: o novo endereço passa a valer imediatamente, sem publicar.",
+  "content.renameDraftOnly": "Esta página ainda não foi publicada, então nada muda para quem lê.",
+  "content.renameVacates": "{{url}} deixa de responder.",
+  "content.renameInbound_one": "{{count}} página aponta para esse endereço.",
+  "content.renameInbound_other": "{{count}} páginas apontam para esse endereço.",
+  "content.renamed": "Renomeada para {{url}}"
 }
