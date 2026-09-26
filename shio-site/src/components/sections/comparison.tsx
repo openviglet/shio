@@ -93,7 +93,7 @@ export function Comparison() {
             variant="outline"
             className="h-auto max-w-full whitespace-normal px-5 py-2.5 text-center"
           >
-            <a href="/compare">
+            <a href="/compare/">
               The full matrix, named products, and where Shio loses
               <ArrowRight className="size-4" />
             </a>

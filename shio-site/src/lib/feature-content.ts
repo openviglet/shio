@@ -94,8 +94,8 @@ const AGENT_GATEWAY: FeatureDetail = {
     },
   ],
   related: [
-    { label: "Drive it from Claude Code", href: "/claude-code" },
-    { label: "Content as files", href: "/features/content-as-files" },
+    { label: "Drive it from Claude Code", href: "/claude-code/" },
+    { label: "Content as files", href: "/features/content-as-files/" },
   ],
 };
 
@@ -143,8 +143,8 @@ An open-source headless CMS with four ways in.`,
     },
   ],
   related: [
-    { label: "The agent gateway", href: "/features/agent-gateway" },
-    { label: "Blueprints", href: "/features/blueprints" },
+    { label: "The agent gateway", href: "/features/agent-gateway/" },
+    { label: "Blueprints", href: "/features/blueprints/" },
   ],
 };
 
@@ -186,8 +186,8 @@ shio apply --blueprint corporate \\
     },
   ],
   related: [
-    { label: "Content as files", href: "/features/content-as-files" },
-    { label: "Rendering and themes", href: "/features/rendering" },
+    { label: "Content as files", href: "/features/content-as-files/" },
+    { label: "Rendering and themes", href: "/features/rendering/" },
   ],
 };
 
@@ -238,8 +238,8 @@ const RENDERING: FeatureDetail = {
     },
   ],
   related: [
-    { label: "Replicate an existing site", href: "/replicate" },
-    { label: "Delivery", href: "/features/delivery" },
+    { label: "Replicate an existing site", href: "/replicate/" },
+    { label: "Delivery", href: "/features/delivery/" },
   ],
 };
 
@@ -290,8 +290,8 @@ shio init --blueprint corporate --site acme`,
     },
   ],
   related: [
-    { label: "Rendering and themes", href: "/features/rendering" },
-    { label: "The curator’s half", href: "/curator" },
+    { label: "Rendering and themes", href: "/features/rendering/" },
+    { label: "The curator’s half", href: "/curator/" },
   ],
 };
 

@@ -61,7 +61,7 @@ export function CuratorHalf() {
             variant="outline"
             className="h-auto max-w-full border-white/20 bg-white/10 whitespace-normal px-5 py-2.5 text-center text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
           >
-            <a href="/curator">
+            <a href="/curator/">
               A curator&rsquo;s Tuesday, and the reason behind each gate
               <ArrowRight className="size-4" />
             </a>

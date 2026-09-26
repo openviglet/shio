@@ -27,24 +27,24 @@ const NAV_GROUPS = [
   {
     label: "Ways to use it",
     items: [
-      { label: "In the console, by hand", href: "/console" },
-      { label: "With a coding agent", href: "/claude-code" },
-      { label: "As files in your repository", href: "/features/content-as-files" },
-      { label: "Through the delivery API", href: "/features/delivery" },
+      { label: "In the console, by hand", href: "/console/" },
+      { label: "With a coding agent", href: "/claude-code/" },
+      { label: "As files in your repository", href: "/features/content-as-files/" },
+      { label: "Through the delivery API", href: "/features/delivery/" },
       { label: "All four, side by side", href: "/#paths" },
     ],
   },
   {
     label: "The product",
     items: [
-      { label: "What the console does", href: "/console#capabilities" },
-      { label: "What stops an agent write", href: "/curator" },
+      { label: "What the console does", href: "/console/#capabilities" },
+      { label: "What stops an agent write", href: "/curator/" },
       { label: "One call, and its price", href: "/#one-call" },
       { label: "MCP + CLI surface", href: "/#surface" },
       { label: "Errors that instruct", href: "/#errors" },
       { label: "Proof without a screenshot", href: "/#verify" },
-      { label: "Rendering and design tokens", href: "/features/rendering" },
-      { label: "Replicate an existing site", href: "/replicate" },
+      { label: "Rendering and design tokens", href: "/features/rendering/" },
+      { label: "Replicate an existing site", href: "/replicate/" },
     ],
   },
   {
@@ -52,7 +52,7 @@ const NAV_GROUPS = [
     items: [
       { label: "Who runs it, and how", href: "/#use-cases" },
       { label: "The ten design laws", href: "/#laws" },
-      { label: "Compare", href: "/compare" },
+      { label: "Compare", href: "/compare/" },
       { label: "Self-host", href: "/#self-host" },
     ],
   },
@@ -119,7 +119,7 @@ export function SiteNav() {
             and the console sits above it in the first group.
           */}
           <a
-            href="/claude-code"
+            href="/claude-code/"
             className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-sm font-bold whitespace-nowrap text-primary transition-colors hover:border-primary/50 hover:bg-primary/15"
           >
             <Terminal className="size-3.5" />

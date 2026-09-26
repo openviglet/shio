@@ -243,7 +243,7 @@ export function ReplicatePage() {
                     times is the palette by observation and changes nothing until somebody
                     rewires the CSS.{" "}
                     <a
-                      href="/features/rendering"
+                      href="/features/rendering/"
                       className="font-medium text-primary underline underline-offset-4"
                     >
                       How tokens work &rarr;

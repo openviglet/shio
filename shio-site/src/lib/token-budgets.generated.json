@@ -5,19 +5,19 @@
       "key": "response.manifest.check",
       "label": "Capability check",
       "note": "manifest?include=features,limits: what a session opens with",
-      "tokens": 390
+      "tokens": 450
     },
     {
       "key": "response.manifest",
       "label": "Full manifest",
       "note": "every capability, every limit, a curated endpoint index",
-      "tokens": 2820
+      "tokens": 2920
     },
     {
       "key": "mcp.tools.list.total",
       "label": "Every MCP tool schema",
       "note": "tools/list, re-sent on every turn before any work happens",
-      "tokens": 2560
+      "tokens": 2975
     },
     {
       "key": "benchmark.build-marketing-site.tokens",

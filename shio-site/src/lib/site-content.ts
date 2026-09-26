@@ -411,7 +411,7 @@ export const PATHS: UsePath[] = [
     body:
       "Create the site, shape the content model, write the pages, upload the media, publish or schedule it, and add the rest of the team. All in a browser, with no agent, no terminal and no file to hand-edit anywhere in it.",
     surface: ["React console", "Universal Editor", "Preview links"],
-    start: { label: "Shio without an agent", href: "/console" },
+    start: { label: "Shio without an agent", href: "/console/" },
   },
   {
     id: "agent",
@@ -423,7 +423,7 @@ export const PATHS: UsePath[] = [
     body:
       "Discovery in one call, content authored as files, blueprints applied as units, a render digest instead of a screenshot. The agent writes drafts and cannot publish them, which is what makes handing it write access reasonable.",
     surface: ["MCP", "shio CLI", "/api/v2/agent"],
-    start: { label: "Drive it from Claude Code", href: "/claude-code" },
+    start: { label: "Drive it from Claude Code", href: "/claude-code/" },
   },
   {
     id: "files",
@@ -435,7 +435,7 @@ export const PATHS: UsePath[] = [
     body:
       "Pull the whole site to disk as front-mattered Markdown, edit it with the editor you already use, push it back through a three-way merge. Put shio apply --check in CI so drift fails a build instead of surprising somebody.",
     surface: ["shio pull / push", "shio apply --check", "Git"],
-    start: { label: "How the projection works", href: "/features/content-as-files" },
+    start: { label: "How the projection works", href: "/features/content-as-files/" },
   },
   {
     id: "api",
@@ -447,7 +447,7 @@ export const PATHS: UsePath[] = [
     body:
       "Headless in the ordinary sense: REST and GraphQL, a TypeScript client with zero runtime dependencies, a React SDK, a generated Next.js starter, and a bridge that makes your own front end inline-editable.",
     surface: ["REST", "GraphQL", "@viglet/shio-client"],
-    start: { label: "Delivery and the SDKs", href: "/features/delivery" },
+    start: { label: "Delivery and the SDKs", href: "/features/delivery/" },
   },
 ];
 
@@ -1499,7 +1499,7 @@ export const PILLARS: Pillar[] = [
     title: "The agent gateway",
     description:
       "MCP over the same services the console uses, a manifest that answers first, and a context pack that ends the discovery session.",
-    anchor: "/features/agent-gateway",
+    anchor: "/features/agent-gateway/",
   },
   {
     icon: FolderTree,
@@ -1507,7 +1507,7 @@ export const PILLARS: Pillar[] = [
     title: "Content as files",
     description:
       "The whole site projected to disk with a three-way merge behind it, so authoring is Edit and Write rather than a REST call per field.",
-    anchor: "/features/content-as-files",
+    anchor: "/features/content-as-files/",
   },
   {
     icon: Layers,
@@ -1515,7 +1515,7 @@ export const PILLARS: Pillar[] = [
     title: "Blueprints",
     description:
       "Appliable units instead of prose recipes: post types, folders, content and carried files, converged in one transaction.",
-    anchor: "/features/blueprints",
+    anchor: "/features/blueprints/",
   },
   {
     icon: Sparkles,
@@ -1523,7 +1523,7 @@ export const PILLARS: Pillar[] = [
     title: "Render and prove",
     description:
       "Pages, layouts, regions and a section vocabulary, with a digest, a lint and an audit that make a page checkable without a screenshot.",
-    anchor: "/features/rendering",
+    anchor: "/features/rendering/",
   },
   {
     icon: Boxes,
@@ -1531,7 +1531,7 @@ export const PILLARS: Pillar[] = [
     title: "Replication",
     description:
       "Point it at a site that already exists and get one a curator can edit: capture, convert, prove, and a verdict that says when to stop.",
-    anchor: "/replicate",
+    anchor: "/replicate/",
   },
   {
     icon: Braces,
@@ -1539,7 +1539,7 @@ export const PILLARS: Pillar[] = [
     title: "Delivery",
     description:
       "REST and GraphQL, a zero-dependency TypeScript client, a React SDK and a generated Next.js starter.",
-    anchor: "/features/delivery",
+    anchor: "/features/delivery/",
   },
 ];
 

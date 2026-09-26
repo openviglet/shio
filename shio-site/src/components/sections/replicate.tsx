@@ -67,7 +67,7 @@ export function Replicate() {
             variant="outline"
             className="h-auto max-w-full whitespace-normal px-5 py-2.5 text-center"
           >
-            <a href="/replicate">
+            <a href="/replicate/">
               The four verbs, the two modes, and what the crawl refuses
               <ArrowRight className="size-4" />
             </a>

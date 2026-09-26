@@ -33,9 +33,39 @@ function replaceOrThrow(text, re, replacement, label, where = "index.html templa
   return text.replace(re, replacement);
 }
 
+/**
+ * The published URL of a route. GitHub Pages serves `/x/index.html` at `/x/`
+ * and answers `/x` with a 301, so the slashed form is the only one that does
+ * not redirect, and it is the one a canonical, a sitemap entry and a link use.
+ */
+function pageUrl(path) {
+  return path.endsWith("/") ? path : `${path}/`;
+}
+
+/**
+ * Every link to a route must use `pageUrl`. Search Console reports a link that
+ * redirects as a page with a redirect, and the route keys have no slash, so a
+ * link typed from one of them is wrong by default. This reads what was written,
+ * not the source, because an href can come out of a data file.
+ */
+const routePaths = new Set(routes.map((r) => r.path).filter((p) => p !== "/"));
+function assertSlashedLinks(text, where) {
+  const bad = [];
+  const re = /(?:href="|\]\(|<loc>)(?:https:\/\/shio\.viglet\.org)?(\/[^"#?)<\s]*)/g;
+  for (const m of text.matchAll(re)) {
+    if (routePaths.has(m[1])) bad.push(m[1]);
+  }
+  if (bad.length) {
+    throw new Error(
+      `prerender: ${where} links to ${[...new Set(bad)].join(", ")} without the trailing slash; ` +
+        `that URL answers with a redirect. Write ${pageUrl(bad[0])}.`
+    );
+  }
+}
+
 function buildHtml(route) {
   const appHtml = render(route.path);
-  const canonical = `${SITE_ORIGIN}${route.path === "/" ? "/" : route.path}`;
+  const canonical = `${SITE_ORIGIN}${pageUrl(route.path)}`;
   const title = route.title;
   const desc = route.description;
 
@@ -92,7 +122,8 @@ const index = [];
 
 for (const route of routes) {
   const html = buildHtml(route);
-  const canonical = `${SITE_ORIGIN}${route.path === "/" ? "/" : route.path}`;
+  assertSlashedLinks(html, route.path);
+  const canonical = `${SITE_ORIGIN}${pageUrl(route.path)}`;
 
   const outFile =
     route.path === "/"
@@ -179,6 +210,9 @@ writeFileSync(
   ),
   "utf-8"
 );
+
+assertSlashedLinks(readFileSync(llmsPath, "utf-8"), "llms.txt");
+assertSlashedLinks(readFileSync(resolve(distDir, "sitemap.xml"), "utf-8"), "sitemap.xml");
 
 console.log(
   `\nprerendered ${routes.length} route(s), each with a Markdown twin.` +

@@ -205,7 +205,7 @@ export function ConsolePage() {
 
             <div className="mt-10 flex flex-wrap justify-center gap-3">
               <Button asChild size="lg">
-                <a href="/curator">
+                <a href="/curator/">
                   What stops an agent write <ArrowRight className="size-4" />
                 </a>
               </Button>
@@ -215,7 +215,7 @@ export function ConsolePage() {
                 variant="outline"
                 className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
               >
-                <a href="/claude-code">
+                <a href="/claude-code/">
                   <TerminalSquare className="size-4" />
                   Attach one in a command
                 </a>
