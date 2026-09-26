@@ -2157,25 +2157,26 @@ which the project's own process requires when a block closes.
 
 ### LXXIV.8 A docs gate that can come back clean (SH1102)
 
-`roadkeep lint` reports six `code.renamed` findings on ledger entries that were correct
-when they were written, and has done so across many commits. Three symbols between them:
-document.fonts and document.referrer, which are the browser's and not this package's,
-and schema.graphqls, which is a filename. The rule reads a dotted name **in backticks**
-as a member of a symbol this repository ought to define, finds no document and no
-schema, and calls it drift. They are spelled bare here for that reason: backticking them
-in this very section fired it three more times.
+`mcp__roadkeep__lint` reports six `code.renamed` findings on ledger entries that were
+correct when written. The citations are document.fonts, document.referrer and
+schema.graphqls, spelled bare here because backticking them fires the rule again.
 
-The cost is not those six. It is that the gate cannot come back clean, so the next
-finding — a class that really was renamed, a pointer into code that moved — arrives at
-the bottom of a list nobody reads to the bottom of. That is SH579's rule about a red
-suite one file along: a check that always fails has stopped being a check.
+The cause is not the wording. The rule resolves a backticked dotted name against the
+roadkeep engine's own modules, and it runs only when the engine sits inside the project
+root (linting.py, `config.root in home.parents`). That condition means "this checkout is
+roadkeep's own source". Shio vendors the engine into `.roadkeep/`, so the condition
+holds here too: `document` and `schema` match roadkeep's `document.py` and `schema.py`,
+and the rule reports a rename. In Shio it never resolves anything against Shio's code,
+so every finding it can produce is false. Checked in 0.2.473 (vendored) and 0.2.489 (the
+newest plugin cache); both have the same gate.
 
-Two ways out, and choosing is the task. Reword the six, which this project's own
-configuration argues against: `[rules.changelog]` already declares those entries are
-paragraphs written before the tool existed. Or declare what the rule must not read as a
-symbol — the browser globals, and a dotted name whose tail is a file extension — which
-is a roadkeep change and belongs upstream. The assertion is that `lint` exits clean here
-and still fails on a symbol this repository really has renamed.
+Rewording cannot clear it here. One of the six is the SH-0f entry, which has no id the
+ledger verbs can address, and the guard refuses the hand-edit. The fix is roadkeep's:
+skip the rule when the engine directory is a vendored copy rather than the project's own
+source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher sets.
+
+Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
+here with no baseline.
 
 ### LXXIV.9 A stamp that knows what it ran against (SH1103)
 

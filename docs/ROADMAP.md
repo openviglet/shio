@@ -76,7 +76,7 @@
 
 ## Block BI — The areas this round did not reach
 
-- 📋 **SH1102** (deps: —) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — `code.renamed` reads a browser global and a filename as symbols this repository should define, so six ledger entries that were correct when written keep the gate permanently red. → §LXXIV.8
+- ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
 - 📋 **SH1103** (deps: —) **a gate stamp stays fresh across the ship that changes what it certified, so a red commit lands unseen** — Staleness is the HEAD sha and `ship` writes the governed docs at that same HEAD — which the JS suite reads, so a ship turns `pnpm test` red after its last green run. → §LXXIV.9
 - 📋 **SH1104** (deps: SH1039 ✅) **the editable read is on no response budget, and it just grew a section that scales with the catalogue** — Sixteen responses are measured and `/agent/editable` is not one, so `include=insertable` has no ceiling and the budget fixture renders no page to measure it against. → §LXXIV.10
 - 📋 **SH1121** (deps: SH1055 ✅) **the landing blueprint builds pages with no main region and no h1, which the a11y check reports on each** — marketing-site was repaired because a benchmark caught it; landing has the same defect and no assertion holds any blueprint to our own gate. → §LXXIV.11
@@ -107,6 +107,12 @@
   two-pane page shape, the post editor shows form and preview side by side with a ratio
   kept per curator, the translation workspace moves onto it, and a phone-width page
   stacks with a toggle rather than dropping a pane.
+
+## Done when — SH1102
+
+- **roadkeep lint exits clean here with no baseline** After re-vendoring a roadkeep that
+  skips code.renamed for a vendored engine, `lint` with no --baseline reports no finding
+  in Shio's three docs.
 
 ## Non-goals (do NOT add as tasks)
 
