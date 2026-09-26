@@ -182,6 +182,16 @@ public class ShRenderAPI {
         }
         // An asset has no revisions, so a revision preview that lands on one serves the draft's bytes.
         ShPostState wanted = perspective.rowOr(ShPostState.DRAFT);
+        // SH1110 — and to the page it was minted for. Outside that path a share still reaches the
+        // site's own assets, because that is how the shared page's stylesheet and pictures arrive
+        // (its images are /file_source, public and outside the cookie's path; its theme is inlined),
+        // and an asset is a file the site serves rather than a draft somebody is writing. A page is
+        // refused with the site bound's 404, for the site bound's reason.
+        String path = pathWithin(siteKey, request);
+        if (!ShPreviewShare.allowsPath(path)) {
+            return assetOr(new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND), siteKey, path, wanted);
+        }
         ShRenderedPage rendered;
         try {
             rendered = shPageRenderService.render(siteKey, pathWithin(siteKey, request), perspective,

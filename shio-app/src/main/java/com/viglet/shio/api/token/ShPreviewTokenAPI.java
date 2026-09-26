@@ -29,6 +29,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.model.token.ShApiToken;
+import com.viglet.shio.spring.security.auth.ShPreviewShare;
 import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
 import com.viglet.shio.persistence.model.token.ShApiTokenScope;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
@@ -138,6 +139,11 @@ public class ShPreviewTokenAPI {
         token.setScope(share ? ShApiTokenScope.SHARE : ShApiTokenScope.PREVIEW);
         token.setEnv(ShApiTokenEnv.PREVIEW);
         token.setSiteIds(Set.of(site.getId())); // SH2: confine the token to this one site
+        // SH1110 — and a share to the page it links to. Site-wide was more than the link promised: the
+        // recipient of a link to one draft could read every draft on the site until it expired. An
+        // external front end's PREVIEW token keeps the site bound; its drafts are read through the
+        // delivery API, which has no page path to narrow to.
+        token.setPathPrefix(share ? ShPreviewShare.normalize(post.getFurl()) : null);
         token.setExpiresAt(now.plusSeconds(ttl));
         token.setEphemeral(true);
         shApiTokenRepository.saveAndFlush(token);

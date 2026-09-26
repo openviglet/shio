@@ -29,12 +29,19 @@ import com.viglet.shio.persistence.model.token.ShApiTokenScope;
  * @param siteIds the per-site allow-list (empty = every site)
  * @param env     the target content environment ({@code PROD}/{@code PREVIEW})
  * @param mayPublish whether this credential may publish on the agent surface (SH107)
+ * @param pathPrefix SH1110 — the page path a share may render; {@code null} for the whole site
  *
  * @author Alexandre Oliveira
  * @since 2026.2
  */
 public record ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds,
-                                ShApiTokenEnv env, boolean mayPublish) {
+                                ShApiTokenEnv env, boolean mayPublish, String pathPrefix) {
+
+    /** The pre-SH1110 form: no path narrowing, which is every token but a page's share link. */
+    public ShApiTokenContext(String tokenId, ShApiTokenScope scope, Set<String> siteIds,
+                             ShApiTokenEnv env, boolean mayPublish) {
+        this(tokenId, scope, siteIds, env, mayPublish, null);
+    }
 
     /**
      * Back-compat constructor defaulting the environment to {@code PROD}, so

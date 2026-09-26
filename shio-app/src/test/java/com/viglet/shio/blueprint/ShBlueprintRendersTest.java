@@ -9,9 +9,15 @@
 package com.viglet.shio.blueprint;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
+
+import jakarta.servlet.http.Cookie;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -20,14 +26,22 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.api.token.ShPreviewTokenAPI;
+import com.viglet.shio.api.token.ShPreviewTokenResponse;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.render.ShPageRenderService;
+import com.viglet.shio.spring.security.auth.ShApiTokenFilter;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -75,11 +89,17 @@ class ShBlueprintRendersTest {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private com.viglet.shio.api.agent.verify.ShAgentRenderService shAgentRenderService;
+    @Autowired
+    private WebApplicationContext webApplicationContext;
+    @Autowired
+    private ShPreviewTokenAPI shPreviewTokenAPI;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     private String siteName;
+    /** SH1110 — a second site, for the site bound SH1042 claimed and nothing asserted. */
+    private String otherSiteName;
 
     @BeforeAll
     void setup() {
@@ -98,6 +118,20 @@ class ShBlueprintRendersTest {
             root.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             root.setOwner("admin");
             entityManager.persist(root);
+
+            ShSite other = new ShSite();
+            otherSiteName = siteName + "-other";
+            other.setName(otherSiteName);
+            other.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            other.setOwner("admin");
+            entityManager.persist(other);
+            ShFolder otherRoot = new ShFolder();
+            otherRoot.setName("root");
+            otherRoot.setRootFolder((byte) 1);
+            otherRoot.setShSite(other);
+            otherRoot.setDate(Instant.parse("2026-01-01T00:00:00Z"));
+            otherRoot.setOwner("admin");
+            entityManager.persist(otherRoot);
         });
         shBlueprintService.apply("marketing-site", siteName,
                 new ObjectMapper().readTree("{\"brand\":\"Acme\"}"), "admin");
@@ -190,6 +224,67 @@ class ShBlueprintRendersTest {
         System.out.printf("SH1109: one digest of the composed home page: median %.1f ms, max %.1f ms%n",
                 nanos[nanos.length / 2] / 1e6, nanos[nanos.length - 1] / 1e6);
         assertThat(nanos[nanos.length / 2]).isPositive();
+    }
+
+    /**
+     * SH1110 — a share link is one page wide, and that page still renders whole.
+     *
+     * <p>Here because the page has to render for the answer to mean anything: this class has a
+     * composed site on its own database, and the suite has no context left to spend (SH423). The
+     * link is minted through the real endpoint and exchanged through the real route, so the
+     * credential the render sees is the one a recipient's browser would carry.</p>
+     */
+    @Test
+    @DisplayName("SH1110: a share link renders its page whole and refuses every other page of the site")
+    void aShareLinkIsOnePageWide() throws Exception {
+        MockMvc secured = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+        // In a transaction because a request has one (open-in-view) and a direct call does not.
+        String pricing = pageAt("/pricing");
+        ShPreviewTokenResponse minted = new TransactionTemplate(transactionManager).execute(status ->
+                (ShPreviewTokenResponse) shPreviewTokenAPI
+                        .mint(new ShPreviewTokenAPI.MintRequest(pricing, 600L), () -> "admin").getBody());
+        assertThat(minted).isNotNull();
+        MvcResult exchanged = secured.perform(get(URI.create(minted.previewUrl())))
+                .andExpect(status().is3xxRedirection()).andReturn();
+        Cookie share = exchanged.getResponse().getCookie(ShApiTokenFilter.SHARE_COOKIE);
+        assertThat(share).isNotNull();
+        String landing = exchanged.getResponse().getHeader(HttpHeaders.LOCATION);
+        assertThat(landing).isEqualTo("/preview/" + siteName + "/pricing");
+
+        String html = secured.perform(get(landing).cookie(share)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(html)
+                .as("the shared page renders whole: the banner that says it is a draft (SH1110)")
+                .contains("data-shio-preview=\"true\"")
+                .as("and its stylesheet, which the theme inlines")
+                .contains("--accent");
+        for (org.jsoup.nodes.Element image : org.jsoup.Jsoup.parse(html).select("img[src], link[href][rel=stylesheet]")) {
+            String source = image.hasAttr("src") ? image.attr("src") : image.attr("href");
+            if (source.startsWith("/preview/")) {
+                secured.perform(get(source).cookie(share))
+                        .andExpect(status().isOk());
+            }
+        }
+
+        for (String sibling : new String[] { "/", "/about", "/menu/home" }) {
+            secured.perform(get("/preview/" + siteName + sibling).cookie(share))
+                    .andExpect(result -> assertThat(result.getResponse().getStatus())
+                            .as("SH1110: a link for /pricing refused on %s, another page of the same site",
+                                    sibling)
+                            .isEqualTo(404));
+        }
+        secured.perform(get("/preview/" + otherSiteName + "/").cookie(share))
+                .andExpect(result -> assertThat(result.getResponse().getStatus())
+                        .as("SH1042: and on another site entirely, which nothing had asserted")
+                        .isEqualTo(404));
+    }
+
+    private String pageAt(String furl) {
+        return new TransactionTemplate(transactionManager).execute(status -> entityManager
+                .createQuery("select p from ShPostUnified p where p.furl = :furl", ShPostUnified.class)
+                .setParameter("furl", furl).getResultList().stream()
+                .filter(post -> post.getShSite() != null && siteName.equals(post.getShSite().getName()))
+                .map(ShPostUnified::getId).findFirst().orElseThrow());
     }
 
     private String aHomePageId() {

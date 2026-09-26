@@ -63,6 +63,44 @@ public final class ShPreviewShare {
         return siteId != null && sites != null && sites.contains(siteId);
     }
 
+    /**
+     * SH1110 — whether this request may render the page at {@code path}, within a site it may read.
+     *
+     * <p>{@code true} for everybody who is not a share, and for a share minted before SH1110 or for
+     * a whole site ({@code null} prefix). Otherwise the prefix is a page — {@code /pricing} matches
+     * {@code /pricing} and {@code /pricing/} and nothing else — or, ending in {@code /}, a folder and
+     * everything under it. A string comparison and never a content lookup: this is a security
+     * decision, and resolving content to reach it would be a second path into the content.</p>
+     */
+    public static boolean allowsPath(String path) {
+        ShApiTokenContext share = context();
+        if (share == null || share.pathPrefix() == null || share.pathPrefix().isBlank()) {
+            return true;
+        }
+        return matches(share.pathPrefix(), path);
+    }
+
+    /** The rule {@link #allowsPath} applies, exposed for the test that holds it. */
+    static boolean matches(String prefix, String path) {
+        String asked = normalize(path);
+        if (prefix.length() > 1 && prefix.endsWith("/")) {
+            return asked.equals(prefix.substring(0, prefix.length() - 1)) || asked.startsWith(prefix);
+        }
+        return asked.equals(normalize(prefix));
+    }
+
+    /** One spelling of a page path: leading slash, no trailing one, {@code /} for the home page. */
+    public static String normalize(String path) {
+        String trimmed = path == null ? "" : path.trim();
+        if (!trimmed.startsWith("/")) {
+            trimmed = "/" + trimmed;
+        }
+        while (trimmed.length() > 1 && trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
+    }
+
     /** The share's own context, or {@code null} when this request is not one. */
     private static ShApiTokenContext context() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

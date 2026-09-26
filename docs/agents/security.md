@@ -223,12 +223,23 @@ registered after `BasicAuthenticationFilter` while CORS runs at the head of the 
     exactly one bit and in the only direction that matters here. The editor bridge is forced off
     whatever `?editor=true` says, and the banner stays.
 
-  What this does **not** do yet is narrow a link to one page: the credential is bounded to a site,
-  so a recipient can read that site's drafts until it expires. SH1110 is the narrowing — it needs a
-  target column and an answer about how a shared page's own sub-resources are reached, which the
-  design did not settle — and SH1111 is the other absence: nothing lists the live links, because the
-  token screen hides ephemeral rows by design. `ShPreviewShareTest` drives the refusals and
-  `ShPreviewIsNotPublicTest` is unchanged: no cookie is still no preview.
+  **And to one page (SH1110).** `api_token.path_prefix` (v2026.3.49) holds the page a share was
+  minted for — `ShPreviewTokenAPI` sets it to the post's friendly URL, normalized, on a SHARE and
+  never on an external front end's PREVIEW token — and `ShRenderAPI.page` checks
+  `ShPreviewShare.allowsPath` right after the site bound. The rule is a string comparison, never a
+  content lookup: `/pricing` matches `/pricing` and `/pricing/` and not `/pricing-old` or
+  `/pricing/annual`; a value ending in `/` other than `/` itself is a folder and its subtree; `/` is
+  the home page alone; `null` is the site-wide bound every earlier token had. **Sub-resources were
+  the open question, and the answer is that pages are narrowed and assets are not:** outside the
+  prefix a share still reaches the site's own assets (`ShSiteAssetDelivery`, under the site bound),
+  and a path that resolves to a page is a 404. That covers what a composed page pulls — its images
+  are `/file_source`, public and outside the cookie's `Path=/preview`; its theme is inlined; its
+  site assets come through the asset branch — and an asset is a file the site serves, not a draft.
+  `ShBlueprintRendersTest` mints a link for `/pricing` through the real endpoint, exchanges it,
+  renders the page whole (banner, stylesheet, every `/preview/` sub-resource) and gets 404 on `/`,
+  `/about`, `/menu/home` and on another site — the site bound SH1042 claimed and nothing had
+  asserted. `ShPreviewSharePathTest` holds the rule. SH1111 is the remaining absence: nothing lists
+  the live links, because the token screen hides ephemeral rows by design.
 - **The general rule this is an instance of:** an allow-list entry outlives the route it was
   written for. Both halves read correctly on their own — the entry names a path that once meant
   something else, the new controller's comment names the rule it believes it inherits — and

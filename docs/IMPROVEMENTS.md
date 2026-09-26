@@ -1594,29 +1594,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.13 A share link that is one page wide (SH1110)
-
-A share link is minted for one page and bounded to that page's **site**, so the
-stakeholder sent a link to the new pricing page can read every draft on that site until
-it expires. The mint says so and the credential is ephemeral, which is why this shipped
-rather than not at all — but it is more than the link promises.
-
-The token row has no target column, so the narrowing is schema: a nullable path prefix
-beside the site allow-list, matched against the request. A prefix rather than an SH79
-address on purpose — the check runs where a security decision is made and must not
-resolve content to reach a verdict, and a prefix expresses post, folder and site in one
-comparison.
-
-What the design did not settle, and what makes this a task rather than a column: **a
-shared page's own sub-resources.** A page pulls images, a stylesheet and a region's
-script, several rewritten into the preview's own address space, so a credential confined
-to `/about` refuses the page's own pictures. The answer is one of three — leave assets
-to the site bound, serve them under a path the prefix covers, or mint against the set
-the page references — and choosing costs a measurement of what a real page pulls.
-
-The assertion is a link for one page refused on another page of the same site, and the
-shared page rendering whole: every image, the stylesheet and the banner.
-
 ### LXXI.14 Which links are live, and `shio share` (SH1111)
 
 A share link is created and then nobody can see it. The token listing hides ephemeral

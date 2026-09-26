@@ -1,0 +1,27 @@
+databaseChangeLog:
+  # SH1110 — a share link narrowed to the page it was minted for.
+  #
+  # `api_token.path_prefix`: the path a SHARE token may render, beside the site allow-list it
+  # already carries (`api_token_site`). A path and not an SH79 address, because the check runs where
+  # a security decision is made and must not resolve content to reach a verdict. Nullable forever:
+  # null keeps the site-wide bound every token minted before this had, and every non-share token.
+  #
+  # Not a tenant discriminator, so no ShTenantBackfillRunner entry. VARCHAR, per
+  # ShLiquibaseChangelogAgnosticTest; SH26: identifier case preserved on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1110-api-token-path-prefix
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: api_token
+                columnName: path_prefix
+      changes:
+        - addColumn:
+            tableName: api_token
+            columns:
+              - column:
+                  name: path_prefix
+                  type: VARCHAR(512)

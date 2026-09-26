@@ -1838,6 +1838,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1106** — shio verify warns section-not-accepted once per type when a page composes a section its layout's sh-accepts does not name, with the accepted list.
 - **SH1108** — shio patterns push copies a pattern file to the instance, and the visual editor's rail places it through the document and apply the CLI uses (design §LXXI.11 superseded: the marketplace installer it would reuse downloads by catalogue id and takes no upload) (design §LXXI.11 recorded in `docs/agents/blueprints.md`).
 - **SH1109** — A visual editor save reports in the dock which fields it wrote and whether the structure and appearance digests moved, flagging a text-only edit that moved the appearance.
+- **SH1110** — A share link renders only the page it was minted for: a path prefix on the token, checked in the preview route, with the site's assets still served so the page renders whole.
 
 ## Block BG — The console as an application: cost, resilience and access
 

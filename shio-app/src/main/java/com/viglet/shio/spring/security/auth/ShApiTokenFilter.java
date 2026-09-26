@@ -255,7 +255,8 @@ public class ShApiTokenFilter extends OncePerRequestFilter {
         // than being re-read from the database at the publish site: the decision must be
         // the one this request authenticated with, not whatever the row says a second later.
         authentication.setDetails(new ShApiTokenContext(
-                apiToken.getId(), scope, apiToken.getSiteIds(), env, apiToken.isMayPublish()));
+                apiToken.getId(), scope, apiToken.getSiteIds(), env, apiToken.isMayPublish(),
+                apiToken.getPathPrefix()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

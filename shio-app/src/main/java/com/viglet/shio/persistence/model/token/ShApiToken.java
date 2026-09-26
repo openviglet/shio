@@ -138,6 +138,17 @@ public class ShApiToken implements Serializable {
         return Boolean.TRUE.equals(mayPublish);
     }
 
+    /**
+     * SH1110 — the page path a share may render, or {@code null} for the whole site.
+     *
+     * <p>A share link was bounded only by {@link #siteIds}, so one minted for the pricing page read
+     * every draft on that site until it expired. {@code "/pricing"} renders that page and nothing
+     * beside it; a value ending in {@code /} is a folder and covers what is under it. Matched by
+     * {@code ShPreviewShare.allowsPath}.</p>
+     */
+    @Column(name = "path_prefix", length = 512)
+    private String pathPrefix;
+
     /** @return {@code true} when this token carries an expiry that has passed. */
     public boolean isExpired(Instant now) {
         return expiresAt != null && expiresAt.isBefore(now);
