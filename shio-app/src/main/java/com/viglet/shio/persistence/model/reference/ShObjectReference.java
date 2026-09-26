@@ -28,11 +28,12 @@ import jakarta.persistence.Table;
  *
  * <h2>Why this is not {@code ShReference}</h2>
  *
- * <p>{@link ShReference} stores object-to-object edges and cannot hold these — it joins
+ * <p>{@code ShReference} stored object-to-object edges and could not hold these — it joined
  * {@code object_from} and {@code object_to} to {@code ShObject}, and a post is <b>not</b> an
  * {@code ShObject}: the unified model is its own table. {@code ShTemplateGraph} reached the same
  * conclusion from the other side and recorded it ("a post-to-post edge would need a new table").
- * Nothing in main writes {@code ShReference} today.</p>
+ * Nothing ever wrote it under the unified model, and SH1100 dropped it and its draft twin, so this
+ * is the one table references live in.</p>
  *
  * <h2>What it is for, with the number that chose it</h2>
  *

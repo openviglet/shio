@@ -1574,31 +1574,6 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.9 The reference tables from the model before this one (SH1100)
-
-`ShReference` and `ShReferenceDraft` are pre-unified tables, and nothing in `src/main`
-writes either. The repository has no callers, and the only mentions of the type are
-three comments saying why it cannot be used: it joins `object_from` and `object_to` to
-`ShObject`, and a post is not an `ShObject`. `ShTemplateGraph` says so from the render
-side, recording a design it had to correct: extracting slot edges into this table was
-proposed and is not available. SH1034 hit the same wall from the asset side.
-
-So the schema carries two tables holding edges nobody can produce, and they are not
-inert: both are in `ShTenantBackfillRunner.TENANT_TABLES`, so every start-up backfill
-issues an UPDATE against them, and the PostgreSQL and MariaDB schema ITs assert they
-exist with a `tenant_id` column: three instruments maintaining something with no writer.
-A reader asking "where do references live" finds them first, which is how that
-render-side design went wrong.
-
-Not a data migration — there is nothing to move, which is the point. Drop both tables,
-remove the entities and the repository, take both names out of `TENANT_TABLES`, and
-settle whether the exchange format mentions them: an import reading a 2018 package is
-the one caller that might, and that question belongs before the drop.
-
-Deliberately not folded into SH1034: a table nobody writes is safe to leave for a task
-that can answer the exchange question on its own evidence, and a removal inside a
-feature commit is the shape that gets reverted wholesale.
-
 ## LXXI The visual editor becomes a composer (Block BF)
 
 Shio's Universal Editor is a bridge of five postMessage messages, and every one concerns

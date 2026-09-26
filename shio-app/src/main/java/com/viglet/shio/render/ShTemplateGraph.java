@@ -52,7 +52,8 @@ import com.viglet.shio.render.ShPageRenderService.ShPageTemplates;
  * already exists and already survives a move", following SH154's treatment of {@code Multi Select}
  * post URLs. <b>That is not available:</b> {@code ShReference} joins {@code object_from} and
  * {@code object_to} to {@code ShObject}, and a post is <em>not</em> an {@code ShObject} — the
- * unified model is its own table. A post-to-post edge would need a new table.</p>
+ * unified model is its own table. A post-to-post edge would need a new table, which SH1034 built
+ * ({@code sh_object_reference}); SH1100 then dropped {@code ShReference}, which nothing wrote.</p>
  *
  * <p>It is not needed, and SH251 is the evidence. That task established that a page's presentation
  * resolves from its <b>post-type</b> rather than from the page: {@code site.postTypeLayout} is

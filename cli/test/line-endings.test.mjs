@@ -28,7 +28,7 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -100,6 +100,10 @@ test("SH863: every tracked file's line endings are the ones `.gitattributes` dec
 
   const wrong = [];
   for (const [path, want] of eol) {
+    // A tracked path deleted in the working tree has no bytes and so no endings; the index still
+    // lists it until the deletion is staged, which is the normal state of a change that removes a
+    // file (SH1100's first run failed here with ENOENT rather than with anything about endings).
+    if (!existsSync(join(ROOT, path))) continue;
     const { crlf, lf } = endingsOf(join(ROOT, path));
     // Asked in one direction each. A file declared `lf` may not hold a CRLF; one declared `crlf` may
     // not hold a bare LF. Mixed endings fail both ways round, which is right — a file half converted

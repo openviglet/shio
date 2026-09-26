@@ -376,7 +376,7 @@ public class ShPostUnifiedWriteService {
      * detail rather than letting the caller discover it (P7); an agent that wants the
      * live URL to hold still should unpublish first.</p>
      *
-     * <p>Inbound references are id-keyed ({@code ShReference} joins {@code ShObject} ids),
+     * <p>Inbound references are id-keyed ({@code sh_object_reference} points at ids, SH1034),
      * so they survive a move untouched. URLs written into another post's body as text do
      * not, and nothing here can know which strings were meant as links — SH100's route
      * verification is where that gets caught.</p>

@@ -94,8 +94,8 @@ OIDC `workspace_id` claim → username and sets `ShTenantContext` (ThreadLocal, 
 there filters polymorphic *and* `ShSite`/`ShFolder`/`ShPostType` subclass queries; subclasses
 need **no** column of their own), **`ShPostUnified`** (`tenantId` is **not** part of its
 composite `@IdClass` — Hibernate adds `tenant_id=?` next to the `(id,state)` PK), and
-`ShReference`, plus the 6 pre-existing ones (ShApiToken/ShSiteWebhook/ShPostTypeAttr/
-ShRelatorItem/ShWorkflowTask/ShHistory). **Gotchas:**
+`ShReference` (dropped by SH1100, below), plus the 6 pre-existing ones (ShApiToken/ShSiteWebhook/
+ShPostTypeAttr/ShRelatorItem/ShWorkflowTask/ShHistory). **Gotchas:**
 1. **The discriminator column MUST be lowercase `tenant_id`.** Hibernate emits the
    `@TenantId` *filter predicate* UNQUOTED (`where x.tenant_id = ?`) even with
    `globally_quoted_identifiers=true` (only the SELECT projection is quoted). PostgreSQL
@@ -667,7 +667,12 @@ Four decisions worth keeping:
 - **A new table, and `ShReference` is why rather than an oversight.** That table stores
   object-to-object edges and cannot hold these: it joins `object_from`/`object_to` to `ShObject`, and
   a post is not an `ShObject`. `ShTemplateGraph` reached the same conclusion from the other side and
-  wrote it down — "a post-to-post edge would need a new table". Nothing in main writes `ShReference`.
+  wrote it down — "a post-to-post edge would need a new table". Nothing in main wrote `ShReference`,
+  and **SH1100 dropped it and `ShReferenceDraft`** (`v2026.3.48.yaml`, preconditioned on existence).
+  The exchange format never carried either: a package holds posts and their data, and this index is
+  rebuilt from the data on import, so there was nothing to move. Both names left
+  `ShTenantBackfillRunner.TENANT_TABLES`, which the three schema ITs hold to the applied schema, and
+  `ShLiquibaseChangelogReferenceLintTest` asserts the applied changelog no longer has them.
 - **`from_state` is a column, not an assumption.** A post's key is `(id, state)`, so draft and
   published are two documents that may reference different assets — the point of a draft. An index
   keyed on the id alone would answer with the union and never be able to say which.

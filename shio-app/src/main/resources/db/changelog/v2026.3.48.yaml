@@ -1,0 +1,35 @@
+databaseChangeLog:
+  # SH1100 — drop ShReference and ShReferenceDraft, the reference tables from before the unified
+  # post model.
+  #
+  # Nothing writes either. They join object_from and object_to to ShObject, and a post is not an
+  # ShObject, so no edge the product has could be stored in them; SH1034's sh_object_reference is
+  # where references live. The exchange format never carried them: a package holds posts with their
+  # data, and the reference index is rebuilt from that data on import. So there is nothing to move,
+  # and the drop takes their foreign keys with them.
+  #
+  # Preconditioned on existence, so a schema that never had them (or already dropped them) marks the
+  # changeset ran. The SH26 baseline's PascalCase names, quoted as they were created.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1100-drop-sh-reference-draft
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: ShReferenceDraft
+      changes:
+        - dropTable:
+            tableName: ShReferenceDraft
+            cascadeConstraints: true
+  - changeSet:
+      id: sh1100-drop-sh-reference
+      author: shio
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: ShReference
+      changes:
+        - dropTable:
+            tableName: ShReference
+            cascadeConstraints: true

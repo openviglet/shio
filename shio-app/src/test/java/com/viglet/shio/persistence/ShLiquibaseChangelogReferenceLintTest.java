@@ -116,6 +116,20 @@ class ShLiquibaseChangelogReferenceLintTest {
     }
 
     @Test
+    @DisplayName("SH1100: the pre-unified reference tables are gone once the changelog is applied")
+    void thePreUnifiedReferenceTablesAreDropped() {
+        assertThat(walk().tables())
+                .as("""
+                        SH1100: ShReference and ShReferenceDraft join ShObject, which a post is not, \
+                        so nothing could write them; they were backfilled and asserted anyway, and a \
+                        reader asking where references live found them before sh_object_reference.""")
+                .doesNotContainKeys("ShReference", "ShReferenceDraft")
+                .containsKey("sh_object_reference");
+        // TENANT_TABLES is held to the applied schema by the three schema ITs, which require every
+        // name in it to exist: a name left there after this drop fails them on every engine.
+    }
+
+    @Test
     @DisplayName("SH1089: the rule fires on SH1010's defect, reproduced")
     void theRuleFiresOnTheDefect() {
         // The defect itself, fed to the same apply: an addColumn on the snake_case spelling of a

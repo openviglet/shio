@@ -34,7 +34,7 @@ import tools.jackson.databind.ObjectMapper;
  *
  * <h2>The thing an SH79 address cannot fix</h2>
  *
- * <p>{@code ShReference} is id-keyed, so a reference stored <em>as</em> a reference survives a
+ * <p>The reference index ({@code sh_object_reference}, SH1034) is id-keyed, so a reference stored <em>as</em> a reference survives a
  * move: the row points at the post whatever its address becomes. A URL typed into another post's
  * rich text is not that. It is a string in a field, it names the address rather than the object,
  * and {@code post.move} rewrites the address underneath it — so a move breaks pages nowhere near

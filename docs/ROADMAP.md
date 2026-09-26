@@ -44,10 +44,6 @@
 - 📋 **SH1142** (deps: SH1026 ✅) **in the browser's table view, the toolbar's Select menu and Clear change nothing the table shows** — BentoDataTable reports its selection but takes none in, so the page's set and the ticked rows can differ under a bulk delete. → §LXIX.11
 - 📋 **SH1145** (deps: —) **the content browser page is still 1300 lines, so its next feature lands somewhere nobody can review** — SH1026 moved the views, the table and the window into content-browser; the listing reads, the keyboard and the dialogs are still in one file. → §LXIX.12
 
-## Block BE — Media: what the bytes mean
-
-- 📋 **SH1100** (deps: —) **two reference tables nothing writes are still backfilled and asserted, and readers find them first** — ShReference joins ShObject and a post is not one, so no writer can use it, yet it sits in TENANT_TABLES and in two schema ITs. → §LXX.9
-
 ## Block BF — The visual editor becomes a composer
 
 - 📋 **SH1101** (deps: SH1038 ✅) **a copied post comes back with no id, so duplicating a section can only place the same one twice** — `copyto` returns only the folders it made, so nothing can address a post it just copied, and the editor's Duplicate repeats the reference instead. → §LXXI.8

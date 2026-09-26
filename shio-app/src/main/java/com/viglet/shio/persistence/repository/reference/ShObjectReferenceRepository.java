@@ -29,7 +29,7 @@ import com.viglet.shio.persistence.model.reference.ShObjectReference;
  *
  * <p>No association is navigated, so the {@code agents.md} JPQL invariant does not arise — this
  * entity deliberately holds ids rather than {@code ShObject} references, which is the same reason
- * it exists instead of {@code ShReference}.</p>
+ * it exists instead of {@code ShReference}, the pre-unified table SH1100 dropped.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3

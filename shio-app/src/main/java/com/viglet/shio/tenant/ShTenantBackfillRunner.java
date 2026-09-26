@@ -43,8 +43,6 @@ public class ShTenantBackfillRunner {
             "ShPostAttr",
             "ShPostDraftAttr",
             "ShPostTypeAttr",
-            "ShReference",
-            "ShReferenceDraft",
             "ShRelatorItem",
             "ShRelatorItemDraft",
             "ShWorkflowTask",

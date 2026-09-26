@@ -81,6 +81,15 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  BE: {
+    swept: true,
+    why: "ten tasks on media: what an asset costs to list, where it is used, its alt text, its words in "
+      + "the tree, replacing its bytes, and two storage corrections (SH1099's PostgreSQL text, SH1100's "
+      + "dropped reference tables). docs-shio's COVERAGE.md names all ten: the Media Library row carries "
+      + "SH1029-SH1035 and SH1098, the full-text search row SH1099, the internal row SH1100, and the "
+      + "mirror is regenerated. README and shio-site are NOT moved and that is the finding: neither "
+      + "describes the media library, asset usage or the database, and no count they state changed",
+  },
   BB: {
     swept: false,
     why: "twelve tasks building the curator's return channel: notes anchored to a page, per-change "
