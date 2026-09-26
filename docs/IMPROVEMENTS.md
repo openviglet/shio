@@ -1595,30 +1595,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-### LXXI.9 A rail you can see, and something to drop onto (SH1105)
-
-The rail names each accepted type and describes it, which is already the difference
-between a list of post-type names and something to place. It is still the wrong medium
-for the choice being made: a curator picking between a hero and a rich-text block is
-picking a shape, and a sentence is the worst way to show one.
-
-SH1039's design named the answer and the constraint together. A thumbnail is the preview
-route rendering that type against a fixture of placeholder values — **HTML, not a
-raster**, which keeps it inside the non-goal that the instance does not run a browser.
-Same render path a page takes, so it cannot show a section the site would not draw, and
-cacheable by type and theme.
-
-The caret is the other half and belongs with it. Placement today is two buttons, above
-and below the selection, which states *where* and needs no drag at all. What a drag
-needs is a drop target between sections, and the console can draw one from the geometry
-the bridge already sends for the overlay. They are one piece of work because the caret
-exists to receive something a visual rail can be dragged from; buttons over a text rail
-need neither.
-
-The assertions are that a thumbnail renders through the preview path rather than a
-second one, and that a drop between two sections writes the same array a Below button
-writes.
-
 ### LXXI.10 The allow-list read by something that is not a screen (SH1106)
 
 `sh-accepts` is read by the console, which offers only the types it names, and by

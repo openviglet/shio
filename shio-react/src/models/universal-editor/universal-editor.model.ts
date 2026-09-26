@@ -137,6 +137,8 @@ export type SelectedSection = {
    * page sends the box.
    */
   rect?: FrameRect
+  /** SH1105 — every section box of the same container, in document order: the drop caret's gaps. */
+  sections?: FrameRect[]
   /**
    * SH1039 — the post-type names this section's container says fit in it.
    *

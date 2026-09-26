@@ -30,6 +30,7 @@ import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShSiteService } from "@/services/site/site.service"
 import { ShUniversalEditorService } from "@/services/universal-editor/universal-editor.service"
 import { copyReference } from "./section-reference"
+import { buttonIndex, caretY, gapIndex, placeAt } from "./section-placement"
 import {
   attrFromDeclared, labelSource, labelSourceKey, labelsFrom, type DeclaredWidgetField,
 } from "./field-labels"
@@ -102,19 +103,22 @@ function SectionThumbnail({ src, title }: { src: string | null; title: string })
  * post-type names in a picker — a list of names — and what a curator needs is a thing they can put
  * on the page. So each entry is the type's own title and description, and pressing it writes.
  *
- * `above` / `below` rather than a drag caret: the caret is what a drag needs, and the capability it
- * expresses is *where*, which two buttons say exactly. With nothing selected there is no `where`
- * to be relative to, and the section goes last — which on the empty page this exists for is also
- * first.
+ * `above` / `below` say *where* exactly, and with nothing selected the section goes last — which on
+ * the empty page this exists for is also first. SH1105 adds the drag: a card can be dropped on a
+ * caret between any two sections, which names the same index through `section-placement.ts`.
  */
-function SectionInserter({ container, relative, busy, t, onInsert, thumbnail }: {
+function SectionInserter({ container, relative, busy, t, onInsert, thumbnail, draggable, onDrag }: {
   container: InsertableContainer
   /** Whether a section is selected, and the placement is relative to it. */
   relative: boolean
   busy: boolean
   /** SH1105 — where the type is drawn on this page, or null where there is no page to draw it on. */
   thumbnail: (type: InsertableType) => string | null
-  t: (key: string, options?: Record<string, unknown>) => string
+  /** SH1105 — whether a card may be dragged onto the page, which needs the section boxes. */
+  draggable: boolean
+  /** SH1105 — a drag of `type` began, or (null) ended. */
+  onDrag: (type: InsertableType | null) => void
+  t:(key: string, options?: Record<string, unknown>) => string
   onInsert: (type: InsertableType, after: boolean) => void
 }) {
   if (!container.accepts.length) {
@@ -135,7 +139,14 @@ function SectionInserter({ container, relative, busy, t, onInsert, thumbnail }: 
         {t("universalEditor.addSection")}
       </div>
       {container.accepts.map((type) => (
-        <div key={type.type} className="rounded-md border p-2">
+        <div key={type.type} className="rounded-md border p-2"
+          draggable={draggable && type.provisioned && !busy}
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "copy"
+            event.dataTransfer.setData("text/plain", type.type)
+            onDrag(type)
+          }}
+          onDragEnd={() => onDrag(null)}>
           {type.provisioned && <SectionThumbnail src={thumbnail(type)} title={type.title || type.type} />}
           <div className="text-sm font-medium">{type.title || type.type}</div>
           {type.description && (
@@ -348,6 +359,10 @@ export default function VisualEditorPage() {
    * folding the second into the first would re-run every effect keyed on the selection once a frame.
    */
   const [sectionRect, setSectionRect] = useState<FrameRect | null>(null)
+  /** SH1105 — every section box of the selection's container, which is what the drop caret reads. */
+  const [sectionBoxes, setSectionBoxes] = useState<FrameRect[]>([])
+  /** SH1105 — the type being dragged off the rail, and the gap the pointer is over. */
+  const [dragging, setDragging] = useState<{ type: InsertableType; at: number | null } | null>(null)
   /**
    * SH1038 — the Page's own ordered array, which is what every one of the three verbs replaces.
    *
@@ -585,6 +600,7 @@ export default function VisualEditorPage() {
           const section = msg.data as SelectedSection
           setSelectedSection(section)
           setSectionRect(section.rect ?? null)
+          setSectionBoxes(section.sections ?? [])
           setSelected(null)
           break
         }
@@ -592,8 +608,10 @@ export default function VisualEditorPage() {
         // is gone. `rect: null` is a removal: the overlay comes down rather than staying over
         // whatever moved into that space.
         case "sh:section-geometry": {
-          const moved = (msg.data as { rect?: FrameRect | null } | undefined)?.rect ?? null
+          const geometry = msg.data as { rect?: FrameRect | null; sections?: FrameRect[] } | undefined
+          const moved = geometry?.rect ?? null
           setSectionRect(moved)
+          setSectionBoxes(moved ? geometry?.sections ?? [] : [])
           if (!moved) setSelectedSection(null)
           break
         }
@@ -893,7 +911,22 @@ export default function VisualEditorPage() {
    * template, so there is nothing the bridge could have drawn optimistically the way it does for a
    * move. `/preview` is draft-preferred, so the reload shows what was just written.
    */
-  const insertSection = async (type: InsertableType, after: boolean) => {
+  /** SH1105 — Above, Below and At end, as the index they name; the caret names it by `gapIndex`. */
+  const insertByButton = (type: InsertableType, after: boolean) => {
+    if (sectionArray.state !== "ready") return
+    void insertSection(type, buttonIndex(selectedSection?.index ?? null, after, sectionArray.entries.length))
+  }
+
+  /**
+   * SH1105 — the drop caret. The frame belongs to another origin, so a drag over it would deliver
+   * its events to the framed page; while one is in flight a transparent layer covers the frame and
+   * takes them, and the bridge's boxes say which gap the pointer is over.
+   */
+  const caretEnabled = sectionBoxes.length > 0 && sectionArray.state === "ready" && !inserting
+  const dropGap = (event: React.DragEvent<HTMLDivElement>) =>
+    gapIndex(sectionBoxes, event.clientY - event.currentTarget.getBoundingClientRect().top)
+
+  const insertSection = async (type: InsertableType, at: number) => {
     const pageId = selectedSection?.pagePostId ?? pageOfFrame
     if (!pageId || sectionArray.state !== "ready" || inserting || !type.provisioned) return
     setInserting(true)
@@ -910,12 +943,9 @@ export default function VisualEditorPage() {
           ? { [titleField]: t("universalEditor.newSection", { type: type.title ?? type.type }) }
           : {},
       })
-      const entries = [...sectionArray.entries]
-      const spellsPaths = entries.some((entry) => typeof entry === "string" && entry.startsWith("/"))
+      const spellsPaths = sectionArray.entries.some((entry) => typeof entry === "string" && entry.startsWith("/"))
       const reference = spellsPaths && created.furl ? created.furl : created.id
-      const at = selectedSection ? selectedSection.index + (after ? 1 : 0) : entries.length
-      entries.splice(at, 0, reference)
-      await editorService.patch(pageId, { [SECTIONS_FIELD]: entries })
+      await editorService.patch(pageId, { [SECTIONS_FIELD]: placeAt(sectionArray.entries, reference, at) })
       toast.success(t("universalEditor.sectionInserted"))
       refresh()
     } catch {
@@ -1205,6 +1235,27 @@ export default function VisualEditorPage() {
                 onOp={runSectionOp}
               />
             )}
+            {dragging && caretEnabled && (
+              <div className="absolute inset-0 z-20" data-testid="section-drop-layer"
+                onDragOver={(event) => {
+                  event.preventDefault()
+                  event.dataTransfer.dropEffect = "copy"
+                  const at = dropGap(event)
+                  if (at !== dragging.at) setDragging({ type: dragging.type, at })
+                }}
+                onDragLeave={() => setDragging({ type: dragging.type, at: null })}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  const type = dragging.type
+                  setDragging(null)
+                  void insertSection(type, dropGap(event))
+                }}>
+                {dragging.at !== null && caretY(sectionBoxes, dragging.at) !== null && (
+                  <div className="pointer-events-none absolute left-2 right-2 h-0.5 -translate-y-1/2 rounded-full bg-primary"
+                    style={{ top: caretY(sectionBoxes, dragging.at) ?? 0 }} />
+                )}
+              </div>
+            )}
             </div>
           )}
           {!siteError && !src && (
@@ -1269,7 +1320,8 @@ export default function VisualEditorPage() {
                 )}
                 {soleContainer && sectionArray.state === "ready" && (
                   <SectionInserter container={soleContainer} relative busy={inserting}
-                    t={t} onInsert={insertSection} thumbnail={sectionThumbnail} />
+                    t={t} onInsert={insertByButton} thumbnail={sectionThumbnail}
+                    draggable={caretEnabled} onDrag={(type) => setDragging(type ? { type, at: null } : null)} />
                 )}
               </div>
             ) : selected ? (
@@ -1354,7 +1406,8 @@ export default function VisualEditorPage() {
                 */}
                 {soleContainer && sectionArray.state === "ready" && (
                   <SectionInserter container={soleContainer} relative={false} busy={inserting}
-                    t={t} onInsert={insertSection} thumbnail={sectionThumbnail} />
+                    t={t} onInsert={insertByButton} thumbnail={sectionThumbnail}
+                    draggable={caretEnabled} onDrag={(type) => setDragging(type ? { type, at: null } : null)} />
                 )}
               </div>
             )}

@@ -46,7 +46,6 @@
 
 ## Block BF — The visual editor becomes a composer
 
-- ⏳ **SH1105** (deps: SH1039 ✅) **the inserter rail describes a section in a sentence, which is the worst way to show a shape** — The drop caret between sections is open: it needs every section's box from the bridge, and a drop must write the array a Below button writes. → §LXXI.9
 - 📋 **SH1106** (deps: SH1039 ✅) **a page can name a section of a type its own template says does not belong there, and nothing says so** — `sh-accepts` is read by the console and by nothing else, so any write past that screen composes a page against a list no instrument consults. → §LXXI.10
 - 📋 **SH1108** (deps: SH1040 ✅) **the console cannot offer patterns, because it cannot read the project file they live in** — A pattern is a file in the tree and the console is a browser, so the inserter rail's Patterns tab has nothing to list and Save as pattern has nowhere to write. → §LXXI.11
 - 📋 **SH1109** (deps: SH1041 ✅) **a save in the visual editor proves nothing — it returns a toast and the curator has to look** — The render digests, the change log and the reporting dock all exist and nothing joins them, so the one surface where a person edits by hand closes its loop with the word saved. → §LXXI.12
@@ -111,11 +110,6 @@
 - **roadkeep lint exits clean here with no baseline** After re-vendoring a roadkeep that
   skips code.renamed for a vendored engine, `lint` with no --baseline reports no finding
   in Shio's three docs.
-
-## Done when — SH1105
-
-- **a drop between two sections writes the same array a Below button writes** the caret
-  is a second way to place, so it must not be a second arithmetic
 
 ## Non-goals (do NOT add as tasks)
 

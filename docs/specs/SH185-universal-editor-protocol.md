@@ -148,7 +148,7 @@ All messages are `{ type, data }` with a `sh:` prefix. Anything else is ignored 
 | `sh:content-changed` | `ContentChange` | an editable element's content changed |
 | `sh:navigating` | `{ to, from }` | a click in the page is leaving for another page of this site (SH1036) |
 | `sh:component-selected` | `SelectedSection` | a curator clicked a **section** rather than one of its fields (SH1038) |
-| `sh:section-geometry` | `{ rect: FrameRect \| null }` | the selected section's box moved (a scroll, a resize, a reorder), or `null` — there is no longer one (SH1038) |
+| `sh:section-geometry` | `{ rect: FrameRect \| null, sections?: FrameRect[] }` | the selected section's box moved (a scroll, a resize, a reorder), or `null` — there is no longer one (SH1038); `sections` is every box of its container, for the drop caret (SH1105) |
 
 `sh:ready` and `sh:navigating` are arrival and departure, and both are needed. Arrival re-keys the
 session: a different `url` means the selection, the pending changes and the loaded field labels all

@@ -610,8 +610,8 @@ renderer over one body of content at a second address. See the section on it bel
   spells its entries, a furl where the neighbours are paths and the id where they are ids. The frame
   **reloads** afterwards, which is not laziness: a new section's markup comes from the template, so
   there is nothing the bridge could draw optimistically the way it does for a move, and `/preview`
-  is draft-preferred so the reload shows what was written. `above`/`below` rather than a drag caret —
-  the caret is what a *drag* needs and the capability it expresses is *where*, which two buttons say.
+  is draft-preferred so the reload shows what was written. `above`/`below` say *where*; SH1105 adds a
+  drag onto a caret, which names the same index.
   Two limits, both deliberate: the rail appears only where the page composes **exactly one**
   container, because `sh:component-selected` says how many a container holds and not *which* one it
   is, so a second list would be written into by a guess; and a declared type this instance has not
@@ -628,7 +628,14 @@ renderer over one body of content at a second address. See the section on it bel
   element, scripts removed; the console draws it at a quarter scale in an `<iframe sandbox="">`, so
   the site's stylesheet cannot restyle the console and the thumbnail runs nothing. HTML, not a
   raster — the instance runs no browser. Console-only in `ShAgentReadReachabilityLintTest`: the same
-  choice is data at `include=insertable`. The drag caret between sections is the part still open.
+  choice is data at `include=insertable`. **A card drags onto a caret between sections**: the bridge
+  adds `sections` — every box of the selection's container — to `sh:component-selected` and
+  `sh:section-geometry`; while a drag is in flight a transparent layer covers the frame (another
+  origin, which would otherwise take the drag events) and `gapIndex` maps the pointer to a gap, a
+  section's midpoint being the boundary. Above, Below, At end and a drop all place through
+  `section-placement.ts`'s `placeAt`, so a drop under section `i` writes the array Below writes with
+  `i` selected — `section-placement.test.mjs` asserts exactly that. The caret needs a selection,
+  since the boxes ride on it.
 - **The panel draws the field the model declares (SH1037)** — it used to be a bare `<Input>` for an
   `attr` field and read-only text for everything else, so a `Date` was a string, a `Check Box` was
   `"1"` and a `Content Select` was a UUID — and `affordance="panel"`, the field a caret cannot

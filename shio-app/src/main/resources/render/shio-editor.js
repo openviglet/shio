@@ -170,6 +170,9 @@
       // to the console's own tree, which is where the writes are, and the console cannot measure
       // the framed document because it is another origin.
       rect: rectOf(section),
+      // SH1105 — every section of the same container, in document order, so the console can draw a
+      // drop caret in any gap and not only beside the selection. `sections[i]` is position `i`.
+      sections: sectionsIn(container).map(rectOf),
       // SH1039 — the post-type names this container says fit in it, so the console knows what may
       // be placed beside the selection. An empty list is "nothing is known to fit here", which is
       // what an absent declaration means; it is never read as "anything". The catalogue itself —
@@ -308,7 +311,10 @@
       send("sh:section-geometry", { rect: null });
       return;
     }
-    send("sh:section-geometry", { rect: rectOf(selectedSection) });
+    send("sh:section-geometry", {
+      rect: rectOf(selectedSection),
+      sections: sectionsIn(selectedSection.parentElement).map(rectOf)
+    });
   }
 
   var geometryPending = false;
