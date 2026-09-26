@@ -38,7 +38,7 @@ claude plugin marketplace add openviglet/shio
 claude plugin install shio
 ```
 
-See [shio.viglet.org/claude-code](https://shio.viglet.org/claude-code).
+See [shio.viglet.org/claude-code](https://shio.viglet.org/claude-code/).
 
 ## Commands
 

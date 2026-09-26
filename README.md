@@ -86,7 +86,7 @@ with attribution.
 Read the full concept:
 [shio.viglet.org](https://shio.viglet.org/) ·
 [docs/specs/SH74-agent-native-cms.md](docs/specs/SH74-agent-native-cms.md) ·
-[the comparison against Contentful, Sanity, Strapi and WordPress](https://shio.viglet.org/compare).
+[the comparison against Contentful, Sanity, Strapi and WordPress](https://shio.viglet.org/compare/).
 
 ## Quick start
 
@@ -147,7 +147,7 @@ claude mcp add shio -- npx -y @viglet/shio mcp
 The plugin also adds **skills** (`shio-site`, `shio-content-model`,
 `shio-verify`) that load only when the work calls for them. Details:
 [claude-plugin/README.md](claude-plugin/README.md) ·
-[shio.viglet.org/claude-code](https://shio.viglet.org/claude-code).
+[shio.viglet.org/claude-code](https://shio.viglet.org/claude-code/).
 
 ## Build a front end in JavaScript, with zero Java
 
@@ -201,7 +201,7 @@ npx @viglet/shio publish --all   # drafts until you say so
 npx @viglet/shio judge           # ACCEPTED, or what holds it
 ```
 
-See [shio.viglet.org/replicate](https://shio.viglet.org/replicate).
+See [shio.viglet.org/replicate](https://shio.viglet.org/replicate/).
 
 ## Packages
 
@@ -302,7 +302,7 @@ verifiable output.
 **Does it work with Claude Code?**
 Yes — there is a first-party [Claude Code](https://claude.com/claude-code)
 plugin and an MCP server. See
-[shio.viglet.org/claude-code](https://shio.viglet.org/claude-code).
+[shio.viglet.org/claude-code](https://shio.viglet.org/claude-code/).
 
 **Does Shio call an LLM?**
 No. Shio hosts no model and no prompts. It is the substrate an external agent
@@ -316,7 +316,7 @@ browser, edge runtimes, Next.js server components, Astro, Vue, Svelte), and
 **Can it replicate an existing website?**
 Yes — `shio clone` / `propose` / `convert` / `publish` / `judge`, and `judge` is
 the one that tells you when to stop. See
-[shio.viglet.org/replicate](https://shio.viglet.org/replicate).
+[shio.viglet.org/replicate](https://shio.viglet.org/replicate/).
 
 ## Contributing
 

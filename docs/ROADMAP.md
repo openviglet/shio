@@ -46,7 +46,7 @@
 
 ## Block BF — The visual editor becomes a composer
 
-- 📋 **SH1109** (deps: SH1041 ✅) **a save in the visual editor proves nothing — it returns a toast and the curator has to look** — The render digests, the change log and the reporting dock all exist and nothing joins them, so the one surface where a person edits by hand closes its loop with the word saved. → §LXXI.12
+- 🛠 **SH1109** (deps: SH1041 ✅) **a save in the visual editor proves nothing — it returns a toast and the curator has to look** — The render digests, the change log and the reporting dock all exist and nothing joins them, so the one surface where a person edits by hand closes its loop with the word saved. → §LXXI.12
 - 📋 **SH1110** (deps: SH1042 ✅) **a share link for one page lets its reader see every draft on that site until it expires** — The credential is bounded to a site because the token row has no target, and narrowing it needs an answer about how a shared page's own images and stylesheet are reached. → §LXXI.13
 - 📋 **SH1111** (deps: SH1042 ✅) **a share link is sent and then nobody can see it, because the token screen hides ephemeral rows** — Revocation works and the reading does not: nothing lists the live links, and an agent that just built a site has no verb that prints one. → §LXXI.14
 
