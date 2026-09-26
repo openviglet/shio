@@ -1640,32 +1640,6 @@ permanent there, with the reason.
 Pay a file off by deleting its lines from both the suppressions file and DECLARED in the
 same diff. A page fixed for `set-state-in-effect` joins PAID.
 
-### LXXII.25 A folder that crosses sites leaves its pages behind (SH1137)
-
-Found by a run during SH1078, not by reading. A folder holding a published post was
-moved with `PUT /api/v2/object/moveto/{root}` from one site's root into another site's
-root. The move succeeded. The folder's parent is now the new site's root. The post's
-rows still carry the old site in `shSite`.
-
-Delivery resolves a page by `findByShSite_IdAndFurlAndState`, so the page keeps
-answering under the old site while the tree shows it under the new one: the split the
-`ShFolderSite` invariant exists to prevent. `requireUrlFree` never runs for posts
-beneath a folder, so the destination can also end up with two posts at one URL.
-
-`ShFolderWriteService.move` is the shared writer, so the agent's `folder.move` probably
-has the same hole. Check that with the same run before assuming it.
-
-Two ways to close it. One: refuse a folder move that crosses sites, with a teaching
-error naming `shio export` and `shio import`. Two: carry the subtree over, re-pointing
-every post row's `shSite`, checking each friendly URL against the destination, and
-treating the retired addresses as SH1064 treats a rename.
-
-Refusing is smaller and cannot surprise a curator (P7). Carrying over is what a curator
-dragging a folder between sites expects. Either way, SH1078's route delta already
-reports what delivery actually does, so it becomes the assertion: after the fix, a
-permitted cross-site folder move lists each published post's retired and created
-address.
-
 ### LXXII.26 A fetch the guard cannot parse (SH1140)
 
 SH1047's guard in `shio-react/test/fetch-cancellation.test.mjs` finds a fetching effect

@@ -262,6 +262,42 @@ public class ShFolderWriteService {
         if (newParent instanceof ShFolder destination) {
             requireOutsideSubtree(folder, destination);
         }
+        requireSameSite(folder, newParent);
+    }
+
+    /**
+     * Refuses a destination in another site (SH1137).
+     *
+     * <h2>Why it is here and not on a caller</h2>
+     *
+     * <p>The agent's {@code folder.move} refused a cross-site address in its own op, and this writer
+     * did not — so the console's {@code PUT /api/v2/object/moveto/{id}} carried a folder into
+     * another site's root and the move <b>succeeded</b>. The folder's parent became the new site's
+     * root; every post beneath it kept the old site in {@code shSite}. Delivery resolves a page by
+     * {@code findByShSite_IdAndFurlAndState}, so the pages went on answering under the old site
+     * while the tree showed them under the new one — and `requireUrlFree` never runs for posts
+     * beneath a folder, so the destination could also end up with two posts at one URL.</p>
+     *
+     * <p>Found by a run during SH1078, not by reading, which is the part worth keeping: a refusal
+     * that lives on one caller is a refusal the other caller does not have. The other two moved onto
+     * this writer for the same reason, and this is the third.</p>
+     *
+     * <p>The site is <b>walked</b>, never read off the field (SH128): only a root folder carries
+     * {@code shSite}, so a nested folder's own is null and comparing the fields would call every
+     * move cross-site.</p>
+     */
+    private void requireSameSite(ShFolder folder, ShObject newParent) {
+        ShSite from = ShFolderSite.of(folder);
+        ShSite to = newParent instanceof ShFolder destination
+                ? ShFolderSite.of(destination)
+                : newParent instanceof ShSite destSite ? destSite : null;
+        if (from == null || to == null || from.getId().equals(to.getId())) {
+            // A folder with no site to leave, or no site to arrive in, is not a cross-site move —
+            // it is a tree this cannot reason about, and refusing it here would be a second guess
+            // at a shape the rest of the writer does not refuse either.
+            return;
+        }
+        throw new ShFolderMoveException.CrossSite(folder.getName(), from.getName(), to.getName());
     }
 
     /**

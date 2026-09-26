@@ -47,7 +47,6 @@
 - 📋 **SH1117** (deps: SH1048 ✅) **the CLI never sends If-None-Match to Shio, so every run pays the full body of an unchanged read** — SH1048 made the console's reads answer 304, which a browser takes for free and Node does not — the CLI sends a conditional GET only to external assets it clones. → §LXXII.22
 - 📋 **SH1126** (deps: SH1043 ✅) **the console size gate measures whatever build is in public, whether or not it was built from the tree under test** — pnpm test never builds the console, so a pass can measure bytes older than the change and a fail can come from a build made outside the task. → §LXXII.23
 - 📋 **SH1136** (deps: —) **seventeen console lint findings are suppressed rather than fixed, ten of them effects that set state on mount** — SH1075 recorded them to get CI's lint green and a local gate running, and each is a render cascade or a stale ref. → §LXXII.24
-- 📋 **SH1137** (deps: —) **a folder moved into another site leaves its posts answering under the old site** — The folder's parent changes and its posts keep the old shSite, so the tree and delivery disagree and no URL check runs. → §LXXII.25
 - 📋 **SH1140** (deps: —) **SH1047's fetch guard cannot see a service built and called in one expression, so login-form's mount read escapes it** — Its FETCHES pattern needs a dot right after the class name, and new ShSetupService().status() puts () between them. → §LXXII.26
 
 ## Block BH — One content model, many languages

@@ -1871,6 +1871,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1078** — A console move answers with the published addresses it retired and created, read before and after the write, so a caller learns what visitors lost without a verify run (design §LXXII.16 superseded: a URL is site plus furl, not the folder chain, so only a cross-site move or a first furl changes one) (design §LXXII.16 recorded in `docs/agents/content-api.md`).
 - **SH1079** — An import answers with the site, what arrived by kind and what it could not do (skipped posts, unresolved types, files it never brings), and the console and shio import show it (design §LXXII.17 recorded in `docs/agents/content-api.md`).
 - **SH1112** — GET /agent/manifest?include=console answers the console's eager load from the build the instance serves, with the ceiling the build now ships beside it; raw matches the script exactly.
+- **SH1137** — a cross-site folder move is refused on the shared writer, where the console reaches it too, with a teaching 409 naming both sites and `shio export`/`shio import` (design §LXXII.25 superseded: the supposition that the agent's folder.move shared the hole — it already refused it, and the refusal belonged on the shared writer instead)
 
 ## Block BH — One content model, many languages
 
