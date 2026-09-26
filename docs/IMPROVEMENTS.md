@@ -1343,27 +1343,6 @@ the draft alone or both rows: the op moves both and the live URL changes immedia
 which is right for an agent applying a plan and is the surprise P7 forbids for a curator
 who has not published.
 
-### LXVIII.20 shio preview and the asset that is not pushed yet (SH1143)
-
-SH1095 gave the files tier a preview: `shio preview <file>` reads a content file as
-`push` reads it and renders its fields through `POST /api/v2/agent/render` without
-storing anything. It sends a file field exactly as the file spells it. For an asset
-already on the instance that is right, because push wrote the address back. For an image
-the author has just dropped under `shio/assets/**`, the field names a path the instance
-has never seen, so the preview shows a broken image where the page will show a picture.
-The author learns the wrong thing about the page, which is the one thing a preview must
-not do.
-
-Two shapes are possible. The render endpoint could accept inline bytes for a file field,
-a data URI the render service resolves only for this request. Or the CLI could stage the
-asset under a disposable name and clean it up afterwards. The first keeps P7's promise
-that a preview stores nothing; the second reuses the upload path but writes, and a write
-needs sweeping. The first is preferred, and it needs a size ceiling so a render request
-cannot carry a video.
-
-Done when a preview of a file whose image is not pushed yet renders that image, and a
-test at the CLI boundary asserts it, naming this id.
-
 ## LXIX Finding, selecting and acting on content (Block BD)
 
 The content browser is where a curator spends the day, and it is the console's weakest

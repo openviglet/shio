@@ -21,7 +21,10 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.Map;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -276,5 +279,59 @@ class ShRenderImageTest {
                 .as("SH1031: `altAttr` is the whole attribute, for the reason `srcset` is — a "
                         + "template cannot express an attribute's own absence")
                 .contains("alt=\"A wide hero\"");
+    }
+
+    /**
+     * SH1143 — a proposed render may carry an image's bytes, because a preview has no id to use.
+     *
+     * <p>`shio preview` renders a content file before it is pushed. A `File` field there is a tree
+     * path; this renderer reads it as a <b>File post id</b>. For an image the author has just
+     * dropped under `shio/assets/**` there is no id at all, so `findById` finds nothing, the helper
+     * takes its inverse branch, and the page shows nothing where it will show a picture — the author
+     * learns the wrong thing about the page, which is the one thing a preview must not do.</p>
+     *
+     * <p>Nothing is stored. §LXVIII.20 weighed staging the asset under a disposable name and
+     * preferred this: a write needs sweeping, and P7 says a preview stores nothing.</p>
+     */
+    @Test
+    @DisplayName("SH1143: a File field carrying bytes renders them, with no ladder and no lookup")
+    void sh1143InlineBytesRender() {
+        String pixel = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAA"
+                + "DUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+        String html = new TransactionTemplate(transactionManager).execute(status ->
+                shPageRenderService.renderProposed(siteName, "/", ShPostState.DRAFT,
+                        new ObjectMapper().createObjectNode().put("HERO", pixel), Map.of()).html());
+
+        assertThat(html)
+                .as("""
+                        SH1143: the bytes are already a URL, so they are the answer rather than a                         lookup key. Sent as a tree path this field is not an id, findById finds                         nothing, and the preview shows a broken image where the pushed page shows                         a picture.""")
+                .contains("src=\"" + pixel + "\"");
+
+        assertThat(html)
+                .as("""
+                        SH1143: and no ladder. There is no File post, so there is no stored WIDTH,                         and this helper's own note says an empty srcset is exactly right:                         fabricating candidates from a width nobody knows is the one thing that                         produces broken images rather than unoptimised ones.""")
+                .contains("srcset=\"\"");
+    }
+
+    /**
+     * SH1143 — the ceiling, asked of the renderer rather than of the CLI that respects it.
+     *
+     * <p>A render request is held in memory and rendered synchronously, so something has to stop one
+     * carrying a video. Over the ceiling the value is simply not a URL this emits: it falls through
+     * to the id lookup, finds nothing, and takes the inverse branch — the same answer an unknown id
+     * gets, which is the conservative one.</p>
+     */
+    @Test
+    @DisplayName("SH1143: bytes past the ceiling are not a URL, and fall back to the inverse")
+    void sh1143TheCeilingHolds() {
+        String huge = "data:image/png;base64," + "A".repeat(3 * 1024 * 1024);
+        String html = new TransactionTemplate(transactionManager).execute(status ->
+                shPageRenderService.renderProposed(siteName, "/", ShPostState.DRAFT,
+                        new ObjectMapper().createObjectNode().put("HERO", huge), Map.of()).html());
+
+        assertThat(html)
+                .as("SH1143: three megabytes of base64 rode into the page, so the ceiling is not a "
+                        + "ceiling and a render request can carry a film")
+                .doesNotContain(huge);
     }
 }

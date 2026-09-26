@@ -893,5 +893,33 @@ and writes the markup to a file (`--out`, or a temp path it prints). Nothing is 
 - **The address is the file's own**, from its path or `site:`/`url:`; `--address` overrides it.
 - **A page the instance does not have is refused, not faked.** A render needs a friendly URL, a
   layout and a site, which are facts about the instance: push once, or render at `--address`.
-- **File fields go as written.** A path whose asset is not pushed yet will not resolve, which the
-  help says rather than the command guessing an id.
+- **An unpushed image renders from the tree (SH1143).** A `File` field is a tree path; the renderer
+  reads that field as a **File post id** and emits `/file_source/<id>/<name>`. `push` maps path to
+  id as it uploads, and a preview stores nothing — so an image just dropped under `shio/assets/**`
+  had no id, `findById` found nothing, and the page showed a broken image where it will show a
+  picture. *The author learned the wrong thing about the page, which is the one thing a preview must
+  not do.* The command now reads the bytes and sends them as a `data:` URI, and `ShRenderHelpers`
+  treats a `data:image/` value as the URL it already is rather than as a lookup key.
+
+  Four things decided here, each the narrow answer:
+
+  - **Bytes, not a staged upload.** §LXVIII.20 weighed both and preferred this: staging under a
+    disposable name reuses the upload path but *writes*, and a write needs sweeping — a failed
+    preview would leave rubbish on the instance. Inline bytes keep P7's promise that a preview
+    stores nothing.
+  - **Only what the instance lacks.** An asset already uploaded goes as its id, exactly as `push`
+    would send it, srcset and all. Inlining it instead would show the author a *different* page from
+    the one they are about to get, which is the same defect pointing the other way.
+  - **The model decides which fields, never the shape of the value.** The def is read for the post's
+    type and only its `File` fields are touched; a `Text` field holding `Blog/img/hero.png` prints
+    that string, and a tree that happens to contain a file of that name does not change it.
+  - **A ceiling on both sides.** 1.5 MB of bytes in the CLI, 2 MB of base64 in the helper — a render
+    request is held in memory and rendered synchronously, so something has to stop one carrying a
+    video. Over it the value is simply not a URL the helper emits: it falls through to the id
+    lookup, finds nothing, and answers as an unknown id does.
+
+  An inlined image renders **without a `srcset`**, because there is no `File` post and so no stored
+  `WIDTH` — which that helper's own note calls exactly right, since fabricating a ladder from a
+  width nobody knows is the one thing that produces broken images rather than unoptimised ones. The
+  run says which images it carried, because that is the one way the previewed page differs from the
+  pushed one.
