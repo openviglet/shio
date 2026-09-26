@@ -2963,7 +2963,8 @@ first rows, and an idle page making no reads.
 was a continuous stream of `/list?page=0` that also threw away every "load more". `filters` is now
 memoised on `list.key`, the committed query string. The check's idle-read claim holds that.
 
-Still to come: moving the rest of the page into the directory.
+Moving the rest of the page into the directory (the listing reads, the listbox keyboard, the
+dialogs) is SH1145.
 
 ## The Forms page (SH1066)
 

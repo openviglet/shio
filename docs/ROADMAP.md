@@ -41,8 +41,8 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- 🛠 **SH1026** (deps: SH1025 ✅) **three view-mode buttons highlight when pressed and render the identical list** — Every view is built, thumbnailed and windowed; most of the 1300-line page is still not in content-browser. → §LXIX.7
-- 📋 **SH1142** (deps: SH1026 🛠) **in the browser's table view, the toolbar's Select menu and Clear change nothing the table shows** — BentoDataTable reports its selection but takes none in, so the page's set and the ticked rows can differ under a bulk delete. → §LXIX.11
+- 📋 **SH1142** (deps: SH1026 ✅) **in the browser's table view, the toolbar's Select menu and Clear change nothing the table shows** — BentoDataTable reports its selection but takes none in, so the page's set and the ticked rows can differ under a bulk delete. → §LXIX.11
+- 📋 **SH1145** (deps: —) **the content browser page is still 1300 lines, so its next feature lands somewhere nobody can review** — SH1026 moved the views, the table and the window into content-browser; the listing reads, the keyboard and the dialogs are still in one file. → §LXIX.12
 
 ## Block BE — Media: what the bytes mean
 
@@ -98,13 +98,6 @@
 - **A curator can freeze the dock's mascot from the preferences dialog** The design
   system has to ship a paused prop on VigletAssistant first, and then the stored choice
   needs a still flag beside muted.
-
-## Done when — SH1026
-
-- **Thumbnails, an editable data table and virtualised rows** Cards show an
-  image-pipeline thumbnail, the table is BentoDataTable with a persisted column picker
-  whose scalar edits are refused on a stale ETag, and each view mounts only its visible
-  window over BD6's fixture.
 
 ## Done when — SH1091
 

@@ -1508,25 +1508,6 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.7 Grid, table and list views, virtualised (SH1026)
-
-A grep of the browser for viewMode returns its declaration and the three buttons' own
-class and click handlers; the render below them is one unconditional map, so the choice
-changes a button's colour and nothing else.
-
-Build the two missing views over one data hook. Grid renders cards with a thumbnail from
-the existing image transform pipeline, or a post-type-coloured placeholder. Table
-renders VDS138's BentoDataTable with a column picker persisted per user and inline
-editing of scalar fields, which goes through the merge verb with the post's ETag. All
-three views are virtualised. The 965-line page is extracted into a content-browser
-directory with one renderer per view, because at that size the next feature makes it
-unreviewable, and the chosen view moves into the URL through BD4 instead of being
-forgotten on navigation.
-
-The declared table dependency either earns its place here or leaves the manifest. The
-assertions render each view over BD6's fixture, confirm only the visible window of rows
-is mounted, and edit a scalar cell whose stale ETag is refused.
-
 ### LXIX.11 A table selection the page can set (SH1142)
 
 SH1026 drew the browser's table view with the design system's BentoDataTable, and the
@@ -1549,6 +1530,31 @@ and Escape do both, so there is only one control for the one selection.
 The assertion renders the table view, chooses "Select all" from the toolbar, and
 confirms the table's checked rows equal the page's selection before any bulk verb is
 offered.
+
+### LXIX.12 The browser page, split by concern (SH1145)
+
+SH1026's design asked for the browser page to be split into the content-browser
+directory "because at that size the next feature makes it unreviewable". It moved what
+each view draws (browser-views.tsx, browser-table.tsx, title-cell.tsx), the pure view
+logic (browser-view.ts) and the window (use-row-window.ts). What stayed in
+object.children.page.tsx is three concerns tangled in one component: the listing's reads
+(first page, load more, the re-read after a write, the facet counts), the listbox
+keyboard (roving focus, ranges, the window's reveal) and seven dialogs with their state.
+
+The cost is not only size. SH1026's live check found the listing effect re-reading page
+0 after every render, because a value built in the component body fed a callback the
+effect depended on. Nothing in a file that size makes that visible, and the lint that
+could have seen it was answering about a different line. A `use-browser-listing` hook
+that owns the reads, and a `use-browser-keyboard` hook that owns the listbox, would each
+be small enough that their dependencies are the whole of their inputs.
+
+Source-reading tests (content-query, filter-bar, browser-keyboard, browser-views, the
+list-state census) match regexes against this file; each moves with the code it asserts,
+not left behind reading a file that no longer holds it.
+
+Done when the page renders the three concerns from hooks and dialog components in
+content-browser, the page is under 600 lines, and e2e/browser-window.check.mjs still
+passes, naming this id.
 
 ## LXX Media: what the bytes mean (Block BE)
 
