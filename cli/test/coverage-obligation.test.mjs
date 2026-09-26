@@ -30,7 +30,8 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -39,7 +40,7 @@ import { test } from "node:test";
 // file and runs it through the shared stripper first, because the comment explaining the
 // instruction quotes the instruction, and a raw scan read the explanation as the defect.
 
-import { readMirror, shippedSince } from "../../scripts/coverage-mirror.mjs";
+import { readMirror, refresh, shippedSince } from "../../scripts/coverage-mirror.mjs";
 import { code } from "./support/source-text.mjs";
 
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -86,8 +87,21 @@ test("SH758: what shipped since the matrix was refreshed, named while somebody r
     "SH758: docs/coverage-named.json is missing or unreadable, so this reader compares a ship "
     + "against nothing and passes forever. Regenerate it: pnpm run coverage:mirror");
 
-  const named = new Set(mirror.named);
+  // SH1115 — an id named only by an UNCOMMITTED edit to the matrix is not named. The mirror is read
+  // from a working directory in another repository, and nothing used to ask whether the edit that
+  // put an id there had ever been committed; observed twice in one session, and the conformance
+  // check reads the same working copy, so mirror and matrix agreed permanently while the published
+  // page never gained the sentence. `refresh` now records which ids the matrix's own HEAD does not
+  // carry, and this subtracts them, so the obligation comes back instead of being forgotten.
+  const provisional = new Set(mirror.matrix?.provisional ?? []);
+  const named = new Set(mirror.named.filter((id) => !provisional.has(id)));
   const since = shippedSince(ROOT, mirror.at);
+
+  if (mirror.matrix?.clean === false) {
+    console.log(`SH1115: the matrix was uncommitted when this mirror was taken`
+      + `${provisional.size ? `, and ${provisional.size} id(s) are named only by that edit: `
+        + `${[...provisional].join(" ")}` : ""}`);
+  }
 
   if (since === null) {
     // A shallow clone, a rewritten history, no git. Said out loud rather than passed over: an
@@ -288,4 +302,103 @@ test("SH771: the coverage ratchet's refusal names both repositories, not one com
   assert.doesNotMatch(ratchet, /lower UNNAMED in the same commit/,
     "SH771: this was the instruction, and it named a commit that cannot exist. Restoring it puts "
     + "the reader back where three pushes went over a red nobody could clear.");
+});
+
+/**
+ * SH1115 — driven against two real repositories, because the defect is about a revision.
+ *
+ * <p>Everything else in this file reads the live tree, which cannot answer this: the live docs
+ * checkout is whatever the machine happens to have, and on a machine that has none at all the whole
+ * question is unobservable. So these build a docs repository and a shio repository in a temp
+ * directory and commit into them — the two states the mirror has to be able to tell apart.</p>
+ *
+ * <p>Why this is worth a fixture rather than a comment: the failure was not a wrong answer, it was
+ * a question nobody asked. `refresh` wrote `at: <this repository's HEAD>` and read `COVERAGE.md`
+ * out of a directory, and the two facts look like one until somebody says them side by side.</p>
+ */
+function repositories() {
+  const base = mkdtempSync(join(tmpdir(), "sh1115-"));
+  const docs = join(base, "docs-shio");
+  const shio = join(base, "shio", "docs");
+  mkdirSync(docs, { recursive: true });
+  mkdirSync(shio, { recursive: true });
+  const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" });
+  for (const cwd of [docs, join(base, "shio")]) {
+    git(cwd, "init", "-q");
+    git(cwd, "config", "user.email", "t@example.invalid");
+    git(cwd, "config", "user.name", "t");
+    git(cwd, "commit", "-q", "--allow-empty", "-m", "root");
+  }
+  const matrix = (body) => writeFileSync(join(docs, "COVERAGE.md"), body, "utf8");
+  return { base, docs, shio: join(base, "shio"), git, matrix };
+}
+
+test("SH1115: a mirror taken from an uncommitted matrix names the ids it cannot vouch for", () => {
+  const { base, docs, shio, git, matrix } = repositories();
+  try {
+    matrix("| cluster | ids |\n| a | SH9001 SH9002 |\n");
+    git(docs, "add", "-A");
+    git(docs, "commit", "-q", "-m", "matrix");
+
+    // The clean case first, or a pass below proves nothing: this is the state the mirror has always
+    // been able to express, and it must not change.
+    const settled = refresh(shio, docs);
+    assert.equal(settled.matrix.clean, true,
+      "SH1115: a committed matrix is clean, and this is the case that must read exactly as before");
+    assert.deepEqual(settled.matrix.provisional, [],
+      "SH1115: nothing is provisional when every id is in the matrix's own HEAD");
+    assert.deepEqual(settled.named, ["SH9001", "SH9002"]);
+    assert.equal(settled.matrix.at, git(docs, "rev-parse", "HEAD").trim(),
+      "SH1115: the revision recorded is the MATRIX's repository, not this one — `at` is this "
+      + "repository's HEAD and answers a different question, which is how the two were conflated");
+    assert.notEqual(settled.matrix.at, settled.at,
+      "SH1115: and they are genuinely different shas here, so the assertion above is not passing "
+      + "by both fields happening to hold the same value");
+
+    // Now the observed failure: an id added to the matrix and never committed there.
+    matrix("| cluster | ids |\n| a | SH9001 SH9002 |\n| b | SH9003 |\n");
+    const dirty = refresh(shio, docs);
+
+    assert.equal(dirty.matrix.clean, false,
+      "SH1115: the matrix differs from its own HEAD, and a mirror that cannot say so marks SH9003 "
+      + "named here forever while the published page never gains the sentence");
+    assert.deepEqual(dirty.matrix.provisional, ["SH9003"],
+      "SH1115: and it names WHICH id depends on the uncommitted edit. SH9001 and SH9002 are committed, "
+      + "so crediting them is right; only SH9003 is a claim this mirror cannot support.");
+    assert.deepEqual(dirty.named, ["SH9001", "SH9002", "SH9003"],
+      "SH1115: `named` stays the working copy's set, because docs-coverage.conformance.mjs asserts "
+      + "the mirror equals what the real matrix names — checked against the authority, and the "
+      + "authority is the file. The provisional list is how the mirror disagrees with itself "
+      + "honestly rather than by holding a different set.");
+
+    // And committing it settles the obligation, which is the loop closing.
+    git(docs, "add", "-A");
+    git(docs, "commit", "-q", "-m", "name SH9003");
+    assert.deepEqual(refresh(shio, docs).matrix.provisional, [],
+      "SH1115: committing the matrix is what clears it, and nothing else — a re-run against the "
+      + "same dirty tree must keep reporting, which is what `provisional` buys over a refusal");
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test("SH1115: a provisional id is not credited, so the obligation comes back", () => {
+  // The consequence, at the reader rather than at the writer. A mirror can hold the state and still
+  // be useless if whoever reads it subtracts the whole `named` set, which is what happened.
+  const provisional = new Set(["SH9003"]);
+  const named = new Set(["SH9001", "SH9002", "SH9003"].filter((id) => !provisional.has(id)));
+
+  assert.deepEqual(["SH9003"].filter((id) => !named.has(id)), ["SH9003"],
+    "SH1115: an id named only in an uncommitted matrix still owes a row, or the mirror records the "
+    + "state and the reader forgets it anyway");
+  assert.deepEqual(["SH9002"].filter((id) => !named.has(id)), [],
+    "SH1115: and a committed one does not, or every ship would read as owing after any local edit");
+
+  // The shape the live mirror is read with, held so the `?.` cannot quietly become a crediting of
+  // everything: a mirror written before SH1115 has no `matrix` key at all.
+  const old = { named: ["SH9001"], at: "abc" };
+  assert.deepEqual([...new Set(old.matrix?.provisional ?? [])], [],
+    "SH1115: a mirror from before this field reads as nothing provisional, which is the only "
+    + "backward-compatible answer — and is why the writer prints a warning rather than relying on "
+    + "the reader to notice");
 });

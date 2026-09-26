@@ -117,6 +117,55 @@ function headSha(root) {
   }
 }
 
+/** `COVERAGE.md`, as the matrix's own repository has it committed, or `null` where it cannot say. */
+function committedMatrix(docs) {
+  try {
+    // `:./COVERAGE.md` — relative to `cwd`, so this works whether the docs checkout's root is the
+    // directory handed in or several levels above it, which it is: `docs-shio` is a subdirectory of
+    // `vigletdocs.github.io`.
+    return execFileSync("git", ["show", "HEAD:./COVERAGE.md"],
+      { cwd: docs, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What the matrix's repository was at, and whether the file this was read from is in it.
+ *
+ * <h2>SH1115 — the revision, because a directory is not one</h2>
+ *
+ * <p>`at` above is <b>this</b> repository's HEAD, which `shippedSince` needs and which says nothing
+ * about the matrix. The matrix lives in another repository and was read out of a working directory,
+ * so nothing anywhere asked whether the edit that put an id in it had ever been committed. Observed,
+ * not reasoned: clearing SH799's queue twice in one session left `COVERAGE.md` modified and
+ * uncommitted both times, and the mirror was refreshed from that working tree and committed here
+ * each pass. `docs-coverage.conformance.mjs` reads the same working copy, so mirror and matrix agree
+ * permanently while the published page never gains the sentence.</p>
+ *
+ * <p>Returns the docs HEAD, whether `COVERAGE.md` is clean there, and — the useful part — exactly
+ * which ids are named <b>only</b> by the uncommitted edit. That last one is why this marks rather
+ * than refuses: refusing would make the state something the mirror cannot hold, and a session that
+ * legitimately edits the matrix then mirrors then commits both would be blocked for doing the right
+ * thing in the right order. Naming the ids lets the reader decline to credit them and keep asking,
+ * which is what §LXIV.18 wanted from "provisional".</p>
+ */
+function matrixRevision(docs, working) {
+  const at = headSha(docs);
+  const committed = committedMatrix(docs);
+  if (at === null || committed === null) {
+    // No git, a detached export, a tarball. Said out loud: an unreadable revision is not a clean
+    // one, and treating it as clean is precisely the forgetting this exists to stop.
+    return { at, clean: null, provisional: [] };
+  }
+  const settled = new Set(namedIn(committed));
+  return {
+    at,
+    clean: committed === working,
+    provisional: namedIn(working).filter((id) => !settled.has(id)),
+  };
+}
+
 /** Rewrite the mirror from the matrix. The only supported way to change this file. */
 export function refresh(root, docs = DOCS) {
   const path = join(docs, "COVERAGE.md");
@@ -127,12 +176,17 @@ export function refresh(root, docs = DOCS) {
         + "  SHIO_DOCS_DIR=<path>/docs-shio pnpm run coverage:mirror",
     );
   }
-  const named = namedIn(readFileSync(path, "utf8"));
+  const working = readFileSync(path, "utf8");
+  const named = namedIn(working);
+  const matrix = matrixRevision(docs, working);
   const body = {
     note: "SH758 — generated from docs-shio/COVERAGE.md by `pnpm run coverage:mirror`. Never edited "
       + "by hand: docs-coverage.conformance.mjs asserts it still agrees with the matrix, so an "
       + "edit here that the matrix does not carry fails the gate that reads the real file.",
     at: headSha(root),
+    // SH1115 — which revision of the OTHER repository this was taken from, and whether the file it
+    // was read from is in it. `at` is this repository's and answers a different question.
+    matrix,
     named,
   };
   writeFileSync(join(root, MIRROR), `${JSON.stringify(body, null, 2)}\n`, "utf8");
@@ -145,4 +199,24 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "
   process.stdout.write(
     `SH758: ${MIRROR} now names ${written.named.length} id(s), taken at ${written.at}\n`,
   );
+  // SH1115 — said on the run that writes it, because the person who can still commit the matrix is
+  // the one reading this line. Not a refusal: the state is recorded either way and the reader
+  // declines to credit these ids, so the obligation comes back rather than being lost.
+  const { clean, provisional } = written.matrix;
+  if (clean === null) {
+    process.stdout.write(
+      `SH1115: could not read the matrix's own revision at ${process.argv[2] ?? DOCS} — no git `
+      + "there. Every id reads as settled, which is the one direction this cannot verify.\n",
+    );
+  } else if (!clean) {
+    process.stdout.write(
+      `SH1115: the matrix is UNCOMMITTED in its own repository (HEAD ${String(written.matrix.at)
+        .slice(0, 8)}).\n`
+      + (provisional.length
+        ? `  ${provisional.length} id(s) named only by that edit: ${provisional.join(" ")}\n`
+          + "  They are recorded as provisional and are NOT credited, so they keep being reported.\n"
+        : "  No id depends on the edit, so nothing here is provisional.\n")
+      + "  Commit COVERAGE.md in vigletdocs and re-run: pnpm run coverage:mirror\n",
+    );
+  }
 }

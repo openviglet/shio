@@ -1141,33 +1141,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.18 A mirror taken from a directory, not a revision (SH1115)
-
-`coverage-mirror.mjs` reads `COVERAGE.md` from a checkout directory — `SHIO_DOCS_DIR`,
-defaulting to a path on one machine — and writes the ids it finds into
-`docs/coverage-named.json`. Committing that file here marks those ids named forever:
-SH758's reader subtracts them and SH747's ratchet counts them as covered. Nothing
-anywhere asks whether the edit that put them in the matrix was ever committed in the
-repository the matrix belongs to.
-
-Observed, not reasoned: clearing SH799's queue twice in one session left
-`vigletdocs/docs-shio/COVERAGE.md` modified and uncommitted both times, and the mirror
-was refreshed from that working tree and committed here each pass. The conformance check
-reads the same working copy, so an uncommitted edit makes mirror and matrix agree
-permanently.
-
-This is the shape the mirror's own header warns about: a copy of a fact whose home is
-elsewhere, held honest by being generated and by being checked against the authority.
-The authority it is checked against is a directory, and a directory is not a revision.
-
-The narrow fix records beside the ids what the matrix's repository was at — its HEAD,
-and whether that tree was clean — and refuses a refresh taken from a dirty one, or marks
-it provisional so the next run asks again. An id named from an uncommitted file is then
-a state the mirror can express rather than one it forgets.
-
-The assertion is a refresh from a dirty docs checkout refused or marked, and a clean one
-unchanged.
-
 ### LXIV.25 Six more strippers, and one already knew (SH1147)
 
 SH1118 fixed the shared stripper and measured what the pattern it replaced was doing:

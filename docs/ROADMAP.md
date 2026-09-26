@@ -21,7 +21,6 @@
 
 ## Block AY — What the conformance instruments cannot see
 
-- 📋 **SH1115** (deps: —) **the coverage mirror marks ids named from a working copy nobody checked was committed** — It reads COVERAGE.md from a directory rather than a revision, so an uncommitted edit names ids here forever while the published matrix never gains the sentence. → §LXIV.18
 - 📋 **SH1147** (deps: SH1118 ✅) **six more comment strippers can each delete the rest of a file from one string literal** — SH1118 fixed the shared helper and its lint names six re-implementations, two of which hide 656 and 508 lines behind a fixture string. → §LXIV.25
 
 ## Block BA — Releases, scheduling and the publish gate
