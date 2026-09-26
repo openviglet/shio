@@ -13,6 +13,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ShUserService } from "@/services/auth/user.service"
 import type { ShUser } from "@/models/auth/user"
 import { toast } from "@viglet/viglet-design-system"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShUserService()
 
@@ -40,6 +41,11 @@ export default function AdminUserPage() {
       }
       toast.success(t("common.save"))
       navigate(`${ROUTES.ADMIN_ROOT}/users`)
+    } catch (error) {
+      // SH1139 — a create that toasts success and lets a refusal escape as an unhandled rejection
+      // looks exactly like a button that did nothing. The dock reads toasts, so the curator, the
+      // mascot and a screen reader all missed it.
+      reportProblem(error, t("common.error"))
     } finally {
       setIsLoading(false)
     }

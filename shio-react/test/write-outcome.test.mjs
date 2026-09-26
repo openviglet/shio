@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 import { strict as assert } from "node:assert"
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
@@ -77,24 +77,25 @@ const EXCEPTIONS = {
     "the publish dry run, rendered in the dialog that asks for confirmation.",
 }
 
-const WORKLIST = [
-  "app/admin/admin.user.page.tsx#onSubmit.create",
-  "app/admin/admin.user.page.tsx#onSubmit.update",
-  "app/admin/api-token/api-token.page.tsx#handleDelete.delete",
-  "app/admin/auth-provider/auth-provider.page.tsx#handleDelete.delete",
-  "app/admin/exchange-provider/exchange-provider.page.tsx#handleDelete.delete",
-  "app/admin/identity-entity.page.tsx#onSubmit.create",
-  "app/admin/site-webhook/site-webhook.page.tsx#handleDelete.delete",
-  "app/admin/tenant/tenant.page.tsx#handleDelete.delete",
-  "app/content/folder.new.page.tsx#onSubmit.create",
-  "app/content/post-type.edit.page.tsx#save.update",
-  "app/content/post-type.list.page.tsx#handleDelete.delete",
-  "app/content/post-type.new.page.tsx#onSubmit.create",
-  "app/content/site.import.page.tsx#onImport.import",
-  "app/content/site.new.page.tsx#onSubmit.create",
-  "app/content/static-file.list.page.tsx#handleDelete.delete",
-  "app/content/static-file.list.page.tsx#bulkDelete.delete",
-]
+/**
+ * SH1139 — emptied, and it stays empty.
+ *
+ * <p>Sixteen write sites were held here: five that said nothing at all (the token, auth provider,
+ * exchange provider, webhook and tenant editors awaited a delete and navigated away), and eleven
+ * that toasted success and let the failure escape as an unhandled rejection. A refused create there
+ * looked exactly like a button that did nothing.</p>
+ *
+ * <p>The two static-file deletes were the worst and are worth remembering: they swallowed each
+ * failure with `.catch(() => {})`, removed the rows from local state, and then toasted success — so
+ * a bulk pass in which <b>nothing</b> went reported all of it deleted, and the rows left the list
+ * either way until a reload put them back. The bulk one now goes through `deleteEach`
+ * (`lib/batch-delete.ts`), which SH953 wrote for this exact shape in the content browser; reusing it
+ * rather than writing the counting again is the whole reason it lives in `lib/`.</p>
+ *
+ * <p>An entry added here needs a reason it cannot be fixed now, and the test below fails on an entry
+ * that has stopped being silent — so this can only shrink, and it is at zero.</p>
+ */
+const WORKLIST = []
 
 test("SH965: every console write reports both outcomes, or is named here with its reason", () => {
   const { sites } = writeSites(SRC)
@@ -152,4 +153,104 @@ test("SH965: the reader is not vacuous, and a planted silent delete is named", (
     "SH965: a handler that awaits a delete and reports nothing was not named silent")
   assert.ok(reported && reported.success && reported.failure,
     "SH965: a handler with a success toast and a failing catch was named silent")
+})
+
+/**
+ * SH1139 — the sixteen, named, so a regression names itself.
+ *
+ * <p>Emptying the WORKLIST makes the test above cover these by default, and that is the weaker
+ * claim: it says "nothing is silent", which passes just as well if one of these handlers stops
+ * existing, gets renamed, or has its write moved behind a local function the reader cannot see
+ * through. Each of the sixteen is listed here instead, so the failure says <em>which</em> outcome
+ * went missing from <em>which</em> screen rather than that a count moved.</p>
+ *
+ * <p>The ids are the reader's own, `<file>#<handler>.<method>`, which is what the WORKLIST held.</p>
+ */
+const CLOSED = [
+  // Five that said nothing at all: awaited a delete and navigated away.
+  "app/admin/api-token/api-token.page.tsx#handleDelete.delete",
+  "app/admin/auth-provider/auth-provider.page.tsx#handleDelete.delete",
+  "app/admin/exchange-provider/exchange-provider.page.tsx#handleDelete.delete",
+  "app/admin/site-webhook/site-webhook.page.tsx#handleDelete.delete",
+  "app/admin/tenant/tenant.page.tsx#handleDelete.delete",
+  // Eleven that toasted success and let the failure escape.
+  "app/admin/admin.user.page.tsx#onSubmit.create",
+  "app/admin/admin.user.page.tsx#onSubmit.update",
+  "app/admin/identity-entity.page.tsx#onSubmit.create",
+  "app/content/folder.new.page.tsx#onSubmit.create",
+  "app/content/post-type.edit.page.tsx#save.update",
+  "app/content/post-type.list.page.tsx#handleDelete.delete",
+  "app/content/post-type.new.page.tsx#onSubmit.create",
+  "app/content/site.import.page.tsx#onImport.import",
+  "app/content/site.new.page.tsx#onSubmit.create",
+  "app/content/static-file.list.page.tsx#handleDelete.delete",
+  "app/content/static-file.list.page.tsx#bulkDelete.delete",
+]
+
+test("SH1139: every site the worklist held reports both outcomes, and still exists", () => {
+  const { sites } = writeSites(SRC)
+  const byId = new Map(sites.map((s) => [s.id, s]))
+
+  const missing = CLOSED.filter((id) => !byId.has(id))
+  assert.deepEqual(missing, [],
+    "SH1139: a site this task fixed is no longer found by the reader. That is not automatically a "
+      + "regression — a handler may have been renamed or a page rewritten — but it must not pass "
+      + "silently, because the list above is the only thing keeping these sixteen from going quiet "
+      + "again. Update the id, or delete it if the write is gone.\n  " + missing.join("\n  "))
+
+  const silent = CLOSED.filter((id) => !byId.get(id).success || !byId.get(id).failure)
+  assert.deepEqual(silent, [],
+    "SH1139: one of the sixteen has gone silent again. The dock reads toasts, so this is a write "
+      + "the curator, the mascot and a screen reader all miss — and five of these originally said "
+      + "nothing at all while navigating away, which looks identical to a button that worked.\n  "
+      + silent.map((id) => {
+        const s = byId.get(id)
+        return `  ${id}:${s.line} (${s.success ? "" : "no success report"}`
+          + `${!s.success && !s.failure ? ", " : ""}${s.failure ? "" : "no failure report"})`
+      }).join("\n  "))
+})
+
+test("SH1139: a batch delete that ignores its refusals is still silent", () => {
+  /*
+   * The exemption `deleteEach` earns is narrow, and this is what keeps it narrow. Calling the helper
+   * is not the report — the report is saying something about `refusals`, which is the one fact the
+   * outcome carries that the swallow it replaced did not. A caller that took the outcome and toasted
+   * only `deleted` would be the original defect with more ceremony: SH953's content browser and
+   * SH1139's static-file list were both exactly that, one success toast speaking for a selection in
+   * which nothing may have gone.
+   */
+  const dir = mkdtempSync(join(tmpdir(), "sh1139-"))
+  mkdirSync(join(dir, "services"))
+  mkdirSync(join(dir, "app"))
+  writeFileSync(join(dir, "services", "thing.service.ts"),
+    "import axios from \"axios\"\nexport class ThingService {\n"
+    + "  async delete(id: string) { await axios.delete(`/v2/thing/${id}`) }\n}\n")
+  writeFileSync(join(dir, "app", "batch.page.tsx"),
+    "import { toast } from \"@viglet/viglet-design-system\"\n"
+    + "import { deleteEach } from \"@/lib/batch-delete\"\n"
+    + "const thingService = new ThingService()\n"
+    + "export function Page() {\n"
+    + "  const ignores = async () => {\n"
+    + "    const outcome = await deleteEach(targets, (t) => thingService.delete(t.id))\n"
+    + "    toast.success(`${outcome.deleted} gone`)\n"
+    + "  }\n"
+    + "  const reports = async () => {\n"
+    + "    const outcome = await deleteEach(targets, (t) => thingService.delete(t.id))\n"
+    + "    if (outcome.refusals.length > 0) toast.error(`${outcome.refusals.length} refused`)\n"
+    + "    if (outcome.deleted > 0) toast.success(`${outcome.deleted} gone`)\n"
+    + "  }\n"
+    + "  return null\n}\n")
+
+  const planted = writeSites(dir).sites
+  const ignores = planted.find((s) => s.id === "app/batch.page.tsx#ignores.delete")
+  const reports = planted.find((s) => s.id === "app/batch.page.tsx#reports.delete")
+
+  assert.ok(ignores && !ignores.failure,
+    "SH1139: a handler that calls deleteEach and never mentions refusals was credited with "
+      + "reporting failure. Then the exemption is `uses the helper`, which is not a report — and "
+      + "the next bulk delete can swallow everything and toast a number again")
+  assert.ok(reports && reports.failure && reports.success,
+    "SH1139: and one that reports both counts is not silent, or the exemption does nothing and the "
+      + "static-file list would have had to hide its write from this reader instead")
+  rmSync(dir, { recursive: true, force: true })
 })

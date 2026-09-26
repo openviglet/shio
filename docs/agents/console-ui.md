@@ -2634,9 +2634,48 @@ itself.
 
 `write-outcome.test.mjs` holds the silent ones as two named lists. EXCEPTIONS covers dry runs,
 preview mints, autosave, the tenant switch and setup, each with a reason and what would falsify
-it. WORKLIST is SH1139's sixteen real gaps. The test prints both counts, fails on a new silent
-write, and fails on a held entry that is no longer silent, so the lists only shrink. A new write
-handler needs a success toast and a catch that calls `reportProblem(error, t("common.error"))`.
+it. The test prints both counts, fails on a new silent write, and fails on a held entry that is no
+longer silent, so the lists only shrink. A new write handler needs a success toast and a catch that
+calls `reportProblem(error, t("common.error"))`.
+
+### WORKLIST is empty, and what its sixteen were (SH1139)
+
+**Five said nothing at all.** The token, auth provider, exchange provider, webhook and tenant
+editors awaited a delete and navigated away — so the row vanished from the list whether the server
+agreed or not, a refusal escaped as an unhandled rejection, and the outcome was indistinguishable
+from a button that worked. They toast `common.deleted` and catch.
+
+**Nine toasted success and let the failure escape**: the user editor's create and update, the
+group/role create, folder create, post-type create, edit and list delete, site create and site
+import. A refused create there looked exactly like a button that did nothing. Each gets the catch
+the rest of the console already had.
+
+**The two static-file deletes were the worst, and are the ones worth remembering.** Both swallowed
+every failure with `.catch(() => {})`, removed the rows from local state, and *then* toasted
+success — so a file the server refused looked deleted until a reload put it back, and a bulk pass in
+which **nothing** went reported all of it deleted. The single delete now moves state only on
+success. The bulk one goes through `deleteEach` (`lib/batch-delete.ts`), which **SH953 wrote for
+this exact shape** in the content browser: refusals are counted and named with `refusalSummary`,
+only what went leaves the list, and a row that refused stays selected so the reason can be read and
+the delete retried. Reusing it rather than writing the counting a second time is the whole reason it
+lives in `lib/`.
+
+**One thing the lint had to learn, and the alternative is why.** `deleteEach` catches internally and
+hands the caller its refusals, so a handler using it has no `catch` of its own — and the reader
+called the bulk delete silent. The other way out was to move the delete behind a local function the
+reader cannot see through, which is how the content browser's equivalent site is invisible to this
+lint: that passes by **hiding from the instrument**, which is worse than the defect. So `paths()`
+takes a `deleteEach` call as a failure report, on the same grounds it already accepts
+`BentoEntityShell` — a helper that owns the reporting contract is not a silent write. The exemption
+is deliberately narrow: calling the helper is not enough, the handler must say something about
+`refusals`, because a caller that took the outcome and toasted only `deleted` would be the original
+swallow with more ceremony. A planted fixture holds both directions.
+
+**Closed with a list rather than a count.** Emptying WORKLIST would make the general rule cover
+these by default, and that is the weaker claim — it passes just as well if one of the sixteen is
+renamed, deleted, or has its write moved somewhere the reader cannot follow. `SH1139: every site the
+worklist held reports both outcomes, and still exists` names all sixteen, so a regression says
+*which* outcome went missing from *which* screen.
 
 ## A refusal is a dock report (SH966)
 

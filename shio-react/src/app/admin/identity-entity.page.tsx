@@ -12,6 +12,7 @@ import { toast } from "@viglet/viglet-design-system"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
+import { reportProblem } from "@/lib/problem"
 
 /** The entity a create page starts from — module-level, so it is one stable object. */
 const BLANK: IdentityEntity = { id: "", name: "", description: "" }
@@ -173,9 +174,15 @@ export function IdentityEntityPage({
             id={formId}
             onSubmit={async (event) => {
               event.preventDefault()
-              await service.create({ name: staged.title, description: staged.description })
-              toast.success(t("common.save"))
-              navigate(listRoute)
+              // SH1139 — a refused create used to escape as an unhandled rejection, leaving the
+              // form sitting there with no toast: indistinguishable from a button that did nothing.
+              try {
+                await service.create({ name: staged.title, description: staged.description })
+                toast.success(t("common.save"))
+                navigate(listRoute)
+              } catch (error) {
+                reportProblem(error, t("common.error"))
+              }
             }}
           />
         ) : null

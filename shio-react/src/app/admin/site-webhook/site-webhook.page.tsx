@@ -80,8 +80,16 @@ export default function SiteWebhookPage() {
 
   const handleDelete = async () => {
     if (confirm(t("dialog.deleteMessage"))) {
-      await service.delete(item.id)
-      navigate(ROUTES.ADMIN_WEBHOOKS)
+      // SH1139 — a delete that navigates away is not a delete that was reported. This awaited and
+      // left, so a refusal escaped as an unhandled rejection and the dock, its live caption and the
+      // curator all learned nothing: the row vanished from the list either way.
+      try {
+        await service.delete(item.id)
+        toast.success(t("common.deleted"))
+        navigate(ROUTES.ADMIN_WEBHOOKS)
+      } catch (error) {
+        reportProblem(error, t("common.error"))
+      }
     }
   }
 

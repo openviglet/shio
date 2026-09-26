@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import type { ShPostType } from "@/models/post-type/post-type"
 import { toast } from "@viglet/viglet-design-system"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShPostTypeService()
 
@@ -31,6 +32,11 @@ export default function PostTypeNewPage() {
       await service.create(data)
       toast.success(t("common.save"))
       navigate(ROUTES.POST_TYPE_ROOT)
+    } catch (error) {
+      // SH1139 — a create that toasts success and lets a refusal escape as an unhandled rejection
+      // looks exactly like a button that did nothing. The dock reads toasts, so the curator, the
+      // mascot and a screen reader all missed it.
+      reportProblem(error, t("common.error"))
     } finally {
       setIsLoading(false)
     }

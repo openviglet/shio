@@ -141,9 +141,35 @@ function isInsideCatch(node, stop) {
   return false
 }
 
+/**
+ * `deleteEach` (`lib/batch-delete.ts`) catches per target and hands the caller its refusals, so a
+ * handler using it has no `catch` of its own and still reports both outcomes.
+ *
+ * <p>SH1139 — the same exemption {@link shellReports} makes, for the same reason: a helper that owns
+ * the reporting contract is not a silent write, and the alternative was to move the delete behind a
+ * local function so this reader stopped seeing it at all. That passes the lint by hiding from it,
+ * which is worse than the defect.</p>
+ *
+ * <p>Narrow on purpose. It is not enough to <i>call</i> `deleteEach`: the handler has to say
+ * something about `refusals`, which is the one thing the outcome carries that a silent caller would
+ * drop. A handler that took the outcome and reported only `deleted` is exactly the swallow SH953 and
+ * SH1139 both fixed, and still fails here.</p>
+ */
+const BATCH = "deleteEach"
+function batchReports(handler) {
+  let uses = false
+  let refusals = false
+  visit(handler, (node) => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)
+      && node.expression.text === BATCH) uses = true
+    if (ts.isPropertyAccessExpression(node) && node.name.text === "refusals") refusals = true
+  })
+  return uses && refusals
+}
+
 function paths(handler, known) {
   let success = false
-  let failure = false
+  let failure = batchReports(handler)
   visit(handler, (node) => {
     if (ts.isCatchClause(node) && reports(node.block, known)) failure = true
     if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)

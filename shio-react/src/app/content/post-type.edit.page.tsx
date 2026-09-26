@@ -63,6 +63,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { WIDGET_BADGE_COLORS, WIDGET_ACCENT_COLORS } from "@/lib/widget-colors"
 import { usePostTypes, useWidgets } from "@/hooks/use-catalogue"
+import { reportProblem } from "@/lib/problem"
 
 const postTypeService = new ShPostTypeService()
 
@@ -797,6 +798,11 @@ export default function PostTypeEditPage() {
       await postTypeService.update({ ...data, name: postTypeName, fields: toFieldDefs(fields) })
       toast.success(t("common.save"))
       if (close) navigate(ROUTES.POST_TYPE_ROOT)
+    } catch (error) {
+      // SH1139 — a create that toasts success and lets a refusal escape as an unhandled rejection
+      // looks exactly like a button that did nothing. The dock reads toasts, so the curator, the
+      // mascot and a screen reader all missed it.
+      reportProblem(error, t("common.error"))
     } finally {
       setIsLoading(false)
     }
