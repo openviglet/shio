@@ -2178,28 +2178,6 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline.
 
-### LXXIV.9 A stamp that knows what it ran against (SH1103)
-
-A gate stamp records the HEAD it ran at, and staleness is that sha against the current
-one. That catches the run somebody skipped. It cannot catch the run that is no longer
-about this tree, because `ship` writes ROADMAP.md, CHANGELOG.md and IMPROVEMENTS.md at
-the same HEAD the green run was taken at — so the stamp stays fresh while the thing it
-certified has changed underneath it.
-
-That is not a corner. The documented order is implement, run the gates, ship, commit,
-and the JS suite reads the ledger: `coverage-obligation.test.mjs` counts shipped ids
-against the mirror and `red-suites.test.mjs` reads the roadmap. So a ship can turn `pnpm
-test` red after the last green run of it, every time, by construction. It happened on
-SH1038: the suite was green, the ship made the sixth unnamed id against SH799's ceiling
-of five, and the commit landed over a red nobody could have seen.
-
-Either the stamp carries what it ran against rather than only where — a digest of the
-inputs the gates read, so a write between the run and the commit reads as stale — or the
-gates run after the ship, which costs a second full run on every task. The first is
-cheaper and says more: a stale stamp already prints the run somebody owes, and this
-makes it print for the case it misses. The assertion is that a ship between a green
-stamp and a read of it leaves it stale.
-
 ### LXXIV.10 A ceiling on the catalogue (SH1104)
 
 `ShAgentResponseBudgetTest` measures sixteen responses and treats a measured one with no

@@ -83,6 +83,16 @@ class ShDeclaredRedTest {
     private static final Pattern STAMP_RED = Pattern.compile("\"red\"\\s*:\\s*(true|false)");
     private static final Pattern STAMP_SHA = Pattern.compile("\"sha\"\\s*:\\s*\"([0-9a-f]+)\"");
     private static final Pattern STAMP_WHEN = Pattern.compile("\"when\"\\s*:\\s*\"([^\"]+)\"");
+    /** SH1103 — the digest of what the run read that a ship rewrites, written by gate-stamp.mjs. */
+    private static final Pattern STAMP_INPUTS = Pattern.compile("\"inputs\"\\s*:\\s*\"([0-9a-f]+)\"");
+
+    /**
+     * SH1103 — {@code STAMP_INPUTS} in {@code scripts/gate-stamp.mjs}, in its order. The digest has to be
+     * byte-for-byte the one the script writes, so both hash raw bytes: the path, a NUL, the file (or
+     * {@code <absent>}), a NUL.
+     */
+    static final List<String> INPUTS = List.of(
+            "docs/ROADMAP.md", "docs/CHANGELOG.md", "docs/IMPROVEMENTS.md", "docs/coverage-named.json");
 
     @Test
     @DisplayName("SH755: no gate that answered red in this tree is missing from red-suites.json")
@@ -120,7 +130,7 @@ class ShDeclaredRedTest {
             // failed over exactly that: `red: true` at 4b20d8e0 while HEAD was 42d02432, two
             // commits later. It happened to be right, because the defect was still open, and that
             // is luck rather than a property of a check.
-            if (isStale(sha, head)) {
+            if (staleStamp(body, head)) {
                 report.add("  " + gate + " — last run" + at + ", " + group(STAMP_WHEN, body)
                         + " — NOT this tree, so not a colour");
                 continue;
@@ -195,7 +205,7 @@ class ShDeclaredRedTest {
             }
             try {
                 String body = Files.readString(stamp, StandardCharsets.UTF_8);
-                if (!"true".equals(group(STAMP_RED, body)) || isStale(group(STAMP_SHA, body), head)) {
+                if (!"true".equals(group(STAMP_RED, body)) || staleStamp(body, head)) {
                     return false;
                 }
             } catch (IOException unreadable) {
@@ -249,7 +259,7 @@ class ShDeclaredRedTest {
             // SH770 again, and it matters more here than above: a stale GREEN must not retire a
             // declaration any more than a stale red may block a commit. Excluding it in both
             // directions is what makes a stale stamp read as an absent one.
-            if (isStale(group(STAMP_SHA, body), head)) {
+            if (staleStamp(body, head)) {
                 continue;
             }
             if (!"true".equals(group(STAMP_RED, body))) {
@@ -327,6 +337,20 @@ class ShDeclaredRedTest {
                 .isFalse();
     }
 
+    @Test
+    @DisplayName("SH1103: the same commit with a different ledger is not the tree the stamp certified")
+    void aShipAfterTheRunLeavesTheStampStale() {
+        assertThat(isStale("4b20d8e0", "4b20d8e0", "aaaa", "bbbb"))
+                .as("SH1103: a ship rewrites the ledger at the HEAD a green run was taken at; by sha "
+                        + "alone that run read as current, and a commit landed over a red nobody saw")
+                .isTrue();
+        assertThat(isStale("4b20d8e0", "4b20d8e0", "aaaa", "aaaa")).isFalse();
+        assertThat(isStale("4b20d8e0", "4b20d8e0", null, "bbbb"))
+                .as("a stamp written before the field existed cannot be shown to be about other inputs")
+                .isFalse();
+        assertThat(inputsDigest()).as("this tree's inputs can be digested").matches("[0-9a-f]{64}");
+    }
+
     /**
      * Was this stamp taken against the tree being judged? (SH770)
      *
@@ -348,6 +372,43 @@ class ShDeclaredRedTest {
             return false;
         }
         return !stampSha.trim().equals(head.trim());
+    }
+
+    /**
+     * SH1103 — the same commit with different inputs is a different tree. A ship writes the ledger at
+     * the HEAD a green run was taken at, so the sha alone read that run as current. Unknown either side
+     * is not stale, for {@link #isStale}'s reason.
+     */
+    static boolean isStale(String stampSha, String head, String stampInputs, String inputs) {
+        if (isStale(stampSha, head)) {
+            return true;
+        }
+        if (stampSha == null || head == null || stampSha.isBlank() || head.isBlank()) {
+            return false;
+        }
+        return stampInputs != null && inputs != null && !stampInputs.equals(inputs);
+    }
+
+    private static boolean staleStamp(String body, String head) {
+        return isStale(group(STAMP_SHA, body), head, group(STAMP_INPUTS, body), inputsDigest());
+    }
+
+    /** The digest `gate-stamp.mjs` writes, over this tree's inputs now, or {@code null} if unreadable. */
+    static String inputsDigest() {
+        try {
+            java.security.MessageDigest sha = java.security.MessageDigest.getInstance("SHA-256");
+            for (String input : INPUTS) {
+                Path file = ROOT.resolve(input);
+                sha.update(input.getBytes(StandardCharsets.UTF_8));
+                sha.update((byte) 0);
+                sha.update(Files.isRegularFile(file)
+                        ? Files.readAllBytes(file) : "<absent>".getBytes(StandardCharsets.UTF_8));
+                sha.update((byte) 0);
+            }
+            return java.util.HexFormat.of().formatHex(sha.digest());
+        } catch (IOException | java.security.NoSuchAlgorithmException cannotRead) {
+            return null;
+        }
     }
 
     /** HEAD, or {@code null} where git cannot say — the same tolerance the stamp writer has. */

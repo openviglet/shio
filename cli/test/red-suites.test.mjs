@@ -59,7 +59,7 @@ import { test } from "node:test";
 
 import {
   CYCLE_EXIT, COMPARATOR_GATES, GATES, GATE_COVERS, GATE_SUITES, clearedGates, comparatorCycle,
-  gateLines,
+  gateLines, inputsDigest, STAMP_INPUTS,
   isStale, owedGates, stamps,
 } from "../../scripts/gate-stamp.mjs";
 import { GATE_RUNS } from "../../scripts/gates.mjs";
@@ -278,6 +278,33 @@ test("SH755: the declared red matches the red the gates actually reported", asyn
     + "its red is how a suite stops being a gate: the next real failure is already excused. Delete "
     + "the entry — and if it went green for a reason nobody understands, that is a task, not a "
     + "line in a ledger.");
+});
+
+test("SH1103: a ship between a green stamp and a read of it leaves the stamp stale", async () => {
+  const { mkdtemp, mkdir, writeFile } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const root = await mkdtemp(join(tmpdir(), "sh1103-"));
+  await mkdir(join(root, "docs"), { recursive: true });
+  await writeFile(join(root, "docs", "ROADMAP.md"), "- 📋 **SH1** open\n");
+  const green = { sha: "4b20d8e0", red: false, inputs: inputsDigest(root) };
+  assert.equal(isStale(green, "4b20d8e0", inputsDigest(root)), false, "the tree it ran against is its colour");
+
+  // What `ship` does: rewrite the ledger at the same HEAD the green run was taken at.
+  await writeFile(join(root, "docs", "ROADMAP.md"), "");
+  assert.equal(isStale(green, "4b20d8e0", inputsDigest(root)), true,
+    "SH1103: same sha, different ledger — the run certified a tree that is no longer here, and on "
+      + "SH1038 that is how a commit landed over a red `pnpm test` nobody could have seen");
+  assert.equal(isStale({ sha: "4b20d8e0" }, "4b20d8e0", inputsDigest(root)), false,
+    "a stamp written before the field existed cannot be shown to be about other inputs");
+
+  // The Java comparator judges the same stamps, so it has to digest the same files.
+  const java = await readFile(new URL("../../shio-app/src/test/java/com/viglet/shio/ShDeclaredRedTest.java",
+    import.meta.url), "utf8");
+  const block = /List<String> INPUTS = List\.of\(([\s\S]*?)\);/.exec(java)?.[1] ?? "";
+  assert.deepEqual([...block.matchAll(/"([^"]+)"/g)].map((match) => match[1]), STAMP_INPUTS,
+    "SH1103: ShDeclaredRedTest digests other inputs than gate-stamp.mjs writes, so every stamp "
+      + "reads as stale to one comparator and fresh to the other")
 });
 
 test("SH770: a stamp from another commit is not this tree's colour, in either direction", () => {

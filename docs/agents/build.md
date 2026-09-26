@@ -422,6 +422,18 @@ conformance — last run at 950cdaed, 2026-08-17T11:44:57.024Z — NOT this tree
 That is a more useful line than either a colour or a silence, because it names the run somebody has
 to do.
 
+**And a stamp at HEAD can still be about another tree (SH1103).** The documented order is implement,
+run the gates, ship, commit. `ship` rewrites the ledger at the HEAD the green run was taken at, and
+the JS suite reads it: the coverage obligation counts shipped ids, and the red-suites comparator reads
+the roadmap. So a ship could turn `pnpm test` red after its last green run, and the stamp still read
+as fresh. That is how SH1038's commit landed over a red. A stamp now carries `inputs`, a SHA-256 over
+the four files a ship or a coverage mirror writes between a run and a commit (`STAMP_INPUTS`:
+ROADMAP, CHANGELOG, IMPROVEMENTS, `docs/coverage-named.json`), hashed as path, NUL, raw bytes, NUL.
+Same sha with different inputs is stale. `ShDeclaredRedTest` computes the identical digest, and
+`red-suites.test.mjs` holds its file list to the script's. A stamp without the field is not stale for
+lacking it, for the reason below. In practice, run the gates **after** `ship`; a stamp taken before it
+now says so.
+
 **The commit alone, and deliberately not SH764's `compiles()`.** That predicate answers *could this
 change have produced different classes*, which is right about the JVM and wrong here: **no gate
 writes a `java` stamp** — the Java suite is the java gate and cannot stamp its own outcome — so

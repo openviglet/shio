@@ -30,8 +30,42 @@
  * `grep` those tasks exist to refuse.
  */
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+
+/**
+ * SH1103 — what a gate read that can change without a commit, digested beside the sha.
+ *
+ * <p>A stamp said <em>where</em> it ran and not <em>what against</em>, and staleness was the sha
+ * alone. The documented order is implement, run the gates, ship, commit — and `ship` rewrites these
+ * files at the same HEAD the green run was taken at, while the JS suite reads them (the coverage
+ * obligation counts shipped ids against the mirror; the red-suites comparator reads the roadmap). So
+ * a ship turned `pnpm test` red after its last green run and the stamp still read fresh: it happened
+ * on SH1038. The four files are the ones a ship or a coverage mirror writes between a run and a
+ * commit. `ShDeclaredRedTest` computes the same digest, byte for byte, which is why it is over raw
+ * bytes and a fixed order.</p>
+ */
+export const STAMP_INPUTS = [
+  "docs/ROADMAP.md", "docs/CHANGELOG.md", "docs/IMPROVEMENTS.md", "docs/coverage-named.json",
+];
+
+/** The digest of {@link STAMP_INPUTS} as this tree holds them now, or `null` where it cannot read. */
+export function inputsDigest(root) {
+  try {
+    const hash = createHash("sha256");
+    for (const path of STAMP_INPUTS) {
+      const file = join(root, path);
+      hash.update(path, "utf8");
+      hash.update(Buffer.from([0]));
+      hash.update(existsSync(file) ? readFileSync(file) : Buffer.from("<absent>", "utf8"));
+      hash.update(Buffer.from([0]));
+    }
+    return hash.digest("hex");
+  } catch {
+    return null;
+  }
+}
 
 /**
  * The keys `red-suites.json` allows, and the only names a stamp may take.
@@ -237,6 +271,8 @@ export function stamp(root, gate, code) {
       code,
       red: code !== 0,
       sha: headSha(root),
+      // SH1103 — what it ran against, so a ship between this run and the commit reads as stale.
+      inputs: inputsDigest(root),
       when: new Date().toISOString(),
     };
     writeFileSync(join(dir, `${gate}.json`), `${JSON.stringify(record, null, 2)}\n`, "utf8");
@@ -465,11 +501,17 @@ export function clear(root, gate) {
  * shown to be about another commit, and inventing staleness from an absence is the same mistake in
  * the other direction.</p>
  */
-export function isStale(record, head) {
+export function isStale(record, head, inputs = null) {
   if (!head || !record?.sha) {
     return false;
   }
-  return String(record.sha).trim() !== String(head).trim();
+  if (String(record.sha).trim() !== String(head).trim()) {
+    return true;
+  }
+  // SH1103 — the same commit with different inputs is a different tree: a ship wrote the ledger
+  // after this run. Unknown either side is not stale, for SH770's reason: a stamp written before
+  // the field existed cannot be shown to be about other inputs.
+  return Boolean(record.inputs && inputs) && record.inputs !== inputs;
 }
 
 /**
@@ -482,6 +524,7 @@ export function isStale(record, head) {
 export function stamps(root) {
   const found = {};
   const head = headSha(root);
+  const inputs = inputsDigest(root);
   for (const gate of GATES) {
     const path = join(root, GATES_DIR, `${gate}.json`);
     if (!existsSync(path)) {
@@ -494,7 +537,7 @@ export function stamps(root) {
       // need no new branch to be correct. The file survives so `git status` and a curious reader
       // can see the clearing happened, which a deletion does not offer.
       if (record && typeof record === "object" && typeof record.red === "boolean") {
-        found[gate] = { ...record, stale: isStale(record, head) };
+        found[gate] = { ...record, stale: isStale(record, head, inputs) };
       }
     } catch {
       // A corrupt stamp is no stamp. It cannot be allowed to fail a gate, because the thing it
