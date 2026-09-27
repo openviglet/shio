@@ -61,15 +61,10 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
  */
 const UNCANCELLED = new Set([
   "src/app/admin/admin.user.page.tsx",
-  "src/app/admin/api-token/api-token.page.tsx",
-  "src/app/admin/auth-provider/auth-provider.page.tsx",
   "src/app/admin/email-config/email-config.page.tsx",
-  "src/app/admin/exchange-provider/exchange-provider.page.tsx",
   "src/app/admin/graphql/graphql.page.tsx",
   "src/app/admin/identity-entity.page.tsx",
   "src/app/admin/review/review.list.page.tsx",
-  "src/app/admin/site-webhook/site-webhook.page.tsx",
-  "src/app/admin/tenant/tenant.page.tsx",
   "src/app/content/folder.edit.page.tsx",
   "src/app/content/post-type.edit.page.tsx",
   "src/app/content/post-type.new.page.tsx",
@@ -97,7 +92,13 @@ const UNCANCELLED = new Set([
   "src/components/working-line.tsx",
 ]);
 
-/** The five the task's own design names, held apart so the list above cannot absorb them. */
+/**
+ * The five SH1047's design named, and the five SH1116's first slice took off the list.
+ *
+ * <p>Held apart from `UNCANCELLED` so the declared list cannot absorb a fix and go on recording it
+ * as a debt. SH1116 is explicitly a task in slices — each screen's failure path is its own — and the
+ * assertion the design names is <b>this list growing while that one shrinks</b>.</p>
+ */
 const MIGRATED = [
   "src/app/admin/activity/activity.list.page.tsx",
   // SH1145 — the browser's reads moved into this hook; the page holds none of its own.
@@ -105,6 +106,35 @@ const MIGRATED = [
   "src/app/content/search.page.tsx",
   "src/app/content/static-file.list.page.tsx",
   "src/app/content/trash.page.tsx",
+];
+
+/**
+ * SH1116, slice one — the five admin entity forms, which no longer fetch in an effect at all.
+ *
+ * <h2>Why they are a second list rather than five more entries above</h2>
+ *
+ * <p>`MIGRATED` asserts a file still fetches inside an effect *and* passes a signal, which is the
+ * right claim for the five that thread an `AbortController` through one. These five moved to the
+ * <b>query layer</b>: the read is a `useQuery` and the effects that remain only seed form state from
+ * its answer. Asserting they "fetch inside an effect" would be a sentence that is no longer true and
+ * that passes anyway — the scan sees a `useEffect` and a `service.` call in one file and cannot tell
+ * they are unrelated. The gate's own failure message says to say so here rather than delete the line,
+ * so this is that.</p>
+ *
+ * <h2>The second defect the migration is what fixed</h2>
+ *
+ * <p>Each of the five had `item.name` — `item.title` for the token — in its effect's dependency list,
+ * so <b>typing in the name field re-read the row</b> and `setItem` put the saved copy back: the
+ * curator's edits to *every* field reverted a moment after they were made. Nothing errored. A query's
+ * key is its subject, so the read re-runs when the tenant or the token changes and never when the
+ * form does, which is the whole of that fix.</p>
+ */
+const QUERY_LAYER = [
+  "src/app/admin/api-token/api-token.page.tsx",
+  "src/app/admin/auth-provider/auth-provider.page.tsx",
+  "src/app/admin/exchange-provider/exchange-provider.page.tsx",
+  "src/app/admin/site-webhook/site-webhook.page.tsx",
+  "src/app/admin/tenant/tenant.page.tsx",
 ];
 
 /** Every source file under the walked roots, as repo-relative paths with forward slashes. */
@@ -190,6 +220,46 @@ test("SH1047: the five screens the task named cancel, and cannot rejoin the list
       `SH1047: ${path} is both migrated and declared uncancelled — the list would then absorb the `
       + "fix rather than record the debt");
   }
+});
+
+test("SH1116: the query-layer five take the signal useQuery hands them, and are off the list", () => {
+  const { uncancelled } = cancellation(onDisk());
+
+  for (const path of QUERY_LAYER) {
+    const code = stripComments(readFileSync(join(ROOT, path), "utf8"));
+
+    // The claim, read off the source: a `queryFn` that is handed a signal and forwards it. A
+    // `queryFn: () => service.get(id)` compiles, caches, and cancels nothing — which is this
+    // migration's own way of going wrong, and it would leave the file looking done.
+    assert.match(code, /queryFn: \(\{ signal \}\) => service\.\w+\(/u,
+      `SH1116: ${path} has a queryFn that does not take useQuery's signal. The whole reason to move `
+        + "a read here is that the signal is aborted when the key changes or the screen unmounts; a "
+        + "queryFn that ignores it is the same uncancelled read with a cache in front of it.");
+
+    // The dependency that made typing revert the form. `item.name` and `item.title` are the two
+    // spellings the five used; either back in an effect's deps is the defect returning.
+    assert.doesNotMatch(code, /\}, \[[^\]]*\bitem\.(?:name|title)\b/u,
+      `SH1116: ${path} has item.name or item.title back in an effect's dependencies. That is what `
+        + "re-read the row on every keystroke and put the saved copy back over what was being typed.");
+
+    // A cancelled read must not reach the failure path, or the fix is a reliable blank screen in
+    // place of a rare race — the hazard §LXXII.21 says to carry into every slice.
+    assert.match(code, /isCancelled\(/u,
+      `SH1116: ${path} reports a read failure without asking whether it was a cancellation. An `
+        + "aborted request rejects, so a navigation would be reported to the curator as an error.");
+
+    assert.ok(!uncancelled.includes(path),
+      `SH1116: ${path} is back among the screens that read without a signal`);
+    assert.ok(!UNCANCELLED.has(path),
+      `SH1116: ${path} is on the declared list and migrated — a debt paid off has to leave the `
+        + "books, or the next reader counts it twice");
+  }
+
+  // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
+  // rather than an equality: the next slice lowers it, and nothing may raise it.
+  assert.ok(UNCANCELLED.size <= 28,
+    `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened `
+      + "and slice one took five off it; it may only ever shrink.");
 });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {

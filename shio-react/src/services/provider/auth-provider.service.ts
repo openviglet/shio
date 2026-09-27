@@ -1,4 +1,5 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 import type {
   ShAuthProviderInstance,
   ShAuthProviderVendor,
@@ -10,18 +11,21 @@ export class ShAuthProviderService {
     return response.data
   }
 
-  async vendors(): Promise<ShAuthProviderVendor[]> {
-    const response = await axios.get<ShAuthProviderVendor[]>("/v2/provider/auth/vendor")
+  async vendors(read: ShRead = {}): Promise<ShAuthProviderVendor[]> {
+    const response = await axios.get<ShAuthProviderVendor[]>("/v2/provider/auth/vendor",
+      { signal: read.signal })
     return response.data
   }
 
-  async model(): Promise<ShAuthProviderInstance> {
-    const response = await axios.get<ShAuthProviderInstance>("/v2/provider/auth/model")
+  async model(read: ShRead = {}): Promise<ShAuthProviderInstance> {
+    const response = await axios.get<ShAuthProviderInstance>("/v2/provider/auth/model",
+      { signal: read.signal })
     return response.data
   }
 
-  async get(id: string): Promise<ShAuthProviderInstance> {
-    const response = await axios.get<ShAuthProviderInstance>(`/v2/provider/auth/${id}`)
+  async get(id: string, read: ShRead = {}): Promise<ShAuthProviderInstance> {
+    const response = await axios.get<ShAuthProviderInstance>(`/v2/provider/auth/${id}`,
+      { signal: read.signal })
     return response.data
   }
 

@@ -2376,6 +2376,82 @@ open**, navigates past it, releases it, and reads the rows. A route pattern that
 skip that says so rather than a pass: held zero requests and green is indistinguishable from a
 console that is fine.
 
+## Paying the uncancelled-reads list down, one slice at a time (SH1116)
+
+SH1047 above migrated five screens and left the rest as a declared list. The list did its job — a
+new one cannot arrive quietly — but **a gate that records a debt is not the thing that pays it**, and
+the list stood at 33 when SH1116 opened. (§LXXII.21 and the roadmap line both say thirty-five; the
+file's own count is the number.)
+
+The task is explicitly in slices, because each screen's failure path is its own. **Slice one is the
+five admin entity forms** — the API token, the auth provider, the exchange provider, the site webhook
+and the tenant — and they are one slice because they shared a shape *and* a second defect:
+
+**Each had `item.name` (or `item.title`) in its effect's dependency list.** So typing in the name
+field re-read the row, and `setItem` put the saved copy back — reverting the curator's edits to
+*every* field, a moment after they were made, racily, with nothing errored and nothing to notice by.
+That is a straight P7 violation that had nothing to do with cancellation, and **the migration is what
+fixed it**: a query's key is its subject, so the read re-runs when the tenant changes and never when
+the form does. It is worth knowing that the two defects travel together, because the dependency array
+is where an effect-shaped read keeps its mistakes.
+
+These five went onto **SH1046's query layer** rather than taking an `AbortController`, which is the
+opposite of what SH1047's five did and for the reason that note gives: these hold one entity keyed on
+a route parameter, so caching is what you want, while a cursor or an accumulating page is a behaviour
+change that belongs to `useInfiniteQuery`. The idiom is `queryFn: ({ signal }) => service.get(id, {
+signal })` with `enabled: !isNew`, and two effects that only seed form state from `data` and report
+`error` — `isCancelled` first, or the fix is a reliable error toast on every navigation in place of a
+rare race.
+
+The two provider pages gained a third query rather than a branch: the blank `model()` for a new
+provider is a different subject from an existing one and is the same answer for every new provider, so
+it caches under its own key. Their `vendors()` read stopped being component state entirely.
+
+**What the browser probe actually said, which is not "green".** §LXXII.21 asks for the probe green
+after each slice. On the instance this slice was driven against it is not, and it was not before
+either: 16 of 57 probes fail, all on `missing: no hero heading` / `no frosted surface` over the bento
+**admin list mosaics** and on fixture gaps (no CDA token, no editable props). That set is *unstable* —
+across five runs of identical pre-slice code the failures moved between 11 and 16, and every single
+route that differs after the slice (`bento-webhooks`, `bento-exchange-providers`, `graphql`,
+`post-new:Page`, `legacy-console-post`, `bento-universal-editor`) had already failed in at least one
+run before it. The probe reads `backdrop-filter` off computed style, which is timing-sensitive, and
+this is the same instability that made `probe.ok` the wrong costing predicate for SH1113's budget.
+
+So the evidence for this slice is the narrower and better-aimed one: **the five routes that render
+the changed pages — `bento-token-new`, `bento-webhook-new`, `bento-tenant-new`,
+`bento-auth-provider-new`, `bento-exchange-provider-new` — all pass**, and the list mosaics that fail
+are pages this slice did not touch, failing on rendered chrome rather than on a read. A slice cannot
+be blocked on a probe that is red for reasons it did not cause, and it must not be able to claim a
+green one either.
+
+**Two gates this slice tripped, and neither was about cancellation.**
+
+- **`react-hooks/set-state-in-effect`.** The natural shape for seeding a form from a query is
+  `useEffect(() => { if (data) setItem(data) }, [data])`, and that rule forbids it — SH1136 is the open
+  task for the ten suppressions of exactly this, so adding a suppression was not available and would
+  have been the wrong answer anyway. These five set state **during render** instead, which is React's
+  documented "adjust state when the input changes" pattern: a `seeded` value holds the subject already
+  poured into the form (the row's id, or `"model"` for a new provider's blank) so each answer seeds
+  once and a curator's edits are never overwritten. eslint is clean on it.
+- **SH1043's headroom check, for a reason that is not this change.** Building the console from the tree
+  under test put the eager total at 1810450 raw / 495034 gzip, leaving 3.70% and 3.69% against the 4%
+  that gate asks for, so both ceilings were raised. This slice's own cost, measured by building HEAD
+  and the change on the same tree, is **1.3 KB raw / 0.2 KB gzip** — the rest is accumulated growth
+  that every previous green run had missed because `pnpm test` never builds the console and the gate
+  measured whatever was sitting in `resources/public`. That is **SH1126** by name, and it is worth
+  knowing before reading the budget's `raised` note: taking that entry for this feature's cost would be
+  wrong by a factor of fifteen.
+
+**Why the five are a second list in the gate and not five more `MIGRATED` entries.** `MIGRATED`
+asserts a file still fetches inside an effect *and* passes a signal, which is right for an
+`AbortController`. These no longer fetch in an effect at all. Asserting they do would be a sentence
+that is no longer true **and that passes anyway**, because the scan sees a `useEffect` and a
+`service.` call in one file and cannot tell they are unrelated — the gate's own failure message says
+to say so rather than delete the line, so `QUERY_LAYER` is that, with its own three claims: the
+`queryFn` takes the signal, `item.name` is not back in any dependency list, and the failure path asks
+`isCancelled`. The declared list is asserted as a **ceiling of 28** that later slices lower and
+nothing raises.
+
 ## A failure that stays in the screen it happened in (SH1049)
 
 `main.tsx` mounted the design system's `ErrorBoundary` around the whole application, so a render

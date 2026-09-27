@@ -1,4 +1,5 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 import type { ShTenant } from "@/models/tenant/tenant.model"
 
 /** The request's resolved tenant (GET /v2/tenant/current). */
@@ -23,8 +24,8 @@ export class ShTenantService {
     return response.data
   }
 
-  async get(id: string): Promise<ShTenant> {
-    const response = await axios.get<ShTenant>(`/v2/tenant/${id}`)
+  async get(id: string, read: ShRead = {}): Promise<ShTenant> {
+    const response = await axios.get<ShTenant>(`/v2/tenant/${id}`, { signal: read.signal })
     return response.data
   }
 

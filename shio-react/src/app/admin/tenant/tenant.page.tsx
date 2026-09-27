@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
 import { Building2, Save, ArrowLeft, Trash2, Info, Sparkles, Ban, CircleCheck } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -16,6 +17,8 @@ import { toast } from "@viglet/viglet-design-system"
 import { ShTenantService } from "@/services/tenant/tenant.service"
 import type { ShTenant } from "@/models/tenant/tenant.model"
 import { reportProblem } from "@/lib/problem"
+import { addressKey } from "@/lib/query-keys"
+import { isCancelled } from "@/lib/read-options"
 
 const service = new ShTenantService()
 
@@ -32,11 +35,31 @@ export default function TenantPage() {
   const isDefault = item.name === "shio"
   const isSuspended = item.status === "SUSPENDED"
 
+  /*
+   * SH1116 — the server's copy, read once per tenant and cancelled when the curator leaves.
+   *
+   * The effect this replaced had `item.name` in its dependencies, so it re-read on **every
+   * keystroke in the name field** and `setItem` put the saved row back: the curator's edits, to
+   * every field, reverted a moment after they were typed. The key is the id and nothing else, which
+   * is the whole of that fix — a query re-runs when its subject changes, not when the form does.
+   */
+  const loaded = useQuery<ShTenant>({
+    queryKey: addressKey(`tenant:${tenantId}`),
+    queryFn: ({ signal }) => service.get(tenantId, { signal }),
+    enabled: !isNew,
+  })
+
+  // Set during render, not in an effect: React's own "adjust state when the input changes" pattern.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (loaded.data && seeded !== loaded.data.id) {
+    setSeeded(loaded.data.id)
+    setItem(loaded.data)
+  }
+
   useEffect(() => {
-    if (!isNew) {
-      service.get(tenantId).then(setItem).catch(error => reportProblem(error, t("common.error")))
-    }
-  }, [t, tenantId, isNew, item.name])
+    // A cancelled read is this side hanging up and has no answer to report (SH1047).
+    if (loaded.error && !isCancelled(loaded.error)) reportProblem(loaded.error, t("common.error"))
+  }, [loaded.error, t])
 
   const handleSave = async () => {
     if (!item.name.trim()) {
