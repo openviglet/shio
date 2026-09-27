@@ -2457,6 +2457,17 @@ designing rather than translating: its single effect made three reads that are w
 are **not one subject** — the site, its locale policy and the instance's locale catalogue have three
 lifetimes, and the catalogue is the same answer for every site, so they are three queries.
 
+**A render-phase seed may set this component's state, never a form (SH1166).** The post-type and
+user editors moved `form.reset(loaded.data)` into the render phase alongside their own `useState`.
+React allows a render to set its own state, but `reset` notifies every react-hook-form `Controller`,
+which is a setState on *other* components. That raised "Cannot update a component (`Controller`) while
+rendering a different component", and `console-check.mjs` failed three post-type routes on it. Both
+editors now seed through `useForm({ values: loaded.data, resetOptions: { keepDirtyValues: true } })`.
+react-hook-form resets from `values` in its own effect, only when the data differs, and keeps
+in-progress edits. `test/render-phase-form-seed.test.mjs` scans for an `if` at component-body indent
+whose block writes to a form. The user editor has no route in the check, so that site was found by
+the scan.
+
 **And one of the twenty-five was never a debt.** `post-type.new.page.tsx` held
 `useEffect(() => {}, [t])` — an empty body — and sat on the declared list because the scan matches
 `useEffect(` and a `service.` call *anywhere in the same file*, and its `create` is in the submit

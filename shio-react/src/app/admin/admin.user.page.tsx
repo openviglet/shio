@@ -25,7 +25,6 @@ export default function AdminUserPage() {
   const isNew = userId === "new"
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const form = useForm<ShUser>()
   const [isLoading, setIsLoading] = useState(false)
 
   /*
@@ -40,12 +39,11 @@ export default function AdminUserPage() {
     enabled: !isNew && Boolean(userId),
   })
 
-  // Reset during render rather than in an effect (`react-hooks/set-state-in-effect`), once per user.
-  const [seeded, setSeeded] = useState<string | null>(null)
-  if (loaded.data && seeded !== userId) {
-    setSeeded(userId ?? null)
-    form.reset(loaded.data)
-  }
+  /*
+   * SH1166 — seeded through `values`, which react-hook-form resets from in its own effect and only
+   * when the user differs. A `form.reset` during render updates every field's Controller mid-render.
+   */
+  const form = useForm<ShUser>({ values: loaded.data, resetOptions: { keepDirtyValues: true } })
 
   useEffect(() => {
     // The read had no failure path: a user that would not load left the blank create form on screen.

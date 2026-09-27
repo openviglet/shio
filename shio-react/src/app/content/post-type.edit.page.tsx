@@ -768,7 +768,6 @@ export default function PostTypeEditPage() {
   const { postTypeName } = useParams() as { postTypeName: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const form = useForm<ShPostType>()
   const [isLoading, setIsLoading] = useState(false)
   const [fields, setFields] = useState<FieldRow[]>([])
   /*
@@ -797,11 +796,16 @@ export default function PostTypeEditPage() {
     enabled: Boolean(postTypeName),
   })
 
-  // Set during render rather than in an effect (`react-hooks/set-state-in-effect`), once per type.
+  /*
+   * SH1166 — the form is seeded through `values`, which react-hook-form resets from in its own effect
+   * and only when the type differs; a `form.reset` here, during render, updated every field's
+   * Controller mid-render. The page's own field rows are still set during render, once per type
+   * (`react-hooks/set-state-in-effect`), because they are this component's state.
+   */
+  const form = useForm<ShPostType>({ values: loaded.data, resetOptions: { keepDirtyValues: true } })
   const [seeded, setSeeded] = useState<string | null>(null)
   if (loaded.data && seeded !== postTypeName) {
     setSeeded(postTypeName)
-    form.reset(loaded.data)
     setFields(withKeys(loaded.data.fields))
   }
 
