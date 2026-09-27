@@ -1894,6 +1894,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1136** — No console file suppresses set-state-in-effect or refs any more: each effect's state is derived, recorded per input or remounted, refs are written after commit, and the three helper exports moved to lib modules (design §LXXII.24 recorded in `docs/agents/console-ui.md`).
 - **SH1140** — The fetch guard sees a service built in the call and one held under any name, and the login form it then found aborts both mount reads on unmount (design §LXXII.26 recorded in `docs/agents/console-ui.md`).
 - 🗑 **SH1161** — superseded by SH1102: The six findings are code.renamed resolving Shio's prose against the vendored roadkeep's own modules, so the entries were never stale; SH1102 already tracks that cause.
+- **SH1164** — The theme script is a data block now, so React's dev build stops reporting it and the dev-server console check fails only on real faults (design §LXXII.28 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

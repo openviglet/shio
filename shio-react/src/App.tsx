@@ -57,6 +57,9 @@ import { SHIO_DEFAULT_THEME, SHIO_THEME_STORAGE_KEY } from "./theme"
 import { Toaster } from "./components/ui/sonner"
 import { ShioQueryProvider } from "./contexts/query.provider"
 
+/** SH1164 — any type React does not read as JavaScript makes the theme script a data block. */
+const INERT_THEME_SCRIPT = { type: "text/x-inert-theme" } as const
+
 /**
  * The providers every route renders inside, as the router's root layout.
  *
@@ -70,7 +73,12 @@ function AppLayout() {
     <div className="App">
       {/* SH918 — the same two constants the boot-loader seed reads, so the splash and the app
           cannot disagree about the theme. Spelling them here again is what caused the defect. */}
-      <ThemeProvider defaultTheme={SHIO_DEFAULT_THEME} storageKey={SHIO_THEME_STORAGE_KEY}>
+      {/* SH1164 — next-themes renders a blocking script for a server render's first paint. This
+          console is never server-rendered, a script React inserts on the client never runs, and the
+          first paint is the boot-loader's (SH918). A non-JavaScript type says so, and stops React's
+          dev build reporting that script as an error on every route. */}
+      <ThemeProvider defaultTheme={SHIO_DEFAULT_THEME} storageKey={SHIO_THEME_STORAGE_KEY}
+        scriptProps={INERT_THEME_SCRIPT}>
           <ShioQueryProvider>
             <Toaster />
             <Outlet />

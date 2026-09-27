@@ -910,6 +910,20 @@ preference, or the test passes over the only case that was ever broken.
 Verified in a browser under both OS preferences: `<body>` carries no boot class and paints
 `rgb(10,10,15)` under `html.dark`, where it used to paint `rgb(250,250,250)`.
 
+### The provider's own script is inert, and says so (SH1164)
+
+The design system's `ThemeProvider` is a wrapper over `next-themes`, which renders a blocking
+`<script>` for a server render's first paint. This console is never server-rendered, a script
+React inserts on the client never runs, and first paint is the boot loader's (above). React's
+**development** build logs every executable `<script>` it renders as an error, so
+`console-check.mjs` against the dev server failed **every route** on it, which hid whichever
+route also had a real failure. The jar ships the production build and never showed it.
+
+`App.tsx` passes `scriptProps={INERT_THEME_SCRIPT}`, a non-JavaScript `type` that React reads as
+a data block. `test/theme-script-inert.test.mjs` asserts both halves: that `App.tsx` passes it,
+and, rendered, that `next-themes` carries it onto the element. The other consoles on this design
+system have the same script, and the design system is where their fix belongs.
+
 ## Every surface declared once, for both readers (SH889)
 
 [`bento-nav.ts`](../../shio-react/src/app/system/bento-nav.ts) declares **17 surfaces in 2
