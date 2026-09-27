@@ -60,6 +60,11 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
  * list working — a debt paid off has to leave it, or the next reader counts it twice.</p>
  */
 const UNCANCELLED = new Set([
+  /*
+   * SH1157 moved this page's session **list** to the query layer and left the entry. Its other read is
+   * one session's detail, which the deep-link effect makes when a URL names a run — still an effect,
+   * still uncancelled. Same rule as the visual editor: one read done is not the file done.
+   */
   "src/app/admin/review/review.list.page.tsx",
   "src/app/content/post.edit.page.tsx",
   // The one the stripper caught on a real file rather than a planted one: this page's prose says
@@ -72,7 +77,6 @@ const UNCANCELLED = new Set([
    * migration delete the line would stop describing the console.
    */
   "src/app/editor/visual-editor.page.tsx",
-  "src/app/system/bento.root.page.tsx",
   "src/components/post-history.panel.tsx",
   "src/components/post-live-preview.tsx",
   "src/components/widgets/content-browser-dialog.tsx",
@@ -342,9 +346,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 7,
+  assert.ok(UNCANCELLED.size <= 6,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "the slices took it to 28, 25, 21, 19, 16, 14, 12, 8 and 7. It may only ever shrink.");
+      + "the slices took it to 28, 25, 21, 19, 16, 14, 12, 8, 7 and 6. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -780,6 +784,46 @@ test("SH1156: the create form and the visual editor derive rather than mirror", 
     "SH1156: the visual editor is off the declared list. Its site read moved to the query layer and "
       + "its other reads — the post-type of a selection, the insertable catalogue, the patterns, a "
       + "section's editable props — did not.");
+});
+
+test("SH1157: the palette stops ignoring answers, and the review list stops hiding a failure", () => {
+  const palette = stripComments(readFileSync(
+    join(ROOT, "src/app/system/bento.root.page.tsx"), "utf8"));
+  const review = stripComments(readFileSync(
+    join(ROOT, "src/app/admin/review/review.list.page.tsx"), "utf8"));
+
+  /*
+   * SH1157 — the palette held the last of this task's token guards: a ref compared against itself in
+   * three callbacks, so a superseded answer was *ignored* while the server was still asked for it and
+   * still answered. A query key does the ignoring for free, because an answer under a key nobody is
+   * asking for is never rendered, and the signal stops the asking.
+   */
+  assert.doesNotMatch(palette, /queryToken/u,
+    "SH1157: the token guard is back. It ignores a superseded answer rather than cancelling the "
+      + "request for it — SH1047's own note names that as the thing a signal replaces.");
+  assert.match(palette, /const searching = wanted !== term \|\| \(term\.length >= 2 && read\.isFetching\)/u,
+    "SH1157: \"searching\" has to mean the debounce has not caught up or the request is in flight — "
+      + "not merely that a keystroke happened, which is what `setSearching(true)` before the timer "
+      + "meant");
+  assert.match(palette, /queryKey: addressKey\(`summary:palette\|\$\{term\}`\)/u,
+    "SH1157: the committed term is the subject, so two keystrokes are two subjects and the older "
+      + "answer cannot land on the newer question");
+
+  /*
+   * The review queue's list is the most expensive read on this list — `sessions()` scans 2000 audit
+   * rows and resolves every post they touched, which is why a separate cheap `pending()` exists for
+   * the nav badge. So leaving the page mid-read saves real server work here, not just a stale render.
+   */
+  assert.match(review, /queryFn: \(\{ signal \}\) => service\.sessions\(50, \{ signal \}\)/u,
+    "SH1157: the review queue's list read does not take the signal");
+  assert.doesNotMatch(review, /catch\(\(\) => setSessions\(\[\]\)\)/u,
+    "SH1157: \"the queue could not be read\" and \"nothing is waiting for you\" must not be the same "
+      + "screen — the second is the one a curator stops checking");
+
+  // And its entry stays, because the deep-link detail read is still an effect's.
+  assert.ok(UNCANCELLED.has("src/app/admin/review/review.list.page.tsx"),
+    "SH1157: the review queue is off the declared list. Its session list moved to the query layer; "
+      + "the per-session detail the deep-link effect reads did not.");
 });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {

@@ -14,6 +14,9 @@ import type {
 } from "@/models/review/review.model"
 import { formatDistanceToNow } from "date-fns"
 import { Bot, Check, ChevronDown, ChevronRight, RefreshCw, Undo2 } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import { useInvalidate } from "@/hooks/use-catalogue"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
@@ -53,9 +56,7 @@ const ACTION_BADGE: Record<string, string> = {
  */
 export default function ReviewListPage() {
   const { t } = useTranslation()
-  const [sessions, setSessions] = useState<ShReviewSession[]>([])
   const [open, setOpen] = useState<Record<string, ShReviewDetail | null>>({})
-  const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
   const list = useListState(REVIEW_LIST)
   const { q, site } = list.value
@@ -71,28 +72,33 @@ export default function ReviewListPage() {
     const { q: nextQ, site: nextSite } = fromBarValue(next)
     patchList({ q: nextQ, site: nextSite })
   }, [patchList])
+  /*
+   * SH1157 — the review queue's own list, cancelled when the page unmounts.
+   *
+   * This read is expensive: `sessions()` scans 2000 audit rows and resolves every post they touched,
+   * which is why `pending()` exists as a separate cheap read for the nav badge. So it is the one on
+   * this list where leaving the page mid-read saves the most server work, not just a stale render.
+   *
+   * `catch(() => setSessions([]))` also made "the queue could not be read" and "nothing is waiting for
+   * you" the same screen — and on a review queue the second is the one a curator stops checking.
+   */
+  const read = useQuery<ShReviewSession[]>({
+    queryKey: addressKey("summary:review"),
+    queryFn: ({ signal }) => service.sessions(50, { signal }),
+  })
+  const sessions = read.data ?? []
+  const loading = read.isFetching
+  const invalidate = useInvalidate()
+
+  /** The curator asked, so the refetch is a response to them (SH701) — `isFetching` shows it. */
+  const load = useCallback(() => { void invalidate("summary:review") }, [invalidate])
+
   // SH1024 — each site counts the runs `q` leaves that touched it, which is what choosing it lists.
   const facets = useMemo(() => withCounts(withSiteFacet([], runSites(sessions), t("content.filterSite")),
     { site: countLocally(sessions.filter((run) => matchesRun(run, q, "")), (run) => Object.keys(run.bySite ?? {})) }),
   [sessions, q, t])
   const shown = useMemo(() => sessions.filter((run) => matchesRun(run, q, site)), [sessions, q, site])
 
-  /** The read. It raises no state before the request, which is what lets the mount effect call it. */
-  const fetchSessions = useCallback(
-    () => service.sessions().then(setSessions).catch(() => setSessions([]))
-      .finally(() => setLoading(false)),
-    [],
-  )
-
-  /** The curator asked, so the spinner is a response to them (SH701). */
-  const load = useCallback(() => {
-    setLoading(true)
-    void fetchSessions()
-  }, [fetchSessions])
-
-  useEffect(() => {
-    void fetchSessions()
-  }, [t, fetchSessions])
 
   const toggle = async (session: string) => {
     if (session in open) {

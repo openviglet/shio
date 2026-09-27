@@ -2568,6 +2568,21 @@ and a list that let a partial migration delete the line would stop describing th
 assertion says so explicitly, so the entry cannot quietly go later.
 **The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7.**
 
+**Slice ten closed the pattern this task set out to remove** (SH1157). The bento root's command palette
+held a `queryToken` ref compared against itself in three callbacks, so a superseded answer was
+**ignored** — the server was still asked for it and still answered. That is what SH1047's note names as
+the thing a signal replaces, and a query key does the ignoring *for free*: an answer under a key nobody
+is asking for is never rendered. Its debounce is a **committed term** now rather than a timer around a
+request, which is also what makes "searching" honest — true while what was typed and what was asked
+disagree, or while the request is in flight, and not merely because a keystroke happened.
+
+The review queue's list is the most expensive read the task touched: `sessions()` scans 2000 audit rows
+and resolves every post they touched, which is exactly why a separate cheap `pending()` exists for the
+nav badge. Leaving that page mid-read saves real server work. Its `catch(() => setSessions([]))` made
+"the queue could not be read" and "nothing is waiting for you" the same screen, and the second is the
+one a curator stops checking. Its entry stays, because the deep-link detail read did not move.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7 → 6.**
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key
