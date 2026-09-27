@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.viglet.shio.api.agent.ShAddress;
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.ShAgentDesiredStateService;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
@@ -113,10 +115,59 @@ public class ShBlueprintWriteService {
                          Options options) {
         String site = createSiteIfAsked(desired, options, actor, false);
         List<ShBlueprintApplied.PostType> postTypes = provision(defs, options, false);
-        ShAgentChangeSet content = declaresNothing(desired)
-                ? empty(false)
-                : shAgentDesiredStateService.apply(desired, false, actor);
+        ShAgentChangeSet content;
+        try {
+            content = declaresNothing(desired)
+                    ? empty(false)
+                    : shAgentDesiredStateService.apply(desired, false, actor);
+        } catch (ShTeachingException refused) {
+            throw needsMerge(refused, postTypes, options).orElse(refused);
+        }
         return new Written(postTypes, content, site);
+    }
+
+    /**
+     * SH1163 — the refusal a blueprint meets on an instance whose type lacks its fields, retold.
+     *
+     * <p>A fresh instance seeds {@code Page} with {@code title} and {@code content}, and the section
+     * blueprints declare {@code description} and {@code sections} too — so without the merge opt-in
+     * the apply keeps the existing type and the content half is refused with {@code undeclared-field},
+     * naming fields and not the cause. The two models cannot simply be made to agree: measured, the
+     * three blueprints' {@code Page}s disagree with each other as well as with the seed. So the answer
+     * is a refusal that says what to do: which types lacked which fields, and the opt-in that adds
+     * them. Only when merging was off and some existing type did lack fields; any other refusal is
+     * the content's own and passes through untouched.</p>
+     */
+    private static java.util.Optional<ShTeachingException> needsMerge(
+            ShTeachingException refused, List<ShBlueprintApplied.PostType> postTypes, Options options) {
+        if (options.mergePostTypes() || refused.problem() == null
+                || !"undeclared-field".equals(refused.problem().slug())) {
+            return java.util.Optional.empty();
+        }
+        List<String> short_ = postTypes.stream()
+                .filter(type -> type.missing() != null && !type.missing().isEmpty())
+                .map(type -> type.name() + " (" + String.join(", ", type.missing()) + ")")
+                .toList();
+        return short_.isEmpty() ? java.util.Optional.empty()
+                : java.util.Optional.of(new NeedsMergeException(short_, refused));
+    }
+
+    /** SH1163 — a 400 that names the opt-in, instead of a field list that names the symptom. */
+    public static class NeedsMergeException extends ShTeachingException {
+
+        public NeedsMergeException(List<String> shortTypes, ShTeachingException cause) {
+            super(ShProblem.badRequest("blueprint-needs-merge",
+                            "This instance's post-types lack fields the blueprint writes: "
+                                    + String.join("; ", shortTypes))
+                    .withDetail("A blueprint never alters a post-type the instance already has unless "
+                            + "asked (SH151), so it kept the existing ones and the content that needs "
+                            + "their missing fields was refused: " + cause.problem().title()
+                            + ". A fresh instance's seeded Page is the usual case.")
+                    .withFix("Apply again with the merge opt-in, which adds the missing fields and "
+                            + "removes none: `shio apply --blueprint <name> --merge-post-types`, or "
+                            + "`\"mergePostTypes\": true` in the body of POST "
+                            + "/api/v2/agent/blueprints/<name>/apply."));
+        }
     }
 
     /**

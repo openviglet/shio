@@ -1492,26 +1492,3 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline. Then make it a gate (SH1161's half): it drifted because nothing
 failed.
-
-### LXXIV.17 The seeded Page and the blueprints' Page disagree (SH1144 follow-up) (SH1163)
-
-SH1144 made the console smoke check's provisioning pass `mergePostTypes`, which is the
-documented way through and enough for a fixture. It does not answer the question the
-collision raised: why a fresh instance's `Page` and a blueprint's `Page` disagree at
-all.
-
-A clean instance provisions `import/bootstrap-site/export.json`, whose `Page` declares
-`title` and `content`. The section vocabulary's own `post-types/vocabulary/Page.json`,
-and the marketing-site, landing and nextjs-starter blueprints, declare a `Page` with
-`description` and `sections` too. So every section blueprint applied to a fresh instance
-by anyone other than the smoke check (an agent through `shio_apply`, a curator through
-`shio apply --blueprint`) is refused with `undeclared-field` unless its caller knows to
-ask for the merge, and the refusal names fields, not the cause.
-
-Measure first: diff the bootstrap `Page` against the vocabulary's and the three
-blueprints', field by field. If the bootstrap type is a strict subset, the fix is to
-seed the vocabulary's `Page` in the bootstrap package, which removes the collision
-rather than routing around it. If it carries a field the others lack, the apply's
-refusal should name the merge in its `fix`. The assertion: a blueprint applied to a
-freshly provisioned instance without the opt-in succeeds, or its refusal names
-`mergePostTypes`.

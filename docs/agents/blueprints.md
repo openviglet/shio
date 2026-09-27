@@ -38,7 +38,15 @@ from becoming a third contract (P10).
   instance without the opt-in, so the apply kept the bootstrap `Page` and refused the content at
   `ops[20]` (`undeclared-field`), and every check that provisions first walked a site with no pages
   on exactly the instance CI starts from. It sends `mergePostTypes: true` now, which is additive, and
-  `e2e-fixture-site.test.mjs` holds it. Whether the two `Page`s should differ at all is SH1163.
+  `e2e-fixture-site.test.mjs` holds it. **Whether they should differ at all (SH1163) was measured,
+  not argued:** the bootstrap `Page` is `title` + `content` (HTML Editor); the vocabulary's,
+  marketing-site's and landing's add `description` and `sections` and use Ace HTML for `content`;
+  nextjs-starter's has `summary` instead. So reseeding the bootstrap with the vocabulary's type would
+  still collide with nextjs-starter, and no single seed agrees with every package. What changed
+  instead is the refusal: without the opt-in, an apply whose content is refused `undeclared-field`
+  while an existing type lacked fields is re-told as `400 blueprint-needs-merge`, naming each type
+  and its missing fields and the two doors that take the opt-in (`--merge-post-types`,
+  `"mergePostTypes": true`). MCP's `shio_apply` still takes neither, by SH152's token-ceiling choice.
 - **A plan writes nothing and needs no write transaction (SH153).** It used to provision the
   package's post-types inside its own transaction and roll back — accurate, and it meant a plan
   could not run on a read-only credential, a replica, or inside a `readOnly` transaction, which

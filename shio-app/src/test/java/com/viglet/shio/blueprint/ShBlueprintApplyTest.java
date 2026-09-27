@@ -465,6 +465,27 @@ class ShBlueprintApplyTest {
     // --- SH152: additive post-type reconciliation ---
 
     @Test
+    @Order(10)
+    @DisplayName("SH1163: without the flag, the refusal names the opt-in rather than only the fields")
+    void withoutTheFlagTheRefusalNamesTheMerge() {
+        createSite();
+        // The collision a fresh instance has: `Page` is already there without the package's fields
+        // (Order 9 above found it existing), and a blueprint never alters a type unless asked.
+        assertThatThrownBy(() -> shBlueprintService.apply("landing", siteName,
+                params("{\"brand\":\"Acme\"}"), "admin", ShBlueprintWriteService.Options.NONE))
+                .as("SH1163: `undeclared-field` named the fields and not the cause, so a caller who "
+                        + "had never heard of SH152 could not tell there was a door")
+                .isInstanceOf(ShBlueprintWriteService.NeedsMergeException.class)
+                .satisfies(failure -> {
+                    var problem = ((ShBlueprintWriteService.NeedsMergeException) failure).problem();
+                    assertThat(problem.slug()).isEqualTo("blueprint-needs-merge");
+                    assertThat(problem.title()).contains("Page (").contains("sections");
+                    assertThat(problem.toProblemDetail().getProperties().get("fix").toString())
+                            .contains("--merge-post-types").contains("\"mergePostTypes\": true");
+                });
+    }
+
+    @Test
     @Order(11)
     @DisplayName("mergePostTypes adds the fields an existing type lacks, and says it merged")
     void mergeAddsTheMissingFields() {
