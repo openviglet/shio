@@ -13,7 +13,7 @@ import { test } from "node:test";
 
 import {
   KEPT, breaches, classify, packageOf, reachability, report, specifiersIn,
-} from "../scripts/dependency-reachability.mjs";
+} from "../../scripts/dependency-reachability.mjs";
 
 /**
  * SH1045 — a declared dependency the console cannot reach is a claim about the console.

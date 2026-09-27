@@ -2245,7 +2245,8 @@ them under its own tree and nothing breaks; SH1043's gate measured the eager loa
 / 403.5 KB gzip before and after**, which is the right record for a removal that touches no import.
 
 **Four ways to be reachable, and only one is an import.** `scripts/dependency-reachability.mjs`
-classifies each declaration as imported by the console's own files, required as a **peer** by
+(at the repository root since SH1114; it lived under `shio-react/scripts/` while the console was its
+only subject) classifies each declaration as imported by a package's own files, required as a **peer** by
 something already reachable, run as a **binary** by a `package.json` script, or the `@types` of
 something reachable. The three that are not imports are why this can be trusted to delete: a grep
 for the name would have taken `sonner` and `next-themes` (peers of the design system, imported
@@ -2262,10 +2263,62 @@ Two details the reader is wrong without:
   appear in no `.ts` file at all. `@tailwindcss/typography` was deleted precisely because no
   `@plugin` line ever registered it, which means it was not loaded either.
 
-`test/dependency-reachability.test.mjs` is the gate and `pnpm --filter shio-react run deps` prints
-the inventory. Exemptions live in the script's `KEPT` map with a sentence each, and it is **empty**:
-everything unreachable was deleted rather than excused. A stale exemption fails too — for the reason
-SH1043's budget fails on a ceiling that outlives its chunk.
+`shio-react/test/dependency-reachability.test.mjs` is the console's gate and
+`pnpm --filter shio-react run deps` prints its inventory. Exemptions live in the script's `KEPT` map
+with a sentence each, and it is **empty**: everything unreachable was deleted rather than excused. A
+stale exemption fails too — for the reason SH1043's budget fails on a ceiling that outlives its chunk.
+
+## The same walk over all eleven manifests, and the two breaches only npm sees (SH1114)
+
+SH1045 above read one manifest and left ten unread, and the reason that is worse than "ten more of
+the same" is where the others end up. **Seven of the eleven packages are published**, so a dead
+dependency there is not merely installed on every CI run here — it is downloaded on every consumer's
+install. (§LXXII.20 estimated four. `private: true` is what decides, and only `shio-react`,
+`shio-site`, `claude-plugin` and the two examples carry it; the list is asserted rather than
+remembered, because which packages are published is what decides where these rules apply.)
+
+The reader was written to be lifted, so the work was turning two console-specific constants into
+`PACKAGES` — one declaration per package: `walk` (every directory whose files can reach a package),
+`root` (configs that import from outside a walked directory), and `shipped`.
+
+**`shipped` is the half that earns the task**, and it only matters for a published package: *which of
+the walked directories a consumer's install actually runs*. Without it two breaches are invisible
+here and break somewhere else, and neither is what SH1045 looks for:
+
+- a **`dependencies` entry reached only from code npm does not pack** is a download on every install
+  for a file the consumer never loads. It is not dead — the walk reaches it — so SH1045's rule is
+  satisfied by it;
+- a **`devDependency` reached from shipped code** is quieter and worse: it resolves here, because the
+  whole workspace is installed, and throws on the consumer's first import. Every gate in this
+  repository passes.
+
+It is a declaration rather than a derivation from `files`, because `files` names build output for half
+these packages — `shio-model` ships `dist/`, which is bundled and not walked, and the source behind it
+is `src/`. So `shipped` says which *walked* directory stands behind what npm packs, and
+`shippedAgreesWithFiles` checks it against the manifest so the two cannot drift: a package that starts
+packing `test/` fails rather than going on being described as test-only.
+
+**Two corrections the first run bought, both of them to the new rules rather than to the code.**
+
+- **A peer that is also a devDependency is correct, and the rule called it a breach.** A React library
+  declares `react` as a peer — the consumer supplies it — and as a devDependency so it is installed
+  here to build and test against. `shio-sections` and `shio-react-sdk` are both in exactly that shape
+  and were both reported. SH1045's own note is that an unused-dependency check gets turned off after
+  its first false positive; this one had one waiting on day one. The exemption is asserted against the
+  two real manifests, so it cannot outlive its reason.
+- **A packed directory carrying its own `package.json` is a payload, not unread source.**
+  `create-shio-app` packs `template/`, whose imports resolve against *that* manifest once a consumer
+  scaffolds with it, never against this one.
+
+`cli/test/workspace-reachability.test.mjs` is the gate and `pnpm run deps` walks all of them. It
+holds the design's assertion — a dead dependency planted in a package **other than the console**
+failing **by name**, driven against each of the eleven declarations rather than reasoned about once,
+because what failed before was never the rule but that only one package was ever asked. `PACKAGES` is
+checked against `pnpm-workspace.yaml`, which is the guard that would have caught SH1045's own gap: a
+reader with a hand-kept list passes for the wrong reason the moment the workspace grows a package it
+does not name. The workspace's real run classifies **99 declarations across twelve packages with zero
+findings**, and the count is asserted with a floor — 43 of those were SH1045's one package, so a
+number near that would mean the other manifests are being read as empty.
 
 ## The docs gate stays a warning locally, and it was 135 commits unrun (SH1070)
 

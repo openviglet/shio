@@ -1483,32 +1483,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.20 One walk over every workspace manifest, not the console's alone (SH1114)
-
-SH1045 found eighteen dead declarations in one manifest and left ten unread. The
-workspace has eleven packages — `cli`, `shio-client`, `shio-model`, `shio-sections`,
-`shio-react-sdk`, `shio-js-sdk`, `create-shio-app`, `claude-plugin`, `shio-site`,
-`shio-examples/*` and the console — and four of them are published to npm, where a dead
-dependency is not just installed on every CI run here but on every consumer's install.
-
-The reader is written to be lifted. `reachability` is pure over the manifest and three
-lookups, and `classify` is the only part that knows this console: `WALK` names `src`,
-`test`, `e2e`, `scripts` and `ROOT_FILES` names two configs. Another package's layout is
-a different list, so the work is turning those constants into a per-package declaration
-rather than writing a second walk.
-
-Two things the console's run does not exercise. Nothing here is published, so nothing
-tested what a published package owes: a `dependencies` entry imported only from `test/`
-is a consumer's download for a file they never load, and a runtime import from a
-`devDependency` breaks on install and passes every gate here. The classifier already
-reports which list an entry came from and asserts nothing on it. And `bin` reachability
-is read from this `package.json`'s scripts, which is the wrong file for a package whose
-binary is what it ships.
-
-The assertion is a dead dependency planted in a workspace package other than the console
-failing by name, and the published packages' own runs coming back clean or naming what
-they owe.
-
 ### LXXII.21 The rest of the uncancelled reads, in slices (SH1116)
 
 SH1047 migrated the five screens its symptom named and left thirty-five in
