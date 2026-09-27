@@ -990,9 +990,37 @@ Nothing writes `_site.md` yet — there is no `writeSiteMarker`, and no merge ru
 `merge-rules.test.mjs`, because an unused writer would be dead code and a declared rule would describe
 a sync that does not happen. A marker is authored (P4: `Write` is the agent's tool) and pushed.
 
-Projecting one *from* an instance needs a cheap read of a site's settings, and there is none: the
-context pack's site row carries `url` and the locale fields but neither `description` nor `furl`, and
-the console's `GET /api/v2/site/{name}` answers the whole row including the 5 MB `postTypeLayout`
-column — so reading four short strings that way is a P3 regression, and P3 says the measurement comes
-first. That read, the projection, its merge rule and §LXXIV.12's own round-trip assertion (*push a
-site, change a field on disk, pull, read the diff*) are the second half, filed as its own task.
+Projecting one *from* an instance needed a cheap read of a site's settings, and **SH1160 is that read**
+(below). What is still outstanding is the projection itself: a `writeSiteMarker`, its merge rule in
+`merge-rules.test.mjs`, a `sites` section in `content-base.json` so the three-way merge has an
+ancestor, and §LXXIV.12's own round-trip assertion — *push a site, change a field on disk, pull, read
+the diff*. A site marker carries values a person authors, so `writeFolderMarker`'s "the server wins,
+no conflict is possible" does not transfer to it; the shape it wants is `writeLocalNotes`' **per-key,
+neither side wins, the conflict is reported**, and that is what the base section is for.
+
+## The read a projection needs, and what it cost (SH1160)
+
+The context pack's site row now carries `furl`, `description` and `localePolicy` beside the `url` and
+the three locale fields it already had. The alternative was the console's `GET /api/v2/site/{name}`,
+which answers the whole entity — including the 5 MB `postTypeLayout` column — so reading four short
+strings that way is a P3 regression rather than an implementation detail.
+
+**`localePolicy` is the stored document, not a reconstruction.** The three locale fields already on the
+row are the *discovery* answer and each is omitted when it says the ordinary thing: a default matching
+the instance's is absent, a single-locale list is absent, and `locales` carries no `fallback` at all. A
+tree rebuilding a policy from them would have to invent the chain and guess the default — so a
+projection would write four of the marker's five keys and call it a round trip. It is built by
+`ShSiteLocales.toNode()`, which `toJson` now delegates to, so there is **one** spelling of that
+document rather than two that agree until a key moves.
+
+**Measured, twice, and the second measurement is the point.** `response.context.json` did not move by a
+single token: all three additions are `NON_NULL` and the benchmark's site has none of them. That is a
+true number that says nothing about the fields, so `measureConfiguredSiteRow` takes the other one — a
+site with `furl` and `description` set, whose JSON row costs **30 tokens** against a declared ceiling of
+40 (`response.context.site-row`). It multiplies by the number of sites on an instance, which is why it
+has a ceiling of its own.
+
+**The terse rendering deliberately does not carry them.** Terse is the cheapest form of the call that
+replaces a session and the tree reads `format=json`; three more attributes per site there would be paid
+by every caller for one caller's benefit. Asserted in both directions, because a guard over the terse
+row would be a guard over a row the change never touched.

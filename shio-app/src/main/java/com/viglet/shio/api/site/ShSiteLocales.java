@@ -25,6 +25,9 @@ import com.viglet.shio.utils.ShStableMap;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * SH1056 — a site's locale policy: which language it is in, which it offers, and what to show
@@ -204,11 +207,31 @@ public record ShSiteLocales(String defaultLocale, List<String> enabled,
 
     /** The stored form: three keys, fixed order, map sorted (P5). */
     public String toJson(ObjectMapper mapper) {
-        Map<String, Object> document = new LinkedHashMap<>();
+        return mapper.writeValueAsString(toNode());
+    }
+
+    /**
+     * The same document as a node (SH1122), which is what a reader that hands it on needs.
+     *
+     * <p>{@link #toJson} delegates here so there is <b>one</b> place that knows this document's shape.
+     * The context pack carries the stored policy so a site marker file can round-trip exactly, and a
+     * pack that built those three keys for itself would be a second spelling of them — the shape that
+     * agrees today and diverges the first time a key moves. Same rules, stated once: the three keys in
+     * a fixed order, {@code enabled} in the order it was declared because a switcher's order is a
+     * decision, and {@code fallback} sorted because a map's order is not (P5).</p>
+     */
+    public ObjectNode toNode() {
+        ObjectNode document = JsonNodeFactory.instance.objectNode();
         document.put(DEFAULT_KEY, defaultLocale);
-        document.put(ENABLED_KEY, enabled);
-        document.put(FALLBACK_KEY, new TreeMap<>(fallback));
-        return mapper.writeValueAsString(document);
+        ArrayNode offered = document.putArray(ENABLED_KEY);
+        for (String locale : enabled) {
+            offered.add(locale);
+        }
+        ObjectNode chains = document.putObject(FALLBACK_KEY);
+        for (Map.Entry<String, String> entry : new TreeMap<>(fallback).entrySet()) {
+            chains.put(entry.getKey(), entry.getValue());
+        }
+        return document;
     }
 
     /**

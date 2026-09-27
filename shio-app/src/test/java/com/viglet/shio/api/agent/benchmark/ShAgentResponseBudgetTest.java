@@ -349,6 +349,7 @@ class ShAgentResponseBudgetTest {
                 .param("site", siteName).param("format", "terse").param("include", "fields"));
         measure("memory", get("/api/v2/agent/memory").param("site", siteName));
         measureTypeRow();
+        measureConfiguredSiteRow();
         seedComposingPage();
         // SH1104 — the editable read, and its catalogue on its own row for SH987's reason: the
         // catalogue scales with what a layout declares, and a shared ceiling would let the plain
@@ -550,6 +551,93 @@ class ShAgentResponseBudgetTest {
                         "No type row for " + postTypeName + " — the model-cost guard has "
                                 + "nothing to measure, which means it is not guarding."));
         record("context.type-row", ShTokenBudget.estimate(row));
+    }
+
+    /**
+     * SH1122 — what a site row costs once somebody has configured the site.
+     *
+     * <h2>Why the measurement had to be taken twice</h2>
+     *
+     * <p>SH1122 put {@code furl} and {@code description} on the row so the tree can project a site's
+     * settings, and {@code context.json} did not move by a single token — this fixture's site has
+     * neither, and the row is {@code NON_NULL}, so the pack came back byte-identical. That is the good
+     * answer and it is <b>not</b> the whole measurement: a number that only ever measures the case
+     * where a field is absent is a number that says nothing about the field. P3 asks what the cost is,
+     * and the cost lands on a site that has been configured.</p>
+     *
+     * <p>So this sets both, reads the row, and puts them back. Measured on <em>one known row</em> for
+     * {@code measureTypeRow}'s reason: an average over whatever sites other classes created would
+     * move with them, and this number multiplies by the number of sites on an instance.</p>
+     *
+     * <h2>And on the JSON pack, not the terse one</h2>
+     *
+     * <p>The first version of this measured the terse row and reported 7 tokens — a number that had
+     * nothing to do with the two fields, because {@code ShAgentContextTerse} does not emit them. That
+     * is deliberate and stays: terse is the cheapest rendering of the call that replaces a session,
+     * the tree reads {@code format=json} (see {@code listSites} in the CLI), and two more attrs per
+     * site on the cheap rendering would be paid by every caller for one caller's benefit. So the
+     * guard has to read the rendering that grew, or it is a guard over a row the change never
+     * touched — the vacuity this repository keeps finding, one level in.</p>
+     */
+    private void measureConfiguredSiteRow() throws Exception {
+        String[] before = new String[2];
+        configureFixtureSite("budget-furl", "A site with a description, for the measurement", before);
+        try {
+            MvcResult pack = mockMvc.perform(get("/api/v2/agent/context")
+                    .param("site", siteName).param("budget", "0")
+                    .principal(principal)).andReturn();
+            String body = pack.getResponse().getContentAsString();
+            String row = jsonSiteRow(body, siteName);
+            assertThat(row)
+                    .as("SH1122: the JSON site row has to carry the two fields this measures, or the "
+                            + "guard is over a row the change never touched")
+                    .contains("\"furl\"").contains("\"description\"");
+            record("context.site-row", ShTokenBudget.estimate(row));
+        } finally {
+            configureFixtureSite(before[0], before[1], new String[2]);
+        }
+    }
+
+    /**
+     * The one site object out of the JSON pack, by brace matching from its {@code "name"}.
+     *
+     * <p>Parsed rather than regexed for the same reason the row is one known row: the question is what
+     * <em>this</em> site costs, and a slice that stopped at the wrong brace would answer with a number
+     * nobody could reproduce.</p>
+     */
+    private static String jsonSiteRow(String body, String site) {
+        int name = body.indexOf("\"name\":\"" + site + "\"");
+        assertThat(name)
+                .as("SH1122: no site row for %s in the JSON pack — the site-cost guard has nothing "
+                        + "to measure, which means it is not guarding", site)
+                .isNotNegative();
+        int start = body.lastIndexOf('{', name);
+        int depth = 0;
+        for (int i = start; i < body.length(); i++) {
+            if (body.charAt(i) == '{') {
+                depth++;
+            } else if (body.charAt(i) == '}') {
+                depth--;
+                if (depth == 0) {
+                    return body.substring(start, i + 1);
+                }
+            }
+        }
+        throw new AssertionError("unterminated site row in the JSON pack");
+    }
+
+    /** Sets the two SH1122 fields on the fixture site, keeping what was there in {@code kept}. */
+    private void configureFixtureSite(String furl, String description, String[] kept) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShSite site = entityManager.createQuery(
+                    "select s from ShSite s where s.name = :name", ShSite.class)
+                    .setParameter("name", siteName).getSingleResult();
+            kept[0] = site.getFurl();
+            kept[1] = site.getDescription();
+            site.setFurl(furl);
+            site.setDescription(description);
+            entityManager.merge(site);
+        });
     }
 
     private void measure(String name, MockHttpServletRequestBuilder request) throws Exception {

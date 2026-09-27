@@ -628,6 +628,116 @@ class ShAgentContextTest {
                 .contains("locales-declared=true");
     }
 
+    /**
+     * SH1160 — the pack answers exactly what a site marker file needs, and no more.
+     *
+     * <h2>The blocker SH1122 recorded</h2>
+     *
+     * <p>SH1122 gave a site's settings a file — `shio/folders/SITE/_site.md`, carrying `url`,
+     * `furl`, `description` and SH1056's locale policy — and could only <b>push</b> it. Projecting one
+     * <em>from</em> an instance needed a read of those four, and there was none: this row carried
+     * `url` and the three locale fields, the console's whole-entity site read answers the 5 MB
+     * `postTypeLayout` column along with them, and P3 makes "read 5 MB to write four short strings"
+     * a regression rather than an implementation detail.</p>
+     *
+     * <h2>Why the stored policy rather than the three fields already here</h2>
+     *
+     * <p>The three are the <em>discovery</em> answer and each is omitted when it says the ordinary
+     * thing: a default matching the instance's is absent, a single-locale list is absent, and
+     * {@code locales} carries no {@code fallback} at all. A tree reconstructing a policy from them
+     * would have to invent the chain and guess the default — so a projection would write four of the
+     * marker's five keys and call it a round trip, which is lying by omission. {@code localePolicy}
+     * is the stored document, built by {@code ShSiteLocales.toNode()} — the same method
+     * {@code toJson} now delegates to, so there is one spelling of that document and not two.</p>
+     *
+     * <h2>And it costs nothing on a site nobody configured</h2>
+     *
+     * <p>All three additions are {@code NON_NULL}. Measured: `response.context.json` did not move by
+     * a single token, because the benchmark's site has none of them —
+     * `ShAgentResponseBudgetTest#measureConfiguredSiteRow` is the second measurement, taken on a site
+     * that HAS been configured, because a number that only measures the absent case says nothing
+     * about the field.</p>
+     */
+    @Test
+    @DisplayName("SH1160: the pack carries furl, description and the stored policy a marker needs")
+    void aSiteRowAnswersWhatAMarkerFileNeeds() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShSite site = entityManager
+                    .createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                    .setParameter("name", siteName)
+                    .getSingleResult();
+            site.setFurl("marker-furl");
+            site.setDescription("What this site is for");
+            site.setLocales("{\"default\":\"pt-br\",\"enabled\":[\"pt-br\",\"en\"],"
+                    + "\"fallback\":{\"en\":\"pt-br\"}}");
+            entityManager.merge(site);
+        });
+
+        ShAgentContext.Site row = shAgentContextService.context(siteName, null, 0, null, null)
+                .sites().stream().filter(each -> siteName.equals(each.name()))
+                .findFirst().orElseThrow();
+
+        assertThat(row.furl()).isEqualTo("marker-furl");
+        assertThat(row.description()).isEqualTo("What this site is for");
+        assertThat(row.localePolicy()).isNotNull();
+        assertThat(row.localePolicy().get("default").stringValue()).isEqualTo("pt-br");
+        assertThat(row.localePolicy().get("fallback").get("en").stringValue())
+                .as("SH1160: the fallback chain, which is the half the three discovery fields cannot "
+                        + "carry and the half a reconstruction would have to invent")
+                .isEqualTo("pt-br");
+
+        // Blank is absent, for the reason the marker treats it so: a column is either unset or holds
+        // something, and `""` is the first. Writing the key would make an empty value and an absent
+        // one the same thing on the way back in.
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShSite site = entityManager
+                    .createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                    .setParameter("name", siteName).getSingleResult();
+            site.setFurl("   ");
+            site.setDescription("");
+            site.setLocales(null);
+            entityManager.merge(site);
+        });
+        ShAgentContext.Site blank = shAgentContextService.context(siteName, null, 0, null, null)
+                .sites().stream().filter(each -> siteName.equals(each.name()))
+                .findFirst().orElseThrow();
+        assertThat(blank.furl()).isNull();
+        assertThat(blank.description()).isNull();
+        assertThat(blank.localePolicy())
+                .as("SH1160: a DERIVED policy is absent too — a marker carrying one would turn an "
+                        + "observation into a declaration on the next push (SH1056)")
+                .isNull();
+    }
+
+    /**
+     * SH1160 — the terse pack deliberately does not carry them, and that is the P3 half.
+     *
+     * <p>Terse is the cheapest rendering of the call that replaces a session, and the tree reads
+     * {@code format=json}. Three more attributes per site on the cheap form would be paid by every
+     * caller for one caller's benefit, so they are on the JSON row only — which is also why the
+     * budget guard measures the JSON row and not this one.</p>
+     */
+    @Test
+    @DisplayName("SH1160: the terse rendering stays as cheap as it was")
+    void theTerseRowDoesNotCarryTheMarkerFields() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            ShSite site = entityManager
+                    .createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                    .setParameter("name", siteName).getSingleResult();
+            site.setFurl("terse-furl");
+            site.setDescription("A description terse must not carry");
+            entityManager.merge(site);
+        });
+
+        String terse = ShAgentContextTerse.render(
+                shAgentContextService.context(siteName, null, 0, null, null));
+
+        assertThat(terse)
+                .doesNotContain("terse-furl")
+                .doesNotContain("A description terse must not carry")
+                .doesNotContain("locale-policy=");
+    }
+
     @Test
     void terseAndJsonDescribeTheSameState() {
         ShAgentContext pack = context();
