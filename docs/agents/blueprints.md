@@ -33,7 +33,12 @@ from becoming a third contract (P10).
 - **The model is provisioned, never upserted.** An existing post-type of the same name is
   left exactly as it is (including a field a curator added) and the response *names the fields
   it lacks* — the bootstrap `Page` (SH71: `title` + `content`) versus the section
-  vocabulary's `Page` is the collision this actually happens to. SH152 reconciles.
+  vocabulary's `Page` is the collision this actually happens to. SH152 reconciles. **It bit the
+  console smoke check (SH1144):** `shio-react/e2e/provision.mjs` applied marketing-site to a clean
+  instance without the opt-in, so the apply kept the bootstrap `Page` and refused the content at
+  `ops[20]` (`undeclared-field`), and every check that provisions first walked a site with no pages
+  on exactly the instance CI starts from. It sends `mergePostTypes: true` now, which is additive, and
+  `e2e-fixture-site.test.mjs` holds it. Whether the two `Page`s should differ at all is SH1163.
 - **A plan writes nothing and needs no write transaction (SH153).** It used to provision the
   package's post-types inside its own transaction and roll back — accurate, and it meant a plan
   could not run on a read-only credential, a replica, or inside a `readOnly` transaction, which

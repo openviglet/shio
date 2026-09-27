@@ -99,11 +99,21 @@ async function createSite() {
   return site
 }
 
+/**
+ * SH1144 — with `mergePostTypes`, because a clean instance refuses the package without it.
+ *
+ * The bootstrap site a fresh instance provisions declares a `Page` with `title` and `content`, and
+ * marketing-site's own `Page` adds `description` and `sections`. The apply keeps an existing type
+ * unless asked (SH151), then refuses the content that needs the new fields: `400 undeclared-field`
+ * at `ops[20]`, so every check that provisions first walked a site with no pages on exactly the
+ * instance CI starts from. SH152's merge is additive — it adds the fields and removes none — which
+ * is what provisioning a smoke-check fixture wants.
+ */
 async function applyBlueprint() {
   const res = await fetch(`${API}/api/v2/agent/blueprints/${BLUEPRINT}/apply`, {
     method: "POST",
     headers: { ...json, Authorization: AUTH },
-    body: JSON.stringify({ site: SITE, params: { brand: BRAND } }),
+    body: JSON.stringify({ site: SITE, params: { brand: BRAND }, mergePostTypes: true }),
   })
   const body = await res.text()
   if (!res.ok) throw new Error(`apply ${BLUEPRINT} → ${res.status} ${body}`)

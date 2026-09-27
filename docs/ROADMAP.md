@@ -45,7 +45,7 @@
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
-- 📋 **SH1144** (deps: —) **the console smoke check's provisioning cannot fill a fresh instance: marketing-site's Page is refused** — A fresh instance already has Page with title and content, the blueprint's Page adds description and sections, and provision.mjs applies without the merge opt-in. → §LXXIV.16
+- 📋 **SH1163** (deps: —) **a fresh instance's seeded Page lacks the fields every section blueprint's Page declares, so their apply is refused** — The bootstrap site seeds Page with title and content only, and an apply without mergePostTypes keeps it and refuses the blueprint's content. → §LXXIV.17
 
 ## Priority
 

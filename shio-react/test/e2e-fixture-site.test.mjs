@@ -54,6 +54,19 @@ function createSiteBody(source) {
   return body.slice(open, body.indexOf("}),", open));
 }
 
+test("SH1144: the fixture's blueprint is applied with the merge a clean instance needs", () => {
+  const start = provision.indexOf("async function applyBlueprint");
+  assert.notEqual(start, -1, "SH1144: applyBlueprint moved, and this test lost the call it guards");
+  const call = provision.slice(start, provision.indexOf("\n}\n", start));
+
+  assert.match(call, /\/api\/v2\/agent\/blueprints\/\$\{BLUEPRINT\}\/apply/u);
+  assert.match(call, /mergePostTypes: true/u,
+    "SH1144: a clean instance's bootstrap site declares `Page` with title and content only, and "
+      + "marketing-site's `Page` adds description and sections. Without SH152's merge the apply keeps "
+      + "the existing type and refuses the content (`400 undeclared-field`), so every check that "
+      + "provisions first walks a site with no pages on exactly the instance CI starts from");
+});
+
 test("SH664: the fixture site declares no front end of its own", () => {
   const body = createSiteBody(provision);
 
