@@ -62,10 +62,16 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
 const UNCANCELLED = new Set([
   "src/app/admin/review/review.list.page.tsx",
   "src/app/content/post.edit.page.tsx",
-  "src/app/content/post.new.page.tsx",
-  "src/app/editor/visual-editor.page.tsx",
   // The one the stripper caught on a real file rather than a planted one: this page's prose says
   // "an ambient signal", and a raw scan read that as cancellation and passed it.
+  /*
+   * SH1156 moved this page's **site** read to the query layer and left the entry, which is the honest
+   * state: the visual editor makes seven more reads — the post-type of a selection, the insertable
+   * catalogue, the patterns, a section's editable props — several of them inside effects, and it is
+   * the heaviest file on this list. One read done is not the file done, and a list that let a partial
+   * migration delete the line would stop describing the console.
+   */
+  "src/app/editor/visual-editor.page.tsx",
   "src/app/system/bento.root.page.tsx",
   "src/components/post-history.panel.tsx",
   "src/components/post-live-preview.tsx",
@@ -336,9 +342,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 8,
+  assert.ok(UNCANCELLED.size <= 7,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "the slices took it to 28, 25, 21, 19, 16, 14, 12 and 8. It may only ever shrink.");
+      + "the slices took it to 28, 25, 21, 19, 16, 14, 12, 8 and 7. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -732,6 +738,48 @@ test("SH1155: four more, a second dead effect, and one effect that is the right 
   assert.match(setup, /const checking = status\.isPending/u,
     "SH1155: `isPending` is the honest source for \"still checking\" — the `setChecking(false)` this "
       + "replaced ran on a cancelled read too, showing the setup form to somebody already leaving");
+});
+
+test("SH1156: the create form and the visual editor derive rather than mirror", () => {
+  const fresh = stripComments(readFileSync(
+    join(ROOT, "src/app/content/post.new.page.tsx"), "utf8"));
+  const editor = stripComments(readFileSync(
+    join(ROOT, "src/app/editor/visual-editor.page.tsx"), "utf8"));
+
+  // Same correction SH1150 made to the post-type *editor*, one page over: `t` is not a subject.
+  assert.match(fresh, /queryKey: addressKey\(`postType:\$\{postTypeName\}`\)/u,
+    "SH1156: the create form's cache key is the post-type it reads");
+  assert.doesNotMatch(fresh, /\}, \[postTypeName, t\]/u,
+    "SH1156: a translation function is back among the things that decide which type is read");
+  assert.match(fresh, /isCancelled\(loaded\.error\)/u,
+    "SH1156: the read had no failure path — a type that would not load left a form with no fields, "
+      + "which a curator would take for a type that declares none");
+
+  /*
+   * The visual editor is the one file in the task where the answer is **derived** rather than seeded,
+   * and the distinction is worth keeping: a form holds a local copy because the curator edits it, and
+   * nothing here is edited after it arrives. So there is no `seeded` guard and no second source of
+   * truth — the src and the error are expressions over the query.
+   */
+  assert.match(editor, /const fetchedSrc = site\.data \? withEditorFlag\(siteDestination\(site\.data\)\.url\) : ""/u,
+    "SH1156: the framed URL is derived from the query rather than mirrored into state");
+  assert.doesNotMatch(editor, /setFetchedSrc|setSiteError/u,
+    "SH1156: a local copy is back. Nothing here is edited after it arrives, so a second source of "
+      + "truth can only disagree with the first.");
+  assert.match(editor, /site\.isError && !isCancelled\(site\.error\)/u,
+    "SH1156: leaving the editor while the site loads would otherwise show \"site not found\" for a "
+      + "site that is there");
+  assert.match(editor, /enabled: !externalSrc && Boolean\(siteId\)/u,
+    "SH1156: an external front end supplies its own URL, so there is no site to read — asking anyway "
+      + "is a request per mount for an answer the page will not use");
+
+  // And the honest half: this file keeps its entry on the declared list, because its site read is one
+  // of eight and the other seven are still in effects. A slice that deleted the line for one read
+  // would leave the list describing something other than the console.
+  assert.ok(UNCANCELLED.has("src/app/editor/visual-editor.page.tsx"),
+    "SH1156: the visual editor is off the declared list. Its site read moved to the query layer and "
+      + "its other reads — the post-type of a selection, the insertable catalogue, the patterns, a "
+      + "section's editable props — did not.");
 });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {

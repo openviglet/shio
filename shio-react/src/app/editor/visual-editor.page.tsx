@@ -19,6 +19,10 @@ import {
   Undo2,
   Upload,
 } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import type { ShSite } from "@/models/site/site"
+import { isCancelled } from "@/lib/read-options"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
@@ -335,7 +339,6 @@ export default function VisualEditorPage() {
    * `?url=`, read straight from the query string, so the effect below no longer has a branch that
    * writes what it could have computed.
    */
-  const [fetchedSrc, setFetchedSrc] = useState<string>("")
   // SH333 — the three states this used to collapse into two. The frame had no `onLoad` and no
   // `onError`, and the SH185 handshake had no deadline, so "still loading" and "this will never
   // load" were the same word: a curator opening the editor on a site with no page at `/` read
@@ -432,7 +435,6 @@ export default function VisualEditorPage() {
   const [inserting, setInserting] = useState(false)
   // Why the site failed to resolve, if it did (SH181): a page that spins forever instead of
   // saying so is what let `GET /api/v2/site/{furl}` 404 twice and look like slow loading.
-  const [siteError, setSiteError] = useState<string | null>(null)
   // Pending edits keyed by `${postId}:${prop}` so re-edits of the same field collapse.
   const [changes, setChanges] = useState<Map<string, ContentChange>>(new Map())
   // SH303 — field name -> declared label, from the page's post-type. A field's label belongs to
@@ -497,6 +499,28 @@ export default function VisualEditorPage() {
   // renders the page here, and the fallback mirrors ShSiteFrontEnd on the server so the two
   // cannot come to disagree about where a site is visible.
   const externalSrc = siteId === "external" ? searchParams.get("url") : null
+  /*
+   * SH1156 — the site this editor frames, read once and cancelled when it changes or the page
+   * unmounts. `t` was in the effect's dependency list this replaced and is not a subject; the site
+   * id is.
+   *
+   * `?editor=true` asks Shio's renderer for the SH185 bridge. It is a query param rather than
+   * something the parent turns on afterwards, so an ordinary preview never ships editor code — and
+   * it is harmless on an external front end that ignores it.
+   *
+   * Both values are derived rather than seeded: unlike a form, nothing here is edited after it
+   * arrives, so there is no local copy to keep. A cancelled read leaves the src empty and the error
+   * null, which reads as "still loading" — which is what it is.
+   */
+  const site = useQuery<ShSite>({
+    queryKey: addressKey(`id:${siteId ?? ""}`),
+    queryFn: ({ signal }) => siteService.get(siteId ?? "", { signal }),
+    enabled: !externalSrc && Boolean(siteId),
+  })
+  const fetchedSrc = site.data ? withEditorFlag(siteDestination(site.data).url) : ""
+  const siteError = site.isError && !isCancelled(site.error)
+    ? t("universalEditor.siteNotFound", { key: siteId })
+    : null
   const src = externalSrc ?? fetchedSrc
   const bridge: BridgeState = handshake.src === src ? handshake.bridge : "waiting"
   const frameLoaded = handshake.src === src && handshake.frameLoaded
@@ -523,21 +547,6 @@ export default function VisualEditorPage() {
     return declared === null || declared.includes(capability)
   }, [handshake, src])
 
-  useEffect(() => {
-    if (externalSrc) return
-    if (!siteId) return
-    siteService
-      .get(siteId)
-      .then((site) => {
-        // `?editor=true` asks Shio's renderer for the SH185 bridge. It is a query param
-        // rather than something the parent turns on afterwards, so an ordinary preview never
-        // ships editor code — and it is harmless on an external front end that ignores it.
-        const destination = siteDestination(site)
-        setFetchedSrc(withEditorFlag(destination.url))
-        setSiteError(null)
-      })
-      .catch(() => setSiteError(t("universalEditor.siteNotFound", { key: siteId })))
-  }, [siteId, externalSrc, t])
 
   /**
    * The origin the framed page lives at (SH185).

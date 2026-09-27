@@ -2551,6 +2551,23 @@ so this list has no business with it, and it sets no state, so `set-state-in-eff
 say either. An effect is simply the right shape for a side effect — the rule was never "no effects".
 **The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8.**
 
+**Slice nine took the create form and one read out of the visual editor** (SH1156). The create form
+repeated the post-type editor's mistake one page over — `t` in the dependency list — and had no failure
+path, so a type that would not load left a form with **no fields**, which a curator would take for a
+type that declares none.
+
+The visual editor is the first file here where the answer is **derived rather than seeded**, and the
+distinction is worth keeping: a form holds a local copy because the curator edits it, and nothing in the
+editor is edited after it arrives, so the framed URL and the error are expressions over the query with
+no second source of truth to disagree with the first.
+
+**And it keeps its entry on the declared list**, which is the honest state: that site read is one of
+eight this page makes — the post-type of a selection, the insertable catalogue, the patterns, a
+section's editable props — and it is the heaviest file on the list. One read done is not the file done,
+and a list that let a partial migration delete the line would stop describing the console. The
+assertion says so explicitly, so the entry cannot quietly go later.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7.**
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key
