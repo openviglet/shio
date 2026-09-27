@@ -1599,30 +1599,6 @@ The MCP write path that silently dropped locale and translationOf was a live def
 is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
 translates, reached through the assistant, and every result lands as a reviewable draft.
 
-### LXXIII.9 A switcher entry for a page nobody published (SH1128)
-
-A post's `availableLocales` is read from its whole translation group, and nothing in
-that read asks for a state. `translate` creates the sibling as a DRAFT, so the moment a
-curator starts a Portuguese translation, every production token's read of the English
-page says it exists in `pt-br`. A switcher built from that field links to a page the
-same token gets a 404 for, and it stays that way for as long as the translation is being
-written.
-
-SH1123 fixed the same defect one level up: a site's derived languages are read from the
-states the token can see, so a production switcher is never offered a draft-only
-language. The post-level field kept the old rule, and SH1129 carried it into GraphQL
-deliberately, so the two surfaces agree while this is open rather than disagreeing in a
-way nobody filed.
-
-The fix is the one SH1123 made: the group's locales come from the rows in the states the
-reader reads. `PUBLISHED` for a production token, both for a preview token. The batch
-query SH1129 added takes the states as a parameter, and the single-post path moves onto
-it so there is one reading of the rule instead of two.
-
-The assertion carries the id: a published English page with a draft-only `pt-br` sibling
-reports `["en"]` to a production token and `["en","pt-br"]` to a preview token, on REST
-and on GraphQL.
-
 ### LXXIII.10 A promised language nobody wrote (SH1130)
 
 SH1057's design ended on a verify finding for "a route that accepts a distinction it

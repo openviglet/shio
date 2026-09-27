@@ -259,15 +259,25 @@ public class ShCdaService {
         return Optional.empty();
     }
 
-    /** The distinct locales this post's translation group is available in (SH53), sorted. */
+    /**
+     * The distinct locales this post's translation group is available in (SH53), sorted.
+     *
+     * <h2>SH1128 — over the states this token reads, and through the batch</h2>
+     *
+     * <p>It counted every state, so the moment a curator started a Portuguese translation —
+     * {@code translate} creates the sibling as a DRAFT — every production token's read of the English
+     * page said it exists in {@code pt-br}. A switcher built from that field linked to a page the same
+     * token gets a 404 for, and it stayed that way for as long as the translation was being written.
+     * SH1123 fixed the same defect one level up for a site's derived languages; this is the
+     * post-level field, which kept the old rule.</p>
+     *
+     * <p>It reads through {@link #availableLocales(List)} rather than a finder of its own, so there is
+     * <b>one</b> reading of the rule instead of two that agree until somebody changes one. The batch
+     * loads two columns where this used to load whole documents, so the single-post path got cheaper
+     * on the way.</p>
+     */
     private List<String> availableLocales(ShPostUnified post) {
-        String group = post.getTranslationGroupId() != null ? post.getTranslationGroupId() : post.getId();
-        return shPostUnifiedRepository.findByTranslationGroupId(group).stream()
-                .map(ShPostUnified::getLocale)
-                .filter(l -> l != null && !l.isBlank())
-                .distinct()
-                .sorted()
-                .toList();
+        return availableLocales(List.of(post)).getOrDefault(groupOf(post), List.of());
     }
 
     public ShCdaListing query(String siteId, String folderId, String postType, int page, int size) {
@@ -322,7 +332,16 @@ public class ShCdaService {
                 .toList();
     }
 
-    /** SH1129 — the locales every row's translation group is in, in one query for the page. */
+    /**
+     * SH1129 — the locales every row's translation group is in, in one query for the page.
+     *
+     * <p>SH1128 — and only in the states {@link #readStates()} names, which is the whole fix: a
+     * production token is never told a group is available in a language it cannot fetch a row of. By
+     * the <em>token</em> rather than by the request's {@code state=}, because the question the field
+     * answers is "which of these can I follow a link to", and that is decided by the credential. A
+     * preview token looking at published rows still sees the draft translation, which is correct — it
+     * can fetch it.</p>
+     */
     private Map<String, List<String>> availableLocales(List<ShPostUnified> rows) {
         if (rows.isEmpty()) {
             return Map.of();
@@ -330,7 +349,8 @@ public class ShCdaService {
         Set<String> groups = new java.util.LinkedHashSet<>();
         rows.forEach(post -> groups.add(groupOf(post)));
         Map<String, java.util.TreeSet<String>> sorted = new LinkedHashMap<>();
-        for (Object[] row : shPostUnifiedRepository.findDistinctLocalesByTranslationGroupIdIn(groups)) {
+        for (Object[] row : shPostUnifiedRepository
+                .findDistinctLocalesByTranslationGroupIdInAndStateIn(groups, readStates())) {
             sorted.computeIfAbsent((String) row[0], group -> new java.util.TreeSet<>()).add((String) row[1]);
         }
         Map<String, List<String>> byGroup = new LinkedHashMap<>();

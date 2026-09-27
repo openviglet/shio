@@ -1563,6 +1563,33 @@ carries the `state-needs-preview-token` slug. `@viglet/shio-react` passes it thr
 
 **GraphQL has the same two fields and the same argument (SH1129).** `ShContent` declares `locale`
 and `availableLocales`, and `postByUrl` and `posts` take `locale`. A `posts` page reads every row's
-translation group in one query (`findDistinctLocalesByTranslationGroupIdIn`) — the single-post reads
-ask per post, and that shape on a list is a query per row; `ShCdaAvailableLocalesBenchmarkTest`
-prints both and holds the page's count flat from five rows to twenty-five.
+translation group in one query (`findDistinctLocalesByTranslationGroupIdInAndStateIn`) — the
+single-post read goes through the same method, and that shape on a list would otherwise be a query per
+row; `ShCdaAvailableLocalesBenchmarkTest` prints both and holds the page's count flat from five rows to
+twenty-five.
+
+### A switcher entry for a page nobody published (SH1128)
+
+`availableLocales` was read from the whole translation group with **nothing in that read asking for a
+state**. `translate` creates the sibling as a DRAFT, so the moment a curator started a Portuguese
+translation, every production token's read of the English page said it exists in `pt-br` — and a
+switcher built from that field linked to a page the same token gets a 404 for, for as long as the
+translation was being written.
+
+SH1123 had fixed the identical defect one level up (a site's derived languages come from the states the
+token can see) and the post-level field kept the old rule; SH1129 then carried that rule into GraphQL
+**deliberately**, so the two surfaces agreed while this was open rather than disagreeing in a way
+nobody had filed. This is the pair brought onto SH1123's rule: the group's locales come from the rows
+in the states the reader reads — `PUBLISHED` for a production token, both for a preview token.
+
+**By the token, not by the request's `state=`.** The question the field answers is "which of these can
+I follow a link to", and the credential decides that. A preview token looking at published rows still
+sees the draft translation, which is right: it can fetch it.
+
+**One reading of the rule, not two.** The single-post path used to load whole rows through
+`findByTranslationGroupId`; it goes through the batch now, so there is one query with the state rule in
+it rather than two that agree until somebody changes one — and the single read got cheaper on the way,
+since the batch selects two columns where the finder loaded documents. The assertion is driven from
+both surfaces, because they were two different queries before this and that is exactly how they could
+have diverged: a published English page with a draft-only `pt-br` sibling reports `["en"]` to a
+production token and `["en","pt-br"]` to a preview token, on the REST read and on the GraphQL page.
