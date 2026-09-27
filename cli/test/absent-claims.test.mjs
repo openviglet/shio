@@ -124,6 +124,12 @@ const DECLARED = new Map(Object.entries({
   "docs/agents/cli.md | is not part of | SH477,SH658":
     "An archetype's mark whose aria-label repeats its visible text. False if the archetype set "
     + "grows one, which is a change in this repository's own corpus.",
+  "docs/agents/content-files.md | is not here":
+    "The pull half of the site marker (SH1122): nothing projects `_site.md` FROM an instance, because "
+    + "no cheap read of a site's settings exists — the context pack omits `description` and `furl`, "
+    + "and the console's site read answers the 5 MB `postTypeLayout` column with them. False the day "
+    + "a site-settings read lands on the agent surface, which is a controller and a response budget "
+    + "measurement, not a doc change.",
   "docs/agents/blueprints.md | is not here":
     "`shio_apply --at --mode insert`, which SH1040's design named and which needs the SERVER to "
     + "hold the pattern. False the day a project file can reach the registry without the "

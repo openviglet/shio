@@ -15,6 +15,7 @@ import { join } from "node:path";
 
 import {
   FOLDER_MARKER,
+  SITE_MARKER,
   bodyFieldFor,
   fault,
   filePathFor,
@@ -22,6 +23,7 @@ import {
   normalizeUrl,
   storedUrl,
   parseFolderMarker,
+  parseSiteMarker,
   parsePost,
   projectedPost,
   serializeFolder,
@@ -397,6 +399,31 @@ export async function readLocalFolders(ctx, { dir = FOLDERS_DIR, site = null, mo
   const unportable = unportableFrom(paths, dir);
   if (mode === "report") return { markers, unportable };
   if (unportable.length) throw unportableFault(unportable[0]);
+  return markers;
+}
+
+/**
+ * Reads the site markers (SH1122) — the settings half of the folders root.
+ *
+ * <p>Walks only the site directories' own level: a `_site.md` lives beside the site root's
+ * `_folder.md` and nowhere else, so `Blog/news/_site.md` is not a deeper site, it is a mistake, and
+ * `parseSiteMarker` refuses it by path rather than this walk guessing what was meant.</p>
+ *
+ * @returns {Promise<{site: string, url?: string, furl?: string, description?: string,
+ *                    locales?: object}[]>} sorted by site, so a document built from this is
+ *   byte-stable whatever order the filesystem hands the entries back (P5)
+ */
+export async function readLocalSites(ctx, { dir = FOLDERS_DIR, site = null } = {}) {
+  const root = join(ctx.cwd, dir);
+  const files = await walk(ctx, root, "");
+  const markers = [];
+  for (const relPath of files.sort()) {
+    const name = relPath.split("/").pop() ?? "";
+    if (name.toLowerCase() !== SITE_MARKER) continue;
+    if (site && !relPath.startsWith(`${site}/`)) continue;
+    markers.push(parseSiteMarker(relPath, await ctx.fs.readFile(join(root, relPath), "utf8")));
+  }
+  markers.sort((a, b) => a.site.localeCompare(b.site));
   return markers;
 }
 

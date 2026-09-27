@@ -588,4 +588,114 @@ class ShAgentDesiredStateTest {
         assertThat(plan(withBinding(site, true, java.util.Map.of("Page", "ACME_FIDELITY"))).changed())
                 .isZero();
     }
+    /**
+     * SH1122 — a site's own settings, from the tree's {@code _site.md}, as a third
+     * {@code site.upsert}.
+     *
+     * <h2>The hole this closes</h2>
+     *
+     * <p>A site root is a folder, so it already projected to a {@code _folder.md} — carrying
+     * {@code site} and {@code folder} and nothing about the site. Everything a site <em>is</em> lived
+     * only in its row: {@code url}, {@code furl}, the description, and since SH1056 the locale
+     * policy. None of it could be authored as a file, which is law P4 with a hole in exactly the
+     * wrong place: the one object an agent must configure before a page renders at all was the one it
+     * could not edit the way P4 says it should.</p>
+     *
+     * <h2>Why nothing here is a new rule about a site</h2>
+     *
+     * <p>The op is {@code site.upsert}, which has filled these four since SH170 and SH1056 and
+     * already draws the P7 line where it belongs: an empty field is filled, a value somebody chose is
+     * <b>kept and reported</b>. So the document gains a way to <em>ask</em>, and what happens to the
+     * ask is unchanged — which is also why the round trip stays idempotent.</p>
+     */
+    @Test
+    void siteSettingsCompileToOneMoreUpsert() {
+        JsonNode settings = new ObjectMapper().readTree("""
+                {"url":"https://acme.example","furl":"acme","description":"Acme",
+                 "locales":{"default":"en","enabled":["en"]}}""");
+
+        List<ShAgentBatch.Op> ops = shAgentDesiredStateService.compile(withSettings(siteName, settings));
+
+        ShAgentBatch.Op upsert = ops.stream()
+                .filter(op -> ShAgentBatchService.SITE_UPSERT.equals(op.op()))
+                .reduce((first, second) -> second).orElseThrow();
+        assertThat(upsert.data().get("url").stringValue()).isEqualTo("https://acme.example");
+        assertThat(upsert.data().get("furl").stringValue()).isEqualTo("acme");
+        assertThat(upsert.data().get("description").stringValue()).isEqualTo("Acme");
+        assertThat(upsert.data().get("locales").get("default").stringValue()).isEqualTo("en");
+
+        // Absent and empty are the same document as before this task: no op, no bytes (P5).
+        assertThat(shAgentDesiredStateService.compile(withSettings(siteName, null)))
+                .noneMatch(op -> ShAgentBatchService.SITE_UPSERT.equals(op.op()));
+        assertThat(shAgentDesiredStateService.compile(
+                withSettings(siteName, new ObjectMapper().readTree("{}"))))
+                .noneMatch(op -> ShAgentBatchService.SITE_UPSERT.equals(op.op()));
+    }
+
+    /**
+     * SH1122 — the allow-list, which is the whole of {@code settingsData}.
+     *
+     * <p>A document is written by whoever is pushing, so a {@code settings} block copied through
+     * unfiltered would be a second path to {@code scratch} — settable on a create and never
+     * afterwards, which is the guarantee {@code shio site rm --scratch} rests on — and to
+     * {@code postTypeLayout}, which has a field of its own. Neither may arrive this way, and a blank
+     * string may not either: the op reads a blank as "nothing requested", so sending one would make a
+     * marker with an empty key indistinguishable from one without it.</p>
+     */
+    @Test
+    void aSettingsBlockCannotSmuggleScratchOrABinding() {
+        JsonNode settings = new ObjectMapper().readTree("""
+                {"url":"https://acme.example","scratch":true,
+                 "postTypeLayout":{"Page":"SOMETHING"},"searchablePostTypes":"Page",
+                 "formSuccess":"/thanks","description":"   "}""");
+
+        ShAgentBatch.Op upsert = shAgentDesiredStateService.compile(withSettings(siteName, settings))
+                .stream().filter(op -> ShAgentBatchService.SITE_UPSERT.equals(op.op()))
+                .reduce((first, second) -> second).orElseThrow();
+
+        assertThat(upsert.data().propertyNames())
+                .as("SH1122: only the four keys a site marker projects reach the op, and a blank is "
+                        + "not one of them")
+                .containsExactly("url");
+    }
+
+    /** And it reaches the site, then reports noop — the property that makes a push re-runnable. */
+    @Test
+    void siteSettingsReachTheSiteAndStayConvergent() {
+        String site = "settings-apply-" + UUID.randomUUID();
+        JsonNode settings = new ObjectMapper()
+                .readTree("{\"url\":\"https://acme.example\",\"description\":\"Acme\"}");
+
+        apply(withSettings(site, settings, true));
+
+        ShSite stored = shSiteRepository.findByName(site);
+        assertThat(stored.getUrl()).isEqualTo("https://acme.example");
+        assertThat(stored.getDescription()).isEqualTo("Acme");
+        assertThat(plan(withSettings(site, settings, true)).changed())
+                .as("SH1122: a second push finds the fields filled and asks for nothing")
+                .isZero();
+
+        // SH170's P7 line, read from the tree: a field somebody chose is kept, and the caller is told
+        // so rather than shown a success that did not happen. This is why the projection's round trip
+        // is "author, push, read the report" and not "author, push, assume".
+        JsonNode moved = new ObjectMapper().readTree("{\"url\":\"https://elsewhere.example\"}");
+        ShAgentChangeSet kept = plan(withSettings(site, moved, true));
+        assertThat(kept.results().stream().map(Change::detail).filter(java.util.Objects::nonNull))
+                .as("SH1122: repointing a live site is a console edit, and being told that is more "
+                        + "useful than a silent no-op")
+                .anyMatch(detail -> detail.contains("kept the existing url"));
+        assertThat(shSiteRepository.findByName(site).getUrl()).isEqualTo("https://acme.example");
+    }
+
+    private ShAgentDesiredState withSettings(String site, JsonNode settings) {
+        return withSettings(site, settings, false);
+    }
+
+    private ShAgentDesiredState withSettings(String site, JsonNode settings, boolean createSite) {
+        return new ShAgentDesiredState(site, List.of(new ShAgentDesiredState.Folder("/pages")),
+                List.of(new ShAgentDesiredState.Post("/pages/home", postTypeName, "/pages",
+                        data("Home"), null)),
+                null, false, null, createSite, null, false, null, null, settings);
+    }
+
 }

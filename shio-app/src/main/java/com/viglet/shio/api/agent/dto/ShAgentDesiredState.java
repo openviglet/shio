@@ -102,6 +102,17 @@ import tools.jackson.databind.JsonNode;
  *                named forty, the batch refused the write on the first one, and the conversion
  *                died having uploaded 18 assets and written no page
  *
+ * @param settings the site's own settings, as the tree's `_site.md` carries them (SH1122):
+ *                {@code url}, {@code furl}, {@code description} and SH1056's {@code locales}
+ *                policy. Compiled to one more {@code site.upsert}, which is the op that already
+ *                fills each of them and already refuses to replace a value somebody chose — so
+ *                this adds a way to <em>author</em> a site's settings and no new rule about them.
+ *                <b>Only those four keys are read</b>, filtered where the op is built rather than
+ *                trusted here: {@code scratch} is settable on a create and never afterwards, and
+ *                {@code postTypeLayout} has its own field above, so a {@code settings} block that
+ *                could carry either would be a second path to both and a way past the guarantee
+ *                each one rests on
+ *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
@@ -109,7 +120,17 @@ public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> 
                                   List<Move> moves, boolean prune, String confirm,
                                   boolean createSite, Map<String, String> postTypeLayout,
                                   boolean scratch, List<String> postTypes,
-                                  Map<String, List<String>> postTypeFields) {
+                                  Map<String, List<String>> postTypeFields, JsonNode settings) {
+
+    /** The eleven-field form: every caller before SH1122 had no file to author a site's settings in. */
+    public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,
+                               List<Move> moves, boolean prune, String confirm,
+                               boolean createSite, Map<String, String> postTypeLayout,
+                               boolean scratch, List<String> postTypes,
+                               Map<String, List<String>> postTypeFields) {
+        this(site, folders, posts, moves, prune, confirm, createSite, postTypeLayout, scratch,
+                postTypes, postTypeFields, null);
+    }
 
     /** The ten-field form: every caller before SH871 wrote only fields somebody had declared. */
     public ShAgentDesiredState(String site, List<Folder> folders, List<Post> posts,

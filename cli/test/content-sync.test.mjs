@@ -843,3 +843,68 @@ test("a whole-document comparison cannot hide a collision either", () => {
 
   assert.equal(same(base, local), false);
 });
+
+/*
+ * SH1122 — a site's own settings, from the tree, as a `settings` block on the document.
+ *
+ * The server compiles it to one more `site.upsert`, which is the op that already fills each of these
+ * and already refuses to replace a value somebody chose (SH170's P7 line). So this adds a way to
+ * *author* a site's settings and no new rule about them.
+ */
+test("SH1122: a site marker becomes the document's settings block", () => {
+  const [document] = documentsFor([], {
+    siteMarkers: [{
+      site: "Blog",
+      url: "https://blog.example",
+      furl: "blog",
+      description: "The company blog",
+      locales: { default: "en", enabled: ["en"] },
+    }],
+  });
+
+  assert.equal(document.site, "Blog",
+    "SH1122: a tree holding nothing but a `_site.md` still emits a document — configuring a site is "
+    + "the step before scaffolding it, and it was the one step with no file to do it in");
+  assert.deepEqual(document.settings, {
+    url: "https://blog.example",
+    furl: "blog",
+    description: "The company blog",
+    locales: { default: "en", enabled: ["en"] },
+  });
+  assert.ok(!("site" in document.settings),
+    "SH1122: the document already names its site, and a second spelling of it is a second thing "
+    + "that can disagree");
+});
+
+test("SH1122: a document for a site with no marker is byte-identical to before", () => {
+  const [document] = documentsFor([
+    { site: "Blog", url: "/hello", type: "Post", folder: "/", data: {} },
+  ]);
+  assert.ok(!("settings" in document),
+    "SH1122: the key is deleted rather than written as null, so every existing tree's document "
+    + "serializes exactly as it did (P5)");
+  const [blank] = documentsFor([], { siteMarkers: [{ site: "Blog" }] });
+  assert.ok(!("settings" in blank),
+    "SH1122: and a marker that declares nothing declares nothing — a blank `settings` would ask the "
+    + "server to fill four fields with empty strings");
+});
+
+test("SH1122: a marker cannot smuggle a key the projection refuses", () => {
+  // Belt and braces with the server's own allow-list, and deliberately so: a document is written by
+  // whoever is pushing, so the rule has to hold for a hand-written one too. What this side adds is
+  // that the TREE never writes a key the server would drop — a file whose contents are silently
+  // ignored is the failure §LXXIV.12 is about, one layer along.
+  const [document] = documentsFor([], {
+    siteMarkers: [{
+      site: "Blog",
+      url: "https://blog.example",
+      scratch: true,
+      bindings: { Page: "Layout" },
+      searchablePostTypes: "Page",
+      formSuccess: "/thanks",
+    }],
+  });
+  assert.deepEqual(Object.keys(document.settings), ["url"],
+    "SH1122: `scratch` is settable on a create and never afterwards, `bindings` have a field of "
+    + "their own, and the other two have no write op — none of them reaches the op through here");
+});

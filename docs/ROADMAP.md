@@ -55,7 +55,7 @@
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
-- 📋 **SH1122** (deps: SH1056 ✅) **a site's own settings are projected to no file, so url, bindings and the locale policy cannot be authored or diffed** — A site root's _folder.md says nothing about the site, so the one object that decides whether a page renders is reachable only through the API. → §LXXIV.12
+- ⏳ **SH1122** (deps: SH1056 ✅) **a site's own settings are projected to no file, so url, bindings and the locale policy cannot be authored or diffed** — the pull half waits on a cheap read: the context pack omits description and furl, and the console's site read carries the 5 MB postTypeLayout. → §LXXIV.12
 - 📋 **SH1133** (deps: —) **a redirect on a site with its own front end routes nobody, and the lint still demands one** — Redirect posts are served by the instance's renderer; a Next.js site's URLs are served by the front end, which the CDA and the SDK never tell which addresses moved. → §LXXIV.13
 - 📋 **SH1134** (deps: —) **an exported site carries no asset bytes, so every File post arrives pointing at nothing** — The format has a files/ directory and the import restores from it; the site export passes an empty list, so the pages render with broken images and neither side says so. → §LXXIV.14
 - 📋 **SH1135** (deps: —) **an instance cannot say what a site was replicated from, and the console cannot start a run** — Every artefact of a round lives on the CLI's disk and the instance sees only the site that came out, so the source URL behind a page is lost the moment the shell closes. → §LXXIV.15
@@ -96,6 +96,12 @@
   books. It stood at 33 when this task opened and slice one took it to 28, which the
   test holds as a ceiling that only ever falls, so the list reaching zero is the whole
   of what done means here.
+
+## Done when — SH1122
+
+- **a site's settings are authored as a file and reach the instance**
+  `shio/folders/SITE/_site.md` carries url, furl, description and SH1056's locale
+  policy, and a push compiles it to the `site.upsert` that fills each of them.
 
 ## Non-goals (do NOT add as tasks)
 

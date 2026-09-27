@@ -923,3 +923,76 @@ and writes the markup to a file (`--out`, or a temp path it prints). Nothing is 
   width nobody knows is the one thing that produces broken images rather than unoptimised ones. The
   run says which images it carried, because that is the one way the previewed page differs from the
   pushed one.
+
+## `_site.md` — the site marker the projection never had (SH1122, the push half)
+
+A site root is a folder, so it already projected to a `_folder.md` — carrying `site` and `folder` and
+nothing about the site. Everything a site *is* lived only in its row: `url`, `furl`, the description,
+and since SH1056 the locale policy. None of it could be authored as a file, which is **law P4 with a
+hole in exactly the wrong place**: the one object an agent must configure before a page renders at
+all was the one it could not edit the way P4 says it should. Found by SH1056, whose design asked for
+"a locales block in the site marker file" — a sentence that reads as a field on an existing file and
+is a subsystem, because there was no such file.
+
+`shio/folders/<Site>/_site.md`, beside the site root's own `_folder.md`. **Beside** rather than under
+`shio/content` for SH149's reason unchanged: there the directories are *URL* segments, so a `_site.md`
+in the content root would be claiming a URL prefix is a site. `siteLocationOf` reads a marker below
+the site root as no site at all rather than as one named after a folder.
+
+Five keys in a fixed order — `site`, `url`, `furl`, `description`, `locales` — and every one but
+`site` is written only when the site has a value for it, so an unconfigured site is two lines rather
+than a file full of nulls a push would read as a request to blank four fields. A blank string is an
+*absent* key, because the op reads a blank as "nothing requested".
+
+**What it deliberately does not carry**, and each reason is a different one (`SITE_KEYS_ABSENT`):
+
+| Absent | Why |
+|---|---|
+| `bindings` (`postTypeLayout`) | §LXXIV.12's one open question, decided: they stay an API-only edge. A binding names a layout **by title**, so it is a reference the tree cannot check — nothing in `shio/` resolves a title to a post, and a marker naming a layout that does not exist would push a site whose pages render nothing, reported as a success. They are also derived rather than authored, and the column is a 5 MB blob |
+| `scratch` | Set at creation and never afterwards, which is the whole guarantee behind `shio site rm --scratch`. A file that could carry it is a way to make a site somebody chose to keep deletable in one confirmation |
+| `searchablePostTypes`, `formSuccess` | No write op accepts either. Projecting them would be a file that **lies about being authorable** — an agent edits it, pushes, is told nothing, and the setting is whatever it was. They are a write before they are a file |
+
+The rule those three share is the projection's rule: **every key in a marker is a key the tree can
+author *and* a key `site.upsert` can send.** `parseSiteMarker` refuses each by name rather than
+ignoring it, because a file whose contents are silently dropped is the failure this task is about, one
+layer along.
+
+The locale policy is the one structured value: three keys in the order the server's own `toJson`
+writes them, with `fallback` sorted (the stored document is byte-stable through `ShStableMap`, and a
+projection that re-encoded it in hash order would show a diff after a restart with nothing changed)
+and `enabled` in the author's order, since it is a list rather than a set. An **undeclared** policy is
+*absent*, not an empty object: a site that has declared nothing reports the locales its content
+happens to be written in, and writing that derived answer into the file would turn an observation into
+a declaration on the next push.
+
+### Push, and why nothing here is a new rule about a site
+
+`documentsFor` carries the marker as the document's `settings` block, and
+`ShAgentDesiredStateService` compiles it to one more `site.upsert` — a third, for the reason the
+binding is a second: these are settable without `createSite`, so one op serves both the site the
+document just created and the one that was already there. `site` is deliberately not among the keys;
+the document already names its site, and a second spelling is a second thing that can disagree.
+
+The op is the one that has filled these four since SH170 and SH1056, and it already draws the P7 line
+where it belongs: **an empty field is filled, a value somebody chose is kept and reported.** So the
+document gains a way to *ask*, and what happens to the ask is unchanged — which is also what keeps a
+push idempotent. Repointing a live site is a console edit, and `kept the existing url` in the change
+detail is more useful than a silent no-op. That is why the round trip to check is *author, push, read
+the report*.
+
+The allow-list is applied **twice, on purpose**: in `settingsFor` so the tree never writes a key the
+server would drop, and in `settingsData` because a document is written by whoever is pushing and the
+rule has to hold for a hand-written one too.
+
+### Pull is not here, and the reason is a read
+
+Nothing writes `_site.md` yet — there is no `writeSiteMarker`, and no merge rule to declare in
+`merge-rules.test.mjs`, because an unused writer would be dead code and a declared rule would describe
+a sync that does not happen. A marker is authored (P4: `Write` is the agent's tool) and pushed.
+
+Projecting one *from* an instance needs a cheap read of a site's settings, and there is none: the
+context pack's site row carries `url` and the locale fields but neither `description` nor `furl`, and
+the console's `GET /api/v2/site/{name}` answers the whole row including the 5 MB `postTypeLayout`
+column — so reading four short strings that way is a P3 regression, and P3 says the measurement comes
+first. That read, the projection, its merge rule and §LXXIV.12's own round-trip assertion (*push a
+site, change a field on disk, pull, read the diff*) are the second half, filed as its own task.

@@ -20,6 +20,12 @@ import {
   filePathFor,
   folderLocationOf,
   folderMarkerPathFor,
+  SITE_KEYS_ABSENT,
+  parseSiteMarker,
+  serializeSite,
+  siteLocalePolicy,
+  siteLocationOf,
+  siteMarkerPathFor,
   locationOf,
   parseFolderMarker,
   parsePost,
@@ -557,4 +563,119 @@ test("SH585: a post with no declared slash serializes byte-identically to before
   // The overwhelming case, and the one that must not move: the whole tree would show a diff.
   assert.equal(serializePost(DOC), serializePost({ ...DOC, url: "/blog/hello" }));
   assert.match(serializePost(DOC), /^url: \/blog\/hello$/m);
+});
+
+/*
+ * SH1122 — the site marker, and the hole in P4 it fills.
+ *
+ * A site root is a folder, so it already had a `_folder.md` — carrying `site` and `folder` and
+ * nothing about the site. Everything a site *is* lived only in its row: `url`, `furl`, the
+ * description, and since SH1056 the locale policy. None of it pulled, pushed or diffed, which is law
+ * P4 with a hole in exactly the wrong place: the one object an agent must configure before a page
+ * renders at all was the one it could not edit as a file.
+ *
+ * Found by SH1056, whose design asked for "a locales block in the site marker file" — a sentence that
+ * reads as a field on an existing file and is a subsystem, because there was no such file.
+ */
+test("SH1122: a site marker round-trips, and every key is one a push can send", () => {
+  const marker = {
+    site: "Blog",
+    url: "https://blog.example",
+    furl: "blog",
+    description: "The company blog",
+    locales: { default: "en", enabled: ["en", "pt-br"], fallback: { "pt-br": "en" } },
+  };
+  const text = serializeSite(marker);
+  assert.equal(text, [
+    "---",
+    "site: Blog",
+    "url: https://blog.example",
+    "furl: blog",
+    "description: The company blog",
+    'locales: {"default":"en","enabled":["en","pt-br"],"fallback":{"pt-br":"en"}}',
+    "---",
+    "",
+  ].join("\n"), "SH1122: the key order is fixed, so a diff never shows a reordering (P5)");
+  assert.deepEqual(parseSiteMarker("Blog/_site.md", text), marker,
+    "SH1122: what the tree writes is what the tree reads back — the property every sync rests on");
+  assert.equal(serializeSite(parseSiteMarker("Blog/_site.md", text)), text,
+    "SH1122: and it is byte-stable over a round trip");
+});
+
+test("SH1122: a site with nothing but a name projects two lines, and gains one per field", () => {
+  assert.equal(serializeSite({ site: "Blog" }), "---\nsite: Blog\n---\n",
+    "SH1122: a key is written only when the site has a value for it, so an unconfigured site is not "
+    + "a file full of nulls that a push would read as a request to blank four fields");
+  // A column is either unset or holds something, and `""` is the first: the op reads a blank as
+  // "nothing requested", so writing the key would make an empty value indistinguishable from an
+  // absent one on the way back in.
+  assert.equal(serializeSite({ site: "Blog", url: "", description: "   " }),
+    "---\nsite: Blog\n---\n");
+});
+
+test("SH1122: an undeclared locale policy is absent, not an empty object", () => {
+  // SH1056's distinction, carried into the tree. A site that has declared nothing reports the
+  // locales its content happens to be written in, and writing that derived answer into the file
+  // would turn an observation into a declaration on the next push — the agent would be declaring a
+  // policy nobody chose.
+  assert.equal(siteLocalePolicy(null), undefined);
+  assert.equal(siteLocalePolicy("{}"), undefined);
+  assert.equal(siteLocalePolicy("not json"), undefined);
+  assert.equal(siteLocalePolicy('{"enabled":[]}'), undefined,
+    "SH1122: a policy naming nothing is not a policy");
+  // `fallback` sorted, because the server's stored document is byte-stable (ShStableMap) and a
+  // projection that re-encoded it in hash order would show a diff after a restart with nothing
+  // changed. `enabled` keeps the author's order — it is a list, not a set.
+  assert.equal(
+    JSON.stringify(siteLocalePolicy(
+      '{"fallback":{"z":"en","a":"en"},"enabled":["pt-br","en"],"default":"en"}')),
+    '{"default":"en","enabled":["pt-br","en"],"fallback":{"a":"en","z":"en"}}');
+});
+
+test("SH1122: a marker and its directory have to agree, and a body has nowhere to go", () => {
+  assert.throws(() => parseSiteMarker("Blog/_site.md", "---\nsite: Other\n---\n"),
+    /disagrees with its directory/,
+    "SH1122: a directory renamed without its frontmatter is a rename on one side and a create on "
+    + "the other — the same refusal `parseFolderMarker` makes, and for the same reason");
+  assert.throws(() => parseSiteMarker("Blog/_site.md", "---\nsite: Blog\n---\nsome prose\n"),
+    /has no body/,
+    "SH1122: text in a marker is content somebody wrote expecting it to land somewhere, and there "
+    + "is nowhere for it to go");
+  assert.deepEqual(parseSiteMarker("Blog/_site.md", "---\nurl: https://x\n---\n"),
+    { site: "Blog", url: "https://x" },
+    "SH1122: the path names the site, so a hand-written file needs no ceremony (P4)");
+});
+
+test("SH1122: the four keys a marker may not carry are refused by name", () => {
+  // The projection's rule: every key in a marker is a key the tree can author AND a key
+  // `site.upsert` can send. A file carrying a field no write accepts is a file that lies about being
+  // authorable — an agent edits it, pushes, is told nothing, and the setting is whatever it was.
+  for (const [key, value] of [
+    ["bindings", "{}"],
+    ["scratch", "true"],
+    ["searchablePostTypes", "Page"],
+    ["formSuccess", "/thanks"],
+  ]) {
+    assert.throws(
+      () => parseSiteMarker("Blog/_site.md", `---\nsite: Blog\n${key}: ${value}\n---\n`),
+      new RegExp(`carries \`${key}:\``),
+      `SH1122: ${key} is not projected and a marker carrying it must say so rather than be ignored`);
+  }
+  assert.deepEqual(SITE_KEYS_ABSENT,
+    ["bindings", "scratch", "searchablePostTypes", "formSuccess"],
+    "SH1122: the list is the decision — `bindings` name a layout by title, which is a reference the "
+    + "tree cannot check; `scratch` is settable on a create and never afterwards, which is what "
+    + "`shio site rm --scratch` rests on; the other two have no write op at all");
+});
+
+test("SH1122: the marker lives beside the site root's _folder.md, never under content", () => {
+  assert.equal(siteMarkerPathFor({ site: "Blog" }), "Blog/_site.md");
+  assert.deepEqual(siteLocationOf("Blog/_site.md"), { site: "Blog" });
+  // Not a deeper site: under `shio/content` the directories are URL segments (SH149), and the
+  // folders root is where a marker can mean a structural thing. A `_site.md` below the site root is
+  // a mistake, and it reads as no site rather than as one named after a folder.
+  assert.deepEqual(siteLocationOf("Blog/news/_site.md"), {});
+  assert.throws(() => siteMarkerPathFor({ site: ".." }), /site name/,
+    "SH1122: the only value in the path is the site name, and `siteDir` is what stops a "
+    + "server-reported `..` leaving the root");
 });

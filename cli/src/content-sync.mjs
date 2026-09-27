@@ -418,7 +418,15 @@ function urlOf(address) {
  * `/archive`, and the identical widening already happened when a *post* named it. A marker
  * only reaches the same rule through a different file.
  *
+ * `siteMarkers` (SH1122) adds the site's own settings — `url`, `furl`, `description` and SH1056's
+ * locale policy — as a `settings` block on the document, which the server compiles to one more
+ * `site.upsert`. Like a folder marker it also makes the site a subject: a tree holding nothing but a
+ * `_site.md` emits a document, because configuring a site before writing a page in it is how a site
+ * gets built and was the one step that had to leave the tree.
+ *
  * @param {{site: string, folder: string}[]} [options.markers] declared empty folders
+ * @param {{site: string, url?: string, furl?: string, description?: string,
+ *          locales?: object}[]} [options.siteMarkers] declared site settings
  * @param {string[]} [options.sites] sites to emit a document for even with no posts —
  *   without it a site holding only folders produces nothing, which is the "scaffold the
  *   structure before any content exists" case SH149 is for
@@ -426,6 +434,7 @@ function urlOf(address) {
 export function documentsFor(posts, {
   prune = false,
   markers = [],
+  siteMarkers = [],
   sites = [],
   moves = [],
   folderMoves = [],
@@ -462,7 +471,15 @@ export function documentsFor(posts, {
     // would ask for a move to a path it never mentions.
     markersBySite.get(move.site).push(normalizeFolder(move.to));
   }
-  for (const site of [...markersBySite.keys(), ...sites]) {
+  // SH1122 — a `_site.md` is a declaration about a site, so it makes the site a subject the same
+  // way a folder marker does. Without this a tree that has been configured and has no page in it
+  // yet would push nothing at all.
+  const settingsBySite = new Map();
+  for (const marker of siteMarkers) {
+    if (!marker?.site) continue;
+    settingsBySite.set(marker.site, marker);
+  }
+  for (const site of [...markersBySite.keys(), ...settingsBySite.keys(), ...sites]) {
     if (!bySite.has(site)) bySite.set(site, []);
   }
   return [...bySite.keys()].sort().map((site) => {
@@ -509,12 +526,36 @@ export function documentsFor(posts, {
         // says nothing about publishing cannot unpublish a live page (P7).
         publish: typeof post.publish === "boolean" ? post.publish : undefined,
       })),
+      // SH1122 — the four keys and nothing else, and `site` is deliberately not among them: the
+      // document already names its site, and a second spelling of it is a second thing that can
+      // disagree. Omitted entirely when the marker declares nothing, so a document for a site with
+      // no `_site.md` serializes exactly as it did before this existed.
+      settings: settingsFor(settingsBySite.get(site)),
       prune,
     };
   }).map((document) => {
     if (!document.moves.length) delete document.moves;
+    if (document.settings === undefined) delete document.settings;
     return document;
   });
+}
+
+/**
+ * One site marker as a document's `settings` block, or `undefined` when it declares nothing.
+ *
+ * <p>The server filters this to the same four keys where it builds the op, and that duplication is
+ * deliberate: a document is written by whoever is pushing, so the rule has to hold for a hand-written
+ * one too. What this side adds is that the tree never *writes* a key the server would drop — a file
+ * whose contents are silently ignored is the failure §LXXIV.12 is about, one layer along.</p>
+ */
+function settingsFor(marker) {
+  if (!marker) return undefined;
+  const settings = {};
+  for (const key of ["url", "furl", "description"]) {
+    if (typeof marker[key] === "string" && marker[key].trim() !== "") settings[key] = marker[key];
+  }
+  if (marker.locales && typeof marker.locales === "object") settings.locales = marker.locales;
+  return Object.keys(settings).length ? settings : undefined;
 }
 
 /**
