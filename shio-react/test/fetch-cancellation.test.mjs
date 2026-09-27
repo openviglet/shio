@@ -45,8 +45,28 @@ import { stripComments } from "./support/source-text.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ROOTS = ["src/app", "src/components", "src/hooks"];
 
-/** A call that goes to the server: a service method, or axios reached for directly. */
-const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b/u;
+/**
+ * A call that goes to the server: a service method, or axios reached for directly.
+ *
+ * <p>SH1140 — and a service built and called in one expression, `new ShSetupService().status()`,
+ * which has `()` between the class name and the dot. `login-form.tsx` read the setup status that way
+ * in a mount effect with no signal, and the guard never counted it as fetching at all.</p>
+ */
+const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\bnew \w*Service\(\)\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b/u;
+
+/**
+ * SH1140 — the other way a read hid from `FETCHES`: a service held under a name that does not end in
+ * "service". `const authorization = new ShAuthorizationService()` then `authorization.discovery()`
+ * is a read, and the same effect in `login-form.tsx` made it. The names come from the file itself,
+ * so the scan asks what each receiver *is* rather than what it is called.
+ */
+function fetchesIn(code) {
+  const held = [...code.matchAll(/\b(?:const|let)\s+(\w+)\s*=\s*new\s+\w*Service\(\)/gu)]
+    .map(([, name]) => name)
+    .filter((name) => !/[Ss]ervice$/u.test(name));
+  if (!held.length) return FETCHES;
+  return new RegExp(`${FETCHES.source}|\\b(?:${held.join("|")})\\.\\w+\\(`, "u");
+}
 
 /**
  * The screens that read inside an effect and pass no signal.
@@ -88,6 +108,9 @@ const MIGRATED = [
   "src/components/post-history.panel.tsx",
   "src/components/post-live-preview.tsx",
   "src/components/widgets/content-browser-dialog.tsx",
+  // SH1140 — the screen the guard could not see: one read built in the call, the other held under a
+  // name that is not *service. Found once the scan learned both shapes, and given a signal.
+  "src/components/login/login-form.tsx",
 ];
 
 /**
@@ -251,8 +274,9 @@ export function cancellation(files) {
     // SH1151 — inside the effects and whatever they call, never anywhere in the file. A `service.`
     // call in a click handler is a write on a button, and a write cannot take a signal at all.
     const effects = effectBodies(code);
+    const fetches = fetchesIn(code);
     const reading = [...effects, ...calledBodies(code, effects)]
-      .filter((body) => FETCHES.test(body));
+      .filter((body) => fetches.test(body));
     if (!reading.length) continue;
     fetching.push(path);
     if (!reading.some((body) => /\bsignal\b/u.test(body))) uncancelled.push(path);
@@ -1066,6 +1090,25 @@ test("SH1159: the visual editor's three hand-written cache keys become query key
   for (const read of [/signal: read\.signal/u, /this\.posts\.get\(postId, "DRAFT", read\)/u]) {
     assert.match(service, read, `SH1159: ${read.source} — the signal does not reach the request`);
   }
+});
+
+test("SH1140: a service built in the call, or held under another name, is still a read", () => {
+  // Both shapes login-form.tsx used, planted with no signal: each must be named.
+  const inline = "useEffect(() => { new ShSetupService().status().then(go) }, [])";
+  assert.deepEqual(cancellation({ "src/app/inline.tsx": inline }).uncancelled, ["src/app/inline.tsx"],
+    "SH1140: `new X().read()` has `()` before the dot, and the first pattern never saw it");
+
+  const held = "const authorization = new ShAuthorizationService()\n"
+    + "useEffect(() => { authorization.discovery().then(go) }, [])";
+  assert.deepEqual(cancellation({ "src/app/held.tsx": held }).uncancelled, ["src/app/held.tsx"],
+    "SH1140: a service held under a name that is not *service is a service all the same");
+
+  // And the same two with a signal pass, so the widening did not simply mark everything.
+  const signalled = "const authorization = new ShAuthorizationService()\n"
+    + "useEffect(() => { const a = new AbortController(); "
+    + "new ShSetupService().status({ signal: a.signal }); authorization.discovery({ signal: a.signal }); "
+    + "return () => a.abort() }, [])";
+  assert.deepEqual(cancellation({ "src/app/ok.tsx": signalled }).uncancelled, []);
 });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {

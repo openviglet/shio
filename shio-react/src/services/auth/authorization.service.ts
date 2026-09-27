@@ -1,5 +1,6 @@
 import type { ShDiscoveryAPI } from "@/models/auth/discovery";
 import type { ShCurrentUser } from "@/models/auth/current-user";
+import type { ShRead } from "@/lib/read-options";
 import axios from "axios";
 
 export class ShAuthorizationService {
@@ -17,8 +18,8 @@ export class ShAuthorizationService {
     return response.json() as Promise<ShCurrentUser>;
   }
 
-  async discovery(): Promise<ShDiscoveryAPI> {
-    const response = await axios.create().get<ShDiscoveryAPI>("/v2/discovery");
+  async discovery(read: ShRead = {}): Promise<ShDiscoveryAPI> {
+    const response = await axios.create().get<ShDiscoveryAPI>("/v2/discovery", { signal: read.signal });
     return response.data;
   }
 }

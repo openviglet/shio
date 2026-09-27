@@ -26,19 +26,25 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
   const authorization = new ShAuthorizationService()
 
   useEffect(() => {
+    // SH1140 — both mount reads take one signal, aborted on unmount. Each answer redirects the page,
+    // so one landing after the curator has already left the login screen would pull them back to
+    // setup or to the identity provider from wherever they went. SH1047's guard missed this effect
+    // twice over: one read is built in the call, the other is held under a name that is not *service.
+    const abort = new AbortController()
     // Check if first-access setup is needed
-    new ShSetupService().status().then((status) => {
+    new ShSetupService().status({ signal: abort.signal }).then((status) => {
       if (status.required) {
         globalThis.location.href = ROUTES.SETUP;
         return;
       }
-    }).catch(() => { /* ignore */ });
+    }).catch(() => { /* ignore, a cancellation included */ });
 
-    authorization.discovery().then((discovery) => {
+    authorization.discovery({ signal: abort.signal }).then((discovery) => {
       if (discovery.keycloak) {
         globalThis.location.href = "/oauth2/authorization/keycloak";
       }
-    }).catch(() => { /* ignore — login page is still usable */ });
+    }).catch(() => { /* ignore — login page is still usable, and a cancellation is not a failure */ });
+    return () => abort.abort()
   }, []);
 
   function onSubmit(data: LoginData) {

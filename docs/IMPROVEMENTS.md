@@ -1459,26 +1459,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.26 A fetch the guard cannot parse (SH1140)
-
-SH1047's guard in `shio-react/test/fetch-cancellation.test.mjs` finds a fetching effect
-with `FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(get|post|…)\b/`. A service constructed
-and called in one expression, `new ShSetupService().status()`, has `()` between the
-class name and the dot, so the pattern never matches it. A file that reads only that way
-is not counted as fetching at all, and neither list ever names it.
-
-`grep -rnE "new Sh\w*Service\(\)\.\w+\(" shio-react/src` finds two. `login-form.tsx`
-reads the setup status in a mount effect with no signal, which is exactly what the list
-exists to hold. `use-discovery.ts` builds a store factory, outside any effect. SH968's
-first draft of the shell's pending-count read had the same shape and passed the gate for
-the same reason; it now passes a signal.
-
-The fix is the instrument first. Widen `FETCHES` to accept `new \w*Service\(\)\.\w+\(`,
-plant a file that reads that way with no signal and require the guard to name it, then
-add `login-form.tsx` to the declared list or give it an `AbortController`. Either result
-is honest, and the first is what the list's own rule prescribes for a screen that has
-not moved yet.
-
 ### LXXII.27 A dirty lint is a lint people stop reading (SH1161)
 
 `roadkeep lint` has not been clean for some time: six `code.renamed` findings stand in

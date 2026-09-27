@@ -2669,6 +2669,16 @@ sense that rule is about, and aborting it loses only a render a newer one supers
 fallback to the site list is for a path that cannot be read, and a closed dialog no longer takes it.
 `UNCANCELLED` is an empty declaration, asserted to stay empty.
 
+**An empty list is only as good as the scan behind it (SH1140).** `FETCHES` needed a receiver whose
+name ends in "service" followed by a dot, and `login-form.tsx` read in its mount effect both ways it
+could not see: `new ShSetupService().status()` (a `()` between the class and the dot) and
+`authorization.discovery()` (a service held under another name). The scan now accepts the inline
+form and learns, per file, every variable assigned `new …Service()`. Widened first and run against
+the tree, it named exactly one file and no false positive; the form then took one `AbortController`
+for both reads, because each answer redirects the page and one landing after the curator had left
+would pull them back to setup or to the identity provider. It is held in `MIGRATED`, and two planted
+files keep both shapes named.
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key
