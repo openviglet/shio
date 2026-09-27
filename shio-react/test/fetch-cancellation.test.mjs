@@ -75,8 +75,6 @@ const UNCANCELLED = new Set([
   "src/components/post-live-preview.tsx",
   "src/components/publish-preview.dialog.tsx",
   "src/components/widgets/content-browser-dialog.tsx",
-  "src/components/widgets/content-select.widget.tsx",
-  "src/components/widgets/file.widget.tsx",
   "src/components/working-line.tsx",
 ]);
 
@@ -338,9 +336,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 16,
+  assert.ok(UNCANCELLED.size <= 14,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "the slices took it to 28, 25, 21, 19 and 16. It may only ever shrink.");
+      + "the slices took it to 28, 25, 21, 19, 16 and 14. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -585,6 +583,47 @@ test("SH1152: the post editor's companions share what they share, and writes inv
   for (const scheme of ["note:", "translation:", "insights:", "locale:"]) {
     assert.ok(keys.includes(`"${scheme}"`),
       `SH1152: ${scheme} is not in SCHEMES, so addressKey throws on the first render that uses it`);
+  }
+});
+
+test("SH1153: the two widgets cancel the resolve instead of ignoring its answer", () => {
+  /*
+   * SH1153 — the `let alive = true` flag these two carried is exactly what SH1047's own note says the
+   * signal is for: it **ignored** a superseded answer, where the signal stops the server being asked
+   * for it. Two costs, and the second is the one a curator could see: the flag could not tell a
+   * cancellation from a failure, so both landed on `{ file: null }` / `{ content: null }` — "this
+   * reference resolves to nothing", which is what the widget draws its missing state for, and "we
+   * stopped asking" rendered identically.
+   */
+  for (const [file, id, field] of [
+    ["src/components/widgets/content-select.widget.tsx", "contentId", "content"],
+    ["src/components/widgets/file.widget.tsx", "fileId", "file"],
+  ]) {
+    const code = stripComments(readFileSync(join(ROOT, file), "utf8"));
+
+    assert.doesNotMatch(code, /let alive = true/u,
+      `SH1153: ${file} is back to ignoring a superseded answer rather than cancelling the request`);
+    assert.match(code, new RegExp(`queryFn: \\(\\{ signal \\}\\) => resolveFullPath\\(${id}, \\{ signal \\}\\)`, "u"),
+      `SH1153: ${file}'s resolve does not take the signal useQuery hands it`);
+
+    // The resolve makes two reads of its own, and a signal that reaches only the first cancels half
+    // the work — which is the shape that looks done and is not.
+    const resolve = /async function resolveFullPath\([\s\S]*?\n\}/u.exec(code)?.[0] ?? "";
+    assert.ok(resolve.length > 0, `SH1153: ${file}'s resolveFullPath moved and this scan lost it`);
+    assert.equal((resolve.match(/signal: read\.signal/gu) ?? []).length, 2,
+      `SH1153: ${file}'s resolve makes two requests and ${
+        (resolve.match(/signal: read\.signal/gu) ?? []).length} of them take the signal`);
+
+    // Seeded during render, once per id — `react-hooks/set-state-in-effect`, as every slice since
+    // the first has had to be.
+    assert.match(code, new RegExp(`if \\(resolvedPath.isSuccess && seeded !== ${id}\\)`, "u"),
+      `SH1153: ${file} seeds from the query on every render rather than once per id`);
+    // `isSuccess`, not a truthy check on the data: `null` is a real answer here — the reference
+    // resolves to nothing — and a truthy guard would re-seed for ever on exactly that answer.
+    assert.doesNotMatch(code, new RegExp(`if \\(resolvedPath.data && seeded`, "u"),
+      `SH1153: ${file} guards on the data, and \`null\` is a legitimate answer for these two`);
+    assert.ok(code.includes(`${field}: resolvedPath.data`),
+      `SH1153: ${file} no longer puts the resolved path where the widget reads it`);
   }
 });
 

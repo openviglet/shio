@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button"
 import { ChevronRight, FileText, Folder, Loader2, Search, Upload, X } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import type { ShRead } from "@/lib/read-options"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import axios from "axios"
 import { toast } from "@viglet/viglet-design-system"
@@ -46,7 +49,7 @@ function parseSettings(raw?: string): { folderId?: string } {
   }
 }
 
-async function resolveFullPath(fileId: string): Promise<ResolvedFile | null> {
+async function resolveFullPath(fileId: string, read: ShRead = {}): Promise<ResolvedFile | null> {
   if (!fileId) return null
   // SH660 — this widget renders two different things. On another post's field the value is a
   // reference the browser wrote (`selection.id`); on the `File` type's own `FILE` field it is the
@@ -54,14 +57,14 @@ async function resolveFullPath(fileId: string): Promise<ResolvedFile | null> {
   // both swallowed by the `.catch` below, so the page returned 200 and only the network tab knew.
   if (!isObjectReference(fileId)) return null
 
-  const postRes = await axios.get(`/v2/post/xp/${fileId}`).catch(() => null)
+  const postRes = await axios.get(`/v2/post/xp/${fileId}`, { signal: read.signal }).catch(() => null)
   if (postRes?.data?.shPost) {
     const post = postRes.data.shPost
     const folderId = post.shFolder?.id
     const pathSegments: PathSegment[] = []
 
     if (folderId) {
-      const pathRes = await axios.get(`/v2/object/${folderId}/path`).catch(() => null)
+      const pathRes = await axios.get(`/v2/object/${folderId}/path`, { signal: read.signal }).catch(() => null)
       if (pathRes?.data) {
         const data = pathRes.data
         if (data.site) pathSegments.push({ id: data.site.id, name: data.site.name })
@@ -133,17 +136,27 @@ export function FileWidget({ attr, onChange, labelledBy, describedBy, required }
     setBrowserOpen(true)
   }
 
-  // SH703 — no state raised before the request, and the answer is tagged so a late one for a
-  // replaced file is ignored rather than shown. `.then` and not `await`: the compiler rule does
-  // not model the suspension, so a `setState` after an await reads to it as synchronous.
-  useEffect(() => {
-    if (!fileId) return
-    let alive = true
-    void resolveFullPath(fileId)
-      .then((file) => { if (alive) setEntry({ id: fileId, file }) })
-      .catch(() => { if (alive) setEntry({ id: fileId, file: null }) })
-    return () => { alive = false }
-  }, [fileId])
+  /*
+   * SH1153 — one read per file, cancelled by the signal `useQuery` hands it.
+   *
+   * The `let alive = true` flag this replaced is what SH1047 says the signal is for: it *ignored* a
+   * superseded answer, where the signal stops the server being asked for it. The flag also could not
+   * tell a cancellation from a failure, so both landed on `{ file: null }` — "this reference resolves
+   * to nothing" and "we stopped asking" rendered identically, and the first is what the widget draws
+   * a missing-file state for.
+   */
+  const resolvedPath = useQuery<ResolvedFile | null>({
+    queryKey: addressKey(`summary:file|${fileId}`),
+    queryFn: ({ signal }) => resolveFullPath(fileId, { signal }),
+    enabled: Boolean(fileId),
+  })
+
+  // Set during render rather than in an effect (`react-hooks/set-state-in-effect`), once per file.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (resolvedPath.isSuccess && seeded !== fileId) {
+    setSeeded(fileId)
+    setEntry({ id: fileId, file: resolvedPath.data })
+  }
 
   const handleBrowserSelect = (selection: ContentBrowserSelection) => {
     onChange({ ...attr, strValue: selection.id })

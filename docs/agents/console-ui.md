@@ -2497,6 +2497,22 @@ becoming suffixes under `summary:`, and the reason is invalidation: it matches o
 segment, so folding them together would mean adding a note dropped the locale catalogue with it.
 **The declared list: 33 → 28 → 25 → 21 → 19 → 16.**
 
+**Slice six took the two widgets** (SH1153) — Content Select and File — and they are the clearest case
+in the whole task. Both resolved a stored reference into a readable path behind `let alive = true`,
+which is **the flag SH1047's own note names as the thing a signal replaces**: it *ignores* a superseded
+answer where the signal stops the server being asked for it.
+
+The cost a curator could see is the second one. The flag cannot tell a cancellation from a failure, so
+both landed on `{ file: null }` — and that value is not nothing, it is the widget's
+**missing-reference** state, the affordance it draws for "this points at nothing". So leaving a field
+while its file resolved rendered exactly like a broken reference.
+
+Each resolve makes **two** requests — the post, then its folder's path — so a signal threaded into only
+the first cancels half the work and looks finished; the gate counts both. And the seeding guard is
+`isSuccess` rather than a truthy check on the data, because `null` is a legitimate answer here: a
+truthy guard would re-seed for ever on precisely the case the widget exists to show.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14.**
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key

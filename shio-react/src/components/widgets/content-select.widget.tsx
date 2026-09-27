@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button"
 import { ChevronRight, FileText, Folder, Search, X } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import type { ShRead } from "@/lib/read-options"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import axios from "axios"
 import type { WidgetProps } from "./index"
@@ -29,7 +32,7 @@ function parseSettings(raw?: string): { folderId?: string } {
   }
 }
 
-async function resolveFullPath(contentId: string): Promise<ResolvedContent | null> {
+async function resolveFullPath(contentId: string, read: ShRead = {}): Promise<ResolvedContent | null> {
   if (!contentId) return null
   // SH660 — the same guard as the File widget, and here it is a precaution rather than a fix: a
   // Content Select value is written by the browser and is always an id today. It is applied anyway
@@ -38,14 +41,14 @@ async function resolveFullPath(contentId: string): Promise<ResolvedContent | nul
   if (!isObjectReference(contentId)) return null
 
   // Try as post
-  const postRes = await axios.get(`/v2/post/xp/${contentId}`).catch(() => null)
+  const postRes = await axios.get(`/v2/post/xp/${contentId}`, { signal: read.signal }).catch(() => null)
   if (postRes?.data?.shPost) {
     const post = postRes.data.shPost
     const folderId = post.shFolder?.id
     const pathSegments: PathSegment[] = []
 
     if (folderId) {
-      const pathRes = await axios.get(`/v2/object/${folderId}/path`).catch(() => null)
+      const pathRes = await axios.get(`/v2/object/${folderId}/path`, { signal: read.signal }).catch(() => null)
       if (pathRes?.data) {
         const data = pathRes.data
         if (data.site) {
@@ -116,16 +119,27 @@ export function ContentSelectWidget({ attr, onChange, labelledBy, describedBy, r
     setBrowserOpen(true)
   }
 
-  // SH703 — no state raised before the request. `.then` and not `await`, because the compiler rule
-  // does not model the suspension and reads a `setState` after an await as synchronous.
-  useEffect(() => {
-    if (!contentId) return
-    let alive = true
-    void resolveFullPath(contentId)
-      .then((content) => { if (alive) setEntry({ id: contentId, content }) })
-      .catch(() => { if (alive) setEntry({ id: contentId, content: null }) })
-    return () => { alive = false }
-  }, [contentId])
+  /*
+   * SH1153 — one read per contentId, cancelled by the signal `useQuery` hands it.
+   *
+   * The `let alive = true` flag this replaced is precisely what SH1047 says the signal is for: it
+   * *ignored* a superseded answer, where the signal stops the server being asked for it at all. The
+   * flag also could not tell a cancellation from a failure, so both landed on the same
+   * `{ content: null }` — "this reference resolves to nothing" and "we stopped asking" rendered
+   * identically.
+   */
+  const resolvedPath = useQuery<ResolvedContent | null>({
+    queryKey: addressKey(`summary:content|${contentId}`),
+    queryFn: ({ signal }) => resolveFullPath(contentId, { signal }),
+    enabled: Boolean(contentId),
+  })
+
+  // Set during render rather than in an effect (`react-hooks/set-state-in-effect`), once per id.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (resolvedPath.isSuccess && seeded !== contentId) {
+    setSeeded(contentId)
+    setEntry({ id: contentId, content: resolvedPath.data })
+  }
 
   const handleBrowserSelect = (selection: ContentBrowserSelection) => {
     onChange({ ...attr, strValue: selection.id })
