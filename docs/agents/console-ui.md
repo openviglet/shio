@@ -2424,7 +2424,19 @@ are pages this slice did not touch, failing on rendered chrome rather than on a 
 be blocked on a probe that is red for reasons it did not cause, and it must not be able to claim a
 green one either.
 
-**Two gates this slice tripped, and neither was about cancellation.**
+**Slice two finished the admin area**: the user editor, the email configuration and the shared
+group/role editor. Two of the three carried a dependency that was an *identity* rather than a
+subject — `form.reset` on the user page, `service` on the identity editor. Both are stable in
+practice, which is why nothing visibly went wrong, and **neither says which user or which group is
+wanted**; a query key says exactly that. The email configuration is the one singleton here, so its key
+carries no id and `emailConfig:` joined `SCHEMES` — a scheme rather than a bare string because
+`addressKey` throws on an unknown one, and a key outside that list would cache under a name no
+invalidation ever names. Its old `catch(() => setConfig(EMPTY))` was the worse half: it made "the
+server did not answer" and "nothing is configured" the same screen, and the second invites a save
+that overwrites the first one's real settings. The shared editor took a `scheme` prop rather than
+deriving one from its route parameter, for the same reason. **The declared list: 33 → 28 → 25.**
+
+**Two gates slice one tripped, and neither was about cancellation.**
 
 - **`react-hooks/set-state-in-effect`.** The natural shape for seeding a form from a query is
   `useEffect(() => { if (data) setItem(data) }, [data])`, and that rule forbids it — SH1136 is the open

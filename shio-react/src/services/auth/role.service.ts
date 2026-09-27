@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { ShRead } from "@/lib/read-options";
 
 export type ShRole = {
   id: string;
@@ -12,8 +13,8 @@ export class ShRoleService {
     return response.data;
   }
 
-  async get(id: string): Promise<ShRole> {
-    const response = await axios.get<ShRole>(`/v2/role/${id}`);
+  async get(id: string, read: ShRead = {}): Promise<ShRole> {
+    const response = await axios.get<ShRole>(`/v2/role/${id}`, { signal: read.signal });
     return response.data;
   }
 

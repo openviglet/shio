@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
 import { Mail, Save, Info } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -14,6 +15,8 @@ import { toast } from "@viglet/viglet-design-system"
 import { ShEmailConfigService } from "@/services/config/email-config.service"
 import type { ShEmailConfig } from "@/models/config/email-config.model"
 import { reportProblem } from "@/lib/problem"
+import { addressKey } from "@/lib/query-keys"
+import { isCancelled } from "@/lib/read-options"
 
 const service = new ShEmailConfigService()
 
@@ -28,9 +31,30 @@ export default function EmailConfigPage() {
   const [config, setConfig] = useState<ShEmailConfig>(EMPTY)
   const [saving, setSaving] = useState(false)
 
+  /*
+   * SH1116 — one read, cancelled when the curator leaves, and a failure that is not an empty form.
+   *
+   * `catch(() => setConfig(EMPTY))` made "the server did not answer" and "nothing is configured" the
+   * same screen — and the second one invites a save that overwrites the first one's real settings.
+   * `useQuery` answers the three states apart, and `isCancelled` keeps a navigation out of the
+   * failure path (SH1047).
+   */
+  const loaded = useQuery<ShEmailConfig>({
+    queryKey: addressKey("emailConfig:"),
+    queryFn: ({ signal }) => service.get({ signal }),
+  })
+
+  // Set during render rather than in an effect: `react-hooks/set-state-in-effect`, and React's own
+  // "adjust state when the input changes" pattern. One answer, so one seeding.
+  const [seeded, setSeeded] = useState(false)
+  if (loaded.data && !seeded) {
+    setSeeded(true)
+    setConfig(loaded.data)
+  }
+
   useEffect(() => {
-    service.get().then(setConfig).catch(() => setConfig(EMPTY))
-  }, [t])
+    if (loaded.error && !isCancelled(loaded.error)) reportProblem(loaded.error, t("common.error"))
+  }, [loaded.error, t])
 
   const set = <K extends keyof ShEmailConfig>(key: K, value: ShEmailConfig[K]) =>
     setConfig((prev) => ({ ...prev, [key]: value }))

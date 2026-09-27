@@ -21,6 +21,7 @@ export default function BentoGroupEditPage() {
     <IdentityEntityPage
       service={service}
       param="groupId"
+      scheme="group:"
       listRoute={ROUTES.BENTO_GROUPS}
       icon={IconShieldCog}
       tone="violet"

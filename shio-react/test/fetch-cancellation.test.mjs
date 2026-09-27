@@ -60,10 +60,7 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
  * list working — a debt paid off has to leave it, or the next reader counts it twice.</p>
  */
 const UNCANCELLED = new Set([
-  "src/app/admin/admin.user.page.tsx",
-  "src/app/admin/email-config/email-config.page.tsx",
   "src/app/admin/graphql/graphql.page.tsx",
-  "src/app/admin/identity-entity.page.tsx",
   "src/app/admin/review/review.list.page.tsx",
   "src/app/content/folder.edit.page.tsx",
   "src/app/content/post-type.edit.page.tsx",
@@ -109,7 +106,7 @@ const MIGRATED = [
 ];
 
 /**
- * SH1116, slice one — the five admin entity forms, which no longer fetch in an effect at all.
+ * SH1116 — the screens that no longer fetch in an effect at all, because they moved to the query layer.
  *
  * <h2>Why they are a second list rather than five more entries above</h2>
  *
@@ -135,6 +132,16 @@ const QUERY_LAYER = [
   "src/app/admin/exchange-provider/exchange-provider.page.tsx",
   "src/app/admin/site-webhook/site-webhook.page.tsx",
   "src/app/admin/tenant/tenant.page.tsx",
+  /*
+   * Slice two: the rest of the admin area. Three more of the same shape, and two of them had a
+   * dependency that was an *identity* rather than a subject — `form.reset` on the user page and
+   * `service` on the shared group/role editor. Both are stable in practice, which is why nothing
+   * went wrong, and neither says which user or which group is wanted; a key says exactly that.
+   * The email configuration is the one singleton, so its key carries no id at all.
+   */
+  "src/app/admin/admin.user.page.tsx",
+  "src/app/admin/email-config/email-config.page.tsx",
+  "src/app/admin/identity-entity.page.tsx",
 ];
 
 /** Every source file under the walked roots, as repo-relative paths with forward slashes. */
@@ -222,7 +229,7 @@ test("SH1047: the five screens the task named cancel, and cannot rejoin the list
   }
 });
 
-test("SH1116: the query-layer five take the signal useQuery hands them, and are off the list", () => {
+test("SH1116: every query-layer screen takes the signal useQuery hands it, and is off the list", () => {
   const { uncancelled } = cancellation(onDisk());
 
   for (const path of QUERY_LAYER) {
@@ -257,10 +264,60 @@ test("SH1116: the query-layer five take the signal useQuery hands them, and are 
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 28,
-    `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened `
-      + "and slice one took five off it; it may only ever shrink.");
+  assert.ok(UNCANCELLED.size <= 25,
+    `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
+      + "slice one took five off it and slice two three more. It may only ever shrink.");
 });
+
+test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
+  () => {
+    /*
+     * SH1149 — slice two's own boundary, and the two shapes it is about are not cancellation.
+     *
+     * An effect keyed on an **identity** rather than on a subject: `form.reset` on the user editor
+     * and `service` on the shared group/role editor. Both are stable in practice, which is why
+     * nothing visibly broke, and neither says *which* user or *which* group is wanted — so the read
+     * could not be right for the reason a key is right, it merely happened not to be wrong. That is
+     * the thing a later refactor turns into a real bug, and it is invisible in a screenshot.
+     */
+    const user = stripComments(readFileSync(
+      join(ROOT, "src/app/admin/admin.user.page.tsx"), "utf8"));
+    assert.doesNotMatch(user, /\}, \[[^\]]*\bform\b/u,
+      "SH1149: `form` is back in an effect's dependencies on the user editor. A `useForm` identity is "
+        + "not the subject being read, and the username is.");
+    assert.match(user, /queryKey: addressKey\(`user:\$\{userId \?\? ""\}`\)/u,
+      "SH1149: the user editor's cache key is the username it reads");
+
+    const identity = stripComments(readFileSync(
+      join(ROOT, "src/app/admin/identity-entity.page.tsx"), "utf8"));
+    assert.doesNotMatch(identity, /\}, \[[^\]]*\bservice\b/u,
+      "SH1149: `service` is back in an effect's dependencies on the shared group/role editor — an "
+        + "object identity, not the entity being read");
+    assert.match(identity, /queryKey: addressKey\(`\$\{scheme\}\$\{id\}`\)/u,
+      "SH1149: the shared editor is cached under the scheme its caller passes, so a group and a role "
+        + "are two subjects and not one. Deriving a scheme from the route parameter would be one typo "
+        + "from a key no invalidation ever names, which is why `addressKey` throws on an unknown one.");
+    assert.match(identity, /scheme: ShScheme/u,
+      "SH1149: and the scheme is a declared scheme rather than a string");
+
+    /*
+     * The singleton's failure path, which was the more urgent half. `catch(() => setConfig(EMPTY))`
+     * made "the server did not answer" and "nothing is configured" the same screen — and the second
+     * one invites a save that overwrites the first one's real settings.
+     */
+    const email = stripComments(readFileSync(
+      join(ROOT, "src/app/admin/email-config/email-config.page.tsx"), "utf8"));
+    assert.doesNotMatch(email, /catch\(\(\) => setConfig\(EMPTY\)\)/u,
+      "SH1149: an unanswered server and an unconfigured tenant must not render the same screen — the "
+        + "empty form is the one that invites a save over the real settings");
+    assert.match(email, /queryKey: addressKey\("emailConfig:"\)/u,
+      "SH1149: one configuration per tenant, so the key carries no id");
+
+    // The scheme has to be declared, or `addressKey` throws at the first render of that page.
+    const keys = readFileSync(join(ROOT, "src/lib/query-keys.ts"), "utf8");
+    assert.match(keys, /"emailConfig:"/u,
+      "SH1149: `emailConfig:` is not in SCHEMES, so addressKey throws where the page calls it");
+  });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {
   // Driven, because the rules above have only ever been run against a tree that satisfies them.

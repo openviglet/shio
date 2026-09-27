@@ -47,6 +47,11 @@ export const SCHEMES = [
   "post:", "folder:", "site:", "postType:", "id:",
   "widget:", "group:", "role:", "user:", "token:", "webhook:", "staticFile:",
   "authProvider:", "exchangeProvider:", "tenant:", "summary:",
+  // SH1116 — the one singleton among them: there is one email configuration per tenant, so the key
+  // carries no id. It is a scheme rather than a bare string for the reason `addressKey` throws on an
+  // unknown one: every invalidation names a scheme, so a key outside this list would cache and never
+  // be invalidated.
+  "emailConfig:",
 ] as const;
 
 export type ShScheme = (typeof SCHEMES)[number];

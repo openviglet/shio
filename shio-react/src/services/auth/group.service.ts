@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { ShRead } from "@/lib/read-options";
 
 export type ShGroup = {
   id: string;
@@ -12,8 +13,8 @@ export class ShGroupService {
     return response.data;
   }
 
-  async get(id: string): Promise<ShGroup> {
-    const response = await axios.get<ShGroup>(`/v2/group/${id}`);
+  async get(id: string, read: ShRead = {}): Promise<ShGroup> {
+    const response = await axios.get<ShGroup>(`/v2/group/${id}`, { signal: read.signal });
     return response.data;
   }
 
