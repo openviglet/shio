@@ -1716,31 +1716,6 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline.
 
-### LXXIV.11 A blueprint nobody applies is a blueprint nothing checks (SH1121)
-
-`checks=a11y` found two rules broken by `marketing-site`'s layout — no `<main>`, and a
-first heading of `<h2>` — and that one was repaired in the same commit, because the
-headline benchmark applies it and went over its token budget. `landing` has exactly the
-same defect and no benchmark, so nothing reported it: its PageLayout emits `<html lang>`
-and a `<body>` of sections, no main region, and no `h1` anywhere on any page it builds.
-
-Three of the six blueprints ship a PageLayout. `blog` is clean, `marketing-site` is now
-clean, and `landing` is not. The other three — `docs`, `product-catalog`,
-`nextjs-starter` — carry no layout of their own, and the starter's markup lives in
-`files/app/layout.tsx`, which no Shio check renders. That is worth confirming rather
-than assuming.
-
-The repair follows the sibling's: wrap the section loop in `<main>`, and choose `<h1>`
-for the first section's heading through the `@first` data frame `getRelation` has
-published since SH772. It is small, and the reason this is a task rather than a typo is
-the second half.
-
-**A blueprint nobody applies is a blueprint nothing checks.** Every appliable unit this
-product recommends should be provably clean against our own gate, and the way to know
-that is an assertion rather than a sweep: apply each blueprint that ships a layout,
-render a page, and assert `a11y` reports nothing. That fails on the blueprint added next
-year, which a fixed list of three names cannot.
-
 ### LXXIV.12 The site marker file the projection never had (SH1122)
 
 The tree holds content, folders, assets and a snapshot. A site root is a folder, so it

@@ -250,8 +250,17 @@ class ShContextCacheHeadroomTest {
      * which is a property and therefore a context — until it borrows ShAgentSearchReindexTest's
      * shape and mutates the `ShTuringProperties` bean, restoring it in `@AfterAll`. A slot is the
      * scarce thing here; a save-and-restore is four lines.
+     *
+     * SH1121 spent one more, to 79, with maxSize raised 81 -> 82 beside it. ShBlueprintAccessibilityTest
+     * applies every blueprint that ships a PageLayout and asserts `checks=a11y` reports nothing, so it
+     * creates instance-wide post-types from three packages and cannot meet the Page type
+     * ShBlueprintApplyTest bends on purpose. The cheaper answer was tried first and is refused by
+     * ShBenchmarkIsolationLintTest#everyDatabaseNameIsClaimedOnce: sharing
+     * ShBlueprintRendersTest's database works and is the shared fixture wearing isolation's clothes,
+     * which is the one exemption that rule reserves for the SH22 ITs and not for this. That refusal is
+     * the answer to "did you ask before spending a slot" — it was asked, and the project said no.
      */
-    private static final int DECLARED_CONTEXTS = 78;
+    private static final int DECLARED_CONTEXTS = 79;
 
     // SH603 raised this from 62, and the gauge is what asked. The slot went to
     // `ShAgentAuthoringCostTest`, which counts the calls it takes to build a site FROM AN EMPTY
