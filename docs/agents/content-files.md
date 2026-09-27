@@ -756,6 +756,7 @@ log line, so the declaration **is** the instrument (SH338).
 | `writeAssetBytes` | whole | neither — half an image is not a merge | `conflicts` on the pull report, by asset path |
 | `writeAssetMeta` | per key | neither — a key both sides changed keeps the **tree's** value and is reported | `assetMetaConflicts`, as `<asset path>#<key>` (SH1032) |
 | `writeFolderMarker` | no | the server: that a folder exists is the server's fact | none is possible — the file carries no value a person authors |
+| `writeSiteMarker` | per key | neither — the file is left alone; **not** the server, unlike the folder marker above | `sites.conflicts`, as `<site>#<key>` (SH1122) |
 | `writeLocalNotes` | per key | neither — neither copy is written | `notes.conflicts`, as `<site>:<key>` (SH161) |
 | `writeLocalInstanceNotes` | no | the server; the tree pushes back only with `--adopt-memory` (SH231) | none is possible: projected, never read back |
 | `writeOpenNotes` | no | the server, always (SH1003) | none is possible: never parsed, never pushed |
@@ -766,6 +767,13 @@ are the one projected artefact a person edits in the console *while* the tree ho
 "resolve it in the console with an edited body locally" has no natural answer. SH1003 chose one —
 the file is a projection and is never read back — and this is where that choice is recorded, so a
 later reader does not have to re-derive it from the absence of a parser.
+
+**The two markers take opposite rules, and the pair is worth reading together.** A `_folder.md`
+records that a folder exists, which is the server's fact, so the server wins and no conflict is
+possible — the file carries no value a person authors. Every key of a `_site.md` is something somebody
+chose, so nobody wins and a key both sides moved is reported. Copying the folder rule onto the site
+marker would have made a pull silently overwrite a url an agent had just authored, which is the
+failure this table exists to make visible before it happens rather than after.
 
 **An artefact outside the base has to name an authoritative side.** That is asserted, not just
 written: "outside the merge" with nobody winning is how a local edit disappears on the next pull
@@ -984,19 +992,37 @@ The allow-list is applied **twice, on purpose**: in `settingsFor` so the tree ne
 server would drop, and in `settingsData` because a document is written by whoever is pushing and the
 rule has to hold for a hand-written one too.
 
-### Pull is not here, and the reason is a read
+### Pull, and the rule it must not borrow from the folder marker
 
-Nothing writes `_site.md` yet — there is no `writeSiteMarker`, and no merge rule to declare in
-`merge-rules.test.mjs`, because an unused writer would be dead code and a declared rule would describe
-a sync that does not happen. A marker is authored (P4: `Write` is the agent's tool) and pushed.
+`readRemoteFolders` asks for `sites` beside the `sitemap` it was already asking for, **on the first
+page of each site's walk and no other** — the rows do not paginate, so a section per page would pay for
+the same answer once per page. `siteMarkersFrom` is then a pure mapper over those rows. The first
+version fetched the pack itself and took a settled pull from twelve requests to thirteen, which SH398's
+cost guard caught: that guard is the one that measured a 208-request pull down to this, and it is why
+the read rides a call that was being made anyway (P2).
 
-Projecting one *from* an instance needed a cheap read of a site's settings, and **SH1160 is that read**
-(below). What is still outstanding is the projection itself: a `writeSiteMarker`, its merge rule in
-`merge-rules.test.mjs`, a `sites` section in `content-base.json` so the three-way merge has an
-ancestor, and §LXXIV.12's own round-trip assertion — *push a site, change a field on disk, pull, read
-the diff*. A site marker carries values a person authors, so `writeFolderMarker`'s "the server wins,
-no conflict is possible" does not transfer to it; the shape it wants is `writeLocalNotes`' **per-key,
-neither side wins, the conflict is reported**, and that is what the base section is for.
+`reconcileSiteSettings` merges **per key**, and the rule is `reconcileNotes`' rather than
+`reconcileFolders`'. That distinction is the task:
+
+- A `_folder.md` records *that a folder exists*, which is the server's fact, so the server wins and no
+  conflict is possible — the file carries no value a person authors.
+- Every key of a `_site.md` is something somebody **chose**. So a value the tree moved on its own
+  survives a read, and a key both sides moved is reported (`sites.conflicts`, as `<site>#<key>`) with
+  the file left exactly as it was.
+
+Copying the folder rule would have made a pull silently overwrite a url an agent had just authored.
+Per key rather than per file for `assetMeta`'s reason — "the agent set the url, the curator wrote the
+description" is two edits that do not touch — but the *write* is per file, because a marker is one
+document: a site with any conflicted key is left alone, since writing three of four keys produces a
+file that is half each side's with nothing saying which.
+
+`content-base.json` grows a `sites` section, site → key → the agreed value, merged over what the base
+held rather than replacing it, so a `--site` run does not forget the agreement about a site it did not
+read. Absent in a pre-SH1122 snapshot, which reads as "we have never agreed about any setting": every
+value is then an addition on whichever side has it, which is the safe reading in both directions.
+
+§LXXIV.12's own assertion — *push a site, change a field on disk, pull, read the diff* — is four tests
+in `content-commands.test.mjs`, and the middle two are the ones that would have caught the wrong rule.
 
 ## The read a projection needs, and what it cost (SH1160)
 

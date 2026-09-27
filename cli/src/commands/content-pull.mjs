@@ -47,10 +47,12 @@ import {
   bodyFields,
   deleteDoc,
   deleteFolderMarker,
+  deleteSiteMarker,
   deleteLocalNotes,
   readBase,
   readLocal,
   readLocalFolders,
+  readLocalSites,
   readLocalNotes,
   readRemoteInstanceNotes,
   readRemoteNotes,
@@ -60,12 +62,14 @@ import {
   readRemote,
   readRemoteAssets,
   readRemoteFolders,
+  siteMarkersFrom,
   writeAssetBytes,
   writeAssetMeta,
   readAssetMetaOrNull,
   writeBase,
   writeDoc,
   writeFolderMarker,
+  writeSiteMarker,
   writeLocalInstanceNotes,
   writeLocalNotes,
   writeOpenNotes,
@@ -85,6 +89,7 @@ import {
   baseEntryFor,
   reconcile,
   reconcileFolders,
+  reconcileSiteSettings,
   resolveConflict,
 } from "../content-sync.mjs";
 
@@ -241,6 +246,10 @@ export async function run(flags, _positionals, ctx) {
     assetMeta: assets.metaWritten ?? [],
     assetMetaConflicts: assets.metaConflicts ?? [],
     notes: { written: [], deleted: [], conflicts: [] },
+    // SH1122 — the site markers, reported apart from the folder ones because they merge apart: a
+    // folder marker records the server's fact and cannot conflict, while every key of a site marker
+    // is something somebody chose. A conflict here names one KEY of one site (`Blog#url`).
+    sites: { written: [], deleted: [], conflicts: [] },
     // SH231 — how many instance-wide notes were projected; 0 when the instance has none.
     instanceNotes: 0,
   };
@@ -338,8 +347,12 @@ export async function run(flags, _positionals, ctx) {
 
   // SH149 — the folder half. It runs after the posts because "which folders does a post
   // already declare" is the input that keeps the marker set minimal.
-  const { folders: remoteFolders, truncated: foldersTruncated } = await readRemoteFolders(agent, {
+  const {
+    folders: remoteFolders, truncated: foldersTruncated, siteRows,
+  } = await readRemoteFolders(agent, {
     sites: siteScope,
+    // SH1122 — the site rows ride this walk's first page rather than a call of their own.
+    withSites: true,
   });
   // SH403 — the same filter the posts get one screen up, for the same reason: a chain that
   // navigates cannot become a marker, and one bad row in the sitemap must not take the run down.
@@ -445,6 +458,39 @@ export async function run(flags, _positionals, ctx) {
     nextNotes[noteSite] = Object.fromEntries(keep.map((entry) => [entry.key, entry.note]));
   }
 
+  /*
+   * SH1122 — the site markers: `url`, `furl`, `description` and the declared locale policy, which had
+   * no file to live in at all. A site root is a folder, so it projected to a `_folder.md` carrying
+   * `site` and `folder` and nothing about the site, and everything a site *is* lived only in its row.
+   *
+   * Reconciled per key rather than per file, and the server does NOT simply win: every key here is
+   * something somebody chose, so a value the tree moved on its own survives a read, and a key both
+   * sides moved is reported and the file is left alone. That is `reconcileNotes`' rule, not
+   * `reconcileFolders`'.
+   */
+  const nextSites = { ...(base.sites ?? {}) };
+  const sitePlan = reconcileSiteSettings({
+    base: base.sites ?? {},
+    // Off the rows the folder walk already asked for, so this costs no request (SH398's guard).
+    remote: siteMarkersFrom(siteRows, { sites: siteScope }),
+    local: await readLocalSites(ctx, { dir: foldersDir, site }),
+  });
+  for (const marker of sitePlan.write) {
+    if (!dryRun) await writeSiteMarker(ctx, marker, { dir: foldersDir });
+    report.sites.written.push(`site:${marker.site}`);
+  }
+  for (const gone of sitePlan.deleteLocal) {
+    if (!dryRun) await deleteSiteMarker(ctx, { site: gone }, { dir: foldersDir });
+    report.sites.deleted.push(`site:${gone}`);
+    delete nextSites[gone];
+  }
+  for (const clash of sitePlan.conflicts) {
+    report.sites.conflicts.push(`${clash.site}#${clash.key}`);
+  }
+  for (const [name, settings] of Object.entries(sitePlan.agreed)) {
+    nextSites[name] = settings;
+  }
+
   // SH231 — the instance-wide notes, which until now travelled nowhere at all. SH161 left them
   // behind deliberately, and that reasoning holds for a *site* import; it does not hold for
   // moving a whole instance, which is the case they matter most in and the only one with no
@@ -512,6 +558,9 @@ export async function run(flags, _positionals, ctx) {
         // SH1032 — same rule as `assets` one line up: merged rather than replaced, so a scoped
         // run does not forget what it did not look at.
         assetMeta: { ...(base.assetMeta ?? {}), ...(assets.metaAgreed ?? {}) },
+        // SH1122 — merged over what the base held, for the reason `assets` states one line up: a
+        // scoped run must not forget the agreement about a site it did not read.
+        sites: nextSites,
       },
       flags.baseFile ?? BASE_FILE,
     );
@@ -552,6 +601,18 @@ export async function run(flags, _positionals, ctx) {
         `sides and were not written (${report.notes.conflicts.join(", ")}). Edit the note in ` +
         "shio/content/<site>/.memory.yaml, or run `shio remember <key> \"<note>\"` to settle " +
         "it on the server, then pull again.\n",
+    );
+  }
+  if (report.sites.conflicts.length) {
+    // SH1122 — the same outcome the notes merge has and for the same reason: every key of a site
+    // marker is something somebody chose, so picking a side would discard the other with nothing to
+    // recover it from. Named by key, because the remedy is per key even though the write is per file.
+    ctx.stderr.write(
+      `shio pull --content: ${report.sites.conflicts.length} site setting(s) changed on both ` +
+        `sides and were not written (${report.sites.conflicts.join(", ")}). Edit ` +
+        "shio/folders/<site>/_site.md, or settle it on the server and pull again — `site.upsert` " +
+        "fills what is empty and never replaces a value somebody set, so a live url is a console " +
+        "edit.\n",
     );
   }
   if (report.assetConflicts.length) {
@@ -809,6 +870,15 @@ function render(report, { dir, dryRun, truncated }) {
           : ""),
     );
   }
+  const sites = report.sites ?? { written: [], deleted: [], conflicts: [] };
+  if (sites.written.length || sites.deleted.length || sites.conflicts.length) {
+    // SH1122 — counted apart from the folders for the reason they merge apart: a `_site.md` is a
+    // site's settings and a `_folder.md` is a structural fact, and a reader scanning "what moved"
+    // wants to know which.
+    lines[0] += ` · sites: ${sites.written.length} written, ${sites.deleted.length} deleted`
+      + (sites.conflicts.length ? `, ${sites.conflicts.length} conflicted: `
+        + sites.conflicts.slice(0, 5).join(", ") : "");
+  }
   const folders = report.folders ?? { written: [], deleted: [], kept: [] };
   if (folders.written.length || folders.deleted.length || folders.kept.length) {
     // Counted separately because a folder is not a post: a reader scanning for "how much
@@ -816,6 +886,8 @@ function render(report, { dir, dryRun, truncated }) {
     lines[0] += ` · folders: ${folders.written.length} written, ${folders.deleted.length} ` +
       `deleted, ${folders.kept.length} local-only`;
   }
+  for (const address of sites.written) lines.push(`  + ${address}`);
+  for (const address of sites.deleted) lines.push(`  - ${address}`);
   for (const address of report.written) lines.push(`  + ${address}`);
   for (const address of folders.written) lines.push(`  + ${address}`);
   for (const address of report.deleted) lines.push(`  - ${address}`);
