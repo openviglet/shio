@@ -10,13 +10,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { addressKey } from "@/lib/query-keys";
 import type { ShPostType } from "@/models/post-type/post-type";
-import type { ShSite } from "@/models/site/site";
+import type { ShSite, ShSiteLocalePolicy } from "@/models/site/site";
 import type { ShWidget } from "@/models/widget/widget";
 import type { ShTenant } from "@/models/tenant/tenant.model";
 import { ShPostTypeService } from "@/services/post-type/post-type.service";
 import { ShSiteService } from "@/services/site/site.service";
 import { ShWidgetService } from "@/services/widget/widget.service";
 import { ShTenantService, type ShCurrentTenant } from "@/services/tenant/tenant.service";
+import { ShLocaleService, type ShLocale } from "@/services/locale/locale.service";
 
 /**
  * SH1046 — the three catalogues every screen reads, read once.
@@ -49,6 +50,7 @@ const postTypeService = new ShPostTypeService();
 const siteService = new ShSiteService();
 const widgetService = new ShWidgetService();
 const tenantService = new ShTenantService();
+const localeService = new ShLocaleService();
 
 /** Every post type, as the console's own name-keyed surface reports them. */
 export function usePostTypes() {
@@ -101,6 +103,32 @@ export function useCurrentTenant() {
   return useQuery<ShCurrentTenant>({
     queryKey: addressKey("tenant:current"),
     queryFn: ({ signal }) => tenantService.current({ signal }),
+  });
+}
+
+/**
+ * SH1152 — the locale catalogue and one site's locale policy, shared for the same reason the tenant
+ * pair is.
+ *
+ * <p>`site.edit.page.tsx` and `post-translations.menu.tsx` both read these two, and the menu is
+ * mounted from the post editor while the editor's own screens read the same catalogue — so the
+ * instance's locale list was fetched once per surface that wanted it. The catalogue is the same answer
+ * for every site and never changes at runtime; the policy changes only when somebody edits it, and
+ * `useInvalidate()("locale:")` or `("site:")` is what says so.</p>
+ */
+export function useLocales() {
+  return useQuery<ShLocale[]>({
+    queryKey: addressKey("locale:"),
+    queryFn: ({ signal }) => localeService.list({ signal }),
+  });
+}
+
+/** One site's declared languages, default and fallbacks (SH1056). */
+export function useSiteLocalePolicy(siteId: string | undefined) {
+  return useQuery<ShSiteLocalePolicy>({
+    queryKey: addressKey(`site:${siteId ?? ""}`),
+    queryFn: ({ signal }) => siteService.locales(siteId ?? "", { signal }),
+    enabled: Boolean(siteId),
   });
 }
 

@@ -70,7 +70,18 @@ test("SH1056: the menu reads the post's site and narrows through the one rule", 
   const MENU = read("src", "components", "post-translations.menu.tsx")
   assert.match(MENU, /offeredLocales\(locales, policy\)/u,
     "SH1056: the menu offers what the rule returns, not the raw catalogue")
-  assert.match(MENU, /siteService\.locales\(siteId\)/u)
+  /*
+   * SH1152 moved this read into `useSiteLocalePolicy`, because `site.edit.page.tsx` asks for the same
+   * answer. The claim is the same and is followed rather than relaxed: the menu narrows by **the
+   * post's own site**, so it must pass that site's id, and the hook must read that site's policy.
+   * Without both, the menu would offer every locale the instance has.
+   */
+  assert.match(MENU, /useSiteLocalePolicy\(siteId\)/u,
+    "SH1056: the menu reads a policy that is not this post's site's")
+  assert.match(read("src", "hooks", "use-catalogue.ts"),
+    /queryFn: \(\{ signal \}\) => siteService\.locales\(siteId \?\? "", \{ signal \}\)/u,
+    "SH1056: `useSiteLocalePolicy` no longer reads the site's own declared languages, so what the "
+      + "menu narrows by is no longer the policy")
   assert.match(read("src", "app", "content", "post.edit.page.tsx"),
     /<PostTranslationsMenu postId=\{postId\} siteId=\{post\.shSite\?\.id \?\? post\.shFolder\?\.shSite\?\.id\}/u,
     "SH1056: without the site the menu cannot know the policy and offers everything")

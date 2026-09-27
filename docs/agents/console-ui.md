@@ -2473,6 +2473,30 @@ root, which is exactly the shape SH1113's per-route budget was built to see. The
 cached reads now, in `use-catalogue.ts` where a third caller will find them. **The declared list:
 33 → 28 → 25 → 21 → 19.**
 
+**Slice five took the post editor's three companions** (SH1152) — the note rail, the insights panel
+and the translations menu — and turned up **a second shared read and a new class of defect**.
+
+The shared read is SH1151's shape again: the translations menu reads the instance's locale catalogue
+and one site's locale policy, and so does the site editor, and the menu is mounted from the post
+editor. `useLocales()` and `useSiteLocalePolicy()` now serve both.
+
+**The new class is what a cache brings that the reads did not have.** An effect-shaped read cannot be
+stale — it runs, it answers, and the answer is as fresh as the render. A cached one is right when it
+is fetched and **wrong after a write**. Creating a translation changes the group as seen from *every*
+member of it, and the curator is navigated to the new page and may come back, so the write invalidates
+the whole `translation:` scheme rather than the key it was called from; the note rail's
+refresh-after-add is the same thing. This is the half of a migration easiest to leave out, because
+nothing fails until somebody goes back — and it is worth carrying into every remaining slice.
+
+The insights panel's key carries the **revision**, which is what makes its two long-standing wants
+true at once: a save re-lints and a keystroke does not. As an effect dependency that was a re-run; as
+part of the key it is what it actually is — a different subject per revision.
+
+Four new schemes joined `SCHEMES` (`note:`, `translation:`, `insights:`, `locale:`) rather than
+becoming suffixes under `summary:`, and the reason is invalidation: it matches on the key's first
+segment, so folding them together would mean adding a note dropped the locale catalogue with it.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16.**
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key

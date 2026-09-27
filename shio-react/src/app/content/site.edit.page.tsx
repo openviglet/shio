@@ -11,6 +11,7 @@ import { toast } from "@viglet/viglet-design-system"
 import { BentoEntityShell, BentoFormSection } from "@viglet/viglet-design-system/bento"
 import type React from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useLocales, usePostTypes, useSiteLocalePolicy } from "@/hooks/use-catalogue"
 import { isCancelled } from "@/lib/read-options"
 import { addressKey } from "@/lib/query-keys"
 import { useEffect, useState } from "react"
@@ -22,16 +23,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { siteDestination } from "@/lib/site-front-end"
 import type { ShSite, ShSiteLocalePolicy } from "@/models/site/site"
-import { usePostTypes } from "@/hooks/use-catalogue"
 import { ShSiteService } from "@/services/site/site.service"
-import { ShLocaleService, type ShLocale } from "@/services/locale/locale.service"
 import { SiteIndexSection } from "@/components/site-index.section"
 import { SiteLanguagesSection } from "@/components/site-languages.section"
 import { declarationOf, draftOf, type LanguagesDraft } from "@/lib/site-languages"
 import { reportProblem } from "@/lib/problem"
 
 const service = new ShSiteService()
-const localeService = new ShLocaleService()
 
 /**
  * SH899 — the site editor, and the first entity shell in this console.
@@ -101,15 +99,10 @@ export default function BentoSiteEditPage() {
     queryFn: ({ signal }) => service.get(siteId, { signal }),
     enabled: Boolean(siteId),
   })
-  const reportedPolicy = useQuery<ShSiteLocalePolicy>({
-    queryKey: addressKey(`site:${siteId ?? ""}`),
-    queryFn: ({ signal }) => service.locales(siteId, { signal }),
-    enabled: Boolean(siteId),
-  })
-  const localeCatalogue = useQuery<ShLocale[]>({
-    queryKey: addressKey("summary:locales"),
-    queryFn: ({ signal }) => localeService.list({ signal }),
-  })
+  // SH1152 — shared, because `post-translations.menu.tsx` reads the same two and the post editor
+  // mounts it. The catalogue is the same answer for every site and never changes at runtime.
+  const reportedPolicy = useSiteLocalePolicy(siteId)
+  const localeCatalogue = useLocales()
 
   /*
    * Seeded during render rather than in an effect (`react-hooks/set-state-in-effect`), once per site.

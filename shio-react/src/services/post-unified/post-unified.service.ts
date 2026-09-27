@@ -350,8 +350,8 @@ export class ShPostUnifiedService {
   }
 
   /** Sibling translations of this post's group (SH53), DRAFT-preferred. */
-  async translations(id: string): Promise<ShPostUnified[]> {
-    const response = await axios.get<ShPostUnified[]>(`/v2/post-unified/${id}/translations`)
+  async translations(id: string, read: ShRead = {}): Promise<ShPostUnified[]> {
+    const response = await axios.get<ShPostUnified[]>(`/v2/post-unified/${id}/translations`, { signal: read.signal })
     return response.data
   }
 

@@ -70,12 +70,9 @@ const UNCANCELLED = new Set([
   // The one the stripper caught on a real file rather than a planted one: this page's prose says
   // "an ambient signal", and a raw scan read that as cancellation and passed it.
   "src/app/system/bento.root.page.tsx",
-  "src/components/note-rail.tsx",
   "src/components/permissions.dialog.tsx",
   "src/components/post-history.panel.tsx",
-  "src/components/post-insights.panel.tsx",
   "src/components/post-live-preview.tsx",
-  "src/components/post-translations.menu.tsx",
   "src/components/publish-preview.dialog.tsx",
   "src/components/widgets/content-browser-dialog.tsx",
   "src/components/widgets/content-select.widget.tsx",
@@ -270,7 +267,7 @@ test("SH1047: no screen fetches inside an effect without a signal, outside the d
   // SH1151 recalibrated this floor: it was 30 against a scan that asked whether a file contained a
   // `useEffect` and a service call anywhere, which counted writes in click handlers. Reading the
   // effects and what they call gives 37, so the floor is what that measurement supports.
-  assert.ok(fetching.length >= 35,
+  assert.ok(fetching.length >= 32,
     `SH1047: only ${fetching.length} fetching effect(s) found — this scan is measuring nothing`);
 
   const arrived = uncancelled.filter((path) => !UNCANCELLED.has(path));
@@ -341,9 +338,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 19,
+  assert.ok(UNCANCELLED.size <= 16,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "the slices took it to 28, 25, 21 and 19. It may only ever shrink.");
+      + "the slices took it to 28, 25, 21, 19 and 16. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -434,8 +431,21 @@ test("SH1150: the content editors key on their subject, and one entry was never 
   // locale catalogue is the same answer for every site.
   const site = stripComments(readFileSync(
     join(ROOT, "src/app/content/site.edit.page.tsx"), "utf8"));
-  assert.equal((site.match(/useQuery</gu) ?? []).length, 3,
-    "SH1150: the site editor's site, locale policy and locale catalogue are three subjects");
+  /*
+   * Three subjects, and SH1152 moved two of them into shared hooks because `post-translations.menu`
+   * asks for the same two. So the claim is checked where each now lives rather than by counting
+   * `useQuery` in one file — the count would have passed for a page that had merged them back.
+   */
+  assert.equal((site.match(/useQuery</gu) ?? []).length, 1,
+    "SH1150: the site editor's own subject is the site; the other two are shared reads");
+  assert.match(site, /const reportedPolicy = useSiteLocalePolicy\(siteId\)/u,
+    "SH1150: the site's locale policy is its own subject, read through the shared hook");
+  assert.match(site, /const localeCatalogue = useLocales\(\)/u,
+    "SH1150: the instance's locale catalogue is the same answer for every site, so it is shared");
+  const shared = stripComments(readFileSync(join(ROOT, "src/hooks/use-catalogue.ts"), "utf8"));
+  assert.match(shared, /queryFn: \(\{ signal \}\) => localeService\.list\(\{ signal \}\)/u,
+    "SH1150: and the shared catalogue read takes the signal useQuery hands it");
+  assert.match(shared, /queryFn: \(\{ signal \}\) => siteService\.locales\(siteId \?\? "", \{ signal \}\)/u);
   assert.match(site, /function searchableOf\(/u,
     "SH1150: the free-text searchable list is read by a named function — the column has held a "
       + "non-JSON value, and an unreadable list is \"none selected\" rather than a crash on the one "
@@ -518,6 +528,64 @@ test("SH1151: a write in a handler is not an uncancelled read, and a hoisted rea
   assert.match(hooks, /queryFn: \(\{ signal \}\) => tenantService\.mine\(\{ signal \}\)/u,
     "SH1151: the shared read takes the signal useQuery hands it");
   assert.match(hooks, /queryFn: \(\{ signal \}\) => tenantService\.current\(\{ signal \}\)/u);
+});
+
+test("SH1152: the post editor's companions share what they share, and writes invalidate", () => {
+  const shared = stripComments(readFileSync(join(ROOT, "src/hooks/use-catalogue.ts"), "utf8"));
+
+  /*
+   * SH1152 — the second dedup this task has turned up, and the same shape as SH1151's tenant pair:
+   * `site.edit.page.tsx` and `post-translations.menu.tsx` both read the instance's locale catalogue
+   * and one site's locale policy, and the menu is mounted from the post editor. Two components
+   * independently correct and collectively wasteful.
+   */
+  for (const file of ["src/app/content/site.edit.page.tsx",
+    "src/components/post-translations.menu.tsx"]) {
+    const code = stripComments(readFileSync(join(ROOT, file), "utf8"));
+    assert.match(code, /useLocales\(\)/u, `SH1152: ${file} reads the locale catalogue on its own again`);
+    assert.match(code, /useSiteLocalePolicy\(/u, `SH1152: ${file} reads the site policy on its own`);
+    assert.doesNotMatch(code, /localeService\.list\(/u,
+      `SH1152: ${file} is back to asking for a catalogue the other surface already has`);
+  }
+
+  /*
+   * A cache the reads did not have brings a defect the reads did not have: an answer that is right
+   * when it is fetched and wrong after a write. Creating a translation changes the group as seen from
+   * every member of it, and the curator is navigated to the new page and may come back — so the
+   * write invalidates the whole scheme, not the key it was called from.
+   */
+  const menu = stripComments(readFileSync(
+    join(ROOT, "src/components/post-translations.menu.tsx"), "utf8"));
+  assert.match(menu, /await invalidate\("translation:"\)/u,
+    "SH1152: creating a translation does not invalidate the group. The source post's menu would go "
+      + "on showing the group as it was before the translation it just created — which the "
+      + "effect-shaped read could not get wrong, because it had no cache to be stale.");
+
+  const rail = stripComments(readFileSync(join(ROOT, "src/components/note-rail.tsx"), "utf8"));
+  assert.match(rail, /void invalidate\(`note:\$\{objectId\}`\)/u,
+    "SH1152: adding a note does not refresh the rail it was added to");
+  assert.doesNotMatch(rail, /catch\(\(\) => setNotes\(\[\]\)\)/u,
+    "SH1152: an unanswered server and a field with no notes must not render the same empty rail");
+
+  /*
+   * The insights panel's key carries the revision, which is what makes its two long-standing wants
+   * true at once: a save re-lints and a keystroke does not. As an effect dependency that was a
+   * re-run; as part of the key it is a different subject, which is what it actually is.
+   */
+  const insights = stripComments(readFileSync(
+    join(ROOT, "src/components/post-insights.panel.tsx"), "utf8"));
+  assert.match(insights, /queryKey: addressKey\(`insights:\$\{address \?\? ""\}\|\$\{revision\}`\)/u,
+    "SH1152: the revision belongs in the insights key — a lint of the saved draft is a different "
+      + "subject per revision, not the same subject read again");
+  assert.match(insights, /failed = read\.isError && !isCancelled\(read\.error\)/u,
+    "SH1152: a cancelled lint is a navigation, not a failed one, and must not raise the panel's flag");
+
+  // Every scheme these keys use has to be declared, or `addressKey` throws where the page calls it.
+  const keys = readFileSync(join(ROOT, "src/lib/query-keys.ts"), "utf8");
+  for (const scheme of ["note:", "translation:", "insights:", "locale:"]) {
+    assert.ok(keys.includes(`"${scheme}"`),
+      `SH1152: ${scheme} is not in SCHEMES, so addressKey throws on the first render that uses it`);
+  }
 });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {
