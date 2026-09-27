@@ -1683,6 +1683,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH946** — The console renders in the package's BentoShell, which owns the reading column; the five pages dropped their own widths, and the forms get narrow by route, verified identical by digest and in a browser (design §LX.7 recorded in `docs/agents/console-ui.md`).
 - **SH947** — page-lint.test.mjs runs the design system's viglet-ds-page-lint over the console in pnpm test, with a planted-width case that must fail naming the file. Its first run found 29 page wrappers repeating the shell's gutter or width; 27 were cleaned, the six max-w-2xl editors moved to the narrow column, and two pages rendered outside the shell carry reasoned exemptions.
 - **SH944** — The viglet-ds plugin is enabled here and carries the page skill, hook and check; only the artboards stay vendored, and the MCP-at-root gap is filed upstream (design §LX.5 superseded: the split it left to decide had been made by the package (VDS135): with the plugin on, the bin removes the vendored skill itself) (design §LX.5 recorded in `docs/agents/console-ui.md`).
+- **SH948** — copy-ds.cmd resolves the design system through its latest worktree junction (or VIGLET_DS), and --list names Shio and exits zero again (design §LX.9 recorded in `copy-ds.cmd`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 

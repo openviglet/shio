@@ -953,48 +953,6 @@ than as an error anybody sees.
 
 ## LIX What the Turing round left in the build and in a guard
 
-## LX The design system's consumer contract, adopted and gated (Block AU)
-
-Shio is one of seven products declared in the design system's consumers.json, and the
-only one whose declaration is wrong: it says the console takes three subpaths where its
-source imports five. That is not bookkeeping. The package's own guards read that
-declaration, so a parity check meant to catch a drifting consumer passes on one it does
-not describe.
-
-The larger gap is newer. The package stopped being only a component catalogue when VDS88
-gave it a way to vendor its page contract into a consumer: viglet-ds-page-reference
-writes .claude/skills/viglet-ds-pages/ and nine artboards into the consuming repository,
-on the argument that a contract kept in another repository is read after the fifth
-screen. roadkeep-gui adopted it. Shio has none of it — no skill, no artboards, no drift
-check — and cannot, because the floor it pins is 2026.3.5, whose files list carries
-check-duplicates.mjs and neither the page-reference bin nor the docs payload.
-
-This block is the substrate the rest of the round stands on, ordered the way this
-project orders instruments: the version floor that makes the tooling runnable, the
-vendoring that lands the contract, the check that makes drift a failure rather than a
-discovery, then the declaration corrected on both sides. It closes by asking whether the
-package should be a plugin rather than copied files — a question this repository already
-ships an answer to.
-
-### LX.9 The local loop, resolved from the register (SH948)
-
-SH895 made copy-ds.cmd forward to the design system's own use:local so the consumer and
-the install path were resolved rather than hardcoded. Both checkouts have since moved to
-git worktrees, and copy-ds.cmd --list now fails with could not find the design system
-checkout, while use:local --list reports no consumer at all. The script's header records
-the same failure one level down, where it did nothing useful for two version bumps
-without anyone noticing.
-
-VDS130 makes the register the source: each consumer declares its checkout, and zero
-consumers found is a non-zero exit naming the register. Shio's side is to stop deriving
-anything from position. copy-ds.cmd resolves the package through the
-viglet-design-system latest junction, the same stable pointer the global instructions
-use for Shio and Turing, or it is deleted if use:local alone now does the job.
-
-The assertion is that copy-ds.cmd --list, run from this checkout, names Shio and exits
-zero. A wrapper whose only job is a path it gets wrong is worth less than no wrapper,
-because it reports a missing package instead of a broken script.
-
 ## LXI The live defects, fixed before anything is built on them (Block AV)
 
 Everything else in this round adds a capability. This block removes behaviour that is

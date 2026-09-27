@@ -1,23 +1,27 @@
 @echo off
-REM Deprecated wrapper. This script used to build the design system and xcopy its
-REM dist into a hardcoded path -- d:\git\viglet\shio\shio-react\node_modules -- which
-REM stopped existing when the checkout moved to 2026.3, so it silently did nothing
-REM useful for two version bumps.
+REM Try an unpublished design-system change in this console: forwards to the design
+REM system's own `pnpm use:local`, scoped to this checkout's shio-react.
 REM
-REM The design system now owns the recipe and resolves both the consumers and the
-REM install location instead of hardcoding them. Run it from there directly:
+REM The design system resolves its consumers from a register (VDS130), so this wrapper
+REM owns exactly one fact: where the design system's checkout is. It lives beside the
+REM products as git worktrees, one per version, with a `latest` junction pointing at the
+REM one in use -- the same stable pointer Shio and Turing use. Resolving through that
+REM junction is SH948: the plain sibling path now reaches the worktree container, which
+REM has no scripts, and the wrapper reported a missing package instead of a broken path.
 REM
-REM     cd d:\Git\viglet\viglet-design-system
-REM     pnpm use:local
-REM
-REM This wrapper just forwards to it, scoped to this checkout.
+REM Set VIGLET_DS to use another checkout. `copy-ds.cmd --list` names the consumers.
 setlocal
 
-set DS_SRC=%~dp0..\..\viglet-design-system
+if defined VIGLET_DS (
+    set "DS_SRC=%VIGLET_DS%"
+) else (
+    set "DS_SRC=%~dp0..\..\viglet-design-system\latest"
+)
 
 if not exist "%DS_SRC%\scripts\use-local.mjs" (
     echo Could not find the design system checkout at "%DS_SRC%".
-    echo Clone it beside the products, or run `pnpm use:local` from it directly.
+    echo Expected the viglet-design-system `latest` worktree junction beside the products,
+    echo or set VIGLET_DS to a checkout. `pnpm use:local` can also be run from it directly.
     exit /b 1
 )
 

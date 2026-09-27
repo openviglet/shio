@@ -95,3 +95,18 @@ test("SH895: the reader is not vacuous — it reads real scripts and would catch
   assert.ok(COMMENT.test("REM     cd d:\\Git\\viglet\\viglet-design-system"),
     "SH895: a REM line quoting a path reads as a defect, so the fix cannot document itself");
 });
+
+test("SH948: copy-ds.cmd reaches the design system through its latest worktree junction", () => {
+  // The sibling path SH895 anchored on became the worktree container once the design system moved
+  // to one worktree per version, and the wrapper then said the package was missing rather than that
+  // its own path was wrong. The junction is the stable pointer; VIGLET_DS overrides it.
+  const followed = readFileSync(join(ROOT, "copy-ds.cmd"), "utf8").split(/\r?\n/)
+    .filter((line) => !COMMENT.test(line) && /DS_SRC=/.test(line));
+  assert.ok(followed.length > 0, "SH948: copy-ds.cmd no longer sets DS_SRC, so this read proves nothing");
+  assert.ok(followed.some((line) => line.includes("%~dp0..\\..\\viglet-design-system\\latest")),
+    "SH948: copy-ds.cmd must resolve the design system through `viglet-design-system\\latest`, the"
+      + " junction beside the products; the bare sibling is a worktree container with no scripts in it."
+      + `\nFollowed:\n${followed.join("\n")}`);
+  assert.ok(!followed.some((line) => /viglet-design-system"?\s*$/.test(line.trim())),
+    "SH948: a DS_SRC ending at the bare `viglet-design-system` container is the defect this closed");
+});

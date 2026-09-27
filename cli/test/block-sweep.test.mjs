@@ -89,6 +89,15 @@ const SWEEP = {
       + "mirror is regenerated. README and shio-site are NOT moved: neither describes the test "
       + "instruments, and no count or claim they state changed",
   },
+  AU: {
+    swept: true,
+    why: "the design system's consumer contract, adopted and gated: the page reference vendored and "
+      + "held against drift, the canvas this repository draws in, and the round closing with SH944 (the "
+      + "viglet-ds plugin enabled, carrying the skill while only the artboards stay vendored) and SH948 "
+      + "(copy-ds.cmd through the latest worktree junction). docs-shio moved: COVERAGE's Block AU and "
+      + "instruments rows name both, with the mirror regenerated. README and shio-site are NOT moved: "
+      + "neither mentions the design system, its plugin or the local loop",
+  },
   BG: {
     swept: true,
     why: "the console as an application, cost and access: a bundle and a per-route cost budget, "

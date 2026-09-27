@@ -66,6 +66,15 @@ import { fileURLToPath } from "node:url"
  * and the console did not compile until it went. The other ten left this list and lost their
  * `DS VDS` dep, so they are ordinary work now. Four still wait: SH944, SH948, SH1051 and SH1053.
  *
+ * <h2>And the list emptied, which the check was not written to allow</h2>
+ *
+ * Those four were read against 2026.3.12 and all four waits were over; SH944, SH1051 and SH1053
+ * shipped with their entries still here, because the comparison ran in one direction only — a
+ * waiting line with no entry failed, an entry whose line no longer waited did not. Dropping SH948's
+ * dep then emptied the roadmap's side, and the check that its read matched *something* went red on
+ * the state the header had always called fine. So both directions are asserted now, and the
+ * line-shape proof reads a sample line instead of requiring the backlog to hold a wait (SH948).
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -132,9 +141,6 @@ function bentoDeclarations() {
     .join("\n")
 }
 
-/** VDS141's skip link, by name — see SH1053's entry for why not the bare word. */
-const SKIP_LINK = /skipLink|SkipLink|skip-link/
-
 /**
  * One entry per roadmap line that is waiting on a design-system release.
  *
@@ -143,45 +149,8 @@ const SKIP_LINK = /skipLink|SkipLink|skip-link/
  * "not yet" for the same reason a real wait does.
  */
 const WAITS = [
-  {
-    id: "SH944",
-    waitingFor: "VDS135: the package shipping a Claude Code plugin manifest",
-    over: () => existsSync(join(PACKAGE_ROOT, ".claude-plugin", "plugin.json")),
-    proof: () => existsSync(join(PACKAGE_ROOT, "scripts", "page-reference.mjs")),
-    proofIs: "the installed package still carries scripts/page-reference.mjs, so this read reached the package root",
-    instruction: "Decide skills-from-the-plugin against vendoring, enable it in settings.json and ship SH944.",
-  },
-  {
-    id: "SH948",
-    waitingFor: "VDS130: use:local resolving its consumers from a register rather than from its position on disk",
-    // Declared unprobeable rather than given a probe that cannot fire. `copy-ds.cmd` pushes into
-    // the design system's own checkout and runs `pnpm use:local` there; `scripts/use-local.mjs` is
-    // not in the published `files`, and neither is the register VDS130 introduces. Nothing under
-    // node_modules changes on the day this lands. Reading the checkout instead is the one thing
-    // this file must not do — it is a path that exists on one machine, and CI would go red on it.
-    over: null,
-    unprobeable: "the local loop runs from the design system's checkout, and nothing it changes is published in the package this file can read",
-    instruction: "Point copy-ds.cmd at the viglet-design-system latest junction, or delete it if use:local alone now does the job; the assertion is copy-ds.cmd --list naming Shio and exiting zero (SH948).",
-  },
-  {
-    id: "SH1051",
-    waitingFor: "VDS137: measurePairs exported, so a consumer can assert its own contrast",
-    over: () => exportsAnywhere("measurePairs"),
-    proof: () => exportsAnywhere("Button"),
-    proofIs: "the package still exports Button, so this read reached the real export list",
-    instruction: "Assert every accent and primary pair at 4.5:1 on both grounds printing each ratio, then re-key the accent and claim primary through the four base inputs (SH1051).",
-  },
-  {
-    id: "SH1053",
-    waitingFor: "VDS141: the shell owning one labelled main and a skip link as its first focusable element",
-    // Not the bare word: two bento declarations already say "skip" in their prose ("skip it and
-    // pass their own node", "skipping to `h3`"), and a probe matching those reports this wait over
-    // on the day it is written. The name is what arrives, so the name is what is read.
-    over: () => SKIP_LINK.test(bentoDeclarations()),
-    proof: () => bentoDeclarations().includes("BentoEntityShell"),
-    proofIs: "the bento declarations still name BentoEntityShell, so this read reached them",
-    instruction: "Render the root through the shell's main, delete the three page-level main elements, and give every spinner an sr-only label under an aria-busy ancestor (SH1053).",
-  },
+  // Empty since SH948: every line that waited on a release has had its wait read and closed. An
+  // entry is added with the `DS VDS<n>` dep that makes the roadmap line wait, and removed with it.
 ]
 
 /** The waits this file can answer for itself. An entry with no probe says why, and is checked below. */
@@ -251,29 +220,26 @@ test("SH984: every entry either probes the package or says why it cannot", () =>
       `SH984: ${wait.id} probes the package with no proof that the probe reads anything`)
   }
 
-  /*
-   * The three probes that read a *shape* rather than a name are the ones that can be written
-   * wrong and never fire, and `proof` cannot catch that: a read can reach the right file and
-   * still be asking a question nothing will ever answer yes to. So each is driven against the
-   * shape it waits for, and against what is there today — which is not a formality: SH1053's
-   * first draft matched the bare word `skip`, and two bento declarations already say "skip it"
-   * and "skipping to `h3`" in their prose, so it reported that wait over on the day it was
-   * written.
-   */
-  assert.ok(SKIP_LINK.test("skipLink?: string") && !SKIP_LINK.test("and skipping to `h3` leaves"),
-    "SH984: VDS141's probe reads prose rather than the export it waits for")
-
   // And the list is the whole of what is waiting. Every roadmap line depending on a design-system
   // release carries `DS VDS<n>`, so the roadmap itself says how many entries there should be —
   // which is the read nobody made for seven lines in a row.
+  const WAITING = /\*\*(SH\d+)\*\* \(deps: [^)]*DS VDS\d+/g
   const roadmap = readFileSync(join(CONSOLE_ROOT, "..", "docs", "ROADMAP.md"), "utf8")
-  const waiting = [...roadmap.matchAll(/\*\*(SH\d+)\*\* \(deps: [^)]*DS VDS\d+/g)].map(([, id]) => id)
-  assert.ok(waiting.length > 0,
-    "SH984: no roadmap line reads as waiting on a design-system release, so this read has stopped "
-      + "matching the line shape and the comparison below proves nothing")
+  const waiting = [...roadmap.matchAll(WAITING)].map(([, id]) => id)
+  // The read is proved on a line of the shape roadkeep writes, not on the backlog holding a wait:
+  // an empty list is a state this file must allow, and requiring one made it red on the day it was
+  // reached (SH948).
+  assert.deepEqual(
+    [..."- 📋 **SH1** (deps: SH2 ✅, DS VDS130) **a symptom** — a why. → §I.1".matchAll(WAITING)].map(([, id]) => id),
+    ["SH1"],
+    "SH984: the waiting-line read no longer matches the roadmap's line shape, so the comparison below proves nothing")
   assert.deepEqual(waiting.filter((id) => !WAITS.some((wait) => wait.id === id)), [],
     "SH984: these lines depend on a design-system release and have no entry here, so the release "
       + "that ends their wait will pass through unnoticed — which is the state SH937 exists to end. "
       + "Add one entry each: what it wants, a probe (or a stated reason there can be none), a proof "
       + "the probe reads something real, and the instruction to run when it fires.")
+  assert.deepEqual(WAITS.map((wait) => wait.id).filter((id) => !waiting.includes(id)), [],
+    "SH948: these entries wait for a line that no longer waits on a design-system release — it "
+      + "shipped or lost its `DS VDS` dep. Delete the entry with the dep, or the list says something "
+      + "is waiting that is not, which is how three shipped lines stayed here unnoticed.")
 })
