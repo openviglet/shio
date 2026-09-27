@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { ShProposedRenderService } from "@/services/insights/insights.service"
+import { isCancelled } from "@/lib/read-options"
 
 const service = new ShProposedRenderService()
 
@@ -65,21 +66,40 @@ export function PostLivePreview({ address, data, revision }: Readonly<Props>) {
   const latest = useRef(data)
   latest.current = data
 
+  /*
+   * SH1116 — a render composes a whole page on the server, so with live rendering on a slow one can
+   * land after the render a later pause asked for, and the frame shows values the curator has since
+   * typed over. Each render aborts the one before it, and unmounting aborts the last; only a render
+   * nobody superseded may write the frame, the flag or the spinner.
+   */
+  const inflight = useRef<AbortController | null>(null)
+
   const render = useCallback(() => {
+    inflight.current?.abort()
+    const abort = new AbortController()
+    inflight.current = abort
     setLoading(true)
     setFailed(false)
-    return service.html(address, latest.current)
+    return service.html(address, latest.current, { signal: abort.signal })
       .then(setHtml)
       // A page with no layout cannot render, which is a fact about the page rather than an error:
-      // the editor still works, and a dialog about it would be in the way of the fix.
-      .catch(() => setFailed(true))
-      .finally(() => setLoading(false))
+      // the editor still works, and a dialog about it would be in the way of the fix. A superseded
+      // render is neither, and must not raise the flag over the render that replaced it.
+      .catch((reason: unknown) => {
+        if (!isCancelled(reason)) setFailed(true)
+      })
+      .finally(() => {
+        if (!abort.signal.aborted) setLoading(false)
+      })
   }, [address])
+
+  const cancel = useCallback(() => inflight.current?.abort(), [])
 
   // On mount and on every save the curator asked for.
   useEffect(() => {
     void render()
-  }, [render, revision])
+    return cancel
+  }, [render, cancel, revision])
 
   // And on a pause in typing, only while the switch is on.
   useEffect(() => {

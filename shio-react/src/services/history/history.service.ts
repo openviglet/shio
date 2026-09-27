@@ -28,9 +28,9 @@ export class ShHistoryService {
   }
 
   /** One object's own trail — what the post editor's history panel asks for. */
-  async byObject(objectId: string, query: ShHistoryQuery = {}): Promise<ShHistoryPage> {
+  async byObject(objectId: string, query: ShHistoryQuery = {}, read: ShRead = {}): Promise<ShHistoryPage> {
     const response = await axios.get<ShHistoryPage>(`/v2/history/object/${objectId}`,
-      { params: params(query) })
+      { params: params(query), signal: read.signal })
     return response.data
   }
 

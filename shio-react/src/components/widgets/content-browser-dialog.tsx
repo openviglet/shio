@@ -9,9 +9,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ChevronRight, FileText, Folder, Globe, Home, Loader2 } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import axios from "axios"
+import { isCancelled } from "@/lib/read-options"
 import type { ShFolder } from "@/models/folder/folder"
 import type { ShSite } from "@/models/site/site"
 
@@ -146,32 +147,52 @@ function ContentBrowserBody({
     }
   }, [buildPathString, buildPathSegments, getCurrentFolderId])
 
+  /*
+   * SH1116 — one controller for whichever read is in flight. A curator walking folders quickly used
+   * to be shown the slow answer for a folder they had left under the breadcrumb of the one they were
+   * in, and a "load more" page for the old folder could be appended to the new one's rows. Every read
+   * aborts the one before it, closing the dialog aborts the last, and only a read nobody superseded
+   * may write the rows or lower the spinner.
+   */
+  const inflight = useRef<AbortController | null>(null)
+
+  const begin = useCallback(() => {
+    inflight.current?.abort()
+    const abort = new AbortController()
+    inflight.current = abort
+    return abort.signal
+  }, [])
+
+  const cancel = useCallback(() => inflight.current?.abort(), [])
+
   // Load site list
   // SH702 — `fetch*` reads, `load*` reads AND raises the flags. The mount effect uses the first,
   // because a freshly mounted body is already `loading` with nothing selected; navigation inside
   // the open dialog uses the second, where the spinner is a response to a click.
-  const fetchSites = useCallback(async () => {
-    try {
-      const res = await axios.get<ShSite[]>("/v2/site")
+  const fetchSites = useCallback((signal: AbortSignal) => axios.get<ShSite[]>("/v2/site", { signal })
+    .then((res) => {
       setSites(res.data ?? [])
       setFolders([])
       setPosts([])
       setBreadcrumb([{ id: "__sites__", name: t("content.sites"), type: "SITE_LIST" }])
-    } finally {
-      setLoading(false)
-    }
-  }, [t])
+    })
+    .catch((reason: unknown) => {
+      if (!isCancelled(reason)) throw reason
+    })
+    .finally(() => {
+      if (!signal.aborted) setLoading(false)
+    }), [t])
 
   const loadSites = useCallback(async () => {
     setLoading(true)
     setSelectedItem(null)
-    await fetchSites()
-  }, [fetchSites])
+    await fetchSites(begin())
+  }, [fetchSites, begin])
 
   // Load children of an object (site or folder)
-  const fetchChildren = useCallback(async (objectId: string, crumbs: BreadcrumbItem[]) => {
-    try {
-      const res = await axios.get<ObjectListResponse>(`/v2/object/${objectId}/list?page=0&size=${PICKER_PAGE_SIZE}`)
+  const fetchChildren = useCallback((objectId: string, crumbs: BreadcrumbItem[], signal: AbortSignal) => axios
+    .get<ObjectListResponse>(`/v2/object/${objectId}/list?page=0&size=${PICKER_PAGE_SIZE}`, { signal })
+    .then((res) => {
       setFolders(res.data.folders ?? [])
       setPosts(res.data.posts ?? [])
       setPostPage(res.data.page ?? 0)
@@ -179,16 +200,19 @@ function ContentBrowserBody({
       setCurrentFolder(objectId)
       setSites([])
       setBreadcrumb(crumbs)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    })
+    .catch((reason: unknown) => {
+      if (!isCancelled(reason)) throw reason
+    })
+    .finally(() => {
+      if (!signal.aborted) setLoading(false)
+    }), [])
 
   const loadChildren = useCallback(async (objectId: string, crumbs: BreadcrumbItem[]) => {
     setLoading(true)
     setSelectedItem(null)
-    await fetchChildren(objectId, crumbs)
-  }, [fetchChildren])
+    await fetchChildren(objectId, crumbs, begin())
+  }, [fetchChildren, begin])
 
   /**
    * The next page of this folder's posts (SH165).
@@ -200,16 +224,22 @@ function ContentBrowserBody({
   const loadMorePosts = useCallback(async () => {
     if (!currentFolder) return
     setLoadingMore(true)
+    const signal = begin()
     try {
       const next = postPage + 1
-      const res = await axios.get<ObjectListResponse>(`/v2/object/${currentFolder}/list?page=${next}&size=${PICKER_PAGE_SIZE}`)
+      const res = await axios.get<ObjectListResponse>(`/v2/object/${currentFolder}/list?page=${next}&size=${PICKER_PAGE_SIZE}`,
+        { signal })
       setPosts((prev) => [...prev, ...(res.data.posts ?? [])])
       setPostPage(res.data.page ?? next)
       setTotalPosts(res.data.totalPosts ?? 0)
+    } catch (reason) {
+      if (!isCancelled(reason)) throw reason
     } finally {
+      // Unconditionally: a navigation that aborted this page starts its own read and must not find
+      // the next folder's "load more" still disabled by this one.
       setLoadingMore(false)
     }
-  }, [currentFolder, postPage])
+  }, [currentFolder, postPage, begin])
 
   // Navigate to a site
   const navigateToSite = useCallback((site: ShSite) => {
@@ -265,8 +295,9 @@ function ContentBrowserBody({
   // SH702 — the mount IS the open, so there is nothing to clear and no flag to check: `loading`
   // starts true and `selectedItem` starts null because this component did not exist a moment ago.
   useEffect(() => {
+    const signal = begin()
     if (startFolderId) {
-      axios.get(`/v2/object/${startFolderId}/path`).then((pathRes) => {
+      axios.get(`/v2/object/${startFolderId}/path`, { signal }).then((pathRes) => {
         const data = pathRes.data
         const crumbs: BreadcrumbItem[] = [
           { id: "__sites__", name: t("content.sites"), type: "SITE_LIST" },
@@ -279,14 +310,17 @@ function ContentBrowserBody({
             crumbs.push({ id: c.id, name: c.name, type: "FOLDER" })
           }
         }
-        void fetchChildren(startFolderId, crumbs)
-      }).catch(() => {
-        void fetchSites()
+        void fetchChildren(startFolderId, crumbs, signal)
+      }).catch((reason: unknown) => {
+        // A folder whose path cannot be read falls back to the site list; a closed dialog does not.
+        if (isCancelled(reason)) return
+        void fetchSites(signal)
       })
     } else {
-      void fetchSites()
+      void fetchSites(signal)
     }
-  }, [startFolderId, t, fetchChildren, fetchSites])
+    return cancel
+  }, [startFolderId, t, fetchChildren, fetchSites, begin, cancel])
 
   return (
     <>

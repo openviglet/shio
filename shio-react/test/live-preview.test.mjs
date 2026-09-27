@@ -52,7 +52,8 @@ test("SH1014: re-rendering as you type is a switch, and it starts off", () => {
   assert.match(preview, /\}, \[live, render, JSON\.stringify\(data\)\]\)/u,
     "SH1014: debounced by VALUE — depending on the object the caller rebuilds every render would "
       + "re-arm the timer forever and never fire it")
-  assert.match(preview, /useEffect\(\(\) => \{\s*void render\(\)\s*\}, \[render, revision\]\)/u,
+  // SH1116: the effect also returns the abort of the render in flight, and so depends on `cancel`.
+  assert.match(preview, /useEffect\(\(\) => \{\s*void render\(\)\s*return cancel\s*\}, \[render, cancel, revision\]\)/u,
     "SH1014: and it still refreshes on every save, which is the question being asked most of the time")
 })
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Bot, ChevronDown, GitCompare } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -7,6 +7,7 @@ import { Link } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { ShHistoryService } from "@/services/history/history.service"
 import type { ShHistory } from "@/models/history/history.model"
+import { isCancelled } from "@/lib/read-options"
 
 const service = new ShHistoryService()
 
@@ -41,23 +42,49 @@ export function PostHistoryPanel({ objectId, onCompare }: Props) {
   const [cursor, setCursor] = useState<string | null>(null)
   const [more, setMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
+  /*
+   * SH1116 — one controller for whichever read is in flight, the first page or an older one. Rows
+   * accumulate, so an older page of the post the curator just left landing after the switch would be
+   * appended to the new post's trail: the object changing, a second "show older" and unmounting all
+   * abort it, and only a read nobody cancelled may write.
+   */
+  const inflight = useRef<AbortController | null>(null)
 
   const load = useCallback((before?: string) => {
+    inflight.current?.abort()
+    const abort = new AbortController()
+    inflight.current = abort
     setLoading(true)
-    return service.byObject(objectId, { limit: PAGE_SIZE, before })
+    return service.byObject(objectId, { limit: PAGE_SIZE, before }, { signal: abort.signal })
       .then((page) => {
         setRows((current) => (before ? [...current, ...page.rows] : page.rows))
         setCursor(page.cursor)
         setMore(page.more)
+        setFailed(false)
       })
-      .catch(() => setMore(false))
-      .finally(() => setLoading(false))
+      .catch((reason: unknown) => {
+        if (isCancelled(reason)) return
+        setMore(false)
+        setFailed(true)
+      })
+      .finally(() => {
+        if (!abort.signal.aborted) setLoading(false)
+      })
   }, [objectId])
+
+  const cancel = useCallback(() => inflight.current?.abort(), [])
 
   useEffect(() => {
     void load()
-  }, [load])
+    return cancel
+  }, [load, cancel])
 
+  // "Nothing was recorded" and "the trail could not be read" are opposite facts, and the first is
+  // what a curator stops checking for — so a failure says so rather than borrowing the empty one.
+  if (!loading && failed && rows.length === 0) {
+    return <p className="text-sm text-muted-foreground">{t("activity.readFailed")}</p>
+  }
   if (!loading && rows.length === 0) {
     return <p className="text-sm text-muted-foreground">{t("activity.none")}</p>
   }

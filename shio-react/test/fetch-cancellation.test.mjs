@@ -59,11 +59,12 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
  * `useQuery` against `/v2/console/summary`, and a query hands its `queryFn` a signal. That is the
  * list working — a debt paid off has to leave it, or the next reader counts it twice.</p>
  */
-const UNCANCELLED = new Set([
-  "src/components/post-history.panel.tsx",
-  "src/components/post-live-preview.tsx",
-  "src/components/widgets/content-browser-dialog.tsx",
-]);
+/*
+ * Empty since SH1116's last slice, and kept as a declaration rather than deleted: the test below still
+ * reads it, so a screen that has to be declared again is one line here with its reason in the diff,
+ * and the assertion that the list only shrinks has something to hold.
+ */
+const UNCANCELLED = new Set([]);
 
 /**
  * The five SH1047's design named, and the five SH1116's first slice took off the list.
@@ -79,6 +80,14 @@ const MIGRATED = [
   "src/app/content/search.page.tsx",
   "src/app/content/static-file.list.page.tsx",
   "src/app/content/trash.page.tsx",
+  /*
+   * SH1116's last slice: three components that stay effect-shaped for the reason those five did. The
+   * history panel and the picker accumulate pages by hand, and the live preview's read is a render
+   * the curator asks for by pausing — none of the three is a subject a query key would name.
+   */
+  "src/components/post-history.panel.tsx",
+  "src/components/post-live-preview.tsx",
+  "src/components/widgets/content-browser-dialog.tsx",
 ];
 
 /**
@@ -345,9 +354,63 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 3,
-    `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "the slices took it to 28, 25, 21, 19, 16, 14, 12, 8, 7, 6, 4 and 3. It may only ever shrink.");
+  assert.equal(UNCANCELLED.size, 0,
+    `SH1116: ${UNCANCELLED.size} screens are declared again. The list was 33 when this task opened; `
+      + "the slices took it to 28, 25, 21, 19, 16, 14, 12, 8, 7, 6, 4, 3 and 0. It may only ever shrink.");
+});
+
+test("SH1116: the last three abort what they superseded, and none reads a cancel as a failure", () => {
+  const read = (file) => stripComments(readFileSync(join(ROOT, file), "utf8"));
+
+  /*
+   * All three keep one controller for whichever read is in flight, because each of them has two
+   * callers of the same read — mount and a button — and a per-effect controller would cancel only the
+   * first. The history panel and the picker accumulate rows, so an older page of what the curator
+   * left, landing late, would be APPENDED to what they are looking at: worse than a stale answer,
+   * because the rows are real, only in the wrong place.
+   */
+  for (const file of ["src/components/post-history.panel.tsx",
+    "src/components/post-live-preview.tsx",
+    "src/components/widgets/content-browser-dialog.tsx"]) {
+    const code = read(file);
+    assert.match(code, /inflight\.current\?\.abort\(\)/u,
+      `SH1116: ${file} starts a read without aborting the one it supersedes`);
+    assert.match(code, /return cancel\b/u,
+      `SH1116: ${file}'s effect does not abort the read in flight when it is torn down`);
+    assert.match(code, /isCancelled\(reason\)/u,
+      `SH1116: ${file} reads a cancellation as a failure — an aborted request rejects`);
+    // The spinner belongs to the read that replaced this one, which set it a moment ago.
+    assert.match(code, /if \(!(?:abort\.)?signal\.aborted\) setLoading\(false\)/u,
+      `SH1116: ${file} lowers the spinner for a read that was superseded, while the new one is in flight`);
+  }
+
+  // The live preview's render is a POST, and a read: it persists nothing, so it takes a signal.
+  const insights = read("src/services/insights/insights.service.ts");
+  assert.match(insights, /\{ address, state: "draft", data \},\s*\{ signal: read\.signal \}/u,
+    "SH1116: the proposed render does not forward the signal, so aborting it aborts nothing");
+  const history = read("src/services/history/history.service.ts");
+  assert.match(history, /`\/v2\/history\/object\/\$\{objectId\}`,\s*\{ params: params\(query\), signal: read\.signal \}/u,
+    "SH1116: the per-object trail read does not forward the signal");
+
+  /*
+   * The history panel's own failure path, and SH1158's lesson on one more surface: "nothing has been
+   * recorded" and "the trail could not be read" rendered the same sentence, and the first is the one a
+   * curator stops checking for.
+   */
+  const panel = read("src/components/post-history.panel.tsx");
+  assert.match(panel, /t\("activity\.readFailed"\)/u,
+    "SH1116: an unreadable trail borrows the empty one's words again");
+  for (const lang of ["en", "pt"]) {
+    const bundle = JSON.parse(readFileSync(join(ROOT, `src/i18n/locales/${lang}/activity.json`), "utf8"));
+    assert.ok("activity.readFailed" in bundle,
+      `SH1116: activity.readFailed is missing from the ${lang} bundle`);
+  }
+
+  // A closed picker must not fall back to the site list: the fallback is for a path that cannot be read.
+  const picker = read("src/components/widgets/content-browser-dialog.tsx");
+  assert.match(picker, /if \(isCancelled\(reason\)\) return\s*void fetchSites\(signal\)/u,
+    "SH1116: a cancelled path read falls through to the site-list fallback — a second request for a "
+      + "dialog nobody has open");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",

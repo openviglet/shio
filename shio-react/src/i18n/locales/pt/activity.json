@@ -28,6 +28,7 @@
   "activity.newer": "Mais recentes",
   "activity.section": "Histórico",
   "activity.none": "Nada foi registrado para esta página ainda.",
+  "activity.readFailed": "Não foi possível ler o histórico desta página. Recarregue para tentar de novo.",
   "activity.compare": "Comparar as versões desta página",
   "activity.more": "Mostrar mais antigas",
   "activity.working": "{{who}} está trabalhando nesta página agora",

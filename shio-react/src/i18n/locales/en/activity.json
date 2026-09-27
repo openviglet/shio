@@ -28,6 +28,7 @@
   "activity.newer": "Newer",
   "activity.section": "History",
   "activity.none": "Nothing has been recorded for this page yet.",
+  "activity.readFailed": "This page's history could not be read. Reload to try again.",
   "activity.compare": "Compare this page's versions",
   "activity.more": "Show older",
   "activity.working": "{{who}} is working on this page right now",

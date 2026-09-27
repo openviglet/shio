@@ -85,12 +85,17 @@ export class ShInsightsService {
  * <p>`POST /v2/agent/render` renders through the same service `/preview` uses, over a transient
  * copy of the post, and persists nothing. `format=html` is what a frame needs; without it the same
  * call answers the digest, which is what an agent wants and what this would otherwise pay for.</p>
+ *
+ * <p>A POST that takes a signal, which `read-options.ts` reserves for reads — and this is one: the
+ * verb carries a body the query string could not, and nothing is written (SH1116). Aborting it loses
+ * only a render that a newer keystroke or a save has already superseded.</p>
  */
 export class ShProposedRenderService {
-  async html(address: string, data: Record<string, unknown>): Promise<string> {
+  async html(address: string, data: Record<string, unknown>, read: ShRead = {}): Promise<string> {
     const response = await axios.post<{ html?: string }>(
       "/v2/agent/render?format=html",
       { address, state: "draft", data },
+      { signal: read.signal },
     )
     return response.data?.html ?? ""
   }

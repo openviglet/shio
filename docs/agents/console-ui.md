@@ -2649,6 +2649,26 @@ looking for before the next slice, not after.
 **The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7 → 6 → 4 → 3.** The three left are the
 paged screens §LXXII.21 says want `useInfiniteQuery` **and** a product decision.
 
+**The last slice emptied it, and took the product decision by not needing it.** The three were the post
+editor's history panel, its live preview and the content picker dialog, and none went to the query
+layer: the panel and the picker accumulate pages by hand, and the preview is a render the curator asks
+for by pausing — no query key names that subject, and caching any of them is the behaviour change
+§LXXII.21 said would have to be decided. They took an `AbortController` instead, the shape of SH1047's
+five, but **one controller per component held in a ref**, not one per effect: each has two callers of
+the same read (the mount, and a button — "show older", "load more", "refresh", a pause while live), and
+a per-effect controller cancels only the first. Every read aborts the one before it, the effect's
+cleanup aborts the last, and the spinner is lowered only by a read nobody superseded, because the one
+that replaced it raised it a moment earlier.
+
+Three things came with it. **The accumulating shape is the worse race**: an older page of the post the
+curator left, landing late, is *appended* to the rows of the one they are on — real rows in the wrong
+place. **The history panel said "nothing recorded" for a trail it could not read**, SH1158's finding on
+one more surface, and has `activity.readFailed` now. And **the preview's render is a POST**, which
+`read-options.ts` reserves signals away from — but it persists nothing, so it is a read in the only
+sense that rule is about, and aborting it loses only a render a newer one superseded. The picker's
+fallback to the site list is for a path that cannot be read, and a closed dialog no longer takes it.
+`UNCANCELLED` is an empty declaration, asserted to stay empty.
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key

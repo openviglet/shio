@@ -78,7 +78,8 @@ test("SH1005: the post editor answers 'who changed this' on the page it is about
   assert.match(editor, /AdaptiveSectionCard\.StaticHeader icon=\{IconHistory\}/)
 
   const panel = read("src", "components", "post-history.panel.tsx")
-  assert.match(panel, /service\.byObject\(objectId, \{ limit: PAGE_SIZE, before \}\)/,
+  // SH1116 added the third argument, the signal; the narrowing is the first two.
+  assert.match(panel, /service\.byObject\(objectId, \{ limit: PAGE_SIZE, before \}, \{ signal: abort\.signal \}\)/,
     "SH1005: narrowed in the query, so a post with more history than one screen pages correctly "
       + "rather than filtering a page of the whole trail")
 })

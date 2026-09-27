@@ -1483,32 +1483,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.21 The rest of the uncancelled reads, in slices (SH1116)
-
-SH1047 migrated the five screens its symptom named and left thirty-five in
-`fetch-cancellation.test.mjs`'s declared list. The list does its job — a thirty-sixth
-cannot arrive quietly — but the gate that records a debt is not the thing that pays it.
-
-Two shapes, and the split is what makes this schedulable. Most are one read keyed on a
-route parameter — a post editor, a folder editor, a provider form — and those are
-`useQuery` with the signal its `queryFn` is handed, which brings caching with it. Three
-are not: the content browser, the activity trail and the media library each keep a
-cursor or accumulate pages by hand, which is why SH1047 gave them an `AbortController`
-instead. Those want `useInfiniteQuery`, and moving them changes behaviour a curator can
-see — a cached trail shows rows that were true a minute ago, which has to be decided
-rather than inherited.
-
-The hazard to carry into every one of them is the one SH1047 met: **an aborted request
-rejects**, so a `catch(() => setItems([]))` turns a navigation into an empty list.
-`isCancelled` in `lib/read-options.ts` exists for that, and the trash needed it rethrown
-past a per-read fallback that was there for a different reason. A migration that forgets
-it trades a rare race for a reliable blank screen.
-
-Worth doing in slices, since each screen's failure path is its own.
-
-The assertion is the list shrinking with every slice, and the browser probe green after
-each.
-
 ### LXXII.24 The seventeen the console lint still holds (SH1136)
 
 SH1075 found the console lint red in CI with twenty errors, fixed three, and recorded
