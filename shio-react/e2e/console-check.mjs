@@ -1424,6 +1424,20 @@ async function main() {
         failedRequests.push(`${r.status()} ${r.request().method()} ${url.replace(BASE, "").replace(API, "")}`)
       }
     })
+    /*
+     * SH1170 — a request that never connected has no response, so the listener above cannot see it,
+     * and the console message it raises carries no URL: probes failed on ERR_CONNECTION_TIMED_OUT
+     * with nothing to say which resource. `requestfailed` names it. ERR_ABORTED is skipped because
+     * the console aborts superseded and unmounted reads on purpose (SH1047, SH1116).
+     */
+    page.on("requestfailed", (r) => {
+      const url = r.url()
+      const why = r.failure()?.errorText ?? "failed"
+      if (why.includes("ERR_ABORTED")) return
+      if (url.startsWith(BASE) || url.startsWith(API)) {
+        failedRequests.push(`failed ${r.method()} ${url.replace(BASE, "").replace(API, "")} (${why})`)
+      }
+    })
 
     const probe = { ...route, url: BASE + route.path }
     // SH1113 — armed before `goto`, or the document request itself is not counted.

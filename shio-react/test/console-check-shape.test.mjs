@@ -292,3 +292,13 @@ test("SH1049: the failed-read probe actually fails the reads, and only the reads
     "SH1049: the sampled routes are named, so a rename must be a skip that says so rather than a"
       + " loop over an empty list reporting success — the report-zero shape again.")
 })
+
+test("SH1170: a request that never connected is named, and a cancelled read is not a failure", () => {
+  // A timed-out connection has no response, so only `requestfailed` can name its URL; the console
+  // aborts superseded reads on purpose (SH1047), so ERR_ABORTED must stay out of the failures.
+  assert.match(source, /page\.on\("requestfailed"/,
+    "SH1170: the check no longer listens for failed requests, so a probe can fail on"
+      + " ERR_CONNECTION_TIMED_OUT with no URL in the report")
+  assert.match(source, /ERR_ABORTED"\)\) return/,
+    "SH1170: aborted reads are counted as failures, which turns the console's cancellation into reds")
+})

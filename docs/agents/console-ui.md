@@ -1416,6 +1416,16 @@ SH936 was for still holds and is asserted in `agent-runs.test.mjs`: an agent tha
 told to the curator, and the pending count is still read once at load, so a curator who arrives
 after a run hears about it. See "Agent runs report in the dock" below.
 
+## A request that never connected is named (SH1170)
+
+`console-check.mjs` recorded failing requests only from `response` events of 400 or more. A connection
+that timed out has no response, and the console message it raises carries no URL. Over three runs,
+two to five probes failed on `net::ERR_CONNECTION_TIMED_OUT`, on different routes each time, and
+nothing said which resource. The check now also listens for `requestfailed` and records
+`failed <METHOD> <path> (<errorText>)` in the probe's `failedRequests`. `net::ERR_ABORTED` is
+skipped because the console aborts superseded and unmounted reads on purpose (SH1047, SH1116). Across
+72 probes the listener added no false failures. `console-check-shape.test.mjs` holds both halves.
+
 ## The check was walking another product's console (SH927, probe half)
 
 SH927 was filed about redness: the GraphQL explorer's Monaco workers fall back to the main thread
