@@ -40,7 +40,7 @@
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
-- 📋 **SH1175** (deps: —) **editing a plain field's end in the Universal Editor stores &amp;nbsp; as text, escaped once more on each save** — The bridge writes a plain field with textContent but reads every field with innerHTML, so a typed trailing space arrives as markup. → §LXXIV.20
+- ⏳ **SH1175** (deps: —) **editing a plain field's end in the Universal Editor stores &amp;nbsp; as text, escaped once more on each save** — A section's fields carry no declared widget, since compose knows only the page type, so the bridge edits them as rich and a hero heading gains an entity per save. → §LXXIV.20
 
 ## Priority
 
@@ -69,6 +69,13 @@
 - **roadkeep lint exits clean here with no baseline** After re-vendoring a roadkeep that
   skips code.renamed for a vendored engine, `lint` with no --baseline reports no finding
   in Shio's three docs.
+
+## Done when — SH1175
+
+- **A section's Text field survives two editor saves with no entity** On a clean
+  instance provisioned with marketing-site, run console:check against the jar twice: the
+  home hero's stored title is "Acme " with one ordinary space, and the served heading
+  carries data-shio-prop-type.
 
 ## Non-goals (do NOT add as tasks)
 

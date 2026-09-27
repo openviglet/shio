@@ -497,6 +497,34 @@ const TYPED_PAGE = `
   </div>
 `;
 
+test("SH1175: a plain field reports text, so a trailing space is a space and not an entity", async () => {
+  const { window, document, posted } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+  const title = document.querySelector('[data-shio-prop="TITLE"]');
+
+  // What a browser leaves behind when a curator types a space at the end of a contenteditable:
+  // U+00A0, which `innerHTML` serialises as `&nbsp;`. Read that way, the server stored the entity
+  // as text, the template escaped it, and every save added one more — measured on a live instance
+  // as `Acme&amp;amp;amp;nbsp;&amp;amp;nbsp;&amp;nbsp;&nbsp;` after four.
+  title.focus?.()
+  title.dispatchEvent(new window.Event("focus"))
+  title.textContent = "Hello "
+  title.dispatchEvent(new window.Event("input", { bubbles: true }))
+
+  const change = messagesOfType(posted, "sh:content-changed").at(-1)
+  assert.equal(change.value, "Hello ", "SH1175: a plain field's value is its text, with the space back")
+  assert.doesNotMatch(change.value, /&/u, "SH1175: no entity reaches the server from a plain field")
+  assert.equal(change.was, "Hello", "SH1175: and its baseline is read the same way")
+})
+
+test("SH1175: a rich field still reports its markup", async () => {
+  const { window, document, posted } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
+  const body = document.querySelector('[data-shio-prop="BODY"]');
+  body.innerHTML = "<b>Body</b>"
+  body.dispatchEvent(new window.Event("input", { bubbles: true }))
+  assert.equal(messagesOfType(posted, "sh:content-changed").at(-1).value, "<b>Body</b>",
+    "SH1175: an HTML Editor field holds markup, so it is read as markup")
+})
+
 test("SH1037: a Text field is plaintext-only, so a paste cannot put markup in it", async () => {
   const { document } = await pageWithBridge(TYPED_PAGE, { bodyAttrs: BODY_ATTRS });
   const title = document.querySelector('[data-shio-prop="TITLE"]');

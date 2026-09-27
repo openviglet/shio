@@ -479,6 +479,14 @@ renderer over one body of content at a second address. See the section on it bel
   `editor=true`. A reference inside this page's own prefix is now kept as it is and gets the carried
   parameters. Another site's `/preview/…` is still left alone. `ShSiteFrontEndTest` had pinned
   `/preview/My+Site`, the 404 itself. It now pins `%20`.
+- **A plain field is read the way it is written (SH1175, bridge half)**: `shio-editor.js` wrote a
+  `plain` field with `textContent` and read every field with `innerHTML`, so a typed trailing space
+  arrived as `&nbsp;`. The server stored it as text, the template escaped it, and each save added
+  one more entity. `valueOf(el)` is now the one read: text for a `plain` field, with U+00A0 given
+  back as a space, and markup otherwise. **What it does not reach yet:** a section's fields.
+  `compose` declares widgets only from the page type's `propTypes`, so every `sh-field` inside a
+  section post has no `data-shio-prop-type`, and the bridge edits it as rich. Measured on
+  `marketing-site`, the hero heading still gains an entity per save, and that is the open half.
 - **A field says what KIND it is, and the browser offers only that (SH1037)** — edit mode was granted
   by the presence of `data-shio-prop` alone, so every annotated element became `contenteditable` and
   reported `innerHTML`. A plain `Text` field therefore absorbed the markup of a paste, stored it, and

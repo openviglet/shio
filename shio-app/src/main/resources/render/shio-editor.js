@@ -366,6 +366,22 @@
   }
 
   /**
+   * SH1175 — what a field holds, read the way `setField` writes it.
+   *
+   * A plain field is written with `textContent` (SH1037) and was read with `innerHTML`, so it
+   * reported markup: a browser serialises a trailing space in a contenteditable as `&nbsp;`, the
+   * server stored that as text, the template escaped it, and the next read returned
+   * `&amp;nbsp;` — one more entity on every save. U+00A0 is the browser's stand-in for the space
+   * the curator typed, so a plain field gives it back as one.
+   */
+  function valueOf(el) {
+    if (el.getAttribute("data-shio-affordance") === "plain") {
+      return (el.textContent || "").replace(/ /g, " ");
+    }
+    return el.innerHTML;
+  }
+
+  /**
    * Every editable field of the same post, so the properties panel can show the whole set
    * rather than only the one that was clicked. Cheap here and a round trip otherwise.
    */
@@ -376,7 +392,7 @@
       if (ownerOf(el) !== postId) return;
       var prop = el.getAttribute("data-shio-prop");
       if (prop) {
-        out.push({ prop: prop, type: "text", label: labelOf(prop), value: el.innerHTML });
+        out.push({ prop: prop, type: "text", label: labelOf(prop), value: valueOf(el) });
       }
       // SH503 — and the fields this element draws into its attributes, in declaration order. The
       // attribute name travels with the field because the panel is the only place one of these can
@@ -441,12 +457,12 @@
    * page was serving.
    */
   function baselineOf(el) {
-    return el.shioWas === undefined ? el.innerHTML : el.shioWas;
+    return el.shioWas === undefined ? valueOf(el) : el.shioWas;
   }
 
   function onFieldFocus(event) {
     var el = event.currentTarget;
-    if (el.getAttribute("data-shio-prop")) el.shioWas = el.innerHTML;
+    if (el.getAttribute("data-shio-prop")) el.shioWas = valueOf(el);
   }
 
   function onFieldInput(event) {
@@ -463,7 +479,7 @@
       postId: postId,
       prop: el.getAttribute("data-shio-prop"),
       type: "text",
-      value: el.innerHTML,
+      value: valueOf(el),
       // SH1041 — what to put back. It travels on every message and the console keeps the first,
       // which is what makes an undo mean "before I started" rather than "before the last keystroke".
       was: baselineOf(el),
