@@ -14,11 +14,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Function;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.DataNode;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
 /**
@@ -339,6 +342,22 @@ public class ShRegionComposer {
     public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions,
                           String pagePostId, String pageType, Set<String> unpublishedSlots,
                           String missingTheme, Map<String, String> propTypes) {
+        return compose(layoutHtml, regions, pagePostId, pageType, unpublishedSlots, missingTheme,
+                propTypes, ids -> Map.of());
+    }
+
+    /**
+     * @param ownerWidgets SH1175 — asked once, with every post id that owns a field and is not the
+     *                     page, for each one's field-to-widget map. A section is a post of its own
+     *                     type, so without this every field inside one was undeclared, the bridge
+     *                     edited it as rich HTML, and a typed trailing space was stored as an
+     *                     {@code &nbsp;} that the next save escaped again. One call for the whole
+     *                     page rather than one per section, so a page of ten sections is one query
+     */
+    public String compose(String layoutHtml, Map<String, ShRenderedRegion> regions,
+                          String pagePostId, String pageType, Set<String> unpublishedSlots,
+                          String missingTheme, Map<String, String> propTypes,
+                          Function<Set<String>, Map<String, Map<String, String>>> ownerWidgets) {
         if (layoutHtml == null || layoutHtml.isBlank()) {
             return "";
         }
@@ -364,7 +383,7 @@ public class ShRegionComposer {
             slot.html(region.html() == null ? "" : region.html());
             filled.add(name);
         }
-        annotateEditable(document, pagePostId, pageType, propTypes);
+        annotateEditable(document, pagePostId, pageType, propTypes, ownerWidgets);
         annotateSections(document);
         markMissingTheme(document, missingTheme);
         appendRegionScripts(document, regions, filled);
@@ -428,7 +447,8 @@ public class ShRegionComposer {
      * here.</p>
      */
     private void annotateEditable(Document document, String pagePostId, String pageType,
-            Map<String, String> propTypes) {
+            Map<String, String> propTypes,
+            Function<Set<String>, Map<String, Map<String, String>>> ownerWidgets) {
         if (pagePostId != null && !pagePostId.isBlank()) {
             document.body().attr(ANNOTATION_FIELD_POST, pagePostId);
             if (pageType != null && !pageType.isBlank()) {
@@ -441,13 +461,15 @@ public class ShRegionComposer {
                 owner.attr(ANNOTATION_FIELD_POST, postId);
             }
         }
-        for (Element field : document.select("[" + FIELD_ATTR + "]")) {
+        Elements fields = document.select("[" + FIELD_ATTR + "]");
+        Map<String, Map<String, String>> ownerTypes = ownerWidgetsOf(fields, pagePostId, ownerWidgets);
+        for (Element field : fields) {
             String prop = field.attr(FIELD_ATTR).trim();
             if (prop.isEmpty()) {
                 continue;
             }
             field.attr(ANNOTATION_PROP, prop);
-            String widget = widgetOf(field, prop, propTypes);
+            String widget = widgetOf(field, prop, propTypes, ownerTypes);
             if (widget != null) {
                 field.attr(ANNOTATION_PROP_TYPE, widget);
             }
@@ -478,12 +500,45 @@ public class ShRegionComposer {
      * <p>A collection leaf ({@code COLL.N.LEAF}, SH475) is not in the map either and falls through
      * the same way.</p>
      */
-    private static String widgetOf(Element field, String prop, Map<String, String> propTypes) {
-        if (propTypes == null || propTypes.isEmpty()) {
+    private static String widgetOf(Element field, String prop, Map<String, String> propTypes,
+                                   Map<String, Map<String, String>> ownerTypes) {
+        Element owner = field.closest("[" + ANNOTATION_FIELD_POST + "]");
+        if (owner == null) {
             return null;
         }
+        if ("body".equals(owner.tagName())) {
+            return propTypes == null ? null : propTypes.get(prop);
+        }
+        // SH1175 — a section, or any other post named by `sh-post`: its own type's widgets, when the
+        // resolver knew the post. A listing row the resolver could not type stays undeclared.
+        Map<String, String> widgets = ownerTypes.get(owner.attr(ANNOTATION_FIELD_POST));
+        return widgets == null ? null : widgets.get(prop);
+    }
+
+    /**
+     * SH1175 — every post other than the page that owns a field, asked about in one call, sorted so
+     * the call is the same for the same page (P5). No call at all when the page owns every field.
+     */
+    private static Map<String, Map<String, String>> ownerWidgetsOf(Elements fields, String pagePostId,
+            Function<Set<String>, Map<String, Map<String, String>>> ownerWidgets) {
+        Set<String> owners = new TreeSet<>();
+        for (Element field : fields) {
+            String owner = ownerIdOf(field);
+            if (owner != null && !owner.isBlank() && !owner.equals(pagePostId)) {
+                owners.add(owner);
+            }
+        }
+        if (owners.isEmpty() || ownerWidgets == null) {
+            return Map.of();
+        }
+        Map<String, Map<String, String>> answer = ownerWidgets.apply(owners);
+        return answer == null ? Map.of() : answer;
+    }
+
+    /** The post a field belongs to: its nearest declared owner, or {@code null} for none. */
+    private static String ownerIdOf(Element field) {
         Element owner = field.closest("[" + ANNOTATION_FIELD_POST + "]");
-        return owner != null && "body".equals(owner.tagName()) ? propTypes.get(prop) : null;
+        return owner == null ? null : owner.attr(ANNOTATION_FIELD_POST);
     }
 
     /**

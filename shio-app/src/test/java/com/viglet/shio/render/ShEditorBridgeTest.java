@@ -207,6 +207,45 @@ class ShEditorBridgeTest {
     }
 
     @Test
+    @DisplayName("SH1175: a section's field carries the widget of the section's own type")
+    void aSectionsFieldIsDeclaredFromItsOwnType() {
+        java.util.List<java.util.Set<String>> asked = new java.util.ArrayList<>();
+        String html = composer.compose(
+                "<body><h1 sh-field=\"TITLE\">Page</h1>"
+                        + "<section sh-post=\"hero-1\"><h1 sh-field=\"heading\">Acme</h1>"
+                        + "<div sh-field=\"body\">b</div></section>"
+                        + "<section sh-post=\"cta-2\"><a sh-field=\"ctaLabel\">Go</a></section></body>",
+                Map.of(), "page-1", "Page", java.util.Set.of(), null, Map.of("TITLE", "Text"),
+                ids -> {
+                    asked.add(ids);
+                    return Map.of("hero-1", Map.of("heading", "Text", "body", "HTML Editor"));
+                });
+
+        // Undeclared, the bridge edited a section's Text heading as rich HTML, and a typed trailing
+        // space was stored as `&nbsp;` and escaped again on every save — measured on marketing-site.
+        assertThat(html)
+                .contains("sh-field=\"heading\" data-shio-prop=\"heading\" data-shio-prop-type=\"Text\"")
+                .contains("data-shio-prop=\"body\" data-shio-prop-type=\"HTML Editor\"")
+                .contains("data-shio-prop=\"TITLE\" data-shio-prop-type=\"Text\"");
+        assertThat(html).as("a post the resolver did not type stays undeclared, as a row always did")
+                .doesNotContain("data-shio-prop=\"ctaLabel\" data-shio-prop-type");
+        assertThat(asked).as("one call for the whole page, with every non-page owner, sorted")
+                .containsExactly(new java.util.TreeSet<>(java.util.Set.of("cta-2", "hero-1")));
+    }
+
+    @Test
+    @DisplayName("SH1175: a page that owns every field asks about no other post")
+    void aPageAloneAsksNothing() {
+        java.util.List<java.util.Set<String>> asked = new java.util.ArrayList<>();
+        composer.compose("<body><h1 sh-field=\"TITLE\">Hi</h1></body>", Map.of(), "page-1", "Page",
+                java.util.Set.of(), null, Map.of("TITLE", "Text"), ids -> {
+                    asked.add(ids);
+                    return Map.of();
+                });
+        assertThat(asked).isEmpty();
+    }
+
+    @Test
     @DisplayName("SH1037: a field the type does not declare carries no kind")
     void anUndeclaredFieldCarriesNoKind() {
         String html = composer.compose("<body><h1 sh-field=\"NOPE\">Hi</h1></body>",

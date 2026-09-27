@@ -755,6 +755,19 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<Object[]> findDistinctLocaleTypesBySiteIdIn(@Param("siteIds") Collection<String> siteIds,
                                                      @Param("state") ShPostState state);
 
+    /**
+     * SH1175 — each post's type id, for the posts a rendered page's fields belong to.
+     *
+     * <p>A section is a post of its own type, and the composer needs that type's widgets to say
+     * what kind of field each annotated element is. The id and not {@code p.shPostType.name}, for
+     * the tenant-join reason above; a post's type is the same in every state, so {@code distinct}
+     * folds its rows into one.</p>
+     *
+     * @return rows of {@code [postId, postTypeId]}
+     */
+    @Query("select distinct p.id, p.shPostType.id from ShPostUnified p where p.id in :ids")
+    List<Object[]> findPostTypeIdsByIdIn(@Param("ids") Collection<String> ids);
+
     // --- Content i18n / locales (SH53) ---
 
     /** All sibling translation rows (across states) sharing a translation group. */

@@ -483,10 +483,16 @@ renderer over one body of content at a second address. See the section on it bel
   `plain` field with `textContent` and read every field with `innerHTML`, so a typed trailing space
   arrived as `&nbsp;`. The server stored it as text, the template escaped it, and each save added
   one more entity. `valueOf(el)` is now the one read: text for a `plain` field, with U+00A0 given
-  back as a space, and markup otherwise. **What it does not reach yet:** a section's fields.
-  `compose` declares widgets only from the page type's `propTypes`, so every `sh-field` inside a
-  section post has no `data-shio-prop-type`, and the bridge edits it as rich. Measured on
-  `marketing-site`, the hero heading still gains an entity per save, and that is the open half.
+  back as a space, and markup otherwise. **And a section's fields are declared (SH1175, renderer
+  half).** `compose` declared widgets only from the page type's `propTypes`, so every `sh-field`
+  inside a section post had no `data-shio-prop-type`, and the bridge edited it as rich: the
+  `marketing-site` hero heading gained an entity on every save. `compose` now takes an
+  `ownerWidgets` resolver. It is asked once per page with every non-page owner id, sorted. The
+  service answers with two queries whatever the number of sections:
+  `ShPostUnifiedRepository.findPostTypeIdsByIdIn` (`p.shPostType.id`, never the name) and the
+  types by id. A page that owns all its fields asks nothing, and a post the query cannot type stays
+  undeclared, as a listing row always did. Measured on a clean instance: the heading reads
+  `data-shio-prop-type="Text"`, and two editor saves leave `"Acme  "`, with no entity.
 - **A field says what KIND it is, and the browser offers only that (SH1037)** — edit mode was granted
   by the presence of `data-shio-prop` alone, so every annotated element became `contenteditable` and
   reported `innerHTML`. A plain `Text` field therefore absorbed the markup of a paste, stored it, and

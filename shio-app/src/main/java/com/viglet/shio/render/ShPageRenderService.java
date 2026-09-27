@@ -514,7 +514,9 @@ public class ShPageRenderService {
                 // SH1037 — what KIND each of the page's fields is, so an annotated element can say
                 // so and the browser can offer the right affordance instead of contenteditable HTML
                 // over everything.
-                declaredWidgets(page.getShPostType()));
+                declaredWidgets(page.getShPostType()),
+                // SH1175 — and each section's, which is a post of its own type.
+                this::widgetsOfOwners);
         return new ShRenderedPage(
                 // SH185: the page's own identity goes onto <body>, so a `sh-field` in a layout
                 // needs no `sh-post` to say what it belongs to.
@@ -1189,6 +1191,39 @@ public class ShPageRenderService {
             }
         }
         return widgets;
+    }
+
+    /**
+     * SH1175 — field-to-widget maps for the posts that own a page's fields other than the page.
+     *
+     * <p>Two queries whatever the number of sections: the posts' type ids, then those types. A
+     * section's fields used to carry no declared widget, so the editor bridge treated a Text heading
+     * as rich HTML and a typed trailing space was stored as {@code &nbsp;}, escaped again on every
+     * save. A post the query does not find (a listing row from another site, a stale id) is simply
+     * absent, and its fields stay undeclared as before.</p>
+     */
+    private Map<String, Map<String, String>> widgetsOfOwners(Set<String> postIds) {
+        Map<String, String> typeOfPost = new java.util.HashMap<>();
+        for (Object[] row : shPostUnifiedRepository.findPostTypeIdsByIdIn(postIds)) {
+            if (row[0] != null && row[1] != null) {
+                typeOfPost.put(row[0].toString(), row[1].toString());
+            }
+        }
+        if (typeOfPost.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Map<String, String>> widgetsOfType = new java.util.HashMap<>();
+        for (ShPostType type : shPostTypeRepository.findAllById(new java.util.HashSet<>(typeOfPost.values()))) {
+            widgetsOfType.put(type.getId(), declaredWidgets(type));
+        }
+        Map<String, Map<String, String>> answer = new java.util.HashMap<>();
+        typeOfPost.forEach((post, type) -> {
+            Map<String, String> widgets = widgetsOfType.get(type);
+            if (widgets != null && !widgets.isEmpty()) {
+                answer.put(post, widgets);
+            }
+        });
+        return answer;
     }
 
     private List<ShPostUnified> loadPostsOfSystemType(ShSite site, String typeName,

@@ -1492,27 +1492,3 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline. Then make it a gate (SH1161's half): it drifted because nothing
 failed.
-
-### LXXIV.20 A plain field read as markup, one entity per save (SH1175)
-
-Measured against a jar with the Universal Editor drive, which types one space into the
-first editable field and publishes. After four runs, the home hero's stored title is
-`Acme&amp;amp;amp;nbsp;&amp;amp;nbsp;&amp;nbsp;&nbsp;`, and the page shows those
-entities as visible text. Every round trip escapes the previous entity once more and
-adds a new one. A curator who edits a heading's end loses it the same way, one save at a
-time.
-
-The bridge reads and writes a field asymmetrically. `shio-editor.js` writes a `plain`
-field back with `textContent` (SH1037's decision: a plain field holds text). But it
-reads every field with `innerHTML`: the fields it offers the panel, the baseline for a
-revert (SH1041), and the value sent on `sh:content-changed`. A browser serialises a
-trailing space in a contenteditable as `&nbsp;`, so a plain field reports markup. The
-server stores it as text, the template escapes it (correctly, for a text field), and the
-next read of `innerHTML` returns the escaped form.
-
-Build: one `valueOf(el)` in the bridge, used at all four reads: `textContent` for a
-`data-shio-affordance="plain"` field, with U+00A0 normalised to a space (the browser's
-stand-in for the space the curator typed), and `innerHTML` otherwise. Test it in the
-bridge's own suite with this id: a plain field with a trailing space reports text and no
-entity. Then re-run the drive twice on a clean instance: the title keeps one ordinary
-space and no entity.
