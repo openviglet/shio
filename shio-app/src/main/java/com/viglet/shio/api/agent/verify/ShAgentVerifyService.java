@@ -72,6 +72,10 @@ import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.post.revision.ShPostRevisionRepository;
+import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
+import com.viglet.shio.api.site.ShSiteLocaleService;
+import com.viglet.shio.api.site.ShSiteLocales;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.url.ShFurlSpellings;
 import com.viglet.shio.api.post.unified.ShHtmlSanitizer;
 import com.viglet.shio.widget.ShSystemWidget;
@@ -208,6 +212,11 @@ public class ShAgentVerifyService {
     /** SH1064 — where the addresses this site used to serve are still written down. */
     private final ShPostRevisionRepository shPostRevisionRepository;
 
+    /** SH1130 — the names behind the type ids a locale read selects, so templates can be left out. */
+    private final ShPostTypeRepository shPostTypeRepository;
+    /** SH1130 — a site's declared locale policy, read the one way that records an unreadable one. */
+    private final ShSiteLocaleService siteLocaleService;
+
     /**
      * SH1034 — the reverse index, which is what makes {@code asset-unused} affordable.
      *
@@ -279,8 +288,12 @@ public class ShAgentVerifyService {
                                 ShPostRevisionRepository shPostRevisionRepository,
                                 com.viglet.shio.persistence.repository.form.ShSiteFormRepository shSiteFormRepository,
                                 com.viglet.shio.api.form.ShFormDestination shFormDestination,
+                                ShPostTypeRepository shPostTypeRepository,
+                                ShSiteLocaleService siteLocaleService,
                                 PlatformTransactionManager transactionManager) {
         this.shPostRevisionRepository = shPostRevisionRepository;
+        this.shPostTypeRepository = shPostTypeRepository;
+        this.siteLocaleService = siteLocaleService;
         this.shSiteFormRepository = shSiteFormRepository;
         this.shFormDestination = shFormDestination;
         this.shTuringIndexService = shTuringIndexService;
@@ -849,6 +862,117 @@ public class ShAgentVerifyService {
         siteScripts(check, scan, findings);
         vocabularyDrift(check, scan, findings);
         unusedAssets(check, scan, findings);
+        siteLocales(check, scan, findings);
+    }
+
+    /**
+     * The post types whose rows are not content anybody writes in a language (SH1130).
+     *
+     * <p>Every row gets a locale on write, so a layout, a theme, an uploaded file and a redirect each
+     * carry {@code en} whatever the site is in. Counting them would tell a site declaring only
+     * {@code pt-br} that its templates are undeclared content, and would let a site's English
+     * layouts stand in for the English pages it never wrote.</p>
+     */
+    private static final Set<String> NOT_WRITTEN_IN_A_LANGUAGE = Set.of(
+            ShSystemPostType.REGION, ShSystemPostType.THEME, ShSystemPostType.PAGE_LAYOUT,
+            ShSystemPostType.SITE_SCRIPTS, ShSystemPostType.FILE, ShSystemPostType.REDIRECT);
+
+    /**
+     * SH1130 — a language a site promises and never wrote, and the mirror of it.
+     *
+     * <h2>Why the route cannot say it</h2>
+     *
+     * <p>Since SH1057 a locale segment selects the translation and a missing one falls back along
+     * the site's chain. That is the right behaviour and it is what hides this: a site declaring
+     * {@code ["pt-br","en"]} with nothing written in {@code pt-br} answers every {@code /pt-br/} URL
+     * with the English page and a 200. The switcher offers it, SH459's route check accepts it, and
+     * the reader gets English under a Portuguese address.</p>
+     *
+     * <h2>Two findings, both warnings</h2>
+     *
+     * <p>{@code locale-declared-unwritten}: a declared locale no published content is written in.
+     * {@code locale-undeclared-content}: published content in a locale the policy does not enable,
+     * which no switcher links to and no locale segment reaches. Warnings, because either can be the
+     * middle of somebody's work — a language announced ahead of its pages — and SH99's line is that
+     * {@code ok} goes false only for what is provably wrong.</p>
+     *
+     * <p>Silent on an undeclared site, whose languages are by definition the ones its content is in.
+     * Published rows only, because the reader of a {@code /pt-br/} URL is served published content.
+     * One query for every declared site in the run, addressed to {@code site:<name>} like the other
+     * site-level rules: detection is the whole site's, whatever the scope's subjects are.</p>
+     */
+    private void siteLocales(String check, Scan scan, List<Finding> findings) {
+        Map<String, ShSiteLocales> declared = new LinkedHashMap<>();
+        for (ShSite site : scan.siteById().values()) {
+            // `declared` costs no query and records an incident for a policy that will not parse,
+            // which is then not a declaration to hold content against.
+            siteLocaleService.declared(site).ifPresent(policy -> declared.put(site.getId(), policy));
+        }
+        if (declared.isEmpty()) {
+            return;
+        }
+        Map<String, Map<String, Set<String>>> typesByLocale = new HashMap<>();
+        Set<String> typeIds = new HashSet<>();
+        for (Object[] row : shPostUnifiedRepository.findDistinctLocaleTypesBySiteIdIn(
+                declared.keySet(), ShPostState.PUBLISHED)) {
+            String locale = isBlank((String) row[1])
+                    ? ShPostUnifiedWriteService.DEFAULT_LOCALE : ((String) row[1]).trim();
+            String typeId = (String) row[2];
+            typesByLocale.computeIfAbsent((String) row[0], id -> new java.util.TreeMap<>())
+                    .computeIfAbsent(locale, key -> new HashSet<>()).add(typeId);
+            if (typeId != null) {
+                typeIds.add(typeId);
+            }
+        }
+        Set<String> notContent = new HashSet<>();
+        for (ShPostType type : shPostTypeRepository.findAllById(typeIds)) {
+            if (NOT_WRITTEN_IN_A_LANGUAGE.contains(type.getName())) {
+                notContent.add(type.getId());
+            }
+        }
+        for (Map.Entry<String, ShSiteLocales> entry : declared.entrySet()) {
+            ShSite site = scan.siteById().get(entry.getKey());
+            ShSiteLocales policy = entry.getValue();
+            Set<String> written = new java.util.TreeSet<>();
+            typesByLocale.getOrDefault(entry.getKey(), Map.of()).forEach((locale, types) -> {
+                if (types.stream().anyMatch(type -> type != null && !notContent.contains(type))) {
+                    written.add(locale);
+                }
+            });
+            String address = "site:" + site.getName();
+            for (String locale : policy.enabled()) {
+                if (written.contains(locale)) {
+                    continue;
+                }
+                // What a reader of that locale is actually handed: the first language along the
+                // chain that has anything published, which is exactly what the route serves.
+                String served = policy.chain(locale).stream()
+                        .filter(written::contains).findFirst().orElse(null);
+                findings.add(Finding.warning(check, "locale-declared-unwritten", address, null,
+                        "'" + site.getName() + "' declares '" + locale + "' and has published nothing "
+                                + "written in it, so every /" + locale + "/ URL falls back along the "
+                                + "site's chain"
+                                + (served == null ? " and finds nothing published at all."
+                                        : " and serves the " + served + " page under a " + locale
+                                                + " address.")
+                                + " A language switcher offers it all the same.",
+                        "Publish the " + locale + " translations (post.upsert with \"locale\":\""
+                                + locale + "\", then post.publish), or drop '" + locale + "' from the "
+                                + "site's locales.enabled with site.upsert until they exist."));
+            }
+            for (String locale : written) {
+                if (policy.offers(locale)) {
+                    continue;
+                }
+                findings.add(Finding.warning(check, "locale-undeclared-content", address, null,
+                        "'" + site.getName() + "' has published content written in '" + locale
+                                + "', which its locale policy does not enable ("
+                                + String.join(", ", policy.enabled()) + "). No switcher links to it "
+                                + "and no locale segment reaches it.",
+                        "Add '" + locale + "' to the site's locales.enabled with site.upsert, or move "
+                                + "that content to a language the site offers."));
+            }
+        }
     }
 
     /**

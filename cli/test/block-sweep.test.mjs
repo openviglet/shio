@@ -81,6 +81,16 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  BH: {
+    swept: true,
+    why: "content i18n as a decision rather than a description: a declared locale policy, the locale "
+      + "segment selecting the translation along its fallback chain, locale on every CDA and GraphQL "
+      + "read, staleness marks, the coverage board and workspace, the default-language chip, and "
+      + "SH1130's verify warnings for a language promised and never written. docs-shio moved: "
+      + "content-i18n gained the verify section and COVERAGE's content i18n row names every id, with "
+      + "the mirror regenerated; the curator hub already routes to that page. README and shio-site are "
+      + "NOT moved: neither makes a claim about languages, so no outward sentence became untrue",
+  },
   BF: {
     swept: true,
     why: "the visual editor as a composer: an independent Duplicate, rail thumbnails and a drop caret, "

@@ -45,10 +45,6 @@
 - 📋 **SH1140** (deps: —) **SH1047's fetch guard cannot see a service built and called in one expression, so login-form's mount read escapes it** — Its FETCHES pattern needs a dot right after the class name, and new ShSetupService().status() puts () between them. → §LXXII.26
 - 📋 **SH1161** (deps: —) **roadkeep lint reports six ledger entries citing symbols nothing defines any more** — SH4, SH102, SH185, SH234, SH350 and one unnumbered entry name schema.graphqls, document.fonts and document.referrer, so a reader greps and finds nothing. → §LXXII.27
 
-## Block BH — One content model, many languages
-
-- 📋 **SH1130** (deps: SH1057 ✅) **nothing flags a declared locale no page is written in, so every URL in it quietly serves another language** — The route accepts a declared locale and falls back along the chain, so a locale the site promises and never wrote looks served while showing none of it. → §LXXIII.10
-
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8

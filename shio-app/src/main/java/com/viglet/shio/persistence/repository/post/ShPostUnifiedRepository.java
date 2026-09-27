@@ -736,6 +736,25 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<Object[]> findDistinctLocalesBySiteIdInAndStateIn(@Param("siteIds") Collection<String> siteIds,
                                                            @Param("states") Collection<ShPostState> states);
 
+    /**
+     * SH1130 — which languages each site has actually published, and in which post types.
+     *
+     * <p>The type is carried because the answer is about <em>content</em>: every row gets a locale
+     * on write, templates and assets included, so a site that declares only {@code pt-br} would
+     * otherwise be told its layouts are written in {@code en}. The caller drops the system types by
+     * name; the id is selected rather than {@code p.shPostType.name}, because navigating past
+     * {@code .id} to an {@code ShObject} subclass emits the tenant predicate against an alias with
+     * no such column. {@code locale} may be null on a row written before the column existed, and
+     * the caller reads that as the writer's default (SH383), as every other reader does.</p>
+     *
+     * @return rows of {@code [siteId, locale, postTypeId]}, ordered
+     */
+    @Query("select distinct p.shSite.id, p.locale, p.shPostType.id from ShPostUnified p "
+            + "where p.shSite.id in :siteIds and p.state = :state and p.deletedDate is null "
+            + "order by p.shSite.id, p.locale, p.shPostType.id")
+    List<Object[]> findDistinctLocaleTypesBySiteIdIn(@Param("siteIds") Collection<String> siteIds,
+                                                     @Param("state") ShPostState state);
+
     // --- Content i18n / locales (SH53) ---
 
     /** All sibling translation rows (across states) sharing a translation group. */

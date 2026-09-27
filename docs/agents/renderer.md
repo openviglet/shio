@@ -744,6 +744,22 @@ renderer over one body of content at a second address. See the section on it bel
   form carries no locale and is left alone, as is a site whose declared default is `en-us` itself.
   The tag rides out on `ShRenderedPage.siteLocale` because the render already holds the site, so it
   costs no query — only the render before the 302, once per reader on a legacy URL.
+- **What the fallback hides, verify says (SH1130)** — the chain above means a declared locale with
+  nothing written in it answers every URL in it with 200 and another language's page, so no route
+  check can see it. `verify`'s `content` group reports it as `locale-declared-unwritten` against
+  `site:<name>`, naming the language the chain actually serves, and the mirror as
+  `locale-undeclared-content`: published content in a locale the policy does not enable, which no
+  switcher links to. Both are warnings, published rows only, silent on an undeclared site, and one
+  query (`findDistinctLocaleTypesBySiteIdIn`) for every declared site in the run. The policy is read
+  through `ShSiteLocaleService.declared`, which records an unreadable one as an incident, rather than
+  parsed here behind a `catch` that `ShSilentCatchInventoryTest` would rightly count. **Templates and
+  assets are left out by type** (`Region`, `Theme`, `PageLayout`, `SiteScripts`, `File`, `Redirect`),
+  because every row gets `en` on write: without that, a site declaring only `pt-br` would be told its
+  layouts are undeclared English, and English layouts would count as the English pages nobody wrote.
+  The type is resolved by id in the service, never by `p.shPostType.name` in the JPQL (the
+  `@TenantId` join rule). Not `isPage`: a headless site binds no layouts, and its content still has
+  a language. `ShVerifySiteLocalesTest` holds both findings, the draft and template exclusions and
+  the undeclared site's silence.
 - **A `File` post is reachable at the path its source used, and `src` joins the rewrite (SH437)** —
   a static file's bytes are public at `/file_source/<postId>/<fileName>` (SH38), keyed by an id no
   source ever chose, so a fidelity replica's `<img src="/img/hero.png">` was as broken with the bytes
