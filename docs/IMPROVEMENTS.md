@@ -1206,30 +1206,6 @@ endpoint with the new instant, which records the dropper as the requester SH991 
 The zone line stays above every view. A test drives a drop and reads the change back
 through the agent's scheduled listing.
 
-### LXVI.15 A schedule that fires past the gate (SH1138)
-
-SH1084's lint lists every method that publishes and whether it evaluates the site's
-publish gates. The SH15 sweep sits outside its pattern and does not evaluate one.
-`ShPostScheduler` fires a due post through `publishScheduled`, and a due release through
-`ShReleaseRunner.run`. Nothing on either path calls `ShPublishGateService`. So a page
-scheduled for Monday goes live on Monday whatever a gate declared since, and whatever
-the draft became after it was scheduled.
-
-Check first what the schedule call itself evaluates. If `post.publish` with `when` gates
-at scheduling time, the hole is only content that changed afterwards. If it does not,
-the hole is every scheduled publish. Either way, evaluating the gate when the schedule
-is set is not enough, because the draft can change until the moment it fires.
-
-The fix evaluates the gate at fire time. A thread with no request cannot answer a 409,
-so a stopped publish becomes a durable incident on the change feed, as SH969 made a
-failed scheduled publish one, with the gate's title and a retry. The schedule stays, so
-a curator can fix the page or waive with SH998's reason, and the release runner reports
-the stopped page rather than aborting the release.
-
-The assertion carries the id: a post scheduled past a failing gate is still a draft
-after the sweep, and the feed carries an incident naming the gate. Then SH1084's lint
-widens its pattern to `publishScheduled` and drops the `ShReleaseRunner#run` exemption.
-
 ## LXVII The curator's return channel, and the conversation with the agent (Block BB)
 
 Shio's thesis is that an agent builds and a curator approves. Today that is a one-way

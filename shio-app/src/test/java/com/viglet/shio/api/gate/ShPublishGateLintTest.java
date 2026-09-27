@@ -47,11 +47,31 @@ class ShPublishGateLintTest {
 
     private static final Path MAIN = Path.of("src/main/java/com/viglet/shio");
 
-    /** What a publish looks like: the writer's promotion of a draft. */
-    private static final Pattern PUBLISHES = Pattern.compile("shPostUnifiedWriteService\\.publish\\(");
+    /**
+     * What a publish looks like: the writer's promotion of a draft, or one of the two calls that
+     * publish by proxy (SH1138). The sweep reached the writer through {@code publishScheduled} and the
+     * release runner, and a pattern that saw only the writer's own name read the timer as a method
+     * that published nothing.
+     */
+    private static final Pattern PUBLISHES = Pattern.compile(
+            "shPostUnifiedWriteService\\.publish\\(|writeService\\.publishScheduled\\(|shReleaseRunner\\.run\\(");
 
     /** What evaluating the gate looks like: {@code requirePost} or {@code require} on the service. */
     private static final String ASKS = "shPublishGateService.require";
+
+    /**
+     * SH1138 — the one other way a method may ask, and only where it is declared: the sweep's dry run.
+     *
+     * <p>{@code require} throws a 409 nobody is waiting for and dispatches the GATE_FAILED webhook,
+     * and a stopped schedule is asked again every minute. So the sweep evaluates without side effects
+     * ({@code stoppedBy}, over {@code evaluatePost}) and records an incident instead. Accepting the dry
+     * run everywhere would let a method evaluate the gate and ignore the answer; accepting it for the
+     * methods listed here, with the reason, keeps that a decision.</p>
+     */
+    private static final String ASKS_BY_DRY_RUN = "stoppedBy(";
+    private static final Map<String, String> DRY_RUN = Map.of(
+            "ShPostScheduler#sweepCurrentTenant", "a timer: nobody receives the 409, the schedule is "
+                    + "retried every sweep, and the incident on the change feed is the record");
 
     /**
      * Methods that publish without evaluating a gate, keyed {@code Class#method}, each with its reason.
@@ -64,8 +84,9 @@ class ShPublishGateLintTest {
     static {
         EXEMPT.put("ShAgentBatchService#postRedirect", "a redirect post carries no content a gate "
                 + "judges; SH1064 writes it beside a publish that was itself gated");
-        EXEMPT.put("ShReleaseRunner#run", "the release op evaluates the gate for every publish in the "
-                + "plan before calling in; the scheduled sweep calling it ungated is SH1138");
+        EXEMPT.put("ShReleaseRunner#run", "both of its callers evaluate the gate for every publish in "
+                + "the plan before calling in — the release op with require, the sweep with its dry run "
+                + "(SH1138) — and both are held by this test, since the pattern matches the call");
         EXEMPT.put("ShReleaseRunner#rollback", "puts back what was live before the release, which is "
                 + "content that already went through a publish");
         EXEMPT.put("ShReviewService#revertOne", "a revert restores the version that was live before "
@@ -84,7 +105,8 @@ class ShPublishGateLintTest {
             for (String method : methodsThatPublish(code)) {
                 String key = file + "#" + signatureOf(method);
                 found.add(key);
-                if (EXEMPT.containsKey(key) || method.contains(ASKS)) {
+                if (EXEMPT.containsKey(key) || method.contains(ASKS)
+                        || (DRY_RUN.containsKey(key) && method.contains(ASKS_BY_DRY_RUN))) {
                     continue;
                 }
                 ungated.add(key);
@@ -100,7 +122,12 @@ class ShPublishGateLintTest {
         assertThat(found)
                 .as("SH1084: an exemption naming a method that no longer publishes is a list nobody "
                         + "reads; delete it")
-                .containsAll(EXEMPT.keySet());
+                .containsAll(EXEMPT.keySet())
+                .containsAll(DRY_RUN.keySet());
+        assertThat(found)
+                .as("SH1138: the sweep fires scheduled publishes and releases, so the widened pattern "
+                        + "has to find it — otherwise the timer reads as a method that publishes nothing")
+                .contains("ShPostScheduler#sweepCurrentTenant", "ShAgentBatchService#releaseRun");
         assertThat(ungated)
                 .as("""
                         SH1084: a method publishes without evaluating the site's publish gates. \

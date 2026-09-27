@@ -3437,9 +3437,31 @@ population on every run (ten when it landed). It found three doors the gate skip
   `override`.
 
 Exempt, each with its reason in the map: the redirect write, the release rollback, a review revert,
-and `ShReleaseRunner#run`, which the release op gates before calling. Neither the scheduled sweep
-nor its release run evaluates a gate. The lint's pattern does not reach the sweep yet, and SH1138 is
-that task.
+and `ShReleaseRunner#run`, which both of its callers gate before calling.
+
+### The sweep asks at fire time (SH1138)
+
+The SH15 sweep published through `publishScheduled` and the release runner and asked no gate — and
+**scheduling asks none either** (`post.publish` with `when`, `release.run` with `when`), so this was
+every scheduled launch, not only drafts edited after they were scheduled. `ShPostScheduler` now asks
+before each fire, which is the only moment that is right: a gate declared since, and a draft edited
+since, are both what the curator would have met on the button.
+
+**A dry run, not `require`.** `requirePost` throws a 409 nobody is waiting for and dispatches the
+GATE_FAILED webhook, and a stopped schedule stays due, so it is asked again every sweep — once a
+minute, to every subscriber. The sweep uses `evaluatePost` and records the stop as a `schedule`
+incident instead, which folds on repeat (one row seen again, not five hundred). Its message starts
+with `scheduled publish failed: ` so SH969's retry (a `post.publish`, itself gated) is offered, and it
+names the gate and its first blocking detail. A due **release** asks for every page its plan puts
+live and stops whole on the first refusal: partial release is the state a release exists to make
+unreachable, so the design's "report the stopped page and go on" was declined; the release stays
+`SCHEDULED` and its incident names the page. No waiver is offered at fire time, because there is
+nobody to give the reason; the incident's fix names `?override=`.
+
+The lint's pattern now matches the two calls that publish by proxy — `writeService.publishScheduled(`
+and `shReleaseRunner.run(` — so the sweep and the release op are both found, and the sweep's dry run is
+accepted only because `ShPostScheduler#sweepCurrentTenant` is declared in `DRY_RUN` with its reason.
+`ShScheduledGateTest` holds the stopped post, the passing post and the stopped release.
 
 ## Waiving a gate, and the two events an orchestrator needs (SH998)
 

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import com.viglet.shio.api.agent.ShAgentBatchService;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentFrames;
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
+import com.viglet.shio.api.gate.ShPublishGateService;
 import com.viglet.shio.api.release.ShReleaseRunner;
 import com.viglet.shio.api.release.ShReleaseService;
 import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
@@ -64,6 +65,17 @@ public class ShPostScheduler {
                     + "publish or unpublish it explicitly, then re-schedule if the timing still "
                     + "matters.";
 
+    /** SH1138 — what a curator does about a scheduled publish a gate stopped. */
+    private static final String GATE_FIX =
+            "The page is still a draft and its schedule stands, so the next sweep asks the gate again. "
+                    + "Fix what the gate names and it goes live then, or publish it now past the gate "
+                    + "with a reason (POST /api/v2/post-unified/<id>/publish?override=<reason>).";
+
+    /** SH1138 — the same for a release, which runs whole or not at all. */
+    private static final String RELEASE_GATE_FIX =
+            "The release is still SCHEDULED, so the next sweep asks the gates again. Fix the page the "
+                    + "gate names; the release goes live whole once every page it holds passes.";
+
     /** SH993 — the actor a release the sweep fires is recorded as, beside SH15's per-post one. */
     private static final String SCHEDULER = "scheduler";
 
@@ -74,6 +86,8 @@ public class ShPostScheduler {
     private final ShAgentIncidentLog incidentLog;
     private final ShTenantRepository shTenantRepository;
     private final ShAppProperties shAppProperties;
+    /** SH1138 — the site's publish gates, asked at fire time. */
+    private final ShPublishGateService shPublishGateService;
 
     /**
      * The batch op that attempts a failed transition again, read from its incident's message, or
@@ -93,13 +107,27 @@ public class ShPostScheduler {
         return message.startsWith(UNPUBLISH_FAILED) ? ShAgentBatchService.POST_UNPUBLISH : null;
     }
 
+    /**
+     * SH1138 — a launch a publish gate stopped, recorded where SH969 records a failed one.
+     *
+     * <p>No frame, and deliberately: nothing threw. The gate answered, the sweep chose not to go on,
+     * and the gate's own name and detail in the message are the location a reader needs. Kept apart
+     * from the sweep's {@code catch} blocks so SH269's lint, which asks every recorder near a catch to
+     * pass the throwable it holds, is not asked about a branch that holds none.</p>
+     */
+    private void recordGateStop(String subject, String message, String fix, String siteId) {
+        incidentLog.record(ShAgentIncidentLog.Kind.SCHEDULE, subject, message, fix, null, siteId);
+    }
+
     public ShPostScheduler(ShPostUnifiedWriteService writeService,
                            ShReleaseService shReleaseService,
                            ShReleaseRunner shReleaseRunner,
                            ShScheduleProperties properties,
                            ShAgentIncidentLog incidentLog,
                            ShTenantRepository shTenantRepository,
-                           ShAppProperties shAppProperties) {
+                           ShAppProperties shAppProperties,
+                           ShPublishGateService shPublishGateService) {
+        this.shPublishGateService = shPublishGateService;
         this.writeService = writeService;
         this.shReleaseService = shReleaseService;
         this.shReleaseRunner = shReleaseRunner;
@@ -194,6 +222,15 @@ public class ShPostScheduler {
         for (ShPostUnifiedWriteService.ShScheduledPost due : writeService.findScheduledPublishDue(now)) {
             String id = due.id();
             try {
+                // SH1138 — the site's gates, asked at the moment the page goes live and not when it was
+                // scheduled: a gate declared since, or a draft edited since, is what the curator would
+                // have met on the button.
+                String stoppedBy = stoppedBy(id);
+                if (stoppedBy != null) {
+                    log.info("Scheduled publish of post {} stopped by a publish gate", id);
+                    recordGateStop("id:" + id, PUBLISH_FAILED + stoppedBy, GATE_FIX, due.siteId());
+                    continue;
+                }
                 writeService.publishScheduled(id);
                 log.info("Scheduled publish fired for post {}", id);
             } catch (Exception e) {
@@ -226,6 +263,19 @@ public class ShPostScheduler {
         // would be the worst kind of surprise to debug, so there is one implementation of running.
         for (ShRelease due : shReleaseService.dueRuns(now)) {
             try {
+                // SH1138 — every page the launch puts live passes the gates first, as the release.run
+                // op asks: one page that would stop stops the release, because a launch that went half
+                // live is the state a release exists to make unreachable.
+                String stoppedBy = shReleaseRunner.plan(due).publishes().stream()
+                        .map(this::stoppedBy)
+                        .filter(java.util.Objects::nonNull)
+                        .findFirst().orElse(null);
+                if (stoppedBy != null) {
+                    log.info("Scheduled release run of {} stopped by a publish gate", due.getName());
+                    recordGateStop("release:" + due.getName(), RELEASE_FAILED + stoppedBy,
+                            RELEASE_GATE_FIX, due.getSiteId());
+                    continue;
+                }
                 shReleaseRunner.run(due, SCHEDULER);
                 log.info("Scheduled release run fired for {}", due.getName());
             } catch (Exception e) {
@@ -238,5 +288,38 @@ public class ShPostScheduler {
                         ShAgentIncidentFrames.of(e), due.getSiteId());
             }
         }
+    }
+
+    /**
+     * SH1138 — which gate stops this post going live, as the sentence an incident carries, or
+     * {@code null} when every gate lets it through.
+     *
+     * <h2>A dry run, not {@code require}</h2>
+     *
+     * <p>{@code requirePost} throws the 409 a request can answer and dispatches the GATE_FAILED
+     * webhook as it does. Neither fits a timer: nobody is waiting for the 409, and the schedule stays
+     * due, so a page a gate stops is asked again on every sweep — once a minute, and so once a minute
+     * to every subscriber. {@code evaluatePost} is the same evaluation with no side effect; the
+     * incident is the record, and it folds on repeat, so a page stopped all night is one row seen
+     * again rather than five hundred.</p>
+     *
+     * <p>A waiver is not offered here because there is nobody to give its reason: SH998's
+     * {@code ?override=} is the curator's, on the button, and the incident's fix names it.</p>
+     */
+    private String stoppedBy(String postId) {
+        List<ShPublishGateService.Outcome> stopped = shPublishGateService.evaluatePost(postId).stream()
+                .filter(ShPublishGateService.Outcome::blocked)
+                .toList();
+        if (stopped.isEmpty()) {
+            return null;
+        }
+        ShPublishGateService.Outcome first = stopped.get(0);
+        String because = first.failures().stream()
+                .filter(ShPublishGateService.Failure::blocking)
+                .map(failure -> failure.check() + ": " + failure.detail())
+                .findFirst().orElse("");
+        return "the publish gate '" + first.gate() + "' stops id:" + postId
+                + (because.isEmpty() ? "" : " (" + because + ")")
+                + (stopped.size() > 1 ? ", and " + (stopped.size() - 1) + " more gate(s)" : "");
     }
 }

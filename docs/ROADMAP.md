@@ -25,7 +25,6 @@
 ## Block BA — Releases, scheduling and the publish gate
 
 - 📋 **SH1082** (deps: SH991 ✅, a calendar component in the viglet design system) **the Scheduled page is a list only, with no month or week calendar and no drag to reschedule** — The console has no calendar component, and one built inside Shio is a copy the duplicate gate refuses. → §LXVI.11
-- 📋 **SH1138** (deps: —) **a scheduled publish or release goes live without evaluating the site's publish gates** — The SH15 sweep fires publishScheduled and ShReleaseRunner.run with no gate call, so a gate declared later, or a draft edited after scheduling, is never checked. → §LXVI.15
 
 ## Block BC — The authoring surface, field by field
 
