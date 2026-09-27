@@ -100,11 +100,19 @@ const FIRST_ROW_TIMEOUT = 10_000
  * <em>ratio</em> against the baseline route, for the reason `route-cost.mjs` gives.</p>
  */
 const DATA_READ = /\/(api\/v2|graphql)\b/u
+/**
+ * SH1171 — the change stream is a held connection, not a read. Every screen opens SH968's shared
+ * stream and SH969's bounded replay, and whether either is counted depended on when it opened
+ * relative to the measurement: the seed saw 7 reads on the 404 page and a later run 9, from the
+ * same code. Its cost has its own budget (`events.idle`, SH967), so it is left out here.
+ */
+const HELD_STREAM = /\/api\/v2\/events\b/u
 
 function watchCost(page) {
   const cost = { requests: 0, bytes: 0, ms: null }
   const sized = []
   const mine = (url) => (url.startsWith(BASE) || url.startsWith(API)) && DATA_READ.test(url)
+    && !HELD_STREAM.test(url)
   page.on("request", (r) => { if (mine(r.url())) cost.requests++ })
   page.on("requestfinished", (r) => {
     if (!mine(r.url())) return
@@ -1587,7 +1595,7 @@ async function main() {
     .map((p) => [p.name, p.cost]))
   report.cost = { measured, families: foldFamilies(measured) }
   if (RECORD_COST) await recordCost(report)
-  else await gateCost(report)
+  else await gateCost(report, server.dev)
 
   // SH238: not a route, so it runs after the route walk rather than inside it.
   const anyPost = routes.find((r) => r.name.startsWith("post-edit:"))
@@ -1724,8 +1732,15 @@ async function recordCost(report) {
   }
 }
 
-/** The gate itself: findings fail, notes are printed. */
-async function gateCost(report) {
+/**
+ * The gate itself: findings fail, notes are printed.
+ *
+ * SH1171 — only against the production build the ceilings were measured on. Under the Vite dev
+ * server `React.StrictMode` runs every effect twice, so every route read ~6 more times and ~16 KB
+ * more than the jar, and all fifty families came back over: a gate red for the environment, which
+ * is the state SH927 exists to prevent. The dev run still prints what it measured, as notes.
+ */
+async function gateCost(report, dev) {
   const budget = JSON.parse(await readFile(BUDGET, "utf8"))
   let findings
   try {
@@ -1744,6 +1759,14 @@ async function gateCost(report) {
   console.log(`\nSH1113: ${walked} route famil${walked === 1 ? "y" : "ies"} costed against`
     + " console-route-budget.json")
   for (const note of notes) console.log(`       note: ${note}`)
+  if (dev) {
+    if (findings.length) {
+      console.log(`       note: ${findings.length} finding(s) not gated — the budget is a production-build`
+        + " measurement and StrictMode doubles every read under the dev server (SH1171). Run against"
+        + " the jar to gate: --base http://localhost:2710")
+    }
+    return
+  }
   for (const finding of findings) console.log(`       OVER: ${finding}`)
   if (findings.length) process.exitCode = 1
 }

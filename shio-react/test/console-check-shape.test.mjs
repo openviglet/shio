@@ -302,3 +302,16 @@ test("SH1170: a request that never connected is named, and a cancelled read is n
   assert.match(source, /ERR_ABORTED"\)\) return/,
     "SH1170: aborted reads are counted as failures, which turns the console's cancellation into reds")
 })
+
+test("SH1171: the route cost leaves out held streams, and gates only the production build", () => {
+  // Measured: the 404 page read 7 or 9 from the same code depending on when the change streams
+  // opened, and every family was over under the dev server, where StrictMode runs each effect twice.
+  assert.match(source, /HELD_STREAM = \/\\\/api\\\/v2\\\/events\\b\/u/,
+    "SH1171: the cost watcher no longer names the change stream it leaves out")
+  assert.match(source, /&& !HELD_STREAM\.test\(url\)/,
+    "SH1171: the cost watcher counts held change streams as reads again")
+  assert.match(source, /gateCost\(report, server\.dev\)/,
+    "SH1171: the cost gate is no longer told whether it runs against the dev server")
+  assert.match(source, /if \(dev\) \{[\s\S]*?return\s*\}/,
+    "SH1171: under the dev server the cost gate fails on StrictMode's doubled reads again")
+})

@@ -2155,6 +2155,15 @@ existed:
 | `bytes` | with ~8% of room | Payloads grow with the content on an instance; a ceiling at the measurement refuses the next change instead of measuring it (SH736). |
 | `firstRow` | a **ratio** against a named baseline route, coarsely | Milliseconds move with the machine, so a ceiling in them is one nobody can reproduce and therefore one that gets raised until it means nothing. |
 
+**What the count leaves out, and where it gates (SH1171).** `/api/v2/events` is not counted. Every
+screen opens SH968's shared stream and SH969's bounded replay, and whether either was counted
+depended on when it opened: the 404 page read 7 in the seed and 9 in a later run of the same code.
+A held stream is a connection, not a read, and its cost has its own budget (`events.idle`, SH967).
+The gate also fails **only against the jar**. The ceilings are a production-build measurement, and
+under the Vite dev server `React.StrictMode` runs every effect twice: every family came back over by
+about 6 requests and 16 KB. A dev run prints its findings as notes and exits clean, the way SH927
+treats dev-only noise. To gate, run `--base http://localhost:2710`.
+
 **Two asymmetries that make it runnable on a thin instance without being toothless on a full one.**
 The route list is *discovered* from the instance — one post editor per post-type it finds — so the
 key is the **family** (the name up to its first colon): `post-edit`, not `post-edit:Page`, which is

@@ -36,6 +36,7 @@
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
 - 📋 **SH1053** (deps: DS VDS141, SH964 ✅) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
 - 📋 **SH1054** (deps: SH1052 ✅, SH1053) **no accessibility check runs against a rendered console page** — The existing rules scan source for four patterns, there is no axe run, no jsx-a11y plugin and one viewport, so a violation composed across components ships unseen. → §LXXII.12
+- 📋 **SH1172** (deps: —) **the route-cost budget's byte ceilings sit below the shell's own floor, and seven admin routes have no entry** — It was seeded while open streams were exhausting the pool, so late routes never rendered and the bytes came from a degraded run. → §LXXII.35
 
 ## Block BI — The areas this round did not reach
 
