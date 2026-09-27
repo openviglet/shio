@@ -38,7 +38,9 @@ from becoming a third contract (P10).
   instance without the opt-in, so the apply kept the bootstrap `Page` and refused the content at
   `ops[20]` (`undeclared-field`), and every check that provisions first walked a site with no pages
   on exactly the instance CI starts from. It sends `mergePostTypes: true` now, which is additive, and
-  `e2e-fixture-site.test.mjs` holds it. **Whether they should differ at all (SH1163) was measured,
+  `e2e-fixture-site.test.mjs` holds it. Its log line reads the change count from `content.changed`,
+  since the apply's content half is an `ShAgentChangeSet`. It read `applied.changed`, which is
+  always absent, so every run printed `changed=?` (SH1176). A clean instance now reads `changed=45`. **Whether they should differ at all (SH1163) was measured,
   not argued:** the bootstrap `Page` is `title` + `content` (HTML Editor); the vocabulary's,
   marketing-site's and landing's add `description` and `sections` and use Ace HTML for `content`;
   nextjs-starter's has `summary` instead. So reseeding the bootstrap with the vocabulary's type would

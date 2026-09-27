@@ -118,8 +118,12 @@ async function applyBlueprint() {
   const body = await res.text()
   if (!res.ok) throw new Error(`apply ${BLUEPRINT} → ${res.status} ${body}`)
   const applied = JSON.parse(body)
+  // SH1176 — the count lives in the content half, an `ShAgentChangeSet` under `content`. Read off the
+  // top level it was always absent, and `?` said the same thing for a whole site written as for none.
+  const changed = applied.content?.changed
   console.log(
-    `blueprint ${BLUEPRINT}: postTypes=${applied.postTypes?.length ?? 0} changed=${applied.changed ?? "?"}`,
+    `blueprint ${BLUEPRINT}: postTypes=${applied.postTypes?.length ?? 0} `
+      + `changed=${changed ?? "unknown (content.changed absent)"}`,
   )
 }
 

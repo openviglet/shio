@@ -67,6 +67,17 @@ test("SH1144: the fixture's blueprint is applied with the merge a clean instance
       + "provisions first walks a site with no pages on exactly the instance CI starts from");
 });
 
+test("SH1176: the provisioning line reads the change count where the apply puts it", () => {
+  const start = provision.indexOf("async function applyBlueprint");
+  const call = provision.slice(start, provision.indexOf("\n}\n", start));
+  // `ShBlueprintApplied` carries the count in its content half, an `ShAgentChangeSet`. Read off the
+  // top level it was absent on every run, and `changed=?` said the same for a whole site as for none.
+  assert.match(call, /applied\.content\?\.changed/u,
+    "SH1176: the change count is read off the top of the apply response, where it never is");
+  assert.doesNotMatch(call, /applied\.changed\b/u,
+    "SH1176: `applied.changed` is back, and it is always undefined");
+});
+
 test("SH664: the fixture site declares no front end of its own", () => {
   const body = createSiteBody(provision);
 

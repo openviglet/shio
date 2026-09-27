@@ -1903,6 +1903,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1170** — The console check records a request that never connected with its URL and error, and leaves out the reads the console cancels on purpose (design §LXXII.33 recorded in `docs/agents/console-ui.md`).
 - **SH1171** — The route cost counts reads and not the held change streams, and gates only the jar: a dev-server run prints its findings as notes and exits clean (design §LXXII.34 recorded in `docs/agents/build.md`).
 - **SH1172** — The route budget is re-seeded from a healthy jar, reads are counted by path, and a ceiling below the shell's floor is refused; a jar run reports no finding (design §LXXII.35 recorded in `docs/agents/build.md`).
+- **SH1176** — The provisioner reads the change count where the apply puts it, so its log says how much a run wrote: changed=45 on a clean instance (design §LXXII.36 recorded in `docs/agents/blueprints.md`).
 
 ## Block BH — One content model, many languages
 
