@@ -49,11 +49,14 @@ test("SH1014: re-rendering as you type is a switch, and it starts off", () => {
     "SH1014: each render composes a whole page on the server — layout, regions, theme — and a "
       + "curator fixing a typo has not asked for one per pause in their typing")
   assert.match(preview, /if \(!live\) return undefined/u)
-  assert.match(preview, /\}, \[live, render, JSON\.stringify\(data\)\]\)/u,
+  // SH1136 named the value, so the dependency is a variable the lint can check.
+  assert.match(preview, /const typed = JSON\.stringify\(data\)/u)
+  assert.match(preview, /\}, \[live, render, typed\]\)/u,
     "SH1014: debounced by VALUE — depending on the object the caller rebuilds every render would "
       + "re-arm the timer forever and never fire it")
-  // SH1116: the effect also returns the abort of the render in flight, and so depends on `cancel`.
-  assert.match(preview, /useEffect\(\(\) => \{\s*void render\(\)\s*return cancel\s*\}, \[render, cancel, revision\]\)/u,
+  // SH1116: the effect also aborts the render in flight, and so depends on `cancel`. SH1136: the
+  // render is scheduled rather than called, so the effect body itself sets no state.
+  assert.match(preview, /const timer = setTimeout\(\(\) => void render\(\), 0\)[\s\S]*?\}, \[render, cancel, revision\]\)/u,
     "SH1014: and it still refreshes on every save, which is the question being asked most of the time")
 })
 

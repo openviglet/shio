@@ -41,8 +41,13 @@ export function PostHistoryPanel({ objectId, onCompare }: Props) {
   const [rows, setRows] = useState<ShHistory[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
   const [more, setMore] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
+  // SH1136 — derived, not raised by the read: the panel is loading while the rows on screen belong to
+  // another object than the one asked for, or while an older page is in flight. Raising a flag at the
+  // top of the read is what put a synchronous setState in the mount effect.
+  const [settledFor, setSettledFor] = useState<string | null>(null)
+  const [olderLoading, setOlderLoading] = useState(false)
+  const loading = settledFor !== objectId || olderLoading
   /*
    * SH1116 — one controller for whichever read is in flight, the first page or an older one. Rows
    * accumulate, so an older page of the post the curator just left landing after the switch would be
@@ -55,7 +60,6 @@ export function PostHistoryPanel({ objectId, onCompare }: Props) {
     inflight.current?.abort()
     const abort = new AbortController()
     inflight.current = abort
-    setLoading(true)
     return service.byObject(objectId, { limit: PAGE_SIZE, before }, { signal: abort.signal })
       .then((page) => {
         setRows((current) => (before ? [...current, ...page.rows] : page.rows))
@@ -69,9 +73,18 @@ export function PostHistoryPanel({ objectId, onCompare }: Props) {
         setFailed(true)
       })
       .finally(() => {
-        if (!abort.signal.aborted) setLoading(false)
+        // A superseded read settles nothing: the one that replaced it is what the spinner waits for.
+        if (!abort.signal.aborted) {
+          setSettledFor(objectId)
+          setOlderLoading(false)
+        }
       })
   }, [objectId])
+
+  const showOlder = () => {
+    setOlderLoading(true)
+    void load(cursor ?? undefined)
+  }
 
   const cancel = useCallback(() => inflight.current?.abort(), [])
 
@@ -129,7 +142,7 @@ export function PostHistoryPanel({ objectId, onCompare }: Props) {
       </ol>
       {more && (
         <Button size="sm" variant="outline" disabled={loading}
-          onClick={() => void load(cursor ?? undefined)}>
+          onClick={showOlder}>
           <ChevronDown className="mr-1 h-4 w-4" />
           {t("activity.more")}
         </Button>

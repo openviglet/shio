@@ -375,12 +375,15 @@ test("SH1116: the last three abort what they superseded, and none reads a cancel
     const code = read(file);
     assert.match(code, /inflight\.current\?\.abort\(\)/u,
       `SH1116: ${file} starts a read without aborting the one it supersedes`);
-    assert.match(code, /return cancel\b/u,
+    // Returned directly, or called from a cleanup that also clears the timer the read was scheduled
+    // on (the live preview since SH1136).
+    assert.match(code, /return cancel\b|clearTimeout\(timer\)\s*cancel\(\)/u,
       `SH1116: ${file}'s effect does not abort the read in flight when it is torn down`);
     assert.match(code, /isCancelled\(reason\)/u,
       `SH1116: ${file} reads a cancellation as a failure — an aborted request rejects`);
-    // The spinner belongs to the read that replaced this one, which set it a moment ago.
-    assert.match(code, /if \(!(?:abort\.)?signal\.aborted\) setLoading\(false\)/u,
+    // The spinner belongs to the read that replaced this one, which set it a moment ago. SH1136
+    // derived the history panel's spinner, so there the superseded read settles nothing instead.
+    assert.match(code, /if \(!(?:abort\.)?signal\.aborted\)(?: setLoading\(false\)| \{\s*setSettledFor\()/u,
       `SH1116: ${file} lowers the spinner for a read that was superseded, while the new one is in flight`);
   }
 

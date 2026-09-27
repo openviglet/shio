@@ -105,15 +105,13 @@ const DECLARED = {
     "src/app/content/post-conflict.dialog.tsx": 1,
     "src/app/content/search.page.tsx": 1,
     "src/app/system/bento-tenant-link-notice.tsx": 1,
-    // `bento.root.page.tsx` left with SH1157, whose palette query took the effect that set state.
-    "src/components/post-history.panel.tsx": 1,
-    "src/components/post-live-preview.tsx": 1,
+    // `bento.root.page.tsx` left with SH1157, whose palette query took the effect that set state;
+    // the history panel and the live preview with SH1136's first slice (see PAID).
     "src/hooks/use-list-state.ts": 1,
   },
   // SH1075 — a ref read during render, the same accrual and the same payoff task (SH1136).
   "react-hooks/refs": {
     "src/app/admin/activity/activity.list.page.tsx": 1,
-    "src/components/post-live-preview.tsx": 1,
     "src/hooks/use-autosave.ts": 1,
     "src/hooks/use-change-stream.ts": 1,
   },
@@ -237,6 +235,11 @@ const PAID = [
   // subscription (`@/lib/discovery-store`), which is drivable under plain Node, so what it promises
   // is asserted in `shio-react/test/use-discovery.test.mjs` rather than by this file's count alone.
   "src/hooks/use-discovery.ts",
+  // SH1136, slice one — the two SH1116 had just reworked. The history panel's spinner is derived
+  // (the rows on screen belong to another object, or an older page is in flight), and the live
+  // preview's save render is scheduled like its typing render, so neither effect raises a flag.
+  "src/components/post-history.panel.tsx",
+  "src/components/post-live-preview.tsx",
 ];
 
 test("SH701: every paid-off page stays paid off", async () => {

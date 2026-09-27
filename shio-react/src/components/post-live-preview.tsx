@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Loader2, Monitor, RefreshCw, Smartphone, Tablet } from "lucide-react"
 
@@ -62,9 +62,12 @@ export function PostLivePreview({ address, data, revision }: Readonly<Props>) {
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
   // The latest values, so a render that fires after a keystroke sends what is on screen now rather
-  // than what was there when the timer was armed.
+  // than what was there when the timer was armed. SH1136 — written after the commit, not during the
+  // render: a ref assigned in render is a value React may throw away with the render it came from.
   const latest = useRef(data)
-  latest.current = data
+  useLayoutEffect(() => {
+    latest.current = data
+  })
 
   /*
    * SH1116 — a render composes a whole page on the server, so with live rendering on a slow one can
@@ -95,20 +98,25 @@ export function PostLivePreview({ address, data, revision }: Readonly<Props>) {
 
   const cancel = useCallback(() => inflight.current?.abort(), [])
 
-  // On mount and on every save the curator asked for.
+  // On mount and on every save the curator asked for. SH1136 — scheduled, like the render a pause in
+  // typing asks for below, so the spinner is raised from the timer's callback and not from the effect
+  // body: the render is a request to an external system, and this is the effect subscribing to it.
   useEffect(() => {
-    void render()
-    return cancel
+    const timer = setTimeout(() => void render(), 0)
+    return () => {
+      clearTimeout(timer)
+      cancel()
+    }
   }, [render, cancel, revision])
 
-  // And on a pause in typing, only while the switch is on.
+  // And on a pause in typing, only while the switch is on. By value: the caller rebuilds `data`
+  // every render, so depending on the object would re-arm this timer forever and never fire it.
+  const typed = JSON.stringify(data)
   useEffect(() => {
     if (!live) return undefined
     const timer = setTimeout(() => void render(), QUIET_MS)
     return () => clearTimeout(timer)
-    // By value: the caller rebuilds `data` every render, so depending on the object would re-arm
-    // this timer forever and never fire it.
-  }, [live, render, JSON.stringify(data)])
+  }, [live, render, typed])
 
   return (
     <div className="space-y-3">

@@ -52,19 +52,6 @@
       "count": 1
     }
   },
-  "src/components/post-history.panel.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
-  },
-  "src/components/post-live-preview.tsx": {
-    "react-hooks/refs": {
-      "count": 1
-    },
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
-  },
   "src/components/theme-provider.tsx": {
     "react-refresh/only-export-components": {
       "count": 1

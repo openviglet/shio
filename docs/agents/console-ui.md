@@ -2876,6 +2876,17 @@ effect called `toggle`, which set state synchronously, so it now starts the read
 when the read answers. The remaining seventeen are declared by name in
 `cli/test/lint-baseline.test.mjs` against SH1136, the task that pays them off.
 
+**SH1136 pays them in slices, and the first took three.** The history panel and the live preview,
+both just reworked by SH1116, held a `set-state-in-effect` each and the preview a `refs`. The
+panel's spinner is now **derived** (SH701's rule): loading while the rows on screen belong to
+another object than the one asked for, or while an older page is in flight, so the read raises no
+flag and a superseded read settles nothing. The preview's save render is **scheduled** on a
+zero-delay timer, the way its typing render already was, so the flag is raised in a callback and
+not the effect body; and `latest.current = data` moved from the render into a layout effect,
+because a ref written during render belongs to a render React may discard. Both files joined
+`PAID`. To see a file's findings without the baseline, run ESLint with `--suppressions-location`
+pointing at a file holding `{}` (written without a BOM, or ESLint cannot parse it).
+
 ## The Activity page's live update, seen to arrive (SH1087)
 
 `useChangeStream` (SH1005) had only source-scan assertions, and a stream that never delivers looks

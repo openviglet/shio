@@ -41,7 +41,7 @@
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
 - 📋 **SH1053** (deps: DS VDS141, SH964 ✅) **the console has no skip link, most pages have no main landmark, and navigation never moves focus** — A keyboard reader tabs through the rail and header on every page, and after a route change stays where they were, because no shell owns a main region or focus. → §LXXII.11
 - 📋 **SH1054** (deps: SH1052 ✅, SH1053) **no accessibility check runs against a rendered console page** — The existing rules scan source for four patterns, there is no axe run, no jsx-a11y plugin and one viewport, so a violation composed across components ships unseen. → §LXXII.12
-- 📋 **SH1136** (deps: —) **seventeen console lint findings are suppressed rather than fixed, ten of them effects that set state on mount** — SH1075 recorded them to get CI's lint green and a local gate running, and each is a render cascade or a stale ref. → §LXXII.24
+- ⏳ **SH1136** (deps: —) **seventeen console lint findings are suppressed rather than fixed, ten of them effects that set state on mount** — Eleven findings remain suppressed: five effects that set state, three refs read in render and three non-component exports, beside the rows the baseline calls API. → §LXXII.24
 - 📋 **SH1140** (deps: —) **SH1047's fetch guard cannot see a service built and called in one expression, so login-form's mount read escapes it** — Its FETCHES pattern needs a dot right after the class name, and new ShSetupService().status() puts () between them. → §LXXII.26
 - 📋 **SH1161** (deps: —) **roadkeep lint reports six ledger entries citing symbols nothing defines any more** — SH4, SH102, SH185, SH234, SH350 and one unnumbered entry name schema.graphqls, document.fonts and document.referrer, so a reader greps and finds nothing. → §LXXII.27
 
@@ -77,6 +77,13 @@
 - **roadkeep lint exits clean here with no baseline** After re-vendoring a roadkeep that
   skips code.renamed for a vendored engine, `lint` with no --baseline reports no finding
   in Shio's three docs.
+
+## Done when — SH1136
+
+- **DECLARED holds no set-state-in-effect or refs entry.**
+  cli/test/lint-baseline.test.mjs holds the suppression file equal to DECLARED, so both
+  rule groups being empty there is ESLint finding none of them; each paid file joins
+  PAID, and the three exports are fixed or declared permanent with a reason.
 
 ## Non-goals (do NOT add as tasks)
 
