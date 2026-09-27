@@ -45,6 +45,7 @@
 - 📋 **SH1126** (deps: SH1043 ✅) **the console size gate measures whatever build is in public, whether or not it was built from the tree under test** — pnpm test never builds the console, so a pass can measure bytes older than the change and a fail can come from a build made outside the task. → §LXXII.23
 - 📋 **SH1136** (deps: —) **seventeen console lint findings are suppressed rather than fixed, ten of them effects that set state on mount** — SH1075 recorded them to get CI's lint green and a local gate running, and each is a render cascade or a stale ref. → §LXXII.24
 - 📋 **SH1140** (deps: —) **SH1047's fetch guard cannot see a service built and called in one expression, so login-form's mount read escapes it** — Its FETCHES pattern needs a dot right after the class name, and new ShSetupService().status() puts () between them. → §LXXII.26
+- 📋 **SH1161** (deps: —) **roadkeep lint reports six ledger entries citing symbols nothing defines any more** — SH4, SH102, SH185, SH234, SH350 and one unnumbered entry name schema.graphqls, document.fonts and document.referrer, so a reader greps and finds nothing. → §LXXII.27
 
 ## Block BH — One content model, many languages
 

@@ -1583,6 +1583,28 @@ add `login-form.tsx` to the declared list or give it an `AbortController`. Eithe
 is honest, and the first is what the list's own rule prescribes for a screen that has
 not moved yet.
 
+### LXXII.27 A dirty lint is a lint people stop reading (SH1161)
+
+`roadkeep lint` has not been clean for some time: six `code.renamed` findings stand in
+CHANGELOG entries whose prose names symbols the code no longer defines —
+`schema.graphqls` (SH4, SH234 and one unnumbered entry), `document.fonts` (SH102) and
+`document.referrer` (SH185, SH350).
+
+Each is the failure the check describes: a session reading the ledger for how something
+works greps for the name and finds nothing, and nothing else in the entry resolves it.
+They are cheap to correct — `record amend <id> --why -` per entry, the sentence arriving
+on stdin — and the reason they are a task rather than a sweep is that none of them is
+wrong about *what shipped*. The prose has to keep saying the same thing while naming
+something that exists, which is a judgement per entry and not a find-and-replace.
+
+The half worth having is what happens after. A lint nobody can get to zero is a lint
+whose output people scroll past, and this project has six instruments that depend on
+somebody reading a failure. `roadkeep lint` is not one of the three gates, which is
+exactly why it drifted: nothing failed. Either it joins them once it is clean, or the
+findings that are standing history get a declared exemption the way `red-suites.json`
+holds a red suite — a dated entry naming what would clear it. Deciding which is part of
+this task, and the wrong answer is to leave it dirty and keep telling people to read it.
+
 ## LXXIII One content model, many languages (Block BH)
 
 Localization in Shio is complete in the data and thin everywhere above it. ShPostUnified
