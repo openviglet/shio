@@ -119,8 +119,15 @@ test("SH780: closing a fixture twice resolves twice and closes once", async () =
  * would have caught SH1146 at the boundary it crossed: if an idle socket ever starts holding the
  * close open again, this fails here and names the id, instead of the test below quietly passing for
  * the wrong reason.</p>
+ *
+ * <p><b>The premise is a platform's, not the runtime's (SH1162).</b> The assertion first shipped
+ * as "reclaimed, everywhere", measured on Linux only, and so went red on every Windows run: there
+ * the same idle accepted socket is still open when the deadline passes, and `getConnections` says
+ * 1. Both answers are measured, so both are asserted — a platform that changes its answer fails
+ * here by name, which is the point of writing the premise down at all. What SH698's test below
+ * relies on holds on both: an ACTIVE socket holds the close everywhere.</p>
  */
-test("SH1146: an idle accepted socket does not hold the close, so it cannot hold a deadline", async (t) => {
+test("SH1146: an idle accepted socket is reclaimed on Linux and holds the close on Windows", async (t) => {
   const { server, port } = await listening();
   const idle = await accept(server, port);
   t.after(() => {
@@ -134,15 +141,26 @@ test("SH1146: an idle accepted socket does not hold the close, so it cannot hold
     + "measuring a socket at all.");
 
   const started = Date.now();
-  await assert.doesNotReject(() => closeFixture(server, 1000),
-    "SH1146: an accepted socket that has sent nothing is idle, and `closeFixture` reclaims it on "
-    + "purpose. If this rejects, `closeIdleConnections()` no longer reaches such a socket and the "
-    + "test below can go back to holding one — but the change has to be made deliberately, because "
-    + "it is the difference between SH698's instrument firing and SH698's instrument being unable "
-    + "to fire.");
+  const error = await closeFixture(server, 300).then(() => null, (e) => e);
   const elapsed = Date.now() - started;
-  assert.ok(elapsed < 1000,
-    `SH1146: the close took ${elapsed}ms, so the idle socket was waited on rather than reclaimed.`);
+
+  if (process.platform === "win32") {
+    // SH1162 — measured on Node 26 Windows: `closeIdleConnections()` does not reach a socket that
+    // has sent nothing, so the deadline fires and names it.
+    assert.ok(error,
+      `SH1162: an idle accepted socket no longer holds the close on Windows (closed in ${elapsed}ms). `
+      + "That is the Linux answer arriving here, and this branch has to be changed deliberately.");
+    assert.match(error.message, /1 connection\(s\) still open/u);
+  } else {
+    assert.equal(error, null,
+      "SH1146: an accepted socket that has sent nothing is idle, and `closeFixture` reclaims it on "
+      + "purpose. If this rejects, `closeIdleConnections()` no longer reaches such a socket and the "
+      + "test below can go back to holding one — but the change has to be made deliberately, because "
+      + "it is the difference between SH698's instrument firing and SH698's instrument being unable "
+      + "to fire.");
+    assert.ok(elapsed < 300,
+      `SH1146: the close took ${elapsed}ms, so the idle socket was waited on rather than reclaimed.`);
+  }
 });
 
 test("SH698: a held socket makes the deadline fire, and the reason names the state", async (t) => {

@@ -426,6 +426,12 @@ it — so if `closeIdleConnections()` ever stops reaching such a socket, that is
 deliberate decision, not SH698 passing for a reason nobody checked. Removing the in-flight request
 fails the held-socket test in one run, which is how the pair was verified.
 
+**That premise was Linux's, not Node's (SH1162).** On Node 26 Windows the same idle accepted socket is
+*not* reclaimed: the close waits out its deadline with `getConnections()` at 1, so the premise test
+was red on every Windows run from the moment it merged — the mirror of the defect it was written to
+close. It now asserts each platform's measured answer, and a platform that changes its answer fails
+by name. The held-socket test is unaffected, because an **active** socket holds the close on both.
+
 ### A stamp taken against another commit is not a colour (SH770)
 
 The comparison above is between a **claim** and a **measurement**, and nothing asked whether the
