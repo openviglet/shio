@@ -38,6 +38,8 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { test } from "node:test";
 
+import { uncommented } from "./support/source-text.mjs";
+
 import { disarmRequestLayer, finish, requestLayerHandles } from "../src/exit.mjs";
 
 const run = promisify(execFile);
@@ -318,5 +320,7 @@ async function sources(dir) {
  * make pass.</p>
  */
 function stripComments(code) {
-  return code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "$1");
+  // SH1147 — the shared per-line reading; the cross-line strip this replaced could open inside a
+  // string literal and delete the rest of the file.
+  return uncommented(code);
 }

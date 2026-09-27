@@ -51,6 +51,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { uncommented } from "./support/source-text.mjs";
 import { INVENTORY_FILE, INVENTORY_VERSION } from "../src/clone.mjs";
 import { PLAN_FILE, SECTION_TYPES } from "../src/propose.mjs";
 import {
@@ -1189,9 +1190,9 @@ describe("SH560 group K: every trait an archetype declares is read by an asserti
     // …and `INERT_KEYS` is cut from its own walk for the same reason `assertion-debt.test.mjs` is
     // cut from its: a declaration that a key is unread is not a read of it. Left in, the list makes
     // every entry on it report as covered, which is exactly backwards.
-    const readers = `${suite}\n${loader}\n${live}`
-      .replace(/\/\*[\s\S]*?\*\//g, " ")
-      .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ")
+    // SH1147 — the shared per-line reading; the cross-line strip this replaced could open inside a
+    // string literal and delete the rest of the suite it was reading.
+    const readers = uncommented(`${suite}\n${loader}\n${live}`)
       .replace(/const INERT_KEYS = \[[^\]]*\]/, " ");
 
     const declared = new Set();

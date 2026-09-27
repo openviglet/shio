@@ -101,6 +101,47 @@ export function masked(body) {
     .join("\n");
 }
 
+/**
+ * Source with whole-line comments removed **and** a trailing `//` comment cut, strings kept.
+ *
+ * <p>SH1147 — the reading six scans needed and each wrote as
+ * `.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1")`. The first half opens on a
+ * slash and two stars inside a string literal and deletes to the next closer, hundreds of lines on
+ * (SH1118 measured 656 behind one `robots.txt` fixture). Neither existing reading fits them: {@link
+ * code} keeps a trailing comment, which a scan asserting an absence can trip on, and {@link masked}
+ * blanks strings, which is where a scan for flag names finds its subject.</p>
+ *
+ * <p>Per line and stateless, SH630's rule: a quote opened on one line never swallows the next. A
+ * trailing `//` is cut only outside a string and only after whitespace, so `http://` and a regex
+ * literal's `\/\/` stay; a block comment that starts mid-line stays too. Both are the conservative
+ * direction — text a scan may read, never text it silently loses.</p>
+ */
+export function uncommented(body) {
+  return body
+    .split("\n")
+    .filter((line) => !isProse(line))
+    .map(withoutTrailingComment)
+    .join("\n");
+}
+
+function withoutTrailingComment(line) {
+  let quote = null;
+  for (let at = 0; at < line.length; at += 1) {
+    const char = line[at];
+    if (quote) {
+      if (char === "\\") at += 1;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === "\"" || char === "'" || char === "`") {
+      quote = char;
+    } else if (char === "/" && line[at + 1] === "/" && (at === 0 || /\s/u.test(line[at - 1]))) {
+      return line.slice(0, at).trimEnd();
+    }
+  }
+  return line;
+}
+
 /** A Markdown fence, at the start of a line — three backticks or three tildes. */
 const FENCE = /^\s*(```|~~~)/;
 

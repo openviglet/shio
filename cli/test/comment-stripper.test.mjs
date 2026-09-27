@@ -47,7 +47,7 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
-import { code } from "./support/source-text.mjs";
+import { code, uncommented } from "./support/source-text.mjs";
 
 // @scans code
 //
@@ -87,17 +87,11 @@ const OWNER = "SH1147";
  * not on it fails the test on the day it is written. Nothing is added here to make a run green —
  * the whole point of a list over a count is that adding to it is a visible act.</p>
  */
-const DECLARED = {
-  "shio-react/scripts/surface-digest.mjs":
-    "a build script, so it cannot import the console's test support — it needs a reading of its own "
-    + "or one hoisted out of `test/support/`",
-  "cli/test/audit.test.mjs": "scans the audit command's source for shapes it must not contain",
-  "cli/test/instance-assumptions.test.mjs": "scans for hardcoded instance assumptions",
-  "cli/test/flag-meaning.test.mjs": "scans flag handling, and `--` in prose is what it reads past",
-  "cli/test/exit-path.test.mjs": "strips block and line comments together, so it needs both halves",
-  "cli/test/source-corpus.test.mjs":
-    "replaces with a space rather than nothing, which is a third reading again — see `masked`",
-};
+// Empty since SH1147: the five CLI scans read through `uncommented`, and the console's surface
+// digest has a per-line reading of its own (a build script does not import test support) whose
+// output was byte-identical before and after. Kept as a declaration so a new copy has somewhere
+// visible to be added, with its reason, rather than a count to drift.
+const DECLARED = {};
 
 function walk(dir) {
   const out = [];
@@ -159,6 +153,28 @@ test("SH1118: every cross-line comment strip is either gone or on the declared l
     `SH1118: a path declared under ${OWNER} no longer has a naive strip, so the list is claiming a `
     + "debt that has been paid. Delete the entry — a list that outlives its findings is how a count "
     + "stops meaning anything, and this one exists precisely so the number cannot drift.");
+});
+
+test("SH1147: the shared reading loses nothing behind a comment opener inside a string", () => {
+  // The fixture that hid 656 lines of clone.test.mjs, in miniature: a string holding `/*`, then code
+  // that a naive strip would have deleted up to the next closer.
+  const source = [
+    'const robots = "Disallow: /*"',
+    "const kept = true",
+    "// a whole-line comment",
+    "const url = \"https://example.test//x\" // a trailing comment",
+    "const re = /\\/\\//",
+    "/* a closer, far below */",
+  ].join("\n");
+  const read = uncommented(source);
+
+  assert.match(read, /const kept = true/,
+    "SH1147: the line after a string holding `/*` is still read — the naive strip deleted it");
+  assert.match(read, /const url = "https:\/\/example\.test\/\/x"$/m,
+    "SH1147: a `//` inside a string is kept, and the trailing comment after it is cut");
+  assert.doesNotMatch(read, /a whole-line comment|a trailing comment|a closer/,
+    "SH1147: comments are still removed, which is the job the naive strip was doing");
+  assert.match(read, /const re = \/\\\/\\\/\//, "SH1147: a regex literal's escaped slashes survive");
 });
 
 test("SH1118: the shared readings the list points at are themselves safe", () => {

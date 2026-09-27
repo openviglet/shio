@@ -39,6 +39,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 
+import { uncommented } from "./support/source-text.mjs";
+
 const COMMANDS = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "commands");
 
 /**
@@ -64,9 +66,9 @@ const SOLE_MEANING = {
  * documents SH365 in its header and would otherwise be reported for describing what it avoids.
  */
 function code(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  // SH1147 — the shared per-line reading; the cross-line strip this replaced could open inside a
+  // string literal and delete the rest of the file.
+  return uncommented(source);
 }
 
 async function scan() {

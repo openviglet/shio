@@ -15,6 +15,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { uncommented } from "./support/source-text.mjs";
+
 import {
   AUDIT_RULES,
   describeShape,
@@ -482,10 +484,9 @@ test("the probe closes over nothing but its own argument", () => {
   // Comments are stripped first: the probe's own prose cites `parseColor`'s reasoning, and a name
   // in a comment is not a reference. Checking the raw source would make the lint refuse the
   // documentation the rest of this file insists on.
-  const source = probe
-    .toString()
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  // SH1147 — the shared per-line reading; the cross-line strip this replaced could open inside a
+  // string literal and delete the rest of the probe.
+  const source = uncommented(probe.toString());
   const moduleScope = ["AUDIT_RULES", "CONTRAST_FLOOR", "PER_RULE_CAP", "DEFAULT_WIDTHS",
     "parseColor", "luminance", "contrastRatio", "classify", "describe(", "line("];
   for (const name of moduleScope) {

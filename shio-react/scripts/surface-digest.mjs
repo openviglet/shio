@@ -124,11 +124,37 @@ const SURFACE = [
  * that would slip through (a component name inside a quoted string, followed by whitespace or `>`)
  * do not occur in these 43 pages. Stated rather than assumed, so the next person knows it is a
  * bounded shortcut and not an oversight.
+ *
+ * SH1147 — per line, with no state crossing a line. The cross-line strip this replaced opened on a
+ * slash and two stars anywhere, string literals included, and deleted everything to the next closer:
+ * SH1118 measured that pattern hiding 656 lines of one file. This is the reading of the CLI's
+ * `uncommented`, kept here because a build script does not import test support: a line that is only
+ * comment goes, and a trailing `//` is cut only outside a string and after whitespace. The digest it
+ * produces over the console's pages was byte-identical before and after the change.
  */
 function code(source) {
   return source
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ")
+    .split("\n")
+    .filter((line) => !/^\s*(\/\/|\*|\/\*|\{\/\*)/.test(line))
+    .map(withoutTrailingComment)
+    .join("\n")
+}
+
+function withoutTrailingComment(line) {
+  let quote = null
+  for (let at = 0; at < line.length; at += 1) {
+    const char = line[at]
+    if (quote) {
+      if (char === "\\") at += 1
+      else if (char === quote) quote = null
+      continue
+    }
+    if (char === "\"" || char === "'" || char === "`") quote = char
+    else if (char === "/" && line[at + 1] === "/" && (at === 0 || /\s/.test(line[at - 1]))) {
+      return line.slice(0, at).trimEnd()
+    }
+  }
+  return line
 }
 
 /** Every JSX opening tag, in source order. `<Card ` and `<Card>` but not `</Card>` or `<div`. */

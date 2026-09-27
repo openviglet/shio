@@ -18,10 +18,6 @@
 
 - ⏳ **SH971** (deps: SH968 ✅, design system: VigletAssistant passes VigletAvatar's paused prop through) **a curator cannot choose what the dock reports or quiet the mascot** — The kinds can be muted now, but quieting the mascot needs VigletAssistant to pass VigletAvatar's paused prop through. → §LXIII.8
 
-## Block AY — What the conformance instruments cannot see
-
-- 📋 **SH1147** (deps: SH1118 ✅) **six more comment strippers can each delete the rest of a file from one string literal** — SH1118 fixed the shared helper and its lint names six re-implementations, two of which hide 656 and 508 lines behind a fixture string. → §LXIV.25
-
 ## Block BA — Releases, scheduling and the publish gate
 
 - 📋 **SH1082** (deps: SH991 ✅, a calendar component in the viglet design system) **the Scheduled page is a list only, with no month or week calendar and no drag to reschedule** — The console has no calendar component, and one built inside Shio is a copy the duplicate gate refuses. → §LXVI.11

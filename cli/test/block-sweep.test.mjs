@@ -81,6 +81,14 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  AY: {
+    swept: true,
+    why: "what the conformance instruments cannot see: a line of instrument rounds and their "
+      + "corrections, ending with SH1162 (a socket premise measured on one platform) and SH1147 (the last "
+      + "hand-written comment strippers). docs-shio moved: COVERAGE's instruments row names both and the "
+      + "mirror is regenerated. README and shio-site are NOT moved: neither describes the test "
+      + "instruments, and no count or claim they state changed",
+  },
   BH: {
     swept: true,
     why: "content i18n as a decision rather than a description: a declared locale policy, the locale "

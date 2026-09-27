@@ -1118,33 +1118,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.25 Six more strippers, and one already knew (SH1147)
-
-SH1118 fixed the shared stripper and measured what the pattern it replaced was doing:
-**19 spans, 77,285 characters** deleted across this repository's JS sources by a strip
-that began mid-line. Only three of the call sites were the shared helper's. **Six
-re-implement the same two lines**, and each can delete the rest of a file from one
-string literal:
-
-- `shio-react/scripts/surface-digest.mjs` — a script, so it cannot reach the console's test support
-- `cli/test/audit.test.mjs`, `instance-assumptions.test.mjs`, `flag-meaning.test.mjs`,
-  `exit-path.test.mjs`, `source-corpus.test.mjs`
-
-The CLI half is the worse half and the measurement says so: `clone.test.mjs` hides **656
-lines** behind a `robots.txt` fixture's `Disallow: /*`, and `theme.test.mjs` 508 behind
-a CSS selector — so a scan over either reads mostly nothing.
-`cli/test/support/source-text.mjs` already exports the safe line-oriented reading
-(SH740, SH630), and `cli/src/theme.mjs` already carries a comment explaining in as many
-words why a `/\*[\s\S]*?\*\/` over a raw file is wrong. The knowledge was in the tree;
-six readers did not have it.
-
-The work is one shared reading per package and then the six call sites onto it, which is
-a migration with its own red risk per scan — `code` keeps a trailing comment where the
-naive strip removed it, and a scan asserting an absence can notice.
-`comment-stripper.test.mjs` holds the six as a named list, so the count only goes down.
-
-The assertion is the declared list emptied, and the lint red on a seventh.
-
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key

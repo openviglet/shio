@@ -44,6 +44,8 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
 
+import { uncommented } from "./support/source-text.mjs";
+
 // @scans both reason: it reads suite sources for what they assume, and an assumption stated in
 // a comment is as much the subject as one written in code (SH740).
 
@@ -92,9 +94,9 @@ function conformanceFiles(dir = CONFORMANCE, found = []) {
  * to happen and SH613's answer to it one language over.
  */
 function code(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  // SH1147 — the shared per-line reading; the cross-line strip this replaced could open inside a
+  // string literal and delete the rest of the file.
+  return uncommented(source);
 }
 
 /** `const NAME = "literal"` in the same file, so a type named once and used twice resolves. */

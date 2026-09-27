@@ -1967,6 +1967,16 @@ rather than a ceiling, because a ceiling lets one task pay it down and the next 
 in both directions — a planted seventh copy fails it, and the two assertions in
 `shio-react/test/source-text.test.mjs` both fail against the body they replaced.
 
+**SH1147 emptied the list, with a third reading rather than either of the two.** All six stripped
+line comments as well as block ones, and neither existing CLI reading fits: `code` keeps a trailing
+`//` comment, which a scan asserting an absence can trip on, and `masked` blanks strings, which is
+where `flag-meaning` finds flag names. So `cli/test/support/source-text.mjs` exports `uncommented`:
+per line (SH630), whole-comment lines dropped, a trailing `//` cut only outside a quote and after
+whitespace, so `http://` and a regex literal's `\/\/` stay. The five CLI scans read through it and
+all stayed green on text the old strip had been deleting. The console's `surface-digest.mjs` is a
+build script and keeps a reading of its own with the same rule, proved by its output: byte-identical
+over the console's pages before and after. `DECLARED` is `{}`, kept as a declaration.
+
 The population is **files that scan this repository's own source or docs**, not every suite that
 reads a file: `"foo.mjs"` is usually a fixture filename in JS, and taking every read gives 66,
 mostly temp trees a suite wrote itself. A suite that reads back a tree it just wrote cannot be
