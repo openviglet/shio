@@ -1,265 +1,307 @@
 {
   "note": "SH1113 — what ONE console route costs, which console-size-budget.json cannot see. That file measures the eager bundle: one number for the whole console, identical for a route that fetches nothing and a route that fetches three collections to draw two figures. This one is measured in a browser against a live instance by e2e/console-check.mjs, which is the only place a page's own requests are observable, and it is held per route because a total is what lets a new screen's cost hide inside the sum. Read scripts/route-cost.mjs for why the three numbers are held differently — `requests` at the measurement with no room in it, `bytes` with headroom, `firstRow` as a ratio rather than a millisecond count.",
-  "measured": "2026-09-27T01:00Z",
+  "measured": "2026-09-27T19:17Z",
   "baseline": "sites",
   "baselineWhy": "The site list is the cheapest route the console has and the first one a curator sees, so every other route's first-row time is expressed as a multiple of it. Named here rather than picked per run so a run cannot quietly change what the numbers are relative to.",
-  "seed": "SH1113 seeded this against a live jar walking all 57 probes of `console:check`, of which 43 route families put a first row on screen and were costed. The numbers are the page's own reads — /api/v2 and /graphql — and nothing else, which is the correction the first recording forced: counting every same-origin request put the ~1.73 MB eager bundle into every route and made the post editor's extra reads a 1% difference against a site list. Two numbers are worth reading before any other: `unknown-route` renders a 404 and still makes 7 calls, which is the shell's floor and the thing every other entry is measured on top of; and `post-edit` makes 23, so sixteen are its own. `graphql` is the one entry in megabytes, and it is real — 1.13 MB of schema introspection fetched before a curator types a character. Ceilings: `requests` at the measurement with no room in it, `bytes` with ~8%, `firstRow` a coarse ratio against `sites` (see FIRST_ROW_SLACK, and FIRST_ROW_TRUST for why two families carry none).",
+  "seed": "SH1172 re-seeded this against a live jar carrying the current console build, on a clean instance provisioned by `e2e/provision.mjs`, walking all 72 probes of `console:check`. It replaces SH1113's first seed, which ran while SH1165's open change streams were exhausting the connection pool: seven admin boards never rendered and were never costed, and eleven byte ceilings sat below the 3 KB the shell's own reads cost on a 404. The numbers are the page's own reads — paths under /api/v2/ and /graphql itself (SH1172: by path, so the explorer's document and chunks are not reads) — and not /api/v2/events, a held connection with its own budget (SH1171). `unknown-route` is the shell's floor at 7 reads; `post-edit` makes 21. Ceilings: `requests` at the measurement with no room in it, `bytes` with ~8%, `firstRow` a coarse ratio against `sites`.",
   "routes": {
     "bento-activity": {
       "requests": 8,
-      "bytes": 1000,
-      "firstRow": 2.1,
+      "bytes": 23000,
+      "firstRow": 2.6,
       "why": "The activity feed."
     },
     "bento-admin-hub": {
       "requests": 8,
-      "bytes": 4000,
-      "firstRow": 2.8,
+      "bytes": 5000,
+      "firstRow": 2.2,
       "why": "The admin hub, which redirects to the users board — so this entry costs the redirect as well as the destination, which is the honest number for what a curator clicking 'Admin' waits for."
     },
     "bento-auth-provider-new": {
-      "requests": 10,
-      "bytes": 2000,
-      "firstRow": 2.8,
+      "requests": 9,
+      "bytes": 5000,
+      "firstRow": 2.4,
       "why": "A new auth provider's form, which reads the provider kinds the instance supports on top of the shell."
     },
     "bento-auth-providers": {
       "requests": 8,
-      "bytes": 4000,
-      "firstRow": null,
+      "bytes": 5000,
+      "firstRow": 2.3,
       "why": "The auth-provider board. firstRow unobserved for the same reason as `bento-tenants`."
     },
     "bento-editor-sites": {
       "requests": 8,
-      "bytes": 4000,
-      "firstRow": 2.1,
+      "bytes": 5000,
+      "firstRow": 2,
       "why": "The editor's site picker."
     },
     "bento-email-config": {
       "requests": 8,
-      "bytes": 1000,
-      "firstRow": 2.5,
+      "bytes": 4000,
+      "firstRow": 2.2,
       "why": "The email configuration form — one read, no collection."
     },
     "bento-exchange-provider-new": {
-      "requests": 10,
-      "bytes": 2000,
-      "firstRow": 2.5,
+      "requests": 9,
+      "bytes": 5000,
+      "firstRow": 2.9,
       "why": "A new exchange provider's form."
+    },
+    "bento-exchange-providers": {
+      "requests": 8,
+      "bytes": 4000,
+      "firstRow": 2.4,
+      "why": "The exchange-providers board. Absent from the first seed, which ran while open change streams were exhausting the connection pool (SH1165): routes late in the walk never rendered, so they were never costed. Recorded by SH1172's re-seed; the shell's seven reads plus the board's own list."
     },
     "bento-files": {
       "requests": 9,
-      "bytes": 1000,
-      "firstRow": 2.2,
+      "bytes": 5000,
+      "firstRow": 2.3,
       "why": "The static-file list under the bento shell."
     },
     "bento-graphql": {
-      "requests": 11,
-      "bytes": 1133000,
-      "firstRow": 3.3,
-      "why": "The GraphQL explorer under the bento shell — the same 1.13 MB introspection; see `graphql`."
+      "requests": 9,
+      "bytes": 40000,
+      "firstRow": 5.6,
+      "why": "The GraphQL explorer under the bento shell — the same reads; see `graphql`."
     },
     "bento-group-new": {
       "requests": 7,
-      "bytes": 1000,
+      "bytes": 4000,
       "firstRow": 2.3,
       "why": "A new group's form."
     },
+    "bento-groups": {
+      "requests": 8,
+      "bytes": 4000,
+      "firstRow": 2.2,
+      "why": "The groups board. Absent from the first seed, which ran while open change streams were exhausting the connection pool (SH1165): routes late in the walk never rendered, so they were never costed. Recorded by SH1172's re-seed; the shell's seven reads plus the board's own list."
+    },
     "bento-marketplace": {
       "requests": 8,
-      "bytes": 7000,
-      "firstRow": 2,
+      "bytes": 10000,
+      "firstRow": 2.1,
       "why": "The marketplace board, which reads a catalogue rather than a table of rows."
     },
     "bento-post-edit": {
-      "requests": 23,
-      "bytes": 21000,
-      "firstRow": 2.6,
+      "requests": 21,
+      "bytes": 30000,
+      "firstRow": 3.9,
       "why": "The post editor under the bento shell — same sixteen reads as `post-edit`; see that entry for why this is the ceiling that matters most."
     },
     "bento-post-type-edit": {
       "requests": 10,
-      "bytes": 8000,
+      "bytes": 31000,
       "firstRow": 2.7,
       "why": "A post-type's form under the bento shell."
     },
     "bento-post-type-list": {
       "requests": 8,
-      "bytes": 4000,
-      "firstRow": 2.7,
+      "bytes": 27000,
+      "firstRow": 2.3,
       "why": "The post-type catalogue under the bento shell."
     },
     "bento-post-type-new": {
       "requests": 7,
-      "bytes": 3000,
-      "firstRow": 2.4,
+      "bytes": 4000,
+      "firstRow": 2.2,
       "why": "A new post-type under the bento shell."
     },
     "bento-review": {
       "requests": 9,
-      "bytes": 1000,
+      "bytes": 5000,
       "firstRow": 2.3,
       "why": "The review queue under the bento shell."
     },
     "bento-role-new": {
       "requests": 7,
-      "bytes": 1000,
-      "firstRow": 2.2,
+      "bytes": 4000,
+      "firstRow": 2.3,
       "why": "A new role's form."
+    },
+    "bento-roles": {
+      "requests": 8,
+      "bytes": 4000,
+      "firstRow": 2.2,
+      "why": "The roles board. Absent from the first seed, which ran while open change streams were exhausting the connection pool (SH1165): routes late in the walk never rendered, so they were never costed. Recorded by SH1172's re-seed; the shell's seven reads plus the board's own list."
     },
     "bento-root": {
       "requests": 8,
-      "bytes": 4000,
+      "bytes": 8000,
       "firstRow": 2.5,
       "why": "The bento content hub."
     },
     "bento-search": {
       "requests": 10,
-      "bytes": 6000,
+      "bytes": 28000,
       "firstRow": 2.3,
       "why": "Search under the bento shell."
     },
     "bento-tenant-new": {
       "requests": 7,
-      "bytes": 1000,
-      "firstRow": 2.3,
+      "bytes": 4000,
+      "firstRow": 2.2,
       "why": "A new tenant's form."
     },
     "bento-tenants": {
       "requests": 8,
-      "bytes": 4000,
-      "firstRow": null,
+      "bytes": 5000,
+      "firstRow": 2.2,
       "why": "The tenants board (SH22). Its firstRow may be recorded as unobserved rather than as a number: see `FIRST_ROW_TRUST` — it has rendered at the edge of the probe's deadline, and a ratio taken there says nothing."
     },
     "bento-token-new": {
       "requests": 8,
-      "bytes": 1000,
-      "firstRow": 2.5,
+      "bytes": 5000,
+      "firstRow": 2.4,
       "why": "A new API token's form."
+    },
+    "bento-tokens": {
+      "requests": 8,
+      "bytes": 5000,
+      "firstRow": 2.1,
+      "why": "The API tokens board. Absent from the first seed, which ran while open change streams were exhausting the connection pool (SH1165): routes late in the walk never rendered, so they were never costed. Recorded by SH1172's re-seed; the shell's seven reads plus the board's own list."
     },
     "bento-trash": {
       "requests": 11,
+      "bytes": 6000,
+      "firstRow": 2.1,
+      "why": "The trash under the bento shell; same reads as `trash`, one more for the shell."
+    },
+    "bento-users": {
+      "requests": 8,
       "bytes": 5000,
       "firstRow": 2.3,
-      "why": "The trash under the bento shell; same reads as `trash`, one more for the shell."
+      "why": "The users board. Absent from the first seed, which ran while open change streams were exhausting the connection pool (SH1165): routes late in the walk never rendered, so they were never costed. Recorded by SH1172's re-seed; the shell's seven reads plus the board's own list."
     },
     "bento-webhook-new": {
       "requests": 8,
-      "bytes": 1000,
-      "firstRow": 2.8,
+      "bytes": 5000,
+      "firstRow": 2.5,
       "why": "A new webhook's form."
+    },
+    "bento-webhooks": {
+      "requests": 8,
+      "bytes": 4000,
+      "firstRow": 2.3,
+      "why": "The webhooks board. Absent from the first seed, which ran while open change streams were exhausting the connection pool (SH1165): routes late in the walk never rendered, so they were never costed. Recorded by SH1172's re-seed; the shell's seven reads plus the board's own list."
     },
     "files": {
       "requests": 9,
       "bytes": 5000,
-      "firstRow": 2.1,
+      "firstRow": 2,
       "why": "The static-file list, which reads the file rows and nothing a post-type knows about."
     },
     "graphql": {
-      "requests": 11,
-      "bytes": 1131000,
-      "firstRow": 3.3,
-      "why": "The GraphQL explorer, and the one entry here measured in **megabytes** — 1.13 MB, all of it the schema introspection the editor fetches to offer completion. That is a genuine data read and not the eager bundle leaking back in (compare `unknown-route` at 3 KB), and it is a finding this instrument produced on its first run: the explorer downloads the whole schema before a curator types a character. Held rather than fixed here, because a ceiling that records it is what makes shrinking it an argued change rather than a discovery."
+      "requests": 9,
+      "bytes": 40000,
+      "firstRow": 5.7,
+      "why": "The GraphQL explorer: the shell's reads, the token list and one introspection POST to `/graphql`, about 40 KB. SH1172 — the first seed held it at 1.13 MB and called that schema introspection; it was the explorer's own document and four bundle chunks, which a substring match on `/graphql` counted as reads. The bundle is `console-size-budget.json`'s subject, not this one."
+    },
+    "legacy-console-content": {
+      "requests": 8,
+      "bytes": 5000,
+      "firstRow": 2.1,
+      "why": "A legacy console bookmark to the content root, redirected to the bento browser — see `legacy-console-root`. Absent from the first seed for the same reason as `bento-groups`."
     },
     "legacy-console-home": {
       "requests": 8,
-      "bytes": 1000,
+      "bytes": 8000,
       "firstRow": 2,
       "why": "A legacy console bookmark — see `legacy-console-root`."
     },
     "legacy-console-post": {
-      "requests": 10,
-      "bytes": 1000,
-      "firstRow": 2,
+      "requests": 21,
+      "bytes": 30000,
+      "firstRow": 2.1,
       "why": "A legacy post-editor bookmark (SH909), which redirects into the bento editor client-side. Its number is lower than `post-edit`'s because the first row appears on the redirecting page, before the editor's own reads land — which is the honest measure of what a curator with an old bookmark waits for, and the reason both are costed rather than one."
     },
     "legacy-console-review": {
       "requests": 9,
-      "bytes": 1000,
+      "bytes": 5000,
       "firstRow": 2,
       "why": "A legacy review bookmark — see `legacy-console-root`."
     },
     "legacy-console-root": {
       "requests": 8,
-      "bytes": 1000,
-      "firstRow": 2.1,
+      "bytes": 8000,
+      "firstRow": 2,
       "why": "A legacy console bookmark (SH909). Costed because the redirect is client-side: the old URL loads the SPA, the router replaces the entry, and both halves are requests a curator with an old bookmark actually pays."
     },
     "legacy-console-tenant-prefixed": {
       "requests": 8,
-      "bytes": 4000,
-      "firstRow": 2.3,
+      "bytes": 5000,
+      "firstRow": 2,
       "why": "A tenant-prefixed legacy bookmark (SH22) — see `legacy-console-root`."
     },
     "post-edit": {
-      "requests": 23,
-      "bytes": 21000,
-      "firstRow": 2.2,
+      "requests": 21,
+      "bytes": 30000,
+      "firstRow": 2.1,
       "why": "The post editor, and **the number this whole budget exists to hold**: 23 requests against the shell's floor of 7, so sixteen of them are its own. It is the heaviest form in the product and the form built from a saved post rather than from a type's defaults. A ceiling here is what makes the next read added per field, or per relator row, visible on the run that adds it rather than on the day somebody profiles the console."
     },
     "post-new": {
       "requests": 8,
-      "bytes": 1000,
+      "bytes": 6000,
       "firstRow": 2,
       "why": "A new post's form, built from its post-type's defaults rather than from a saved row."
     },
     "post-type-edit": {
       "requests": 10,
-      "bytes": 1000,
-      "firstRow": 2.2,
+      "bytes": 32000,
+      "firstRow": 2,
       "why": "A post-type's form. The one name-keyed surface in the product (SH117), so this is also the entry that would notice the id-keyed twin coming back."
     },
     "post-type-list": {
       "requests": 8,
-      "bytes": 4000,
+      "bytes": 27000,
       "firstRow": 2,
       "why": "The post-type catalogue, one read over the shell's floor."
     },
     "post-type-select": {
       "requests": 8,
-      "bytes": 4000,
+      "bytes": 27000,
       "firstRow": 2,
       "why": "The chooser a curator passes through to create a post: the post-types available in one folder."
     },
     "review": {
       "requests": 9,
-      "bytes": 4000,
+      "bytes": 5000,
       "firstRow": 2.1,
       "why": "The review queue (SH109) — the curator's primary workflow under the product's orientation, so its cost is worth a ceiling even on an instance where no agent has run."
     },
     "search": {
       "requests": 10,
-      "bytes": 6000,
-      "firstRow": 2.2,
+      "bytes": 28000,
+      "firstRow": 2,
       "why": "The search page: the query surface plus the facet counts the filter bar draws."
     },
     "site-children": {
-      "requests": 11,
-      "bytes": 6000,
-      "firstRow": 2.4,
+      "requests": 12,
+      "bytes": 29000,
+      "firstRow": 2.5,
       "why": "A folder's children — the listing a curator walks the tree with, and the heaviest read on this budget's cheap end because it fetches the folder, its rows and the post-type catalogue that names them."
     },
     "sites": {
       "requests": 8,
-      "bytes": 4000,
+      "bytes": 5000,
       "firstRow": 3,
       "why": "The site list, and the **baseline** every firstRow ratio here is against: the cheapest route the console has and the first one a curator sees."
     },
     "trash": {
       "requests": 11,
-      "bytes": 5000,
-      "firstRow": 2.2,
+      "bytes": 6000,
+      "firstRow": 2,
       "why": "The trash listing, which reads deleted rows plus the filter bar's facets (SH1024)."
     },
     "unknown-route": {
       "requests": 7,
-      "bytes": 3000,
+      "bytes": 4000,
       "firstRow": 2,
       "why": "A route that does not exist, and the reason it is in this budget rather than excluded from it: it renders a 404 and still makes **7 API calls**. That is the shell's floor — what every other entry here is measured on top of — so a route at 8 is one call of its own, not eight. It is also this file's own guard: if the eager bundle ever gets back into the measurement, this entry is the one that cannot hide it, because a 404 has no data of its own."
     },
     "unknown-route-bento": {
       "requests": 7,
-      "bytes": 3000,
+      "bytes": 4000,
       "firstRow": 2,
       "why": "The same 404 under the bento shell, kept beside its console twin so the two shells' floors can be compared rather than assumed equal."
     }

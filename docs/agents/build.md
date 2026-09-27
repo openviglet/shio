@@ -2190,17 +2190,25 @@ that rendered nothing.
 - `unknown-route` — a path the console does not have, rendering a 404 — still makes **7 API calls**.
   That is the shell's own cost, paid by every route, so an entry at 8 is *one call of its own* rather
   than eight. It is also the file's own guard: a 404 has no data of its own, so if that entry is ever
-  megabyte-sized, `DATA_READ` has stopped filtering and every number here is measuring the bundle
+  megabyte-sized, `isDataRead` has stopped filtering and every number here is measuring the bundle
   again. `route-cost-budget.test.mjs` asserts it rather than asserting a blanket ceiling, and the
   blanket was the first draft — see the next point for what refuted it.
 - `post-edit` makes **23**, so sixteen are its own, against a site list's 8. That is the ceiling this
   budget most exists for, and it is the gap the first implementation reported as 1,747,000 against
   1,730,000.
-- `graphql` is the one entry measured in **megabytes** — 1.13 MB, all of it the schema introspection
-  the explorer fetches before a curator types a character. It is a genuine data read, not the bundle
-  leaking back in, which is why the blanket `bytes < 1 MB` assertion had to go: it would have failed
-  a real finding as a defect in the instrument. Held rather than fixed here, so shrinking it becomes
-  an argued change rather than a discovery.
+- ~~`graphql` is the one entry measured in megabytes~~ — **refuted by SH1172.** The 1.13 MB was
+  the explorer's own document and four bundle chunks. The filter matched `/graphql` as a substring,
+  so `/bento/graphql` and `/assets/graphql-*.js` counted as reads. By path, the explorer makes 9 reads
+  and about 40 KB, one introspection POST included. Its bundle is SH1043's subject.
+
+**The first seed was taken from a failing instance (SH1172).** It ran while SH1165's open streams
+were exhausting the connection pool. Seven admin boards never rendered, so they had no entry. Eleven
+byte ceilings sat at 1–2 KB, below the ~3 KB the shell itself reads on a 404, so no page could meet
+them. The budget was re-seeded from a jar carrying the current console build, on a clean provisioned
+instance, and a second jar run reports no finding across 50 families. `belowFloor` in
+`scripts/route-cost.mjs` now makes an unmeetable ceiling a finding of its own: every costed route
+renders inside the shell, so no entry may sit under `unknown-route`'s. A read is decided by its
+pathname: under `/api/v2/`, or `/graphql` exactly.
 
 **Where it runs, and one position that was bought.** It rides `console-check.yml`, which already
 boots a jar, provisions a site and drives Chromium on every pull request — no second workflow, and a

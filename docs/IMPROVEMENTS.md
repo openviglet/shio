@@ -1432,29 +1432,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.35 A budget seeded from a run the pool was failing (SH1172)
-
-Measured against the jar after SH1171 made the request count deterministic. Requests now
-match the seed nearly everywhere; the 404 page is back to 7. Bytes are over on 37
-families and cannot be met. Eleven ceilings are 1000 or 2000 bytes, below the 3083 the
-shell's own reads cost on an empty 404 page, so no page of those families can pass.
-Seven families have no entry at all: groups, users, roles, tokens, webhooks,
-exchange-providers and legacy-console-content.
-
-Both point at the seed. `console-route-budget.json` was recorded at 01:00Z on
-2026-09-27. That was before SH1165: open change streams exhausted the connection pool
-within minutes of a full walk, so late routes failed to render and were never costed,
-and the bytes that were measured came from a degraded run. The fixture has also changed
-since: SH1144's provisioning merges `marketing-site`'s post types, which moves the
-post-type list from 4 KB to 24 KB.
-
-Build: once a jar with the current console build is packaged (a full `package`, not
-`-Dskip.npm`), run `console:check --base <jar> --record-cost` on a clean provisioned
-instance. Write a `why` for each new entry, and check that no bytes ceiling sits below
-the 404 page's floor. The comparator should refuse a seed where one does, because such a
-ceiling cannot be met. Then a jar run is green on cost, and the seed note records the
-run it came from.
-
 ## LXXIII One content model, many languages (Block BH)
 
 Localization in Shio is complete in the data and thin everywhere above it. ShPostUnified

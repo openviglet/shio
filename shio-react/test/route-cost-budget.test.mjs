@@ -13,7 +13,8 @@ import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 
 import {
-  BYTES_HEADROOM, compare, familyOf, foldFamilies, headroom, seedCeilings, staleEntries,
+  BYTES_HEADROOM, belowFloor, compare, familyOf, FLOOR_ROUTE, foldFamilies, headroom, seedCeilings,
+  staleEntries,
 } from "../scripts/route-cost.mjs"
 import { stripComments } from "./support/source-text.mjs"
 
@@ -62,6 +63,23 @@ function budgetFor(measured = MEASURED, baseline = "sites") {
 }
 
 const clone = (o) => JSON.parse(JSON.stringify(o))
+
+test("SH1172: a ceiling below the shell's own floor is refused, and the committed budget has none", () => {
+  // The first seed held eleven byte ceilings at 1–2 KB against a 404 that reads 3 KB: taken from a
+  // run the pool was failing, and unmeetable by any page, since every page pays the shell first.
+  const planted = {
+    routes: {
+      [FLOOR_ROUTE]: { requests: 7, bytes: 4000, firstRow: 2, why: "the floor" },
+      "bento-review": { requests: 9, bytes: 1000, firstRow: 2, why: "seeded from a failing run" },
+      sites: { requests: 8, bytes: 5000, firstRow: 3, why: "fine" },
+    },
+  }
+  const findings = belowFloor(planted)
+  assert.equal(findings.length, 1, `SH1172: expected one finding, got:\n${findings.join("\n")}`)
+  assert.match(findings[0], /^bento-review: the bytes ceiling 1000 is below the shell's own floor/u)
+  assert.deepEqual(belowFloor(BUDGET), [],
+    "SH1172: the committed budget holds a ceiling no page can meet — re-seed it on a healthy instance")
+})
 
 test("SH1113: a planted fetch fails that route's entry and no other", () => {
   const budget = budgetFor()
@@ -199,9 +217,9 @@ test("SH1113: the committed budget is real, and every entry in it argues for its
   }
 
   // The guard against the eager bundle getting back into the measurement, and it is aimed at one
-  // route rather than applied as a blanket ceiling. A blanket one was the first draft and it was
-  // wrong: `graphql` legitimately reads 1.13 MB of schema introspection, which is the page's own
-  // fetch and a finding worth holding rather than a leak worth failing. A 404 route is the case
+  // route rather than applied as a blanket ceiling. SH1172 — the reason a blanket one was refused,
+  // "`graphql` legitimately reads 1.13 MB of schema introspection", was itself the bundle: the old
+  // filter counted the explorer's document and four of its chunks as reads. A 404 route is the case
   // that cannot have data of its own, so if it is ever megabyte-sized the filter is gone.
   const floor = BUDGET.routes["unknown-route"]
   assert.ok(floor, "SH1113: the 404 route is this file's own guard and it has no entry")
@@ -218,9 +236,13 @@ test("SH1113: the committed budget is real, and every entry in it argues for its
 
 test("SH1113: the probe measures the data plane, and says the bundle is not its subject", () => {
   const probe = stripComments(readFileSync(join(ROOT, "e2e", "console-check.mjs"), "utf8"))
-  assert.match(probe, /const DATA_READ = /u,
+  assert.match(probe, /function isDataRead\(url\)/u,
     "SH1113: the filter that keeps the eager bundle out of a per-route cost")
-  assert.match(probe, /mine = \(url\) => \(url\.startsWith\(BASE\) \|\| url\.startsWith\(API\)\) && DATA_READ\.test\(url\)/u,
+  // SH1172 — by path, exactly: a substring match counted `/bento/graphql` and `/assets/graphql-*.js`.
+  assert.match(probe, /path\.startsWith\("\/api\/v2\/"\) \|\| path === "\/graphql"/u,
+    "SH1172: a read is decided by its pathname; a substring of the URL counted the explorer's"
+      + " document and bundle chunks as reads")
+  assert.match(probe, /mine = \(url\) => \(url\.startsWith\(BASE\) \|\| url\.startsWith\(API\)\) && isDataRead\(url\)/u,
     "SH1113: both halves — this instance's own origins, and only its data reads. Dropping the "
       + "second put 1.73 MB of bundle into every route and made a post editor's extra reads a 1% "
       + "difference")

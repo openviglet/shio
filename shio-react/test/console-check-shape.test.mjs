@@ -308,7 +308,7 @@ test("SH1171: the route cost leaves out held streams, and gates only the product
   // opened, and every family was over under the dev server, where StrictMode runs each effect twice.
   assert.match(source, /HELD_STREAM = \/\\\/api\\\/v2\\\/events\\b\/u/,
     "SH1171: the cost watcher no longer names the change stream it leaves out")
-  assert.match(source, /&& !HELD_STREAM\.test\(url\)/,
+  assert.match(source, /&& !HELD_STREAM\.test\(path\)/,
     "SH1171: the cost watcher counts held change streams as reads again")
   assert.match(source, /gateCost\(report, server\.dev\)/,
     "SH1171: the cost gate is no longer told whether it runs against the dev server")

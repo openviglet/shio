@@ -99,7 +99,6 @@ const FIRST_ROW_TIMEOUT = 10_000
  * chunked response does not carry. `ms` is wall-clock to the first row, and is only ever used as a
  * <em>ratio</em> against the baseline route, for the reason `route-cost.mjs` gives.</p>
  */
-const DATA_READ = /\/(api\/v2|graphql)\b/u
 /**
  * SH1171 — the change stream is a held connection, not a read. Every screen opens SH968's shared
  * stream and SH969's bounded replay, and whether either is counted depended on when it opened
@@ -108,11 +107,27 @@ const DATA_READ = /\/(api\/v2|graphql)\b/u
  */
 const HELD_STREAM = /\/api\/v2\/events\b/u
 
+/**
+ * SH1172 — a read is decided by its **path**, not by a substring of its URL. `DATA_READ` matched any
+ * URL with `/graphql` followed by a word boundary, which is also the explorer's own document
+ * (`/bento/graphql`) and four of its bundle chunks (`/assets/graphql.page-….js`, `graphql-….css`,
+ * `graphql.worker-….js`): the explorer's "14 reads" were 9 reads and 5 static files, and its
+ * megabyte was the editor's code rather than the schema. The bundle is SH1043's subject, not this.
+ */
+function isDataRead(url) {
+  let path
+  try {
+    path = new URL(url).pathname
+  } catch {
+    return false
+  }
+  return (path.startsWith("/api/v2/") || path === "/graphql") && !HELD_STREAM.test(path)
+}
+
 function watchCost(page) {
   const cost = { requests: 0, bytes: 0, ms: null }
   const sized = []
-  const mine = (url) => (url.startsWith(BASE) || url.startsWith(API)) && DATA_READ.test(url)
-    && !HELD_STREAM.test(url)
+  const mine = (url) => (url.startsWith(BASE) || url.startsWith(API)) && isDataRead(url)
   page.on("request", (r) => { if (mine(r.url())) cost.requests++ })
   page.on("requestfinished", (r) => {
     if (!mine(r.url())) return

@@ -216,6 +216,36 @@ export function compare(budget, measured) {
     }
     findings.push(...compareFamily(family, entry, walked[family], baselineRow.ms));
   }
+  findings.push(...belowFloor(budget));
+  return findings;
+}
+
+/** The route every other entry is measured on top of: a 404 renders the shell and nothing else. */
+export const FLOOR_ROUTE = "unknown-route";
+
+/**
+ * SH1172 — a ceiling below the shell's own floor, which no page can meet.
+ *
+ * <p>Every route this budget costs renders inside the shell, so it pays the shell's reads before
+ * its own. The first seed held eleven byte ceilings at 1–2 KB against a 404 page that reads 3 KB,
+ * because it was taken from a run the connection pool was failing: a page that can never pass is a
+ * gate somebody learns to re-seed past, which is worse than no gate. So an entry under the floor is
+ * a finding of its own, naming the seed rather than the page.</p>
+ */
+export function belowFloor(budget) {
+  const floor = budget.routes?.[FLOOR_ROUTE];
+  if (!floor) return [];
+  const findings = [];
+  for (const [family, entry] of Object.entries(budget.routes)) {
+    if (family === FLOOR_ROUTE) continue;
+    for (const metric of ["requests", "bytes"]) {
+      if (entry[metric] != null && floor[metric] != null && entry[metric] < floor[metric]) {
+        findings.push(`${family}: the ${metric} ceiling ${entry[metric]} is below the shell's own floor`
+          + ` (${FLOOR_ROUTE}: ${floor[metric]}), so no page can meet it. The seed is wrong, not the`
+          + " page — re-run `console:check --base <jar> --record-cost` on a healthy instance.");
+      }
+    }
+  }
   return findings;
 }
 
