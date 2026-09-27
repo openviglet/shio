@@ -82,9 +82,27 @@
  * `--vg-brand-*` is a different thing and is deliberately untouched: that is Viglet's corporate
  * orange from viglet.org, shared by every product's footer and app switcher, not Shio's accent.
  */
+/*
+ * SH1051 — the same hues one step deeper where they carry text, and primary claimed.
+ *
+ * Measured with the design system's own arithmetic (`viglet-ds-page-lint --contrast`, VDS137):
+ * orange-600 accent text was 3.59:1 on the light ground, and white on the button's orange-500 →
+ * amber-500 gradient 3.89:1 and 3.00:1 — all under AA's 4.5. The 700s clear it on both grounds; the
+ * dark ground keeps orange-400 text, which measured 7.53:1 there. `accent-contrast.test.mjs` runs
+ * the measurement on every `pnpm test`.
+ *
+ * Primary was never claimed, so every surface the authoring contract says reads `--primary` — the
+ * rail's you-are-here marker, the default button — rendered the preset's neutral. It is claimed
+ * through the four base inputs, never by setting the compiled token: orange-700 with white on the
+ * light ground, orange-400 with near-black on the dark one.
+ */
 :root {
-  --vg-accent-from: oklch(70.5% 0.213 47.604); /* orange-500 */
-  --vg-accent-to: oklch(76.9% 0.188 70.08); /* amber-500 */
-  --vg-accent-text: oklch(64.6% 0.222 41.116); /* orange-600 */
+  --vg-accent-from: oklch(55.3% 0.195 38.402); /* orange-700 */
+  --vg-accent-to: oklch(55.5% 0.163 48.998); /* amber-700 */
+  --vg-accent-text: oklch(55.3% 0.195 38.402); /* orange-700 */
   --vg-accent-text-dark: oklch(75% 0.183 55.934); /* orange-400 */
+  --vg-primary-base: oklch(55.3% 0.195 38.402); /* orange-700 */
+  --vg-primary-foreground-base: oklch(0.985 0 0);
+  --vg-primary-base-dark: oklch(75% 0.183 55.934); /* orange-400 */
+  --vg-primary-foreground-base-dark: oklch(0.205 0 0);
 }

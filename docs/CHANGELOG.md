@@ -1906,6 +1906,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1176** — The provisioner reads the change count where the apply puts it, so its log says how much a run wrote: changed=45 on a clean instance (design §LXXII.36 recorded in `docs/agents/blueprints.md`).
 - **SH1053** — Every console page has one main, a skip link first and focus on the new page's title, held by a live probe; busy buttons keep focus and every spinner is heard (design §LXXII.11 recorded in `docs/agents/console-ui.md`).
 - **SH1054** — Axe runs on every console route and at phone and tablet widths with zero serious findings, the document names its language, dark: follows the theme, and jsx-a11y lints (design §LXXII.12 recorded in `docs/agents/console-ui.md`).
+- **SH1051** — Shio's accent clears 4.5:1 on both grounds, measured on every test run, and primary is claimed through its base inputs, so the rail marker and buttons carry the brand (design §LXXII.9 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

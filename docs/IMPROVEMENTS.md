@@ -1354,45 +1354,6 @@ sent an expiring link to a draft rendered by Shio itself.
 
 Breakpoints stay tokens on a Theme; per-element overrides are out of scope.
 
-## LXXII The console as an application: cost, resilience and access (Block BG)
-
-Shio measures what an agent costs to the token, per endpoint, with the reasoning for
-every raise written beside the number, and measures nothing about what its own console
-costs a person. There is no bundle budget. The lazy GraphiQL split is defeated, so an
-editor nobody opened loads on every route. There is no query cache and no request
-cancellation, the console API sends no ETag, one error boundary guards the whole
-application, and a failed fetch leaves a spinner forever. The dashboard downloads two
-whole collections to show two numbers. The accent fails AA, the primary token is never
-claimed, every post-editor field is an unnamed edit box to a screen reader, and no
-accessibility check runs against a rendered page in the console or in the content Shio
-delivers.
-
-The block follows agents.md's rule for any cost: a measurement first, then what the
-number argues for. The bundle gate's seed is taken before the feature blocks add console
-code, so their additions are visible as raises rather than folded into a baseline.
-Resilience and access follow, and the assistant dock from Block AX already carries the
-announcements this block would otherwise have to build.
-
-### LXXII.9 The accent measured, re-keyed and claimed through the inputs (SH1051)
-
-Shio's accent gate asserts four tokens are present. Measured with the design system's
-own arithmetic, the analysis found accent text on the background near 3.6:1 against AA's
-4.5, and the gradient primary button placing white text far lower on the dark ground,
-because the dark block reuses the light fill. Separately nothing in Shio sets the four
---vg-primary base inputs, so the preset's neutral renders in the surfaces
-BENTO-AUTHORING says read --primary, including the rail's active marker, which is the
-failure the contract names.
-
-The gate lands before the re-key, because the numbers argue for the values. Using
-VDS137's exported measurePairs, a Shio test resolves src/index.css over the published
-preset and asserts every accent and primary pair at 4.5:1 on both grounds, printing each
-ratio on every run. Then re-key: deepen the accent text and darken the dark-ground
-fills, or give the button a foreground the pair guarantees.
-
-Claim primary through the four base inputs, never by setting the compiled token, and
-turn the accent gate into a census of claimable families driven by the preset, so a new
-family fails Shio's build instead of silently rendering grey.
-
 ## LXXIII One content model, many languages (Block BH)
 
 Localization in Shio is complete in the data and thin everywhere above it. ShPostUnified

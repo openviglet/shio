@@ -778,10 +778,21 @@ whole re-keying contract:
 
 | Token | Value | Was |
 |---|---|---|
-| `--vg-accent-from` | `oklch(70.5% 0.213 47.604)` | `orange-500` |
-| `--vg-accent-to` | `oklch(76.9% 0.188 70.08)` | `amber-500` |
-| `--vg-accent-text` | `oklch(64.6% 0.222 41.116)` | `orange-600` |
+| `--vg-accent-from` | `oklch(55.3% 0.195 38.402)` — `orange-700` (SH1051) | `orange-500` |
+| `--vg-accent-to` | `oklch(55.5% 0.163 48.998)` — `amber-700` (SH1051) | `amber-500` |
+| `--vg-accent-text` | `oklch(55.3% 0.195 38.402)` — `orange-700` (SH1051) | `orange-600` |
 | `--vg-accent-text-dark` | `oklch(75% 0.183 55.934)` | `orange-400` |
+
+**Measured, not asserted, and primary claimed (SH1051).** The values above were the console's old
+Tailwind classes, and nobody had measured them. `viglet-ds-page-lint --contrast` (VDS137) put
+orange-600 text at 3.59:1 on the light ground and white on the orange-500 → amber-500 button at
+3.89:1 and 3.00:1, all under AA's 4.5. The fills and the light-ground text moved to the 700s, and the
+dark ground keeps orange-400 (7.53:1). Primary was never claimed, so the rail's "you are here" marker
+and the default button rendered the preset's neutral. `:root` now sets the four
+`--vg-primary-*-base` inputs, never `--vg-primary` itself: orange-700 on white text for the light
+ground, orange-400 on near-black for the dark. `test/accent-contrast.test.mjs` runs the measurement
+on every `pnpm test`. It also reads the claimable families from the installed preset, so a family
+the package adds fails Shio's build instead of rendering its neutral here.
 
 Everything else derives from them in the package's preset — the chip tint, the ring, the
 accented label, the solid fill, the focus ring and both hover steps. **Set them on `:root`,

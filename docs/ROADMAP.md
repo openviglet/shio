@@ -31,10 +31,6 @@
 
 - 📋 **SH1148** (deps: design system: BentoDataTable gains a controlled selectedIds beside onSelectionChange) **the table view has no select-everything and no invert, because the table takes no selection in** — SH1142 removed the two rather than leave them inert; they return when the table can be told. → §LXIX.13
 
-## Block BG — The console as an application: cost, resilience and access
-
-- 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
-
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8

@@ -89,6 +89,16 @@ const SWEEP = {
       + "mirror is regenerated. README and shio-site are NOT moved: neither describes the test "
       + "instruments, and no count or claim they state changed",
   },
+  BG: {
+    swept: true,
+    why: "the console as an application, cost and access: a bundle and a per-route cost budget, "
+      + "cancellable reads through one query layer, failures that stay in their screen, and the access "
+      + "half closing with SH1053 (one main, a skip link first, focus that follows the page), SH1054 "
+      + "(axe on every route and at three widths, the document's language, dark: following the theme) "
+      + "and SH1051 (the accent measured to AA and primary claimed). docs-shio moved: content-console "
+      + "gained the keyboard paragraph and COVERAGE names every id, with the mirror regenerated. README "
+      + "and shio-site are NOT moved: neither states anything about the console's cost or accessibility",
+  },
   BH: {
     swept: true,
     why: "content i18n as a decision rather than a description: a declared locale policy, the locale "
