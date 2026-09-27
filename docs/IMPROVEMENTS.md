@@ -1615,30 +1615,6 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline.
 
-### LXXIV.13 A redirect the front end never hears about (SH1064) (SH1133)
-
-A `Redirect` is served by `ShPageRenderService`, which answers `/sites/**` — the
-instance's own delivery. A site with a front end does not go through it: Next.js owns
-those URLs, asks the CDA for content by address, and never asks which addresses moved.
-So SH1064's op, the console's publish-dialog offer and `verify`'s `url-orphaned` all now
-write and demand a post that, for a headless site, changes nothing a visitor can
-observe. The lint is the sharpest edge: it reports an error whose fix writes a row
-nobody serves, and then goes quiet because the address resolves.
-
-Nothing in the delivery layer knows the type. `@viglet/shio-client` has no redirect
-call, `create-shio-app`'s template has no middleware, and the CDA has no listing —
-grepping all three for the name returns the CLI and the converter only.
-
-What this needs is one read and one consumer. The CDA gains the site's redirect table,
-the SDK a `redirects()` that returns it, and `create-shio-app` a `middleware.ts` that
-consults it before a 404 — the map is small, site-scoped and cacheable, so the front end
-can hold it rather than ask per request. `verify` then stops claiming a repair it cannot
-make: with a front end configured, `url-orphaned` says the redirect has to reach the
-front end's own routing, and `shio redirects` prints which of the two serves each row.
-
-The alternative — teaching the renderer to answer for a headless site — is not one: that
-is the delivery split the product is built on.
-
 ### LXXIV.14 A hand-over with no bytes in it (SH1065) (SH1134)
 
 The exchange format has carried binaries since SH68: `ShExchangePackageCodec` writes a

@@ -70,6 +70,21 @@ test("SH1064: nothing orphaned says so, and --no-check says it did not look", ()
     + "second for the first is how a skipped check reads as a clean bill");
 });
 
+test("SH1133: a site with a front-end URL is told which table its front end has to read", () => {
+  const frontEnds = new Map([["Acme", { id: "site-42", url: "https://www.acme.test" }]]);
+  const table = rows(FOUND, READ, frontEnds);
+
+  assert.deepEqual(table.map((row) => row.frontEnd), ["https://www.acme.test", "https://www.acme.test"]);
+  const out = render(table, [], { frontEnds });
+  assert.match(out, /Acme is served at https:\/\/www\.acme\.test\./u);
+  assert.match(out, /GET \/api\/v2\/cda\/site\/site-42\/redirects/u,
+    "SH1133: this instance honours the rows; a front end of its own honours them only by reading "
+      + "the table, and the note names the exact read");
+
+  assert.doesNotMatch(render(rows(FOUND, READ), []), /served at/u,
+    "SH1133: a site with no front-end URL is served here, where the rows are the whole answer");
+});
+
 test("SH1064: a redirect with no target is the row worth seeing", () => {
   const table = rows({ results: [{ address: "post:Acme/old", state: "published" }] },
     [{ address: "post:Acme/old", data: { TITLE: "z", TO: "" } }]);

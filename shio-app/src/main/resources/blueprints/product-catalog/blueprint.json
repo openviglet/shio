@@ -77,8 +77,16 @@
       "from": "files/app/products/page.tsx"
     },
     {
+      "path": "lib/redirects.ts",
+      "from": "files/lib/redirects.ts"
+    },
+    {
       "path": "lib/shio.ts",
       "from": "files/lib/shio.ts"
+    },
+    {
+      "path": "middleware.ts",
+      "from": "files/middleware.ts"
     },
     {
       "path": "next-env.d.ts",

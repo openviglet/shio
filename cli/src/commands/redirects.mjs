@@ -21,8 +21,14 @@ import { helpText } from "../help.mjs";
 
 export const HELP = helpText("redirects");
 
-/** One row per redirect: where it answers, where it sends, and which status a visitor gets. */
-export function rows(found, read) {
+/**
+ * One row per redirect: where it answers, where it sends, and which status a visitor gets.
+ *
+ * <p>SH1133 — and who serves it. `frontEnds` maps a site name to `{ id, url }` from the context
+ * pack; a site with a front-end URL may be delivered by a front end of its own, which sees these
+ * rows only if it reads the CDA's table. Absent, every row's `frontEnd` is null.</p>
+ */
+export function rows(found, read, frontEnds = new Map()) {
   const fields = new Map();
   // `read` answers with one doc per address, and `data` is the field values — the same shape
   // `shio annotations` joins on, keyed by the canonical address the read returns.
@@ -40,6 +46,7 @@ export function rows(found, read) {
       to: to === null || to === "" ? null : String(to),
       permanent: isTrue(values.PERMANENT ?? values.permanent),
       state: row.state ?? null,
+      frontEnd: frontEnds.get(siteOf(row.address))?.url || null,
     };
   }).sort((left, right) => left.from.localeCompare(right.from));
 }
@@ -49,7 +56,7 @@ export function orphans(report) {
   return (report?.findings ?? []).filter((finding) => finding.rule === "url-orphaned");
 }
 
-export function render(redirects, orphaned, { checked = true } = {}) {
+export function render(redirects, orphaned, { checked = true, frontEnds = new Map() } = {}) {
   const lines = [];
   for (const row of redirects) {
     // A redirect with no target renders as a page rather than redirecting (SH385), so an empty
@@ -60,6 +67,16 @@ export function render(redirects, orphaned, { checked = true } = {}) {
     lines.push(`  ${row.from} -> ${target}  ${status}${draft}`.trimEnd());
   }
   lines.unshift(`${redirects.length} redirect(s)`);
+  // SH1133 — this instance's /sites/ delivery honours every row above. A site with a front-end URL
+  // may be served by a front end of its own instead, and that one honours them only if it reads the
+  // table; the CMS cannot tell from the URL which of the two it is, so the note says both.
+  const served = [...new Set(redirects.filter((row) => row.frontEnd).map((row) => siteOf(row.address)))];
+  for (const name of served.sort()) {
+    const { id, url } = frontEnds.get(name) ?? {};
+    lines.push("", `${name} is served at ${url}. If that is a front end of its own rather than this `
+      + "instance's /sites/ delivery, these redirects reach visitors only when it reads "
+      + `GET /api/v2/cda/site/${id ?? "<siteId>"}/redirects (create-shio-app's middleware.ts does).`);
+  }
   if (!checked) {
     lines.push("", "orphans not checked (--no-check)");
     return `${lines.join("\n")}\n`;
@@ -86,7 +103,9 @@ export async function run(flags, positionals, ctx) {
   // One read for every redirect rather than one each: the fields are the answer, and N round
   // trips for N rows is the shape this surface's multi-address read exists to avoid (SH171).
   const read = addresses.length > 0 ? await client.read(addresses) : null;
-  const table = rows(found, read);
+  // SH1133 — each site's front-end URL, read only when there is a redirect to say it about.
+  const frontEnds = addresses.length > 0 ? await siteFrontEnds(client) : new Map();
+  const table = rows(found, read, frontEnds);
 
   const report = checked
     ? await client.verify(site ? { site, checks: "routes" } : { checks: "routes" })
@@ -97,8 +116,25 @@ export async function run(flags, positionals, ctx) {
     ctx.stdout.write(`${JSON.stringify({ redirects: table, orphaned }, null, 2)}\n`);
     return orphaned.length > 0 ? 1 : 0;
   }
-  ctx.stdout.write(render(table, orphaned, { checked }));
+  ctx.stdout.write(render(table, orphaned, { checked, frontEnds }));
   return orphaned.length > 0 ? 1 : 0;
+}
+
+/** Site name -> `{ id, url }`, from the context pack's site rows (the read `shio site` makes). */
+async function siteFrontEnds(client) {
+  const { body } = await client.getContext({ include: "sites", format: "json" });
+  const sites = JSON.parse(body).sites ?? [];
+  return new Map(sites
+    .filter((site) => site?.name)
+    .map((site) => [site.name, { id: site.id ?? null, url: site.url ?? "" }]));
+}
+
+/** `post:Site/some/url` -> `Site`. */
+function siteOf(address) {
+  const text = String(address ?? "");
+  const colon = text.indexOf(":");
+  const slash = text.indexOf("/", colon + 1);
+  return text.slice(colon + 1, slash < 0 ? undefined : slash);
 }
 
 /** `post:Site/some/url` -> `/some/url`; anything else is printed as it came. */

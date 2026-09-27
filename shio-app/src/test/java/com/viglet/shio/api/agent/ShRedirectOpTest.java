@@ -213,6 +213,13 @@ class ShRedirectOpTest {
         return shAgentVerifyService.verify(siteName, "routes", 200);
     }
 
+    /** SH1133 — the site's front-end URL, set or cleared in its own transaction. */
+    private void siteUrl(String url) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                entityManager.createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                        .setParameter("name", siteName).getSingleResult().setUrl(url));
+    }
+
     // --- the tests ---
 
     @Test
@@ -309,6 +316,27 @@ class ShRedirectOpTest {
         assertThat(orphaned.get(0).address()).isEqualTo("post:" + siteName + "/docs");
         assertThat(orphaned.get(0).message()).contains("1 published page(s) still link to it");
         assertThat(orphaned.get(0).fix()).contains("post.redirect");
+        assertThat(orphaned.get(0).fix())
+                .describedAs("SH1133: a site with no front-end URL is served by this instance, where "
+                        + "the redirect post is the whole repair")
+                .doesNotContain("/redirects");
+
+        // SH1133 — with a front end of its own, the same repair writes a row no visitor passes
+        // through unless that front end reads the table, so the fix says where it has to reach.
+        siteUrl("https://www.example.test");
+        try {
+            String fix = verifyRoutes().findings().stream()
+                    .filter(finding -> "url-orphaned".equals(finding.rule()))
+                    .findFirst().orElseThrow().fix();
+            assertThat(fix)
+                    .describedAs("SH1133: the fix names the front end and the table it has to consult")
+                    .contains("https://www.example.test")
+                    .contains("/api/v2/cda/site/")
+                    .contains("/redirects")
+                    .contains("middleware.ts");
+        } finally {
+            siteUrl(null);
+        }
 
         run(false, redirect("/docs", "/handbook", null));
 

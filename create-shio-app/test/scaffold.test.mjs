@@ -37,6 +37,9 @@ test("scaffolds the full template tree", async () => {
       "tsconfig.json",
       "next.config.mjs",
       "lib/shio.ts",
+      // SH1133 — the redirect table, consulted before a page is looked up.
+      "middleware.ts",
+      "lib/redirects.ts",
       "app/layout.tsx",
       "app/page.tsx",
       "app/[...slug]/page.tsx",

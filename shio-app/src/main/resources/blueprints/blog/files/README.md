@@ -26,6 +26,7 @@ Content Delivery API — headless, TypeScript-first, **zero Java**.
 - [`lib/shio.ts`](lib/shio.ts) creates a shared [`@viglet/shio-client`](https://www.npmjs.com/package/@viglet/shio-client) instance from the environment.
 - [`app/page.tsx`](app/page.tsx) lists the site's published posts (`shio.query`).
 - [`app/[...slug]/page.tsx`](app/[...slug]/page.tsx) resolves any path to a post via `shio.getPostByUrl(siteId, "/the/path")` — friendly-URL routing straight from the CDA, with `generateStaticParams` (SSG) + `revalidate` (ISR).
+- [`middleware.ts`](middleware.ts) answers a path that moved. Redirects written in Shio (a `Redirect` post, or keeping an old address working when a page is renamed) come from the CDA's `/site/{siteId}/redirects` table, held for 60 seconds, and a moved path gets its `301` or `302` before any page is looked up. The logic is in [`lib/redirects.ts`](lib/redirects.ts).
 
 All content comes from the Shio CDA (`/api/v2/cda/**`). You never touch the Java backend — just edit React/TypeScript.
 

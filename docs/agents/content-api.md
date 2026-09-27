@@ -1515,7 +1515,7 @@ a front end needs once. The five-argument constructor is that shape, and the con
 (`ShConsoleNavigationMapper`) uses it too. `ShCdaSiteLocalesTest` asserts the declared read, the
 production/preview split, the batched listing and the silent breadcrumb.
 
-## A front end that owns its URLs can read which ones moved (SH1133, first slice)
+## A front end that owns its URLs can read which ones moved (SH1133)
 
 A `Redirect` post is honoured by `ShPageRenderService`, which answers `/sites/**`. A headless site
 never goes through it: Next.js owns those URLs and asks the CDA for content by address, so SH1064's
@@ -1537,10 +1537,22 @@ could observe.
   to redirect to a page only a draft holds; a site the token may not read is the same 404 as a
   missing one.
 
-What this slice does not do yet, and the line stays open for: `create-shio-app`'s middleware that
-consults the table before a 404, `verify`'s `url-orphaned` saying so when a front end is configured,
-and `shio redirects` naming which of the two serves each row. `ShCdaRedirectsTest` holds the order,
-both token kinds, the scoped 404 and the wire names.
+`ShCdaRedirectsTest` holds the order, both token kinds, the scoped 404 and the wire names.
+
+**The consumer is a `middleware.ts`, not a page's `redirect()`.** Next's `redirect()` and
+`permanentRedirect()` answer 307/308, and the table promises 301/302; only a response carries those.
+A redirect's source is its own address (the batch refuses one over a live page), so consulting the
+table *first* is the same as consulting it before a 404. `create-shio-app/template/lib/redirects.ts`
+is plain TypeScript with no `next` import, which is what lets `create-shio-app/test/redirects.test.mjs`
+import it under Node's type stripping: it matches in `ShFurlSpellings.canonical`'s spelling, holds the
+table 60 s (the pages' ISR window), shares one in-flight load, and keeps the last table when the CMS is
+unreachable. **It calls the endpoint with `fetch`, not `getRedirects`**: the template installs the
+published SDK, which predates the method, and an instance without the endpoint answers 404, read as
+an empty table. `pnpm -C create-shio-app run emit` carries the two files into all six blueprints.
+
+**Where a repair has to reach is said, not assumed.** `url-orphaned`'s fix and `shio redirects` both
+add a note for a site with a front-end URL, naming the table the front end must read. Conditional,
+because that URL may be this instance's own `/sites/` address and the string cannot say which.
 
 ## A site's coverage in one read (SH1131)
 

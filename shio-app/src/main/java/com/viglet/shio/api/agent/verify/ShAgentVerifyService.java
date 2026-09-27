@@ -2325,9 +2325,29 @@ public class ShAgentVerifyService {
                                 + "{\"op\":\"post.redirect\",\"address\":\"" + address
                                 + "\",\"to\":\"post:" + site.getName() + "/<where it went>\"}. "
                                 + "Repointing the pages here fixes only the links this instance "
-                                + "can see."));
+                                + "can see." + frontEndRedirectNote(site)));
             });
         });
+    }
+
+    /**
+     * SH1133 — what a {@code post.redirect} does not reach on its own.
+     *
+     * <p>A {@code Redirect} post is honoured by this instance's {@code /sites/**} delivery, and a
+     * site with a front end of its own does not go through it. The fix above then writes a row that
+     * changes nothing a visitor can observe, and the finding goes quiet because the address resolves.
+     * So a site with a front-end URL is told where the redirect has to reach. Conditional, because the
+     * URL may be this instance's own {@code /sites/} address, and the CMS cannot tell from the string
+     * which of the two it is.</p>
+     */
+    private static String frontEndRedirectNote(ShSite site) {
+        if (isBlank(site.getUrl())) {
+            return "";
+        }
+        return " If '" + site.getUrl().trim() + "' is a front end of its own rather than this "
+                + "instance's /sites/ delivery, the redirect reaches visitors only when that front end "
+                + "consults GET /api/v2/cda/site/" + site.getId() + "/redirects before answering 404 "
+                + "(create-shio-app's middleware.ts does).";
     }
 
     /**
