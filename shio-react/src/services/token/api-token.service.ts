@@ -3,8 +3,8 @@ import type { ShRead } from "@/lib/read-options"
 import type { ShApiToken } from "@/models/token/api-token.model"
 
 export class ShApiTokenService {
-  async list(): Promise<ShApiToken[]> {
-    const response = await axios.get<ShApiToken[]>("/v2/api-token")
+  async list(read: ShRead = {}): Promise<ShApiToken[]> {
+    const response = await axios.get<ShApiToken[]>("/v2/api-token", { signal: read.signal })
     return response.data
   }
 

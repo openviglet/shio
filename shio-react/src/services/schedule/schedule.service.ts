@@ -1,4 +1,5 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 
 /** One scheduled post as `/agent/find?scheduled=` returns it (SH991). */
 export interface ShScheduledRow {
@@ -32,12 +33,13 @@ interface FindPage {
  * order — find sorts by address, its cursor — so the rows are walked to the end and sorted here.</p>
  */
 export class ShScheduleService {
-  async upcoming(): Promise<ShScheduleEntry[]> {
+  async upcoming(read: ShRead = {}): Promise<ShScheduleEntry[]> {
     const rows: ShScheduledRow[] = []
     let after: string | undefined
     // Bounded, so a server answering the same cursor forever is a short agenda rather than a hang.
     for (let page = 0; page < 50; page++) {
       const response = await axios.get<FindPage>("/v2/agent/find", {
+        signal: read.signal,
         params: { scheduled: "any", ids: true, limit: 500, after },
       })
       rows.push(...(response.data.results ?? []))

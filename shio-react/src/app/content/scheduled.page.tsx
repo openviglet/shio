@@ -1,6 +1,7 @@
 import { IconCalendarTime } from "@tabler/icons-react"
 import { CalendarClock } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { EmptyState } from "@/components/empty-state"
@@ -31,19 +32,19 @@ const ACTION_BADGE: Record<ShScheduleEntry["action"], string> = {
  */
 export default function ScheduledPage() {
   const { t } = useTranslation()
-  const [entries, setEntries] = useState<ShScheduleEntry[]>([])
-  const [loading, setLoading] = useState(true)
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */
-  const fetchAgenda = useCallback(
-    () => service.upcoming().then(setEntries).catch(() => setEntries([]))
-      .finally(() => setLoading(false)),
-    [],
-  )
-
-  useEffect(() => {
-    void fetchAgenda()
-  }, [fetchAgenda])
+  /*
+   * SH1155 — the agenda, cancelled when the page unmounts. It walks up to fifty pages of
+   * `/agent/find`, so a curator who opens it and leaves immediately used to leave that walk running
+   * to its own bound; the signal stops it at the page it is on.
+   */
+  const read = useQuery<ShScheduleEntry[]>({
+    queryKey: addressKey("summary:scheduled"),
+    queryFn: ({ signal }) => service.upcoming({ signal }),
+  })
+  const entries = read.data ?? []
+  const loading = read.isPending
 
   const when = (at: string) => new Date(at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
 

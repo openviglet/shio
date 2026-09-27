@@ -2535,6 +2535,22 @@ undo it, so a cancelled write is a write whose answer was discarded. `dryRun=tru
 it is a read wearing a write's verb, because the plan is computed by the writer — so hanging up on it
 loses only an answer nobody wants. **The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12.**
 
+**Slice eight took four more** (SH1155), and three of them carried something other than a missing
+signal. `graphql.page.tsx` held `useEffect(() => {}, [t])` — the **second** empty effect on the list
+after SH1150's — and its token list turns an empty state on the difference between `null` (still
+loading) and `[]` (loaded, none usable), so a failure has to become `[]` rather than stay `null`.
+`scheduled.page.tsx` is where the signal is worth most: its read walks up to **fifty pages** of
+`/agent/find`, so a curator who opened the agenda and left immediately left that walk running to its
+own bound. `working-line.tsx` keeps its `mark` as state on purpose, because a timer clears it when the
+claim expires — the line goes away the moment it stops being true without asking again.
+
+**And the setup page records the opposite lesson, which is worth having after seven slices of moving
+reads out of effects: its redirect *belongs* in one.** Navigating is a side effect, and doing it during
+render is what `react-compiler` refuses outright ("This value cannot be modified"). It reads nothing,
+so this list has no business with it, and it sets no state, so `set-state-in-effect` has nothing to
+say either. An effect is simply the right shape for a side effect — the rule was never "no effects".
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8.**
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key

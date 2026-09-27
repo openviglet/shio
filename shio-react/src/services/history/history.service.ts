@@ -40,8 +40,9 @@ export class ShHistoryService {
    * Derived from who wrote recently and expiring on its own, so there is nothing to release. It
    * refuses nothing: a save while it is showing meets the same SH985 guard it always did.
    */
-  async working(objectId: string): Promise<ShWorking | null> {
-    const response = await axios.get<ShWorking | "">(`/v2/history/working/${objectId}`)
+  async working(objectId: string, read: ShRead = {}): Promise<ShWorking | null> {
+    const response = await axios.get<ShWorking | "">(`/v2/history/working/${objectId}`,
+      { signal: read.signal })
     return response.data || null
   }
 }

@@ -60,20 +60,16 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
  * list working — a debt paid off has to leave it, or the next reader counts it twice.</p>
  */
 const UNCANCELLED = new Set([
-  "src/app/admin/graphql/graphql.page.tsx",
   "src/app/admin/review/review.list.page.tsx",
   "src/app/content/post.edit.page.tsx",
   "src/app/content/post.new.page.tsx",
-  "src/app/content/scheduled.page.tsx",
   "src/app/editor/visual-editor.page.tsx",
-  "src/app/setup/setup.page.tsx",
   // The one the stripper caught on a real file rather than a planted one: this page's prose says
   // "an ambient signal", and a raw scan read that as cancellation and passed it.
   "src/app/system/bento.root.page.tsx",
   "src/components/post-history.panel.tsx",
   "src/components/post-live-preview.tsx",
   "src/components/widgets/content-browser-dialog.tsx",
-  "src/components/working-line.tsx",
 ]);
 
 /**
@@ -269,7 +265,7 @@ test("SH1047: no screen fetches inside an effect without a signal, outside the d
   // The floor is a vacuity guard — it exists so a scan that has stopped matching cannot report a
   // clean console — and it is set below the current measurement rather than at it, so it does not
   // have to be edited by every slice. It may only ever come down alongside a shrinking list.
-  assert.ok(fetching.length >= 28,
+  assert.ok(fetching.length >= 22,
     `SH1047: only ${fetching.length} fetching effect(s) found — this scan is measuring nothing`);
 
   const arrived = uncancelled.filter((path) => !UNCANCELLED.has(path));
@@ -340,9 +336,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 12,
+  assert.ok(UNCANCELLED.size <= 8,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "the slices took it to 28, 25, 21, 19, 16, 14 and 12. It may only ever shrink.");
+      + "the slices took it to 28, 25, 21, 19, 16, 14, 12 and 8. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -683,6 +679,59 @@ test("SH1154: the two dialogs read on open, and one of them paid off a suppressi
     assert.ok(!baseline.includes(`"${paid}": 1`),
       `SH1154: ${paid} is still declared in the lint baseline, which is the other book SH1136 keeps`);
   }
+});
+
+test("SH1155: four more, a second dead effect, and one effect that is the right shape", () => {
+  /*
+   * SH1155 — the fourth slice to find something other than a missing signal.
+   *
+   * `graphql.page.tsx` held `useEffect(() => {}, [t])` — the **second** empty effect on the declared
+   * list, after the one SH1150 deleted from the post-type create page. Both were there because the
+   * scan counted a file that had a `useEffect` and a service call anywhere in it; both were dead code.
+   */
+  const graphql = stripComments(readFileSync(
+    join(ROOT, "src/app/admin/graphql/graphql.page.tsx"), "utf8"));
+  assert.doesNotMatch(graphql, /useEffect/u,
+    "SH1155: an effect is back in the GraphQL explorer. The one this deleted had an empty body and "
+      + "fetched nothing — the second of its kind on this list.");
+  assert.match(graphql, /const tokens = read\.data \?\? \(read\.isError \? \[\] : null\)/u,
+    "SH1155: this page's empty state turns on the difference between `null` (still loading) and `[]` "
+      + "(loaded, none usable), so a failure has to become `[]` and not stay `null` for ever — "
+      + "`data ?? []` would have shown \"no usable token\" while the read was still in flight");
+
+  // The schedule page walks up to fifty pages of /agent/find, so the signal is worth more here than
+  // anywhere else on the list: leaving the page used to leave that walk running to its own bound.
+  const schedule = stripComments(readFileSync(
+    join(ROOT, "src/services/schedule/schedule.service.ts"), "utf8"));
+  assert.match(schedule, /signal: read\.signal/u,
+    "SH1155: the paged walk does not carry the signal, so cancelling it cancels nothing");
+  assert.match(schedule, /for \(let page = 0; page < 50; page\+\+\)/u,
+    "SH1155: the walk is still the paged loop this is about — if it stopped being one, the claim "
+      + "about what the signal saves is no longer the reason");
+
+  // `working-line` keeps `mark` as state on purpose: a timer clears it when the claim expires, so the
+  // line disappears the moment it stops being true without asking the server again.
+  const working = stripComments(readFileSync(join(ROOT, "src/components/working-line.tsx"), "utf8"));
+  assert.match(working, /queryFn: \(\{ signal \}\) => service\.working\(objectId, \{ signal \}\)/u);
+  assert.match(working, /setTimeout\(\(\) => setMark\(null\)/u,
+    "SH1155: the expiry timer is why `mark` is state rather than the query's data");
+  assert.match(working, /void invalidate\(`summary:working\|\$\{objectId\}`\)/u,
+    "SH1155: `useChangeStream` calls `ask` when the server says this object moved, so `ask` has to "
+      + "stay a function — an invalidation rather than a second way to make the same request");
+
+  /*
+   * And the one that is worth recording in the other direction: after seven slices of moving reads out
+   * of effects, the setup page's redirect **belongs** in one. Navigating is a side effect, so doing it
+   * during render is what `react-compiler` refuses outright.
+   */
+  const setup = stripComments(readFileSync(join(ROOT, "src/app/setup/setup.page.tsx"), "utf8"));
+  assert.match(setup, /useEffect\(\(\) => \{\s*if \(status\.isSuccess && !status\.data\.required\)/u,
+    "SH1155: the redirect is in an effect. It reads nothing, so it is not this list's business, and "
+      + "it sets no state, so `set-state-in-effect` has nothing to say — an effect is simply the "
+      + "right shape for a side effect.");
+  assert.match(setup, /const checking = status\.isPending/u,
+    "SH1155: `isPending` is the honest source for \"still checking\" — the `setChecking(false)` this "
+      + "replaced ran on a cancelled read too, showing the setup form to somebody already leaving");
 });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {

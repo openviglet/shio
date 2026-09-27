@@ -8,7 +8,9 @@ import { GraphiQL } from "graphiql"
 import { createGraphiQLFetcher } from "@graphiql/toolkit"
 import { IconBrandGraphql, IconKey } from "@tabler/icons-react"
 import { KeyRound, Info } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
@@ -42,23 +44,32 @@ export default function GraphiQLPage() {
     const navigate = useNavigate()
 
     // null = still loading; [] = loaded but none usable.
-    const [tokens, setTokens] = useState<ShApiToken[] | null>(null)
     const [selectedId, setSelectedId] = useState<string>("")
 
-    useEffect(() => {
-    }, [t])
+    /*
+     * SH1155 — the usable tokens, cancelled when the explorer unmounts.
+     *
+     * `null` still means "still loading" and `[]` "loaded but none usable", which this page's empty
+     * state turns on — so the failure path keeps saying `[]` rather than leaving `null` for ever, and
+     * that distinction is why `data ?? (isError ? [] : null)` is spelled out rather than `data ?? []`.
+     */
+    const read = useQuery<ShApiToken[]>({
+        queryKey: addressKey("token:"),
+        queryFn: async ({ signal }) => {
+            const list = await tokenService.list({ signal })
+            return list.filter((tk) => tk.enabled && tk.token)
+        },
+    })
+    const tokens = read.data ?? (read.isError ? [] : null)
 
-    useEffect(() => {
-        tokenService.list()
-            .then((list) => {
-                const usable = list.filter((tk) => tk.enabled && tk.token)
-                setTokens(usable)
-                const remembered = localStorage.getItem(STORAGE_KEY)
-                const initial = usable.find((tk) => tk.id === remembered) ?? usable[0]
-                if (initial) setSelectedId(initial.id)
-            })
-            .catch(() => setTokens([]))
-    }, [])
+    // The remembered choice, applied once the list arrives — during render, not in an effect.
+    const [seeded, setSeeded] = useState(false)
+    if (read.isSuccess && !seeded) {
+        setSeeded(true)
+        const remembered = localStorage.getItem(STORAGE_KEY)
+        const initial = read.data.find((tk) => tk.id === remembered) ?? read.data[0]
+        if (initial) setSelectedId(initial.id)
+    }
 
     const selectedToken = useMemo(
         () => tokens?.find((tk) => tk.id === selectedId),
