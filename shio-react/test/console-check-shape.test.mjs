@@ -315,3 +315,15 @@ test("SH1171: the route cost leaves out held streams, and gates only the product
   assert.match(source, /if \(dev\) \{[\s\S]*?return\s*\}/,
     "SH1171: under the dev server the cost gate fails on StrictMode's doubled reads again")
 })
+
+test("SH1174: the drive hears what Publish answered, and one success said twice is still one", () => {
+  // Measured: the toast and the assistant dock both said "Publicado", the two-element locator made
+  // `waitFor` throw, and the catch read a successful publish as "reported nothing".
+  assert.match(source, /getByText\(\/\^\(Publicado\|Published\)\$\/\)\.first\(\)\.waitFor/,
+    "SH1174: the published text is matched without .first(), so a toast and a dock report saying"
+      + " the same word read as silence")
+  assert.match(source, /page\.on\("response", hear\)/,
+    "SH1174: the drive no longer hears the publish write, so a refusal reads as silence again")
+  assert.match(source, /publish refused: \$\{driveProbe\.publishRefused\}/,
+    "SH1174: the summary line can say 'publish skipped: undefined' over a publish it attempted")
+})

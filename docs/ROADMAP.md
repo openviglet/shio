@@ -40,7 +40,7 @@
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
-- 📋 **SH1174** (deps: —) **the Universal Editor drive's Publish reports nothing, and the check cannot say whether it was refused** — A refusal goes to the dock rather than a toast and is recorded nowhere, so the probe reads it as silence and prints undefined as its reason. → §LXXIV.19
+- 📋 **SH1175** (deps: —) **editing a plain field's end in the Universal Editor stores &amp;nbsp; as text, escaped once more on each save** — The bridge writes a plain field with textContent but reads every field with innerHTML, so a typed trailing space arrives as markup. → §LXXIV.20
 
 ## Priority
 

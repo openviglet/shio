@@ -1238,16 +1238,45 @@ async function checkEditorDrive(context, sites) {
         + "and a green publish here would be green over an empty batch"
     } else {
       const publish = page.getByRole("button", { name: /^(Publicar|Publish)$/ })
+      /*
+       * SH1174 — what the write answered, heard at the network. A refusal goes to the dock through
+       * `reportRefusal`, not to a toast, and a 4xx is not an incident, so without this the probe read
+       * a refusal as silence and said "publish skipped: undefined" over a publish it had attempted.
+       */
+      const writes = []
+      const hear = (r) => {
+        const method = r.request().method()
+        if (!/\/api\/v2\/post-unified\//.test(r.url()) || !["PATCH", "POST"].includes(method)) return
+        writes.push(r.text().catch(() => "").then((body) => {
+          let type
+          try { type = JSON.parse(body)?.type } catch { type = undefined }
+          return { status: r.status(), method, type: type ? String(type).replace(/^.*\/errors\//, "") : undefined }
+        }))
+      }
+      page.on("response", hear)
       await publish.click({ timeout: 10_000 })
       // The toast, not the button's own state: `persist` clears the pending map in the same tick
       // it succeeds *and* in the tick it fails, so an empty change count says nothing about which.
-      const published = await page.getByText(/^(Publicado|Published)$/).waitFor(
+      // SH1174 — `.first()`: the toast and the assistant dock (SH965) both say it, and a locator
+      // matching two elements makes `waitFor` throw a strict-mode error — which the catch below read
+      // as "Publish reported nothing" over a publish that had succeeded and said so twice.
+      const published = await page.getByText(/^(Publicado|Published)$/).first().waitFor(
         { state: "visible", timeout: 15_000 }).then(() => true).catch(() => false)
+      page.off("response", hear)
+      probe.publishWrites = await Promise.all(writes)
+      const refused = probe.publishWrites.find((w) => w.status >= 400)
       if (!published) {
+        // What the curator was looking at when nothing said "published" — the one view of this
+        // failure the network cannot give.
+        probe.shot = join(OUT, "universal-editor-drive-publish.png")
+        await page.screenshot({ path: probe.shot }).catch(() => {})
         probe.ok = false
-        probe.errors.push("SH659: the editor's Publish reported nothing — `persist(true)` is the "
-          + "one path `universal-editor-save-back` does not cover, since it patches with "
-          + "`publish:true` rather than saving a draft")
+        probe.publishRefused = refused
+          ? `${refused.status} ${refused.type ?? "(no problem type)"}`
+          : probe.publishWrites.length ? "the write succeeded and no toast followed" : "no write was sent"
+        probe.errors.push(`SH659: the editor's Publish reported nothing — ${probe.publishRefused}. `
+          + "`persist(true)` is the one path `universal-editor-save-back` does not cover, since it "
+          + "patches with `publish:true` rather than saving a draft")
       } else {
         probe.published = true
       }
@@ -1678,7 +1707,10 @@ async function main() {
     + (driveProbe.skipped
       ? `skipped: ${driveProbe.skipped}`
       : `${driveProbe.site} — ${driveProbe.props} editable prop(s), `
-        + (driveProbe.published ? "published" : `publish skipped: ${driveProbe.publishSkipped}`)))
+        // SH1174 — three outcomes, and `publishSkipped` is only the reason for NOT attempting.
+        + (driveProbe.published ? "published"
+          : driveProbe.publishRefused ? `publish refused: ${driveProbe.publishRefused}`
+            : `publish skipped: ${driveProbe.publishSkipped}`)))
   for (const e of driveProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   await browser.close()

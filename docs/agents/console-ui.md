@@ -1426,6 +1426,18 @@ nothing said which resource. The check now also listens for `requestfailed` and 
 skipped because the console aborts superseded and unmounted reads on purpose (SH1047, SH1116). Across
 72 probes the listener added no false failures. `console-check-shape.test.mjs` holds both halves.
 
+## The Universal Editor drive hears what Publish answered (SH1174)
+
+Against a jar, the drive failed on "the editor's Publish reported nothing" and printed "publish
+skipped: undefined". Neither was true. The write succeeded, and the success was shown twice: once
+in the toast and once in the assistant dock (SH965). A locator matching two elements makes
+Playwright's `waitFor` throw a strict-mode error, and the probe's `catch(() => false)` read that as
+silence. The drive now matches with `.first()`. It also listens for the `post-unified` PATCH or
+POST around the click and records each response's status and problem `type`, because a real refusal
+goes to the dock rather than a toast and is recorded nowhere else. The summary line reports
+"published", "publish refused: <status type>" or "publish skipped: <reason>". A failed publish also
+saves `universal-editor-drive-publish.png`, and that screenshot is what exposed SH1175.
+
 ## The check was walking another product's console (SH927, probe half)
 
 SH927 was filed about redness: the GraphQL explorer's Monaco workers fall back to the main thread

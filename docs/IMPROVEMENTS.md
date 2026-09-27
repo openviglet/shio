@@ -1493,26 +1493,26 @@ Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits 
 here with no baseline. Then make it a gate (SH1161's half): it drifted because nothing
 failed.
 
-### LXXIV.19 A publish that answered somewhere the probe was not looking (SH1174)
+### LXXIV.20 A plain field read as markup, one entity per save (SH1175)
 
-Measured against a jar on a clean instance provisioned with `marketing-site`, after
-SH1173 fixed the click-through. `universal-editor-drive` still fails on SH659: the
-editor's Publish reported nothing within 15 seconds. The line it prints reads "publish
-skipped: undefined", which is also wrong: the publish was attempted, and
-`publishSkipped` is only the reason for *not* attempting.
+Measured against a jar with the Universal Editor drive, which types one space into the
+first editable field and publishes. After four runs, the home hero's stored title is
+`Acme&amp;amp;amp;nbsp;&amp;amp;nbsp;&amp;nbsp;&nbsp;`, and the page shows those
+entities as visible text. Every round trip escapes the previous entity once more and
+adds a new one. A curator who edits a heading's end loses it the same way, one save at a
+time.
 
-The cause is not yet known, and the probe cannot say. `persist(true)` shows
-`universalEditor.published` as a toast on success. A refusal goes to `reportRefusal`,
-which writes a problem document into the assistant dock rather than a toast. So a
-refusal from the server, such as the publish gate (SH1084/SH1138) refusing a fixture
-page, looks to the probe exactly like no answer at all. Nothing was recorded
-server-side, since a 4xx refusal is not an incident. One more fact bears on it: the
-pending change was typed on the home page, and the drive then clicked through to another
-page before publishing.
+The bridge reads and writes a field asymmetrically. `shio-editor.js` writes a `plain`
+field back with `textContent` (SH1037's decision: a plain field holds text). But it
+reads every field with `innerHTML`: the fields it offers the panel, the baseline for a
+revert (SH1041), and the value sent on `sh:content-changed`. A browser serialises a
+trailing space in a contenteditable as `&nbsp;`, so a plain field reports markup. The
+server stores it as text, the template escapes it (correctly, for a text field), and the
+next read of `innerHTML` returns the escaped form.
 
-Build: first the instrument. When Publish reports nothing, the drive records the PATCH
-or publish response it saw (status and problem `type`), and the dock's refusal text. The
-summary line prints "published", "publish refused: <type>" or "publish skipped:
-<reason>", never `undefined`. Then run it and fix what it names: a real refusal the
-fixture should satisfy goes in `provision.mjs`; a console defect gets fixed where it is.
-Name this id in both.
+Build: one `valueOf(el)` in the bridge, used at all four reads: `textContent` for a
+`data-shio-affordance="plain"` field, with U+00A0 normalised to a space (the browser's
+stand-in for the space the curator typed), and `innerHTML` otherwise. Test it in the
+bridge's own suite with this id: a plain field with a trailing space reports text and no
+entity. Then re-run the drive twice on a clean instance: the title keeps one ordinary
+space and no entity.
