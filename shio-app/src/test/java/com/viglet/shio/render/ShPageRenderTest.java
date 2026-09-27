@@ -1194,8 +1194,32 @@ class ShPageRenderTest {
 
     /** The preview prefix this fixture's site is served under, as the controller builds it. */
     private String previewPrefix() {
-        return "/preview/" + java.net.URLEncoder.encode(siteName,
-                java.nio.charset.StandardCharsets.UTF_8);
+        return ShSiteFrontEnd.previewPrefix(siteName);
+    }
+
+    @Test
+    @DisplayName("SH1173: a site named with a space is a path, not a query")
+    void aSpaceInTheSiteNameIsAPathSegment() {
+        // `URLEncoder` is form encoding: a space became `+`, which a path reads as a literal plus,
+        // so every link on "Console Check" pointed at `/preview/Console+Check/` — a 404.
+        assertThat(ShSiteFrontEnd.previewPrefix("Console Check")).isEqualTo("/preview/Console%20Check");
+        assertThat(ShSiteFrontEnd.previewPrefix("a/b")).isEqualTo("/preview/a%2Fb");
+    }
+
+    @Test
+    @DisplayName("SH1173: a link already inside the preview carries the reader's mode")
+    void aLinkAlreadyInThePreviewCarriesTheMode() {
+        ShRenderedPage page = renderedPageOfMainFixture();
+        // The home link a template writes from `ShSiteFrontEnd.of` arrives already prefixed. It was
+        // skipped as an instance route, so it never carried `editor=true`: the Universal Editor's
+        // click-through landed there with no bridge.
+        String home = "<a href=\"" + previewPrefix() + "/\">home</a>";
+        assertThat(previewLinks.rewriteInto(home, previewPrefix(), page, "/", "editor=true"))
+                .contains("href=\"" + previewPrefix() + "/?editor=true\"");
+        // Another site's preview is not this page's address space, and is left as it was.
+        String other = "<a href=\"/preview/Other/\">x</a>";
+        assertThat(previewLinks.rewriteInto(other, previewPrefix(), page, "/", "editor=true"))
+                .contains("href=\"/preview/Other/\"");
     }
 
     @Test

@@ -8,8 +8,6 @@
  */
 package com.viglet.shio.render;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -434,8 +432,9 @@ public class ShSitesAPI {
                     ? "/" : "";
         }
 
+        /** SH1173 — a path segment, where a space is {@code %20}: form encoding's {@code +} is a literal plus here. */
         private static String encode(String value) {
-            return URLEncoder.encode(value, StandardCharsets.UTF_8);
+            return ShSiteFrontEnd.pathSegment(value);
         }
     }
 

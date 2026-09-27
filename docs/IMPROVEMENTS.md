@@ -1492,3 +1492,27 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline. Then make it a gate (SH1161's half): it drifted because nothing
 failed.
+
+### LXXIV.19 A publish that answered somewhere the probe was not looking (SH1174)
+
+Measured against a jar on a clean instance provisioned with `marketing-site`, after
+SH1173 fixed the click-through. `universal-editor-drive` still fails on SH659: the
+editor's Publish reported nothing within 15 seconds. The line it prints reads "publish
+skipped: undefined", which is also wrong: the publish was attempted, and
+`publishSkipped` is only the reason for *not* attempting.
+
+The cause is not yet known, and the probe cannot say. `persist(true)` shows
+`universalEditor.published` as a toast on success. A refusal goes to `reportRefusal`,
+which writes a problem document into the assistant dock rather than a toast. So a
+refusal from the server, such as the publish gate (SH1084/SH1138) refusing a fixture
+page, looks to the probe exactly like no answer at all. Nothing was recorded
+server-side, since a 4xx refusal is not an incident. One more fact bears on it: the
+pending change was typed on the home page, and the drive then clicked through to another
+page before publishing.
+
+Build: first the instrument. When Publish reports nothing, the drive records the PATCH
+or publish response it saw (status and problem `type`), and the dock's refusal text. The
+summary line prints "published", "publish refused: <type>" or "publish skipped:
+<reason>", never `undefined`. Then run it and fix what it names: a real refusal the
+fixture should satisfy goes in `provision.mjs`; a console defect gets fixed where it is.
+Name this id in both.

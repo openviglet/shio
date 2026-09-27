@@ -8,8 +8,9 @@
  */
 package com.viglet.shio.render;
 
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+
+import org.springframework.web.util.UriUtils;
 
 import com.viglet.shio.persistence.model.site.ShSite;
 
@@ -94,8 +95,24 @@ public final class ShSiteFrontEnd {
         if (url != null && !url.isBlank()) {
             return new Destination(Kind.EXTERNAL, trimTrailingSlash(url.trim()));
         }
-        return new Destination(Kind.SHIO_PREVIEW,
-                PREVIEW_BASE + URLEncoder.encode(previewKey(site), StandardCharsets.UTF_8));
+        return new Destination(Kind.SHIO_PREVIEW, previewPrefix(previewKey(site)));
+    }
+
+    /**
+     * SH1173 — {@code /preview/<site>}, spelled once, as a path.
+     *
+     * <p>Three call sites built this with {@code URLEncoder.encode}, which is <em>form</em>
+     * encoding: a space becomes {@code +}, and in a path a {@code +} is a literal plus. Every link on
+     * a site named "Console Check" pointed at {@code /preview/Console+Check/}, a 404, and the
+     * Universal Editor's click-through landed there with no bridge.</p>
+     */
+    public static String previewPrefix(String siteKey) {
+        return PREVIEW_BASE + pathSegment(siteKey);
+    }
+
+    /** One URL path segment: a space is {@code %20}, and {@code /} is escaped rather than a separator. */
+    public static String pathSegment(String value) {
+        return UriUtils.encodePathSegment(value == null ? "" : value, StandardCharsets.UTF_8);
     }
 
     /**

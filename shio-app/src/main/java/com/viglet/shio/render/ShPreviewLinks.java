@@ -8,8 +8,6 @@
  */
 package com.viglet.shio.render;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -259,9 +257,7 @@ public class ShPreviewLinks {
      */
     public String rewrite(String html, String siteKey, ShPageRenderService.ShRenderedPage page,
                           String basePath) {
-        return rewriteInto(html,
-                ShSiteFrontEnd.PREVIEW_BASE + URLEncoder.encode(siteKey, StandardCharsets.UTF_8),
-                page, basePath);
+        return rewriteInto(html, ShSiteFrontEnd.previewPrefix(siteKey), page, basePath);
     }
 
     /**
@@ -560,7 +556,16 @@ public class ShPreviewLinks {
      */
     private String rewriteOne(String value, String prefix, String basePath) {
         String site = toSitePath(value, basePath);
-        if (site == null || isInstanceRoute(site)) {
+        if (site == null) {
+            return null;
+        }
+        // SH1173 — a link already inside this address space, such as the home link a template writes
+        // from `ShSiteFrontEnd.of`, is kept as it is rather than skipped as an instance route: skipped,
+        // it never carried `editor=true`, and a click on it ended edit mode.
+        if (site.equals(prefix) || site.startsWith(prefix + "/") || site.startsWith(prefix + "?")) {
+            return site;
+        }
+        if (isInstanceRoute(site)) {
             return null;
         }
         return prefix + site;

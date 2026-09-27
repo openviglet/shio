@@ -65,10 +65,12 @@ class ShSiteFrontEndTest {
     }
 
     @Test
-    @DisplayName("a site name that needs encoding is encoded")
+    @DisplayName("SH1173: a site name that needs encoding is encoded as a path segment")
     void siteNamesAreEncoded() {
+        // This asserted `/preview/My+Site` — form encoding, where a path reads `+` as a literal plus,
+        // so the URL it pinned was a 404. A space in a path is `%20`.
         assertThat(ShSiteFrontEnd.of(site("My Site", null)).baseUrl())
-                .isEqualTo("/preview/My+Site");
+                .isEqualTo("/preview/My%20Site");
     }
 
     @Test

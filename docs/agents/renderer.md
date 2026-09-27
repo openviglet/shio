@@ -469,6 +469,16 @@ renderer over one body of content at a second address. See the section on it bel
   on every load and a second arrival notification is two mechanisms for one fact; and a `navigate`
   message, because the console already drives the frame by reassigning `src`, which re-keys the
   handshake correctly on its own.
+- **A site name in a path is a path segment, and a link already in the preview still carries the
+  mode (SH1173)**: the prefix `/preview/<site>` was built at three call sites with
+  `URLEncoder.encode`, which is form encoding. A space became `+`, which a path reads as a literal
+  plus, so every link on a site named "Console Check" was a 404. The public `/sites/…` prefix had
+  the same bug. `ShSiteFrontEnd.previewPrefix` and `pathSegment` (Spring's `encodePathSegment`) are
+  now the one spelling. Separately, the home link a template writes from `ShSiteFrontEnd.of` arrives
+  already prefixed, and `rewriteOne` skipped it as the `preview` instance route, so it never carried
+  `editor=true`. A reference inside this page's own prefix is now kept as it is and gets the carried
+  parameters. Another site's `/preview/…` is still left alone. `ShSiteFrontEndTest` had pinned
+  `/preview/My+Site`, the 404 itself. It now pins `%20`.
 - **A field says what KIND it is, and the browser offers only that (SH1037)** — edit mode was granted
   by the presence of `data-shio-prop` alone, so every annotated element became `contenteditable` and
   reported `innerHTML`. A plain `Text` field therefore absorbed the markup of a paste, stored it, and

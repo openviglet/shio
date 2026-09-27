@@ -223,8 +223,7 @@ public class ShRenderAPI {
         // frame on a page with no bridge at all — and the console, which keys its handshake on an
         // iframe `src` that in-frame navigation cannot change, went on reporting `connected`.
         String walkable = previewLinks.rewriteInto(rendered.html(),
-                ShSiteFrontEnd.PREVIEW_BASE
-                        + java.net.URLEncoder.encode(siteKey, java.nio.charset.StandardCharsets.UTF_8),
+                ShSiteFrontEnd.previewPrefix(siteKey),
                 rendered, pathWithin(siteKey, request), rendererParams(request));
         ShRenderedPage page = new ShRenderedPage(walkable, rendered.site(), rendered.url(),
                 rendered.layout(), rendered.regions(), rendered.state(), rendered.postId(),
