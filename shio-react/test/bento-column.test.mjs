@@ -27,10 +27,30 @@ const SRC = join(HERE, "..", "src")
 async function columnFor() {
   // The module is TypeScript; its logic is a table of patterns, read here the same way.
   const source = readFileSync(join(SRC, "app", "system", "bento-column.ts"), "utf8")
-  const patterns = [...source.matchAll(/^\s*(\/\^.*\$\/),?$/gm)].map(([, re]) => eval(re))
-  assert.ok(patterns.length >= 3, "SH946: the narrow table was not read, so the rule below is vacuous")
-  return (path) => (patterns.some((pattern) => pattern.test(path)) ? "narrow" : "default")
+  // SH1169 — two tables now, so each is read from its own declaration rather than the whole file.
+  const table = (name) => {
+    const body = source.match(new RegExp(`const ${name}: readonly RegExp\\[\\] = \\[([\\s\\S]*?)\\n\\]`))
+    assert.ok(body, `the ${name} table was not found in bento-column.ts`)
+    return [...body[1].matchAll(/^\s*(\/\^.*\$\/),?$/gm)].map(([, re]) => eval(re))
+  }
+  const narrow = table("NARROW")
+  const full = table("FULL")
+  assert.ok(narrow.length >= 3, "SH946: the narrow table was not read, so the rule below is vacuous")
+  assert.ok(full.length >= 1, "SH1169: the full table was not read, so the rule below is vacuous")
+  return (path) => {
+    if (full.some((pattern) => pattern.test(path))) return "full"
+    return narrow.some((pattern) => pattern.test(path)) ? "narrow" : "default"
+  }
 }
+
+test("SH1169: the GraphQL explorer owns the viewport, and computes no height of its own", async () => {
+  const column = await columnFor()
+  assert.equal(column("/bento/graphql"), "full",
+    "SH1169: the explorer ran 21px past the window sizing itself as 100vh minus a stale 4rem")
+  const page = stripComments(readFileSync(join(SRC, "app", "admin", "graphql", "graphql.page.tsx"), "utf8"))
+  assert.doesNotMatch(page, /100vh|100dvh|h-screen/,
+    "SH1169: the explorer sums the shell's chrome again; the full column already gives it the height")
+})
 
 test("SH946: the single-question forms read narrow, and everything else the default column", async () => {
   const column = await columnFor()

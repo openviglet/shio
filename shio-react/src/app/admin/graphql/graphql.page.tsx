@@ -140,18 +140,16 @@ export default function GraphiQLPage() {
     }
 
     /*
-     * SH908 — the height is the one thing this page cannot get from either shell.
+     * SH1169 — the height is the shell's, not a sum this page does.
      *
-     * GraphiQL sizes itself to its container, so the container has to name a height, and the only
-     * height available is the viewport minus whatever chrome sits above it. That constant is 4rem
-     * in both eras for two *different* reasons: under the bento shell it is the `sticky top-0`
-     * header the page renders below (SH907 measured the same 64px from the other side), and under
-     * the console shell it is the footer `AppFooter` puts underneath. Two coincidences that agree
-     * today — which is exactly the kind of premise SH907 says not to leave in a CSS expression, so
-     * `bento-bespoke-slice.test.mjs` asserts both heights rather than trusting this comment.
+     * GraphiQL sizes itself to its container. SH908 gave the container `100vh - 4rem`, on the premise
+     * that 4rem of chrome sat above it; the shell later put a 61px header and 40px of padding on each
+     * side of `main`, and the editor ran 21px past the window. `columnFor` now gives this route the
+     * shell's `full` column, whose `main` is a flex column filling what the header leaves, so the page
+     * is a flex child that takes the rest — and no constant about the shell lives here to go stale.
      */
     return (
-        <div className="flex flex-1 flex-col h-[calc(100vh-theme(spacing.16))] w-full">
+        <div className="flex flex-1 flex-col min-h-0 w-full">
             {header}
 
             {/*

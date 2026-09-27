@@ -30,6 +30,16 @@ const NARROW: readonly RegExp[] = [
   /^\/bento\/admin\/email-config\/?$/,
 ]
 
+/**
+ * SH1169 — `full` is a tool that owns the viewport: the shell's `main` fills what the header leaves,
+ * with no bottom rhythm, and the tool scrolls inside itself. The explorer computed that height as
+ * `100vh - 4rem` instead, and ran 21px past the window once the shell's chrome stopped being 4rem.
+ */
+const FULL: readonly RegExp[] = [
+  /^\/bento\/graphql\/?$/,
+]
+
 export function columnFor(pathname: string): BentoShellColumn {
+  if (FULL.some((pattern) => pattern.test(pathname))) return "full"
   return NARROW.some((pattern) => pattern.test(pathname)) ? "narrow" : "default"
 }

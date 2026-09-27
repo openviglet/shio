@@ -1899,6 +1899,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1166** — Both editors seed their form through useForm values, so no Controller updates during render, and a scan fails on the next render-phase form write (design §LXXII.29 recorded in `docs/agents/console-ui.md`).
 - **SH1167** — The post editor reads its site's layout bindings first, so the live preview asks only for a type the site renders as a page and says why otherwise (design §LXXII.30 recorded in `docs/agents/console-ui.md`).
 - **SH1168** — The user form starts from empty-string defaults and merges the loaded user over them, so no input is ever uncontrolled and a new field needs a default (design §LXXII.31 recorded in `docs/agents/console-ui.md`).
+- **SH1169** — The explorer takes the shell's full column and fills what the header leaves, so it ends inside the window and the page no longer scrolls (design §LXXII.32 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

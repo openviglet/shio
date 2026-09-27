@@ -3031,6 +3031,15 @@ inside the shell sets `mx-auto max-w-*` or its own padding, and home and the pos
 longer render a `main` of their own. The vocabulary harness is mounted outside the shell and keeps
 its layout.
 
+**A tool that owns the viewport takes the `full` column (SH1169).** The GraphQL explorer sized itself
+as `100vh - 4rem`, SH908's premise about the chrome above it. The shell later put a 61px header and
+40px of `main` padding on each side, and the editor ran 21px past a 1000px window, with the document
+scrolling. `columnFor` has a `FULL` table now, holding `/bento/graphql`. The shell's `full` column
+makes `main` a flex column that fills what the header leaves, with no bottom padding, and the
+explorer is a `flex-1 min-h-0` child of it. Measured at 1600x1000: the editor ends at 984px and the
+document does not scroll. `bento-column.test.mjs` reads the two tables separately and forbids a
+viewport height in `graphql.page.tsx`.
+
 Proof, as the design asked. The surface digest before and after the page edits is byte-identical
 over 48 surfaces. Probed against a running console: one `main` per page, the width the column
 names (1280px default, 896px narrow), the skip link present, and SH1087's delivery check still
