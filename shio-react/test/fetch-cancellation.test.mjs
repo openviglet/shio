@@ -67,8 +67,6 @@ const UNCANCELLED = new Set([
   "src/app/content/scheduled.page.tsx",
   "src/app/editor/visual-editor.page.tsx",
   "src/app/setup/setup.page.tsx",
-  "src/app/system/bento-tenant-link-notice.tsx",
-  "src/app/system/bento-tenant-switcher.tsx",
   // The one the stripper caught on a real file rather than a planted one: this page's prose says
   // "an ambient signal", and a raw scan read that as cancellation and passed it.
   "src/app/system/bento.root.page.tsx",
@@ -174,14 +172,83 @@ function sources() {
  * pass a file for <em>talking</em> about cancellation. SH740's trap, and this file is the shape
  * most likely to walk into it.</p>
  */
+/**
+ * Every `useEffect(...)` body in a file, matched to its balanced closing parenthesis.
+ *
+ * <p>SH1151 — and the reason it exists is that the first version of this scan asked two questions of
+ * the <b>whole file</b>: does it contain `useEffect(`, and does it contain a service call. Those are
+ * not the same as "it reads inside an effect", and the difference produced real false positives:</p>
+ *
+ * <ul>
+ *   <li>`post-type.new.page.tsx` held an <b>empty</b> effect and a `service.create` in its submit
+ *   handler, and was counted (SH1150 deleted the effect rather than argue with the scan).</li>
+ *   <li>The two tenant components hold a `setDismissed` effect and a `service.switchTo` in a click
+ *   handler — a <b>write</b>, which cannot take a signal at all: aborting a POST does not undo it,
+ *   so `read-options.ts` deliberately offers cancellation to reads only. Counting a write as an
+ *   uncancelled read asks for something the design refuses.</li>
+ * </ul>
+ *
+ * <p>Scoping the search to the effect bodies is what makes the list mean what it says. A brace or
+ * paren inside a string would confuse this, so `stripComments` runs first and the counter ignores
+ * nothing else — measured against the console, it finds every effect the file has.</p>
+ */
+export function effectBodies(code) {
+  const bodies = [];
+  const marker = /useEffect\(/gu;
+  for (let found = marker.exec(code); found; found = marker.exec(code)) {
+    let depth = 1;
+    let i = found.index + found[0].length;
+    for (; i < code.length && depth > 0; i++) {
+      if (code[i] === "(") depth++;
+      else if (code[i] === ")") depth--;
+    }
+    bodies.push(code.slice(found.index, i));
+  }
+  return bodies;
+}
+
+/**
+ * The body of a named function an effect calls, so a read hoisted out of the effect still counts.
+ *
+ * <p>The half that keeps the scoping above from trading a false positive for a **false negative**,
+ * which would be the worse bargain: `activity.list.page.tsx` and `review.list.page.tsx` both call a
+ * `useCallback` from their effect, and the read lives in the callback. Scoping to effect bodies alone
+ * declared them clean — a gate that stops seeing a real uncancelled read is worse than one that
+ * counts a write, because the first failure is silent.</p>
+ *
+ * <p>One hop, not a call graph. Two would be a different program, and one is what the console does.</p>
+ */
+export function calledBodies(code, effects) {
+  const bodies = [];
+  const names = new Set();
+  for (const effect of effects) {
+    for (const [, name] of effect.matchAll(/\b([a-z]\w*)\s*\(/gu)) names.add(name);
+  }
+  for (const name of names) {
+    const declared = new RegExp(
+      `(?:const\\s+${name}\\s*=|(?:async\\s+)?function\\s+${name}\\b)`, "u").exec(code);
+    if (!declared) continue;
+    // From the declaration to the end of the statement that follows it: coarse on purpose, because
+    // the question is only "does a read appear in here", and over-reading widens the scan rather
+    // than narrowing it — the direction a gate is allowed to be wrong in.
+    bodies.push(code.slice(declared.index, declared.index + 2000));
+  }
+  return bodies;
+}
+
 export function cancellation(files) {
   const fetching = [];
   const uncancelled = [];
   for (const [path, source] of Object.entries(files)) {
     const code = stripComments(source);
-    if (!/useEffect\(/u.test(code) || !FETCHES.test(code)) continue;
+    // SH1151 — inside the effects and whatever they call, never anywhere in the file. A `service.`
+    // call in a click handler is a write on a button, and a write cannot take a signal at all.
+    const effects = effectBodies(code);
+    const reading = [...effects, ...calledBodies(code, effects)]
+      .filter((body) => FETCHES.test(body));
+    if (!reading.length) continue;
     fetching.push(path);
-    if (!/\bsignal\b/u.test(code)) uncancelled.push(path);
+    if (!reading.some((body) => /\bsignal\b/u.test(body))) uncancelled.push(path);
   }
   return { fetching: fetching.sort(), uncancelled: uncancelled.sort() };
 }
@@ -200,7 +267,10 @@ test("SH1047: no screen fetches inside an effect without a signal, outside the d
 
   // The vacuity guard: a regex that stopped matching would report a console with no fetching
   // effects at all, which agrees with every list including an empty one.
-  assert.ok(fetching.length >= 30,
+  // SH1151 recalibrated this floor: it was 30 against a scan that asked whether a file contained a
+  // `useEffect` and a service call anywhere, which counted writes in click handlers. Reading the
+  // effects and what they call gives 37, so the floor is what that measurement supports.
+  assert.ok(fetching.length >= 35,
     `SH1047: only ${fetching.length} fetching effect(s) found — this scan is measuring nothing`);
 
   const arrived = uncancelled.filter((path) => !UNCANCELLED.has(path));
@@ -271,9 +341,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 21,
+  assert.ok(UNCANCELLED.size <= 19,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "slices took it to 28, 25 and 21. It may only ever shrink.");
+      + "the slices took it to 28, 25, 21 and 19. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -377,6 +447,77 @@ test("SH1150: the content editors key on their subject, and one entry was never 
   assert.doesNotMatch(postType, /\}, \[postTypeName, t, form\]/u,
     "SH1150: a translation function and a form identity are back in the dependencies that decide "
       + "which post-type is read");
+});
+
+test("SH1151: a write in a handler is not an uncancelled read, and a hoisted read still is", () => {
+  /*
+   * SH1151 — this scan asked two questions of the whole file: does it contain `useEffect(`, and does
+   * it contain a service call. Neither is "it reads inside an effect", and both halves of the gap
+   * were real:
+   *
+   * - A **write** in a click handler counted. `read-options.ts` deliberately offers cancellation to
+   *   reads only — aborting a POST does not undo it — so the list was asking two tenant components
+   *   for something the design refuses. SH1150 had already met the same thing as an empty effect
+   *   beside a `service.create`.
+   * - Scoping to effect bodies alone then went too far the other way, which is the worse bargain: a
+   *   read hoisted into a `useCallback` an effect calls became invisible. `activity.list.page.tsx`
+   *   and `review.list.page.tsx` are both that shape, and a gate that stops seeing a real
+   *   uncancelled read fails silently where one that counts a write fails loudly.
+   */
+  const write = `
+    const service = new ShTenantService()
+    export function Switcher() {
+      useEffect(() => setDismissed(false), [claimed])
+      const switchTo = async () => { await service.switchTo(name) }
+      return <button onClick={switchTo} />
+    }`;
+  assert.deepEqual(cancellation({ "src/app/w.tsx": write }).fetching, [],
+    "SH1151: a write on a button is not a read in an effect, and cancelling it is not a thing the "
+      + "design offers — `read-options.ts` says so in as many words");
+
+  const hoisted = `
+    export function Trail() {
+      const load = useCallback(() => { void historyService.recent({}) }, [])
+      useEffect(() => { void load() }, [load])
+    }`;
+  assert.deepEqual(cancellation({ "src/app/h.tsx": hoisted }).uncancelled, ["src/app/h.tsx"],
+    "SH1151: the read is one hop from the effect and it is still the effect's read. Missing this is "
+      + "the false negative that would have made this whole list read shorter than it is.");
+
+  const hoistedWithSignal = `
+    export function Trail() {
+      const load = useCallback((signal) => { void historyService.recent({}, { signal }) }, [])
+      useEffect(() => { const a = new AbortController(); void load(a.signal); return () => a.abort() }, [load])
+    }`;
+  assert.deepEqual(cancellation({ "src/app/hs.tsx": hoistedWithSignal }).uncancelled, [],
+    "SH1151: and a hoisted read that takes a signal is not a debt");
+
+  // The effect extractor's own subject: nested parens must not end the body early, or a read after
+  // one would be missed — the same silent shape as above.
+  const nested = "useEffect(() => { void svc.get(one(two(three))) }, [x])";
+  assert.equal(effectBodies(nested).length, 1);
+  assert.match(effectBodies(nested)[0], /svc\.get/u);
+  assert.equal(effectBodies("useEffect(() => {}, [a])\nuseEffect(() => {}, [b])").length, 2,
+    "SH1151: two effects are two bodies");
+
+  /*
+   * SH1151's own reason for existing: the two tenant components each read `mine()` and `current()`
+   * in their own effect, and `bento.root.page.tsx` mounts BOTH — four requests for two answers on
+   * every visit to the bento root. They share the reads now, and the shared hooks are where a third
+   * caller will find them.
+   */
+  for (const file of ["src/app/system/bento-tenant-switcher.tsx",
+    "src/app/system/bento-tenant-link-notice.tsx"]) {
+    const code = stripComments(readFileSync(join(ROOT, file), "utf8"));
+    assert.match(code, /useCurrentTenant\(\)/u, `SH1151: ${file} reads the tenant on its own again`);
+    assert.match(code, /useMyTenants\(\)/u, `SH1151: ${file} reads the memberships on its own again`);
+    assert.doesNotMatch(code, /service\.(?:mine|current)\(/u,
+      `SH1151: ${file} is back to asking for an answer the other component is already asking for`);
+  }
+  const hooks = stripComments(readFileSync(join(ROOT, "src/hooks/use-catalogue.ts"), "utf8"));
+  assert.match(hooks, /queryFn: \(\{ signal \}\) => tenantService\.mine\(\{ signal \}\)/u,
+    "SH1151: the shared read takes the signal useQuery hands it");
+  assert.match(hooks, /queryFn: \(\{ signal \}\) => tenantService\.current\(\{ signal \}\)/u);
 });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {

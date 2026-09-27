@@ -7,11 +7,12 @@
  * (at your option) any later version.
  */
 import { IconBuildingSkyscraper, IconCheck, IconLink, IconSelector } from "@tabler/icons-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 
 import { useMultiTenant } from "@/app/system/bento-nav"
+import { useCurrentTenant, useMyTenants } from "@/hooks/use-catalogue"
 import { linkWithTenant } from "@/app/system/bento-tenant-link"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,7 +23,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { ShTenant } from "@/models/tenant/tenant.model"
 import { ShTenantService } from "@/services/tenant/tenant.service"
 import { reportProblem } from "@/lib/problem"
 
@@ -67,15 +67,15 @@ const service = new ShTenantService()
 export function BentoTenantSwitcher() {
   const { t } = useTranslation()
   const multiTenant = useMultiTenant()
-  const [tenants, setTenants] = useState<ShTenant[]>([])
-  const [current, setCurrent] = useState("")
+  /*
+   * SH1151 — shared reads, because this component and `BentoTenantLinkNotice` both ask for the same
+   * two answers and `bento.root.page.tsx` mounts both. Four requests for two answers on every visit
+   * to the bento root, which is what SH1113's per-route budget exists to see.
+   */
+  const tenants = useMyTenants().data ?? []
+  const current = useCurrentTenant().data?.tenantId ?? ""
   const [switching, setSwitching] = useState(false)
 
-  useEffect(() => {
-    if (!multiTenant) return
-    service.mine().then(setTenants).catch(() => setTenants([]))
-    service.current().then((c) => setCurrent(c.tenantId)).catch(() => undefined)
-  }, [multiTenant])
 
   // Nothing to offer: a single-tenant instance, or a reader who belongs to one tenant.
   if (!multiTenant || tenants.length < 2) return null

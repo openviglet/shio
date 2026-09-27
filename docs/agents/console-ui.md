@@ -2450,6 +2450,29 @@ handler. The fix was to delete dead code, not to migrate anything. That is worth
 list that records a debt must be able to record that an entry was wrong, or it grows a floor nobody
 can reach. **The declared list: 33 → 28 → 25 → 21.**
 
+**Slice four found the instrument was wrong, and that was half the slice** (SH1151). The scan asked
+two questions of the *whole file*: does it contain `useEffect(`, and does it contain a service call.
+Neither is "it reads inside an effect", and both halves of that gap were real:
+
+- **A write in a click handler counted.** `read-options.ts` offers cancellation to reads only —
+  aborting a POST does not undo it — so the list was asking some files for something the design
+  refuses. SH1150 had already met this as an empty effect standing beside a `service.create`.
+- **Scoping to effect bodies alone over-corrected, and that direction is worse.** A read hoisted into
+  a `useCallback` the effect calls becomes invisible, which the activity trail and the review queue
+  both are. A gate that stops seeing a real uncancelled read fails *silently*; one that counts a
+  write fails loudly. So the scan now reads the effects **and what they call**, one hop — not a call
+  graph, because one hop is what the console does.
+
+Recalibrated, it finds 37 fetching effects where the coarse version found 51, and the vacuity floor
+moved with it. Eight declared entries were never debts.
+
+**And the second finding is what the sharper scan left behind**: `BentoTenantSwitcher` and
+`BentoTenantLinkNotice` each read `mine()` and `current()` in their own effect, and
+`bento.root.page.tsx` mounts **both** — four requests for two answers on every visit to the bento
+root, which is exactly the shape SH1113's per-route budget was built to see. They share one pair of
+cached reads now, in `use-catalogue.ts` where a third caller will find them. **The declared list:
+33 → 28 → 25 → 21 → 19.**
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key

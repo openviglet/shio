@@ -12,9 +12,11 @@ import { addressKey } from "@/lib/query-keys";
 import type { ShPostType } from "@/models/post-type/post-type";
 import type { ShSite } from "@/models/site/site";
 import type { ShWidget } from "@/models/widget/widget";
+import type { ShTenant } from "@/models/tenant/tenant.model";
 import { ShPostTypeService } from "@/services/post-type/post-type.service";
 import { ShSiteService } from "@/services/site/site.service";
 import { ShWidgetService } from "@/services/widget/widget.service";
+import { ShTenantService, type ShCurrentTenant } from "@/services/tenant/tenant.service";
 
 /**
  * SH1046 — the three catalogues every screen reads, read once.
@@ -46,6 +48,7 @@ import { ShWidgetService } from "@/services/widget/widget.service";
 const postTypeService = new ShPostTypeService();
 const siteService = new ShSiteService();
 const widgetService = new ShWidgetService();
+const tenantService = new ShTenantService();
 
 /** Every post type, as the console's own name-keyed surface reports them. */
 export function usePostTypes() {
@@ -68,6 +71,36 @@ export function useWidgets() {
   return useQuery<ShWidget[]>({
     queryKey: addressKey("widget:"),
     queryFn: () => widgetService.query(),
+  });
+}
+
+/**
+ * SH1151 — the tenant's own two reads, shared rather than made twice.
+ *
+ * <h2>The measurement that made these hooks worth having</h2>
+ *
+ * <p>`BentoTenantSwitcher` and `BentoTenantLinkNotice` each read `mine()` and `current()` in their
+ * own effect, and `bento.root.page.tsx` <b>mounts both</b>. So the shell asked the server for two
+ * answers <b>four times</b> on every visit to the bento root — the exact shape SH1113's per-route
+ * budget was built to see, and that route's entry is eight requests. Two components independently
+ * correct and collectively wasteful is what a shared read is for (SH1046's argument, one level out
+ * from the catalogues).</p>
+ *
+ * <p>Both are cached under `tenant:`, so `useInvalidate()("tenant:")` after a switch drops them
+ * together — which is what the switcher needs, since changing tenant changes both answers.</p>
+ */
+export function useMyTenants() {
+  return useQuery<ShTenant[]>({
+    queryKey: addressKey("tenant:mine"),
+    queryFn: ({ signal }) => tenantService.mine({ signal }),
+  });
+}
+
+/** Which tenant this session is in — the other half of the pair above. */
+export function useCurrentTenant() {
+  return useQuery<ShCurrentTenant>({
+    queryKey: addressKey("tenant:current"),
+    queryFn: ({ signal }) => tenantService.current({ signal }),
   });
 }
 

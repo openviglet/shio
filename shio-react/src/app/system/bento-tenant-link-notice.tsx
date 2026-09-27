@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next"
 import { useLocation } from "react-router-dom"
 
 import { useMultiTenant } from "@/app/system/bento-nav"
+import { useCurrentTenant, useMyTenants } from "@/hooks/use-catalogue"
 import { tenantFromSearch } from "@/app/system/bento-tenant-link"
 import { Button } from "@/components/ui/button"
 import { ShTenantService } from "@/services/tenant/tenant.service"
@@ -56,18 +57,15 @@ export function BentoTenantLinkNotice() {
   const location = useLocation()
   const claimed = tenantFromSearch(location.search)
 
-  const [current, setCurrent] = useState("")
-  const [memberships, setMemberships] = useState<string[]>([])
+  /*
+   * SH1151 — the same two shared reads as `BentoTenantSwitcher`, which this renders beside. Both
+   * asked for them independently, so the bento root made four requests for two answers.
+   */
+  const current = useCurrentTenant().data?.tenantId ?? ""
+  const memberships = (useMyTenants().data ?? []).map((tenant) => tenant.name)
   const [dismissed, setDismissed] = useState(false)
   const [switching, setSwitching] = useState(false)
 
-  useEffect(() => {
-    if (!multiTenant || !claimed) return
-    service.current().then((c) => setCurrent(c.tenantId)).catch(() => undefined)
-    service.mine()
-      .then((mine) => setMemberships(mine.map((tenant) => tenant.name)))
-      .catch(() => setMemberships([]))
-  }, [multiTenant, claimed])
 
   // The parameter is reset per navigation, so a dismissal cannot outlive the link it was about.
   useEffect(() => setDismissed(false), [claimed])

@@ -14,8 +14,8 @@ export interface ShProvisionResult {
 }
 
 export class ShTenantService {
-  async current(): Promise<ShCurrentTenant> {
-    const response = await axios.get<ShCurrentTenant>("/v2/tenant/current")
+  async current(read: ShRead = {}): Promise<ShCurrentTenant> {
+    const response = await axios.get<ShCurrentTenant>("/v2/tenant/current", { signal: read.signal })
     return response.data
   }
 
@@ -62,8 +62,8 @@ export class ShTenantService {
   }
 
   /** The tenants the current user actively belongs to (SH22/C). */
-  async mine(): Promise<ShTenant[]> {
-    const response = await axios.get<ShTenant[]>("/v2/tenant/mine")
+  async mine(read: ShRead = {}): Promise<ShTenant[]> {
+    const response = await axios.get<ShTenant[]>("/v2/tenant/mine", { signal: read.signal })
     return response.data
   }
 
