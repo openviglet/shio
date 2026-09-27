@@ -45,7 +45,8 @@ import { test } from "node:test";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const CANVAS_DIR = "docs/design";
-const SKILL_DIR = ".claude/skills/viglet-ds-pages";
+// SH944: the skill arrives through the enabled plugin, so the settings carry what the bin reads.
+const SETTINGS = ".claude/settings.json";
 
 /**
  * The five surfaces, by the artboard that settles each — named rather than counted, because a count
@@ -130,7 +131,7 @@ test("SH945: the drawings and the canvas agree, in both directions", () => {
 test("SH945: a page-reference refresh leaves this repository's own drawings untouched", () => {
   const root = mkdtempSync(join(tmpdir(), "shio-design-canvas-"));
   try {
-    cpSync(join(ROOT, SKILL_DIR), join(root, SKILL_DIR), { recursive: true });
+    cpSync(join(ROOT, SETTINGS), join(root, SETTINGS));
     cpSync(join(ROOT, CANVAS_DIR), join(root, CANVAS_DIR), { recursive: true });
 
     const before = ours(canvasAt(root));

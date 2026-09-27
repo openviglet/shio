@@ -770,6 +770,27 @@ about this one — these are specimen strings naming the components being proved
 in Portuguese. Separating them keeps that lint's `UNTRANSLATED` exemption map short enough to
 stay readable, which is the only thing it has going for it. A product page goes through `t()`.
 
+## The design system arrives twice: a plugin and a vendored copy (SH944)
+
+`.claude/settings.json` enables `viglet-ds@viglet-design-system`, and the split follows what the
+package already decided (VDS135). **The plugin** carries the `viglet-ds-pages` skill. It also
+brings the duplicate-guard hook, which denies a write that declares a component the package
+already exports and names the import instead, and `/viglet-ds-check`, which runs the package's own
+gates. **The vendored copy** is only `docs/design/`, the artboards a plugin cannot put in the file
+tree. It is written by `viglet-ds-page-reference` and gated by SH941/SH942. The bin reads
+`enabledPlugins`, and once the plugin is on it removes the vendored skill as an orphan, because two
+skills named `viglet-ds-pages` is the collision SH949 forbids.
+
+Measured, not assumed: the hook and the command resolve the package from the file or package they
+are given, so both work in `shio-react/`. The MCP server the skill points at starts as
+`npx --no-install viglet-ds-mcp` at the project root, and here the package lives in the
+`shio-react` workspace, so that command answers `E404`. The skill's fallback,
+`node_modules/@viglet/viglet-design-system/docs/`, is also missing at the root. Handling a
+consumer that installs the package in a workspace is the design system's job, and it is filed in
+that repository's roadmap. Until it lands, the contract is at
+`shio-react/node_modules/@viglet/viglet-design-system/docs/`.
+`cli/test/design-system-plugin.test.mjs` holds the enable, the marketplace and the split.
+
 ## Shio's accent is a token, and the rest is a named debt (SH890)
 
 The console's orange is declared **once**, on `:root` in

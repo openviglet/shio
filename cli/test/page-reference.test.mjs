@@ -9,9 +9,10 @@
  *
  * The catalogue answers "does this component exist". It cannot answer "does this page read as the
  * same product", and that answer lives in two documents and nine artboards that no `node_modules`
- * read surfaces. `viglet-ds-page-reference` writes them here — `.claude/skills/viglet-ds-pages/`
- * so an agent session trips over the contract before the first screen, `docs/design/` so a person
- * opens an artboard straight from the file tree.
+ * read surfaces. `viglet-ds-page-reference` writes the artboards into `docs/design/` so a person
+ * opens one straight from the file tree. The two documents reached a session as a vendored skill
+ * until SH944 enabled the `viglet-ds` plugin, which carries them by name; the bin then removes the
+ * vendored copy itself (VDS135).
  *
  * This asserts that those surfaces are **present and internally coherent**. It does not ask the
  * installed package whether they are current: comparing the two copies means running the bin's
@@ -27,7 +28,7 @@
  * — the declaration and the files it lays out can disagree — and it is invisible, because a canvas
  * naming an artboard that is not on disk opens with a blank frame rather than an error. So the two
  * sides are compared in both directions, which is also what catches the likelier accident: somebody
- * tidying `docs/design/` by hand, against a `SKILL.md` that tells them not to.
+ * tidying `docs/design/` by hand, against a contract that tells them not to.
  *
  * It lives in the CLI's suite for the reason `vite-config-esm.test.mjs` gives — a reader over the
  * whole repository rather than a test of one package — and it counts what it read, because a walk
@@ -42,11 +43,7 @@ import { test } from "node:test";
 // @scans prose — reason: the subjects are a Markdown frontmatter block and a JSON declaration, so
 // there is no code here to strip; nothing is read as a claim about a rule, only as a field (SH740).
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-const SKILL_DIR = ".claude/skills/viglet-ds-pages";
 const CANVAS_DIR = "docs/design";
-
-/** The bin's own payload: the orientation it writes, and the two documents it copies verbatim. */
-const SKILL_FILES = ["SKILL.md", "authoring.md", "boundary.md"];
 
 /** Nine when this shipped. The count is asserted as a floor, the names are read off disk. */
 const ARTBOARDS_WHEN_SHIPPED = 9;
@@ -62,14 +59,13 @@ function artboardsOnDisk() {
 
 const REFRESH =
   "Run `viglet-ds-page-reference` from the repository root to rewrite the vendored surfaces."
-  + " Nothing under those two directories is hand-authored — SKILL.md says so in its own header —"
+  + " Nothing under docs/design/ with a `vds-` prefix is hand-authored,"
   + " so a correction belongs in @viglet/viglet-design-system, where every consumer gets it.";
 
-test("SH941: the vendored page reference is on disk, both halves of it", () => {
-  const missing = [
-    ...SKILL_FILES.map((name) => `${SKILL_DIR}/${name}`),
-    `${CANVAS_DIR}/canvas.json`,
-  ].filter((path) => !existsSync(at(path)));
+test("SH941: the vendored page reference is on disk: canvas.json and its artboards", () => {
+  // SH944: the skill half now arrives through the enabled `viglet-ds` plugin, and the bin removes a
+  // vendored copy once it does; `design-system-plugin.test.mjs` holds that half.
+  const missing = [`${CANVAS_DIR}/canvas.json`].filter((path) => !existsSync(at(path)));
 
   assert.deepEqual(
     missing,
@@ -86,36 +82,6 @@ test("SH941: the vendored page reference is on disk, both halves of it", () => {
     `Found ${artboards.length} vds-*.dc.html artboards in ${CANVAS_DIR}; there were`
       + ` ${ARTBOARDS_WHEN_SHIPPED} when this shipped. The contract drawn is half of what is`
       + ` vendored, and a directory that lost them passes every other check here.\n${REFRESH}`,
-  );
-});
-
-test("SH941: the skill is discoverable, and names the package version it was written from", () => {
-  const skill = readFileSync(at(SKILL_DIR, "SKILL.md"), "utf8");
-  const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(skill);
-
-  assert.ok(
-    frontmatter,
-    "SKILL.md has no frontmatter block, so Claude Code does not register it and the contract is"
-      + " vendored into a directory nothing reads — which is the whole defect SH941 closed, arrived"
-      + ` at from the other side.\n${REFRESH}`,
-  );
-
-  const body = frontmatter[1];
-  for (const key of ["name", "description", "vds-version"]) {
-    assert.match(
-      body,
-      new RegExp(`^${key}:\\s*\\S`, "m"),
-      `SKILL.md's frontmatter has no \`${key}\`. \`vds-version\` is the one the bin reads back to`
-        + " decide whether refreshing would be a downgrade, so a copy without it cannot be judged"
-        + ` against any package at all.\n${REFRESH}`,
-    );
-  }
-
-  assert.match(
-    body,
-    /^name:\s*viglet-ds-pages\s*$/m,
-    "The skill's name must stay `viglet-ds-pages` — it is the name the bin writes and the name a"
-      + ` session loads it by.\n${REFRESH}`,
   );
 });
 

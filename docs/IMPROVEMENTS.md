@@ -976,28 +976,6 @@ discovery, then the declaration corrected on both sides. It closes by asking whe
 package should be a plugin rather than copied files — a question this repository already
 ships an answer to.
 
-### LX.5 A plugin, or files rewritten on every run (SH944)
-
-page-reference.mjs argues for copying, and the argument is good: a contract an author
-must browse another repository to find is read after the fifth screen, so the surfaces
-are written where a session and a person both trip over them. Nothing here disputes
-that. The question is narrower — whether copying is the only way to be tripped over, now
-that a plugin is a thing a repository can enable.
-
-A plugin answers by distribution what vendoring answers by rewriting. An enabled
-plugin's skills are in every session by name with no file in the consumer's tree, they
-move when the plugin moves rather than when somebody remembers to run a bin, and there
-is no drift to gate because there is no second copy. What a plugin does not answer is
-the artboards: nine .dc.html files that open straight from the file tree are exactly
-what a consumer wants on disk, and canvas.json is a file the adopter also writes in. So
-the likely answer is both — skills from the plugin, artboards vendored — and that split
-is what this task decides rather than assumes.
-
-Shio need not invent the shape. claude-plugin/ here is a working example:
-.claude-plugin/plugin.json, .mcp.json, three commands, four skills, and a test asserting
-the manifest. The deliverable is the decision with its reasons, plus whichever half Shio
-can land on its own side; the package's half is the design system's own line.
-
 ### LX.9 The local loop, resolved from the register (SH948)
 
 SH895 made copy-ds.cmd forward to the design system's own use:local so the consumer and

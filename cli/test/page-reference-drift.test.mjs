@@ -41,7 +41,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -53,11 +53,16 @@ import { test } from "node:test";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
-/** The two trees the bin owns in a consumer, and the one file inside them that is merged. */
+/**
+ * The tree the bin owns in a consumer, and the one file inside it that is merged. The skill it used
+ * to vendor beside it arrives through the enabled `viglet-ds` plugin since SH944, and the bin reads
+ * that from the settings — so a throwaway copy carries the settings too, or it is another consumer.
+ */
+const SETTINGS = ".claude/settings.json";
 const SKILL_DIR = ".claude/skills/viglet-ds-pages";
 const CANVAS_DIR = "docs/design";
 const CANVAS = `${CANVAS_DIR}/canvas.json`;
-const AUTHORING = `${SKILL_DIR}/authoring.md`;
+const PANEL = `${CANVAS_DIR}/vds-panel.dc.html`;
 
 /**
  * The bin, resolved through whatever pnpm laid down for the console.
@@ -101,7 +106,7 @@ function check(root) {
 /** A throwaway consumer carrying a copy of this repository's vendored surfaces. */
 function vendoredCopy() {
   const root = mkdtempSync(join(tmpdir(), "shio-page-reference-"));
-  cpSync(join(ROOT, SKILL_DIR), join(root, SKILL_DIR), { recursive: true });
+  cpSync(join(ROOT, SETTINGS), join(root, SETTINGS));
   cpSync(join(ROOT, CANVAS_DIR), join(root, CANVAS_DIR), { recursive: true });
   return root;
 }
@@ -148,7 +153,7 @@ test("SH942: the vendored copy is not ahead of the package that would rewrite it
   assert.equal(
     report.ahead,
     false,
-    `SH942: ${SKILL_DIR}/SKILL.md is stamped ${report.stamped} and the installed package is`
+    `SH942: the vendored copy is stamped ${report.stamped} and the installed package is`
       + ` ${report.version}, so refreshing would be a DOWNGRADE and the bin refuses to write.`
       + " Raise the design-system floor in shio-react/package.json rather than rewriting these"
       + " files from an older copy.",
@@ -158,20 +163,20 @@ test("SH942: the vendored copy is not ahead of the package that would rewrite it
 test("SH942: an edited copy is drift, and the check names the file", () => {
   const root = vendoredCopy();
   try {
-    writeFileSync(join(root, AUTHORING), "\nA line the package never wrote.\n", { flag: "a" });
+    writeFileSync(join(root, PANEL), "\n<p>A line the package never wrote.</p>\n", { flag: "a" });
     const { status, report } = check(root);
 
     assert.equal(status, 1, "SH942: --check must exit non-zero on drift, or no gate can read it");
     assert.equal(report.code, "page-reference.stale");
     assert.equal(
-      stateOf(report, AUTHORING),
+      stateOf(report, PANEL),
       "would update",
       "SH942: the check must NAME the drifted file. An exit code alone sends the next reader to"
-        + " diff thirteen surfaces by hand, and a check that cannot be made to name one is not"
+        + " diff ten surfaces by hand, and a check that cannot be made to name one is not"
         + " known to be reading them at all (SH897: the browser check passed with bento.css gone).",
     );
     assert.equal(
-      stateOf(report, `${SKILL_DIR}/boundary.md`),
+      stateOf(report, `${CANVAS_DIR}/vds-shell.dc.html`),
       "unchanged",
       "SH942: only the edited file may be reported — a check that calls everything drifted on one"
         + " edit is one nobody can act on",
@@ -195,6 +200,28 @@ test("SH942: an artboard the package never shipped is reported as an orphan", ()
       "SH942: a `vds-` artboard the package stopped shipping must be reported. A rewrite leaves it"
         + " untouched, so this is the only direction of drift the copy discipline cannot repair by"
         + " itself, and a gate blind to it says `ok` over a drawing nothing declares.",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("SH944: with the plugin enabled, a vendored skill left behind is an orphan the check names", () => {
+  const root = vendoredCopy();
+  try {
+    // The state SH944 left behind, planted: the plugin carries the skill, and a stale copy lingers.
+    const lingering = `${SKILL_DIR}/SKILL.md`;
+    mkdirSync(join(root, SKILL_DIR), { recursive: true });
+    writeFileSync(join(root, lingering), "---\nname: viglet-ds-pages\nvds-version: 2026.3.10\n---\n");
+    const { status, report } = check(root);
+
+    assert.equal(report.plugin, true, "SH944: the bin must read the copied settings as plugin-enabled");
+    assert.equal(status, 1);
+    assert.deepEqual(
+      report.orphans,
+      [lingering],
+      "SH944: a vendored skill beside the enabled plugin is two skills named `viglet-ds-pages` — the"
+        + " collision SH949 forbids — so the check must name it for removal, not pass over it.",
     );
   } finally {
     rmSync(root, { recursive: true, force: true });

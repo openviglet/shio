@@ -95,7 +95,8 @@
   },
   "enabledPlugins": {
     "roadkeep@alegauss": true,
-    "shio@openviglet": true
+    "shio@openviglet": true,
+    "viglet-ds@viglet-design-system": true
   },
   "extraKnownMarketplaces": {
     "alegauss": {
@@ -108,6 +109,12 @@
       "source": {
         "source": "github",
         "repo": "openviglet/shio"
+      }
+    },
+    "viglet-design-system": {
+      "source": {
+        "source": "github",
+        "repo": "openviglet/viglet-design-system"
       }
     }
   }
