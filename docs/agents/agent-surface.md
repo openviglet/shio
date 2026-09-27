@@ -2794,6 +2794,17 @@ memo that lived longer would keep answering after an ACL changed. The principals
 username, so two readers sharing a memo still get their own answer (`ShContentAclServiceTest`).
 What remains is the feed page each stream reads for itself.
 
+**An open stream holds no connection (SH1165).** Boot's open-in-view, on by default, bound an
+EntityManager to the stream's request, and the connection its opening read took stayed held until
+the async request ended: on disconnect, or thirty minutes later. Ten open console tabs were the whole
+default pool, and every other request, sign-in included, then waited thirty seconds and failed.
+`spring.jpa.open-in-view=false` turns Boot's registration off, and `ShEventsOpenInViewConfig`
+registers the same interceptor with `/api/v2/events` excluded. Every other request keeps the session
+it had, and some reads still rely on it. Declaring the interceptor as a bean also backs Boot's off
+(`@ConditionalOnMissingBean`), so flipping the property back on does not restore the leak. Measured on
+a pool of 4: ten streams used to starve the pump; after the fix, thirty streams leave reads at about
+50 ms. `ShEventsOpenInViewTest` asserts on the handler chain the dispatcher builds for each path.
+
 **`shio changes --follow`** holds the stream open over the CLI's Basic auth (a `Key` token is not
 accepted on this path, and the agent's read does not need it to be), reconnects from the last event's
 id with a backoff to 30s, ends on a 4xx rather than retrying an answer that will not change, and with
