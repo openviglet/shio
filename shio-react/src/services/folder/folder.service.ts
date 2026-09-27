@@ -10,8 +10,8 @@ export interface ShCdaPath {
 }
 
 export class ShFolderService {
-  async get(id: string): Promise<ShFolder> {
-    const response = await axios.get<ShFolder>(`/v2/folder/${id}`);
+  async get(id: string, read: ShRead = {}): Promise<ShFolder> {
+    const response = await axios.get<ShFolder>(`/v2/folder/${id}`, { signal: read.signal });
     return response.data;
   }
 

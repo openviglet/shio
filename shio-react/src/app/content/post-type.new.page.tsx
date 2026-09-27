@@ -6,7 +6,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { ROUTES } from "@/app/routes.const"
 import { IconFileText } from "@tabler/icons-react"
 import { Loader2, Save } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -22,9 +22,6 @@ export default function PostTypeNewPage() {
   const navigate = useNavigate()
   const form = useForm<ShPostType>()
   const [isLoading, setIsLoading] = useState(false)
-
-  useEffect(() => {
-  }, [t])
 
   async function onSubmit(data: ShPostType) {
     setIsLoading(true)

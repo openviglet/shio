@@ -2436,6 +2436,25 @@ server did not answer" and "nothing is configured" the same screen, and the seco
 that overwrites the first one's real settings. The shared editor took a `scheme` prop rather than
 deriving one from its route parameter, for the same reason. **The declared list: 33 → 28 → 25.**
 
+**Slice three took the content editors** (SH1150): the folder, site and post-type editors. None of
+the three had a failure path at all, so a folder or a site that would not load left the *previous*
+one's fields on screen under a breadcrumb naming the new one. The site editor was the one worth
+designing rather than translating: its single effect made three reads that are wanted together and
+are **not one subject** — the site, its locale policy and the instance's locale catalogue have three
+lifetimes, and the catalogue is the same answer for every site, so they are three queries.
+
+**And one of the twenty-five was never a debt.** `post-type.new.page.tsx` held
+`useEffect(() => {}, [t])` — an empty body — and sat on the declared list because the scan matches
+`useEffect(` and a `service.` call *anywhere in the same file*, and its `create` is in the submit
+handler. The fix was to delete dead code, not to migrate anything. That is worth recording because a
+list that records a debt must be able to record that an entry was wrong, or it grows a floor nobody
+can reach. **The declared list: 33 → 28 → 25 → 21.**
+
+One thing the slices keep teaching, in a different spelling each time: the dependency array is where
+an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
+slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key
+cannot be anything else.
+
 **Two gates slice one tripped, and neither was about cancellation.**
 
 - **`react-hooks/set-state-in-effect`.** The natural shape for seeding a form from a query is

@@ -1,5 +1,6 @@
 import type { ShPostType, ShPostTypeRenamed } from "@/models/post-type/post-type";
 import axios from "axios";
+import type { ShRead } from "@/lib/read-options"
 
 /**
  * The post-type service — one name-keyed surface (`/api/v2/post-type`), shared
@@ -19,8 +20,8 @@ export class ShPostTypeService {
     return response.data;
   }
 
-  async get(name: string): Promise<ShPostType> {
-    const response = await axios.get<ShPostType>(`/v2/post-type/${encodeURIComponent(name)}`);
+  async get(name: string, read: ShRead = {}): Promise<ShPostType> {
+    const response = await axios.get<ShPostType>(`/v2/post-type/${encodeURIComponent(name)}`, { signal: read.signal });
     return response.data;
   }
 

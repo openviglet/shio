@@ -10,6 +10,9 @@ import { IconDownload, IconExternalLink, IconWorld } from "@tabler/icons-react"
 import { toast } from "@viglet/viglet-design-system"
 import { BentoEntityShell, BentoFormSection } from "@viglet/viglet-design-system/bento"
 import type React from "react"
+import { useQuery } from "@tanstack/react-query"
+import { isCancelled } from "@/lib/read-options"
+import { addressKey } from "@/lib/query-keys"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -54,6 +57,22 @@ const localeService = new ShLocaleService()
  * its confirm dialog. Export and view-site are `extraActions`, which is where the four hover-only
  * row actions from the console list ended up: focusable, announced, and on the entity they act on.
  */
+/**
+ * The searchable post types a site declares, read from a column that is free text.
+ *
+ * <p>It has held a non-JSON value before, so an unreadable list is "none selected" rather than a
+ * crash on the one page a curator could fix it from. A named function rather than a `try` inside the
+ * seeding block, because `no-useless-assignment` is right about what that block looked like.</p>
+ */
+function searchableOf(raw: string | null | undefined): string[] {
+  try {
+    const parsed: unknown = JSON.parse(raw || "[]")
+    return Array.isArray(parsed) ? (parsed as string[]) : []
+  } catch {
+    return []
+  }
+}
+
 export default function BentoSiteEditPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -67,28 +86,57 @@ export default function BentoSiteEditPage() {
   const [policy, setPolicy] = useState<ShSiteLocalePolicy | null>(null)
   const [languages, setLanguages] = useState<LanguagesDraft | null>(null)
   const [languagesDirty, setLanguagesDirty] = useState(false)
-  const [catalogue, setCatalogue] = useState<ShLocale[]>([])
+
+  /*
+   * SH1116 — three reads, three queries, all cancelled when the site changes or the screen unmounts.
+   *
+   * They were one effect because they are wanted together, but they are not one subject: the site,
+   * its locale policy and the instance's locale catalogue are three answers with three lifetimes,
+   * and the catalogue is the same for every site. As one effect they also shared one failure story —
+   * the site read had no `catch` at all, so a site that would not load left the previous site's
+   * fields on screen under the new site's breadcrumb.
+   */
+  const loaded = useQuery<ShSite>({
+    queryKey: addressKey(`id:${siteId ?? ""}`),
+    queryFn: ({ signal }) => service.get(siteId, { signal }),
+    enabled: Boolean(siteId),
+  })
+  const reportedPolicy = useQuery<ShSiteLocalePolicy>({
+    queryKey: addressKey(`site:${siteId ?? ""}`),
+    queryFn: ({ signal }) => service.locales(siteId, { signal }),
+    enabled: Boolean(siteId),
+  })
+  const localeCatalogue = useQuery<ShLocale[]>({
+    queryKey: addressKey("summary:locales"),
+    queryFn: ({ signal }) => localeService.list({ signal }),
+  })
+
+  /*
+   * Seeded during render rather than in an effect (`react-hooks/set-state-in-effect`), once per site.
+   * `searchablePostTypes` is free text and has held a non-JSON value before, so an unreadable list is
+   * "none selected" and never a crash on the page that would let a curator fix it.
+   */
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (loaded.data && seeded !== siteId) {
+    setSeeded(siteId)
+    setSite(loaded.data)
+    setUrl(loaded.data.url ?? "")
+    setSearchableTypes(searchableOf(loaded.data.searchablePostTypes))
+  }
+
+  const [seededPolicy, setSeededPolicy] = useState<string | null>(null)
+  if (reportedPolicy.data && seededPolicy !== siteId) {
+    setSeededPolicy(siteId)
+    setPolicy(reportedPolicy.data)
+    setLanguages(draftOf(reportedPolicy.data))
+  }
+
+  const catalogue = localeCatalogue.data ?? []
 
   useEffect(() => {
-    if (!siteId) return
-    service.locales(siteId).then((reported) => {
-      setPolicy(reported)
-      setLanguages(draftOf(reported))
-    }).catch(() => setPolicy(null))
-    localeService.list().then(setCatalogue).catch(() => setCatalogue([]))
-    service.get(siteId).then((data) => {
-      setSite(data)
-      setUrl(data.url ?? "")
-      try {
-        const parsed: unknown = JSON.parse(data.searchablePostTypes || "[]")
-        setSearchableTypes(Array.isArray(parsed) ? (parsed as string[]) : [])
-      } catch {
-        // The column is free text and has held a non-JSON value before. An unreadable list is
-        // "none selected", never a crash on the page that would let a curator fix it.
-        setSearchableTypes([])
-      }
-    })
-  }, [siteId])
+    const failure = loaded.error ?? reportedPolicy.error
+    if (failure && !isCancelled(failure)) reportProblem(failure, t("common.error"))
+  }, [loaded.error, reportedPolicy.error, t])
 
   const toggle = (name: string, checked: boolean) =>
     setSearchableTypes((prev) => (checked ? [...prev, name] : prev.filter((n) => n !== name)))

@@ -62,13 +62,9 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
 const UNCANCELLED = new Set([
   "src/app/admin/graphql/graphql.page.tsx",
   "src/app/admin/review/review.list.page.tsx",
-  "src/app/content/folder.edit.page.tsx",
-  "src/app/content/post-type.edit.page.tsx",
-  "src/app/content/post-type.new.page.tsx",
   "src/app/content/post.edit.page.tsx",
   "src/app/content/post.new.page.tsx",
   "src/app/content/scheduled.page.tsx",
-  "src/app/content/site.edit.page.tsx",
   "src/app/editor/visual-editor.page.tsx",
   "src/app/setup/setup.page.tsx",
   "src/app/system/bento-tenant-link-notice.tsx",
@@ -142,6 +138,15 @@ const QUERY_LAYER = [
   "src/app/admin/admin.user.page.tsx",
   "src/app/admin/email-config/email-config.page.tsx",
   "src/app/admin/identity-entity.page.tsx",
+  /*
+   * Slice three (SH1150): the content editors. The site editor's one effect made three reads that
+   * are wanted together and are not one subject — the site, its locale policy and the instance's
+   * locale catalogue have three lifetimes, and the catalogue is the same answer for every site.
+   * `post-type.new` is NOT here: its effect was empty, so see the SH1150 test below.
+   */
+  "src/app/content/folder.edit.page.tsx",
+  "src/app/content/post-type.edit.page.tsx",
+  "src/app/content/site.edit.page.tsx",
 ];
 
 /** Every source file under the walked roots, as repo-relative paths with forward slashes. */
@@ -238,7 +243,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
     // The claim, read off the source: a `queryFn` that is handed a signal and forwards it. A
     // `queryFn: () => service.get(id)` compiles, caches, and cancels nothing — which is this
     // migration's own way of going wrong, and it would leave the file looking done.
-    assert.match(code, /queryFn: \(\{ signal \}\) => service\.\w+\(/u,
+    // The service variable is named per page — `service`, `postTypeService`, `localeService` — so this
+    // matches the same shape `FETCHES` above does rather than one spelling of it.
+    assert.match(code, /queryFn: \(\{ signal \}\) => \w*[Ss]ervice\.\w+\(/u,
       `SH1116: ${path} has a queryFn that does not take useQuery's signal. The whole reason to move `
         + "a read here is that the signal is aborted when the key changes or the screen unmounts; a "
         + "queryFn that ignores it is the same uncancelled read with a cache in front of it.");
@@ -264,9 +271,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 25,
+  assert.ok(UNCANCELLED.size <= 21,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "slice one took five off it and slice two three more. It may only ever shrink.");
+      + "slices took it to 28, 25 and 21. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -318,6 +325,59 @@ test("SH1149: the admin area's last three key on their subject, and the singleto
     assert.match(keys, /"emailConfig:"/u,
       "SH1149: `emailConfig:` is not in SCHEMES, so addressKey throws where the page calls it");
   });
+
+test("SH1150: the content editors key on their subject, and one entry was never a debt", () => {
+  /*
+   * SH1150 — the fourth file is the finding, and it is about this scan rather than about the console.
+   *
+   * `post-type.new.page.tsx` held `useEffect(() => {}, [t])`: an empty body. It sat on the declared
+   * list because `cancellation()` matches `useEffect(` and a `service.` call **anywhere in the same
+   * file**, and its `create` is in the submit handler. So one of the twenty-five was never a debt,
+   * and the correct fix was to delete dead code rather than to migrate anything. A list that records
+   * a debt has to be able to record that an entry was wrong, or it grows a floor nobody can reach.
+   */
+  const fresh = stripComments(readFileSync(
+    join(ROOT, "src/app/content/post-type.new.page.tsx"), "utf8"));
+  assert.doesNotMatch(fresh, /useEffect/u,
+    "SH1150: the empty effect is back on the post-type create page. It fetched nothing, and it put "
+      + "the file on the uncancelled list by standing next to a `service.create` in the submit "
+      + "handler — a declared debt that was never one.");
+
+  // The three that were real, each keyed on what it reads rather than on a translation function or a
+  // form identity, and each with the failure path it did not have.
+  for (const [file, key] of [
+    ["src/app/content/folder.edit.page.tsx", /queryKey: addressKey\(`id:\$\{folderId \?\? ""\}`\)/u],
+    ["src/app/content/post-type.edit.page.tsx", /queryKey: addressKey\(`postType:\$\{postTypeName\}`\)/u],
+    ["src/app/content/site.edit.page.tsx", /queryKey: addressKey\(`id:\$\{siteId \?\? ""\}`\)/u],
+  ]) {
+    const code = stripComments(readFileSync(join(ROOT, file), "utf8"));
+    assert.match(code, key, `SH1150: ${file}'s cache key is not the thing it reads`);
+    assert.match(code, /queryFn: \(\{ signal \}\) => \w*[Ss]ervice\.\w+\(/u,
+      `SH1150: ${file} has a queryFn that does not take useQuery's signal`);
+    assert.match(code, /isCancelled\(/u,
+      `SH1150: ${file} reports a read failure without asking whether it was a cancellation. None of `
+        + "these three had a failure path at all before — a folder or a site that would not load left "
+        + "the previous one's fields on screen under the new one's breadcrumb.");
+  }
+
+  // The site editor's three reads are three queries, because they have three lifetimes and the
+  // locale catalogue is the same answer for every site.
+  const site = stripComments(readFileSync(
+    join(ROOT, "src/app/content/site.edit.page.tsx"), "utf8"));
+  assert.equal((site.match(/useQuery</gu) ?? []).length, 3,
+    "SH1150: the site editor's site, locale policy and locale catalogue are three subjects");
+  assert.match(site, /function searchableOf\(/u,
+    "SH1150: the free-text searchable list is read by a named function — the column has held a "
+      + "non-JSON value, and an unreadable list is \"none selected\" rather than a crash on the one "
+      + "page a curator could fix it from");
+
+  // And `t` is not back among the things that decide which post-type is read.
+  const postType = stripComments(readFileSync(
+    join(ROOT, "src/app/content/post-type.edit.page.tsx"), "utf8"));
+  assert.doesNotMatch(postType, /\}, \[postTypeName, t, form\]/u,
+    "SH1150: a translation function and a form identity are back in the dependencies that decide "
+      + "which post-type is read");
+});
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {
   // Driven, because the rules above have only ever been run against a tree that satisfies them.
