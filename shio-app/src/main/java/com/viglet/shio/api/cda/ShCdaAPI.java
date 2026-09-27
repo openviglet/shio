@@ -21,6 +21,7 @@ import com.viglet.shio.api.cda.dto.ShCdaListing;
 import com.viglet.shio.api.cda.dto.ShCdaPath;
 import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
+import com.viglet.shio.api.cda.dto.ShCdaRedirect;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,6 +60,13 @@ public class ShCdaAPI {
     @Operation(summary = "Get one site with its root folder id")
     public ResponseEntity<ShCdaSite> site(@PathVariable String siteId) {
         return ResponseEntity.of(shCdaService.getSite(siteId));
+    }
+
+    /** SH1133 — which addresses moved, for a front end that serves the site's URLs itself. */
+    @GetMapping("/site/{siteId}/redirects")
+    @Operation(summary = "List a site's redirects (from, to, permanent), ordered by from")
+    public ResponseEntity<List<ShCdaRedirect>> redirects(@PathVariable String siteId) {
+        return ResponseEntity.of(shCdaService.getRedirects(siteId));
     }
 
     @GetMapping("/object/{folderId}/list")

@@ -66,6 +66,19 @@ test("single-resource getters translate 404 to null", async () => {
   assert.equal(await client.getPostByUrl("s1", "/missing"), null);
 });
 
+test("SH1133: getRedirects reads the site's redirect table, and an unknown site is null", async () => {
+  const table = [{ from: "/pricing", to: "/plans", permanent: false }];
+  const fetchFn = fakeFetch({ body: table });
+  const client = new ShioClient({ baseUrl: BASE, fetch: fetchFn });
+
+  assert.deepEqual(await client.getRedirects("s 1"), table);
+  assert.equal(fetchFn.calls[0].url, `${BASE}/api/v2/cda/site/s%201/redirects`,
+    "SH1133: the site id is one path segment, escaped like every other");
+
+  const missing = new ShioClient({ baseUrl: BASE, fetch: fakeFetch({ status: 404 }) });
+  assert.equal(await missing.getRedirects("missing"), null);
+});
+
 test("non-404 errors throw ShioHttpError with status", async () => {
   const client = new ShioClient({ baseUrl: BASE, fetch: fakeFetch({ status: 500, body: { error: "boom" } }) });
   await assert.rejects(

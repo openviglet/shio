@@ -101,6 +101,21 @@ export interface ShioSiteLocales {
   declared: boolean;
 }
 
+/**
+ * One row of a site's redirect table (SH1133), from {@link ShioClient.getRedirects}.
+ *
+ * A front end that serves the site's URLs itself consults this before answering 404: the
+ * instance's own renderer honours these, and a headless site never reaches it.
+ */
+export interface ShioRedirect {
+  /** The site-relative path that moved, e.g. `/pricing`. */
+  from: string;
+  /** Where it moved: a site-relative path, or an absolute URL as written. */
+  to: string;
+  /** `true` for a 301, `false` for a 302 — the default, because a wrong 301 is cached for ever. */
+  permanent: boolean;
+}
+
 /** A folder (listing item / breadcrumb node). */
 export interface ShioFolder {
   id: string;

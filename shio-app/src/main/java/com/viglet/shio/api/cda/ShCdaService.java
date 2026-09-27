@@ -35,7 +35,9 @@ import com.viglet.shio.api.cda.dto.ShCdaPath;
 import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.api.cda.dto.ShCdaPostSummary;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
+import com.viglet.shio.api.cda.dto.ShCdaRedirect;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
+import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.post.ShContentPerspective;
@@ -155,6 +157,43 @@ public class ShCdaService {
         return shSiteRepository.findById(siteId)
                 .map(site -> mapper.toSite(site, rootFolderId(site),
                         shSiteLocaleService.of(List.of(site), readStates()).get(site.getId())));
+    }
+
+    /**
+     * SH1133 — the site's redirect table, for a front end that owns its URLs.
+     *
+     * <p>A {@code Redirect} post is served by the instance's renderer, which a headless site never
+     * reaches: Next.js answers those URLs and asks this API for content by address, so until now it
+     * had no way to learn which addresses moved. The table is small, site-scoped and cacheable, so a
+     * front end can hold it and consult it before a 404 rather than asking per request.</p>
+     *
+     * <p>The states are the token's own, draft-preferred for a preview token, by the rule every other
+     * read here follows: a production front end must not redirect to a page it cannot fetch because
+     * the redirect exists only in a draft. Ordered by {@code from} (P5), so the same table is the same
+     * bytes.</p>
+     *
+     * @return empty when the token may not read the site or there is no such site — the 404 every
+     *         other site read gives, so a scoped key cannot tell "wrong site" from "missing"
+     */
+    public Optional<List<ShCdaRedirect>> getRedirects(String siteId) {
+        if (!siteAllowed(siteId) || shSiteRepository.findById(siteId).isEmpty()) {
+            return Optional.empty();
+        }
+        ShPostType type = shPostTypeRepository.findByName(ShSystemPostType.REDIRECT);
+        if (type == null) {
+            return Optional.of(List.of());
+        }
+        Map<String, ShPostUnified> byId = new LinkedHashMap<>();
+        for (ShPostUnified row : shPostUnifiedRepository
+                .findByShSite_IdAndShPostType_IdAndStateIn(siteId, type.getId(), readStates())) {
+            byId.merge(row.getId(), row, (existing, candidate) ->
+                    existing.getState() == ShPostState.DRAFT ? existing : candidate);
+        }
+        return Optional.of(byId.values().stream()
+                .map(mapper::toRedirect)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(ShCdaRedirect::from))
+                .toList());
     }
 
     public Optional<ShCdaListing> listChildren(String folderId, int page, int size) {

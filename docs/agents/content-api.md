@@ -1515,6 +1515,33 @@ a front end needs once. The five-argument constructor is that shape, and the con
 (`ShConsoleNavigationMapper`) uses it too. `ShCdaSiteLocalesTest` asserts the declared read, the
 production/preview split, the batched listing and the silent breadcrumb.
 
+## A front end that owns its URLs can read which ones moved (SH1133, first slice)
+
+A `Redirect` post is honoured by `ShPageRenderService`, which answers `/sites/**`. A headless site
+never goes through it: Next.js owns those URLs and asks the CDA for content by address, so SH1064's
+op, the publish dialog's offer and `url-orphaned`'s repair all wrote a row no visitor of that site
+could observe.
+
+`GET /api/v2/cda/site/{siteId}/redirects` answers the table as `[{from, to, permanent}]`
+(`ShCdaRedirect`, mirrored as `ShioRedirect`; `ShioClient.getRedirects(siteId)`), ordered by `from`
+(P5). Three rules, each the one another surface already follows:
+
+- **`from` is the post's own friendly URL** (SH385: a redirect has no source field), canonicalised
+  with `ShFurlSpellings.canonical` — the CDA does not import `api.agent`, and `ShAddress.normalizePath`
+  is only a delegate to it.
+- **An empty `TO` is not a row**, because `redirectFor` treats that post as no redirect; `PERMANENT`
+  goes through `ShPostFieldFlags.isTrue`, the coercion both writers share (`"1"`/`"0"` from the
+  console, a boolean from an op). The mapper's tolerant parse means a malformed document is no row,
+  never a 500.
+- **The token's own states, draft-preferred for preview**, so a production front end is never told
+  to redirect to a page only a draft holds; a site the token may not read is the same 404 as a
+  missing one.
+
+What this slice does not do yet, and the line stays open for: `create-shio-app`'s middleware that
+consults the table before a 404, `verify`'s `url-orphaned` saying so when a front end is configured,
+and `shio redirects` naming which of the two serves each row. `ShCdaRedirectsTest` holds the order,
+both token kinds, the scoped 404 and the wire names.
+
 ## A site's coverage in one read (SH1131)
 
 `GET /api/v2/site/{id}/coverage?page=&size=` answers a **row per page and a cell per language** —

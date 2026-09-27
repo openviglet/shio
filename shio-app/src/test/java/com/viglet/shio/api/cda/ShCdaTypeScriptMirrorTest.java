@@ -79,7 +79,9 @@ class ShCdaTypeScriptMirrorTest {
             "ShCdaListing", "ShioListing",
             "ShCdaPath", "ShioPath",
             "ShCdaSchemaField", "ShioFieldSchema",
-            "ShCdaPostTypeSchema", "ShioPostTypeSchema");
+            "ShCdaPostTypeSchema", "ShioPostTypeSchema",
+            // SH1133 — the tenth pair, which is Map.of's limit: the next one moves this to ofEntries.
+            "ShCdaRedirect", "ShioRedirect");
 
     /**
      * Records the SDK deliberately does not mirror, each with the reason. A new

@@ -24,6 +24,8 @@ export type {
   ShioSite,
   // SH1123 — the languages a site offers, which a switcher is built from.
   ShioSiteLocales,
+  // SH1133 — which addresses moved, for a front end that owns its URLs.
+  ShioRedirect,
   ShioFolder,
   ShioPostSummary,
   ShioPost,

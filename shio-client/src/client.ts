@@ -13,6 +13,7 @@ import type {
   ShioPostTypeSchema,
   ShioQueryParams,
   ShioReadOptions,
+  ShioRedirect,
   ShioRequestOptions,
   ShioSite,
 } from "./types";
@@ -68,6 +69,16 @@ export class ShioClient {
   /** Get one site (with its root folder id), or `null` if not found. */
   getSite(siteId: string, opts?: ShioRequestOptions): Promise<ShioSite | null> {
     return this.requestOrNull<ShioSite>(`/site/${seg(siteId)}`, opts);
+  }
+
+  /**
+   * A site's redirect table (SH1133), ordered by `from`, or `null` if the site is unknown.
+   *
+   * Small and site-scoped, so a front end can hold it and consult it before a 404 rather than
+   * asking per request. A production token sees published redirects only.
+   */
+  getRedirects(siteId: string, opts?: ShioRequestOptions): Promise<ShioRedirect[] | null> {
+    return this.requestOrNull<ShioRedirect[]>(`/site/${seg(siteId)}/redirects`, opts);
   }
 
   // --- Navigation ---

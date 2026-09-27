@@ -48,7 +48,7 @@
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
-- 📋 **SH1133** (deps: —) **a redirect on a site with its own front end routes nobody, and the lint still demands one** — Redirect posts are served by the instance's renderer; a Next.js site's URLs are served by the front end, which the CDA and the SDK never tell which addresses moved. → §LXXIV.13
+- ⏳ **SH1133** (deps: —) **a redirect on a site with its own front end routes nobody, and the lint still demands one** — create-shio-app's middleware still does not consult the table before a 404, and url-orphaned and shio redirects still assume the instance serves every redirect. → §LXXIV.13
 - 📋 **SH1134** (deps: —) **an exported site carries no asset bytes, so every File post arrives pointing at nothing** — The format has a files/ directory and the import restores from it; the site export passes an empty list, so the pages render with broken images and neither side says so. → §LXXIV.14
 - 📋 **SH1135** (deps: —) **an instance cannot say what a site was replicated from, and the console cannot start a run** — Every artefact of a round lives on the CLI's disk and the instance sees only the site that came out, so the source URL behind a page is lost the moment the shell closes. → §LXXIV.15
 - 📋 **SH1144** (deps: —) **the console smoke check's provisioning cannot fill a fresh instance: marketing-site's Page is refused** — A fresh instance already has Page with title and content, the blueprint's Page adds description and sections, and provision.mjs applies without the merge opt-in. → §LXXIV.16
@@ -80,6 +80,13 @@
 - **roadkeep lint exits clean here with no baseline** After re-vendoring a roadkeep that
   skips code.renamed for a vendored engine, `lint` with no --baseline reports no finding
   in Shio's three docs.
+
+## Done when — SH1133
+
+- **A create-shio-app site answers a moved path with the table's 301 or 302.** A test of
+  the template's middleware plants a redirect table and asserts a request for its `from`
+  gets the `to` with the right status, while an unmoved path still reaches the page; and
+  url-orphaned names the front end when one is configured.
 
 ## Non-goals (do NOT add as tasks)
 

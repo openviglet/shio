@@ -20,8 +20,12 @@ import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.api.cda.dto.ShCdaPostSummary;
 import com.viglet.shio.api.cda.dto.ShCdaPostTypeSchema;
 import com.viglet.shio.api.cda.dto.ShCdaSchemaField;
+import com.viglet.shio.api.cda.dto.ShCdaRedirect;
 import com.viglet.shio.api.cda.dto.ShCdaSite;
 import com.viglet.shio.api.cda.dto.ShCdaSiteLocales;
+import com.viglet.shio.url.ShFurlSpellings;
+import com.viglet.shio.post.type.ShPostFieldFlags;
+import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 import com.viglet.shio.api.site.ShSiteLocales;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -65,6 +69,30 @@ public class ShCdaMapper {
 
     public ShCdaSite toSite(ShSite site, String rootFolderId) {
         return toSite(site, rootFolderId, null);
+    }
+
+    /**
+     * SH1133 — one {@code Redirect} post as a row of the site's redirect table, or null when it
+     * names no destination.
+     *
+     * <p>Null on an empty {@code TO} for the renderer's reason: {@code redirectFor} treats that post
+     * as no redirect at all, and a table that listed it would tell a front end to send readers to
+     * nowhere. {@code PERMANENT} arrives as {@code "1"}/{@code "0"} from the console and as a boolean
+     * from an op, so it goes through the one coercion both writers already share.</p>
+     */
+    public ShCdaRedirect toRedirect(ShPostUnified post) {
+        if (post == null) {
+            return null;
+        }
+        JsonNode data = parseAttrs(post.getData());
+        JsonNode to = data.get(ShSystemPostTypeAttr.TO);
+        if (to == null || !to.isString() || to.stringValue().isBlank()) {
+            return null;
+        }
+        JsonNode permanent = data.get(ShSystemPostTypeAttr.PERMANENT);
+        return new ShCdaRedirect(ShFurlSpellings.canonical(post.getFurl()), to.stringValue().trim(),
+                permanent != null && ShPostFieldFlags.isTrue(
+                        permanent.isBoolean() ? permanent.asBoolean() : permanent.asString()));
     }
 
     /** SH1123 — the site read, carrying the locale policy a switcher is built from. */

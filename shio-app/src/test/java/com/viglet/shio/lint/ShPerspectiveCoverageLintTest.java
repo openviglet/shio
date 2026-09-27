@@ -134,6 +134,9 @@ class ShPerspectiveCoverageLintTest {
                     + "code the preview loads and not a page"),
             Map.entry("ShCdaAPI#sites", NOT_A_PAGE),
             Map.entry("ShCdaAPI#site", NOT_A_PAGE),
+            Map.entry("ShCdaAPI#redirects", "SH1133: it answers a site's routing table over the "
+                    + "token's own states, draft-preferred for preview, and a front end routes by the "
+                    + "table it is serving, not by one revision of one redirect"),
             Map.entry("ShCdaAPI#path", "it answers a folder's breadcrumb, and folders are not "
                     + "published or revised"),
             Map.entry("ShCdaAPI#postTypes", NOT_A_PAGE),
