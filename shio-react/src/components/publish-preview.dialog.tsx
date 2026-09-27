@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Loader2, Upload } from "lucide-react"
 import {
@@ -39,6 +41,24 @@ const service = new ShPostUnifiedService()
  * them and why. The sentence they write is not a formality — it is the whole of the override, and
  * the hint says who will read it.</p>
  */
+/**
+ * The plan and the route impact, read together because the dialog shows them together.
+ *
+ * <p>Named and at module scope rather than an inline `queryFn`, and that is not only tidiness:
+ * SH965's lint names an offender by its enclosing function, and its two halves disagreed about what
+ * encloses an inline query — the finding said `queryFn` and the stale-exception check said
+ * `PublishPreviewDialog`, so no single EXCEPTIONS key could satisfy both. A named function is one
+ * answer to that question.</p>
+ */
+async function readPreview(postId: string, signal?: AbortSignal):
+Promise<{ plan: ShPublishPlan; routes: ShPublishRoutes | null }> {
+  const [plan, routes] = await Promise.all([
+    service.publishPlan(postId, { signal }),
+    service.publishRoutes(postId, { signal }),
+  ])
+  return { plan, routes }
+}
+
 export function PublishPreviewDialog({
   postId,
   open,
@@ -56,9 +76,6 @@ export function PublishPreviewDialog({
   gateRefusal?: string | null
 }) {
   const { t } = useTranslation()
-  const [plan, setPlan] = useState<ShPublishPlan | null>(null)
-  const [routes, setRoutes] = useState<ShPublishRoutes | null>(null)
-  const [loading, setLoading] = useState(false)
   const [override, setOverride] = useState("")
   /*
    * SH1064 — ticked, and the curator can untick it. A rename with no redirect breaks every
@@ -67,23 +84,39 @@ export function PublishPreviewDialog({
    */
   const [redirect, setRedirect] = useState(true)
 
-  useEffect(() => {
-    if (!open) return
-    setLoading(true)
-    setPlan(null)
-    setRoutes(null)
-    setOverride("")
-    setRedirect(true)
-    Promise.all([service.publishPlan(postId), service.publishRoutes(postId)])
-      .then(([answer, moved]) => {
-        setPlan(answer)
-        setRoutes(moved)
-      })
-      // A preview that cannot be read must not block the publish: the server refuses what the
-      // curator may not do, and this dialog is an explanation rather than a gate.
-      .catch(() => setPlan(null))
-      .finally(() => setLoading(false))
-  }, [open, postId])
+  /*
+   * SH1153 — two reads when the dialog opens, both cancelled if it closes before they answer, and the
+   * whole thing out of an effect.
+   *
+   * What this replaced did two jobs in one effect: it *read* the plan and the route impact, and it
+   * *reset* four pieces of form state so a second opening did not show the first one's answers. Doing
+   * both synchronously is what earned this file the `react-hooks/set-state-in-effect` suppression
+   * SH1136 holds — and splitting them removes it: the reads are a query keyed on the post and enabled
+   * only while open, so closing the dialog IS the reset for those three, and the two genuine form
+   * fields reset on the open transition during render.
+   *
+   * A preview that cannot be read must still not block the publish: the server refuses what the
+   * curator may not do, and this dialog is an explanation rather than a gate. So a failure leaves the
+   * plan absent and says nothing, which is what `read.data ?? null` already means.
+   */
+  const read = useQuery({
+    queryKey: addressKey(`summary:publish|${postId}`),
+    queryFn: ({ signal }) => readPreview(postId, signal),
+    enabled: open && Boolean(postId),
+  })
+  const plan = read.data?.plan ?? null
+  const routes = read.data?.routes ?? null
+  const loading = read.isFetching
+
+  // The two fields a curator types into, reset on the transition into `open` rather than in an effect.
+  const [wasOpen, setWasOpen] = useState(false)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) {
+      setOverride("")
+      setRedirect(true)
+    }
+  }
 
   const change = plan?.results?.[0]
 

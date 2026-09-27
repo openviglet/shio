@@ -100,8 +100,13 @@ test("SH996: Publish opens the server's plan before it writes", () => {
 
   assert.match(page, /onClick=\{\(\) => setPublishPreviewOpen\(true\)\}/,
     "SH996: the button arms the preview, and the preview publishes")
-  assert.match(dialog, /service\.publishPlan\(postId\), service\.publishRoutes\(postId\)/,
-    "SH996: both halves come from the server — nothing here decides what publishing would do")
+  // SH1154 moved these two into a `queryFn` and gave each the signal it hands them, so the shape is
+  // `service.publishPlan(postId, { signal })`. The claim is untouched: both halves come from the
+  // server, and this file computes neither.
+  assert.match(dialog, /service\.publishPlan\(postId, \{ signal \}\)/,
+    "SH996: the plan comes from the server — nothing here decides what publishing would do")
+  assert.match(dialog, /service\.publishRoutes\(postId, \{ signal \}\)/,
+    "SH996: and so does which URLs it would move")
   assert.match(service, /publish\?dryRun=true/)
   assert.match(service, /include: "impact"/,
     "SH996: the routes are read where they are computed, not recomputed in the console")

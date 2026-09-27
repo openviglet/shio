@@ -266,8 +266,16 @@ export class ShPostUnifiedService {
    * The server answers the agent's change-set shape, so the console shows the plan the batch surface
    * would have produced rather than a second description of publishing.
    */
-  async publishPlan(id: string): Promise<ShPublishPlan> {
-    const response = await axios.post<ShPublishPlan>(`/v2/post-unified/${id}/publish?dryRun=true`)
+  /*
+   * SH1153 — this one takes a signal even though it is a POST, and that is not a contradiction of
+   * `read-options.ts`'s "writes do not take this". The rule there is about a request that *changes*
+   * something: aborting it does not undo it, so a cancelled write is a write whose answer was thrown
+   * away. `dryRun=true` changes nothing — it is a read wearing a write's verb, because the plan it
+   * returns is computed by the writer — so hanging up on it loses only an answer nobody wants.
+   */
+  async publishPlan(id: string, read: ShRead = {}): Promise<ShPublishPlan> {
+    const response = await axios.post<ShPublishPlan>(
+      `/v2/post-unified/${id}/publish?dryRun=true`, undefined, { signal: read.signal })
     return response.data
   }
 
@@ -277,9 +285,10 @@ export class ShPostUnifiedService {
    * Asked by `id:` address, the escape hatch SH172 kept for exactly this: the console holds an id and
    * the agent surface is addressed. Absent for a publish that moves no URL, which is most of them.
    */
-  async publishRoutes(id: string): Promise<ShPublishRoutes | null> {
+  async publishRoutes(id: string, read: ShRead = {}): Promise<ShPublishRoutes | null> {
     const response = await axios.get<{ impact?: { routes?: ShPublishRoutes } }[]>("/v2/agent/read", {
       params: { address: `id:${id}`, include: "impact" },
+      signal: read.signal,
     })
     return response.data?.[0]?.impact?.routes ?? null
   }

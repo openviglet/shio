@@ -70,10 +70,8 @@ const UNCANCELLED = new Set([
   // The one the stripper caught on a real file rather than a planted one: this page's prose says
   // "an ambient signal", and a raw scan read that as cancellation and passed it.
   "src/app/system/bento.root.page.tsx",
-  "src/components/permissions.dialog.tsx",
   "src/components/post-history.panel.tsx",
   "src/components/post-live-preview.tsx",
-  "src/components/publish-preview.dialog.tsx",
   "src/components/widgets/content-browser-dialog.tsx",
   "src/components/working-line.tsx",
 ]);
@@ -264,8 +262,14 @@ test("SH1047: no screen fetches inside an effect without a signal, outside the d
   // effects at all, which agrees with every list including an empty one.
   // SH1151 recalibrated this floor: it was 30 against a scan that asked whether a file contained a
   // `useEffect` and a service call anywhere, which counted writes in click handlers. Reading the
-  // effects and what they call gives 37, so the floor is what that measurement supports.
-  assert.ok(fetching.length >= 32,
+  // effects and what they call gave 37.
+  //
+  // It comes down as SH1116's slices land, and that is the honest direction: a screen that moves to
+  // the query layer stops having a fetching effect at all, so `fetching` falls with `uncancelled`.
+  // The floor is a vacuity guard — it exists so a scan that has stopped matching cannot report a
+  // clean console — and it is set below the current measurement rather than at it, so it does not
+  // have to be edited by every slice. It may only ever come down alongside a shrinking list.
+  assert.ok(fetching.length >= 28,
     `SH1047: only ${fetching.length} fetching effect(s) found — this scan is measuring nothing`);
 
   const arrived = uncancelled.filter((path) => !UNCANCELLED.has(path));
@@ -336,9 +340,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 14,
+  assert.ok(UNCANCELLED.size <= 12,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "the slices took it to 28, 25, 21, 19, 16 and 14. It may only ever shrink.");
+      + "the slices took it to 28, 25, 21, 19, 16, 14 and 12. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -624,6 +628,60 @@ test("SH1153: the two widgets cancel the resolve instead of ignoring its answer"
       `SH1153: ${file} guards on the data, and \`null\` is a legitimate answer for these two`);
     assert.ok(code.includes(`${field}: resolvedPath.data`),
       `SH1153: ${file} no longer puts the resolved path where the widget reads it`);
+  }
+});
+
+test("SH1154: the two dialogs read on open, and one of them paid off a suppression", () => {
+  const publish = stripComments(readFileSync(
+    join(ROOT, "src/components/publish-preview.dialog.tsx"), "utf8"));
+  const permissions = stripComments(readFileSync(
+    join(ROOT, "src/components/permissions.dialog.tsx"), "utf8"));
+
+  /*
+   * SH1154 — the publish preview's effect did two jobs: it READ the plan and the route impact, and it
+   * RESET four pieces of state so a second opening did not show the first one's answers. Doing both
+   * synchronously is what earned this file one of SH1136's `set-state-in-effect` suppressions, and
+   * splitting them is what removed it — the reads are a query enabled only while open, so closing the
+   * dialog *is* the reset for those three.
+   */
+  assert.match(publish, /enabled: open && Boolean\(postId\)/u,
+    "SH1154: the plan is read whether or not the dialog is open, which is a request per mount for an "
+      + "answer nobody asked for");
+  assert.equal((publish.match(/signal: read\.signal|\{ signal \}/gu) ?? []).length >= 2, true,
+    "SH1154: both of the dialog's two reads take the signal");
+  assert.match(publish, /if \(open !== wasOpen\)/u,
+    "SH1154: the two fields a curator types into reset on the open transition, during render");
+  assert.doesNotMatch(publish, /useEffect/u,
+    "SH1154: an effect is back in the publish preview, which is where its suppression came from");
+
+  assert.match(permissions, /queryFn: \(\{ signal \}\) => service\.get\(objectId, \{ signal \}\)/u,
+    "SH1154: the permissions dialog's read does not take the signal");
+  assert.doesNotMatch(permissions, /catch\(\(\) => setEntries\(\[\]\)\)/u,
+    "SH1154: on a permissions dialog \"the server did not answer\" and \"this object has no rules of "
+      + "its own\" are opposite facts — the second says it inherits, which is what a curator acts on");
+  assert.match(permissions, /if \(read\.isSuccess && seeded !== objectId\)/u,
+    "SH1154: the rows are edited before they are saved, so they are seeded once per object rather "
+      + "than derived");
+
+  /*
+   * And the suppressions this actually retired, asserted rather than remembered: `eslint --prune-
+   * suppressions` found `post-insights.panel.tsx` stale too, left over from SH1152. SH1136 is the task
+   * that owns paying these off, so a slice that pays one has to take it off both books or the next
+   * reader counts it twice.
+   */
+  const suppressions = JSON.parse(readFileSync(join(ROOT, "eslint-suppressions.json"), "utf8"));
+  for (const paid of ["src/components/publish-preview.dialog.tsx",
+    "src/components/post-insights.panel.tsx"]) {
+    assert.ok(!(paid in suppressions),
+      `SH1154: ${paid} is back in eslint-suppressions.json — either the effect returned, or a `
+        + "suppression was re-added for a finding that no longer occurs");
+  }
+  const baseline = readFileSync(
+    join(ROOT, "..", "cli", "test", "lint-baseline.test.mjs"), "utf8");
+  for (const paid of ["src/components/publish-preview.dialog.tsx",
+    "src/components/post-insights.panel.tsx"]) {
+    assert.ok(!baseline.includes(`"${paid}": 1`),
+      `SH1154: ${paid} is still declared in the lint baseline, which is the other book SH1136 keeps`);
   }
 });
 

@@ -2513,6 +2513,28 @@ the first cancels half the work and looks finished; the gate counts both. And th
 truthy guard would re-seed for ever on precisely the case the widget exists to show.
 **The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14.**
 
+**Slice seven took the two dialogs and paid off part of SH1136** (SH1154). The permissions dialog read
+on mount and fell back to `[]`, and on a permissions dialog "the server did not answer" and "this
+object has no rules of its own" are **opposite facts** — the second says the object inherits, which is
+what a curator acts on.
+
+The publish preview is the one worth reading. Its single effect did two jobs: it **read** the plan and
+the route impact, and it **reset** four pieces of state so a second opening did not show the first
+one's answers. Doing both synchronously is what earned that file one of SH1136's
+`react-hooks/set-state-in-effect` suppressions — so **splitting them removed it**. The reads became a
+query enabled only while the dialog is open, which means closing it *is* the reset for three of the
+four; the two fields a curator types into reset on the open transition, during render. Running
+`eslint --prune-suppressions` then found `post-insights.panel.tsx` stale as well, left over from
+SH1152. Two of the seventeen, off both books — `eslint-suppressions.json` and the baseline that
+declares them — because a slice that pays one has to take it off both or the next reader counts it
+twice.
+
+`publishPlan` is a **POST and takes the signal anyway**, which does not contradict `read-options.ts`'s
+"writes do not take this". That rule is about a request that *changes* something: aborting it does not
+undo it, so a cancelled write is a write whose answer was discarded. `dryRun=true` changes nothing —
+it is a read wearing a write's verb, because the plan is computed by the writer — so hanging up on it
+loses only an answer nobody wants. **The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12.**
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key

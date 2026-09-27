@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 import { strict as assert } from "node:assert"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
@@ -36,6 +36,11 @@ const SRC = join(HERE, "..", "src")
 const EXCEPTIONS = {
   "app/admin/marketplace/marketplace.list.page.tsx#preview.install":
     "a dry run: the plan renders in the preview dialog. False if the dialog stops showing it.",
+  "components/publish-preview.dialog.tsx#readPreview.publishPlan":
+    "SH1154's dry run, and the one that wears a write's verb: `publishPlan` is a POST because the "
+    + "plan is computed by the writer, and `dryRun=true` means it changes nothing — so there is no "
+    + "outcome to report, and the plan itself renders in the dialog. False if `dryRun=true` ever "
+    + "leaves `ShPostUnifiedService.publishPlan`, or if the dialog stops rendering the plan.",
   "app/content/content-browser/use-bulk-verbs.ts#planBulk.bulk":
     "a bulk plan, rendered for confirmation before anything is applied. False if it applies.",
   "components/post-rename.dialog.tsx#askForPlan.move":
@@ -77,7 +82,7 @@ const EXCEPTIONS = {
     "the note moves between open and resolved in the same rail; failure reports.",
   "components/post-live-preview.tsx#render.html":
     "a POST that renders, not a write: the frame shows the result.",
-  "components/publish-preview.dialog.tsx#PublishPreviewDialog.publishPlan":
+  "components/publish-preview.dialog.tsx#readPreview.publishPlan":
     "the publish dry run, rendered in the dialog that asks for confirmation.",
 }
 
@@ -100,6 +105,21 @@ const EXCEPTIONS = {
  * that has stopped being silent — so this can only shrink, and it is at zero.</p>
  */
 const WORKLIST = []
+
+test("SH1154: the publish plan's exception is only true while its dry run is", () => {
+  // The EXCEPTIONS entry above says what would falsify it, so this is that sentence run rather than
+  // trusted: a `publishPlan` that stopped being a dry run would be a real write with no outcome
+  // reported, excused by a line nobody re-read.
+  const service = readFileSync(join(SRC, "services", "post-unified", "post-unified.service.ts"),
+    "utf8")
+  assert.match(service, /publish\?dryRun=true/u,
+    "SH1154: `publishPlan` no longer carries `dryRun=true`, so it writes — and its EXCEPTIONS entry "
+      + "is now excusing a write that reports nothing")
+  const dialog = readFileSync(join(SRC, "components", "publish-preview.dialog.tsx"), "utf8")
+  assert.match(dialog, /plan\?\.results/u,
+    "SH1154: the dialog no longer renders the plan, which is the other half of why the call needs no "
+      + "toast of its own")
+})
 
 test("SH965: every console write reports both outcomes, or is named here with its reason", () => {
   const { sites } = writeSites(SRC)
