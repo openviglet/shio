@@ -3445,3 +3445,40 @@ archive state. SH970 already chose trash for the arrival report, and the trash i
 can be restored from. The arrival's caption is still the post type's title and summary fields, not a
 setting of the form. `GET /api/v2/site-form` is declared in `ShConsoleReadAclLintTest`'s `UNCHECKED`:
 it is operator configuration, not content.
+
+## The chip that could not say which language is the original (SH1125)
+
+SH1059 put each post row's locale on a chip beside the post-type badge and named the row by it, so a
+page and its translation are two rows rather than one row and an apparent duplicate. Its design also
+asked that the chip mark the site's **default** locale "where the site's enabled set exists" — and it
+did not exist then: the console could not read a site's policy until SH1056 gave it
+`GET /api/v2/site/{id}/locales`. It could afterwards and the browser still did not ask, so a folder
+holding a page in English and in Portuguese said which row was which and **not which one came first**,
+which is the question a curator deleting one of them is actually asking.
+
+**`declared` is the whole rule**, and it is SH1056's distinction rather than a nicety. A site that has
+chosen nothing still reports a default — the locale its content happens to be written in — and a chip
+saying "default" about something nobody chose is exactly the confusion SH1056 exists to remove. So
+`declaredDefaultLocale` returns a locale only for a declared policy, an undeclared one marks no row,
+and a folder of two translations then says which language each is and stays silent about which came
+first. That is the honest answer, and it is the assertion worth having: the test drives the helper with
+`declared: false` and requires `null`.
+
+Three implementation choices, each for a reason that would otherwise be re-derived:
+
+- **The flag is on the row, not computed at the label.** Whether a row is the site's own language is a
+  fact about *that row in this site*, and four call sites build a label — the checkbox, the title, the
+  actions trigger and the data table. `use-browser-listing` computes `isDefaultLocale` once per listing
+  from one `useSiteLocalePolicy(siteId)`, cached under the key the query layer already uses for the
+  site, so walking a tree inside one site asks once.
+- **The word is passed into `rowLabel` already translated.** That function is pure so
+  `browser-locale.test.mjs` can run it without a browser, and a hard-coded `"default"` would be an
+  English word in a Portuguese console. The locale *tag* is not translated, because a tag is a tag and
+  a sentence about it is not.
+- **All four labels and the chip**, including the spreadsheet view's `getRowLabel`. Leaving the table
+  as the one view without the mark is the half-migration this repository keeps finding, so it has an
+  assertion of its own.
+
+Two guards moved with it and were followed rather than loosened: SH1059's extractor names
+`rowLabel`'s signature, and SH1020's names the actions trigger's call. Both would have kept passing
+against a version that had lost the argument, which is why the regex is the thing that had to change.

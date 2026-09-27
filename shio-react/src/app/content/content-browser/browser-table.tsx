@@ -127,7 +127,9 @@ export function BrowserTable({
     <BentoDataTable
       rows={rows}
       getRowId={(row) => row.id}
-      getRowLabel={rowLabel}
+      // SH1125 — the same marker the card and list views put on a row, so the spreadsheet view names
+      // a translation the way the other two do rather than being the one place it is missing.
+      getRowLabel={(row) => rowLabel(row, t("content.localeDefault"))}
       columns={columns}
       label={t("content.browserList")}
       rowActions={rowActions}

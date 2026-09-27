@@ -1623,29 +1623,6 @@ The MCP write path that silently dropped locale and translationOf was a live def
 is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
 translates, reached through the assistant, and every result lands as a reviewable draft.
 
-### LXXIII.8 The chip that cannot say which language is the original (SH1125)
-
-SH1059 put each post row's locale on a chip beside the post-type badge and named the row
-by it, so a page and its translation are two rows. Its design also asked that the chip
-mark the site's default locale "where the site's enabled set exists", and it did not
-exist then: the console could not read a site's policy until SH1056 gave it `GET
-/api/v2/site/{id}/locales`.
-
-It can now, and the browser still does not ask. So a folder holding a page in English
-and in Portuguese says which row is which and not which one is the original, which is
-the question a curator deleting one of them is actually asking.
-
-The browser already resolves the folder's site on every navigation (`/path` answers it),
-so this is one read of the policy per site the curator opens, cached under the same key
-the query layer uses for the site, and a word on the chip whose tag equals
-`defaultLocale` when the policy is declared. An undeclared policy's default is a
-description of the content rather than a choice, so it is not marked: a chip saying
-"default" about something nobody chose would be the same confusion SH1056 exists to
-remove.
-
-The assertion carries the id: with a declared default of `pt-br`, the `pt-br` row's
-accessible name says it is the default and the `en` row's does not.
-
 ### LXXIII.9 A switcher entry for a page nobody published (SH1128)
 
 A post's `availableLocales` is read from its whole translation group, and nothing in

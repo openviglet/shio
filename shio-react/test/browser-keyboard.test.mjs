@@ -63,7 +63,12 @@ test("SH1020: no row action is reachable by pointer alone", () => {
   assert.equal(VIEWS.match(/<Actions item=\{item\} actions=\{actions\} \/>/gu)?.length, 2,
     "SH1026: a view dropped the row's actions, so there they are reachable by nothing")
   // SH1059 — per row by `rowLabel`, the title plus its locale, since two translations share a title.
-  assert.match(VIEWS, /triggerLabel=\{t\("content\.rowActions", \{ name: rowLabel\(item\) \}\)\}/u,
+  // SH1125 gave `rowLabel` the word for "default" as a second argument, so the name it builds now says
+  // which of two translations is the original as well as which language each is. Followed rather than
+  // loosened: a regex that stopped naming the call would keep passing for a trigger that had lost it.
+  assert.match(
+    VIEWS,
+    /triggerLabel=\{t\("content\.rowActions", \{ name: rowLabel\(item, t\("content\.localeDefault"\)\) \}\)\}/u,
     "SH1020: named per row, or a screen reader hears eight identical 'Actions' buttons")
 })
 

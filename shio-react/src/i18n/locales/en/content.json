@@ -451,5 +451,7 @@
   "content.renameVacates": "{{url}} stops answering.",
   "content.renameInbound_one": "{{count}} page links to that address.",
   "content.renameInbound_other": "{{count}} pages link to that address.",
-  "content.renamed": "Renamed to {{url}}"
+  "content.renamed": "Renamed to {{url}}",
+  "content.localeDefault": "default",
+  "content.localeChipDefault": "Written in {{locale}} — the site's default language, so this is the original"
 }

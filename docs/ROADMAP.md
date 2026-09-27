@@ -49,7 +49,6 @@
 
 ## Block BH — One content model, many languages
 
-- 📋 **SH1125** (deps: SH1056 ✅) **the browser's locale chip does not say which row is the site's default language** — SH1059's design asked for it once a site could declare a default; the console can read the policy now and the browser never asks for it. → §LXXIII.8
 - 📋 **SH1128** (deps: SH1123 ✅) **a post's availableLocales names a translation that exists only as a draft, to a production token** — translate creates a DRAFT and the group read asks for no state, so a switcher links to a page its own token gets a 404 for while the translation is written. → §LXXIII.9
 - 📋 **SH1130** (deps: SH1057 ✅) **nothing flags a declared locale no page is written in, so every URL in it quietly serves another language** — The route accepts a declared locale and falls back along the chain, so a locale the site promises and never wrote looks served while showing none of it. → §LXXIII.10
 

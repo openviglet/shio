@@ -30,12 +30,14 @@ import { toast } from "@viglet/viglet-design-system"
 
 import { filterParams } from "@/lib/content-query"
 import { isCancelled } from "@/lib/read-options"
+import { useSiteLocalePolicy } from "@/hooks/use-catalogue"
 
 import {
   PAGE_SIZE, POST_SORT, SELECT_ALL_CAP, browserFilters,
   type BreadcrumbPathItem, type BROWSER_LIST as BrowserListShape, type ConsoleFolderRow,
   type ObjectChild, type ObjectListResponse,
 } from "./browser-listing"
+import { declaredDefaultLocale } from "./browser-view"
 
 /** What the page hands in: where it is, and which query is committed. */
 export interface BrowserListing {
@@ -211,6 +213,23 @@ export function useBrowserListing({ objectId, listKey, sortBy, t }: BrowserListi
    * They are still two sequences rather than one: merging them would interleave the folder page
    * with the post page and read as a single ordered list of things that were ordered separately.
    */
+  // SH120: the site comes from /path, whose breadcrumb opens with it. The listing used to
+  // repeat it, which meant two endpoints answering "which site is this" — and the listing's
+  // copy was the one that went stale first, because it is the response people add fields to.
+  //
+  // Read here rather than below the mappings since SH1125: the post mapping needs the site to know
+  // which of two translations is the site's own language.
+  const site = breadcrumbPath.find((crumb) => crumb.type === "SITE")
+  const siteId = site?.id ?? null
+  const siteName = site?.name ?? null
+  /*
+   * SH1125 — one read of the site's locale policy per site the curator opens, cached under the same
+   * key the query layer already uses for the site (`useSiteLocalePolicy`), so walking a tree inside
+   * one site asks once. Only a DECLARED default marks a row — see `declaredDefaultLocale`.
+   */
+  const localePolicy = useSiteLocalePolicy(siteId ?? undefined)
+  const defaultLocale = declaredDefaultLocale(localePolicy.data)
+
   const folderItems: ObjectChild[] = listData.folders.map((folder) => ({
     id: folder.id,
     name: folder.name,
@@ -227,6 +246,11 @@ export function useBrowserListing({ objectId, listKey, sortBy, t }: BrowserListi
     postTypeName: post.postTypeTitle || post.postType,
     publishStatus: post.publishStatus,
     locale: post.locale,
+    // SH1125 — whether this is the language the site declared as its own, computed once here rather
+    // than at each of the four places a row label is built. `declaredDefaultLocale` is what keeps an
+    // UNdeclared policy from marking anything (SH1056): a site that chose nothing still reports a
+    // default, and a chip saying "default" about that would be the confusion SH1056 removes.
+    isDefaultLocale: Boolean(post.locale && defaultLocale && post.locale === defaultLocale),
     thumbnail: post.thumbnail,
   }))
 
@@ -319,12 +343,6 @@ export function useBrowserListing({ objectId, listKey, sortBy, t }: BrowserListi
   }
 
 
-  // SH120: the site comes from /path, whose breadcrumb opens with it. The listing used to
-  // repeat it, which meant two endpoints answering "which site is this" — and the listing's
-  // copy was the one that went stale first, because it is the response people add fields to.
-  const site = breadcrumbPath.find((crumb) => crumb.type === "SITE")
-  const siteId = site?.id ?? null
-  const siteName = site?.name ?? null
   // SH1025 — the total, not the page: this line is what a curator reads to know how many
   // subfolders a section has, and it would otherwise say fifty for every folder over fifty.
   const folderCount = listData.totalFolders
@@ -340,5 +358,7 @@ export function useBrowserListing({ objectId, listKey, sortBy, t }: BrowserListi
     folderItems, postItems, combinedItems, sortedItems, hasMoreRows,
     loadedPosts, loadedFolders,
     site, siteId, siteName, folderCount, postCount,
+    // SH1125 — the page passes it to the row views, which mark the chip with it.
+    defaultLocale,
   }
 }
