@@ -4320,3 +4320,51 @@ stood at 2968 of 2975. `address` was added and paid for by trimming the tool's o
 `since` text, which restated the cursor: 2964 after, four fewer than before. `action`, `actor` and
 `subject` stay on REST and the CLI. `subject` is the weakest, since a caller asking about one object
 already has its address. `ShAgentChangesAttributionTest` drives the tool with `address`.
+
+## Conditional reads, where they are not free (SH1117)
+
+SH1048 made the console's reads answer `304` and its design said MCP and the CLI got it for free,
+since they call the same REST. Half of that is true and the false half was the half worth having: a
+browser keeps the body and revalidates, and axios goes through that cache; **Node has none**. `cli/src`
+sent `If-None-Match` in exactly one place — `clone` probing *external* assets it was copying — and
+never to Shio's own API. So every `shio pull`, `verify`, `digest` and `context` paid the full body
+against an unchanged instance, which is the case a CLI is in most of the time.
+
+`src/read-cache.mjs` is a **response cache validated by an ETag**, and that is the one thing about it
+worth reading before changing it. `clone.mjs` stores validators alone because a 304 there means "the
+file on disk is still right" — the body is already somewhere. An API read has nowhere: a 304 carries
+no payload, so a store holding validators alone would answer a cheap request with nothing to return
+and have to ask again unconditionally, which is an extra round trip for no saving at all. Hence the
+`body` field somebody will want to delete.
+
+There is **no TTL and nothing to invalidate**: every hit is confirmed by the instance before it is
+used, a 304 being the instance saying these bytes are current. That is what makes the store safe
+across invocations — and also why a *corrupt* entry must fail loudly rather than degrade. An entry
+whose body no longer matches its `digest` is bytes of unknown provenance that the next 304 would
+bless, so `hit()` throws `ShReadCacheCorrupt` with the file and the `--no-read-cache` escape in the
+message (P6). A file that is absent, unparseable or of another format is the opposite case — no claim
+about content — so it reads as an empty store and the next read is unconditional.
+
+**Counted, not claimed.** Without a count, a store that stopped matching reads exactly like a server
+that never answers 304: everything works, nothing is saved, and nobody can tell. The ledger records
+conditional requests sent, 304s received, 200s paid for, and the bytes on each side; `SHIO_DEBUG`
+prints one line, and `read-cache.test.mjs` asserts the numbers.
+
+Three decisions the file states and this does not repeat: the store is keyed by **instance and
+address** with the origin dropped from the address (it is the other half of the key), the query is
+**sorted** so one request has one key however a caller spells it, and the bodies per instance are
+**bounded** and evicted oldest-first — `find` and `read` answer per address, so an unbounded store
+accumulates an entry per post ever asked for.
+
+It is enabled **once** in `index.mjs`, not per client: twenty commands build `ShioAgentClient` with
+the same four arguments, and a fifth threaded through all of them is a flag half of them would spell
+differently — the thing `ShRead` was invented to avoid on the console side. So the cache is
+module-level in `agent-client.mjs` beside `RUN` and `INTENT`, enabled once per invocation, and
+flushed once on the way out **whatever happened**: a command that failed halfway still learned the
+tags of every read that answered before it did. `--no-read-cache` is for a run that must be seen to
+read the instance. The store lives at `shio/.shio/read-cache.json`, beside the other derived
+snapshots, and `create-shio-app`'s template now ignores that whole directory — it never was content.
+
+**MCP is a separate answer and is deliberately not done here.** It reaches the agent surface too, but
+a long-lived session's caching is a question about the session rather than about a process that exits,
+and answering both in one place would make this file pretend to know about both.

@@ -1509,32 +1509,6 @@ Worth doing in slices, since each screen's failure path is its own.
 The assertion is the list shrinking with every slice, and the browser probe green after
 each.
 
-### LXXII.22 Conditional reads from the CLI, where they are not free (SH1117)
-
-SH1048's design said MCP and the CLI benefit for free, since they call the same REST.
-Half of that is true, and the false half is the half worth having.
-
-A browser gets it free: `no-cache` plus an `ETag` means it keeps the body and
-revalidates, and axios goes through that cache. Node has none. `cli/src` sends
-`If-None-Match` in one place — `clone` probing *external* assets it is copying — and
-never to Shio's own API, so every `shio pull`, `verify`, `digest` and `context` pays the
-full body against an unchanged instance — the case a CLI is in most of the time.
-
-The shape exists next door. `clone.mjs` keeps `etag`/`lastModified` per row, sends the
-conditional `GET` and counts the unconditional ones, which is the accounting this wants:
-without a count, a store that stopped matching reads as a server that never answers 304.
-
-What needs deciding is where the validators live. A per-invocation store is useless —
-the CLI exits — so it is a file, and files are state the CLI has been careful about:
-`shio/` is content, not cache. Somewhere ignored, keyed by instance and address,
-invalidated by nothing, since the validator *is* the invalidation.
-
-MCP is a separate answer: it reaches the agent surface, which carries semantic
-validators of its own, so the question there is whether a long-lived session keeps one.
-
-The assertion is a second identical read costing no body, counted rather than claimed,
-and a stale store failing loudly rather than re-fetching everything.
-
 ### LXXII.23 A size verdict about somebody else's build (SH1126)
 
 SH1043's comparison runs against whatever console build sits in

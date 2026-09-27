@@ -19,6 +19,8 @@ import { randomUUID } from "node:crypto";
 
 import { ShioHttpError } from "@viglet/shio-client";
 
+import { ShReadCache } from "./read-cache.mjs";
+
 /**
  * This process's run id (SH1000).
  *
@@ -32,6 +34,28 @@ const RUN = randomUUID();
 
 /** What this run says it is for, from `--intent`; empty until somebody sets it. */
 let INTENT = "";
+
+/**
+ * SH1117 — the conditional-read cache this process's GETs go through, or none.
+ *
+ * Module-level for the same reason `RUN` and `INTENT` are: twenty commands build this client with
+ * the same four arguments, and threading a fifth through every one of them is how half of them end
+ * up spelling it differently — the thing `ShRead` was invented to avoid on the console side. The
+ * entry point enables it once per invocation and flushes it once, and a command that wants nothing
+ * to do with it leaves it unset, which is what `--no-read-cache` does.
+ */
+let CACHE = null;
+
+/** Read every GET of this process through `cache`, or through none when it is null. */
+export function useReadCache(cache) {
+  CACHE = cache instanceof ShReadCache ? cache : null;
+  return CACHE;
+}
+
+/** The cache in force, for the entry point that has to flush it and for a test that asserts it. */
+export function readCache() {
+  return CACHE;
+}
 
 /**
  * Declare what this invocation is for (SH1000).
@@ -123,10 +147,28 @@ export class ShioAgentClient {
     const accept =
       { terse: "text/plain", "agents-md": "text/markdown" }[query.format] ?? "application/json";
     const url = `${this.baseUrl}/api/v2/agent/context${search ? `?${search}` : ""}`;
+    // SH1117 — the read this cache was written for. `context` is the one call that replaces a session
+    // (P2), it is the largest body on the surface, and a run against an unchanged instance repeats it
+    // verbatim. SH116 gave it an ETag off the configuration hash; until now nobody sent one back.
+    const hit = CACHE?.hit(this.baseUrl, url) ?? null;
     const res = await this.fetch(url, {
       method: "GET",
-      headers: { Authorization: this.#authHeader(), Accept: accept, ...this.#runHeaders() },
+      headers: {
+        Authorization: this.#authHeader(),
+        Accept: accept,
+        ...this.#runHeaders(),
+        ...(CACHE?.conditionalHeaders(hit) ?? {}),
+      },
     });
+    if (res.status === 304 && hit) {
+      // The header if the 304 carries one, and `null` if it does not — `shio context --out` prints
+      // the estimate only when it has one, which it already had to handle. Not stored beside the
+      // body: a count kept next to the bytes it counts is a second thing that can disagree with them,
+      // and this one is a courtesy rather than an answer.
+      const body = CACHE.revalidated(this.baseUrl, url, hit);
+      const cached = res.headers?.get?.("x-shio-est-tokens");
+      return { body, terse, estTokens: cached ? Number(cached) : null };
+    }
     if (!res.ok) {
       let detail = "";
       try {
@@ -136,7 +178,9 @@ export class ShioAgentClient {
       }
       throw new ShioHttpError(res.status, url, detail);
     }
-    const body = await res.text();
+    const body = CACHE
+      ? CACHE.received(this.baseUrl, url, { etag: res.headers?.get?.("etag"), body: await res.text() })
+      : await res.text();
     const header = res.headers?.get?.("x-shio-est-tokens");
     return { body, terse, estTokens: header ? Number(header) : null };
   }
@@ -550,14 +594,22 @@ export class ShioAgentClient {
     }
     const search = params.toString();
     const url = `${this.baseUrl}/api/v2/agent/${path}${search ? `?${search}` : ""}`;
+    // SH1117 — every GET on this surface, because SH159 tags the body of all of them and the ones
+    // that matter most are the ones a loop repeats: `find` on every iteration, `verify` and `index`
+    // on every run, `blueprints` and `gates` unchanged for weeks at a time.
+    const hit = CACHE?.hit(this.baseUrl, url) ?? null;
     const res = await this.fetch(url, {
       method: "GET",
       headers: {
         Authorization: this.#authHeader(),
         Accept: "application/json",
         ...this.#runHeaders(),
+        ...(CACHE?.conditionalHeaders(hit) ?? {}),
       },
     });
+    if (res.status === 304 && hit) {
+      return JSON.parse(CACHE.revalidated(this.baseUrl, url, hit));
+    }
     if (!res.ok) {
       // Same reasoning as `resolve`: the SH80 teaching problem is the useful part of a
       // failure — it names the allowed check groups, or the property that enables
@@ -570,7 +622,12 @@ export class ShioAgentClient {
       }
       throw new ShioHttpError(res.status, url, detail);
     }
-    return res.json();
+    if (!CACHE) return res.json();
+    // Parsed from the text rather than by `res.json()`, so the bytes that are stored are the bytes
+    // the tag names: re-serializing a parsed document would put a *different* string under the
+    // instance's ETag, and the next 304 would hand back something the server never sent.
+    return JSON.parse(CACHE.received(this.baseUrl, url,
+      { etag: res.headers?.get?.("etag"), body: await res.text() }));
   }
 
   /**
@@ -697,18 +754,25 @@ export class ShioAgentClient {
   async getManifest(include) {
     const query = include?.length ? `?include=${encodeURIComponent(include.join(","))}` : "";
     const url = `${this.baseUrl}/api/v2/agent/manifest${query}`;
+    const hit = CACHE?.hit(this.baseUrl, url) ?? null;
     const res = await this.fetch(url, {
       method: "GET",
       headers: {
         Authorization: this.#authHeader(),
         Accept: "application/json",
         ...this.#runHeaders(),
+        ...(CACHE?.conditionalHeaders(hit) ?? {}),
       },
     });
+    if (res.status === 304 && hit) {
+      return JSON.parse(CACHE.revalidated(this.baseUrl, url, hit));
+    }
     if (!res.ok) {
       throw new ShioHttpError(res.status, url, "");
     }
-    return res.json();
+    if (!CACHE) return res.json();
+    return JSON.parse(CACHE.received(this.baseUrl, url,
+      { etag: res.headers?.get?.("etag"), body: await res.text() }));
   }
 }
 

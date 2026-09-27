@@ -67,4 +67,5 @@ Common options:
   --dry-run            push/apply: print the plan, change nothing
   --check              push/apply: exit non-zero if the plan is non-empty
   --prune              push: delete remote types absent locally (never system types)
+  --no-read-cache      Read the instance unconditionally (see shio/.shio/read-cache.json)
   -h, --help           Show help
