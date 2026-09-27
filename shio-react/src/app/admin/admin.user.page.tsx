@@ -9,7 +9,7 @@ import { Loader2, Save } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { isCancelled } from "@/lib/read-options"
 import { addressKey } from "@/lib/query-keys"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -19,6 +19,9 @@ import { toast } from "@viglet/viglet-design-system"
 import { reportProblem } from "@/lib/problem"
 
 const service = new ShUserService()
+
+/** SH1168 — one empty string per rendered field, so no input is ever uncontrolled. */
+const EMPTY_USER: ShUser = { username: "", firstName: "", lastName: "", email: "", password: "" }
 
 export default function AdminUserPage() {
   const { userId } = useParams()
@@ -43,7 +46,12 @@ export default function AdminUserPage() {
    * SH1166 — seeded through `values`, which react-hook-form resets from in its own effect and only
    * when the user differs. A `form.reset` during render updates every field's Controller mid-render.
    */
-  const form = useForm<ShUser>({ values: loaded.data, resetOptions: { keepDirtyValues: true } })
+  // SH1168 — every input starts as "" and stays a string: without defaults each rendered `undefined`
+  // until the user arrived, and the password the server never returns stayed `undefined` after it.
+  const values = useMemo(() => loaded.data && { ...EMPTY_USER, ...loaded.data,
+    password: loaded.data.password ?? "" }, [loaded.data])
+  const form = useForm<ShUser>({ defaultValues: EMPTY_USER, values,
+    resetOptions: { keepDirtyValues: true } })
 
   useEffect(() => {
     // The read had no failure path: a user that would not load left the blank create form on screen.

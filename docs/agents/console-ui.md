@@ -2480,6 +2480,13 @@ in-progress edits. `test/render-phase-form-seed.test.mjs` scans for an `if` at c
 whose block writes to a form. The user editor has no route in the check, so that site was found by
 the scan.
 
+**And a form seeded late starts from strings (SH1168).** The user editor had no `defaultValues`, so
+its inputs rendered `undefined` until the user arrived, which React reports as an uncontrolled input
+becoming controlled. `password`, which the server never returns, stayed `undefined` even after that.
+`EMPTY_USER` gives every rendered field `""`, and `values` is the loaded user merged over it.
+`test/user-form-defaults.test.mjs` holds the defaults to the `FormField` names the page renders, so a
+field added later without a default fails there rather than in a browser.
+
 **And one of the twenty-five was never a debt.** `post-type.new.page.tsx` held
 `useEffect(() => {}, [t])` — an empty body — and sat on the declared list because the scan matches
 `useEffect(` and a `service.` call *anywhere in the same file*, and its `create` is in the submit

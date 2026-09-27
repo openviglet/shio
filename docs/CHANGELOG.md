@@ -1898,6 +1898,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1164** — The theme script is a data block now, so React's dev build stops reporting it and the dev-server console check fails only on real faults (design §LXXII.28 recorded in `docs/agents/console-ui.md`).
 - **SH1166** — Both editors seed their form through useForm values, so no Controller updates during render, and a scan fails on the next render-phase form write (design §LXXII.29 recorded in `docs/agents/console-ui.md`).
 - **SH1167** — The post editor reads its site's layout bindings first, so the live preview asks only for a type the site renders as a page and says why otherwise (design §LXXII.30 recorded in `docs/agents/console-ui.md`).
+- **SH1168** — The user form starts from empty-string defaults and merges the loaded user over them, so no input is ever uncontrolled and a new field needs a default (design §LXXII.31 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 
