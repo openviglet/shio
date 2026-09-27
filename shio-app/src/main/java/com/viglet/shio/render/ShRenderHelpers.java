@@ -1267,6 +1267,11 @@ public class ShRenderHelpers {
         if (id == null || id.isBlank()) {
             return "";
         }
+        // SH1143 — a proposed render may carry the bytes instead of an id. Already a URL, so it is
+        // the answer rather than a lookup key; see the constant's note for why nothing is stored.
+        if (inlineBytes(id)) {
+            return id;
+        }
         // SH279 — the same row the rest of the render reads. `findById` returns a row per state and
         // this took whichever came first, so a draft that renamed the file could produce the
         // published path or the draft one depending on the database. The bytes are immutable (SH145)
@@ -1322,6 +1327,35 @@ public class ShRenderHelpers {
         String id = string(context);
         if (id == null || id.isBlank()) {
             return options.inverse();
+        }
+        /*
+         * SH1143 — inline bytes render as themselves, with no ladder.
+         *
+         * <p>There is no `File` post, so there is no stored `WIDTH`, and `widths` is empty — which
+         * this helper's own note says is "exactly right": an empty `srcset` means "use src" in HTML,
+         * and fabricating a ladder from a width nobody knows is the one thing that produces broken
+         * images rather than unoptimised ones. A preview of an unpushed image is unoptimised and
+         * correct, which is what a preview owes the author.</p>
+         */
+        if (inlineBytes(id)) {
+            // The same keys the row below carries, so a template written for one renders the other.
+            // `alt` is empty and `altAttr` is nothing at all: there is no `File` post to hold an ALT,
+            // and SH1031's rule is that an absent description emits no attribute rather than an
+            // empty one — which is exactly what keeps `image-no-alt` reachable on the pushed page.
+            // `decorative=` is still honoured, because that is the caller's statement and not the
+            // asset's. No `alt=` hash is read: SH291's lint holds this signature to the keys the
+            // body reads, and it caught the first draft of this branch for reading one.
+            boolean decorative = "true".equalsIgnoreCase(hash(options, "decorative", "false"));
+            Map<String, Object> inline = new LinkedHashMap<>();
+            inline.put("url", id);
+            inline.put("width", 0);
+            inline.put("height", 0);
+            inline.put("alt", "");
+            inline.put("altAttr", altAttribute("", decorative));
+            inline.put("widths", List.of());
+            inline.put("srcset", "");
+            inline.put("sizes", hash(options, "sizes", "100vw"));
+            return options.fn(ShStableMap.copyOf(inline));
         }
         Optional<ShPostUnified> file = preferDraft(shPostUnifiedRepository.findById(id), state(options))
                 .stream().findFirst();
@@ -1452,6 +1486,37 @@ public class ShRenderHelpers {
             // Not recorded, because an unmeasurable image is not a degradation — see the helper's note.
             return 0;
         }
+    }
+
+    /**
+     * SH1143 — how large a `data:` URI a proposed render will carry, in characters.
+     *
+     * <p>A render request is a JSON body held in memory and rendered synchronously, so the ceiling
+     * is what stops one carrying a video. Two megabytes of base64 is roughly 1.5 MB of bytes, which
+     * is a generous hero image and not a film. Over it the value is not a URL this will emit: it
+     * falls through to the id lookup, finds nothing, and renders as the empty string — the same
+     * answer an unknown id gets, which is the conservative one.</p>
+     */
+    private static final int INLINE_CEILING = 2 * 1024 * 1024;
+
+    /**
+     * Whether a `File` field's value is the bytes themselves rather than a post id (SH1143).
+     *
+     * <p>`shio preview` renders a content file before it is pushed, and an image the author has just
+     * dropped under `shio/assets/**` has no id on the instance — the field names a tree path, which
+     * is not an id, so the page showed a broken image where it will show a picture. The author
+     * learned the wrong thing about the page, which is the one thing a preview must not do.</p>
+     *
+     * <p>So a proposed render may put the bytes in the field as a `data:` URI. <b>Nothing is
+     * stored</b>, which is the property that made this the answer over staging the asset under a
+     * disposable name: a write needs sweeping, and P7 says a preview stores nothing.</p>
+     *
+     * <p>Deliberately narrow. Only `data:image/`, because this is what an `<img>` renders and a
+     * `data:text/html` in a page is a script host; and only under {@link #INLINE_CEILING}.</p>
+     */
+    private boolean inlineBytes(String value) {
+        return value.length() <= INLINE_CEILING
+                && value.regionMatches(true, 0, "data:image/", 0, "data:image/".length());
     }
 
     private String bytePath(ShPostUnified filePost) {

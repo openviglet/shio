@@ -11,7 +11,10 @@ import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconEye, IconFileText, IconHistory, IconMessage, IconSparkles } from "@tabler/icons-react"
-import { Clock, Eye, EyeOff, History, Save, Sparkles, Upload } from "lucide-react"
+import { Clock, Eye, EyeOff, History, Link2, Save, Sparkles, Upload } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import { isCancelled } from "@/lib/read-options"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -29,6 +32,7 @@ import { PostVersionsDialog } from "@/components/post-versions.dialog"
 import { AskAgentDialog } from "@/components/ask-agent-dialog"
 import { useAgentAvailable } from "@/app/system/use-agent-available"
 import { useAppliedSuggestions } from "@/app/content/use-applied-suggestions"
+import { PostRenameDialog } from "@/components/post-rename.dialog"
 import { PostScheduleDialog } from "@/components/post-schedule.dialog"
 import { PublishPreviewDialog } from "@/components/publish-preview.dialog"
 import { PostTranslationsMenu } from "@/components/post-translations.menu"
@@ -82,13 +86,14 @@ export default function PostUnifiedEditPage() {
   const [isPublishing, setIsPublishing] = useState(false)
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
   const [versionsOpen, setVersionsOpen] = useState(false)
+  // SH1132 — the console's first writer of a friendly URL, which `post.move` was alone in being.
+  const [renameOpen, setRenameOpen] = useState(false)
   /**
    * SH995 — publishing is a permission above writing, so the two controls that change what visitors
    * see are disabled when this curator does not hold it, carrying the server's own sentence. Asked
    * rather than assumed: the alternative is offering a button and answering it with a 403, which
    * tells somebody they cannot do a thing only after they have tried.
    */
-  const [publishHint, setPublishHint] = useState<string | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   /** SH996 — Publish arms behind the server's own plan, rather than being a button with no preview. */
   const [publishPreviewOpen, setPublishPreviewOpen] = useState(false)
@@ -104,58 +109,75 @@ export default function PostUnifiedEditPage() {
   const [conflict, setConflict] = useState<
     { fields: PostConflictField[]; theirs: Record<string, unknown>; detail?: string } | undefined
   >(undefined)
-  /**
-   * SH1049 — why the post is not here, when it is not.
+  /*
+   * SH1158 — the heaviest form in the product, read through the query layer and cancelled when the
+   * curator leaves. Three reads, and each keeps the reason it had:
    *
-   * <p>Without it, `post` stays `null` on a failed read and the render below spins for ever: a 500,
-   * a deleted post and a slow server are the same screen, and there is nothing to press. The load
-   * settles every promise on purpose (SH654 needs to know which rows exist), so a failure has no
-   * other way to reach the page.</p>
+   * Both rows in one round trip. Which one is editable decides `state`, and whether the PUBLISHED row
+   * exists is the separate fact Unpublish needs (SH654) — the old sequential try/catch could not
+   * report it when a draft was found, which is why this is `allSettled` and not `all`.
+   *
+   * The permission read is its own query rather than a call inside this one, because it answers a
+   * different question and a failure means something different: a permission read that fails leaves
+   * the buttons as they were, since the server is the one that decides and hiding a control because a
+   * side call broke would be the worse guess.
    */
-  const [loadFailure, setLoadFailure] = useState<unknown>(null)
-
-  useEffect(() => {
-    async function load() {
-      // Both rows in one round trip. Which one is editable decides `state`, as before;
-      // whether the PUBLISHED row exists is the separate fact Unpublish needs (SH654),
-      // and the old sequential try/catch could not report it when a draft was found.
+  const loaded = useQuery({
+    queryKey: addressKey(`id:${postId}`),
+    queryFn: async ({ signal }) => {
       const [draft, published] = await Promise.allSettled([
-        unifiedService.get(postId, "DRAFT"),
-        unifiedService.get(postId, "PUBLISHED"),
+        unifiedService.get(postId, "DRAFT", { signal }),
+        unifiedService.get(postId, "PUBLISHED", { signal }),
       ])
       const editable = draft.status === "fulfilled" ? draft.value : null
       const live = published.status === "fulfilled" ? published.value : null
       const unified: ShPostUnified | null = editable ?? live
       if (!unified) {
-        // Both reads failed, or the post is gone. Either way this page has nothing to draw, and
-        // the rejection the DRAFT read carries is the one that says which.
-        setLoadFailure(draft.status === "rejected" ? draft.reason : new Error("not found"))
-        return
+        // Both reads failed, or the post is gone. Either way this page has nothing to draw, and the
+        // rejection the DRAFT read carries is the one that says which.
+        throw draft.status === "rejected" ? draft.reason : new Error("not found")
       }
-      setLoadFailure(null)
-      const resolvedState: ShPostState = editable ? "DRAFT" : "PUBLISHED"
+      return { unified, live, resolvedState: (editable ? "DRAFT" : "PUBLISHED") as ShPostState }
+    },
+    enabled: Boolean(postId),
+    retry: false,
+  })
 
-      aclService
-        .allowed(postId)
-        .then((allowed) => setPublishHint(allowed.publish ? null : (allowed.publishHint ?? null)))
-        // A permission read that fails leaves the buttons as they were: the server is the one that
-        // decides, and hiding a control because a side call broke would be the worse guess.
-        .catch(() => setPublishHint(null))
+  const allowed = useQuery({
+    queryKey: addressKey(`summary:allowed|${postId}`),
+    queryFn: ({ signal }) => aclService.allowed(postId, { signal }),
+    enabled: Boolean(postId),
+  })
 
-      setPost(unified)
-      setState(resolvedState)
-      setIsLive(live !== null)
-      setData(unified.data || {})
+  /*
+   * Seeded during render, once per post (`react-hooks/set-state-in-effect`). `data` is the form the
+   * curator edits, so it is a local copy on purpose — the rest follow it so the whole page describes
+   * one answer rather than parts of two.
+   */
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (loaded.isSuccess && seeded !== postId) {
+    setSeeded(postId)
+    setPost(loaded.data.unified)
+    setState(loaded.data.resolvedState)
+    setIsLive(loaded.data.live !== null)
+    setData(loaded.data.unified.data || {})
+    // SH933 — the folder is still read for the parent id, which the move dialog and the "up one
+    // level" action both need.
+    if (loaded.data.unified.shFolder) setParentFolderId(loaded.data.unified.shFolder.id)
+  }
 
-      // SH933 — the folder is still read for the parent id, which the move dialog and the
-      // "up one level" action both need. The trail this block used to build alongside it went
-      // with the renderer: the hero names the post and carries its way back.
-      if (unified.shFolder) {
-        setParentFolderId(unified.shFolder.id)
-      }
-    }
-    load()
-  }, [postId])
+  /*
+   * SH1049 — why the post is not here, when it is not.
+   *
+   * Without it, `post` stays `null` on a failed read and the render below spins for ever: a 500, a
+   * deleted post and a slow server are the same screen, and there is nothing to press. Derived from the
+   * query rather than recorded by a setter now, and `isCancelled` is what the derivation adds — an
+   * aborted read rejects, so a curator navigating away would otherwise be told the post is not there.
+   */
+  const loadFailure = loaded.isError && !isCancelled(loaded.error) ? loaded.error : null
+  const publishHint = allowed.data && !allowed.data.publish
+    ? (allowed.data.publishHint ?? null)
+    : null
 
   /**
    * SH1011 — is there unsaved work here?
@@ -517,6 +539,21 @@ export default function PostUnifiedEditPage() {
                 <History className="size-4" />
                 {t("content.versionHistory")}
               </GradientButton>
+              {/*
+                SH1132 — a rename a curator can do. Only where the page has a URL to change: a post
+                with none has nothing to move FROM, which the service refuses rather than guesses.
+              */}
+              {post.furl && (
+                <GradientButton
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRenameOpen(true)}
+                >
+                  <Link2 className="size-4" />
+                  {t("content.renameTitle")}
+                </GradientButton>
+              )}
               <GradientButton
                 type="button"
                 size="sm"
@@ -752,6 +789,13 @@ export default function PostUnifiedEditPage() {
         onConfirm={handlePublish}
         publishing={isPublishing}
         gateRefusal={gateRefusal}
+      />
+      <PostRenameDialog
+        postId={postId}
+        currentUrl={post.furl ?? ""}
+        open={renameOpen}
+        setOpen={setRenameOpen}
+        onRenamed={(url) => setPost((prev) => (prev ? { ...prev, furl: url } : prev))}
       />
       <PostScheduleDialog
         postId={postId}

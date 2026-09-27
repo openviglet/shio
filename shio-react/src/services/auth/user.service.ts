@@ -1,6 +1,7 @@
 import type { ShCurrentUser } from "@/models/auth/current-user";
 import type { ShUser } from "@/models/auth/user";
 import axios from "axios";
+import type { ShRead } from "@/lib/read-options";
 
 export class ShUserService {
   async get(): Promise<ShCurrentUser> {
@@ -13,8 +14,8 @@ export class ShUserService {
     return response.data;
   }
 
-  async getByUsername(username: string): Promise<ShUser> {
-    const response = await axios.get<ShUser>(`/v2/user/${username}`);
+  async getByUsername(username: string, read: ShRead = {}): Promise<ShUser> {
+    const response = await axios.get<ShUser>(`/v2/user/${username}`, { signal: read.signal });
     return response.data;
   }
 

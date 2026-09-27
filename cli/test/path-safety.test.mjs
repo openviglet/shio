@@ -38,6 +38,7 @@ import {
   folderMarkerPathFor,
   sidecarsOf,
   siteDir,
+  siteMarkerPathFor,
 } from "../src/content-files.mjs";
 import { assetPathFor, metaPathFor } from "../src/content-assets.mjs";
 import { capturedAssetPathFor } from "../src/clone-assets.mjs";
@@ -139,6 +140,19 @@ const DECLARED = {
     collides: {
       values: ["folder:Blog/news", "folder:Blog/News"],
       detector: markerPathCollisions,
+      writtenBy: "commands/content-pull.mjs",
+    },
+  },
+  // SH1122 — the site marker, `<siteDir>/_site.md` in the folders root. Same shape and same guard as
+  // the two notes files below: the only value in the path is the site name, and `siteDir` is what
+  // stops a server-reported `..` leaving the root. Its pair is therefore a *site* pair, which
+  // `siteDir` above owns — named rather than exempted, so a reader does not have to rediscover that.
+  siteMarkerPathFor: {
+    guarded: "SH403 — through `siteDir`, so a server site name cannot leave the folders root",
+    probe: () => siteMarkerPathFor({ site: ".." }),
+    collides: {
+      values: ["Blog", "blog"],
+      detector: siteDirCollisions,
       writtenBy: "commands/content-pull.mjs",
     },
   },

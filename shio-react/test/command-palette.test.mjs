@@ -145,16 +145,30 @@ test("SH1028: recency breaks a tie and never beats a match", () => {
 })
 
 test("SH1028: the content half is debounced and, more importantly, cancellable", () => {
-  assert.match(SHELL, /const timer = setTimeout\(\(\) => \{/u,
+  /*
+   * SH1157 kept both of this test's claims and changed how each is secured, so the assertions name the
+   * property rather than the mechanism that used to carry it.
+   *
+   * The debounce is a **committed term**: the timer sets what has been asked for, and the query is keyed
+   * on that rather than on what has been typed. A keystroke is still not a query.
+   */
+  assert.match(SHELL, /const timer = setTimeout\(\(\) => setTerm\(wanted\), SEARCH_DEBOUNCE_MS\)/u,
     "SH1028: a keystroke is not a query")
-  assert.match(SHELL, /if \(queryToken\.current !== token\) return/u,
+  assert.match(SHELL, /queryKey: addressKey\(`summary:palette\|\$\{term\}`\)/u,
     "SH1028: a slow answer to `pri` arriving after a fast answer to `pricing` would replace the "
       + "right rows with stale ones, and the reader would watch the palette go backwards as they "
-      + "typed. That is a correctness problem, not a network one.")
+      + "typed. That is a correctness problem, not a network one — and SH1157 closes it better than "
+      + "the `queryToken` ref this replaced: the term is part of the key, so the answer to `pri` is "
+      + "filed under a question nobody is asking and is never rendered, where the ref only ignored "
+      + "it after the server had already done the work.")
+  assert.match(SHELL, /queryFn: \(\{ signal \}\) => searchService\.search\(\{ q: term \}, 8, \{ signal \}\)/u,
+    "SH1028: the content comes from the console's own search, which finds drafts (see SH1027) — and "
+      + "the superseded request is cancelled rather than merely disregarded")
   assert.match(SHELL, /pending: searching/u,
     "SH1028: an empty list that is not empty yet reads as \"no matches\" (VDS123)")
-  assert.match(SHELL, /searchService\.search\(\{ q: term \}, 8\)/u,
-    "SH1028: the content comes from the console's own search, which finds drafts (see SH1027)")
+  assert.match(SHELL, /const searching = wanted !== term \|\| \(term\.length >= 2 && read\.isFetching\)/u,
+    "SH1028: and `searching` has to be true while the debounce has not caught up as well as while the "
+      + "request runs, or the palette shows \"no matches\" for the 200ms before it asks")
 })
 
 test("SH1028: actions come before content, and the package keeps that order", () => {

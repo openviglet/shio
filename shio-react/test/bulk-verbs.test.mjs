@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH1021 — the curator's bulk verbs, and the one outcome that must not be smoothed over.
@@ -22,7 +23,7 @@ import { fileURLToPath } from "node:url"
  */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const read = (...path) => readFileSync(join(ROOT, ...path), "utf8")
-const PAGE = read("src", "app", "content", "object.children.page.tsx")
+const PAGE = browserSource()
 const SERVICE = read("src", "services", "post-unified", "post-unified.service.ts")
 
 test("SH1021: one refusal does not swallow the rest, and is named rather than counted", () => {
@@ -50,7 +51,9 @@ test("SH1021: every bulk run is planned first, and the plan is the server's", ()
 })
 
 test("SH1021: the sheet shows each item's outcome and each refusal's fix", () => {
-  assert.match(PAGE, /\(bulkPlan\?\.result\.results \?\? \[\]\)\.map\(\(change\) =>/u,
+  // SH1145 — the sheet is `bulk-plan.dialog.tsx`, mounted only when there is a plan, so the plan
+  // is non-null there and the `?? []` that stood in for "no plan yet" is gone with the four `?.`.
+  assert.match(PAGE, /plan\.result\.results\.map\(\(change\) =>/u,
     "SH1021: per item, because that is the shape the server answers with")
   assert.match(PAGE, /change\.problem\.title/u)
   assert.match(PAGE, /change\.problem\.fix/u,

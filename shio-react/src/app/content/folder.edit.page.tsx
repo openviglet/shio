@@ -8,6 +8,10 @@
  */
 import { IconFolder } from "@tabler/icons-react"
 import { BentoEntityShell } from "@viglet/viglet-design-system/bento"
+import { useQuery } from "@tanstack/react-query"
+import { isCancelled } from "@/lib/read-options"
+import { reportProblem } from "@/lib/problem"
+import { addressKey } from "@/lib/query-keys"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -37,9 +41,27 @@ export default function BentoFolderEditPage() {
   const { folderId = "" } = useParams()
   const [folder, setFolder] = useState<ShFolder | null>(null)
 
+  /*
+   * SH1116 — one read per folder, cancelled when the id changes or the screen unmounts, and a
+   * failure that is reported. The read had no failure path at all: a folder that would not load left
+   * whatever the previous one had put on screen, under a breadcrumb naming the new one.
+   */
+  const loaded = useQuery<ShFolder>({
+    queryKey: addressKey(`id:${folderId ?? ""}`),
+    queryFn: ({ signal }) => service.get(folderId, { signal }),
+    enabled: Boolean(folderId),
+  })
+
+  // Set during render rather than in an effect (`react-hooks/set-state-in-effect`), once per folder.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (loaded.data && seeded !== folderId) {
+    setSeeded(folderId)
+    setFolder(loaded.data)
+  }
+
   useEffect(() => {
-    if (folderId) service.get(folderId).then(setFolder)
-  }, [folderId])
+    if (loaded.error && !isCancelled(loaded.error)) reportProblem(loaded.error, t("common.error"))
+  }, [loaded.error, t])
 
   if (!folder) return null
 

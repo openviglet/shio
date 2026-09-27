@@ -6,6 +6,9 @@ import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
 import { Loader2, Save, Sparkles } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import { isCancelled } from "@/lib/read-options"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -27,9 +30,29 @@ export default function PostUnifiedNewPage() {
   const [data, setData] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(false)
 
+  /*
+   * SH1156 — one read per post-type, cancelled on leaving, keyed on the name it reads. `t` was in the
+   * dependency list and is not a subject: a translation function says nothing about which type is
+   * wanted. This is the same correction SH1150 made to the post-type *editor*, one page over.
+   */
+  const loaded = useQuery<ShPostType>({
+    queryKey: addressKey(`postType:${postTypeName}`),
+    queryFn: ({ signal }) => postTypeService.get(postTypeName, { signal }),
+    enabled: Boolean(postTypeName),
+  })
+
+  // Set during render rather than in an effect (`react-hooks/set-state-in-effect`), once per type.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (loaded.data && seeded !== postTypeName) {
+    setSeeded(postTypeName)
+    setPostType(loaded.data)
+  }
+
   useEffect(() => {
-    postTypeService.get(postTypeName).then(setPostType)
-  }, [postTypeName, t])
+    // The read had no failure path: a type that would not load left the form with no fields, which a
+    // curator would have taken for a type that declares none.
+    if (loaded.error && !isCancelled(loaded.error)) reportProblem(loaded.error, t("common.error"))
+  }, [loaded.error, t])
 
   const schema = useMemo(() => postFormSchema(postType), [postType])
 

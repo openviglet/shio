@@ -18,6 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import type { ShFolder } from "@/models/folder/folder"
 import { ShFolderService } from "@/services/folder/folder.service"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShFolderService()
 
@@ -46,6 +47,11 @@ export default function BentoFolderNewPage() {
       await service.create(data, folderId)
       toast.success(t("common.saved"))
       navigate(parent)
+    } catch (error) {
+      // SH1139 — a create that toasts success and lets a refusal escape as an unhandled rejection
+      // looks exactly like a button that did nothing. The dock reads toasts, so the curator, the
+      // mascot and a screen reader all missed it.
+      reportProblem(error, t("common.error"))
     } finally {
       setSaving(false)
     }

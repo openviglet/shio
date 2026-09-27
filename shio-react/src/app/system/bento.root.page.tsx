@@ -15,7 +15,10 @@ import {
   useBentoShellShortcuts,
 } from "@viglet/viglet-design-system/bento"
 import { columnFor } from "./bento-column"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import type { ShConsoleSearchResult } from "@/services/search/search.service"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { RouteBoundary } from "@/components/route-boundary"
 import { useTranslation } from "react-i18next"
@@ -135,8 +138,6 @@ export default function BentoRootPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [query, setQuery] = useState("")
-  const [found, setFound] = useState<PaletteRow[]>([])
-  const [searching, setSearching] = useState(false)
   const [recent, setRecent] = useState<string[]>([])
 
   const context = useMemo(() => contextOf(location.pathname), [location.pathname])
@@ -168,41 +169,41 @@ export default function BentoRootPage() {
    * palette go backwards as they typed. The token is checked on arrival rather than the request
    * aborted, because an abort is a network saving and this is a correctness one.
    */
-  const queryToken = useRef(0)
+  /*
+   * SH1157 — the palette's search, and the last of the token guards this task set out to replace.
+   *
+   * `queryToken` was a ref compared against itself in three callbacks, so a superseded answer was
+   * *ignored* — the server was still asked for it, and still answered. SH1047's note names that
+   * pattern; the signal stops the request instead, and a query key does the ignoring for free because
+   * an answer under a key nobody is asking for is not rendered.
+   *
+   * The debounce becomes a committed term rather than a timer around a request: `query` is what the
+   * curator has typed and `term` is what has been asked for, which is also what makes "searching"
+   * honest — it is true while the two disagree, or while the request for `term` is in flight, and not
+   * merely because a keystroke happened.
+   */
+  const [term, setTerm] = useState("")
+  const wanted = query.trim().length < 2 ? "" : query.trim()
+
   useEffect(() => {
-    const term = query.trim()
-    if (term.length < 2) {
-      setFound([])
-      setSearching(false)
-      return
-    }
-    const token = queryToken.current + 1
-    queryToken.current = token
-    setSearching(true)
-    const timer = setTimeout(() => {
-      searchService.search({ q: term }, 8)
-        .then((answer) => {
-          if (queryToken.current !== token) return
-          setFound(answer.results.map((row) => ({
-            id: row.address,
-            label: row.title || row.address,
-            description: `${row.type ?? ""} ${row.state === "DRAFT" ? t("content.filterDraft") : ""}`
-              .trim(),
-            route: row.id ? `${ROUTES.CONTENT_ROOT}/post/${row.id}` : "",
-            confirm: false,
-          })))
-        })
-        .catch(() => {
-          if (queryToken.current !== token) return
-          setFound([])
-        })
-        .finally(() => {
-          if (queryToken.current !== token) return
-          setSearching(false)
-        })
-    }, SEARCH_DEBOUNCE_MS)
+    // The state is set inside the timer, never synchronously: `react-hooks/set-state-in-effect`.
+    const timer = setTimeout(() => setTerm(wanted), SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(timer)
-  }, [query, t])
+  }, [wanted])
+
+  const read = useQuery<ShConsoleSearchResult>({
+    queryKey: addressKey(`summary:palette|${term}`),
+    queryFn: ({ signal }) => searchService.search({ q: term }, 8, { signal }),
+    enabled: term.length >= 2,
+  })
+  const found = useMemo<PaletteRow[]>(() => (read.data?.results ?? []).map((row) => ({
+    id: row.address,
+    label: row.title || row.address,
+    description: `${row.type ?? ""} ${row.state === "DRAFT" ? t("content.filterDraft") : ""}`.trim(),
+    route: row.id ? `${ROUTES.CONTENT_ROOT}/post/${row.id}` : "",
+    confirm: false,
+  })), [read.data, t])
+  const searching = wanted !== term || (term.length >= 2 && read.isFetching)
 
   const onPaletteQuery = useCallback((next: string) => setQuery(next), [])
 

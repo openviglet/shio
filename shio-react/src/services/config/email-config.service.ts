@@ -1,9 +1,10 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 import type { ShEmailConfig } from "@/models/config/email-config.model"
 
 export class ShEmailConfigService {
-  async get(): Promise<ShEmailConfig> {
-    const response = await axios.get<ShEmailConfig>("/v2/config/email")
+  async get(read: ShRead = {}): Promise<ShEmailConfig> {
+    const response = await axios.get<ShEmailConfig>("/v2/config/email", { signal: read.signal })
     return response.data
   }
 

@@ -11,6 +11,8 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
+import { stripComments } from "./support/source-text.mjs"
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH1020 — a list a curator can operate without a mouse.
@@ -24,14 +26,15 @@ import { fileURLToPath } from "node:url"
  */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
 const read = (...path) => readFileSync(join(ROOT, ...path), "utf8")
-const PAGE = read("src", "app", "content", "object.children.page.tsx")
+const PAGE = browserSource()
 /** SH1026 — each row's markup, now drawn by one renderer per view. */
 const VIEWS = read("src", "app", "content", "content-browser", "browser-views.tsx")
 
 /** Source with comments stripped, so a rule is never asserted against the prose explaining it. */
-const code = (source) => source
-  .replace(/\/\*[\s\S]*?\*\//gu, "")
-  .replace(/^\s*\/\/.*$/gmu, "")
+// SH1118 — the shared helper, not a local regex. The two-line version this replaced opened a
+// block comment on a `/*` inside a string literal and deleted the rest of the file, so a scan for
+// an absence passed by seeing nothing at all.
+const code = (source) => stripComments(source)
 
 test("SH1020: the list is a listbox and every row is an option", () => {
   assert.match(PAGE, /role="listbox"/u)
@@ -60,7 +63,12 @@ test("SH1020: no row action is reachable by pointer alone", () => {
   assert.equal(VIEWS.match(/<Actions item=\{item\} actions=\{actions\} \/>/gu)?.length, 2,
     "SH1026: a view dropped the row's actions, so there they are reachable by nothing")
   // SH1059 — per row by `rowLabel`, the title plus its locale, since two translations share a title.
-  assert.match(VIEWS, /triggerLabel=\{t\("content\.rowActions", \{ name: rowLabel\(item\) \}\)\}/u,
+  // SH1125 gave `rowLabel` the word for "default" as a second argument, so the name it builds now says
+  // which of two translations is the original as well as which language each is. Followed rather than
+  // loosened: a regex that stopped naming the call would keep passing for a trigger that had lost it.
+  assert.match(
+    VIEWS,
+    /triggerLabel=\{t\("content\.rowActions", \{ name: rowLabel\(item, t\("content\.localeDefault"\)\) \}\)\}/u,
     "SH1020: named per row, or a screen reader hears eight identical 'Actions' buttons")
 })
 
@@ -75,9 +83,15 @@ test("SH1020: arrows move, Space selects, Shift extends, Enter opens, Delete con
   assert.match(handler, /if \(event\.shiftKey\) selectRange\(anchorRow, next\)/u,
     "SH1020: Shift extends from the anchor — where the selection last started, which is the rule "
       + "every file manager uses and the reason the anchor is state rather than the previous row")
-  assert.match(handler, /setDeleteTarget\(item\)\s*\n\s*setDeleteDialogOpen\(true\)/u,
-    "SH1020: Delete goes through the confirm flow, never straight to the server — it is one "
-      + "keystroke away from every other key on this list")
+  // SH1145 — the listbox is a hook now, so the key calls `onDelete` and the page decides what that
+  // is. Both halves are asserted: a hook that called the server directly, or a page that wired the
+  // key to anything but the confirm flow, is the defect this has always been about.
+  assert.match(handler, /if \(item\) onDelete\(item\)/u,
+    "SH1020: Delete goes through the handler the page supplies, never straight to the server")
+  assert.match(browserSource(),
+    /onDelete: \(item\) => \{ setDeleteTarget\(item as ObjectChild\); setDeleteDialogOpen\(true\) \}/u,
+    "SH1020: and what the page supplies is the confirm flow — it is one keystroke away from every "
+      + "other key on this list")
 })
 
 test("SH1020: Shift-click extends the same range Shift-arrow does", () => {

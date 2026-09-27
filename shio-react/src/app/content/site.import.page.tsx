@@ -17,6 +17,7 @@ import { ROUTES } from "@/app/routes.const"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ShSiteService } from "@/services/site/site.service"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShSiteService()
 
@@ -52,6 +53,11 @@ export default function BentoSiteImportPage() {
         toast.success(t("content.importSite"))
       }
       navigate(`${ROUTES.CONSOLE}/content/object/${site.id}`)
+    } catch (error) {
+      // SH1139 — a create that toasts success and lets a refusal escape as an unhandled rejection
+      // looks exactly like a button that did nothing. The dock reads toasts, so the curator, the
+      // mascot and a screen reader all missed it.
+      reportProblem(error, t("common.error"))
     } finally {
       setImporting(false)
     }

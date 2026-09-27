@@ -16,6 +16,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.viglet.shio.api.cda.dto.ShCdaSchemaField;
 
+import tools.jackson.databind.JsonNode;
+
 /**
  * The context pack (SH77) — everything an agent asks at the start of a session, in
  * one deterministic, budgeted payload.
@@ -239,11 +241,38 @@ public record ShAgentContext(
      *                     content. Present only when true, and it is the distinction this whole
      *                     field exists for: "offers Portuguese" means one thing as a decision and
      *                     another as a description of what has been translated so far
+     * @param furl         SH1122 — the site's own URL segment, and {@code description} beside it.
+     *                     Both are here so the tree can <em>project</em> a site's settings: the
+     *                     marker file carries `url`, `furl`, `description` and the locale policy,
+     *                     and the first and last were already on this row while these two were
+     *                     readable only from the console's whole-entity site read, which answers
+     *                     the 5 MB {@code postTypeLayout} column along with them. Omitted when
+     *                     absent, like everything else here, so a site that has neither costs
+     *                     nothing and the pack is byte-identical to before (P3)
+     * @param description  see {@code furl}
+     * @param localePolicy SH1122 — the site's <b>stored</b> locale document, exactly as it is held,
+     *                     or absent while the site has declared none. The three fields above are the
+     *                     <em>discovery</em> answer and stay as they are: each is omitted when it
+     *                     says the ordinary thing, and {@code locales} carries no {@code fallback}
+     *                     at all — so a tree reconstructing a policy from them would have to invent
+     *                     the chain and guess a default the pack left out because it matched the
+     *                     instance's. A projection that wrote four of the marker's five keys would
+     *                     be lying by omission, and one more field that is absent for every
+     *                     undeclared site is the cheaper half of that trade
      */
     @JsonInclude(Include.NON_NULL)
     public record Site(String id, String name, String url, String rootFolderId, long posts,
                        Boolean scratch, String defaultLocale, List<String> locales,
-                       Boolean localesDeclared) {
+                       Boolean localesDeclared, String furl, String description,
+                       JsonNode localePolicy) {
+
+        /** The nine-field form: every caller before SH1122 had no file to project a site into. */
+        public Site(String id, String name, String url, String rootFolderId, long posts,
+                    Boolean scratch, String defaultLocale, List<String> locales,
+                    Boolean localesDeclared) {
+            this(id, name, url, rootFolderId, posts, scratch, defaultLocale, locales,
+                    localesDeclared, null, null, null);
+        }
 
         /** The five-field form, before SH591 made a disposable site visible as one. */
         public Site(String id, String name, String url, String rootFolderId, long posts) {

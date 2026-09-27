@@ -17,15 +17,10 @@
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
 - ⏳ **SH971** (deps: SH968 ✅, design system: VigletAssistant passes VigletAvatar's paused prop through) **a curator cannot choose what the dock reports or quiet the mascot** — The kinds can be muted now, but quieting the mascot needs VigletAssistant to pass VigletAvatar's paused prop through. → §LXIII.8
-- 📋 **SH1139** (deps: SH965 ✅) **sixteen console writes end silently on a path, so the dock never hears a delete or a refused create** — SH965's lint lists them: five deletes report nothing, and eleven writes toast success but let a failure escape or swallow it. → §LXIII.10
 
 ## Block AY — What the conformance instruments cannot see
 
-- 📋 **SH1115** (deps: —) **the coverage mirror marks ids named from a working copy nobody checked was committed** — It reads COVERAGE.md from a directory rather than a revision, so an uncommitted edit names ids here forever while the published matrix never gains the sentence. → §LXIV.18
-- 📋 **SH1118** (deps: SH1049 ✅) **the shared comment stripper silently deletes half a file, and every scan over it passes** — A slash and two stars in any string opens a block comment to it, so one Playwright pattern cut 43,389 characters out of what thirty-one suites read. → §LXIV.19
-- 📋 **SH1119** (deps: SH1052 ✅) **two committed regexes hold a literal backspace where a word boundary was meant, so both assert nothing** — A heredoc expanded the escape before the file was written, and the check that internal task ids do not ship has matched nothing since. → §LXIV.20
-- 📋 **SH1120** (deps: —) **shio verify --delivery runs fewer checks than shio verify, silently dropping page and a11y** — withDelivery hand-copies the server's default as content,routes,diagnostics, so the flag asking for the stronger proof sends the narrower run. → §LXIV.21
-- 📋 **SH1146** (deps: —) **SH698's held-socket test fails on every Linux runner and passes on Windows, so CI's JS job stays red** — On Node 26 Linux, closing the fixture with one idle accepted socket completes before the deadline, so the test reports the silence it exists to catch. → §LXIV.24
+- 📋 **SH1147** (deps: SH1118 ✅) **six more comment strippers can each delete the rest of a file from one string literal** — SH1118 fixed the shared helper and its lint names six re-implementations, two of which hide 656 and 508 lines behind a fixture string. → §LXIV.25
 
 ## Block BA — Releases, scheduling and the publish gate
 
@@ -36,13 +31,10 @@
 
 - ⏳ **SH1091** (deps: maintainer security call) **no stateless caller can change one field of a post without declaring the whole document** — Every route to a partial write crosses a boundary drawn on purpose, so which one is a maintainer's call. → §LXVIII.13
 - ⏳ **SH1094** (deps: a two-pane page shape in viglet-design-system) **the live preview is a card under the form, so reading it means scrolling away from the fields** — Two pages now want two panes (this and the translation workspace), and the design system has no such page shape. → §LXVIII.16
-- 📋 **SH1132** (deps: —) **the console cannot change a page's URL, so a rename is an agent-only act** — post.move is the only writer of a friendly URL; the console's form has no field for one, and its single path to a URL change is a rollback that restores an older revision's. → §LXVIII.19
-- 📋 **SH1143** (deps: —) **shio preview sends a file field as its tree path, so an image not yet pushed renders broken** — Push maps a tree path to an asset id as it uploads; a preview stores nothing, so a new image has no id to render under. → §LXVIII.20
 
 ## Block BD — Finding, selecting and acting on content
 
-- 📋 **SH1142** (deps: SH1026 ✅) **in the browser's table view, the toolbar's Select menu and Clear change nothing the table shows** — BentoDataTable reports its selection but takes none in, so the page's set and the ticked rows can differ under a bulk delete. → §LXIX.11
-- 📋 **SH1145** (deps: —) **the content browser page is still 1300 lines, so its next feature lands somewhere nobody can review** — SH1026 moved the views, the table and the window into content-browser; the listing reads, the keyboard and the dialogs are still in one file. → §LXIX.12
+- 📋 **SH1148** (deps: design system: BentoDataTable gains a controlled selectedIds beside onSelectionChange) **the table view has no select-everything and no invert, because the table takes no selection in** — SH1142 removed the two rather than leave them inert; they return when the table can be told. → §LXIX.13
 
 ## Block BG — The console as an application: cost, resilience and access
 
@@ -55,20 +47,16 @@
 - 📋 **SH1117** (deps: SH1048 ✅) **the CLI never sends If-None-Match to Shio, so every run pays the full body of an unchanged read** — SH1048 made the console's reads answer 304, which a browser takes for free and Node does not — the CLI sends a conditional GET only to external assets it clones. → §LXXII.22
 - 📋 **SH1126** (deps: SH1043 ✅) **the console size gate measures whatever build is in public, whether or not it was built from the tree under test** — pnpm test never builds the console, so a pass can measure bytes older than the change and a fail can come from a build made outside the task. → §LXXII.23
 - 📋 **SH1136** (deps: —) **seventeen console lint findings are suppressed rather than fixed, ten of them effects that set state on mount** — SH1075 recorded them to get CI's lint green and a local gate running, and each is a render cascade or a stale ref. → §LXXII.24
-- 📋 **SH1137** (deps: —) **a folder moved into another site leaves its posts answering under the old site** — The folder's parent changes and its posts keep the old shSite, so the tree and delivery disagree and no URL check runs. → §LXXII.25
 - 📋 **SH1140** (deps: —) **SH1047's fetch guard cannot see a service built and called in one expression, so login-form's mount read escapes it** — Its FETCHES pattern needs a dot right after the class name, and new ShSetupService().status() puts () between them. → §LXXII.26
+- 📋 **SH1161** (deps: —) **roadkeep lint reports six ledger entries citing symbols nothing defines any more** — SH4, SH102, SH185, SH234, SH350 and one unnumbered entry name schema.graphqls, document.fonts and document.referrer, so a reader greps and finds nothing. → §LXXII.27
 
 ## Block BH — One content model, many languages
 
-- 📋 **SH1125** (deps: SH1056 ✅) **the browser's locale chip does not say which row is the site's default language** — SH1059's design asked for it once a site could declare a default; the console can read the policy now and the browser never asks for it. → §LXXIII.8
-- 📋 **SH1128** (deps: SH1123 ✅) **a post's availableLocales names a translation that exists only as a draft, to a production token** — translate creates a DRAFT and the group read asks for no state, so a switcher links to a page its own token gets a 404 for while the translation is written. → §LXXIII.9
 - 📋 **SH1130** (deps: SH1057 ✅) **nothing flags a declared locale no page is written in, so every URL in it quietly serves another language** — The route accepts a declared locale and falls back along the chain, so a locale the site promises and never wrote looks served while showing none of it. → §LXXIII.10
 
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
-- 📋 **SH1121** (deps: SH1055 ✅) **the landing blueprint builds pages with no main region and no h1, which the a11y check reports on each** — marketing-site was repaired because a benchmark caught it; landing has the same defect and no assertion holds any blueprint to our own gate. → §LXXIV.11
-- 📋 **SH1122** (deps: SH1056 ✅) **a site's own settings are projected to no file, so url, bindings and the locale policy cannot be authored or diffed** — A site root's _folder.md says nothing about the site, so the one object that decides whether a page renders is reachable only through the API. → §LXXIV.12
 - 📋 **SH1133** (deps: —) **a redirect on a site with its own front end routes nobody, and the lint still demands one** — Redirect posts are served by the instance's renderer; a Next.js site's URLs are served by the front end, which the CDA and the SDK never tell which addresses moved. → §LXXIV.13
 - 📋 **SH1134** (deps: —) **an exported site carries no asset bytes, so every File post arrives pointing at nothing** — The format has a files/ directory and the import restores from it; the site export passes an empty list, so the pages render with broken images and neither side says so. → §LXXIV.14
 - 📋 **SH1135** (deps: —) **an instance cannot say what a site was replicated from, and the console cannot start a run** — Every artefact of a round lives on the CLI's disk and the instance sees only the site that came out, so the source URL behind a page is lost the moment the shell closes. → §LXXIV.15
@@ -101,6 +89,14 @@
 - **roadkeep lint exits clean here with no baseline** After re-vendoring a roadkeep that
   skips code.renamed for a vendored engine, `lint` with no --baseline reports no finding
   in Shio's three docs.
+
+## Done when — SH1116
+
+- **UNCANCELLED in fetch-cancellation.test.mjs is empty.** That list is the ledger: each
+  slice deletes its own entries, and the gate refuses a debt paid off and left on the
+  books. It stood at 33 when this task opened and slice one took it to 28, which the
+  test holds as a ceiling that only ever falls, so the list reaching zero is the whole
+  of what done means here.
 
 ## Non-goals (do NOT add as tasks)
 

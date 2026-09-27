@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
 import { KeyRound, Save, ArrowLeft, Copy, Check, Trash2, Info } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -19,6 +20,8 @@ import { ShApiTokenService } from "@/services/token/api-token.service"
 import type { ShApiToken, ShApiTokenScope, ShApiTokenEnv } from "@/models/token/api-token.model"
 import { useSites } from "@/hooks/use-catalogue"
 import { reportProblem } from "@/lib/problem"
+import { addressKey } from "@/lib/query-keys"
+import { isCancelled } from "@/lib/read-options"
 
 const service = new ShApiTokenService()
 
@@ -41,12 +44,29 @@ export default function ApiTokenPage() {
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  /*
+   * SH1116 — one read per token, cancelled on leaving, keyed on the id and not on the form.
+   *
+   * `item.title` was in the dependency list, so typing the token's title re-read the row and put
+   * the saved copy back over every field being edited.
+   */
+  const loaded = useQuery<ShApiToken>({
+    queryKey: addressKey(`token:${tokenId}`),
+    queryFn: ({ signal }) => service.get(tokenId, { signal }),
+    enabled: !isNew,
+  })
+
+  // Set during render, not in an effect: React's own "adjust state when the input changes" pattern.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  const token = loaded.data
+  if (token && seeded !== token.id) {
+    setSeeded(token.id)
+    setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [], env: token.env ?? "PROD", mayPublish: token.mayPublish ?? false })
+  }
+
   useEffect(() => {
-    if (!isNew) {
-      service.get(tokenId).then((token) =>
-        setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [], env: token.env ?? "PROD", mayPublish: token.mayPublish ?? false }))
-    }
-  }, [t, tokenId, isNew, item.title])
+    if (loaded.error && !isCancelled(loaded.error)) reportProblem(loaded.error, t("common.error"))
+  }, [loaded.error, t])
 
   const allSites = (item.siteIds?.length ?? 0) === 0
   const toggleSite = (siteId: string, checked: boolean) => {
@@ -79,8 +99,16 @@ export default function ApiTokenPage() {
 
   const handleDelete = async () => {
     if (confirm(t("dialog.deleteMessage"))) {
-      await service.delete(item.id)
-      navigate(ROUTES.ADMIN_TOKENS)
+      // SH1139 — a delete that navigates away is not a delete that was reported. This awaited and
+      // left, so a refusal escaped as an unhandled rejection and the dock, its live caption and the
+      // curator all learned nothing: the row vanished from the list either way.
+      try {
+        await service.delete(item.id)
+        toast.success(t("common.deleted"))
+        navigate(ROUTES.ADMIN_TOKENS)
+      } catch (error) {
+        reportProblem(error, t("common.error"))
+      }
     }
   }
 

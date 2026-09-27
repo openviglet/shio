@@ -771,13 +771,25 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
      *
      * <p>{@link #findByTranslationGroupId} answers one post's switcher and loads whole rows to do
      * it. A delivery list asking the same of every row would be a query per row, so this is the
-     * same fact for a page: two columns, both states, as the single read counts them.</p>
+     * same fact for a page: two columns rather than whole documents.</p>
+     *
+     * <p><b>SH1128 — over the states the reader can see</b>, which SH1129 deliberately did not do so
+     * the two surfaces agreed while that defect was open. {@code translate} creates the sibling as a
+     * DRAFT, so counting both states told every production token that a page it reads exists in a
+     * language it cannot fetch a single row of — a switcher entry linking to a 404 for as long as the
+     * translation was being written. Same rule and same reason as
+     * {@link #findDistinctLocalesBySiteIdInAndStateIn} one level up: {@code PUBLISHED} for a
+     * production token, both for a preview token. Deleted rows are excluded, because a locale nothing
+     * but the recycle bin holds is not one the group is available in.</p>
      *
      * @return one row per (group, locale) pair as {@code [translationGroupId, locale]}
      */
     @Query("select distinct p.translationGroupId, p.locale from ShPostUnified p "
-            + "where p.translationGroupId in :groups and p.locale is not null")
-    List<Object[]> findDistinctLocalesByTranslationGroupIdIn(@Param("groups") Collection<String> groups);
+            + "where p.translationGroupId in :groups and p.state in :states "
+            + "and p.locale is not null and p.deletedDate is null")
+    List<Object[]> findDistinctLocalesByTranslationGroupIdInAndStateIn(
+            @Param("groups") Collection<String> groups,
+            @Param("states") Collection<ShPostState> states);
 
     /**
      * Every post claiming this friendly URL in this state <em>and</em> this locale, by id — SH323.

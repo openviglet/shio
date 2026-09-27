@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -31,6 +33,9 @@ import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.model.token.ShApiTokenEnv;
+import com.viglet.shio.persistence.model.token.ShApiTokenScope;
+import com.viglet.shio.spring.security.auth.ShApiTokenContext;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -288,6 +293,11 @@ class ShContentLocaleTest {
     }
 
     private void persistPublished(String furl, String locale, String title, String group) {
+        persistIn(ShPostState.PUBLISHED, furl, locale, title, group);
+    }
+
+    /** SH1128 — the same row in a state the caller names, so a draft-only sibling can exist. */
+    private void persistIn(ShPostState state, String furl, String locale, String title, String group) {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.executeWithoutResult(s -> {
             ShSite site = entityManager.find(ShSite.class, siteId);
@@ -295,7 +305,7 @@ class ShContentLocaleTest {
             ShPostType pt = entityManager.find(ShPostType.class, postTypeId);
             ShPostUnified post = new ShPostUnified();
             post.setId(UUID.randomUUID().toString());
-            post.setState(ShPostState.PUBLISHED);
+            post.setState(state);
             post.setShSite(site);
             post.setShFolder(folder);
             post.setShPostType(pt);
@@ -303,11 +313,107 @@ class ShContentLocaleTest {
             post.setFurl(furl);
             post.setLocale(locale);
             post.setTranslationGroupId(group);
-            post.setPublished(true);
+            post.setPublished(state == ShPostState.PUBLISHED);
             post.setOwner("admin");
             post.setDate(Instant.parse("2026-01-01T00:00:00Z"));
             post.setData("{\"title\":\"" + title + "\"}");
             entityManager.persist(post);
         });
     }
+    /**
+     * SH1128 — a switcher entry for a page nobody published.
+     *
+     * <h2>The defect</h2>
+     *
+     * <p>A post's {@code availableLocales} was read from its whole translation group with nothing in
+     * that read asking for a state. {@code translate} creates the sibling as a DRAFT, so the moment a
+     * curator started a Portuguese translation, <b>every production token's read of the English page
+     * said it exists in {@code pt-br}</b> — and a switcher built from that field linked to a page the
+     * same token gets a 404 for, for as long as the translation was being written.</p>
+     *
+     * <h2>Why it survived SH1123</h2>
+     *
+     * <p>SH1123 fixed the identical defect one level up: a site's derived languages come from the
+     * states the token can see. The post-level field kept the old rule, and SH1129 carried that rule
+     * into GraphQL <em>deliberately</em>, so the two surfaces agreed while this was open rather than
+     * disagreeing in a way nobody had filed. This is the pair being brought onto SH1123's rule, and
+     * onto one query — the single-post path reads through the batch now, so there is one reading of
+     * the rule instead of two that agree until somebody changes one.</p>
+     *
+     * <p>Both surfaces, because the field is the same field: REST's single read and GraphQL's page.</p>
+     */
+    @Test
+    @org.junit.jupiter.api.DisplayName(
+            "SH1128: a draft-only translation is absent for production and present for preview")
+    void aDraftOnlyTranslationIsNotOfferedToProduction() {
+        String group = UUID.randomUUID().toString();
+        persistPublished("/sh1128-en", "en", "Pricing", group);
+        persistIn(ShPostState.DRAFT, "/sh1128-pt", "pt-br", "Preços", group);
+
+        try {
+            token(ShApiTokenEnv.PROD);
+            assertThat(shCdaService.getPostByUrl(siteId, "/sh1128-en", "en").orElseThrow()
+                    .availableLocales())
+                    .as("SH1128: a production token reads PUBLISHED alone, so it must not be told the "
+                            + "page exists in a language it cannot fetch a single row of — that entry "
+                            + "is a link to a 404")
+                    .containsExactly("en");
+
+            token(ShApiTokenEnv.PREVIEW);
+            assertThat(shCdaService.getPostByUrl(siteId, "/sh1128-en", "en").orElseThrow()
+                    .availableLocales())
+                    .as("SH1128: and a preview token sees it, because it can fetch it — the rule is "
+                            + "the reader's states, not a blanket exclusion of drafts")
+                    .containsExactly("en", "pt-br");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    /**
+     * SH1128 — and on GraphQL, which is the surface SH1129 added the batch for.
+     *
+     * <p>Asserted separately rather than trusted from the single read: the two paths were two
+     * different queries before this, which is exactly how they could have disagreed. They share one
+     * now, and this is the check that says so from the outside.</p>
+     */
+    @Test
+    @org.junit.jupiter.api.DisplayName("SH1128: the GraphQL page reports the same locales as the read")
+    void theListingAgreesWithTheSingleRead() {
+        String group = UUID.randomUUID().toString();
+        persistPublished("/sh1128-list-en", "en", "Features", group);
+        persistIn(ShPostState.DRAFT, "/sh1128-list-pt", "pt-br", "Recursos", group);
+
+        try {
+            token(ShApiTokenEnv.PROD);
+            assertThat(localesOfListing("/sh1128-list-en"))
+                    .as("SH1128: GraphQL's `posts` carried both states on purpose while this was open, "
+                            + "so the two surfaces agreed about the wrong answer")
+                    .containsExactly("en");
+
+            token(ShApiTokenEnv.PREVIEW);
+            assertThat(localesOfListing("/sh1128-list-en")).containsExactly("en", "pt-br");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    /** The `availableLocales` GraphQL's page read reports for one row of it. */
+    private List<String> localesOfListing(String furl) {
+        return shCdaService.queryPosts(siteId, folderId, null, 0, 50, null, null).stream()
+                .filter(post -> furl.equals(post.furl()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("SH1128: " + furl + " is not in the listing, so "
+                        + "this assertion has nothing to be about"))
+                .availableLocales();
+    }
+
+    /** A delivery credential of the given kind, which is what decides the states a read considers. */
+    private void token(ShApiTokenEnv env) {
+        var auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                "delivery", null, List.of());
+        auth.setDetails(new ShApiTokenContext("tok", ShApiTokenScope.READ, Set.of(), env));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
 }

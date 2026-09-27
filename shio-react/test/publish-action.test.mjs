@@ -103,9 +103,11 @@ test("SH654: Unpublish is offered on a live page, not only on a post with no dra
     !guard.includes('state === "PUBLISHED"'),
     "and the edited row's state is not the live page's existence, however similar they read",
   );
+  // SH1158 — the two rows are read by one query and seeded once per post, so the PUBLISHED row's
+  // existence is now `loaded.data.live`. Still the row's existence and still read on load.
   assert.match(
     page,
-    /setIsLive\(live !== null\)/,
+    /setIsLive\(loaded\.data\.live !== null\)/,
     "`isLive` is the PUBLISHED row's existence, read on load",
   );
 });

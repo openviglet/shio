@@ -1098,29 +1098,6 @@ This is a console preference with no agent equivalent, classified as such in the
 declaration rather than argued in prose. The assertions set a preference, drive each
 kind of event, and read which reports appear.
 
-### LXIII.10 Every silent write the lint found, closed (SH1139)
-
-SH965's lint, `shio-react/test/write-outcome.test.mjs`, holds sixteen write sites under
-this id in its WORKLIST. Each one is a path where the dock, its live caption and the
-curator all learn nothing.
-
-Five say nothing at all. The token, auth provider, exchange provider, webhook and tenant
-editors await a delete and navigate away, with no toast on success and no catch on
-failure.
-
-Eleven toast success but leave failure unreported. Ten let it escape as an unhandled
-rejection: the user editor's create and update, the group/role create, folder create,
-post-type create, edit and list delete, site create, site import and the static file
-delete. A refused create there looks exactly like a button that did nothing. The static
-file list's bulk delete is worse: it swallows each failure with `.catch(() => {})` and
-then toasts success for the whole selection.
-
-The fix is the pattern the rest of the console already uses: a try/catch whose catch
-calls `reportProblem(error, t("common.error"))`, and a success toast wherever one is
-missing. The bulk delete counts its failures and says how many did not go. SH966 then
-upgrades what `reportProblem` says. Each fixed site leaves the WORKLIST, and the test
-fails on an entry that has stopped being silent, so the list can only shrink.
-
 ## LXIV What the conformance instruments cannot see (Block AY)
 
 This round adds console surfaces, write paths and agent affordances by the dozen, and
@@ -1141,133 +1118,32 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.18 A mirror taken from a directory, not a revision (SH1115)
+### LXIV.25 Six more strippers, and one already knew (SH1147)
 
-`coverage-mirror.mjs` reads `COVERAGE.md` from a checkout directory — `SHIO_DOCS_DIR`,
-defaulting to a path on one machine — and writes the ids it finds into
-`docs/coverage-named.json`. Committing that file here marks those ids named forever:
-SH758's reader subtracts them and SH747's ratchet counts them as covered. Nothing
-anywhere asks whether the edit that put them in the matrix was ever committed in the
-repository the matrix belongs to.
+SH1118 fixed the shared stripper and measured what the pattern it replaced was doing:
+**19 spans, 77,285 characters** deleted across this repository's JS sources by a strip
+that began mid-line. Only three of the call sites were the shared helper's. **Six
+re-implement the same two lines**, and each can delete the rest of a file from one
+string literal:
 
-Observed, not reasoned: clearing SH799's queue twice in one session left
-`vigletdocs/docs-shio/COVERAGE.md` modified and uncommitted both times, and the mirror
-was refreshed from that working tree and committed here each pass. The conformance check
-reads the same working copy, so an uncommitted edit makes mirror and matrix agree
-permanently.
+- `shio-react/scripts/surface-digest.mjs` — a script, so it cannot reach the console's test support
+- `cli/test/audit.test.mjs`, `instance-assumptions.test.mjs`, `flag-meaning.test.mjs`,
+  `exit-path.test.mjs`, `source-corpus.test.mjs`
 
-This is the shape the mirror's own header warns about: a copy of a fact whose home is
-elsewhere, held honest by being generated and by being checked against the authority.
-The authority it is checked against is a directory, and a directory is not a revision.
+The CLI half is the worse half and the measurement says so: `clone.test.mjs` hides **656
+lines** behind a `robots.txt` fixture's `Disallow: /*`, and `theme.test.mjs` 508 behind
+a CSS selector — so a scan over either reads mostly nothing.
+`cli/test/support/source-text.mjs` already exports the safe line-oriented reading
+(SH740, SH630), and `cli/src/theme.mjs` already carries a comment explaining in as many
+words why a `/\*[\s\S]*?\*\/` over a raw file is wrong. The knowledge was in the tree;
+six readers did not have it.
 
-The narrow fix records beside the ids what the matrix's repository was at — its HEAD,
-and whether that tree was clean — and refuses a refresh taken from a dirty one, or marks
-it provisional so the next run asks again. An id named from an uncommitted file is then
-a state the mirror can express rather than one it forgets.
+The work is one shared reading per package and then the six call sites onto it, which is
+a migration with its own red risk per scan — `code` keeps a trailing comment where the
+naive strip removed it, and a scan asserting an absence can notice.
+`comment-stripper.test.mjs` holds the six as a named list, so the count only goes down.
 
-The assertion is a refresh from a dirty docs checkout refused or marked, and a clean one
-unchanged.
-
-### LXIV.19 A stripper that says when it could not read (SH1118)
-
-`stripComments` opens a block comment on a slash and two stars wherever it finds them,
-string literals included, and closes on the next star-slash — hundreds of lines later,
-or never. Everything between is deleted from the scanned text, and every assertion over
-that region then matches an empty string and passes.
-
-Measured during SH1049: adding a Playwright wildcard route to `console-check.mjs` cut
-the stripped view from 79,612 characters to 36,223 and turned four assertions green over
-nothing. The comment written to explain the hazard quoted the pattern and caused it a
-second time, an hour later.
-
-The file says it is not a parser, which is honest about the *stripping* and silent about
-the consequence. Thirty-one suites across two packages read source through it, and any
-one can be silenced by a string in a file it does not own.
-
-The narrow fix is an invariant the helper enforces itself: a strip that removes too
-large a fraction, or leaves an opener unclosed, throws rather than returning. A reader
-that cannot see the file should say so rather than agree with everything. SH1049's shape
-test anchors on its script's last statement — the same idea, by hand, once.
-
-The wider question is whether the two copies should have stayed separate. SH823 kept
-them apart on purpose, and a bug in both is what that decision quietly costs.
-
-The assertion is a planted opener in a string failing the strip by name, and the
-thirty-one suites green after.
-
-### LXIV.20 A control character where an escape was meant (SH1119)
-
-Two committed regexes contain a literal backspace, U+0008, where `\b` was meant. Found
-by `grep -P '\x08'` over the tree after SH1052 made the same mistake and caught it in
-review.
-
-`claude-plugin/test/plugin.test.mjs:196` reads `text.match(/<BS>SH\d{2,}<BS>/g)` and
-asserts the result is empty — it always is, since no source file contains a backspace.
-That check exists because five internal task ids once shipped in the published README,
-package description, fragment and a skill, and it has been asserting nothing since.
-`shio-react/test/unsaved-work.test.mjs:80` is a `doesNotMatch` for `useBlocker(` and
-`usePrompt(`, so it also always passes; SH1090 says calling either throws against this
-console's router.
-
-Both repair to green, checked before filing: the plugin's published files carry no
-`SH<n>` today, and the guard names both hooks only inside backticks, with no call. The
-fix is two characters; the value is that the gates start working — and it is a task
-because the repair is what finds out whether anything drifted while they were blind.
-
-The cause belongs with them: a shell heredoc expands `\b` before the file is written, so
-a scripted edit inserting a regex corrupts it silently where an editor tool would not.
-Same family as the stripper in the sibling line — an instrument that reads as working
-and checks nothing — reached by another route.
-
-The assertion is a repo-wide scan: no tracked source file contains a control character
-in the C0 range other than tab and newline. Three files named on the first run; a fourth
-is the finding.
-
-### LXIV.21 `--delivery` asks for more and sends less (SH1120)
-
-`withDelivery` in `cli/src/commands/verify.mjs` composes the check list when
-`--delivery` is passed without `--checks`. Its fallback is the literal
-`content,routes,diagnostics`, and the comment above it argues — correctly — that sending
-`delivery` alone "would quietly drop the rules that do not need a network". That list is
-the bug the comment warns about: the server's default is every group, and this
-hand-written copy has been missing `page` since SH516 and now misses `a11y` too. So
-`shio verify --delivery` runs *fewer* checks than `shio verify`, which is the opposite
-of what the flag promises, and `verify.test.mjs` pins the narrower list as if it were
-correct.
-
-A client-side copy of a server-side default is the shape, not the two group names. The
-server already answers `all`, and already adds `delivery` to the default set when
-fetching is on (`ShAgentCheck.defaults`), so the CLI needs to name nothing: with no
-`--checks`, `--delivery` can send `all` and let the server compose the set. That removes
-the list from the client permanently, which is the point — a fourth group will be added
-and this line would be missed again.
-
-The fix is `withDelivery` sending `all` when the caller named no checks, keeping the
-explicit list when they did, and the test asserting the request no longer narrows the
-run. The durable half is an assertion that the CLI names no check group of its own
-anywhere: a wired list here is a second vocabulary that drifts from the one the server
-publishes.
-
-### LXIV.24 A held socket that Linux closes for us (SH698 on the runner) (SH1146)
-
-SH698 asserts that closing a fixture server with a live socket outstanding does not
-finish quietly: the teardown waits, the deadline fires, and the reason names the
-connection count. SH725 fixed its precondition by waiting for the server's own
-connection event, and it has since been green on Windows every run.
-
-On the GitHub runner, Ubuntu with Node 26, it fails on every run of the Suites workflow:
-the close resolves, no error comes back, and the assertion reports the silence this test
-exists to catch. The precondition assertion, one connection open, passes first, so the
-socket is accepted when the close starts.
-
-The likely cause is that closing now also closes idle connections, and a connection that
-has sent no request is idle, so on Linux the teardown genuinely finishes. If so, the
-fixture is right and the test's premise has moved. The work is to measure it on Linux
-first (a container reproduces the runner), then either hold the socket in a state close
-cannot reclaim, such as a request in flight, or restate what SH698 guards.
-
-This surfaced when the JS job's shallow clone was fixed and the job was read failure by
-failure; it is one of the three red suites that were not the checkout.
+The assertion is the declared list emptied, and the lint red on a seventh.
 
 ## LXV What the content said before (Block AZ)
 
@@ -1444,50 +1320,6 @@ the preview vanishes silently.
 A second page wants it: SH1061's translation workspace. The design system's three shapes
 have no two-pane one, so it is a package addition first.
 
-### LXVIII.19 A rename the curator can do (SH1064's other half) (SH1132)
-
-SH1064 went looking for the console's rename dialog and found there is none. A post's
-friendly URL is its identity (SH81), and the only writer that changes one is `post.move`
-on the agent surface: `ShPostUnifiedWriteService.setFurl` has exactly two callers, both
-inside the batch service, and the console's own `PUT /post-unified/{id}` takes `data`
-and a state and nothing else. A curator who wants `/pricing` to become `/plans` has to
-ask an agent, or create a second post and delete the first, which is the data-loss path
-`post.move` exists to prevent.
-
-The one case where the console does see a URL change is a rollback: restoring a revision
-puts that revision's `furl` on the draft, so the live row and the draft disagree until
-the next publish. That is why SH996's publish plan reports `moves` and `stops` at all,
-and it is where SH1064's redirect offer landed.
-
-The shape is the one the batch already has: a dialog on the post editor carrying the new
-URL, the inbound count `ShPostLinks` computes, and SH1064's redirect offer — composed
-onto `post.move` through `ShAgentBatchService` as SH1021 composed the bulk verbs, never
-a console writer that would define a move twice. The open question is whether it renames
-the draft alone or both rows: the op moves both and the live URL changes immediately,
-which is right for an agent applying a plan and is the surprise P7 forbids for a curator
-who has not published.
-
-### LXVIII.20 shio preview and the asset that is not pushed yet (SH1143)
-
-SH1095 gave the files tier a preview: `shio preview <file>` reads a content file as
-`push` reads it and renders its fields through `POST /api/v2/agent/render` without
-storing anything. It sends a file field exactly as the file spells it. For an asset
-already on the instance that is right, because push wrote the address back. For an image
-the author has just dropped under `shio/assets/**`, the field names a path the instance
-has never seen, so the preview shows a broken image where the page will show a picture.
-The author learns the wrong thing about the page, which is the one thing a preview must
-not do.
-
-Two shapes are possible. The render endpoint could accept inline bytes for a file field,
-a data URI the render service resolves only for this request. Or the CLI could stage the
-asset under a disposable name and clean it up afterwards. The first keeps P7's promise
-that a preview stores nothing; the second reuses the upload path but writes, and a write
-needs sweeping. The first is preferred, and it needs a size ceiling so a render request
-cannot carry a video.
-
-Done when a preview of a file whose image is not pushed yet renders that image, and a
-test at the CLI boundary asserts it, naming this id.
-
 ## LXIX Finding, selecting and acting on content (Block BD)
 
 The content browser is where a curator spends the day, and it is the console's weakest
@@ -1507,53 +1339,32 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.11 A table selection the page can set (SH1142)
+### LXIX.13 A selection the page can set, from the component's side (SH1148)
 
-SH1026 drew the browser's table view with the design system's BentoDataTable, and the
-table owns its selection. It reports every change through onSelectionChange, which the
-page copies into selectedItems, but it takes no selection in: its props have no selected
-ids. So the flow runs one way. The toolbar's Select menu (all, folders, content) and the
-selection bar's Clear write selectedItems, and in the table view nothing on screen
-changes. The next click in the table then reports the table's own set and overwrites
-what the menu chose. A curator who picks "Select all" and then Delete in that view
-deletes whatever the table last had ticked, and the confirm dialog counts the page's
-set, so the number and the rows can disagree.
+SH1142 took the correction available on this side: the toolbar's Select menu and the
+selection bar's Clear do not render in the table view, so the table's header checkbox
+and Escape are the one control for the one selection. That is right and it is a
+subtraction — a curator in the table view has no "select every post in this folder",
+which the list view has had since SH237, and no invert.
 
-The fix belongs in the design system first: a controlled selection on BentoDataTable, a
-selectedIds prop beside onSelectionChange, the way layout is already controlled beside
-onLayoutChange. The browser then passes selectedItems in, and the Select menu and Clear
-work in every view. Until the package has it, the smaller correction on this side is to
-hide the Select menu and Clear in the table view and let the table's own header checkbox
-and Escape do both, so there is only one control for the one selection.
+The cause is a prop that is missing rather than anything wrong here. `BentoDataTable`
+reports its selection through `onSelectionChange` and takes none in, where the same
+component's column `layout` **is** controlled beside `onLayoutChange`. One of the two
+was finished.
 
-The assertion renders the table view, chooses "Select all" from the toolbar, and
-confirms the table's checked rows equal the page's selection before any bulk verb is
-offered.
+So the package gains `selectedIds` beside `onSelectionChange`, the browser passes
+`selectedItems` in, and the two controls come back in every view — with `SH1142`'s lint
+then holding the stronger property it cannot state today: that the page's set and the
+ticked rows are the same object rather than two that agree by habit. the assertion
+SH1142 could not write becomes writable at that point — choose "Select all", and the
+table's checked rows are the page's selection.
 
-### LXIX.12 The browser page, split by concern (SH1145)
+Not by remounting the table with a `key`: it mounts only the visible rows of a folder of
+four thousand, and remounting to communicate a checkbox throws that window away on every
+click.
 
-SH1026's design asked for the browser page to be split into the content-browser
-directory "because at that size the next feature makes it unreviewable". It moved what
-each view draws (browser-views.tsx, browser-table.tsx, title-cell.tsx), the pure view
-logic (browser-view.ts) and the window (use-row-window.ts). What stayed in
-object.children.page.tsx is three concerns tangled in one component: the listing's reads
-(first page, load more, the re-read after a write, the facet counts), the listbox
-keyboard (roving focus, ranges, the window's reveal) and seven dialogs with their state.
-
-The cost is not only size. SH1026's live check found the listing effect re-reading page
-0 after every render, because a value built in the component body fed a callback the
-effect depended on. Nothing in a file that size makes that visible, and the lint that
-could have seen it was answering about a different line. A `use-browser-listing` hook
-that owns the reads, and a `use-browser-keyboard` hook that owns the listbox, would each
-be small enough that their dependencies are the whole of their inputs.
-
-Source-reading tests (content-query, filter-bar, browser-keyboard, browser-views, the
-list-state census) match regexes against this file; each moves with the code it asserts,
-not left behind reading a file that no longer holds it.
-
-Done when the page renders the three concerns from hooks and dialog components in
-content-browser, the page is under 600 lines, and e2e/browser-window.check.mjs still
-passes, naming this id.
+The assertion is the restored menu selecting every row in the table view, and the count
+in the confirm dialog equal to the ticked rows.
 
 ## LXX Media: what the bytes mean (Block BE)
 
@@ -1672,57 +1483,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.19 A budget per route, from the probe that already walks them (SH1113)
-
-SH1043's gate measures one number for the whole console: what every route pays before
-the first row. That is right for a budget and blind to what a curator experiences, which
-is a page. A route fetching three collections to draw two figures costs the same eager
-bytes as one fetching nothing — SH1050 is that page, and nothing would have caught it.
-
-The instrument is nearly there. `e2e/console-check.mjs` already drives a browser through
-every route against a live instance, which is where request count, transfer bytes and
-time to first row are observable and nowhere else: the bundle gate reads files on disk
-and knows nothing about what a page then asks the server for.
-
-So the probe records three numbers per route and holds them the way the bundle budget
-holds its own — ceilings with a sentence each, a raise somebody argues for. The
-per-route shape is what makes it useful: a total would let a new screen's cost hide
-inside the sum.
-
-Two things to settle while building. It needs an instance, so it belongs with
-conformance rather than `pnpm test`, and where it runs decides whether a regression
-blocks a commit. And time to first row moves with the machine, so it wants a ratio
-against a baseline route rather than a millisecond ceiling nobody can reproduce.
-
-The assertion is a planted extra fetch on one route failing that route's entry and no
-other.
-
-### LXXII.20 One walk over every workspace manifest, not the console's alone (SH1114)
-
-SH1045 found eighteen dead declarations in one manifest and left ten unread. The
-workspace has eleven packages — `cli`, `shio-client`, `shio-model`, `shio-sections`,
-`shio-react-sdk`, `shio-js-sdk`, `create-shio-app`, `claude-plugin`, `shio-site`,
-`shio-examples/*` and the console — and four of them are published to npm, where a dead
-dependency is not just installed on every CI run here but on every consumer's install.
-
-The reader is written to be lifted. `reachability` is pure over the manifest and three
-lookups, and `classify` is the only part that knows this console: `WALK` names `src`,
-`test`, `e2e`, `scripts` and `ROOT_FILES` names two configs. Another package's layout is
-a different list, so the work is turning those constants into a per-package declaration
-rather than writing a second walk.
-
-Two things the console's run does not exercise. Nothing here is published, so nothing
-tested what a published package owes: a `dependencies` entry imported only from `test/`
-is a consumer's download for a file they never load, and a runtime import from a
-`devDependency` breaks on install and passes every gate here. The classifier already
-reports which list an entry came from and asserts nothing on it. And `bin` reachability
-is read from this `package.json`'s scripts, which is the wrong file for a package whose
-binary is what it ships.
-
-The assertion is a dead dependency planted in a workspace package other than the console
-failing by name, and the published packages' own runs coming back clean or naming what
-they owe.
-
 ### LXXII.21 The rest of the uncancelled reads, in slices (SH1116)
 
 SH1047 migrated the five screens its symptom named and left thirty-five in
@@ -1748,56 +1508,6 @@ Worth doing in slices, since each screen's failure path is its own.
 
 The assertion is the list shrinking with every slice, and the browser probe green after
 each.
-
-### LXXII.22 Conditional reads from the CLI, where they are not free (SH1117)
-
-SH1048's design said MCP and the CLI benefit for free, since they call the same REST.
-Half of that is true, and the false half is the half worth having.
-
-A browser gets it free: `no-cache` plus an `ETag` means it keeps the body and
-revalidates, and axios goes through that cache. Node has none. `cli/src` sends
-`If-None-Match` in one place — `clone` probing *external* assets it is copying — and
-never to Shio's own API, so every `shio pull`, `verify`, `digest` and `context` pays the
-full body against an unchanged instance — the case a CLI is in most of the time.
-
-The shape exists next door. `clone.mjs` keeps `etag`/`lastModified` per row, sends the
-conditional `GET` and counts the unconditional ones, which is the accounting this wants:
-without a count, a store that stopped matching reads as a server that never answers 304.
-
-What needs deciding is where the validators live. A per-invocation store is useless —
-the CLI exits — so it is a file, and files are state the CLI has been careful about:
-`shio/` is content, not cache. Somewhere ignored, keyed by instance and address,
-invalidated by nothing, since the validator *is* the invalidation.
-
-MCP is a separate answer: it reaches the agent surface, which carries semantic
-validators of its own, so the question there is whether a long-lived session keeps one.
-
-The assertion is a second identical read costing no body, counted rather than claimed,
-and a stale store failing loudly rather than re-fetching everything.
-
-### LXXII.23 A size verdict about somebody else's build (SH1126)
-
-SH1043's comparison runs against whatever console build sits in
-`shio-app/src/main/resources/public`, and `pnpm test` never builds one. So the gate
-measures a build of *some* tree, and nothing says which. Seen on consecutive tasks:
-SH1059 passed `pnpm test` against a build that predated its own change, and the next
-task failed the headroom check only because a build made outside the session happened to
-include it. Both verdicts were about bytes the task under test had not produced.
-
-The conformance gate had the same shape and SH460 closed it there: the instance states
-its build time and commit, and the harness refuses one older than HEAD. The console
-build can carry the same identity. A small Vite plugin writes `build-info.json` beside
-`index.html`, holding the commit and a digest of `shio-react/src`, and the size test
-compares that digest with the tree it runs in. A match is measured. A mismatch is said
-out loud, in the same words as the no-build case, rather than measured, because a number
-from a different tree is worse than no number.
-
-A stale build must not fail the suite, or every source edit would demand a one-minute
-build before `pnpm test`. The gate that must see the bytes is the one that already
-builds: CI's `./mvnw package` without `skip.npm`.
-
-The assertion is a planted mismatch: a synthetic dist whose digest differs from the tree
-reports "not measured" and never a total.
 
 ### LXXII.24 The seventeen the console lint still holds (SH1136)
 
@@ -1829,32 +1539,6 @@ permanent there, with the reason.
 Pay a file off by deleting its lines from both the suppressions file and DECLARED in the
 same diff. A page fixed for `set-state-in-effect` joins PAID.
 
-### LXXII.25 A folder that crosses sites leaves its pages behind (SH1137)
-
-Found by a run during SH1078, not by reading. A folder holding a published post was
-moved with `PUT /api/v2/object/moveto/{root}` from one site's root into another site's
-root. The move succeeded. The folder's parent is now the new site's root. The post's
-rows still carry the old site in `shSite`.
-
-Delivery resolves a page by `findByShSite_IdAndFurlAndState`, so the page keeps
-answering under the old site while the tree shows it under the new one: the split the
-`ShFolderSite` invariant exists to prevent. `requireUrlFree` never runs for posts
-beneath a folder, so the destination can also end up with two posts at one URL.
-
-`ShFolderWriteService.move` is the shared writer, so the agent's `folder.move` probably
-has the same hole. Check that with the same run before assuming it.
-
-Two ways to close it. One: refuse a folder move that crosses sites, with a teaching
-error naming `shio export` and `shio import`. Two: carry the subtree over, re-pointing
-every post row's `shSite`, checking each friendly URL against the destination, and
-treating the retired addresses as SH1064 treats a rename.
-
-Refusing is smaller and cannot surprise a curator (P7). Carrying over is what a curator
-dragging a folder between sites expects. Either way, SH1078's route delta already
-reports what delivery actually does, so it becomes the assertion: after the fix, a
-permitted cross-site folder move lists each published post's retired and created
-address.
-
 ### LXXII.26 A fetch the guard cannot parse (SH1140)
 
 SH1047's guard in `shio-react/test/fetch-cancellation.test.mjs` finds a fetching effect
@@ -1875,6 +1559,28 @@ add `login-form.tsx` to the declared list or give it an `AbortController`. Eithe
 is honest, and the first is what the list's own rule prescribes for a screen that has
 not moved yet.
 
+### LXXII.27 A dirty lint is a lint people stop reading (SH1161)
+
+`roadkeep lint` has not been clean for some time: six `code.renamed` findings stand in
+CHANGELOG entries whose prose names symbols the code no longer defines —
+`schema.graphqls` (SH4, SH234 and one unnumbered entry), `document.fonts` (SH102) and
+`document.referrer` (SH185, SH350).
+
+Each is the failure the check describes: a session reading the ledger for how something
+works greps for the name and finds nothing, and nothing else in the entry resolves it.
+They are cheap to correct — `record amend <id> --why -` per entry, the sentence arriving
+on stdin — and the reason they are a task rather than a sweep is that none of them is
+wrong about *what shipped*. The prose has to keep saying the same thing while naming
+something that exists, which is a judgement per entry and not a find-and-replace.
+
+The half worth having is what happens after. A lint nobody can get to zero is a lint
+whose output people scroll past, and this project has six instruments that depend on
+somebody reading a failure. `roadkeep lint` is not one of the three gates, which is
+exactly why it drifted: nothing failed. Either it joins them once it is clean, or the
+findings that are standing history get a declared exemption the way `red-suites.json`
+holds a red suite — a dated entry naming what would clear it. Deciding which is part of
+this task, and the wrong answer is to leave it dirty and keep telling people to read it.
+
 ## LXXIII One content model, many languages (Block BH)
 
 Localization in Shio is complete in the data and thin everywhere above it. ShPostUnified
@@ -1892,53 +1598,6 @@ rather than a diff, and gives curators a coverage board and a side-by-side works
 The MCP write path that silently dropped locale and translationOf was a live defect and
 is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
 translates, reached through the assistant, and every result lands as a reviewable draft.
-
-### LXXIII.8 The chip that cannot say which language is the original (SH1125)
-
-SH1059 put each post row's locale on a chip beside the post-type badge and named the row
-by it, so a page and its translation are two rows. Its design also asked that the chip
-mark the site's default locale "where the site's enabled set exists", and it did not
-exist then: the console could not read a site's policy until SH1056 gave it `GET
-/api/v2/site/{id}/locales`.
-
-It can now, and the browser still does not ask. So a folder holding a page in English
-and in Portuguese says which row is which and not which one is the original, which is
-the question a curator deleting one of them is actually asking.
-
-The browser already resolves the folder's site on every navigation (`/path` answers it),
-so this is one read of the policy per site the curator opens, cached under the same key
-the query layer uses for the site, and a word on the chip whose tag equals
-`defaultLocale` when the policy is declared. An undeclared policy's default is a
-description of the content rather than a choice, so it is not marked: a chip saying
-"default" about something nobody chose would be the same confusion SH1056 exists to
-remove.
-
-The assertion carries the id: with a declared default of `pt-br`, the `pt-br` row's
-accessible name says it is the default and the `en` row's does not.
-
-### LXXIII.9 A switcher entry for a page nobody published (SH1128)
-
-A post's `availableLocales` is read from its whole translation group, and nothing in
-that read asks for a state. `translate` creates the sibling as a DRAFT, so the moment a
-curator starts a Portuguese translation, every production token's read of the English
-page says it exists in `pt-br`. A switcher built from that field links to a page the
-same token gets a 404 for, and it stays that way for as long as the translation is being
-written.
-
-SH1123 fixed the same defect one level up: a site's derived languages are read from the
-states the token can see, so a production switcher is never offered a draft-only
-language. The post-level field kept the old rule, and SH1129 carried it into GraphQL
-deliberately, so the two surfaces agree while this is open rather than disagreeing in a
-way nobody filed.
-
-The fix is the one SH1123 made: the group's locales come from the rows in the states the
-reader reads. `PUBLISHED` for a production token, both for a preview token. The batch
-query SH1129 added takes the states as a parameter, and the single-post path moves onto
-it so there is one reading of the rule instead of two.
-
-The assertion carries the id: a published English page with a draft-only `pt-br` sibling
-reports `["en"]` to a production token and `["en","pt-br"]` to a preview token, on REST
-and on GraphQL.
 
 ### LXXIII.10 A promised language nobody wrote (SH1130)
 
@@ -2007,56 +1666,6 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline.
-
-### LXXIV.11 A blueprint nobody applies is a blueprint nothing checks (SH1121)
-
-`checks=a11y` found two rules broken by `marketing-site`'s layout — no `<main>`, and a
-first heading of `<h2>` — and that one was repaired in the same commit, because the
-headline benchmark applies it and went over its token budget. `landing` has exactly the
-same defect and no benchmark, so nothing reported it: its PageLayout emits `<html lang>`
-and a `<body>` of sections, no main region, and no `h1` anywhere on any page it builds.
-
-Three of the six blueprints ship a PageLayout. `blog` is clean, `marketing-site` is now
-clean, and `landing` is not. The other three — `docs`, `product-catalog`,
-`nextjs-starter` — carry no layout of their own, and the starter's markup lives in
-`files/app/layout.tsx`, which no Shio check renders. That is worth confirming rather
-than assuming.
-
-The repair follows the sibling's: wrap the section loop in `<main>`, and choose `<h1>`
-for the first section's heading through the `@first` data frame `getRelation` has
-published since SH772. It is small, and the reason this is a task rather than a typo is
-the second half.
-
-**A blueprint nobody applies is a blueprint nothing checks.** Every appliable unit this
-product recommends should be provably clean against our own gate, and the way to know
-that is an assertion rather than a sweep: apply each blueprint that ships a layout,
-render a page, and assert `a11y` reports nothing. That fails on the blueprint added next
-year, which a fixed list of three names cannot.
-
-### LXXIV.12 The site marker file the projection never had (SH1122)
-
-The tree holds content, folders, assets and a snapshot. A site root is a folder, so it
-gets a `_folder.md` — carrying `site` and `folder` and nothing about the site.
-Everything a site *is* lives only in its row: `url`, `furl`, the bindings that decide
-whether a page renders at all, `searchablePostTypes`, `formSuccess`, and now SH1056's
-locale policy. None of it pulls, pushes or diffs.
-
-Found by SH1056, whose design asked for "a locales block in the site marker file" — a
-sentence that reads as a field on an existing file and is a subsystem. The locale half
-shipped against the API and stopped there, and every later task wanting a site-level
-setting in the tree stops here too.
-
-It is P4 with a hole in it: the one object an agent must configure before a page can
-render is the one it cannot edit as a file. Measurable in the replication chain — a
-clone reproduces content and re-derives bindings through an API call, so two instances
-agree about posts and cannot be diffed about sites.
-
-The shape is settled by what exists: a `_site.md` beside `_folder.md`, the same
-serializer with its own fixed `META_ORDER`, the same three-way merge. One thing is
-undecided — whether bindings are keys there or stay an API-only edge, since a binding
-naming a layout by title is a reference the tree cannot check.
-
-The assertion is a round trip: push a site, change a field on disk, pull, read the diff.
 
 ### LXXIV.13 A redirect the front end never hears about (SH1064) (SH1133)
 

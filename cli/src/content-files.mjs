@@ -579,6 +579,201 @@ export function parseFolderMarker(relPath, text) {
   return movedFrom == null ? { site, folder } : { site, folder, movedFrom };
 }
 
+/* --- site markers (SH1122) --- */
+
+/**
+ * The file that gives a site's own settings a presence on disk.
+ *
+ * A site root is a folder, so it already got a `_folder.md` — carrying `site` and `folder` and
+ * nothing about the site. Everything a site *is* lived only in its row: `url`, `furl`, the
+ * description, and since SH1056 the locale policy. None of it pulled, pushed or diffed, which is
+ * law P4 with a hole in exactly the wrong place — the one object an agent must configure before a
+ * page renders at all was the one it could not edit as a file.
+ *
+ * Found by SH1056, whose design asked for "a locales block in the site marker file": a sentence
+ * that reads as a field on an existing file and is a subsystem, because there was no such file.
+ */
+export const SITE_MARKER = "_site.md";
+
+/**
+ * Key order, fixed like a post's and a folder's, so a diff never shows a reordering (P5).
+ *
+ * `site` first because it is the identity the path also carries — the pair is what lets a
+ * half-done rename be caught rather than guessed at. Then the three plain settings, then the
+ * policy, which is the only structured value here.
+ */
+const SITE_META_ORDER = ["site", "url", "furl", "description", "locales"];
+
+/**
+ * What a site marker deliberately does **not** carry, and why each one is absent.
+ *
+ * <p>The projection's rule is that every key in a marker is a key the tree can author *and* a key
+ * `site.upsert` can send. A file carrying a field no write accepts is a file that lies about being
+ * authorable, which is worse than a field the tree simply does not have — an agent edits it, pushes,
+ * is told nothing, and the setting is still whatever it was.</p>
+ *
+ * <ul>
+ *   <li><b>bindings</b> (`postTypeLayout`) — §LXXIV.12's one open question, decided here: they stay
+ *   an API-only edge. A binding names a layout <em>by title</em>, so it is a reference the tree
+ *   cannot check: nothing in `shio/` resolves a title to a post, and a marker naming a layout that
+ *   does not exist would push a site whose pages render nothing, reported as a success. They are
+ *   also derived rather than authored — a conversion or a blueprint writes them — and the column is
+ *   a 5 MB JSON blob.</li>
+ *   <li><b>scratch</b> — set at creation and never afterwards, which is the whole guarantee behind
+ *   `shio site rm --scratch`. A file that could carry it is a way to make a site somebody chose to
+ *   keep deletable in one confirmation.</li>
+ *   <li><b>searchablePostTypes</b>, <b>formSuccess</b> — no write op accepts either, so projecting
+ *   them would be the lie above. They are the next task's, and it is a write before it is a file.</li>
+ * </ul>
+ */
+export const SITE_KEYS_ABSENT = ["bindings", "scratch", "searchablePostTypes", "formSuccess"];
+
+/**
+ * Where a site marker lives: beside the site root's `_folder.md`, in the folders root.
+ *
+ * Beside rather than inside `shio/content` for SH149's reason, unchanged — under `shio/content` the
+ * directories are *URL* segments, so a `_site.md` there would be claiming a URL prefix is a site.
+ *
+ * @param {{ site: string }} marker
+ * @returns {string} e.g. `Blog/_site.md`
+ */
+export function siteMarkerPathFor({ site }) {
+  return `${siteDir(site)}/${SITE_MARKER}`;
+}
+
+/** `Blog/_site.md` → `{ site: "Blog" }`. The inverse. */
+export function siteLocationOf(relPath) {
+  const parts = String(relPath).replace(/\\/g, "/").split("/").filter(Boolean);
+  if (parts.length !== 2 || parts[1].toLowerCase() !== SITE_MARKER) return {};
+  return { site: parts[0] };
+}
+
+/**
+ * The locale policy as the tree holds it, or `undefined` when the site declares none.
+ *
+ * <p>Three keys in the order the server's own `toJson` writes them, and a `fallback` map with its
+ * keys sorted: the stored document is byte-stable on the server because `ShStableMap` makes it so,
+ * and a projection that re-encoded it in hash order would show a diff after a restart with nothing
+ * changed. `enabled` keeps its order, which is the author's — it is a list, not a set.</p>
+ *
+ * <p>An <b>underived</b> policy is `undefined` rather than an empty object. A site that has declared
+ * nothing reports the locales its content happens to be written in (SH1056), and writing that
+ * derived answer into the file would turn an observation into a declaration on the next push — the
+ * agent would be declaring a policy nobody chose.</p>
+ */
+export function siteLocalePolicy(locales) {
+  const policy = typeof locales === "string" ? safeJson(locales) : locales;
+  if (!policy || typeof policy !== "object" || Array.isArray(policy)) return undefined;
+  const out = {};
+  if (policy.default != null) out.default = String(policy.default);
+  // Only when it names something: an `enabled: []` is a policy naming nothing, and carrying it
+  // would make `{}` and `{"enabled":[]}` two spellings of the same absence.
+  if (Array.isArray(policy.enabled) && policy.enabled.length) {
+    out.enabled = policy.enabled.map((each) => String(each));
+  }
+  if (policy.fallback && typeof policy.fallback === "object" && !Array.isArray(policy.fallback)) {
+    const fallback = {};
+    for (const key of Object.keys(policy.fallback).sort()) fallback[key] = String(policy.fallback[key]);
+    if (Object.keys(fallback).length) out.fallback = fallback;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** A JSON string that may not be one — a column holds whatever was written to it. */
+function safeJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Serializes a site marker.
+ *
+ * Frontmatter and nothing else, like a folder marker and for the same reason: a site has no content
+ * of its own, so a body would be a place for text the CMS has nowhere to put. Every key but `site`
+ * is written only when the site has a value for it, so a site with nothing but a name projects to
+ * two lines and gains one the day somebody fills a field in.
+ *
+ * @param {{ site: string, url?: string, furl?: string, description?: string,
+ *           locales?: object|string }} marker
+ * @returns {string}
+ */
+export function serializeSite(marker) {
+  const meta = {
+    site: marker.site,
+    url: blankToUndefined(marker.url),
+    furl: blankToUndefined(marker.furl),
+    description: blankToUndefined(marker.description),
+    locales: siteLocalePolicy(marker.locales),
+  };
+  const lines = [FENCE];
+  for (const key of SITE_META_ORDER) {
+    if (meta[key] === undefined) continue;
+    lines.push(`${key}: ${encodeScalar(meta[key])}`);
+  }
+  lines.push(FENCE);
+  return `${lines.join("\n")}\n`;
+}
+
+/** A column is either unset or holds something; `""` is the first and must not write a key. */
+function blankToUndefined(value) {
+  if (value == null) return undefined;
+  const text = String(value);
+  return text.trim() === "" ? undefined : text;
+}
+
+/**
+ * Parses a site marker.
+ *
+ * The same identity check `parseFolderMarker` makes, for the same reason: a directory renamed
+ * without its frontmatter (or the reverse) is a rename on one side and a create on the other, and
+ * guessing which would either duplicate the site or leave the original unmanaged. A site has no
+ * `movedFrom` — renaming a site renames its every address, which is not a projection's to attempt.
+ *
+ * @param {string} relPath path relative to the folders root, e.g. `Blog/_site.md`
+ * @param {string} text    file contents
+ * @returns {{ site: string, url?: string, furl?: string, description?: string, locales?: object }}
+ */
+export function parseSiteMarker(relPath, text) {
+  const { meta, body } = splitDocument(relPath, text);
+  const fromPath = relPath ? siteLocationOf(relPath) : {};
+  const site = meta.site ?? fromPath.site;
+  if (!site) throw fault(relPath, "it has no `site:` and its path does not name one");
+  if (meta.site && fromPath.site && meta.site !== fromPath.site) {
+    throw fault(
+      relPath,
+      `its \`site: ${meta.site}\` disagrees with its directory (${fromPath.site}). One of them ` +
+        "was renamed and the other was not — fix whichever is wrong",
+    );
+  }
+  if (body) {
+    throw fault(
+      relPath,
+      "a site marker has no body — a site holds pages, not text. Move the text into a post in " +
+        "this site",
+    );
+  }
+  for (const absent of SITE_KEYS_ABSENT) {
+    if (meta[absent] === undefined) continue;
+    throw fault(
+      relPath,
+      `it carries \`${absent}:\`, which a site marker deliberately does not project. See ` +
+        "`SITE_KEYS_ABSENT` in `content-files.mjs` for why each one is absent — the short version " +
+        "is that every key here has to be one a push can send, and this is not",
+    );
+  }
+  const marker = { site };
+  for (const key of ["url", "furl", "description"]) {
+    const value = blankToUndefined(meta[key]);
+    if (value !== undefined) marker[key] = value;
+  }
+  const locales = siteLocalePolicy(meta.locales);
+  if (locales !== undefined) marker.locales = locales;
+  return marker;
+}
+
 /**
  * Parses one post file.
  *

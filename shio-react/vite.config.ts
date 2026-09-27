@@ -1,9 +1,11 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { vigletBootLoader } from "@viglet/viglet-design-system/vite";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin } from "vite";
+import { BUILD_INFO, sourceDigest } from "./scripts/console-build-info.mjs";
 import { SHIO_THEME_STORAGE_KEY, shioThemeSeedScript } from "./src/theme";
 
 /**
@@ -52,10 +54,58 @@ function shioConsoleBudget(): Plugin {
   };
 }
 
+/**
+ * SH1126 — the build says which tree it came from, so a size verdict is about the change under test.
+ *
+ * SH1043's comparison runs against whatever build sits in the static root and `pnpm test` never
+ * builds one, so the gate measured a build of *some* tree with nothing saying which. It went wrong in
+ * both directions on consecutive tasks: one passed against a build that predated its own change, the
+ * next failed the headroom check only because a build made outside the session happened to include
+ * it. `build-info.json` beside `index.html` is the same identity SH460 gave the instance, and
+ * `console-size-budget.test.mjs` compares its digest with the tree it runs in.
+ *
+ * The digest comes from `scripts/console-build-info.mjs` — one function, used here and by the test,
+ * because a build that hashed differently from the reader would report a mismatch on every run.
+ */
+function shioBuildInfo(): Plugin {
+  return {
+    name: "shio-build-info",
+    apply: "build",
+    generateBundle() {
+      const root = import.meta.dirname;
+      this.emitFile({
+        type: "asset",
+        fileName: BUILD_INFO,
+        source: `${JSON.stringify({
+          // The comparison. Over file contents, so it matches a dirty tree exactly when the build was
+          // made from it — a commit cannot do that, and refusing a dirty tree would refuse every
+          // build anybody makes while working.
+          sourceDigest: sourceDigest(root),
+          // For a person: what a reader wants when the digests differ and they are working out which
+          // build they have. Absent outside a checkout, which is not a failure — a build from a
+          // tarball has no commit and is still measurable.
+          commit: headCommit(root),
+          builtAt: new Date().toISOString(),
+        }, null, 2)}\n`,
+      });
+    },
+  };
+}
+
+/** HEAD, or `null` where there is no git — a release tarball builds fine and has no commit. */
+function headCommit(root: string): string | null {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+  } catch {
+    return null;
+  }
+}
+
 export default defineConfig({
   plugins: [
     shioThemeSeed(),
     shioConsoleBudget(),
+    shioBuildInfo(),
     vigletBootLoader({
       title: "Viglet Shio CMS",
       subtitle: "Content Management System",

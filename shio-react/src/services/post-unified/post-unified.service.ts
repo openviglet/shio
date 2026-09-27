@@ -22,6 +22,23 @@ import type { ShRead } from "@/lib/read-options"
  * where one post is refused publishes the rest and says which one did not, with the fix its refusal
  * carries. That is the shape the console needs and the shape the agent already had.</p>
  */
+/**
+ * SH1132 — what a rename would do, or did.
+ *
+ * `live` is the one a curator has to read: both state rows move together, so a rename of a
+ * published page changes the live URL immediately. `vacated` is the address that stops answering
+ * and `inbound` how many pages link to it, which is what a redirect would be for.
+ */
+export interface ShMovePlan {
+  from: string | null
+  to: string
+  live: boolean
+  vacated: string | null
+  inbound: number | null
+  redirect: boolean
+  changes: ShBulkResult
+}
+
 export interface ShBulkChange {
   op: string
   address?: string
@@ -126,9 +143,10 @@ export class ShPostUnifiedService {
     return held ? { "If-Match": held } : {}
   }
 
-  async get(id: string, state: ShPostState = "PUBLISHED"): Promise<ShPostUnified> {
+  async get(id: string, state: ShPostState = "PUBLISHED", read: ShRead = {}): Promise<ShPostUnified> {
     const response = await axios.get<ShPostUnified>(`/v2/post-unified/${id}`, {
       params: { state },
+      signal: read.signal,
     })
     this.remember(id, state, response.headers)
     return response.data
@@ -249,8 +267,16 @@ export class ShPostUnifiedService {
    * The server answers the agent's change-set shape, so the console shows the plan the batch surface
    * would have produced rather than a second description of publishing.
    */
-  async publishPlan(id: string): Promise<ShPublishPlan> {
-    const response = await axios.post<ShPublishPlan>(`/v2/post-unified/${id}/publish?dryRun=true`)
+  /*
+   * SH1153 — this one takes a signal even though it is a POST, and that is not a contradiction of
+   * `read-options.ts`'s "writes do not take this". The rule there is about a request that *changes*
+   * something: aborting it does not undo it, so a cancelled write is a write whose answer was thrown
+   * away. `dryRun=true` changes nothing — it is a read wearing a write's verb, because the plan it
+   * returns is computed by the writer — so hanging up on it loses only an answer nobody wants.
+   */
+  async publishPlan(id: string, read: ShRead = {}): Promise<ShPublishPlan> {
+    const response = await axios.post<ShPublishPlan>(
+      `/v2/post-unified/${id}/publish?dryRun=true`, undefined, { signal: read.signal })
     return response.data
   }
 
@@ -260,9 +286,10 @@ export class ShPostUnifiedService {
    * Asked by `id:` address, the escape hatch SH172 kept for exactly this: the console holds an id and
    * the agent surface is addressed. Absent for a publish that moves no URL, which is most of them.
    */
-  async publishRoutes(id: string): Promise<ShPublishRoutes | null> {
+  async publishRoutes(id: string, read: ShRead = {}): Promise<ShPublishRoutes | null> {
     const response = await axios.get<{ impact?: { routes?: ShPublishRoutes } }[]>("/v2/agent/read", {
       params: { address: `id:${id}`, include: "impact" },
+      signal: read.signal,
     })
     return response.data?.[0]?.impact?.routes ?? null
   }
@@ -283,6 +310,32 @@ export class ShPostUnifiedService {
     const response = await axios.post<ShBulkResult>("/v2/post-unified/bulk", {
       op, ids, dryRun: options.dryRun, confirm: options.confirm, when: options.when,
     })
+    return response.data
+  }
+
+  /**
+   * SH1132 — rename this page, through the writer the agent's `post.move` runs through.
+   *
+   * <p>`dryRun` defaults to true for the reason a bulk verb's does, and one more that is specific
+   * to a rename: **both state rows move together**, so renaming a published page changes the live
+   * URL at once with no publish step. The plan is what stops that being a surprise — it says
+   * whether the page is live, which address is being vacated, and how many pages link to it.</p>
+   */
+  async move(id: string, url: string,
+             options: { redirect?: boolean; dryRun?: boolean } = {},
+  ): Promise<ShMovePlan> {
+    const dryRun = options.dryRun ?? true
+    const response = await axios.post<ShMovePlan>(`/v2/post-unified/${id}/move`, {
+      url,
+      redirect: options.redirect ?? false,
+      dryRun,
+    // SH985/SH1132 — conditional on the real run, which is where the lost update is: a curator
+    // renaming a page an agent has already moved would otherwise take the address back. `either`
+    // because a rename is about the post rather than one snapshot. A plan writes nothing and sends
+    // none, so the harmless step is not the one that needs a fresh read.
+    }, { headers: dryRun ? {} : this.ifMatchEither(id) })
+    // The address is part of the post, so every version this service held for it is now stale.
+    if (!dryRun) this.forgetVersion(id)
     return response.data
   }
 
@@ -307,8 +360,8 @@ export class ShPostUnifiedService {
   }
 
   /** Sibling translations of this post's group (SH53), DRAFT-preferred. */
-  async translations(id: string): Promise<ShPostUnified[]> {
-    const response = await axios.get<ShPostUnified[]>(`/v2/post-unified/${id}/translations`)
+  async translations(id: string, read: ShRead = {}): Promise<ShPostUnified[]> {
+    const response = await axios.get<ShPostUnified[]>(`/v2/post-unified/${id}/translations`, { signal: read.signal })
     return response.data
   }
 

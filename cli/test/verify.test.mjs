@@ -195,16 +195,35 @@ test("SH990: digest --state reaches the render query beside an address", async (
   assert.equal(url.searchParams.get("state"), "rev:3");
 });
 
-test("--delivery adds the group without dropping the ones that need no network", async () => {
+test("SH1120: --delivery adds the group and narrows nothing", async () => {
   const fetchImpl = scriptedFetch(CLEAN);
   await verify.run({ delivery: true }, ["Blog"], ctxWith(fetchImpl));
 
   // Not `checks=delivery`: a caller asking for the stronger proof still wants the lint, and
   // sending the group alone would silently switch the content rules off (SH141).
+  //
+  // And not a list of group names either, which is what this assertion used to pin as correct.
+  // It read `content,routes,diagnostics,delivery` — a hand-written copy of the server's default
+  // that had been missing `page` since SH516 and `a11y` since it shipped, so the flag asking for
+  // the stronger proof sent the narrower run. `all` is the server's own word for its default set
+  // (`ShAgentCheck.parse` takes it as a token, SH1120), so nothing on this side names a group and
+  // a ninth group cannot be missed here.
   assert.equal(
     new URL(fetchImpl.calls[0].url).searchParams.get("checks"),
-    "content,routes,diagnostics,delivery",
+    "all,delivery",
+    "SH1120: `--delivery` must not compose the check set itself — every group, plus delivery by "
+      + "name so an instance with fetching off still answers the teaching 400 rather than "
+      + "silently proving nothing",
   );
+});
+
+test("SH1120: --checks all --delivery says the same thing, by the caller's own words", async () => {
+  const fetchImpl = scriptedFetch(CLEAN);
+  await verify.run({ delivery: true, checks: "all" }, ["Blog"], ctxWith(fetchImpl));
+
+  assert.equal(new URL(fetchImpl.calls[0].url).searchParams.get("checks"), "all,delivery",
+    "SH1120: the same request, because there is only one way to spell it now — the branch that "
+      + "special-cased `all` was the same wired list a second time");
 });
 
 test("--delivery keeps an explicit --checks and does not duplicate the group", async () => {
@@ -831,4 +850,91 @@ test("SH411: the tree-only gate still fails on a projection acceptance it proved
   assert.match(ctx.stderr.text, /1 accepted finding\(s\)/);
   // The server entry is reported as unchecked rather than condemned or ignored.
   assert.match(ctx.stdout.text, /1 accepted finding\(s\) were not checked by this run/);
+});
+
+/**
+ * SH1120 — the durable half: this side names no check group of its own.
+ *
+ * <p>Fixing `withDelivery` removes one wired list. This is what stops the next one, and it is the
+ * part that outlives the two names that happened to be missing: **a client-side copy of a
+ * server-side default rots silently**, because nothing here knows when a group is added. `page`
+ * arrived with SH516 and `a11y` after it, and neither reached this file for as long as the copy
+ * existed. A ninth would not have either.</p>
+ *
+ * <p>The vocabulary is read from the enum through `verifyChecks()` (SH1068), not typed here — a
+ * list typed twice is a list that rots, and writing one inside the test for wired lists would be
+ * the SH613 defect wearing the rule's own clothes. `projection` and `replication` are excluded
+ * because they are the CLI's, run over the file tree, and never reach `?checks=`; `delivery` is
+ * excluded because it is this command's flag and naming one group is not composing a set.</p>
+ */
+test("SH1120: no CLI module composes the server's check set", async () => {
+  const { verifyChecks } = await import("../conformance/support/product-vocabulary.mjs");
+  const { readdirSync, statSync } = await import("node:fs");
+  const { readFile } = await import("node:fs/promises");
+  const { join, relative } = await import("node:path");
+  // `isProse` rather than `code`, because this finding has to say WHICH LINE. `code` deletes
+  // comment lines, so an index into its result means nothing in the file — SH786's reason for
+  // `masked` existing, and `masked` blanks string spans, which is the half this needs to read.
+  // Per line, from the shared module, so the vocabulary is still one (SH740).
+  const { isProse } = await import("./support/source-text.mjs");
+
+  const SRC = new URL("../src/", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+  // Every check name there is, the CLI's two tree-only groups included. **Not a subset**, and the
+  // first draft of this was: it excluded `delivery` on the grounds that a flag may name one group,
+  // and so did not fire on `content,routes,diagnostics,delivery` — the very list that caused this.
+  // What is wrong is the LIST, not which names are in it. Naming one group is fine and is what the
+  // token count below allows; composing a set is what this refuses.
+  //
+  // `all` is deliberately absent from the vocabulary, which is what makes `all,delivery` legal: it
+  // is not a group, it is the server's word for "you compose it, not me".
+  const vocabulary = [...verifyChecks()].sort();
+  assert.ok(vocabulary.length >= 6,
+    `SH1120: ${vocabulary.length} check group(s) read from the enum — too few to be the vocabulary, `
+    + "so this scan would pass by having nothing to look for. If a group was removed, SH1068's "
+    + "reader is what should have changed, not this floor");
+
+  function walk(dir, out = []) {
+    for (const entry of readdirSync(dir)) {
+      const path = join(dir, entry);
+      if (statSync(path).isDirectory()) walk(path, out);
+      else if (path.endsWith(".mjs")) out.push(path);
+    }
+    return out;
+  }
+
+  // The shape, not the words. `content` and `page` are ordinary English and the CLI writes both
+  // constantly — a bare-word scan reported twelve lines about page content. What a composed set
+  // actually looks like is a **literal**: `"content,routes,diagnostics"`, or the same names as
+  // separate strings on one line. So this reads quoted spans and asks whether their comma-separated
+  // tokens are group names, which "the page content" cannot be.
+  const QUOTED = /'[^'\n]*'|"[^"\n]*"|`[^`\n]*`/gu;
+  const isGroup = (token) => vocabulary.includes(token.trim());
+
+  const offenders = [];
+  for (const path of walk(SRC)) {
+    // Through the shared reading, or the paragraph above explaining the rule is a finding (SH740).
+    const body = await readFile(path, "utf8");
+    body.split("\n").forEach((line, at) => {
+      if (isProse(line)) return;
+      const where = `${relative(SRC, path).replace(/\\/g, "/")}:${at + 1}`;
+      const literals = [...line.matchAll(QUOTED)].map((m) => m[0].slice(1, -1));
+      // One literal holding a list of them.
+      for (const literal of literals) {
+        const tokens = literal.split(",");
+        if (tokens.length >= 2 && tokens.every(isGroup)) offenders.push(`${where}: "${literal}"`);
+      }
+      // Or several DISTINCT names as separate literals on one line — the same list, built by hand.
+      // Distinct, because one name twice is a message mentioning a group, not a set being composed.
+      const separate = [...new Set(literals.filter((literal) => isGroup(literal)))];
+      if (separate.length >= 2) offenders.push(`${where}: ${separate.join(" + ")}`);
+    });
+  }
+
+  assert.deepEqual(offenders, [],
+    "SH1120: a line here names two or more of the server's check groups, which means this side is "
+    + "composing a set the server already composes. That list is missing whichever group shipped "
+    + "most recently — `content,routes,diagnostics` was missing `page` from SH516 onwards and "
+    + "`a11y` from the day it existed, so `shio verify --delivery` ran fewer checks than "
+    + "`shio verify`. Send `all` and let the server answer with its own default set; add a single "
+    + "group by name only where a flag means that one group.\n  " + offenders.join("\n  "));
 });

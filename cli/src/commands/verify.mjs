@@ -373,22 +373,43 @@ function dirOf(path) {
 /**
  * `--delivery` (SH141) — ask the server to prove each published route by fetching it.
  *
- * A convenience over `--checks …,delivery`, and it names the groups explicitly rather than
- * sending `delivery` alone: a caller reaching for the stronger check wants it *in addition
- * to* the content lint, and `--checks delivery` on its own would quietly drop the rules that
- * do not need a network. Combining it with `--checks` keeps whatever the caller named.
+ * A convenience over `--checks …,delivery`, and it never sends `delivery` alone: a caller
+ * reaching for the stronger check wants it *in addition to* the content lint, and the group
+ * on its own would quietly switch the rules that need no network off. Combining it with
+ * `--checks` keeps whatever the caller named.
  *
  * If the instance has fetching off, the server answers a teaching 400 that names the property
  * — deliberately, because a flag that asked for a proof and silently got none is worse than
- * an error.
+ * an error. That is the whole of what this flag buys where fetching is *on*, since the
+ * server's default set already contains `delivery` there; naming it makes the proof
+ * **required** rather than best-effort.
+ *
+ * <h2>SH1120 — it used to name the groups here, and that made the flag subtract</h2>
+ *
+ * <p>The fallback was the literal `content,routes,diagnostics`: a hand-written copy of a
+ * server-side default, missing `page` since SH516 and `a11y` since it shipped. So
+ * `shio verify --delivery` ran **fewer** checks than `shio verify` — and traded them for a
+ * group that, with fetching on, was already running. A flag that asks for a stronger proof
+ * cannot be the one that narrows the run.</p>
+ *
+ * <p>The comment that stood here argued, correctly, that sending `delivery` alone would drop
+ * the network-free rules — and then did the same thing by a longer route. The lesson is the
+ * shape rather than the two missing names: **a client-side copy of a server-side default
+ * rots silently**, because nothing on this side knows when a group is added. A ninth would
+ * have been missed too.</p>
+ *
+ * <p>So this names no group. `all,delivery` says what the flag means — every group that can
+ * run, plus delivery asked for by name — and the server composes the set (`ShAgentCheck.parse`
+ * takes `all` as a token, SH1120, the way a context section has since SH157). A bare `all`
+ * would not do: it resolves to the defaults, which drop `delivery` where fetching is off, and
+ * the teaching 400 with it.</p>
  */
 function withDelivery(checks, delivery) {
   if (!delivery) return checks;
-  const named = String(checks ?? "content,routes,diagnostics")
-    .split(",")
-    .map((each) => each.trim())
-    .filter(Boolean);
-  if (named.length === 0 || named.includes("all")) return "content,routes,diagnostics,delivery";
+  const named = String(checks ?? "").split(",").map((each) => each.trim()).filter(Boolean);
+  // Nothing named — `all` is the server's word for its own default set, so this side does not
+  // need one. With `--checks all` the caller already said it and the same line carries through.
+  if (named.length === 0) return "all,delivery";
   return named.includes("delivery") ? named.join(",") : [...named, "delivery"].join(",");
 }
 

@@ -7,6 +7,8 @@
  * (at your option) any later version.
  */
 
+import { formatDistanceToNow } from "date-fns"
+
 /**
  * SH1026 — the content browser's three views, as data. Pure, so `browser-views.test.mjs` reads it
  * without a browser; the renderers are `browser-views.tsx`.
@@ -100,6 +102,15 @@ export interface BrowserRow {
    * date and type, and without this a curator deleting "the duplicate" deletes a translation.
    */
   locale?: string
+  /**
+   * SH1125 — whether this row's language is the one the site **declared** as its default.
+   *
+   * <p>A fact about this row in this site rather than about the row, which is why it is computed once
+   * per listing from {@link declaredDefaultLocale} instead of at each of the four places a label is
+   * built. It answers the question a curator deleting one of two translations is actually asking,
+   * which SH1059's chip could not: it says which row is which and not which one is the original.</p>
+   */
+  isDefaultLocale?: boolean
   /** SH1026 — the byte path of the image a card shows, from the listing; absent when there is none. */
   thumbnail?: string
 }
@@ -160,10 +171,72 @@ export function visibleWindow({ count, columns, rowHeight, top, viewportHeight, 
 }
 
 /**
+ * SH1125 — the site's default locale, or `null` when there is nothing to mark.
+ *
+ * <p>`declared` is the whole of it, and it is SH1056's distinction rather than a nicety. A site that
+ * has chosen nothing still reports a default — the locale its content happens to be written in — and
+ * a chip saying "default" about something nobody chose is exactly the confusion SH1056 exists to
+ * remove. So an undeclared policy marks no row, and a folder of two translations then says which
+ * language each is and stays silent about which came first, which is the honest answer.</p>
+ *
+ * <p>Pure and taking the policy rather than the site id, so the rule is checkable without a server:
+ * the one thing that can go wrong here is reading `defaultLocale` without `declared`.</p>
+ */
+export function declaredDefaultLocale(
+  policy: { defaultLocale?: string; declared?: boolean } | null | undefined,
+): string | null {
+  if (!policy?.declared) return null
+  const locale = policy.defaultLocale?.trim()
+  return locale ? locale : null
+}
+
+/**
  * SH1059 — how a row is named to anything that is not looking at it: the title, and the locale
  * when there is one. The checkbox, the actions trigger and the title all say this, so two
  * translations of one page are two different things to a screen reader, as they are on screen.
+ *
+ * <p>SH1125 — and which of them is the original, when the site has declared one. `defaultWord` is
+ * passed in already translated: this function is pure so `browser-locale.test.mjs` can run it without
+ * a browser, and a hard-coded "default" would be an English word in a Portuguese console — the locale
+ * tag itself is not translated because a tag is a tag, and a sentence about it is not.</p>
  */
-export function rowLabel(item: BrowserRow): string {
-  return item.locale ? `${item.name} (${item.locale})` : item.name
+export function rowLabel(item: BrowserRow, defaultWord?: string): string {
+  if (!item.locale) return item.name
+  const marked = item.isDefaultLocale && defaultWord ? `${item.locale}, ${defaultWord}` : item.locale
+  return `${item.name} (${marked})`
+}
+
+/**
+ * SH1027/SH1145 — "search this folder", as the search page's own address.
+ *
+ * <p>The browser's box and the console's search are different questions, and this is the wider one:
+ * it hands the search page a `folder:` address it can scope by, which is what makes its "this
+ * folder" and "this folder and below" options reachable at all — that page has no folder of its own
+ * to offer.</p>
+ *
+ * <p>A path from the breadcrumb, not an id: the search takes the vocabulary's own addressing (SH79),
+ * and an id in that parameter would be a fourth spelling of where content is. Null before the
+ * breadcrumb has landed, because there is no honest address until it has.</p>
+ */
+export function searchHereFor(
+  siteName: string | null,
+  breadcrumbPath: readonly { name: string; type: string }[],
+  searchRoute = "/search",
+): string | null {
+  if (!siteName) return null
+  const chain = breadcrumbPath.filter((crumb) => crumb.type === "FOLDER").map((crumb) => crumb.name)
+  return `${searchRoute}?${new URLSearchParams({
+    folder: `folder:${siteName}/${chain.join("/")}`,
+    subtree: "true",
+  })}`
+}
+
+/** SH1145 — "3 days ago", or nothing at all for a date the row does not carry or cannot parse. */
+export function relativeDate(dateStr: string | undefined): string {
+  if (!dateStr) return ""
+  try {
+    return formatDistanceToNow(new Date(dateStr), { addSuffix: true })
+  } catch {
+    return ""
+  }
 }

@@ -148,7 +148,10 @@ test("SH1049: the post editor is gated on the failure, not only on the value", (
   const editor = stripComments(readFileSync(
     join(ROOT, "src", "app", "content", "post.edit.page.tsx"), "utf8"));
 
-  assert.match(editor, /setLoadFailure\(/u,
+  // SH1158 moved the read onto the query layer, so the failure is DERIVED from the query rather than
+  // recorded by a setter — and the derivation has to exclude a cancellation, or leaving the form mid-load
+  // becomes a reliable "post not found" in place of a rare spinner. Same claim, at its new spelling.
+  assert.match(editor, /const loadFailure = loaded\.isError && !isCancelled\(loaded\.error\)/u,
     "SH1049: the post editor no longer records why the post is missing, so a failed read is "
     + "indistinguishable from a slow one and the page spins for ever");
   assert.match(editor, /<LoadProvider/u,

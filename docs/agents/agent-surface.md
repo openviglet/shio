@@ -660,6 +660,25 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   no URL is a **warning** when the group arrived by default and a **400** when the caller named it
   (a group that joined on its own must not fail a call that never asked); and the pass is bounded
   by `shio.agent.verify.max-fetches` + `fetch-budget-millis`, with every cut in `notes`.
+  **And `all` is a token, because `--delivery` was subtracting (SH1120).** `shio verify --delivery`
+  ran *fewer* checks than `shio verify`: the CLI composed the set itself as the literal
+  `content,routes,diagnostics`, a hand-written copy of `ShAgentCheck.defaults` that had been missing
+  `page` since SH516 and `a11y` since it shipped. With fetching on it was worse than a narrowing — it
+  traded two groups for one **already in the default set**, so the flag's only real effect there is
+  to make the proof *required* rather than best-effort. The comment above that list argued, correctly,
+  that sending `delivery` alone would drop the network-free rules, and then did the same thing by a
+  longer route. The shape is what to keep: **a client-side copy of a server-side default rots
+  silently**, because nothing on that side knows when a group is added, and a ninth would have been
+  missed too. Neither existing spelling could express the request — a bare `all` resolves to the
+  defaults, which drop `delivery` where fetching is off and take the teaching 400 with it, and
+  `delivery` alone switches the content rules off. So `parse` now takes `all` **inside** a list, the
+  way a context section has since SH157, and the CLI sends `all,delivery`: every group that can run,
+  plus delivery named. The asymmetry is deliberate and asserted — a bare `all` asks *what is
+  possible*, naming a group asks *for that group*, so `all,delivery` with fetching off still 400s.
+  `all` is deliberately not in `names()`, which is what lets the CLI name no group at all, and
+  `SH1120: no CLI module composes the server's check set` holds that: a literal whose
+  comma-separated tokens are all check names is the defect's shape, and `all` is legal there
+  precisely because it is not one of them.
   **The fetches happen outside the read transaction (SH206).** They used to run inside it, holding a
   pooled connection for the whole network pass — bounded three ways, which made it *safe* rather than
   right: a slow front end occupied a connection for fifteen seconds doing no database work. `verify()`

@@ -34,6 +34,7 @@ import { isCancelled } from "@/lib/read-options"
 import type { ShSite } from "@/models/site/site"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { reportProblem } from "@/lib/problem"
+import { deleteEach, refusalSummary } from "@/lib/batch-delete"
 import {
   mediaCategory, mediaCategoryIcon, isImageType, formatBytes,
   SH_MEDIA_CATEGORIES, type ShMediaCategory,
@@ -235,7 +236,15 @@ export default function StaticFileListPage() {
 
   const handleDelete = async (item: ShStaticFileItem) => {
     if (!confirm(t("dialog.deleteMessage"))) return
-    await postService.delete(item.id).catch(() => {})
+    // SH1139 — this swallowed the refusal with `.catch(() => {})`, dropped the row from local state
+    // and toasted success, so a file the server refused to delete LOOKED deleted until a reload put
+    // it back. The state now moves only on success, which is the half a swallow cannot get right.
+    try {
+      await postService.delete(item.id)
+    } catch (error) {
+      reportProblem(error, t("common.error"))
+      return
+    }
     setItems((prev) => prev.filter((i) => i.id !== item.id))
     setSelected((prev) => { const next = new Set(prev); next.delete(item.id); return next })
     if (detail?.id === item.id) setDetail(null)
@@ -254,10 +263,37 @@ export default function StaticFileListPage() {
   const bulkDelete = async () => {
     const ids = [...selected]
     if (ids.length === 0 || !confirm(t("staticFile.confirmBulkDelete", { count: ids.length }))) return
-    await Promise.all(ids.map((id) => postService.delete(id).catch(() => {})))
-    setItems((prev) => prev.filter((i) => !selected.has(i.id)))
-    clearSelection()
-    toast.success(t("content.deletedShort"))
+    /*
+     * SH1139 — the worst of the sixteen, and the same defect SH953 already fixed for the content
+     * browser: every failure was swallowed with `.catch(() => {})` and then ONE success toast spoke
+     * for the whole selection. A bulk pass in which nothing went reported all of it deleted, and the
+     * rows left the list either way.
+     *
+     * `deleteEach` is that fix, reused rather than written again (SH953 put it in `lib/` precisely
+     * so the next caller would not fork it). It also makes the loop sequential, which is what the
+     * per-object endpoint wants until Block BD's bulk one lands — a select-all here is capped at a
+     * thousand, and a thousand parallel writes against one folder tree was never the plan.
+     */
+    const outcome = await deleteEach(
+      ids.map((id) => ({ id, name: items.find((i) => i.id === id)?.fileName ?? undefined, objectType: "POST" })),
+      (target) => postService.delete(target.id),
+    )
+
+    if (outcome.refusals.length > 0) {
+      toast.error(t("content.itemsRefused", {
+        count: outcome.refusals.length,
+        reasons: refusalSummary(outcome.refusals),
+      }))
+    }
+    if (outcome.deleted > 0) toast.success(t("content.itemsDeleted", { count: outcome.deleted }))
+
+    // Only what went leaves the list, and only what went is deselected: a row that refused stays
+    // where it is so the curator can read the reason and retry without hunting for it again.
+    const refused = new Set(outcome.refusals.map((refusal) => refusal.id))
+    const gone = new Set(ids.filter((id) => !refused.has(id)))
+    setItems((prev) => prev.filter((i) => !gone.has(i.id)))
+    setSelected(new Set(refused))
+    if (detail && gone.has(detail.id)) setDetail(null)
   }
 
   const handleFolderPicked = async (sel: ContentBrowserSelection) => {

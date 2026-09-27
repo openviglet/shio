@@ -1,10 +1,11 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 import type { ShAllowed, ShContentAcl } from "@/models/acl/acl.model"
 
 /** Client for the SH54 content-ACL endpoints (`/api/v2/object/{id}/acl`). */
 export class ShAclService {
-  async get(objectId: string): Promise<ShContentAcl[]> {
-    const response = await axios.get<ShContentAcl[]>(`/v2/object/${objectId}/acl`)
+  async get(objectId: string, read: ShRead = {}): Promise<ShContentAcl[]> {
+    const response = await axios.get<ShContentAcl[]>(`/v2/object/${objectId}/acl`, { signal: read.signal })
     return response.data
   }
 
@@ -18,8 +19,9 @@ export class ShAclService {
    * Publish is not offered. Asked so a control can be disabled with an explanation rather than
    * offered and answered with a 403.
    */
-  async allowed(objectId: string): Promise<ShAllowed> {
-    const response = await axios.get<ShAllowed>(`/v2/object/${objectId}/allowed`)
+  async allowed(objectId: string, read: ShRead = {}): Promise<ShAllowed> {
+    const response = await axios.get<ShAllowed>(`/v2/object/${objectId}/allowed`,
+      { signal: read.signal })
     return response.data
   }
 }

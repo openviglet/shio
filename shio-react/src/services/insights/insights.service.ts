@@ -59,9 +59,10 @@ export interface ShPageDigest {
  */
 export class ShInsightsService {
   /** What the linter says about this page as it is being edited. */
-  async verify(address: string): Promise<ShInsightReport> {
+  async verify(address: string, read: ShRead = {}): Promise<ShInsightReport> {
     const response = await axios.get<ShInsightReport>("/v2/agent/verify", {
       params: { address, state: "draft" },
+      signal: read.signal,
     })
     return response.data
   }

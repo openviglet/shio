@@ -123,12 +123,23 @@ test("SH931: opening a link never switches the session — the switch is a click
   const bodies = effectBodies(NOTICE)
 
   // The one failure a scan-and-filter cannot catch by itself: a walk that finds nothing reports a
-  // clean file for the same reason a correct one does. The notice has two effects — the reads and
-  // the dismissal reset — so a slicer that has lost the shape says so here rather than passing.
-  assert.ok(bodies.length >= 2,
-    `SH931: the effect scan found ${bodies.length} effects in a file that has two, so the assertion`
+  // clean file for the same reason a correct one does. The notice had two effects — the reads and the
+  // dismissal reset — and SH1151 moved the reads into shared hooks, so it has one. The floor follows
+  // the file rather than the file following the floor, and a slicer that has lost the shape still
+  // says so here rather than passing.
+  assert.ok(bodies.length >= 1,
+    `SH931: the effect scan found ${bodies.length} effects in a file that has one, so the assertion`
       + " below is measuring nothing. Check that `useEffect(` is still how they are written before"
       + " concluding no effect touches the switch.")
+
+  // And the reads it lost are now somewhere else, so the same question is asked of them: a shared
+  // hook that switched tenant would be the same P7 defect one file further away.
+  const shared = stripComments(
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "src", "hooks",
+      "use-catalogue.ts"), "utf8"))
+  assert.doesNotMatch(shared, /switchTo|\/switch/,
+    "SH931: a shared read reaches the tenant switch. Every screen in the console mounts these hooks, "
+      + "so that is the pasted-link defect with a wider blast radius than the banner ever had.")
 
   const switching = bodies.filter((body) => /switchTo|\/switch/.test(body))
   assert.deepEqual(switching, [],

@@ -35,6 +35,9 @@ import {
   Settings2,
   Trash2,
 } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { isCancelled } from "@/lib/read-options"
+import { addressKey } from "@/lib/query-keys"
 import { useCallback, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
@@ -63,6 +66,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { WIDGET_BADGE_COLORS, WIDGET_ACCENT_COLORS } from "@/lib/widget-colors"
 import { usePostTypes, useWidgets } from "@/hooks/use-catalogue"
+import { reportProblem } from "@/lib/problem"
 
 const postTypeService = new ShPostTypeService()
 
@@ -780,13 +784,32 @@ export default function PostTypeEditPage() {
   const [renameTo, setRenameTo] = useState("")
   const [renaming, setRenaming] = useState(false)
 
-  useEffect(() => {
+  /*
+   * SH1116 — one read per post-type, cancelled on leaving, keyed on the name it reads.
+   *
+   * `t` and `form` were in the dependency list and neither is a subject: a translation function and a
+   * `useForm` identity say nothing about which post-type is wanted. SH117 makes this the one
+   * name-keyed surface in the product, so the key is the name.
+   */
+  const loaded = useQuery<ShPostType>({
+    queryKey: addressKey(`postType:${postTypeName}`),
+    queryFn: ({ signal }) => postTypeService.get(postTypeName, { signal }),
+    enabled: Boolean(postTypeName),
+  })
 
-    postTypeService.get(postTypeName).then((data) => {
-      form.reset(data)
-      setFields(withKeys(data.fields))
-    })
-  }, [postTypeName, t, form])
+  // Set during render rather than in an effect (`react-hooks/set-state-in-effect`), once per type.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (loaded.data && seeded !== postTypeName) {
+    setSeeded(postTypeName)
+    form.reset(loaded.data)
+    setFields(withKeys(loaded.data.fields))
+  }
+
+  useEffect(() => {
+    // The read had no failure path: a post-type that would not load left an empty form that a save
+    // would have written over it.
+    if (loaded.error && !isCancelled(loaded.error)) reportProblem(loaded.error, t("common.error"))
+  }, [loaded.error, t])
 
   const save = useCallback(async (data: ShPostType, close: boolean) => {
     setIsLoading(true)
@@ -797,6 +820,11 @@ export default function PostTypeEditPage() {
       await postTypeService.update({ ...data, name: postTypeName, fields: toFieldDefs(fields) })
       toast.success(t("common.save"))
       if (close) navigate(ROUTES.POST_TYPE_ROOT)
+    } catch (error) {
+      // SH1139 — a create that toasts success and lets a refusal escape as an unhandled rejection
+      // looks exactly like a button that did nothing. The dock reads toasts, so the curator, the
+      // mascot and a screen reader all missed it.
+      reportProblem(error, t("common.error"))
     } finally {
       setIsLoading(false)
     }

@@ -78,6 +78,21 @@ const RULES = {
     conflict:
       "none is possible — the file carries no value a person authors, so there is nothing to lose",
   },
+  writeSiteMarker: {
+    base: "per-key",
+    wins:
+      "neither: a key both sides changed is reported and the file is left alone. NOT the server, "
+      + "which is `writeFolderMarker`'s rule one line up and does not transfer — a folder marker "
+      + "records that a folder exists, which is the server's fact, while every key of a site marker "
+      + "is something somebody chose",
+    conflict:
+      "`sites.conflicts` on the pull report, as `<site>#<key>` (SH1122) — the key and not the file, "
+      + "for the reason `assetMeta` gives: \"the agent set the url, the curator wrote the "
+      + "description\" is two edits that do not touch, and a whole-file hash would call it a "
+      + "collision. A site with any conflicted key is left exactly as it is, because a marker is one "
+      + "document and writing three of four keys would produce a file that is half each side's with "
+      + "nothing saying which",
+  },
   writeLocalNotes: {
     base: "per-key",
     wins: "neither: a note both sides changed is reported and neither copy is written",

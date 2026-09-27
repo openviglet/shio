@@ -107,9 +107,7 @@ const DECLARED = {
     "src/app/system/bento-tenant-link-notice.tsx": 1,
     "src/app/system/bento.root.page.tsx": 1,
     "src/components/post-history.panel.tsx": 1,
-    "src/components/post-insights.panel.tsx": 1,
     "src/components/post-live-preview.tsx": 1,
-    "src/components/publish-preview.dialog.tsx": 1,
     "src/hooks/use-list-state.ts": 1,
   },
   // SH1075 — a ref read during render, the same accrual and the same payoff task (SH1136).

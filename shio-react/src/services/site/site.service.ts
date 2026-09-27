@@ -11,8 +11,8 @@ export class ShSiteService {
     return response.data;
   }
 
-  async get(id: string): Promise<ShSite> {
-    const response = await axios.get<ShSite>(`/v2/site/${id}`);
+  async get(id: string, read: ShRead = {}): Promise<ShSite> {
+    const response = await axios.get<ShSite>(`/v2/site/${id}`, { signal: read.signal });
     return response.data;
   }
 

@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { toast } from "@viglet/viglet-design-system"
 import { usePostTypes, useInvalidate } from "@/hooks/use-catalogue"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShPostTypeService()
 
@@ -23,12 +24,19 @@ export default function PostTypeListPage() {
 
   const handleDelete = async (name: string) => {
     if (confirm(t("dialog.deleteMessage"))) {
-      await service.delete(name)
-      // The write half of the cache, and the half it is wrong without: dropping the scheme drops
-      // the catalogue AND every single type under it, so no other screen keeps the deleted row.
-      // Filtering local state instead would leave this page right and the next one wrong.
-      await invalidate("postType:")
-      toast.success(t("common.delete"))
+      // SH1139 — a post-type in use is refused, which is the common case here, and the refusal used
+      // to escape as an unhandled rejection: the row stayed, nothing was said, and the curator had
+      // no way to learn that the type still has posts under it.
+      try {
+        await service.delete(name)
+        // The write half of the cache, and the half it is wrong without: dropping the scheme drops
+        // the catalogue AND every single type under it, so no other screen keeps the deleted row.
+        // Filtering local state instead would leave this page right and the next one wrong.
+        await invalidate("postType:")
+        toast.success(t("common.deleted"))
+      } catch (error) {
+        reportProblem(error, t("common.error"))
+      }
     }
   }
 

@@ -126,6 +126,10 @@ function server({
   // SH231 — what `GET /agent/memory` reports: `[{ scope, key, note }]`, scope absent =
   // instance-wide. Empty by default, so every test written before this reads unchanged.
   serverNotes = [],
+  // SH1122 — the pack's own site rows, which the folder walk now asks for beside the sitemap:
+  // `{ Blog: { url, furl, description, localePolicy } }`. Absent by default, so a site the fake
+  // does not describe projects a marker carrying nothing but its name.
+  serverSites = null,
 } = {}) {
   const calls = [];
   const uploads = [];
@@ -138,6 +142,7 @@ function server({
       const site = new URL(target).searchParams.get("site");
       const paths = serverFolders?.[site] ?? [];
       const wantIds = new URL(target).searchParams.get("ids") === "true";
+      const wantSites = (new URL(target).searchParams.get("include") ?? "").includes("sites");
       return json({
         // A folder's id is `<site>:<chain>` here — enough to be joined against an asset's
         // `folderId`, and readable in a failure message.
@@ -146,6 +151,10 @@ function server({
           path,
           ...(wantIds ? { id: `${site}:${path}` } : {}),
         })),
+        // SH1122 — only when asked for, because the walk asks on its first page and no other.
+        ...(wantSites && serverSites
+          ? { sites: Object.entries(serverSites).map(([name, row]) => ({ name, ...row })) }
+          : {}),
         budget: { estTokens: 10, limitTokens: 0, truncated: sitemapTruncated },
       });
     }
@@ -2606,4 +2615,124 @@ test("SH231: --dry-run adopts nothing but says what it would", async () => {
     0,
   );
   assert.match(ctx.stdout.text, /would be adopted/);
+});
+
+/* --- SH1122: the site marker's round trip --- */
+
+/** Where a site marker lives, beside the site root's own `_folder.md`. */
+const sitePath = (site) => `/repo/shio/folders/${site}/_site.md`;
+
+/**
+ * §LXXIV.12's own assertion: *push a site, change a field on disk, pull, read the diff.*
+ *
+ * <p>Read as three claims, because the middle one is the whole task. A pull projects the settings into
+ * a file that did not exist; an edit on disk survives the next pull rather than being overwritten by a
+ * read; and a key both sides moved is reported and the file is left alone. The last two are what
+ * `writeFolderMarker`'s rule would have got wrong — the server wins there, and copying it here would
+ * make a pull silently discard a url an agent had just authored.</p>
+ */
+test("SH1122: a pull projects a site's settings into a marker that did not exist", async () => {
+  const fetchImpl = server({
+    remote: { "post:Blog/blog/hello": REMOTE_DOC },
+    serverFolders: { Blog: ["/", "/blog"] },
+    serverSites: {
+      Blog: {
+        url: "https://blog.example",
+        furl: "blog",
+        description: "The company blog",
+        localePolicy: { default: "en", enabled: ["en", "pt-br"], fallback: { "pt-br": "en" } },
+      },
+    },
+  });
+  const ctx = ctxWith(fetchImpl, { [markerPath("Blog", "/")]: markerFile("Blog", "/") });
+
+  await contentPull.run({}, [], ctx);
+
+  assert.equal(ctx.fs.files.get(norm(sitePath("Blog"))), [
+    "---",
+    "site: Blog",
+    "url: https://blog.example",
+    "furl: blog",
+    "description: The company blog",
+    'locales: {"default":"en","enabled":["en","pt-br"],"fallback":{"pt-br":"en"}}',
+    "---",
+    "",
+  ].join("\n"), "SH1122: every setting a site has, in the marker's fixed key order");
+  assert.match(ctx.stdout.text, /sites: 1 written/);
+  // The agreement is recorded, or the next pull cannot tell a local edit from a stale file.
+  const base = JSON.parse(ctx.fs.files.get(norm(BASE_PATH)));
+  assert.equal(base.sites.Blog.url, "https://blog.example");
+  assert.equal(base.sites.Blog.locales.default, "en");
+});
+
+test("SH1122: a setting edited only on disk survives the next pull", async () => {
+  // The claim `writeFolderMarker`'s rule would get wrong. A folder marker records the server's fact,
+  // so the server wins and nothing is lost; a site marker's every key is something somebody chose, and
+  // a read that overwrote an unpushed edit would lose it with no report.
+  const fetchImpl = server({
+    remote: {},
+    serverFolders: { Blog: ["/"] },
+    serverSites: { Blog: { url: "https://blog.example" } },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [markerPath("Blog", "/")]: markerFile("Blog", "/"),
+    [sitePath("Blog")]: "---\nsite: Blog\nurl: https://blog.example\ndescription: Mine\n---\n",
+    [BASE_PATH]: JSON.stringify({
+      version: 3, cursor: null, partial: false, posts: {},
+      folders: [{ site: "Blog", folder: "/" }], notes: {}, assets: {}, assetMeta: {},
+      sites: { Blog: { url: "https://blog.example" } },
+    }),
+  });
+
+  await contentPull.run({}, [], ctx);
+
+  assert.match(ctx.fs.files.get(norm(sitePath("Blog"))), /description: Mine/,
+    "SH1122: the description exists only here and the server said nothing about it, so a read must "
+    + "not drop it — a push is what settles it, and `site.upsert` fills what is empty");
+  assert.doesNotMatch(ctx.stdout.text, /sites: \d+ written/,
+    "SH1122: and nothing was rewritten, because nothing moved on the server");
+});
+
+test("SH1122: a setting both sides moved is reported, and the file is left alone", async () => {
+  const fetchImpl = server({
+    remote: {},
+    serverFolders: { Blog: ["/"] },
+    serverSites: { Blog: { url: "https://theirs.example" } },
+  });
+  const ctx = ctxWith(fetchImpl, {
+    [markerPath("Blog", "/")]: markerFile("Blog", "/"),
+    [sitePath("Blog")]: "---\nsite: Blog\nurl: https://mine.example\n---\n",
+    [BASE_PATH]: JSON.stringify({
+      version: 3, cursor: null, partial: false, posts: {},
+      folders: [{ site: "Blog", folder: "/" }], notes: {}, assets: {}, assetMeta: {},
+      sites: { Blog: { url: "https://was.example" } },
+    }),
+  });
+
+  await contentPull.run({}, [], ctx);
+
+  assert.match(ctx.fs.files.get(norm(sitePath("Blog"))), /url: https:\/\/mine\.example/,
+    "SH1122: neither side wins, so the file is exactly as it was");
+  assert.match(ctx.stderr.text, /Blog#url/,
+    "SH1122: named by KEY on stderr — the remedy is per key even though the write is per file");
+  assert.match(ctx.stdout.text, /1 conflicted: Blog#url/);
+});
+
+test("SH1122: a push sends the marker's settings, and only the four it may", async () => {
+  const fetchImpl = server({ remote: {}, serverFolders: { Blog: ["/"] } });
+  const ctx = ctxWith(fetchImpl, {
+    [markerPath("Blog", "/")]: markerFile("Blog", "/"),
+    [sitePath("Blog")]: "---\nsite: Blog\nurl: https://blog.example\nfurl: blog\n---\n",
+  });
+
+  await contentPush.run({}, [], ctx);
+
+  const applied = fetchImpl.calls
+    .filter((call) => call.url.includes("/agent/apply") || call.url.includes("/agent/plan"))
+    .map((call) => call.body)
+    .filter(Boolean);
+  const document = applied.flatMap((body) => body?.documents ?? [body]).find((each) => each?.site === "Blog");
+  assert.ok(document, "SH1122: a tree holding only markers is still a push — that is the whole of "
+    + "\"scaffold the structure, then fill it\", and configuring a site comes before scaffolding it");
+  assert.deepEqual(document.settings, { url: "https://blog.example", furl: "blog" });
 });

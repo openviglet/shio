@@ -402,6 +402,30 @@ libuv a handle that is already closing. That is **not** what removed the flake �
 exit now — but closing twice is a thing a teardown should survive, and the old behaviour answered the
 second caller with `ERR_SERVER_NOT_RUNNING`.
 
+#### The socket it held was not the state it meant (SH1146)
+
+SH698's deadline test held a raw connection that **sent nothing** and asserted that `closeFixture`
+could not finish. It was green on Windows every run and red on every Linux runner for as long as the
+JS job was read, reporting the silence it exists to catch — which is this instrument's own failure
+shape for the third time in its history.
+
+The cause is in `closeFixture` itself: it calls `closeIdleConnections()` on purpose (see above), and
+**an accepted socket that has sent no request is idle by that definition.** Measured on Node 26
+Linux: `close` completes in **0 ms** with the socket outstanding and `getConnections()` back to 0.
+The precondition — one connection open — passes first, so the run looks like it is measuring
+something.
+
+The fix is the second of the two the section proposed: hold the socket in a state `close` cannot
+reclaim. The test now writes a complete request the handler never answers and waits for the server's
+own `request` event, which makes the connection **active** on every platform. That premise does not
+move with the runtime, where "accepted but silent" moved under it.
+
+**And the premise is now a test rather than a comment.** `SH1146: an idle accepted socket does not
+hold the close` asserts that the close does *not* reject — the opposite direction to the test beside
+it — so if `closeIdleConnections()` ever stops reaching such a socket, that is a named failure and a
+deliberate decision, not SH698 passing for a reason nobody checked. Removing the in-flight request
+fails the held-socket test in one run, which is how the pair was verified.
+
 ### A stamp taken against another commit is not a colour (SH770)
 
 The comparison above is between a **claim** and a **measurement**, and nothing asked whether the
@@ -512,6 +536,41 @@ The lint reads **itself** like any other file, and that is the part worth copyin
 skipped itself in the walk *and* shipped with the literal bytes in its own character class — a
 self-exclusion hiding precisely the thing it exists to find. Both declarations are `\u` escapes now
 and both fixtures are built from character codes, so it passes its own rule honestly.
+
+#### And then it was green for its whole life over files it never opened (SH1119)
+
+Two more literal backspaces were found by `grep -P '\x08'` over the tree — not by the lint above,
+which was running and passing. Its walk was an **allow-list of ten trees**, and it had
+`shio-react/src` but not `shio-react/test`, and no `claude-plugin/` at all. Both defects were in
+exactly those two places. Measured: the ten trees reach **1,890** files, a walk from the repository
+root reaches **2,220**, and the 330 unread held both.
+
+So the walk starts at the root and names what is *not* ours instead — dependencies, build output,
+git's store, the vendored `.roadkeep` engine, an instance's `store/`. **A deny-list cannot miss a
+package that does not exist yet**, which is the property the tree list did not have: an allow-list
+also has to be extended by whoever adds a package, and a scan that silently stops covering a new one
+is indistinguishable from one that never ran. SH814's shape again, where a flag was removed from one
+script of nine.
+
+`SH1119: the walk reaches the trees an allow-list of ten left out` names seven files — the two that
+held a defect, one per tree that had no representative, and one that *was* listed so a pass is not
+the walk agreeing with itself. Verified in the direction that matters: narrow the walk back to `cli`
+and the byte scan goes **green** while that assertion fails, which is this defect exactly.
+
+**What the two repairs found, which is why this was a task and not a two-character fix.** The
+published-files check (`claude-plugin/test/plugin.test.mjs`) came back clean — no `SH<n>` ships
+today, so nothing drifted while it was blind, though nothing could have said so. The other did not:
+`unsaved-work.test.mjs` asserted that `use-unsaved-guard.ts` must **not** call `useBlocker(`, on the
+grounds that it throws outside a data router — and SH1090 had since given the console
+`createBrowserRouter` and this guard that very call, which **the next test in the same file
+asserts is there**. Two assertions in one file requiring opposite things, and only the corrupt one
+could pass. The premise is real and is kept where it belongs: held against `App.tsx`, the file that
+decides it, rather than by forbidding the call at the one place that has to make it.
+
+The cause belongs with the bytes: a **shell heredoc resolves `\b` before the file is written**, so a
+scripted edit inserting a regex corrupts it silently where an editor tool would not. Worth knowing
+while fixing this, because the same hazard is one layer up — the doc comment first written for the
+widened walk contained `` `*/src` `` and closed its own block comment.
 
 ### A reserved range protects an id you type, not one you compose (SH801)
 
@@ -1860,6 +1919,48 @@ both directions rather than a comment asserting them, and the general rule is wo
 instance: **before merging two functions that look identical, ask what each is handed** — these
 differ only in the input's shape, which no amount of reading the bodies reveals.
 
+#### The console's copy was the other kind of stripper, and it deleted code (SH1118)
+
+Everything above is the **CLI** side, where SH630 had already established the line-oriented rule.
+The console's `shio-react/test/support/source-text.mjs` was a regex over the whole file —
+`source.replace(/\/\*[\s\S]*?\*\//g, "")` — which opens on a slash and two stars **anywhere**,
+string literals included, and closes on the next star-slash. Thirty-one suites across two packages
+read source through it, and any one of them could be silenced by a string in a file it does not own.
+
+**The measurement came first and it is the reason the design's own fix was not taken.** Across this
+repository's JS sources: **19 spans, 77,285 characters** removed by a strip that began mid-line.
+`cli/test/clone.test.mjs` hid **656 lines** behind a `robots.txt` fixture's `Disallow: /*`;
+`theme.test.mjs` 508 behind a CSS selector; the console's own `routes.const.ts` lost its route table
+to `` `${consolePath}/*` ``. §LXIV.19 proposed throwing when the strip *removes too large a
+fraction*, and the same walk refutes it: files here are legitimately up to **91 %** comment
+(`app/routes/index.ts`, `theme.ts`, `index.css`), so any ceiling low enough to catch the defect
+rejects the honest files. What separates them is not how much was removed but **where the removal
+began**, which is decidable per line. A cost that is argued rather than measured fails the same way
+in somebody else's tree.
+
+So the console's copy now reads the way the CLI's does — an opener counts at the start of a line
+(`/*`, `/**`, `{/*`), a `/*` anywhere else is a trailing comment or a string, and the two are told
+apart by blanking the line's quoted spans first. Two details that are not obvious and were each
+measured: a line that *is* a comment is **not** quote-blanked, because an apostrophe pair in prose
+would swallow the closer and the comment would read as unclosed; and a `/* c */ code` line keeps the
+code after the closer, which the first attempt dropped and `fetch-cancellation.test.mjs` caught in
+one run, since its planted file is exactly that shape.
+
+**One case stays genuinely undecidable, and it throws.** An opener at a line start that never
+closes means the file ends inside a comment, and returning the tail as an empty string is agreeing
+with every assertion over it. That raises an error naming SH1118 and the line, because *a reader
+that cannot see the file should say so rather than agree with everything.*
+
+**And ten call sites wrote those two lines, not one — which is the part worth keeping.**
+`cli/src/theme.mjs` already carried a comment explaining in as many words why the pattern is wrong,
+and the safe reading was already exported beside it. The knowledge was in the tree and nine readers
+did not have it. A silenced scan is invisible by construction, so nothing could count them from
+inside a suite the silence had already made green: `cli/test/comment-stripper.test.mjs` is that
+count, printing it on every run and holding the **six** that remain as a named list under SH1147
+rather than a ceiling, because a ceiling lets one task pay it down and the next spend it. Verified
+in both directions — a planted seventh copy fails it, and the two assertions in
+`shio-react/test/source-text.test.mjs` both fail against the body they replaced.
+
 The population is **files that scan this repository's own source or docs**, not every suite that
 reads a file: `"foo.mjs"` is usually a fixture filename in JS, and taking every read gives 66,
 mostly temp trees a suite wrote itself. A suite that reads back a tree it just wrote cannot be
@@ -1995,6 +2096,95 @@ and it now has a number to argue against rather than an impression.
   the cheapest way to pass then is to delete somebody else's feature — the degrade-the-measurement
   non-goal by name.
 
+## A budget per route, and the two things measuring it refuted (SH1113)
+
+SH1043 above measures **one** number for the whole console: what every route pays before the first
+row. That is the right shape for a bundle and the wrong shape for what a curator experiences, which
+is a *page*. A route that fetches three collections to draw two figures costs exactly the same eager
+bytes as one that fetches nothing, so that gate reports it as free — SH1050 was that page, and
+nothing would have caught it.
+
+The instrument was nearly there: `e2e/console-check.mjs` already drives a browser through every
+route against a live instance, which is the only place a page's own requests are observable. So it
+records three numbers per route, `console-route-budget.json` holds the ceilings the way
+`console-size-budget.json` holds its own, and `scripts/route-cost.mjs` is the comparator.
+`--record-cost` seeds the file from a run; `test/route-cost-budget.test.mjs` is the half a
+`pnpm test` can hold, and it carries the design's own assertion: **a planted extra fetch on one
+route fails that route's entry and no other.**
+
+**Two things the first measurement refuted, both of them in the first implementation rather than in
+the design.** This is the part worth reading, because both were invisible until real numbers
+existed:
+
+- **Counting every same-origin request re-measured the bundle.** The eager assets are ~1.73 MB on
+  every route, so the post editor's own reads showed up as 1,747,000 against a site list's
+  1,730,000 — a 20 KB signal under a 1.7 MB constant, which is the *same* "a total hides a page"
+  failure the task was filed about, reproduced one level up. It would also have failed this gate
+  every time the bundler regrouped a chunk, a regression SH1043 already owns: two gates answering
+  for one number, which is what P10 forbids. The filter is now the **data plane** —
+  `/api/v2/**` and `/graphql` — and what is left is small, stable, and exactly the sentence the
+  design wrote. The static assets are not unmeasured; they are measured by the gate whose subject
+  they are.
+- **A single run cannot establish a tight time ceiling.** Across 52 families one seeded at **26x**
+  the baseline and several neighbours at 1.0x, on pages differing by one list read. So `firstRow` is
+  a deliberately **coarse** guard (`FIRST_ROW_SLACK`, with a floor) that catches a page an order of
+  magnitude worse and nothing finer. A tight ceiling seeded from one run is a flaky gate, which this
+  project treats as worse than no gate — it is the one people learn to re-run past.
+
+**The three numbers are therefore held three different ways, and the differences are the design:**
+
+| Number | Held | Why |
+|---|---|---|
+| `requests` | at the measurement, **no headroom** | Discrete and deterministic — the page either asks for the catalogue or it does not. An extra fetch is the defect this exists to catch, so room in the ceiling would let the first one through, and the first one is the only one anybody would notice. |
+| `bytes` | with ~8% of room | Payloads grow with the content on an instance; a ceiling at the measurement refuses the next change instead of measuring it (SH736). |
+| `firstRow` | a **ratio** against a named baseline route, coarsely | Milliseconds move with the machine, so a ceiling in them is one nobody can reproduce and therefore one that gets raised until it means nothing. |
+
+**Two asymmetries that make it runnable on a thin instance without being toothless on a full one.**
+The route list is *discovered* from the instance — one post editor per post-type it finds — so the
+key is the **family** (the name up to its first colon): `post-edit`, not `post-edit:Page`, which is
+also the better claim, since the second is a fact about somebody's content. And a **walked family
+with no entry is a finding** while an **entry nothing walked is only a note**: a new screen must
+declare what it costs, but "this instance has no posts" is a missing fixture and not a regression.
+Where a family has several members the **costliest** is compared — a ceiling tracking the cheapest
+passes on the slow page, which is the same mistake one level down again.
+
+**A route is costed when it put a first row on screen — not when its probe passed.** Both halves
+were bought. The dead page has to be excluded: one that died on navigation made whatever requests it
+got to first, so costing it would teach the budget that a broken page is a cheap one and then fail
+the day somebody fixes it. But `probe.ok` was the first predicate and it was **wrong, and flaky with
+it**: a probe fails for reasons that say nothing about cost — a missing frost surface, a `mustSee`
+string, a hero heading — and which of those fired moved across three consecutive runs against one
+instance (41, 45 and 46 of 57 probes). The costed set moved with them, so families appeared and
+disappeared from the comparison and the gate reported as unbudgeted a route a previous run had
+costed. A page that rendered its rows and then failed an assertion about its chrome made exactly the
+requests it always makes. `cost.ms != null` is the stable predicate and already excludes the page
+that rendered nothing.
+
+**Two numbers out of the first run are worth more than the gate.** Across 43 costed families:
+
+- `unknown-route` — a path the console does not have, rendering a 404 — still makes **7 API calls**.
+  That is the shell's own cost, paid by every route, so an entry at 8 is *one call of its own* rather
+  than eight. It is also the file's own guard: a 404 has no data of its own, so if that entry is ever
+  megabyte-sized, `DATA_READ` has stopped filtering and every number here is measuring the bundle
+  again. `route-cost-budget.test.mjs` asserts it rather than asserting a blanket ceiling, and the
+  blanket was the first draft — see the next point for what refuted it.
+- `post-edit` makes **23**, so sixteen are its own, against a site list's 8. That is the ceiling this
+  budget most exists for, and it is the gap the first implementation reported as 1,747,000 against
+  1,730,000.
+- `graphql` is the one entry measured in **megabytes** — 1.13 MB, all of it the schema introspection
+  the explorer fetches before a curator types a character. It is a genuine data read, not the bundle
+  leaking back in, which is why the blanket `bytes < 1 MB` assertion had to go: it would have failed
+  a real finding as a defect in the instrument. Held rather than fixed here, so shrinking it becomes
+  an argued change rather than a discovery.
+
+**Where it runs, and one position that was bought.** It rides `console-check.yml`, which already
+boots a jar, provisions a site and drives Chromium on every pull request — no second workflow, and a
+regression therefore blocks a merge rather than a commit. The cost record is written **the moment
+the route loop ends**, not at the end of `main`: the first recording run walked all fifty-seven
+routes and then died on a 401 in a later probe, so nothing was written and twenty minutes of
+measurement went in the bin. Nothing after that line costs a route, so nothing after it can be
+allowed to lose what it measured.
+
 ## The chunking rule that caused what it was written to prevent (SH1044)
 
 `vite.config.ts` carried a `manualChunks` function whose own comment said what it was for: keep
@@ -2055,7 +2245,8 @@ them under its own tree and nothing breaks; SH1043's gate measured the eager loa
 / 403.5 KB gzip before and after**, which is the right record for a removal that touches no import.
 
 **Four ways to be reachable, and only one is an import.** `scripts/dependency-reachability.mjs`
-classifies each declaration as imported by the console's own files, required as a **peer** by
+(at the repository root since SH1114; it lived under `shio-react/scripts/` while the console was its
+only subject) classifies each declaration as imported by a package's own files, required as a **peer** by
 something already reachable, run as a **binary** by a `package.json` script, or the `@types` of
 something reachable. The three that are not imports are why this can be trusted to delete: a grep
 for the name would have taken `sonner` and `next-themes` (peers of the design system, imported
@@ -2072,10 +2263,62 @@ Two details the reader is wrong without:
   appear in no `.ts` file at all. `@tailwindcss/typography` was deleted precisely because no
   `@plugin` line ever registered it, which means it was not loaded either.
 
-`test/dependency-reachability.test.mjs` is the gate and `pnpm --filter shio-react run deps` prints
-the inventory. Exemptions live in the script's `KEPT` map with a sentence each, and it is **empty**:
-everything unreachable was deleted rather than excused. A stale exemption fails too — for the reason
-SH1043's budget fails on a ceiling that outlives its chunk.
+`shio-react/test/dependency-reachability.test.mjs` is the console's gate and
+`pnpm --filter shio-react run deps` prints its inventory. Exemptions live in the script's `KEPT` map
+with a sentence each, and it is **empty**: everything unreachable was deleted rather than excused. A
+stale exemption fails too — for the reason SH1043's budget fails on a ceiling that outlives its chunk.
+
+## The same walk over all eleven manifests, and the two breaches only npm sees (SH1114)
+
+SH1045 above read one manifest and left ten unread, and the reason that is worse than "ten more of
+the same" is where the others end up. **Seven of the eleven packages are published**, so a dead
+dependency there is not merely installed on every CI run here — it is downloaded on every consumer's
+install. (§LXXII.20 estimated four. `private: true` is what decides, and only `shio-react`,
+`shio-site`, `claude-plugin` and the two examples carry it; the list is asserted rather than
+remembered, because which packages are published is what decides where these rules apply.)
+
+The reader was written to be lifted, so the work was turning two console-specific constants into
+`PACKAGES` — one declaration per package: `walk` (every directory whose files can reach a package),
+`root` (configs that import from outside a walked directory), and `shipped`.
+
+**`shipped` is the half that earns the task**, and it only matters for a published package: *which of
+the walked directories a consumer's install actually runs*. Without it two breaches are invisible
+here and break somewhere else, and neither is what SH1045 looks for:
+
+- a **`dependencies` entry reached only from code npm does not pack** is a download on every install
+  for a file the consumer never loads. It is not dead — the walk reaches it — so SH1045's rule is
+  satisfied by it;
+- a **`devDependency` reached from shipped code** is quieter and worse: it resolves here, because the
+  whole workspace is installed, and throws on the consumer's first import. Every gate in this
+  repository passes.
+
+It is a declaration rather than a derivation from `files`, because `files` names build output for half
+these packages — `shio-model` ships `dist/`, which is bundled and not walked, and the source behind it
+is `src/`. So `shipped` says which *walked* directory stands behind what npm packs, and
+`shippedAgreesWithFiles` checks it against the manifest so the two cannot drift: a package that starts
+packing `test/` fails rather than going on being described as test-only.
+
+**Two corrections the first run bought, both of them to the new rules rather than to the code.**
+
+- **A peer that is also a devDependency is correct, and the rule called it a breach.** A React library
+  declares `react` as a peer — the consumer supplies it — and as a devDependency so it is installed
+  here to build and test against. `shio-sections` and `shio-react-sdk` are both in exactly that shape
+  and were both reported. SH1045's own note is that an unused-dependency check gets turned off after
+  its first false positive; this one had one waiting on day one. The exemption is asserted against the
+  two real manifests, so it cannot outlive its reason.
+- **A packed directory carrying its own `package.json` is a payload, not unread source.**
+  `create-shio-app` packs `template/`, whose imports resolve against *that* manifest once a consumer
+  scaffolds with it, never against this one.
+
+`cli/test/workspace-reachability.test.mjs` is the gate and `pnpm run deps` walks all of them. It
+holds the design's assertion — a dead dependency planted in a package **other than the console**
+failing **by name**, driven against each of the eleven declarations rather than reasoned about once,
+because what failed before was never the rule but that only one package was ever asked. `PACKAGES` is
+checked against `pnpm-workspace.yaml`, which is the guard that would have caught SH1045's own gap: a
+reader with a hand-kept list passes for the wrong reason the moment the workspace grows a package it
+does not name. The workspace's real run classifies **99 declarations across twelve packages with zero
+findings**, and the count is asserted with a floor — 43 of those were SH1045's one package, so a
+number near that would mean the other manifests are being read as empty.
 
 ## The docs gate stays a warning locally, and it was 135 commits unrun (SH1070)
 
@@ -2140,3 +2383,48 @@ and `expected.json` is what the script measured on it; `ShConsoleCostTest` and
 the byte. Gzip does not, and cannot be made to: Node ships Chromium's zlib and the JVM its own, and
 neither promises the same stream at level 9 — measured on the fixture, 9787 against 9726 (0.6%). A
 comparison against the build gate's ceilings should use `raw`.
+
+## A size verdict about somebody else's build (SH1126)
+
+SH1043's comparison runs against whatever console build sits in
+`shio-app/src/main/resources/public`, and **`pnpm test` never built one**. So the gate measured a build
+of *some* tree with nothing saying which — and it went wrong in both directions, on consecutive tasks:
+one passed `pnpm test` against a build that predated its own change, and the next failed the headroom
+check only because a build made outside the session happened to include it. Neither verdict was about
+the bytes the task under test had produced.
+
+The conformance gate had the same shape and SH460 closed it there — the instance states its build time
+and commit, and the harness refuses one older than HEAD. A console build carries the same identity now:
+a Vite plugin emits **`build-info.json`** beside `index.html`, holding the commit, the build time and a
+digest of the sources the bundle was built from.
+
+**The digest is the comparison; the commit is for a person.** A commit cannot be compared against a
+working tree — the tree is dirty most of the time anybody runs this, and refusing a dirty tree would
+refuse every build made while working. The digest is over file contents, so it matches a dirty tree
+exactly when the build came from it. The commit is recorded because it is what a reader wants when the
+digests differ and they are working out which build they have.
+
+`SOURCE_INPUTS` is the decision: `src`, plus `index.html` (the entry), `vite.config.ts` (the chunking)
+and `package.json` (the dependency names). §LXXII.23 asked for `src`; the other three decide what the
+bundle contains. **The stated limit:** it does not cover the installed dependency *bytes*, so a
+`pnpm update` that changes a vendor chunk without touching any of these leaves the digest matching.
+That is the right trade — the failure this closes was seen twice and both times it was a source edit,
+and hashing `node_modules` would cost more than the build it protects. The lockfile is out too: it
+moves on an install that changes nothing the bundle sees.
+
+**Three ways to be "not measured", one outcome.** No build, a build from before `build-info.json`
+existed, and a build from another tree all produce no total, because a number from a different tree is
+worse than no number. What differs is the sentence, and each names what to do. One function
+(`buildProvenance`) decides, so the three cannot drift apart.
+
+**A stale build must not fail the suite**, or every source edit would demand a build before
+`pnpm test`. So locally it is a diagnostic — which would leave the number real only where somebody
+happened to build. Hence the other half: CI's `js` job now runs `pnpm run build:console` (~10s against
+a 20-minute budget) and sets `SHIO_REQUIRE_CONSOLE_BUILD=1`, which turns "not measured" into a failure
+there. `ci-gates.test.mjs` asserts both halves *and their order* — a build after the suite measures
+nothing, and the two lines look equally correct in a diff.
+
+One shape worth knowing: `scripts/console-build-info.mjs` stays `.mjs` with a hand-written
+`.d.mts` beside it, because `node --test` runs the suites with no build step while `vite.config.ts` is
+type-checked by `tsc -b`. Moving it to TypeScript would mean compiling it before a test could import
+it, which is the build-before-you-can-measure problem this task exists to remove.

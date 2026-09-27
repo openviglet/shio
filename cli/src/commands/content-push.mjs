@@ -48,6 +48,7 @@ import {
   readBase,
   readLocal,
   readLocalFolders,
+  readLocalSites,
   readLocalInstanceNotes,
   readLocalNotes,
   readRemote,
@@ -90,7 +91,10 @@ export async function run(flags, _positionals, ctx) {
   // markers is a legitimate push: it is the "scaffold the structure, then fill it" step,
   // which was the one step that had to leave the file tree and go through the API.
   const markers = await readLocalFolders(ctx, { dir: flags.foldersDir ?? FOLDERS_DIR, site });
-  if (!Object.keys(local).length && !markers.length) {
+  // SH1122 — and a `_site.md` is a declaration in its own right for the same reason: configuring a
+  // site is the step before scaffolding it, and it was the one step with no file to do it in.
+  const siteMarkers = await readLocalSites(ctx, { dir: flags.foldersDir ?? FOLDERS_DIR, site });
+  if (!Object.keys(local).length && !markers.length && !siteMarkers.length) {
     // Silence here would be dangerous with --prune: an empty document plus a prune is a
     // request to delete a section, and an empty *directory* is far more often a wrong
     // --content-dir than a deliberate wipe.
@@ -115,7 +119,7 @@ export async function run(flags, _positionals, ctx) {
     site,
     // SH173: the tree names the sites this push is about, so the server read is scoped to
     // them. Before this, one un-addressable post in an unrelated site aborted the CI gate.
-    sites: sitesOf(local, markers),
+    sites: sitesOf(local, [...markers, ...siteMarkers]),
     limit: Number(flags.limit ?? 200),
   });
   // SH253 — the same projection the pull applies, because this command answers two questions
@@ -283,7 +287,7 @@ export async function run(flags, _positionals, ctx) {
     // The defs the SH253 projection already fetched — this used to read them a second time.
     defs,
     posts,
-    sites: sitesOf(local, markers),
+    sites: sitesOf(local, [...markers, ...siteMarkers]),
     assetsDir: flags.assetsDir ?? ASSETS_DIR,
     planOnly,
     stdout: ctx.stdout,
@@ -309,9 +313,10 @@ export async function run(flags, _positionals, ctx) {
   const whole = documentsFor(declared.posts, {
     prune,
     markers,
+    siteMarkers,
     moves,
     folderMoves: folderPlan.moves,
-    sites: sitesOf(local, markers),
+    sites: sitesOf(local, [...markers, ...siteMarkers]),
   });
   // SH199 — a tree past the server's document ceiling is several documents, not a dead end.
   // A *pruning* push is the exception and stays whole: see `splitDocuments` for why every
@@ -350,7 +355,7 @@ export async function run(flags, _positionals, ctx) {
   // desired-state document would make it the thing `--prune` deletes when a tree stops naming it.
   // The file declares a membership and a description; `state` and `scheduledAt` are read back and
   // never pushed, because a push that could run a launch is a launch a merge can trigger.
-  await pushReleases(client, ctx, { sites: sitesOf(local, markers), site, planOnly });
+  await pushReleases(client, ctx, { sites: sitesOf(local, [...markers, ...siteMarkers]), site, planOnly });
 
   // SH997 — the gates, outside the document like the releases and the notes: what a site checks
   // before publishing is not content, and --prune must not delete it for going unmentioned.
@@ -375,7 +380,7 @@ export async function run(flags, _positionals, ctx) {
   // upserts, and `--check` reports them without writing, the way a plan does.
   const notes = await pushNotes(client, ctx, {
     base: base.notes ?? {},
-    sites: sitesOf(local, markers),
+    sites: sitesOf(local, [...markers, ...siteMarkers]),
     dir,
     planOnly,
   });

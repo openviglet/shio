@@ -18,9 +18,10 @@ import type {
  * what approves its work.
  */
 export class ShReviewService {
-  async sessions(limit = 50): Promise<ShReviewSession[]> {
+  async sessions(limit = 50, options: ShRead = {}): Promise<ShReviewSession[]> {
     const response = await axios.get<ShReviewSession[]>("/v2/review/sessions", {
       params: { limit },
+      signal: options.signal,
     })
     return response.data
   }
@@ -36,9 +37,10 @@ export class ShReviewService {
     return response.data
   }
 
-  async detail(session: string): Promise<ShReviewDetail> {
+  async detail(session: string, options: ShRead = {}): Promise<ShReviewDetail> {
     const response = await axios.get<ShReviewDetail>(
       `/v2/review/sessions/${encodeURIComponent(session)}`,
+      { signal: options.signal },
     )
     return response.data
   }

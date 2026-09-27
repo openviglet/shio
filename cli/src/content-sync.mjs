@@ -418,7 +418,15 @@ function urlOf(address) {
  * `/archive`, and the identical widening already happened when a *post* named it. A marker
  * only reaches the same rule through a different file.
  *
+ * `siteMarkers` (SH1122) adds the site's own settings — `url`, `furl`, `description` and SH1056's
+ * locale policy — as a `settings` block on the document, which the server compiles to one more
+ * `site.upsert`. Like a folder marker it also makes the site a subject: a tree holding nothing but a
+ * `_site.md` emits a document, because configuring a site before writing a page in it is how a site
+ * gets built and was the one step that had to leave the tree.
+ *
  * @param {{site: string, folder: string}[]} [options.markers] declared empty folders
+ * @param {{site: string, url?: string, furl?: string, description?: string,
+ *          locales?: object}[]} [options.siteMarkers] declared site settings
  * @param {string[]} [options.sites] sites to emit a document for even with no posts —
  *   without it a site holding only folders produces nothing, which is the "scaffold the
  *   structure before any content exists" case SH149 is for
@@ -426,6 +434,7 @@ function urlOf(address) {
 export function documentsFor(posts, {
   prune = false,
   markers = [],
+  siteMarkers = [],
   sites = [],
   moves = [],
   folderMoves = [],
@@ -462,7 +471,15 @@ export function documentsFor(posts, {
     // would ask for a move to a path it never mentions.
     markersBySite.get(move.site).push(normalizeFolder(move.to));
   }
-  for (const site of [...markersBySite.keys(), ...sites]) {
+  // SH1122 — a `_site.md` is a declaration about a site, so it makes the site a subject the same
+  // way a folder marker does. Without this a tree that has been configured and has no page in it
+  // yet would push nothing at all.
+  const settingsBySite = new Map();
+  for (const marker of siteMarkers) {
+    if (!marker?.site) continue;
+    settingsBySite.set(marker.site, marker);
+  }
+  for (const site of [...markersBySite.keys(), ...settingsBySite.keys(), ...sites]) {
     if (!bySite.has(site)) bySite.set(site, []);
   }
   return [...bySite.keys()].sort().map((site) => {
@@ -509,12 +526,145 @@ export function documentsFor(posts, {
         // says nothing about publishing cannot unpublish a live page (P7).
         publish: typeof post.publish === "boolean" ? post.publish : undefined,
       })),
+      // SH1122 — the four keys and nothing else, and `site` is deliberately not among them: the
+      // document already names its site, and a second spelling of it is a second thing that can
+      // disagree. Omitted entirely when the marker declares nothing, so a document for a site with
+      // no `_site.md` serializes exactly as it did before this existed.
+      settings: settingsFor(settingsBySite.get(site)),
       prune,
     };
   }).map((document) => {
     if (!document.moves.length) delete document.moves;
+    if (document.settings === undefined) delete document.settings;
     return document;
   });
+}
+
+/**
+ * One site marker as a document's `settings` block, or `undefined` when it declares nothing.
+ *
+ * <p>The server filters this to the same four keys where it builds the op, and that duplication is
+ * deliberate: a document is written by whoever is pushing, so the rule has to hold for a hand-written
+ * one too. What this side adds is that the tree never *writes* a key the server would drop — a file
+ * whose contents are silently ignored is the failure §LXXIV.12 is about, one layer along.</p>
+ */
+function settingsFor(marker) {
+  if (!marker) return undefined;
+  const settings = {};
+  for (const key of SITE_SETTING_KEYS) {
+    if (key === "locales") continue;
+    if (typeof marker[key] === "string" && marker[key].trim() !== "") settings[key] = marker[key];
+  }
+  if (marker.locales && typeof marker.locales === "object") settings.locales = marker.locales;
+  return Object.keys(settings).length ? settings : undefined;
+}
+
+/**
+ * The four site settings a marker carries, and the order they are compared in.
+ *
+ * <p>Shared with the document builder above rather than spelled twice: what a marker projects and
+ * what a push may send have to be the same list, or the tree writes a key nothing reads.</p>
+ */
+export const SITE_SETTING_KEYS = ["url", "furl", "description", "locales"];
+
+/**
+ * Reconciles a site's settings three ways, per key (SH1122).
+ *
+ * <h2>Why per key, and why not the folder marker's rule</h2>
+ *
+ * <p>`reconcileFolders` says the server wins and no conflict is possible, because a folder marker
+ * carries no value a person authors — it records that a folder exists, which is the server's fact. A
+ * <b>site</b> marker is the opposite: every key in it is something somebody chose. So the rule is
+ * `reconcileNotes`' — <b>per key, neither side wins, and a key both sides moved is reported</b> — and
+ * it is per key rather than per file for the reason `assetMeta` is: "the agent set the url, the curator
+ * wrote the description" is two edits that do not touch, and a whole-file hash would call it a
+ * collision.</p>
+ *
+ * <h2>What a conflict does to the file</h2>
+ *
+ * <p>A marker is one document, so there is no per-key write: a site with any conflicted key is left
+ * exactly as it is and reported, which is what the notes loop does one root over. Writing the other
+ * three and leaving the fourth would produce a file that is half the server's and half the tree's with
+ * nothing saying which.</p>
+ *
+ * @param {Record<string, Record<string, unknown>>} sides.base   site → key → last agreed value
+ * @param {{site: string}[]} sides.remote  the instance's sites, as the context pack reports them
+ * @param {{site: string}[]} sides.local   the markers on disk
+ * @returns {{write: object[], deleteLocal: string[], conflicts: object[],
+ *            agreed: Record<string, Record<string, unknown>>}}
+ */
+export function reconcileSiteSettings({ base = {}, remote = [], local = [] }) {
+  const remoteBySite = new Map((remote ?? []).filter((each) => each?.site)
+    .map((each) => [each.site, each]));
+  const localBySite = new Map((local ?? []).filter((each) => each?.site)
+    .map((each) => [each.site, each]));
+  const sites = [...new Set([
+    ...Object.keys(base ?? {}), ...remoteBySite.keys(), ...localBySite.keys(),
+  ])].sort();
+
+  const write = [];
+  const deleteLocal = [];
+  const conflicts = [];
+  const agreed = {};
+
+  for (const site of sites) {
+    const was = (base ?? {})[site] ?? {};
+    const there = remoteBySite.get(site) ?? null;
+    const here = localBySite.get(site) ?? null;
+    // A site the instance no longer holds. The marker goes, and only when this tree wrote it: a
+    // marker for a site that never existed here is the author's and not a stale projection.
+    if (!there) {
+      if (here && Object.hasOwn(base ?? {}, site)) deleteLocal.push(site);
+      continue;
+    }
+
+    const settled = {};
+    const clashes = [];
+    let moved = false;
+    for (const key of SITE_SETTING_KEYS) {
+      const before = canonical(was[key]);
+      const remoteValue = canonical(there[key]);
+      const localValue = canonical(here?.[key]);
+      const remoteMoved = remoteValue !== before;
+      const localMoved = here != null && localValue !== before;
+
+      if (remoteMoved && localMoved && remoteValue !== localValue) {
+        clashes.push({ site, key, remote: there[key] ?? null, local: here?.[key] ?? null });
+        continue;
+      }
+      // The server's value unless the tree moved this key on its own, which is the same split the
+      // notes merge makes: a local edit nobody has pushed yet is not something a read may overwrite.
+      const winner = localMoved && !remoteMoved ? here?.[key] : there[key];
+      if (winner !== undefined && winner !== null && winner !== "") settled[key] = winner;
+      if (remoteMoved) moved = true;
+    }
+
+    if (clashes.length) {
+      conflicts.push(...clashes);
+      continue;
+    }
+    agreed[site] = Object.fromEntries(
+      SITE_SETTING_KEYS.filter((key) => settled[key] !== undefined)
+        .map((key) => [key, settled[key]]));
+    // Written when the server moved, and when this tree has no file at all: a site whose marker has
+    // never been projected needs one even if nothing changed since the last agreement.
+    if (moved || here == null) write.push({ site, ...settled });
+  }
+
+  return { write, deleteLocal, conflicts, agreed };
+}
+
+/**
+ * One comparable spelling per value, so an object and its re-encoding are one value.
+ *
+ * <p>`locales` is a document, and two readings of the same policy are the same policy: comparing by
+ * reference would report a change on every pull, which is the drift the merge exists to avoid (P5).
+ * A blank and an absent value are also one thing here, for the reason the marker treats them so.</p>
+ */
+function canonical(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string") return value.trim() === "" ? null : value;
+  return JSON.stringify(value);
 }
 
 /**

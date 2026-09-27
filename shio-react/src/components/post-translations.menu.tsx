@@ -8,21 +8,20 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ROUTES } from "@/app/routes.const"
 import { AlertTriangle, Check, Columns2, Languages, Plus } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import type { ShLocale } from "@/services/locale/locale.service"
+import { useInvalidate, useLocales, useSiteLocalePolicy } from "@/hooks/use-catalogue"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
-import { ShLocaleService, type ShLocale } from "@/services/locale/locale.service"
-import { ShSiteService } from "@/services/site/site.service"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
-import type { ShSiteLocalePolicy } from "@/models/site/site"
 import { reportProblem } from "@/lib/problem"
 import { offeredLocales } from "@/lib/site-languages"
 
 const unifiedService = new ShPostUnifiedService()
-const localeService = new ShLocaleService()
-const siteService = new ShSiteService()
 
 /**
  * SH53 — language switcher / translation creator for the post editor. Lists the
@@ -41,24 +40,26 @@ export function PostTranslationsMenu({ postId, siteId, currentLocale }: {
 }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const [translations, setTranslations] = useState<ShPostUnified[]>([])
-  const [locales, setLocales] = useState<ShLocale[]>([])
-  const [policy, setPolicy] = useState<ShSiteLocalePolicy | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const load = useCallback(() => {
-    unifiedService.translations(postId).then(setTranslations).catch(() => setTranslations([]))
-  }, [postId])
-
-  useEffect(() => {
-    load()
-    localeService.list().then(setLocales).catch(() => setLocales([]))
-  }, [load])
-
-  useEffect(() => {
-    if (!siteId) return
-    siteService.locales(siteId).then(setPolicy).catch(() => setPolicy(null))
-  }, [siteId])
+  /*
+   * SH1152 — four reads, three of them now shared or cancelled and none of them in an effect.
+   *
+   * The locale catalogue and the site's policy are the same two answers `site.edit.page.tsx` asks
+   * for, and this menu is mounted from the post editor — so the instance's locale list was fetched
+   * once per surface that wanted it. They are shared hooks now. The translations themselves are this
+   * post's, keyed on its id, and the refresh after a write is an invalidation rather than a second
+   * call site.
+   */
+  const read = useQuery<ShPostUnified[]>({
+    queryKey: addressKey(`translation:${postId}`),
+    queryFn: ({ signal }) => unifiedService.translations(postId, { signal }),
+    enabled: Boolean(postId),
+  })
+  const translations = read.data ?? []
+  const locales = useLocales().data ?? []
+  const policy = useSiteLocalePolicy(siteId).data ?? null
+  const invalidate = useInvalidate()
 
   const existing = new Set(translations.map((tr) => tr.locale).filter(Boolean) as string[])
   // SH1058 — the page being edited is a member of the group the menu already read, so knowing
@@ -74,6 +75,14 @@ export function PostTranslationsMenu({ postId, siteId, currentLocale }: {
     setBusy(true)
     try {
       const created = await unifiedService.translate(postId, initials)
+      /*
+       * SH1152 — the whole scheme, not this post's key. Creating a translation changes the group as
+       * seen from *every* member of it, and the curator navigates to the new page and may come back.
+       * Without this, the source post's menu would still be showing the group as it was before the
+       * translation it just created — a cache the reads did not have and so a defect the reads did
+       * not have either.
+       */
+      await invalidate("translation:")
       toast.success(t("content.translationCreated"))
       navigate(`${ROUTES.CONSOLE}/content/post/${created.id}`)
     } catch (error) {

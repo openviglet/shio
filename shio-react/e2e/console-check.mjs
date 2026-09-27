@@ -29,9 +29,11 @@
  * console *warning*, because a gate that trips on noise is a gate people bypass.
  */
 import { chromium } from "playwright"
-import { mkdir, writeFile } from "node:fs/promises"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { compare, foldFamilies, headroom, seedCeilings, staleEntries }
+  from "../scripts/route-cost.mjs"
 
 const args = process.argv.slice(2)
 const flag = (name, fallback) => {
@@ -52,6 +54,102 @@ const API = flag("api", process.env.SHIO_URL || "http://localhost:2710")
  * screenshots. Two cwds, two output paths, one of them silently unignored (P5).
  */
 const OUT = flag("out", join(dirname(fileURLToPath(import.meta.url)), "report"))
+
+/**
+ * SH1113 — the per-route cost budget, and the flag that seeds it.
+ *
+ * `--record-cost` rewrites `console-route-budget.json` from this run instead of comparing against
+ * it, keeping every entry's `why`. It is a separate flag rather than a fallback for a missing file
+ * because a gate that seeds itself when it finds nothing to compare against is a gate that passes
+ * on the day somebody deletes its budget.
+ */
+const BUDGET = join(dirname(fileURLToPath(import.meta.url)), "..", "console-route-budget.json")
+const RECORD_COST = has("record-cost")
+
+/**
+ * How long a route is given to put its first row on screen before the number is recorded as
+ * unobserved. A route that never renders is a probe failure already, reported there; recording the
+ * timeout for it would put that number into a ratio and read as a page that is merely slow.
+ *
+ * <p>The same 10s the shell wait below already allows, and deliberately not longer: this wait
+ * happens *before* it, so every second here is spent again on every route that renders nothing —
+ * sixteen of them on a thin instance, which is what took a recording run from ten minutes to
+ * twenty-five.</p>
+ */
+const FIRST_ROW_TIMEOUT = 10_000
+
+/**
+ * What the page asks the SERVER for — the data reads, never the bundle.
+ *
+ * <h2>The first draft counted everything, and the numbers said why that was wrong</h2>
+ *
+ * <p>Counting every same-origin request made the eager bundle ~1.73 MB of every route's total, so
+ * the post editor's own reads showed up as 1747000 against a site list's 1730000: a 20 KB signal
+ * under a 1.7 MB constant. That is exactly the failure this task was filed about — a page's cost
+ * hidden inside a bigger number — reproduced one level up, and it would also have failed this gate
+ * every time the bundler regrouped a chunk, which is a regression `console-size-budget.json`
+ * already owns. Two gates answering for one number is the state P10 names.</p>
+ *
+ * <p>So the filter is the data plane: {@code /api/v2/**} and {@code /graphql}. What is left is
+ * small, stable and exactly the sentence the design wrote — "a route fetching three collections to
+ * draw two figures". The static assets are not unmeasured; they are measured by the gate whose
+ * subject they are.</p>
+ *
+ * <p>`bytes` is summed from Playwright's own accounting rather than from `content-length`, which a
+ * chunked response does not carry. `ms` is wall-clock to the first row, and is only ever used as a
+ * <em>ratio</em> against the baseline route, for the reason `route-cost.mjs` gives.</p>
+ */
+const DATA_READ = /\/(api\/v2|graphql)\b/u
+
+function watchCost(page) {
+  const cost = { requests: 0, bytes: 0, ms: null }
+  const sized = []
+  const mine = (url) => (url.startsWith(BASE) || url.startsWith(API)) && DATA_READ.test(url)
+  page.on("request", (r) => { if (mine(r.url())) cost.requests++ })
+  page.on("requestfinished", (r) => {
+    if (!mine(r.url())) return
+    sized.push(r.sizes()
+      .then((s) => { cost.bytes += (s.responseBodySize ?? 0) + (s.responseHeadersSize ?? 0) })
+      .catch(() => {}))
+  })
+  return {
+    cost,
+    /** Resolves once every response this page received has been accounted for. */
+    async settle() { await Promise.all(sized) },
+  }
+}
+
+/**
+ * A first row that arrived this close to the deadline is recorded as not having arrived.
+ *
+ * <p>Bought by a recording run: two of forty families seeded ceilings of **27.1x** and **25.2x**
+ * the baseline while every neighbour sat at 2.0-2.5x. Both had rendered at ~15s against a 15s
+ * deadline — which is not a slow page, it is a page that *barely* rendered, and the difference
+ * between it and a timeout is which side of the deadline the last poll fell on. Writing that down
+ * as a ratio dresses an unreliable observation as a number, and a 27x ceiling governs nothing.</p>
+ */
+const FIRST_ROW_TRUST = 0.8
+
+/**
+ * Wall-clock from navigation to the first row, or `null` when none arrived in time to be believed.
+ *
+ * <p>"First row" is defined as the first moment the page's main region holds any text at all,
+ * which is deliberately app-agnostic: a per-route selector would be a second description of every
+ * screen, drifting from the first. The shell painting empty does not satisfy it, which is the
+ * distinction that matters — a spinner inside `main` is not a row.</p>
+ */
+async function timeToFirstRow(page, startedAt) {
+  try {
+    await page.waitForFunction(() => {
+      const main = document.querySelector("main, [role=main]")
+      return main != null && (main.innerText || "").trim().length > 0
+    }, null, { timeout: FIRST_ROW_TIMEOUT })
+    const elapsed = Date.now() - startedAt
+    return elapsed >= FIRST_ROW_TIMEOUT * FIRST_ROW_TRUST ? null : elapsed
+  } catch {
+    return null
+  }
+}
 
 /**
  * A skipped `universal-editor-drive` is a **failure** (SH238/SH659).
@@ -1328,8 +1426,12 @@ async function main() {
     })
 
     const probe = { ...route, url: BASE + route.path }
+    // SH1113 — armed before `goto`, or the document request itself is not counted.
+    const watch = watchCost(page)
     try {
+      const startedAt = Date.now()
       await page.goto(probe.url, { waitUntil: "domcontentloaded", timeout: 20_000 })
+      watch.cost.ms = await timeToFirstRow(page, startedAt)
       // The console renders after its own fetches settle. `networkidle` is the honest
       // wait but the dev server's HMR socket never goes idle, so wait for the app shell
       // and then for quiet, and treat the timeout as "rendered what it had".
@@ -1403,6 +1505,10 @@ async function main() {
       errors.push(`navigation: ${String(e).split("\n")[0]}`)
     }
 
+    // SH1113 — after every wait above, so a read the page makes late is still this route's cost.
+    await watch.settle()
+    probe.cost = watch.cost
+
     probe.errors = errors
     probe.warnings = warnings
     probe.failedRequests = failedRequests
@@ -1438,6 +1544,36 @@ async function main() {
     for (const f of probe.failedRequests.slice(0, 4)) console.log(`       request: ${f}`)
     for (const e of probe.errors.slice(0, 4)) console.log(`       error: ${e.slice(0, 160)}`)
   }
+
+  /*
+   * SH1113 — the per-route budget, the moment the route loop is done.
+   *
+   * Here rather than at the end of `main`, and that position was bought: the first recording run
+   * walked all fifty-seven routes and then died on a 401 in a later probe, so `recordCost` never
+   * ran and twenty minutes of measurement went in the bin. Nothing after this line costs a route,
+   * so nothing after it can be allowed to lose what this one measured.
+   *
+   * A route is costed when it **put a first row on screen**, which is `cost.ms != null`, and not
+   * when its probe is `ok`. Both halves of that were bought by a run:
+   *
+   * - The dead page has to be excluded. One that threw on navigation made whatever requests it got
+   *   to before it died, and folding that into a ceiling would teach the budget that a broken page
+   *   is a cheap one — then fail the day somebody fixes it. A page that rendered nothing has no
+   *   first row, so this predicate already excludes it.
+   * - `p.ok` was the first predicate and it was **wrong, and flaky with it**. A probe fails for
+   *   reasons that say nothing about cost — a missing frost surface, a `mustSee` string, a hero
+   *   heading — and which of those fire moved between three consecutive runs on one instance
+   *   (41, 45 and 46 of 57). The costed set moved with them, so families appeared and disappeared
+   *   from the comparison and the gate reported routes as unbudgeted that a previous run had
+   *   costed. A page that rendered its rows and then failed an assertion about its chrome made
+   *   exactly the requests it always makes.
+   */
+  const measured = Object.fromEntries(report.probes
+    .filter((p) => p.path && p.cost?.ms != null)
+    .map((p) => [p.name, p.cost]))
+  report.cost = { measured, families: foldFamilies(measured) }
+  if (RECORD_COST) await recordCost(report)
+  else await gateCost(report)
 
   // SH238: not a route, so it runs after the route walk rather than inside it.
   const anyPost = routes.find((r) => r.name.startsWith("post-edit:"))
@@ -1509,7 +1645,6 @@ async function main() {
   for (const e of driveProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   await browser.close()
-  await writeFile(join(OUT, "console-check.json"), JSON.stringify(report, null, 2))
 
   /*
    * SH927 — the exemption's expiry, asserted rather than remembered.
@@ -1531,12 +1666,72 @@ async function main() {
       + " dev-only). The jar is unaffected and the same output there is still a failure.")
   }
 
+  await writeFile(join(OUT, "console-check.json"), JSON.stringify(report, null, 2))
+
   const failed = report.probes.filter((p) => !p.ok)
   console.log(`\n${report.probes.length - failed.length}/${report.probes.length} probes ok — report in ${OUT}`)
   if (failed.length) {
     console.log(`failing: ${failed.map((p) => p.name).join(", ")}`)
     process.exitCode = 1
   }
+}
+
+/** `--record-cost`: rewrite the budget from this run, keeping every entry's `why`. */
+async function recordCost(report) {
+  const budget = JSON.parse(await readFile(BUDGET, "utf8"))
+  const families = report.cost.families
+  const baseline = families[budget.baseline]
+  if (!baseline || !(baseline.ms > 0)) {
+    console.log(`\nSH1113: --record-cost needs the baseline route '${budget.baseline}' to have`
+      + " loaded, because every firstRow ceiling is a ratio against it. It did not, so nothing was"
+      + " written — a budget seeded against a baseline of zero is worse than no budget.")
+    process.exitCode = 1
+    return
+  }
+  const routes = {}
+  for (const family of Object.keys(families).sort()) {
+    const seeded = seedCeilings(families[family], baseline.ms)
+    routes[family] = { ...seeded, why: budget.routes?.[family]?.why ?? "" }
+  }
+  for (const [family, entry] of Object.entries(budget.routes ?? {})) {
+    // An entry this run did not walk keeps its numbers: it is a missing fixture, not a dead route,
+    // and re-recording would silently drop the ceiling somebody argued for.
+    if (!routes[family]) routes[family] = entry
+  }
+  budget.routes = Object.fromEntries(Object.keys(routes).sort().map((k) => [k, routes[k]]))
+  budget.measured = new Date().toISOString().replace(/:\d\d\.\d+Z$/u, "Z")
+  await writeFile(BUDGET, `${JSON.stringify(budget, null, 2)}\n`)
+
+  const blank = Object.entries(budget.routes).filter(([, e]) => !e.why?.trim()).map(([k]) => k)
+  console.log(`\nSH1113: recorded ${Object.keys(routes).length} route families into ${BUDGET}`)
+  if (blank.length) {
+    console.log(`       ${blank.length} entr${blank.length === 1 ? "y has" : "ies have"} no \`why\``
+      + ` — write one before committing, or the gate refuses them: ${blank.join(", ")}`)
+  }
+}
+
+/** The gate itself: findings fail, notes are printed. */
+async function gateCost(report) {
+  const budget = JSON.parse(await readFile(BUDGET, "utf8"))
+  let findings
+  try {
+    findings = compare(budget, report.cost.measured)
+  } catch (e) {
+    console.log(`\n${e.message}`)
+    process.exitCode = 1
+    return
+  }
+  const notes = [...staleEntries(budget, report.cost.measured),
+    ...headroom(budget, report.cost.measured)]
+  report.cost.findings = findings
+  report.cost.notes = notes
+
+  const walked = Object.keys(report.cost.families).length
+  console.log(`\nSH1113: ${walked} route famil${walked === 1 ? "y" : "ies"} costed against`
+    + " console-route-budget.json")
+  for (const note of notes) console.log(`       note: ${note}`)
+  for (const finding of findings) console.log(`       OVER: ${finding}`)
+  if (findings.length) process.exitCode = 1
 }
 
 main().catch((e) => {

@@ -6,6 +6,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { ROUTES } from "@/app/routes.const"
 import { IconShieldCog } from "@tabler/icons-react"
 import { Loader2, Save } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { isCancelled } from "@/lib/read-options"
+import { addressKey } from "@/lib/query-keys"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
@@ -13,6 +16,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ShUserService } from "@/services/auth/user.service"
 import type { ShUser } from "@/models/auth/user"
 import { toast } from "@viglet/viglet-design-system"
+import { reportProblem } from "@/lib/problem"
 
 const service = new ShUserService()
 
@@ -24,11 +28,29 @@ export default function AdminUserPage() {
   const form = useForm<ShUser>()
   const [isLoading, setIsLoading] = useState(false)
 
+  /*
+   * SH1116 — one read per user, cancelled on leaving, and the form reset moved out of the effect.
+   *
+   * `form.reset` was in the dependency list, which is a `useForm` identity rather than a subject: it
+   * is stable in practice and says nothing about which user is wanted. The key is the username.
+   */
+  const loaded = useQuery<ShUser>({
+    queryKey: addressKey(`user:${userId ?? ""}`),
+    queryFn: ({ signal }) => service.getByUsername(userId ?? "", { signal }),
+    enabled: !isNew && Boolean(userId),
+  })
+
+  // Reset during render rather than in an effect (`react-hooks/set-state-in-effect`), once per user.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (loaded.data && seeded !== userId) {
+    setSeeded(userId ?? null)
+    form.reset(loaded.data)
+  }
+
   useEffect(() => {
-    if (!isNew && userId) {
-      service.getByUsername(userId).then((data) => form.reset(data))
-    }
-  }, [userId, isNew, t, form])
+    // The read had no failure path: a user that would not load left the blank create form on screen.
+    if (loaded.error && !isCancelled(loaded.error)) reportProblem(loaded.error, t("common.error"))
+  }, [loaded.error, t])
 
   async function onSubmit(data: ShUser) {
     setIsLoading(true)
@@ -40,6 +62,11 @@ export default function AdminUserPage() {
       }
       toast.success(t("common.save"))
       navigate(`${ROUTES.ADMIN_ROOT}/users`)
+    } catch (error) {
+      // SH1139 — a create that toasts success and lets a refusal escape as an unhandled rejection
+      // looks exactly like a button that did nothing. The dock reads toasts, so the curator, the
+      // mascot and a screen reader all missed it.
+      reportProblem(error, t("common.error"))
     } finally {
       setIsLoading(false)
     }

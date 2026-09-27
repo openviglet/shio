@@ -714,6 +714,36 @@ reads the authoritative file. The copy is checked against the authority, never t
 `SHIO_DOCS_DIR=<path>/docs-shio pnpm run coverage:mirror`, and commit the mirror here in the same
 pass as the matrix there.
 
+**And the authority it is checked against was a directory, which is not a revision (SH1115).** Both
+readers above take `COVERAGE.md` out of a working *checkout*, so nothing asked whether the edit that
+put an id in the matrix had ever been committed **in the repository the matrix belongs to**. Observed
+rather than reasoned: clearing SH799's queue twice in one session left `COVERAGE.md` modified and
+uncommitted both times, and the mirror was refreshed from that working tree and committed here each
+pass. Because the conformance check reads the same working copy, mirror and matrix then agree
+*permanently* — while the published page never gains the sentence and SH758's reader subtracts the
+ids forever. The `at` field looks like it covers this and does not: it is **this** repository's HEAD,
+which `shippedSince` needs and which says nothing about the other one.
+
+So `refresh` records a second fact — `matrix: { at, clean, provisional }` — where `at` is the *docs*
+repository's HEAD, `clean` says whether the file it read is in it, and `provisional` names the ids
+the matrix's own HEAD does **not** carry, computed from `git show HEAD:./COVERAGE.md`.
+`coverage-obligation.test.mjs` subtracts those, so an id named only by an uncommitted edit still owes
+a row and the question comes back.
+
+**Marked, not refused, and the distinction is the point.** A refusal makes the state something the
+mirror cannot hold, and it blocks the session that edits the matrix, mirrors, and commits both — the
+right things in the right order. Naming the ids means an id from an uncommitted file is *a state the
+mirror can express* rather than one it forgets, and re-running against the same dirty tree keeps
+reporting instead of going quiet. The refresh says so on the run that writes it, because the person
+who can still commit the matrix is the one reading that line.
+
+Two limits worth knowing. `named` deliberately stays the **working copy's** set, because the
+conformance check holds the mirror equal to what the real file names — the copy is checked against
+the authority, and the authority is the file; `provisional` is how the mirror disagrees with itself
+honestly rather than by holding a different set. And a mirror written before SH1115 has no `matrix`
+key, which reads as nothing provisional: the only backward-compatible answer, and the reason the
+warning is at the writer rather than left for a reader to notice.
+
 ## A capability is a row the matrix owes (SH1069)
 
 SH747 counts shipped **ids**, which is how a contributor sees work. A reader of the public docs sees

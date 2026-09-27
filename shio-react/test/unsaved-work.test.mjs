@@ -75,11 +75,16 @@ test("SH1011: the browser is asked only while there is something to lose", () =>
       + "dialog, which is how a guard becomes the thing people click through without reading")
   assert.match(guard, /globalThis\.removeEventListener\("beforeunload", ask\)/,
     "SH1011: and it is removed, or leaving the editor leaves the guard behind")
-  // A call, not a mention: the comment above explains why neither is used, and a scan that matched
-  // prose would fail on the sentence that explains itself.
-  assert.doesNotMatch(guard, /useBlocker\(|usePrompt\(/,
-    "SH1011: both need a data router and this console mounts BrowserRouter — calling either here "
-      + "throws rather than degrading (SH1090)")
+  // SH1119 — there was a third assertion here, and repairing it is what found out it had been
+  // asserting the reverse of what shipped. It was `doesNotMatch(guard, /\buseBlocker\(|...)` with
+  // two literal backspaces where the `\b` were written, so it matched nothing and passed every run
+  // — while SH1090 gave the console a data router (`createBrowserRouter` in `App.tsx`) and this
+  // guard a `useBlocker` call, which the very next test in this file asserts is there. Two
+  // assertions in one file requiring opposite things, and only the corrupt one could pass.
+  //
+  // The premise it protected is real and is not dropped: `useBlocker` throws outside a data router.
+  // It is held where it belongs, by the test below, against `App.tsx` — the file that decides it —
+  // rather than by forbidding the call at the one place that needs to make it.
 })
 
 test("SH1011: Cancel asks before it discards", () => {

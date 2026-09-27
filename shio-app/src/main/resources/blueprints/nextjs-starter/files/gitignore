@@ -24,3 +24,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# shio: the CLI's derived state — a clone's progress and inventory, a conversion
+# proposal, and SH1117's conditional-read cache. None of it is content, all of it
+# is reproducible, and the read cache holds response bodies that belong to nobody's
+# history.
+/shio/.shio/

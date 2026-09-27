@@ -162,14 +162,34 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
   `routes` has one `{retired, created}` pair of SH79 addresses per *published* post whose
   address changed. The pairs come from reading the reachable posts' addresses before and
   after the write. A URL is a site plus a `furl`, so a move inside one site reports nothing.
-  Crossing into another site, or being given a first `furl`, does report. A cross-site
-  *folder* move currently reports nothing, and truthfully so: the posts beneath keep the
-  old `shSite`, so delivery still serves them there. That split is SH1137.
+  Crossing into another site, or being given a first `furl`, does report.
   **The folder branch delegates to `ShFolderWriteService#move` (SH137)**, which is where
   the cycle and site-root guards live: this path had neither, and a folder re-parented
   into its own subtree does not fail — it detaches the subtree from the site root and
   sends the recursive delete round the loop. Both are **409**s, so the console dialog
   needs its error path (it has one now).
+  **And a folder cannot cross sites at all (SH1137).** It used to: the move *succeeded*, the
+  folder's parent became the other site's root, and every post beneath it kept the old site in
+  `shSite` — so delivery, which resolves a page by `findByShSite_IdAndFurlAndState`, went on
+  answering them under the old site while the tree showed them under the new one. The split the
+  `ShFolderSite` invariant exists to prevent, reached from the other direction. And because
+  `requireUrlFree` never runs for posts beneath a folder, the destination could end up with two
+  posts at one URL.
+
+  **The finding is where the refusal was, not that one was missing.** §LXXII.25 supposed the
+  agent's `folder.move` "probably has the same hole" and said to check before assuming — and it
+  does not: it throws on the address, and its own docstring lists cross-site as the first of its
+  four refusals while saying the other two live on the shared writer *"because the console can
+  reach them too"*. This one did not. **A refusal that lives on one caller is a refusal the other
+  caller does not have**, so it is on the writer now, beside the two that were already there.
+
+  Refusing rather than carrying the subtree over, which §LXXII.25 offered as the alternative:
+  carrying over means re-pointing every post row's site, checking each `furl` against the
+  destination's, and treating every retired address as SH1064 treats a rename. That is what `shio
+  export` and `shio import` already do, it is a bigger operation than "move", and getting it
+  half-right is how a site ends up with two pages at one URL and no record of it. The 409 names
+  both sites and those two verbs (P6). The site is **walked**, never read off the field (SH128) —
+  only a root folder carries `shSite`, so comparing fields would call every move cross-site.
   **And the picker no longer offers them (SH203).** The move/copy dialog navigates *down*
   from the site root, so the folders inside the one being dragged are exactly the ones a
   curator scrolls into — and they answer 409. A picker that lists choices the server will
@@ -1543,6 +1563,33 @@ carries the `state-needs-preview-token` slug. `@viglet/shio-react` passes it thr
 
 **GraphQL has the same two fields and the same argument (SH1129).** `ShContent` declares `locale`
 and `availableLocales`, and `postByUrl` and `posts` take `locale`. A `posts` page reads every row's
-translation group in one query (`findDistinctLocalesByTranslationGroupIdIn`) — the single-post reads
-ask per post, and that shape on a list is a query per row; `ShCdaAvailableLocalesBenchmarkTest`
-prints both and holds the page's count flat from five rows to twenty-five.
+translation group in one query (`findDistinctLocalesByTranslationGroupIdInAndStateIn`) — the
+single-post read goes through the same method, and that shape on a list would otherwise be a query per
+row; `ShCdaAvailableLocalesBenchmarkTest` prints both and holds the page's count flat from five rows to
+twenty-five.
+
+### A switcher entry for a page nobody published (SH1128)
+
+`availableLocales` was read from the whole translation group with **nothing in that read asking for a
+state**. `translate` creates the sibling as a DRAFT, so the moment a curator started a Portuguese
+translation, every production token's read of the English page said it exists in `pt-br` — and a
+switcher built from that field linked to a page the same token gets a 404 for, for as long as the
+translation was being written.
+
+SH1123 had fixed the identical defect one level up (a site's derived languages come from the states the
+token can see) and the post-level field kept the old rule; SH1129 then carried that rule into GraphQL
+**deliberately**, so the two surfaces agreed while this was open rather than disagreeing in a way
+nobody had filed. This is the pair brought onto SH1123's rule: the group's locales come from the rows
+in the states the reader reads — `PUBLISHED` for a production token, both for a preview token.
+
+**By the token, not by the request's `state=`.** The question the field answers is "which of these can
+I follow a link to", and the credential decides that. A preview token looking at published rows still
+sees the draft translation, which is right: it can fetch it.
+
+**One reading of the rule, not two.** The single-post path used to load whole rows through
+`findByTranslationGroupId`; it goes through the batch now, so there is one query with the state rule in
+it rather than two that agree until somebody changes one — and the single read got cheaper on the way,
+since the batch selects two columns where the finder loaded documents. The assertion is driven from
+both surfaces, because they were two different queries before this and that is exactly how they could
+have diverged: a published English page with a draft-only `pt-br` sibling reports `["en"]` to a
+production token and `["en","pt-br"]` to a preview token, on the REST read and on the GraphQL page.

@@ -10,12 +10,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
 import { ArrowLeftRight, Save, ArrowLeft, Trash2, Info, Plus, X } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "@viglet/viglet-design-system"
 import { ShExchangeProviderService } from "@/services/provider/exchange-provider.service"
 import { reportProblem } from "@/lib/problem"
+import { addressKey } from "@/lib/query-keys"
+import { isCancelled } from "@/lib/read-options"
 import type {
   ShExchangeProviderInstance,
   ShExchangeProviderVendor,
@@ -32,24 +35,60 @@ export default function ExchangeProviderPage() {
   const [item, setItem] = useState<ShExchangeProviderInstance>({
     id: "", name: "", description: "", enabled: true, properties: {},
   })
-  const [vendors, setVendors] = useState<ShExchangeProviderVendor[]>([])
   const [newKey, setNewKey] = useState("")
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (isNew) {
-      service.model()
-        .then((model) => setItem({ ...model, name: t("exchangeProvider.untitled"), properties: model.properties ?? {} }))
-        .catch(() => undefined)
-    } else {
-      service.get(exchangeProviderId)
-        .then((provider) => setItem({ ...provider, properties: provider.properties ?? {} }))
-    }
-  }, [t, exchangeProviderId, isNew, item.name])
+  /*
+   * SH1116 — two reads, both cancelled, and neither keyed on the form.
+   *
+   * `item.name` was in the first effect's dependency list, so typing the provider's name re-read it
+   * and `setItem` put the saved row back over every field being edited — including the properties
+   * the vendor form had just been filled in with. A query's key is its subject, which is the fix.
+   *
+   * The blank model for a new provider is its own query rather than a branch inside one, because it
+   * has a different subject: `exchangeProvider:model` is the vendor-shaped skeleton and is the same
+   * answer for every new provider, so it is worth caching under its own key.
+   */
+  const loaded = useQuery<ShExchangeProviderInstance>({
+    queryKey: addressKey(`exchangeProvider:${exchangeProviderId}`),
+    queryFn: ({ signal }) => service.get(exchangeProviderId, { signal }),
+    enabled: !isNew,
+  })
+  const model = useQuery<ShExchangeProviderInstance>({
+    queryKey: addressKey("exchangeProvider:model"),
+    queryFn: ({ signal }) => service.model({ signal }),
+    enabled: isNew,
+  })
+  const vendorList = useQuery<ShExchangeProviderVendor[]>({
+    queryKey: addressKey("exchangeProvider:vendor"),
+    queryFn: ({ signal }) => service.vendors({ signal }),
+  })
+  const vendors = vendorList.data ?? []
+
+  /*
+   * Set during render, not in an effect: React's own "adjust state when the input changes" pattern,
+   * and `react-hooks/set-state-in-effect` is why it is not the effect it reads more naturally as.
+   * `seeded` is the subject already poured into the form — the provider's id, or `"model"` for the
+   * blank — so each answer seeds once and a curator's edits are never overwritten.
+   */
+  const [seeded, setSeeded] = useState<string | null>(null)
+  const provider = loaded.data
+  const blank = model.data
+  if (provider && seeded !== provider.id) {
+    setSeeded(provider.id)
+    setItem({ ...provider, properties: provider.properties ?? {} })
+  } else if (blank && seeded !== "model") {
+    setSeeded("model")
+    setItem({ ...blank, name: t("exchangeProvider.untitled"), properties: blank.properties ?? {} })
+  }
 
   useEffect(() => {
-    service.vendors().then(setVendors).catch(() => setVendors([]))
-  }, [])
+    // A cancelled read is this side hanging up and has nothing to report (SH1047). The `catch(() =>
+    // undefined)` this replaced swallowed every other failure too, which is how a provider that
+    // would not load left a blank form ready to save over it.
+    const failure = loaded.error ?? model.error
+    if (failure && !isCancelled(failure)) reportProblem(failure, t("common.error"))
+  }, [loaded.error, model.error, t])
 
   const properties = item.properties ?? {}
 
@@ -94,8 +133,16 @@ export default function ExchangeProviderPage() {
 
   const handleDelete = async () => {
     if (confirm(t("dialog.deleteMessage"))) {
-      await service.delete(item.id)
-      navigate(ROUTES.ADMIN_EXCHANGE_PROVIDERS)
+      // SH1139 — a delete that navigates away is not a delete that was reported. This awaited and
+      // left, so a refusal escaped as an unhandled rejection and the dock, its live caption and the
+      // curator all learned nothing: the row vanished from the list either way.
+      try {
+        await service.delete(item.id)
+        toast.success(t("common.deleted"))
+        navigate(ROUTES.ADMIN_EXCHANGE_PROVIDERS)
+      } catch (error) {
+        reportProblem(error, t("common.error"))
+      }
     }
   }
 

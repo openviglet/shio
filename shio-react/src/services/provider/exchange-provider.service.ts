@@ -1,4 +1,5 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 import type {
   ShExchangeProviderInstance,
   ShExchangeProviderVendor,
@@ -10,18 +11,21 @@ export class ShExchangeProviderService {
     return response.data
   }
 
-  async vendors(): Promise<ShExchangeProviderVendor[]> {
-    const response = await axios.get<ShExchangeProviderVendor[]>("/v2/provider/exchange/vendor")
+  async vendors(read: ShRead = {}): Promise<ShExchangeProviderVendor[]> {
+    const response = await axios.get<ShExchangeProviderVendor[]>("/v2/provider/exchange/vendor",
+      { signal: read.signal })
     return response.data
   }
 
-  async model(): Promise<ShExchangeProviderInstance> {
-    const response = await axios.get<ShExchangeProviderInstance>("/v2/provider/exchange/model")
+  async model(read: ShRead = {}): Promise<ShExchangeProviderInstance> {
+    const response = await axios.get<ShExchangeProviderInstance>("/v2/provider/exchange/model",
+      { signal: read.signal })
     return response.data
   }
 
-  async get(id: string): Promise<ShExchangeProviderInstance> {
-    const response = await axios.get<ShExchangeProviderInstance>(`/v2/provider/exchange/${id}`)
+  async get(id: string, read: ShRead = {}): Promise<ShExchangeProviderInstance> {
+    const response = await axios.get<ShExchangeProviderInstance>(`/v2/provider/exchange/${id}`,
+      { signal: read.signal })
     return response.data
   }
 

@@ -756,6 +756,7 @@ log line, so the declaration **is** the instrument (SH338).
 | `writeAssetBytes` | whole | neither — half an image is not a merge | `conflicts` on the pull report, by asset path |
 | `writeAssetMeta` | per key | neither — a key both sides changed keeps the **tree's** value and is reported | `assetMetaConflicts`, as `<asset path>#<key>` (SH1032) |
 | `writeFolderMarker` | no | the server: that a folder exists is the server's fact | none is possible — the file carries no value a person authors |
+| `writeSiteMarker` | per key | neither — the file is left alone; **not** the server, unlike the folder marker above | `sites.conflicts`, as `<site>#<key>` (SH1122) |
 | `writeLocalNotes` | per key | neither — neither copy is written | `notes.conflicts`, as `<site>:<key>` (SH161) |
 | `writeLocalInstanceNotes` | no | the server; the tree pushes back only with `--adopt-memory` (SH231) | none is possible: projected, never read back |
 | `writeOpenNotes` | no | the server, always (SH1003) | none is possible: never parsed, never pushed |
@@ -766,6 +767,13 @@ are the one projected artefact a person edits in the console *while* the tree ho
 "resolve it in the console with an edited body locally" has no natural answer. SH1003 chose one —
 the file is a projection and is never read back — and this is where that choice is recorded, so a
 later reader does not have to re-derive it from the absence of a parser.
+
+**The two markers take opposite rules, and the pair is worth reading together.** A `_folder.md`
+records that a folder exists, which is the server's fact, so the server wins and no conflict is
+possible — the file carries no value a person authors. Every key of a `_site.md` is something somebody
+chose, so nobody wins and a key both sides moved is reported. Copying the folder rule onto the site
+marker would have made a pull silently overwrite a url an agent had just authored, which is the
+failure this table exists to make visible before it happens rather than after.
 
 **An artefact outside the base has to name an authoritative side.** That is asserted, not just
 written: "outside the merge" with nobody winning is how a local edit disappears on the next pull
@@ -893,5 +901,152 @@ and writes the markup to a file (`--out`, or a temp path it prints). Nothing is 
 - **The address is the file's own**, from its path or `site:`/`url:`; `--address` overrides it.
 - **A page the instance does not have is refused, not faked.** A render needs a friendly URL, a
   layout and a site, which are facts about the instance: push once, or render at `--address`.
-- **File fields go as written.** A path whose asset is not pushed yet will not resolve, which the
-  help says rather than the command guessing an id.
+- **An unpushed image renders from the tree (SH1143).** A `File` field is a tree path; the renderer
+  reads that field as a **File post id** and emits `/file_source/<id>/<name>`. `push` maps path to
+  id as it uploads, and a preview stores nothing — so an image just dropped under `shio/assets/**`
+  had no id, `findById` found nothing, and the page showed a broken image where it will show a
+  picture. *The author learned the wrong thing about the page, which is the one thing a preview must
+  not do.* The command now reads the bytes and sends them as a `data:` URI, and `ShRenderHelpers`
+  treats a `data:image/` value as the URL it already is rather than as a lookup key.
+
+  Four things decided here, each the narrow answer:
+
+  - **Bytes, not a staged upload.** §LXVIII.20 weighed both and preferred this: staging under a
+    disposable name reuses the upload path but *writes*, and a write needs sweeping — a failed
+    preview would leave rubbish on the instance. Inline bytes keep P7's promise that a preview
+    stores nothing.
+  - **Only what the instance lacks.** An asset already uploaded goes as its id, exactly as `push`
+    would send it, srcset and all. Inlining it instead would show the author a *different* page from
+    the one they are about to get, which is the same defect pointing the other way.
+  - **The model decides which fields, never the shape of the value.** The def is read for the post's
+    type and only its `File` fields are touched; a `Text` field holding `Blog/img/hero.png` prints
+    that string, and a tree that happens to contain a file of that name does not change it.
+  - **A ceiling on both sides.** 1.5 MB of bytes in the CLI, 2 MB of base64 in the helper — a render
+    request is held in memory and rendered synchronously, so something has to stop one carrying a
+    video. Over it the value is simply not a URL the helper emits: it falls through to the id
+    lookup, finds nothing, and answers as an unknown id does.
+
+  An inlined image renders **without a `srcset`**, because there is no `File` post and so no stored
+  `WIDTH` — which that helper's own note calls exactly right, since fabricating a ladder from a
+  width nobody knows is the one thing that produces broken images rather than unoptimised ones. The
+  run says which images it carried, because that is the one way the previewed page differs from the
+  pushed one.
+
+## `_site.md` — the site marker the projection never had (SH1122, the push half)
+
+A site root is a folder, so it already projected to a `_folder.md` — carrying `site` and `folder` and
+nothing about the site. Everything a site *is* lived only in its row: `url`, `furl`, the description,
+and since SH1056 the locale policy. None of it could be authored as a file, which is **law P4 with a
+hole in exactly the wrong place**: the one object an agent must configure before a page renders at
+all was the one it could not edit the way P4 says it should. Found by SH1056, whose design asked for
+"a locales block in the site marker file" — a sentence that reads as a field on an existing file and
+is a subsystem, because there was no such file.
+
+`shio/folders/<Site>/_site.md`, beside the site root's own `_folder.md`. **Beside** rather than under
+`shio/content` for SH149's reason unchanged: there the directories are *URL* segments, so a `_site.md`
+in the content root would be claiming a URL prefix is a site. `siteLocationOf` reads a marker below
+the site root as no site at all rather than as one named after a folder.
+
+Five keys in a fixed order — `site`, `url`, `furl`, `description`, `locales` — and every one but
+`site` is written only when the site has a value for it, so an unconfigured site is two lines rather
+than a file full of nulls a push would read as a request to blank four fields. A blank string is an
+*absent* key, because the op reads a blank as "nothing requested".
+
+**What it deliberately does not carry**, and each reason is a different one (`SITE_KEYS_ABSENT`):
+
+| Absent | Why |
+|---|---|
+| `bindings` (`postTypeLayout`) | §LXXIV.12's one open question, decided: they stay an API-only edge. A binding names a layout **by title**, so it is a reference the tree cannot check — nothing in `shio/` resolves a title to a post, and a marker naming a layout that does not exist would push a site whose pages render nothing, reported as a success. They are also derived rather than authored, and the column is a 5 MB blob |
+| `scratch` | Set at creation and never afterwards, which is the whole guarantee behind `shio site rm --scratch`. A file that could carry it is a way to make a site somebody chose to keep deletable in one confirmation |
+| `searchablePostTypes`, `formSuccess` | No write op accepts either. Projecting them would be a file that **lies about being authorable** — an agent edits it, pushes, is told nothing, and the setting is whatever it was. They are a write before they are a file |
+
+The rule those three share is the projection's rule: **every key in a marker is a key the tree can
+author *and* a key `site.upsert` can send.** `parseSiteMarker` refuses each by name rather than
+ignoring it, because a file whose contents are silently dropped is the failure this task is about, one
+layer along.
+
+The locale policy is the one structured value: three keys in the order the server's own `toJson`
+writes them, with `fallback` sorted (the stored document is byte-stable through `ShStableMap`, and a
+projection that re-encoded it in hash order would show a diff after a restart with nothing changed)
+and `enabled` in the author's order, since it is a list rather than a set. An **undeclared** policy is
+*absent*, not an empty object: a site that has declared nothing reports the locales its content
+happens to be written in, and writing that derived answer into the file would turn an observation into
+a declaration on the next push.
+
+### Push, and why nothing here is a new rule about a site
+
+`documentsFor` carries the marker as the document's `settings` block, and
+`ShAgentDesiredStateService` compiles it to one more `site.upsert` — a third, for the reason the
+binding is a second: these are settable without `createSite`, so one op serves both the site the
+document just created and the one that was already there. `site` is deliberately not among the keys;
+the document already names its site, and a second spelling is a second thing that can disagree.
+
+The op is the one that has filled these four since SH170 and SH1056, and it already draws the P7 line
+where it belongs: **an empty field is filled, a value somebody chose is kept and reported.** So the
+document gains a way to *ask*, and what happens to the ask is unchanged — which is also what keeps a
+push idempotent. Repointing a live site is a console edit, and `kept the existing url` in the change
+detail is more useful than a silent no-op. That is why the round trip to check is *author, push, read
+the report*.
+
+The allow-list is applied **twice, on purpose**: in `settingsFor` so the tree never writes a key the
+server would drop, and in `settingsData` because a document is written by whoever is pushing and the
+rule has to hold for a hand-written one too.
+
+### Pull, and the rule it must not borrow from the folder marker
+
+`readRemoteFolders` asks for `sites` beside the `sitemap` it was already asking for, **on the first
+page of each site's walk and no other** — the rows do not paginate, so a section per page would pay for
+the same answer once per page. `siteMarkersFrom` is then a pure mapper over those rows. The first
+version fetched the pack itself and took a settled pull from twelve requests to thirteen, which SH398's
+cost guard caught: that guard is the one that measured a 208-request pull down to this, and it is why
+the read rides a call that was being made anyway (P2).
+
+`reconcileSiteSettings` merges **per key**, and the rule is `reconcileNotes`' rather than
+`reconcileFolders`'. That distinction is the task:
+
+- A `_folder.md` records *that a folder exists*, which is the server's fact, so the server wins and no
+  conflict is possible — the file carries no value a person authors.
+- Every key of a `_site.md` is something somebody **chose**. So a value the tree moved on its own
+  survives a read, and a key both sides moved is reported (`sites.conflicts`, as `<site>#<key>`) with
+  the file left exactly as it was.
+
+Copying the folder rule would have made a pull silently overwrite a url an agent had just authored.
+Per key rather than per file for `assetMeta`'s reason — "the agent set the url, the curator wrote the
+description" is two edits that do not touch — but the *write* is per file, because a marker is one
+document: a site with any conflicted key is left alone, since writing three of four keys produces a
+file that is half each side's with nothing saying which.
+
+`content-base.json` grows a `sites` section, site → key → the agreed value, merged over what the base
+held rather than replacing it, so a `--site` run does not forget the agreement about a site it did not
+read. Absent in a pre-SH1122 snapshot, which reads as "we have never agreed about any setting": every
+value is then an addition on whichever side has it, which is the safe reading in both directions.
+
+§LXXIV.12's own assertion — *push a site, change a field on disk, pull, read the diff* — is four tests
+in `content-commands.test.mjs`, and the middle two are the ones that would have caught the wrong rule.
+
+## The read a projection needs, and what it cost (SH1160)
+
+The context pack's site row now carries `furl`, `description` and `localePolicy` beside the `url` and
+the three locale fields it already had. The alternative was the console's `GET /api/v2/site/{name}`,
+which answers the whole entity — including the 5 MB `postTypeLayout` column — so reading four short
+strings that way is a P3 regression rather than an implementation detail.
+
+**`localePolicy` is the stored document, not a reconstruction.** The three locale fields already on the
+row are the *discovery* answer and each is omitted when it says the ordinary thing: a default matching
+the instance's is absent, a single-locale list is absent, and `locales` carries no `fallback` at all. A
+tree rebuilding a policy from them would have to invent the chain and guess the default — so a
+projection would write four of the marker's five keys and call it a round trip. It is built by
+`ShSiteLocales.toNode()`, which `toJson` now delegates to, so there is **one** spelling of that
+document rather than two that agree until a key moves.
+
+**Measured, twice, and the second measurement is the point.** `response.context.json` did not move by a
+single token: all three additions are `NON_NULL` and the benchmark's site has none of them. That is a
+true number that says nothing about the fields, so `measureConfiguredSiteRow` takes the other one — a
+site with `furl` and `description` set, whose JSON row costs **30 tokens** against a declared ceiling of
+40 (`response.context.site-row`). It multiplies by the number of sites on an instance, which is why it
+has a ceiling of its own.
+
+**The terse rendering deliberately does not carry them.** Terse is the cheapest form of the call that
+replaces a session and the tree reads `format=json`; three more attributes per site there would be paid
+by every caller for one caller's benefit. Asserted in both directions, because a guard over the terse
+row would be a guard over a row the change never touched.

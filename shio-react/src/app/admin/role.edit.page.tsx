@@ -21,6 +21,7 @@ export default function BentoRoleEditPage() {
     <IdentityEntityPage
       service={service}
       param="roleId"
+      scheme="role:"
       listRoute={ROUTES.BENTO_ROLES}
       icon={IconLock}
       tone="rose"

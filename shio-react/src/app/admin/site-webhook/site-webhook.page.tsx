@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
 import { Webhook, Save, ArrowLeft, Copy, Check, Trash2, Info } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
@@ -19,6 +20,8 @@ import type { ShSiteWebhook, ShWebhookEventType } from "@/models/webhook/site-we
 import { SH_WEBHOOK_EVENT_TYPES } from "@/models/webhook/site-webhook.model"
 import { useSites } from "@/hooks/use-catalogue"
 import { reportProblem } from "@/lib/problem"
+import { addressKey } from "@/lib/query-keys"
+import { isCancelled } from "@/lib/read-options"
 
 const service = new ShSiteWebhookService()
 
@@ -39,11 +42,31 @@ export default function SiteWebhookPage() {
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  /*
+   * SH1116 — read once per webhook, cancelled on leaving, and keyed on the id alone.
+   *
+   * `item.name` was in this effect's dependencies, so every keystroke in the name field re-read the
+   * row and `setItem` put the saved copy back over what was being typed — in every field, not just
+   * the one. A query's key is its subject, so that cannot happen here.
+   */
+  const loaded = useQuery<ShSiteWebhook>({
+    queryKey: addressKey(`webhook:${webhookId}`),
+    queryFn: ({ signal }) => service.get(webhookId, { signal }),
+    enabled: !isNew,
+  })
+
+  // Set during render, not in an effect: React's own "adjust state when the input changes" pattern.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (loaded.data && seeded !== loaded.data.id) {
+    setSeeded(loaded.data.id)
+    setItem({ ...loaded.data, events: loaded.data.events ?? [] })
+  }
+
   useEffect(() => {
-    if (!isNew) {
-      service.get(webhookId).then((wh) => setItem({ ...wh, events: wh.events ?? [] }))
-    }
-  }, [t, webhookId, isNew, item.name])
+    // The read had no failure path at all before: a 404 left the blank form on screen, saving over
+    // nothing. A cancelled read is not a failure (SH1047) and is the one case with nothing to say.
+    if (loaded.error && !isCancelled(loaded.error)) reportProblem(loaded.error, t("common.error"))
+  }, [loaded.error, t])
 
   const allEvents = (item.events?.length ?? 0) === 0
   const toggleEvent = (event: ShWebhookEventType, checked: boolean) => {
@@ -80,8 +103,16 @@ export default function SiteWebhookPage() {
 
   const handleDelete = async () => {
     if (confirm(t("dialog.deleteMessage"))) {
-      await service.delete(item.id)
-      navigate(ROUTES.ADMIN_WEBHOOKS)
+      // SH1139 — a delete that navigates away is not a delete that was reported. This awaited and
+      // left, so a refusal escaped as an unhandled rejection and the dock, its live caption and the
+      // curator all learned nothing: the row vanished from the list either way.
+      try {
+        await service.delete(item.id)
+        toast.success(t("common.deleted"))
+        navigate(ROUTES.ADMIN_WEBHOOKS)
+      } catch (error) {
+        reportProblem(error, t("common.error"))
+      }
     }
   }
 

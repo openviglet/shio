@@ -19,6 +19,10 @@ import {
   Undo2,
   Upload,
 } from "lucide-react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import type { ShSite } from "@/models/site/site"
+import { isCancelled } from "@/lib/read-options"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
@@ -335,7 +339,6 @@ export default function VisualEditorPage() {
    * `?url=`, read straight from the query string, so the effect below no longer has a branch that
    * writes what it could have computed.
    */
-  const [fetchedSrc, setFetchedSrc] = useState<string>("")
   // SH333 — the three states this used to collapse into two. The frame had no `onLoad` and no
   // `onError`, and the SH185 handshake had no deadline, so "still loading" and "this will never
   // load" were the same word: a curator opening the editor on a site with no page at `/` read
@@ -401,58 +404,28 @@ export default function VisualEditorPage() {
   const [sectionBoxes, setSectionBoxes] = useState<FrameRect[]>([])
   /** SH1105 — the type being dragged off the rail, and the gap the pointer is over. */
   const [dragging, setDragging] = useState<{ type: InsertableType; at: number | null } | null>(null)
-  /**
-   * SH1038 — the Page's own ordered array, which is what every one of the three verbs replaces.
-   *
-   * Read rather than derived: the page on screen says how many sections there are and in what
-   * order, and it does not say what the *entries* are — they are references, which may be ids or
-   * friendly URLs, and a reorder has to write back the same tokens it read. `unavailable` is a real
-   * answer, not an error: a page whose sections live in a field other than {@link SECTIONS_FIELD}
-   * is one this console cannot write, and saying so beats offering a button that would.
+  /*
+   * SH1038 — the Page's own ordered array is read rather than derived: the page on screen says how
+   * many sections there are and in what order, and it does not say what the *entries* are — they are
+   * references, which may be ids or friendly URLs, and a reorder has to write back the same tokens it
+   * read. SH1159 moved it to the query layer, so what was a `{ key, entries }` pair of state is a
+   * query keyed on `<page>|<length>` further down.
    */
-  const [loadedSections, setLoadedSections] = useState<{
-    /** Which selection this answer is about — `<page>|<length>`, empty before the first read. */
-    key: string
-    /** The array as read, or `null` for "this page does not carry one this panel could write". */
-    entries: unknown[] | null
-  }>({ key: "", entries: null })
   const [reordering, setReordering] = useState(false)
-  /**
-   * SH1039 — what may be added to this page, and where, as the server answers it.
-   *
-   * Keyed by the page the bridge reported rather than by the selection, because the case insertion
-   * exists for is a page that composes no sections: there is nothing to click, so a catalogue that
-   * arrived with a selection would never arrive at all on the emptiest page.
-   */
-  const [catalogue, setCatalogue] = useState<{
-    key: string; containers: InsertableContainer[]
-    /** SH1108 — the patterns pushed to this instance, read beside the catalogue. */
-    patterns: PatternSummary[]
-  }>({ key: "", containers: [], patterns: [] })
   const [inserting, setInserting] = useState(false)
   // Why the site failed to resolve, if it did (SH181): a page that spins forever instead of
   // saying so is what let `GET /api/v2/site/{furl}` 404 twice and look like slow loading.
-  const [siteError, setSiteError] = useState<string | null>(null)
   // Pending edits keyed by `${postId}:${prop}` so re-edits of the same field collapse.
   const [changes, setChanges] = useState<Map<string, ContentChange>>(new Map())
-  // SH303 — field name -> declared label, from the page's post-type. A field's label belongs to
-  // the model: the console shows it, `shio pull` round-trips it, and the page carrying a copy
-  // would be a second place for it to be wrong. Until SH303 the bridge read a `data-shio-label`
-  // nothing emitted, so every field in this panel was labelled `TEXT` or `HTML`.
-  const [fieldLabels, setFieldLabels] = useState<Record<string, string>>({})
-  /**
-   * SH1037 — the declared field per name, so the panel can draw the widget the model names.
-   *
-   * Beside `fieldLabels` rather than replacing it: a label is resolved for every field the panel
-   * lists and is cheap to look up, while this is only read for the field being edited. Both come
-   * from the same fetch, so they cannot describe different versions of the type.
+  /*
+   * SH303 — field name -> declared label, from the page's post-type. A field's label belongs to the
+   * model: the console shows it, `shio pull` round-trips it, and the page carrying a copy would be a
+   * second place for it to be wrong. Until SH303 the bridge read a `data-shio-label` nothing emitted,
+   * so every field in this panel was labelled `TEXT` or `HTML`. SH1159 derives it, and the declared
+   * field beside it, from the one query further down.
    */
-  const [declaredFields, setDeclaredFields] = useState<Record<string, DeclaredWidgetField>>({})
-
   const postTypeService = useMemo(() => new ShPostTypeService(), [])
-  // Which label source is loaded (SH305 - a post id or a type name, so a row and the page
-  // cannot collide), so selecting a second field of the same post re-fetches nothing.
-  const loadedLabelsRef = useRef<string | null>(null)
+  const client = useQueryClient()
 
   /**
    * SH1036 — what the bridge last said it was live on, and how many times it has said it.
@@ -497,6 +470,28 @@ export default function VisualEditorPage() {
   // renders the page here, and the fallback mirrors ShSiteFrontEnd on the server so the two
   // cannot come to disagree about where a site is visible.
   const externalSrc = siteId === "external" ? searchParams.get("url") : null
+  /*
+   * SH1156 — the site this editor frames, read once and cancelled when it changes or the page
+   * unmounts. `t` was in the effect's dependency list this replaced and is not a subject; the site
+   * id is.
+   *
+   * `?editor=true` asks Shio's renderer for the SH185 bridge. It is a query param rather than
+   * something the parent turns on afterwards, so an ordinary preview never ships editor code — and
+   * it is harmless on an external front end that ignores it.
+   *
+   * Both values are derived rather than seeded: unlike a form, nothing here is edited after it
+   * arrives, so there is no local copy to keep. A cancelled read leaves the src empty and the error
+   * null, which reads as "still loading" — which is what it is.
+   */
+  const site = useQuery<ShSite>({
+    queryKey: addressKey(`id:${siteId ?? ""}`),
+    queryFn: ({ signal }) => siteService.get(siteId ?? "", { signal }),
+    enabled: !externalSrc && Boolean(siteId),
+  })
+  const fetchedSrc = site.data ? withEditorFlag(siteDestination(site.data).url) : ""
+  const siteError = site.isError && !isCancelled(site.error)
+    ? t("universalEditor.siteNotFound", { key: siteId })
+    : null
   const src = externalSrc ?? fetchedSrc
   const bridge: BridgeState = handshake.src === src ? handshake.bridge : "waiting"
   const frameLoaded = handshake.src === src && handshake.frameLoaded
@@ -523,21 +518,6 @@ export default function VisualEditorPage() {
     return declared === null || declared.includes(capability)
   }, [handshake, src])
 
-  useEffect(() => {
-    if (externalSrc) return
-    if (!siteId) return
-    siteService
-      .get(siteId)
-      .then((site) => {
-        // `?editor=true` asks Shio's renderer for the SH185 bridge. It is a query param
-        // rather than something the parent turns on afterwards, so an ordinary preview never
-        // ships editor code — and it is harmless on an external front end that ignores it.
-        const destination = siteDestination(site)
-        setFetchedSrc(withEditorFlag(destination.url))
-        setSiteError(null)
-      })
-      .catch(() => setSiteError(t("universalEditor.siteNotFound", { key: siteId })))
-  }, [siteId, externalSrc, t])
 
   /**
    * The origin the framed page lives at (SH185).
@@ -601,11 +581,10 @@ export default function VisualEditorPage() {
             setSelectedSection(null)
             setSectionRect(null)
             setChanges(new Map())
-            // The labels belong to the previous page's post-type. Cleared rather than re-fetched
-            // here: the next selection is what says which type is wanted, and fetching now would
-            // be a request for a page nobody has clicked in yet.
-            loadedLabelsRef.current = null
-            setFieldLabels({})
+            // SH1159 — the labels belonged to the previous page's post-type and there is nothing to
+            // clear: `setSelected(null)` makes the label source `none`, so the query is disabled and
+            // the derived labels are empty. Nothing is fetched for a page nobody has clicked in yet,
+            // which is what the two lines this replaces were arranging by hand.
           } else if (reported) {
             // SH1041 — the SAME page came back, which is a refresh. The changes are still pending
             // and the frame no longer shows them, so the badge counted edits that were not on
@@ -736,37 +715,49 @@ export default function VisualEditorPage() {
   // fields — and the page's type otherwise, which is SH303's behaviour and the honest fallback for
   // an editor that cannot save yet. A failure is silent on purpose: the panel falls back to the
   // field name, so a labelling nicety can never break the editor.
-  useEffect(() => {
-    const source = labelSource(selected)
-    const key = labelSourceKey(source)
-    if (source.kind === "none" || loadedLabelsRef.current === key) return
-    loadedLabelsRef.current = key
+  /*
+   * SH1159 — the same read, on the query layer, and the ref that keyed it is the key now.
+   *
+   * `labelSourceKey` was already a cache key written by hand: it exists so selecting a second field
+   * of the same post refetches nothing, which is what a query key does by being one. The chained
+   * reads stay one `queryFn`, because a label and the declared field it belongs to must not be able
+   * to describe two versions of the type — `postTypeOf` names the type and the post-type API declares
+   * the fields, and both hops take the signal.
+   *
+   * Both answers are **derived** rather than mirrored into state: nothing edits them, so a local copy
+   * could only disagree with the query. That also removes the reset on an in-frame navigation — the
+   * labels belonged to the previous page's type, and the key stops naming them the moment the
+   * selection is cleared, which is cheaper than clearing a copy and more certain than remembering to.
+   */
+  const labelling = labelSource(selected)
+  const declared = useQuery({
+    queryKey: addressKey(`summary:editorLabels|${labelSourceKey(labelling)}`),
+    queryFn: async ({ signal }) => {
+      // SH335 — both branches end at the post-type API, because that is where a label is declared.
+      // What differs is only *which* type: the selected post's (SH305) or the page's (SH303).
+      const name = labelling.kind === "post"
+        ? await editorService.postTypeOf(labelling.postId, { signal })
+        : labelling.kind === "post-type" ? labelling.postType : null
+      return name ? ((await postTypeService.get(name, { signal })).fields ?? []) : []
+    },
+    enabled: labelling.kind !== "none",
+  })
 
-    // SH335 — both branches end at the post-type API, because that is where a label is declared.
-    // What differs is only *which* type: the selected post's (SH305) or the page's (SH303).
-    const typeName = source.kind === "post"
-      ? editorService.postTypeOf(source.postId)
-      : Promise.resolve(source.postType)
-
-    typeName
-      .then((name) => (name ? postTypeService.get(name).then((def) => def.fields) : null))
-      .then((declared) => {
-        setFieldLabels(labelsFrom(declared))
-        // SH1037 — the declared field itself, not only its label. The panel needs the widget and
-        // its settings to draw the field the model describes; the fetch that resolves labels
-        // already answers with both, and a second read for the same document would be a second
-        // chance for the two to disagree.
-        const byName: Record<string, DeclaredWidgetField> = {}
-        for (const field of declared ?? []) {
-          if (field?.name) byName[field.name] = field as DeclaredWidgetField
-        }
-        setDeclaredFields(byName)
-      })
-      .catch(() => {
-        setFieldLabels({})
-        setDeclaredFields({})
-      })
-  }, [selected, postTypeService])
+  const fieldLabels = useMemo(() => labelsFrom(declared.data), [declared.data])
+  /*
+   * SH1037 — the declared field itself, not only its label. The panel needs the widget and its
+   * settings to draw the field the model describes; the read that resolves labels already answers
+   * with both, and a second read for the same document would be a second chance for the two to
+   * disagree. A failure leaves both empty, which is deliberate and unchanged: the panel falls back to
+   * the field name, so a labelling nicety can never break the editor.
+   */
+  const declaredFields = useMemo(() => {
+    const byName: Record<string, DeclaredWidgetField> = {}
+    for (const field of declared.data ?? []) {
+      if (field?.name) byName[field.name] = field as DeclaredWidgetField
+    }
+    return byName
+  }, [declared.data])
 
   /**
    * SH1038 — the Page's ordered array, read when a section is selected, checked before it is used.
@@ -792,15 +783,33 @@ export default function VisualEditorPage() {
    * selection: the page with nothing on it is the page most in need of an answer.
    */
   const pageOfFrame = handshake.src === src ? handshake.pagePostId : null
-  useEffect(() => {
-    if (!pageOfFrame || catalogue.key === pageOfFrame) return
-    let current = true
-    Promise.all([editorService.insertable(pageOfFrame), editorService.patterns()])
-      .then(([containers, patterns]) => {
-        if (current) setCatalogue({ key: pageOfFrame, containers, patterns })
-      })
-    return () => { current = false }
-  }, [pageOfFrame, catalogue.key])
+  /*
+   * SH1159 — two subjects and therefore two queries, which is SH1150's finding on the site editor
+   * met again: what this page accepts belongs to the page, and the patterns pushed to this instance
+   * are the same answer for every page. Read together they were re-read together, so walking the
+   * frame through four pages asked for the pattern list four times.
+   *
+   * Both are gated on the handshake rather than on a selection: the case insertion exists for is a
+   * page composing nothing, where there is nothing to click, so a catalogue that waited for a click
+   * would never arrive on the emptiest page.
+   */
+  const insertable = useQuery({
+    queryKey: addressKey(`summary:insertable|${pageOfFrame ?? ""}`),
+    queryFn: ({ signal }) => editorService.insertable(pageOfFrame ?? "", { signal }),
+    enabled: Boolean(pageOfFrame),
+  })
+  const patterns = useQuery({
+    queryKey: addressKey("summary:patterns"),
+    queryFn: ({ signal }) => editorService.patterns({ signal }),
+    enabled: Boolean(pageOfFrame),
+  })
+  /*
+   * Derived, and the `key` field these replace is what the key does now: an answer under
+   * `summary:insertable|<other page>` simply is not this page's, so there is nothing to compare and
+   * no paint in which a previous page's catalogue is offered as this one's.
+   */
+  const containers = insertable.data ?? []
+  const patternList = patterns.data ?? []
 
   /**
    * The one container this page composes, or `null` where it composes none — or more than one.
@@ -814,9 +823,7 @@ export default function VisualEditorPage() {
    * conversion and both blueprints compose exactly one.
    */
   const soleContainer: InsertableContainer | null =
-    catalogue.key && catalogue.key === pageOfFrame && catalogue.containers.length === 1
-      ? catalogue.containers[0]
-      : null
+    pageOfFrame && containers.length === 1 ? containers[0] : null
 
   // SH1105 — the rail draws each type on the page being edited, through that page's own layout.
   const sectionThumbnail = (type: InsertableType) =>
@@ -829,35 +836,41 @@ export default function VisualEditorPage() {
   const sectionCount = selectedSection?.of ?? soleContainer?.holds ?? null
   const sectionKey = pageOfSection && sectionCount !== null
     ? `${pageOfSection}|${sectionCount}` : ""
-  const sectionArray: SectionArray = (() => {
-    if (!sectionKey || loadedSections.key !== sectionKey) return { state: "loading" }
-    return loadedSections.entries
-      ? { state: "ready", entries: loadedSections.entries }
-      : { state: "unavailable" }
-  })()
 
-  useEffect(() => {
-    // Once per key, and never while a write of this page's array is in flight. Both matter: the
-    // bridge echoes the new position *before* the patch resolves, so a read started on that echo
-    // can land after the write and put the array back as it was a moment ago — which reads as "this
-    // page cannot be reordered" and stays that way until the curator selects something else. What
-    // makes a stale read safe to skip is that the write is conditional: `editable` stores the
-    // version it saw and `patch` sends it, so a change behind this screen is refused rather than
-    // overwritten (SH985).
-    if (!sectionKey || !pageOfSection || reordering || loadedSections.key === sectionKey) return
-    let current = true
-    editorService.editable(pageOfSection)
-      .then((post) => {
-        if (!current) return
-        const entries = (post.data ?? {})[SECTIONS_FIELD]
-        setLoadedSections({
-          key: sectionKey,
-          entries: Array.isArray(entries) && entries.length === sectionCount ? entries : null,
-        })
-      })
-      .catch(() => { if (current) setLoadedSections({ key: sectionKey, entries: null }) })
-    return () => { current = false }
-  }, [sectionKey, pageOfSection, sectionCount, reordering, loadedSections.key])
+  /*
+   * SH1159 — the array, keyed on the selection it belongs to, which is what the hand-written `key`
+   * field was for. Never asked while a write of this page's array is in flight, and that guard is the
+   * same one the effect carried: the bridge echoes the new position *before* the patch resolves, so a
+   * read started on that echo can land after the write and put the array back as it was a moment ago
+   * — which reads as "this page cannot be reordered" and stays that way until the curator selects
+   * something else. What makes skipping safe is that the write is conditional: `editable` stores the
+   * version it saw and `patch` sends it, so a change behind this screen is refused (SH985).
+   *
+   * The `let current` flag is gone because the signal replaces it — and it does the better half of the
+   * job: aborting the request rather than discarding its answer, which on this screen means the two
+   * round trips `editable` makes are both stopped when the selection moves.
+   */
+  const sections = useQuery({
+    queryKey: addressKey(`summary:editorSections|${sectionKey}`),
+    queryFn: async ({ signal }) => {
+      const post = await editorService.editable(pageOfSection ?? "", { signal })
+      const entries = (post.data ?? {})[SECTIONS_FIELD]
+      return Array.isArray(entries) && entries.length === sectionCount
+        ? (entries as unknown[]) : null
+    },
+    enabled: Boolean(sectionKey) && Boolean(pageOfSection) && !reordering,
+  })
+  /*
+   * `unavailable` is a real answer and not an error — a page whose sections live in a field other
+   * than {@link SECTIONS_FIELD} is one this console cannot write, and saying so beats offering a
+   * button that would. A *cancelled* read is neither: it is a selection that moved, so it stays
+   * `loading` rather than telling the curator this page cannot be reordered.
+   */
+  const sectionArray: SectionArray = sections.isSuccess
+    ? (sections.data ? { state: "ready", entries: sections.data } : { state: "unavailable" })
+    : sections.isError && !isCancelled(sections.error)
+      ? { state: "unavailable" }
+      : { state: "loading" }
 
   /**
    * One of the three verbs, as one replacement of the Page's array (SH1038).
@@ -890,10 +903,13 @@ export default function VisualEditorPage() {
     setReordering(true)
     try {
       await editorService.patch(selectedSection.pagePostId, { [SECTIONS_FIELD]: next })
-      // Under the key the echoed selection will carry: a remove and a duplicate change the length,
-      // and re-reading the page to learn what this call just wrote would be a round trip for an
-      // answer already in hand.
-      setLoadedSections({ key: `${selectedSection.pagePostId}|${next.length}`, entries: next })
+      // Seeded under the key the echoed selection will carry: a remove and a duplicate change the
+      // length, and re-reading the page to learn what this call just wrote would be a round trip for
+      // an answer already in hand. `setQueryData` is how that answer reaches the cache (SH1159), and
+      // the client's 30s `staleTime` is what keeps it from being re-read the moment it is enabled
+      // again — the economy this had as state, unchanged.
+      client.setQueryData(
+        addressKey(`summary:editorSections|${selectedSection.pagePostId}|${next.length}`), next)
       toast.success(t("universalEditor.sectionSaved"))
     } catch {
       toast.error(t("universalEditor.sectionSaveError"))
@@ -1425,7 +1441,7 @@ export default function VisualEditorPage() {
                     draggable={caretEnabled} onDrag={(type) => setDragging(type ? { type, at: null } : null)} />
                 )}
                 {soleContainer && sectionArray.state === "ready" && (
-                  <PatternRail patterns={catalogue.patterns} busy={inserting} t={t} onInsert={insertPattern} />
+                  <PatternRail patterns={patternList} busy={inserting} t={t} onInsert={insertPattern} />
                 )}
               </div>
             ) : selected ? (
@@ -1514,7 +1530,7 @@ export default function VisualEditorPage() {
                     draggable={caretEnabled} onDrag={(type) => setDragging(type ? { type, at: null } : null)} />
                 )}
                 {soleContainer && sectionArray.state === "ready" && (
-                  <PatternRail patterns={catalogue.patterns} busy={inserting} t={t} onInsert={insertPattern} />
+                  <PatternRail patterns={patternList} busy={inserting} t={t} onInsert={insertPattern} />
                 )}
               </div>
             )}

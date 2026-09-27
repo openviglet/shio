@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
+import { stripComments } from "./support/source-text.mjs"
 
 /**
  * SH1017 — the block editor, and the two things about it that are invisible on screen.
@@ -39,9 +40,10 @@ globalThis.DOMParser = new JSDOM().window.DOMParser
  * `prompt(` — which has now happened three times in this session's suites. The rule is about the
  * code, so the scan reads the code.
  */
-const code = (source) => source
-  .replace(/\/\*[\s\S]*?\*\//gu, "")
-  .replace(/^\s*\/\/.*$/gmu, "")
+// SH1118 — the shared helper, not a local regex. The two-line version this replaced opened a
+// block comment on a `/*` inside a string literal and deleted the rest of the file, so a scan for
+// an absence passed by seeing nothing at all.
+const code = (source) => stripComments(source)
 
 test("SH1017: a new block carries the fields the server requires", () => {
   assert.equal(blankBlock("heading").level, 2,

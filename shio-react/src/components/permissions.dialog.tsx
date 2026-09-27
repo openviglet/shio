@@ -3,7 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, ShieldCheck } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 import { ShAclService } from "@/services/acl/acl.service"
@@ -56,14 +58,32 @@ function PermissionsBody({
   setOpen: (v: boolean) => void
 }) {
   const { t } = useTranslation()
-  const [entries, setEntries] = useState<ShContentAcl[]>([])
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    void service.get(objectId).then(setEntries).catch(() => setEntries([]))
-      .finally(() => setLoading(false))
-  }, [objectId])
+  /*
+   * SH1153 — one read per object, cancelled when it changes or the dialog unmounts.
+   *
+   * `catch(() => setEntries([]))` made "the server did not answer" and "this object has no rules of
+   * its own" the same screen, and on a permissions dialog those are opposite facts: the second says
+   * the object inherits, which is what a curator would act on.
+   */
+  const read = useQuery<ShContentAcl[]>({
+    queryKey: addressKey(`summary:acl|${objectId}`),
+    queryFn: ({ signal }) => service.get(objectId, { signal }),
+    enabled: Boolean(objectId),
+  })
+  const loading = read.isPending
+
+  /*
+   * The rows are edited before they are saved, so they are local state seeded from the server rather
+   * than a derived value — and seeded during render, once per object (`react-hooks/set-state-in-effect`).
+   */
+  const [entries, setEntries] = useState<ShContentAcl[]>([])
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (read.isSuccess && seeded !== objectId) {
+    setSeeded(objectId)
+    setEntries(read.data)
+  }
 
   const addRow = () =>
     setEntries((prev) => [...prev, { principalType: "USER", principalName: "", permission: "READ" }])

@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
+import com.viglet.shio.api.site.ShSiteLocales;
 import com.viglet.shio.render.ShRenderPostTypes;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -235,6 +236,16 @@ public class ShAgentDesiredStateService {
         if (desired.postTypeLayout() != null && !desired.postTypeLayout().isEmpty()) {
             ops.add(op(ShAgentBatchService.SITE_UPSERT, ShAddress.site(site).toString(),
                     null, null, bindingData(desired.postTypeLayout())));
+        }
+        // SH1122 — the site's own settings, from the tree's `_site.md`. A third `site.upsert` for the
+        // reason the binding above is a second one: these are settable without `createSite`, so one
+        // op serves both the site this document just created and the one that was already there.
+        // Idempotent either way — the op fills what is empty, keeps what somebody chose, and says
+        // which it did, so a re-run reports noop.
+        tools.jackson.databind.JsonNode settings = settingsData(desired.settings());
+        if (settings != null) {
+            ops.add(op(ShAgentBatchService.SITE_UPSERT, ShAddress.site(site).toString(),
+                    null, null, settings));
         }
         ops.addAll(folders);
         ops.addAll(folderMoves);
@@ -535,6 +546,60 @@ public class ShAgentDesiredStateService {
     }
 
     /** SH591 — `{"scratch": true}` for the create op, as the JSON literal the op reads. */
+    /**
+     * The four keys a site marker projects, as the {@code data} a {@code site.upsert} reads (SH1122).
+     *
+     * <p><b>An allow-list, and that is the whole of this method.</b> A document is written by whoever
+     * is pushing, so a {@code settings} block copied through unfiltered would be a second path to
+     * {@code scratch} — which is settable on a create and never afterwards, the guarantee
+     * {@code shio site rm --scratch} rests on — and to {@code postTypeLayout}, which has a field of
+     * its own above. Filtering here rather than in the record because the record is data: a DTO that
+     * validated would be a second place the rule lives, and the two would disagree eventually.</p>
+     *
+     * <p>{@code locales} is copied as the object it is (SH1056 validates it against the instance's
+     * catalogue and turns it into the bytes to store); the other three are strings, and a blank is
+     * dropped rather than sent — the op reads a blank as "nothing requested", so sending one would
+     * make a marker with an empty key indistinguishable from one without it.</p>
+     *
+     * @return the op's data, or {@code null} when the block names nothing this projects
+     */
+    private static tools.jackson.databind.JsonNode settingsData(
+            tools.jackson.databind.JsonNode settings) {
+        if (settings == null || !settings.isObject()) {
+            return null;
+        }
+        tools.jackson.databind.node.ObjectNode data = tools.jackson.databind.node.JsonNodeFactory
+                .instance.objectNode();
+        for (String key : SITE_SETTING_KEYS) {
+            tools.jackson.databind.JsonNode value = settings.get(key);
+            if (value == null || value.isNull()) {
+                continue;
+            }
+            if (ShSiteLocales.FIELD.equals(key)) {
+                if (value.isObject()) {
+                    data.set(key, value);
+                }
+                continue;
+            }
+            String text = value.isTextual() ? value.stringValue() : null;
+            if (text != null && !text.isBlank()) {
+                data.put(key, text);
+            }
+        }
+        return data.isEmpty() ? null : data;
+    }
+
+    /**
+     * What a {@code settings} block may carry (SH1122) — the three fillable strings and the policy.
+     *
+     * <p>Spelled here rather than read from {@code ShSiteWriteService.FILLABLE} on purpose: that list
+     * is what the op will fill, and this is what a <em>document</em> may ask it to. A field added to
+     * the first should be a decision about the projection before it is a key in a file, and deriving
+     * one from the other would make it neither.</p>
+     */
+    private static final List<String> SITE_SETTING_KEYS =
+            List.of("url", "furl", "description", ShSiteLocales.FIELD);
+
     private static tools.jackson.databind.JsonNode scratchData() {
         tools.jackson.databind.node.ObjectNode data = tools.jackson.databind.node.JsonNodeFactory
                 .instance.objectNode();

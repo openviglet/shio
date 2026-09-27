@@ -150,11 +150,17 @@ class ShFurlSpellingLintTest {
         List<String> callers = new ArrayList<>();
         List<String> offenders = new ArrayList<>();
         sources().forEach((file, body) -> {
-            if (NOT_CALLERS.contains(file) || !body.contains(POST_FURL_FINDER)) {
+            // SH1137 — the code, not the file. This rule's own subject is written about in javadoc
+            // far more often than it is called, and reading the raw body made a class that
+            // *explains* the finder indistinguishable from one that calls it. Its sibling above has
+            // read code only since SH613; this half had not, and the first paragraph that named the
+            // finder while explaining a cross-site move turned it red.
+            String code = ShSourceText.code(body);
+            if (NOT_CALLERS.contains(file) || !code.contains(POST_FURL_FINDER)) {
                 return;
             }
             callers.add(file);
-            if (!body.contains("ShFurlSpellings")) {
+            if (!code.contains("ShFurlSpellings")) {
                 offenders.add(file);
             }
         });
@@ -207,6 +213,28 @@ class ShFurlSpellingLintTest {
         assertThat(matches("    static List<String> segments(String path) {"))
                 .as("splitting a path into segments is a different job and stays where it is")
                 .isFalse();
+    }
+
+    @Test
+    @DisplayName("SH1137: a class that writes about the finder is not a class that calls it")
+    void theReaderRuleReadsCodeRatherThanProse() {
+        String prose = """
+                /**
+                 * The posts kept resolving through findByShSite_IdAndFurlAndState under the old
+                 * site, so a folder moved across sites left them answering somewhere else.
+                 */
+                class Explains { }
+                """;
+        assertThat(ShSourceText.code(prose))
+                .as("SH1137: explaining the defect must not read as committing it — this is the "
+                        + "SH613 shape, and the sibling rule above has been immune to it since. "
+                        + "A guard that goes red when somebody documents the rule is one people "
+                        + "route around by not documenting it.")
+                .doesNotContain(POST_FURL_FINDER);
+
+        assertThat(ShSourceText.code("    var row = repository.findByShSite_IdAndFurl(id, furl);"))
+                .as("SH1137: and the call itself is still seen, or the fix blinded the rule")
+                .contains(POST_FURL_FINDER);
     }
 
     @Test

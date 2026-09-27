@@ -1,4 +1,5 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 import type { ShSiteWebhook } from "@/models/webhook/site-webhook.model"
 
 export class ShSiteWebhookService {
@@ -7,8 +8,8 @@ export class ShSiteWebhookService {
     return response.data
   }
 
-  async get(id: string): Promise<ShSiteWebhook> {
-    const response = await axios.get<ShSiteWebhook>(`/v2/site-webhook/${id}`)
+  async get(id: string, read: ShRead = {}): Promise<ShSiteWebhook> {
+    const response = await axios.get<ShSiteWebhook>(`/v2/site-webhook/${id}`, { signal: read.signal })
     return response.data
   }
 

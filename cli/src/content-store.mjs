@@ -15,6 +15,7 @@ import { join } from "node:path";
 
 import {
   FOLDER_MARKER,
+  SITE_MARKER,
   bodyFieldFor,
   fault,
   filePathFor,
@@ -22,6 +23,10 @@ import {
   normalizeUrl,
   storedUrl,
   parseFolderMarker,
+  parseSiteMarker,
+  siteLocalePolicy,
+  serializeSite,
+  siteMarkerPathFor,
   parsePost,
   projectedPost,
   serializeFolder,
@@ -101,12 +106,17 @@ export async function readBase(ctx, path = BASE_FILE) {
       // which reads as "never agreed about any description": every key is then an addition on
       // whichever side has it, and neither direction loses a word somebody wrote.
       assetMeta: parsed.assetMeta && typeof parsed.assetMeta === "object" ? parsed.assetMeta : {},
+      // SH1122 — site → { key: value }, the settings both sides last agreed on. Absent before this,
+      // which reads as "we have never agreed about any setting": every value is then an addition on
+      // whichever side has it, so nothing is written over a local edit and nothing is pushed over a
+      // server one. The safe reading in both directions, which is the rule every section here follows.
+      sites: parsed.sites && typeof parsed.sites === "object" ? parsed.sites : {},
     };
   } catch (error) {
     if (error?.code === "ENOENT") {
       return {
         version: BASE_VERSION, cursor: null, partial: false,
-        posts: {}, folders: [], notes: {}, assets: {}, assetMeta: {},
+        posts: {}, folders: [], notes: {}, assets: {}, assetMeta: {}, sites: {},
       };
     }
     throw error;
@@ -138,10 +148,28 @@ export async function writeBase(ctx, base, path = BASE_FILE) {
     // whole-file hash would make that pair a conflict, which is the merge reporting a collision
     // between two edits that do not touch.
     assetMeta: sortedAssetMeta(base.assetMeta),
+    // SH1122 — per KEY, the shape `notes` and `assetMeta` have. A site marker holds four settings a
+    // person authors, and a whole-file hash would make "the agent set the url, the curator wrote the
+    // description" a conflict between two edits that do not touch.
+    sites: sortedSiteSettings(base.sites),
   };
   const target = join(ctx.cwd, path);
   await ctx.fs.mkdir(dirOf(target), { recursive: true });
   await ctx.fs.writeFile(target, `${JSON.stringify(body, null, 2)}\n`, "utf8");
+}
+
+/** SH1122 — site → key → the agreed value, both levels sorted (P5). */
+function sortedSiteSettings(sites) {
+  const out = {};
+  for (const site of Object.keys(sites ?? {}).sort()) {
+    const settings = sites[site] ?? {};
+    const kept = {};
+    for (const key of Object.keys(settings).sort()) {
+      if (settings[key] !== undefined) kept[key] = settings[key];
+    }
+    out[site] = kept;
+  }
+  return out;
 }
 
 /** Asset path → agreed sha-256, sorted (P5). */
@@ -400,6 +428,57 @@ export async function readLocalFolders(ctx, { dir = FOLDERS_DIR, site = null, mo
   return markers;
 }
 
+/**
+ * Reads the site markers (SH1122) — the settings half of the folders root.
+ *
+ * <p>Walks only the site directories' own level: a `_site.md` lives beside the site root's
+ * `_folder.md` and nowhere else, so `Blog/news/_site.md` is not a deeper site, it is a mistake, and
+ * `parseSiteMarker` refuses it by path rather than this walk guessing what was meant.</p>
+ *
+ * @returns {Promise<{site: string, url?: string, furl?: string, description?: string,
+ *                    locales?: object}[]>} sorted by site, so a document built from this is
+ *   byte-stable whatever order the filesystem hands the entries back (P5)
+ */
+export async function readLocalSites(ctx, { dir = FOLDERS_DIR, site = null } = {}) {
+  const root = join(ctx.cwd, dir);
+  const files = await walk(ctx, root, "");
+  const markers = [];
+  for (const relPath of files.sort()) {
+    const name = relPath.split("/").pop() ?? "";
+    if (name.toLowerCase() !== SITE_MARKER) continue;
+    if (site && !relPath.startsWith(`${site}/`)) continue;
+    markers.push(parseSiteMarker(relPath, await ctx.fs.readFile(join(root, relPath), "utf8")));
+  }
+  markers.sort((a, b) => a.site.localeCompare(b.site));
+  return markers;
+}
+
+/**
+ * Writes one site marker (SH1122).
+ *
+ * <p>Whole-file, like every other marker: the four settings live in one document, so there is no
+ * per-key write and the caller hands over the settings it means to keep. `reconcileSiteSettings` is
+ * what decides which those are.</p>
+ */
+export async function writeSiteMarker(ctx, marker, { dir = FOLDERS_DIR } = {}) {
+  const relPath = siteMarkerPathFor(marker);
+  const target = join(ctx.cwd, dir, relPath);
+  await ctx.fs.mkdir(dirOf(target), { recursive: true });
+  await ctx.fs.writeFile(target, serializeSite(marker), "utf8");
+  return relPath;
+}
+
+/** Removes one site marker; one that is already gone is not an error. */
+export async function deleteSiteMarker(ctx, marker, { dir = FOLDERS_DIR } = {}) {
+  const relPath = siteMarkerPathFor(marker);
+  try {
+    await ctx.fs.unlink(join(ctx.cwd, dir, relPath));
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+  return relPath;
+}
+
 /** Writes one folder marker, creating the directories on the way. */
 export async function writeFolderMarker(ctx, marker, { dir = FOLDERS_DIR } = {}) {
   const relPath = folderMarkerPathFor(marker);
@@ -525,6 +604,51 @@ export async function readRemoteNotes(agent, site) {
     .map((note) => ({ key: note.key, note: note.note, author: note.author ?? null }));
 }
 
+/**
+ * Every site's own settings, off the context pack's site rows (SH1122).
+ *
+ * <h3>Why the pack, and why this makes no request of its own</h3>
+ *
+ * SH1160 put `furl`, `description` and the stored locale policy on the row precisely so this needs no
+ * endpoint: a `GET /agent/sites` would be a fourth contract restating one the pull already makes (law
+ * P10), and the console's whole-entity site read answers the 5 MB `postTypeLayout` column along with
+ * the four short values a marker wants.
+ *
+ * <p>It is a <b>pure mapper</b> rather than a read because the first version fetched the pack itself
+ * and took a settled pull from twelve requests to thirteen — caught by SH398's cost guard, which is
+ * the one that measured a 208-request pull down to this. `readRemoteFolders` asks for `sites` beside
+ * the `sitemap` it was already asking for, on the first page only, so the whole of this rides a call
+ * that was being made anyway (P2).</p>
+ *
+ * <h3>`localePolicy`, not the three discovery fields</h3>
+ *
+ * Those three each omit what says the ordinary thing — a default matching the instance's, a
+ * single-locale list — and carry no fallback chain at all, so a policy rebuilt from them would be
+ * invented in the parts they leave out. `localePolicy` is the stored document, and it is absent for
+ * every site that declared nothing, which is the distinction SH1056 drew: a derived policy is an
+ * observation, and a marker carrying one would make it a declaration on the next push.
+ *
+ * @returns {Promise<{site: string, url?: string, furl?: string, description?: string,
+ *                    locales?: object}[]>} sorted by site (P5)
+ */
+export function siteMarkersFrom(rows, { sites = [] } = {}) {
+  const wanted = new Set(sites);
+  const out = [];
+  for (const row of rows ?? []) {
+    if (!row?.name) continue;
+    if (wanted.size && !wanted.has(row.name)) continue;
+    const marker = { site: row.name };
+    for (const [key, value] of [["url", row.url], ["furl", row.furl],
+      ["description", row.description]]) {
+      if (typeof value === "string" && value.trim() !== "") marker[key] = value;
+    }
+    const policy = siteLocalePolicy(row.localePolicy);
+    if (policy !== undefined) marker.locales = policy;
+    out.push(marker);
+  }
+  return out.sort((a, b) => a.site.localeCompare(b.site));
+}
+
 /** Removes one folder marker; a marker that is already gone is not an error. */
 export async function deleteFolderMarker(ctx, marker, { dir = FOLDERS_DIR } = {}) {
   const relPath = folderMarkerPathFor(marker);
@@ -556,12 +680,20 @@ export async function deleteFolderMarker(ctx, marker, { dir = FOLDERS_DIR } = {}
  *
  * @param {boolean} [options.ids] also return `folderIds`: `<site>|<chain>` → folder id, which
  *   SH145 needs because an asset upload targets a folder by id while its path names a chain
+ * @param {boolean} [options.withSites] SH1122 — also return `siteRows`, the pack's own site rows,
+ *   which `siteMarkersFrom` turns into markers. Asked for on the FIRST page of each site's walk and
+ *   no other: the rows do not paginate, so repeating the section per page would pay for the same
+ *   answer once per page of sitemap. Folded in here rather than read separately because a settled
+ *   pull's request count is guarded (SH398) and a second `getContext` broke it
  * @returns {Promise<{ folders: {site: string, folder: string}[], folderIds: Map<string,string>,
- *                     truncated: boolean }>}
+ *                     truncated: boolean, siteRows: object[] }>}
  */
-export async function readRemoteFolders(client, { sites = [], maxPages = 200, ids = false } = {}) {
+export async function readRemoteFolders(client, {
+  sites = [], maxPages = 200, ids = false, withSites = false,
+} = {}) {
   const folders = [];
   const folderIds = new Map();
+  const siteRows = [];
   let truncated = false;
 
   for (const site of sites) {
@@ -570,8 +702,10 @@ export async function readRemoteFolders(client, { sites = [], maxPages = 200, id
     for (;;) {
       // `include=sitemap`, and `ids` only when a caller needs them: the UUID was measured as
       // the largest per-row cost in this payload (SH121), so a marker sync does not pay for it.
-      const { body } = await client.getContext({ site, include: "sitemap", from, ids: ids || undefined });
+      const include = withSites && pages === 0 ? "sitemap,sites" : "sitemap";
+      const { body } = await client.getContext({ site, include, from, ids: ids || undefined });
       const pack = JSON.parse(body);
+      if (withSites && pages === 0) siteRows.push(...(pack?.sites ?? []));
       for (const node of pack?.sitemap ?? []) {
         if (node?.kind === "folder" && node.path != null) {
           const chain = normalizeUrl(node.path);
@@ -591,7 +725,7 @@ export async function readRemoteFolders(client, { sites = [], maxPages = 200, id
       from = budget.truncatedAfter;
     }
   }
-  return { folders: dedupeFolders(folders), folderIds, truncated };
+  return { folders: dedupeFolders(folders), folderIds, truncated, siteRows };
 }
 
 /**

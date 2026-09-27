@@ -21,7 +21,7 @@
     "preview": "vite preview",
     "surface:digest": "node scripts/surface-digest.mjs",
     "size": "node scripts/console-size.mjs",
-    "deps": "node scripts/dependency-reachability.mjs",
+    "deps": "node ../scripts/dependency-reachability.mjs shio-react",
     "console:provision": "node e2e/provision.mjs",
     "console:stream": "node e2e/change-stream.check.mjs",
     "console:check": "node e2e/console-check.mjs",

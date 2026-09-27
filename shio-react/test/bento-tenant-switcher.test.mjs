@@ -41,15 +41,30 @@ const SWITCHER = stripComments(
   readFileSync(join(SRC, "app", "system", "bento-tenant-switcher.tsx"), "utf8"))
 const SHELL = stripComments(readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8"))
 const NAV = stripComments(readFileSync(join(SRC, "app", "system", "bento-nav.ts"), "utf8"))
+/** SH1151 — the switcher's list is a shared read now, so the claim is followed to where it lives. */
+const CATALOGUE = stripComments(readFileSync(join(SRC, "hooks", "use-catalogue.ts"), "utf8"))
+const TENANT_SERVICE = stripComments(
+  readFileSync(join(SRC, "services", "tenant", "tenant.service.ts"), "utf8"))
 
 test("SH934: the switcher calls the endpoint that changes the session's tenant", () => {
   assert.match(SWITCHER, /switchTo\(/,
     "SH934: nothing calls ShTenantService.switchTo, so this control cannot change the tenant. The"
       + " session is the only thing that decides it — the URL never did.")
-  assert.match(SWITCHER, /service\.mine\(\)/,
-    "SH934: the switcher no longer reads /tenant/mine, so it cannot know which tenants this reader"
-      + " may switch to. Listing every tenant on the instance would offer a curator ones they are"
-      + " not a member of.")
+  /*
+   * SH1151 moved this read into `useMyTenants()`, because `BentoTenantLinkNotice` asks for the same
+   * answer and the bento root mounts both — so the claim is checked in two steps now rather than
+   * weakened to one. Listing every tenant on the instance would offer a curator ones they are not a
+   * member of, and either step failing is that.
+   */
+  assert.match(SWITCHER, /useMyTenants\(\)/,
+    "SH934: the switcher no longer reads the reader's own tenants, so it cannot know which ones this"
+      + " reader may switch to")
+  assert.match(CATALOGUE, /queryFn: \(\{ signal \}\) => tenantService\.mine\(\{ signal \}\)/,
+    "SH934: `useMyTenants` no longer reads /tenant/mine. It is the switcher's list, so whatever it"
+      + " returns is what a curator is offered — and /tenant would be every tenant on the instance.")
+  assert.match(TENANT_SERVICE, /mine\(read: ShRead = \{\}\)[\s\S]{0,120}?\/v2\/tenant\/mine/,
+    "SH934: ShTenantService.mine no longer asks for /v2/tenant/mine, which is the endpoint that"
+      + " filters by membership")
   assert.match(SWITCHER, /location\.reload\(\)/,
     "SH934: switching no longer reloads. The tenant is a session property and everything on screen"
       + " was fetched under the old one, so leaving the page up shows another tenant's data until"

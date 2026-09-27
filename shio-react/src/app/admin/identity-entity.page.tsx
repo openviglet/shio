@@ -9,9 +9,13 @@
 import type { Icon as TablerIcon } from "@tabler/icons-react"
 import { BentoEntityShell, type BentoTone } from "@viglet/viglet-design-system/bento"
 import { toast } from "@viglet/viglet-design-system"
+import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
+import { reportProblem } from "@/lib/problem"
+import { addressKey, type ShScheme } from "@/lib/query-keys"
+import { isCancelled, type ShRead } from "@/lib/read-options"
 
 /** The entity a create page starts from — module-level, so it is one stable object. */
 const BLANK: IdentityEntity = { id: "", name: "", description: "" }
@@ -25,7 +29,8 @@ export interface IdentityEntity {
 
 /** The four calls this page needs. Both `ShGroupService` and `ShRoleService` already have them. */
 export interface IdentityService {
-  get(id: string): Promise<IdentityEntity>
+  /** SH1116 — the read takes a cancellation signal, so `useQuery` can hang up when the id changes. */
+  get(id: string, read?: ShRead): Promise<IdentityEntity>
   /**
    * Create takes an entity **with no id**, and that is not a nicety.
    *
@@ -49,6 +54,14 @@ interface IdentityEntityPageProps {
   service: IdentityService
   /** Route param carrying the id, and the sentinel `"new"`. */
   param: string
+  /**
+   * SH1116 — the address scheme this entity is cached under: `"group:"` or `"role:"`.
+   *
+   * <p>Passed in rather than derived from `param`, because a cache key is an address (SH1046) and
+   * `addressKey` throws on a scheme it does not know — a key built from a route parameter would be
+   * one typo away from caching under a name no invalidation ever names.</p>
+   */
+  scheme: ShScheme
   listRoute: string
   icon: TablerIcon
   tone: BentoTone
@@ -98,6 +111,7 @@ interface IdentityEntityPageProps {
 export function IdentityEntityPage({
   service,
   param,
+  scheme,
   listRoute,
   icon,
   tone,
@@ -113,9 +127,30 @@ export function IdentityEntityPage({
   const isNew = id === "new"
   const [loaded, setLoaded] = useState<IdentityEntity | null>(null)
 
+  /*
+   * SH1116 — one read per entity, cancelled when the id changes or the screen unmounts.
+   *
+   * `service` was in the dependency list, which is an object identity rather than a subject: both
+   * callers build theirs at module scope so it never changed, but it said nothing about *which*
+   * entity was wanted. The key says exactly that.
+   */
+  const read = useQuery<IdentityEntity>({
+    queryKey: addressKey(`${scheme}${id}`),
+    queryFn: ({ signal }) => service.get(id, { signal }),
+    enabled: !isNew && Boolean(id),
+  })
+
+  // Set during render rather than in an effect (`react-hooks/set-state-in-effect`), once per entity.
+  const [seeded, setSeeded] = useState<string | null>(null)
+  if (read.data && seeded !== id) {
+    setSeeded(id)
+    setLoaded(read.data)
+  }
+
   useEffect(() => {
-    if (!isNew && id) service.get(id).then(setLoaded)
-  }, [id, isNew, service])
+    // The read had no failure path: a group that would not load left the page on its blank form.
+    if (read.error && !isCancelled(read.error)) reportProblem(read.error, t("common.error"))
+  }, [read.error, t])
 
   /*
    * The blank entity is **derived**, not stored. Setting it from the effect is a synchronous
@@ -173,9 +208,15 @@ export function IdentityEntityPage({
             id={formId}
             onSubmit={async (event) => {
               event.preventDefault()
-              await service.create({ name: staged.title, description: staged.description })
-              toast.success(t("common.save"))
-              navigate(listRoute)
+              // SH1139 — a refused create used to escape as an unhandled rejection, leaving the
+              // form sitting there with no toast: indistinguishable from a button that did nothing.
+              try {
+                await service.create({ name: staged.title, description: staged.description })
+                toast.success(t("common.save"))
+                navigate(listRoute)
+              } catch (error) {
+                reportProblem(error, t("common.error"))
+              }
             }}
           />
         ) : null

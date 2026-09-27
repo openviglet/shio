@@ -919,3 +919,48 @@ validates what `parsePattern` validates, so a pushed file the rail could not pla
 - The rail fills **declared defaults only**; a placeholder without one is named in a toast with the
   CLI line that places it. It passes a free `--as` (`name`, then `name-2`…), since Insert pressed
   twice means two blocks and the same instance twice would splice the same posts in again.
+
+## A blueprint nobody applies is a blueprint nothing checks (SH1121)
+
+`checks=a11y` found two rules broken by `marketing-site`'s layout — no `<main>`, and a first heading
+of `<h2>` — and that one was repaired in the same commit, because the headline benchmark applies it
+and went over its token budget. **`landing` had exactly the same defect and no benchmark**, so nothing
+reported it: its `PageLayout` emitted `<html lang>` and a `<body>` of sections, no main region and no
+`h1` anywhere on any page it built. A package this product recommends as a starting point shipped two
+accessibility failures our own gate names, and the only reason the sibling was clean is that something
+unrelated happened to render it.
+
+The repair follows the sibling's, and is one line of the content document: wrap the section loop in
+`<main>`, and choose `<h1>` for the first section's heading through the `@first` data frame
+`getRelation` has published since SH772 — `{{#if @first}}<h1 …>{{else}}<h2 …>{{/if}}`.
+
+**The half worth keeping is `ShBlueprintAccessibilityTest`.** Every appliable unit this product
+recommends should be provably clean against our own gate, and the way to know that is an assertion
+rather than a sweep. The subjects are **read out of the registry** — every blueprint whose *content*
+declares a `PageLayout` — applied to a fresh site each, then `verify(site, "a11y", 200)` has to report
+nothing. Three things follow from doing it that way rather than naming three packages:
+
+- A blueprint that gains a layout **joins the test by existing**, and one that ships a broken layout
+  fails the day it lands. A fixed list would have held exactly the packages that were already in the
+  tree — which is what `landing` was.
+- The required parameters come from each manifest's own `params.required`, so a package that wants
+  something other than a `brand` is applied correctly instead of failing with a message about this
+  test. Declared defaults are left alone: a default is part of what the package ships, and overriding
+  one would check a configuration nobody gets.
+- The blueprints that carry their markup in `files/app/layout.tsx` — `docs`, `product-catalog`,
+  `nextjs-starter` — are **absent from the subjects because nothing in them declares a layout**, which
+  is §LXXIV.11's "worth confirming rather than assuming" confirmed by construction rather than by a
+  comment. Shio never renders that tree, so our gate has no page to judge there.
+
+It carries a vacuity guard for the reason every inventory here does: a registry that failed to load,
+or a rename of the `PageLayout` type, would leave no subjects, and an empty loop agrees with every
+claim including this one. The counts are printed by the run and deliberately not written here.
+
+**It spends a context slot, and the cheaper answer is refused** — worth recording because it is the
+next reader's first idea. SH347's guard asks before a slot is spent, and there was one left, so
+sharing `ShBlueprintRendersTest`'s database was tried: that class isolates one for this same reason and
+already applies `marketing-site`. It works, and `ShBenchmarkIsolationLintTest#everyDatabaseNameIsClaimedOnce`
+refuses it — *two classes on one in-memory database is the shared fixture again, wearing the
+isolation's clothes* — with an exemption only for the SH22 cross-database ITs, which are one scenario
+across files. That rule is right and this is not its exception. So `DECLARED_CONTEXTS` went 78 → 79 and
+`spring.test.context.cache.maxSize` 81 → 82 beside it, which is the deliberate act SH423 asks for.

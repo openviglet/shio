@@ -20,7 +20,10 @@
  */
 import { argv } from "node:process";
 
-import { declareIntent } from "./agent-client.mjs";
+import fs from "node:fs";
+
+import { declareIntent, readCache, useReadCache } from "./agent-client.mjs";
+import { fileReadCache } from "./read-cache.mjs";
 import { parseArgs } from "./args.mjs";
 import { finish } from "./exit.mjs";
 import { formatError } from "./format-error.mjs";
@@ -78,6 +81,10 @@ const BOOLEANS = [
   // SH1064: `redirects` asks verify for the orphaned addresses, which is the expensive half of it.
   // Negated rather than opt-in, because the half worth having is the one nobody knew to ask for.
   "no-check",
+  // SH1117: conditional reads are on, and this turns them off. Negated for the same reason as
+  // `no-check` — a saving nobody has to ask for is the whole point, and every entry in the store is
+  // re-fetchable, so the flag is for a run that must be seen to read the instance and not a cache.
+  "no-read-cache",
   // SH546: `publish` names its targets, and `--all` is the flag that says "name them from a find
   // instead of from my argv" — a decision, so a flag. `--unpublish` is the same verb inverted,
   // spelled the way `shio_publish` spells it rather than as a second command.
@@ -217,6 +224,17 @@ async function main() {
     declareIntent(flags.intent);
   }
 
+  /*
+   * SH1117 — conditional reads, enabled once per invocation and flushed once.
+   *
+   * Here rather than in the twenty places a client is built, for the reason the module-level cache
+   * in `agent-client.mjs` states: a fifth constructor argument threaded through twenty call sites is
+   * a flag half of them will spell differently. On by default because a browser has had this since
+   * SH1048 and the CLI is the caller that pays the body — and safe by default because nothing is ever
+   * served without the instance confirming it with a 304.
+   */
+  if (!flags.noReadCache) useReadCache(fileReadCache(fs));
+
   const mod = await loader();
   const ctx = defaultContext();
   // SH587 — say that this instance carries notes before the command speaks, not after. The
@@ -224,11 +242,26 @@ async function main() {
   // so they change what the run does; printed underneath a report they would be a footnote.
   // On stderr, because a command's stdout is somebody's `--json` pipe.
   await noticeInstanceNotes(command, flags, ctx);
-  const result = await mod.run(flags, positionals, ctx);
-  // Commands may request a non-zero exit (e.g. `push --check` drift guard, SH65).
-  if (result && typeof result.exitCode === "number" && result.exitCode !== 0) {
-    await finish(result.exitCode);
+  try {
+    const result = await mod.run(flags, positionals, ctx);
+    // Commands may request a non-zero exit (e.g. `push --check` drift guard, SH65).
+    if (result && typeof result.exitCode === "number" && result.exitCode !== 0) {
+      await finish(result.exitCode);
+    }
+  } finally {
+    // SH1117 — written on the way out whatever happened, and only when something changed. A command
+    // that failed halfway still learned the tags of every read that answered before it did, and
+    // throwing those away would make the next run pay for them again.
+    flushReadCache();
   }
+}
+
+/** SH1117 — persist what this run learned, and say what it saved when `SHIO_DEBUG` asks. */
+function flushReadCache() {
+  const cache = readCache();
+  if (!cache) return;
+  cache.flush();
+  if (process.env.SHIO_DEBUG) process.stderr.write(`${cache.report()}\n`);
 }
 
 // SH440 — every non-zero exit goes through `finish`, which disarms the request layer first. A
@@ -238,6 +271,7 @@ async function main() {
 try {
   await main();
 } catch (err) {
+  flushReadCache();
   process.stderr.write(formatError(err, { debug: Boolean(process.env.SHIO_DEBUG) }));
   await finish(1);
 }

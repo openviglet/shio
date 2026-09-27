@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label"
 import { ShSetupService } from "@/services/auth/setup.service"
 import { StartupFirst } from "@viglet/viglet-design-system"
 import { AlertCircle, Check, KeyRound, Loader2, Shield, ShieldCheck } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { LoginSettingsButton, useLoginSettings } from "../login/login-settings"
@@ -19,16 +21,30 @@ export default function SetupPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [checking, setChecking] = useState(true)
 
+  /*
+   * SH1155 — the one read this page makes, cancelled if it is left before the answer arrives.
+   *
+   * It is the pre-login screen, so there is rarely anywhere to navigate to — but `setChecking(false)`
+   * on a cancelled read would show the setup form to somebody already on their way to `/login`, which
+   * is the redirect below. `isPending` is the honest source for "still checking".
+   */
+  const status = useQuery({
+    queryKey: addressKey("summary:setup"),
+    queryFn: ({ signal }) => setupService.status({ signal }),
+  })
+  const checking = status.isPending
+
+  /*
+   * The redirect stays in an effect, and deliberately: navigating is a side effect, so doing it during
+   * render is what `react-compiler` refuses — "This value cannot be modified". It reads nothing, so it
+   * is not a fetching effect and does not belong on SH1116's list; it sets no state either, so the
+   * `set-state-in-effect` rule has nothing to say about it. An effect is the right shape here, which
+   * is worth saying after seven slices of moving reads out of them.
+   */
   useEffect(() => {
-    setupService.status().then((status) => {
-      if (!status.required) {
-        globalThis.location.href = "/login"
-      }
-      setChecking(false)
-    }).catch(() => setChecking(false))
-  }, [])
+    if (status.isSuccess && !status.data.required) globalThis.location.href = "/login"
+  }, [status.isSuccess, status.data])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

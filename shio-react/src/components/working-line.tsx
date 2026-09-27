@@ -1,3 +1,6 @@
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import { useInvalidate } from "@/hooks/use-catalogue"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Bot } from "lucide-react"
@@ -30,13 +33,30 @@ export function WorkingLine({ objectId }: Readonly<{ objectId: string }>) {
   const { t } = useTranslation()
   const [mark, setMark] = useState<ShWorking | null>(null)
 
-  const ask = useCallback(() => {
-    service.working(objectId).then(setMark).catch(() => setMark(null))
-  }, [objectId])
+  /*
+   * SH1155 — one read per object, cancelled when it changes or the line unmounts. `ask` stays a
+   * function because `useChangeStream` calls it when the server says this object moved; it is an
+   * invalidation now rather than a second way to make the same request.
+   */
+  const read = useQuery<ShWorking | null>({
+    queryKey: addressKey(`summary:working|${objectId}`),
+    queryFn: ({ signal }) => service.working(objectId, { signal }),
+    enabled: Boolean(objectId),
+  })
+  const invalidate = useInvalidate()
+  const ask = useCallback(
+    () => { void invalidate(`summary:working|${objectId}`) }, [invalidate, objectId])
 
-  useEffect(() => {
-    ask()
-  }, [ask])
+  /*
+   * `mark` is state rather than the query's data, and that is the point of the timer below: when the
+   * claim expires this component clears it locally without asking the server again, so the line goes
+   * away at the moment it stops being true. Seeded during render, once per answer.
+   */
+  const [seeded, setSeeded] = useState<ShWorking | null | undefined>(undefined)
+  if (read.isSuccess && seeded !== read.data) {
+    setSeeded(read.data)
+    setMark(read.data)
+  }
 
   useChangeStream(ask)
 

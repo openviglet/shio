@@ -8,6 +8,8 @@
  */
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
+
+import { stripComments } from "./support/source-text.mjs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -113,13 +115,11 @@ test("SH955: no save path reports a fixed string in place of the server's refusa
   for (const path of walk(SRC)) {
     scanned += 1;
     const relative = path.slice(SRC.length).replace(/\\/g, "/");
-    // Comments stripped crudely — enough that this file's own prose, and a `//` note explaining
-    // the rule, cannot read as a call (SH206's distinction, SH952's mistake).
-    const code = readFileSync(path, "utf8")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .map((line) => line.replace(/\/\/.*$/, ""))
-      .join("\n");
+    // Comments stripped, so this file's own prose and a `//` note explaining the rule cannot read
+    // as a call (SH206's distinction, SH952's mistake). Through the shared helper since SH1118:
+    // the four-line version this replaced opened a comment on a `/*` inside a string literal and
+    // deleted everything to the next closer, which a scan for an absence reads as agreement.
+    const code = stripComments(readFileSync(path, "utf8"), relative);
     if (FIXED_STRING_REPORT.test(code)) offenders.push(relative);
   }
 

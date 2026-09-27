@@ -51,15 +51,20 @@ function KindIcon({ item, className }: { item: BrowserRow; className: string }) 
 
 function Select({ item, selected, onToggle, className }:
   Pick<BrowserItemProps, "item" | "selected" | "onToggle"> & { className: string }) {
+  // SH1125 — the word comes from i18n rather than from a prop: it is the same word on every row, so
+  // threading it through three components would be passing a constant down to say one thing.
+  // `rowLabel` marks only a row whose `isDefaultLocale` is true, so handing it over always is right.
+  const { t } = useTranslation()
   return (
     <Checkbox className={className} checked={selected} onCheckedChange={onToggle}
-      aria-label={`Select ${rowLabel(item)}`} />
+      aria-label={`Select ${rowLabel(item, t("content.localeDefault"))}`} />
   )
 }
 
 function Title({ item, onOpen, className }: Pick<BrowserItemProps, "item" | "onOpen"> & { className: string }) {
+  const { t } = useTranslation()
   return (
-    <button type="button" onClick={onOpen} aria-label={rowLabel(item)}
+    <button type="button" onClick={onOpen} aria-label={rowLabel(item, t("content.localeDefault"))}
       className={`text-left font-medium text-blue-600 dark:text-blue-400 hover:underline transition-colors truncate block ${className}`}>
       {item.name}
     </button>
@@ -71,7 +76,9 @@ function Actions({ item, actions }: Pick<BrowserItemProps, "item" | "actions">) 
   const { t } = useTranslation()
   return (
     <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
-      <BentoActionsMenu triggerLabel={t("content.rowActions", { name: rowLabel(item) })} actions={actions} />
+      <BentoActionsMenu
+        triggerLabel={t("content.rowActions", { name: rowLabel(item, t("content.localeDefault")) })}
+        actions={actions} />
     </div>
   )
 }
@@ -90,11 +97,23 @@ function Badges({ item, siteName }: Pick<BrowserItemProps, "item" | "siteName">)
       <Chip className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
         {item.objectType === "FOLDER" ? t("content.folder") : item.postTypeName || t("content.postLabel")}
       </Chip>
-      {/* SH1059 — beside the type, which is the badge two translations share. */}
+      {/*
+        SH1059 — beside the type, which is the badge two translations share.
+        SH1125 — and which of them is the original, when the site has declared one. A folder holding a
+        page in English and in Portuguese said which row was which and not which one came first, which
+        is the question a curator deleting one of them is actually asking.
+      */}
       {item.locale && (
-        <Chip className="font-mono uppercase bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
-          title={t("content.localeChip", { locale: item.locale })}>
+        <Chip className={`font-mono uppercase ${item.isDefaultLocale
+          ? "bg-violet-200 text-violet-800 dark:bg-violet-900/60 dark:text-violet-200"
+          : "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"}`}
+          title={item.isDefaultLocale
+            ? t("content.localeChipDefault", { locale: item.locale })
+            : t("content.localeChip", { locale: item.locale })}>
           {item.locale}
+          {item.isDefaultLocale && (
+            <span className="ml-1 normal-case font-sans">{t("content.localeDefault")}</span>
+          )}
         </Chip>
       )}
       {siteName && (

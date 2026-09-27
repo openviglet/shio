@@ -2376,6 +2376,312 @@ open**, navigates past it, releases it, and reads the rows. A route pattern that
 skip that says so rather than a pass: held zero requests and green is indistinguishable from a
 console that is fine.
 
+## Paying the uncancelled-reads list down, one slice at a time (SH1116)
+
+SH1047 above migrated five screens and left the rest as a declared list. The list did its job — a
+new one cannot arrive quietly — but **a gate that records a debt is not the thing that pays it**, and
+the list stood at 33 when SH1116 opened. (§LXXII.21 and the roadmap line both say thirty-five; the
+file's own count is the number.)
+
+The task is explicitly in slices, because each screen's failure path is its own. **Slice one is the
+five admin entity forms** — the API token, the auth provider, the exchange provider, the site webhook
+and the tenant — and they are one slice because they shared a shape *and* a second defect:
+
+**Each had `item.name` (or `item.title`) in its effect's dependency list.** So typing in the name
+field re-read the row, and `setItem` put the saved copy back — reverting the curator's edits to
+*every* field, a moment after they were made, racily, with nothing errored and nothing to notice by.
+That is a straight P7 violation that had nothing to do with cancellation, and **the migration is what
+fixed it**: a query's key is its subject, so the read re-runs when the tenant changes and never when
+the form does. It is worth knowing that the two defects travel together, because the dependency array
+is where an effect-shaped read keeps its mistakes.
+
+These five went onto **SH1046's query layer** rather than taking an `AbortController`, which is the
+opposite of what SH1047's five did and for the reason that note gives: these hold one entity keyed on
+a route parameter, so caching is what you want, while a cursor or an accumulating page is a behaviour
+change that belongs to `useInfiniteQuery`. The idiom is `queryFn: ({ signal }) => service.get(id, {
+signal })` with `enabled: !isNew`, and two effects that only seed form state from `data` and report
+`error` — `isCancelled` first, or the fix is a reliable error toast on every navigation in place of a
+rare race.
+
+The two provider pages gained a third query rather than a branch: the blank `model()` for a new
+provider is a different subject from an existing one and is the same answer for every new provider, so
+it caches under its own key. Their `vendors()` read stopped being component state entirely.
+
+**What the browser probe actually said, which is not "green".** §LXXII.21 asks for the probe green
+after each slice. On the instance this slice was driven against it is not, and it was not before
+either: 16 of 57 probes fail, all on `missing: no hero heading` / `no frosted surface` over the bento
+**admin list mosaics** and on fixture gaps (no CDA token, no editable props). That set is *unstable* —
+across five runs of identical pre-slice code the failures moved between 11 and 16, and every single
+route that differs after the slice (`bento-webhooks`, `bento-exchange-providers`, `graphql`,
+`post-new:Page`, `legacy-console-post`, `bento-universal-editor`) had already failed in at least one
+run before it. The probe reads `backdrop-filter` off computed style, which is timing-sensitive, and
+this is the same instability that made `probe.ok` the wrong costing predicate for SH1113's budget.
+
+So the evidence for this slice is the narrower and better-aimed one: **the five routes that render
+the changed pages — `bento-token-new`, `bento-webhook-new`, `bento-tenant-new`,
+`bento-auth-provider-new`, `bento-exchange-provider-new` — all pass**, and the list mosaics that fail
+are pages this slice did not touch, failing on rendered chrome rather than on a read. A slice cannot
+be blocked on a probe that is red for reasons it did not cause, and it must not be able to claim a
+green one either.
+
+**Slice two finished the admin area**: the user editor, the email configuration and the shared
+group/role editor. Two of the three carried a dependency that was an *identity* rather than a
+subject — `form.reset` on the user page, `service` on the identity editor. Both are stable in
+practice, which is why nothing visibly went wrong, and **neither says which user or which group is
+wanted**; a query key says exactly that. The email configuration is the one singleton here, so its key
+carries no id and `emailConfig:` joined `SCHEMES` — a scheme rather than a bare string because
+`addressKey` throws on an unknown one, and a key outside that list would cache under a name no
+invalidation ever names. Its old `catch(() => setConfig(EMPTY))` was the worse half: it made "the
+server did not answer" and "nothing is configured" the same screen, and the second invites a save
+that overwrites the first one's real settings. The shared editor took a `scheme` prop rather than
+deriving one from its route parameter, for the same reason. **The declared list: 33 → 28 → 25.**
+
+**Slice three took the content editors** (SH1150): the folder, site and post-type editors. None of
+the three had a failure path at all, so a folder or a site that would not load left the *previous*
+one's fields on screen under a breadcrumb naming the new one. The site editor was the one worth
+designing rather than translating: its single effect made three reads that are wanted together and
+are **not one subject** — the site, its locale policy and the instance's locale catalogue have three
+lifetimes, and the catalogue is the same answer for every site, so they are three queries.
+
+**And one of the twenty-five was never a debt.** `post-type.new.page.tsx` held
+`useEffect(() => {}, [t])` — an empty body — and sat on the declared list because the scan matches
+`useEffect(` and a `service.` call *anywhere in the same file*, and its `create` is in the submit
+handler. The fix was to delete dead code, not to migrate anything. That is worth recording because a
+list that records a debt must be able to record that an entry was wrong, or it grows a floor nobody
+can reach. **The declared list: 33 → 28 → 25 → 21.**
+
+**Slice four found the instrument was wrong, and that was half the slice** (SH1151). The scan asked
+two questions of the *whole file*: does it contain `useEffect(`, and does it contain a service call.
+Neither is "it reads inside an effect", and both halves of that gap were real:
+
+- **A write in a click handler counted.** `read-options.ts` offers cancellation to reads only —
+  aborting a POST does not undo it — so the list was asking some files for something the design
+  refuses. SH1150 had already met this as an empty effect standing beside a `service.create`.
+- **Scoping to effect bodies alone over-corrected, and that direction is worse.** A read hoisted into
+  a `useCallback` the effect calls becomes invisible, which the activity trail and the review queue
+  both are. A gate that stops seeing a real uncancelled read fails *silently*; one that counts a
+  write fails loudly. So the scan now reads the effects **and what they call**, one hop — not a call
+  graph, because one hop is what the console does.
+
+Recalibrated, it finds 37 fetching effects where the coarse version found 51, and the vacuity floor
+moved with it. Eight declared entries were never debts.
+
+**And the second finding is what the sharper scan left behind**: `BentoTenantSwitcher` and
+`BentoTenantLinkNotice` each read `mine()` and `current()` in their own effect, and
+`bento.root.page.tsx` mounts **both** — four requests for two answers on every visit to the bento
+root, which is exactly the shape SH1113's per-route budget was built to see. They share one pair of
+cached reads now, in `use-catalogue.ts` where a third caller will find them. **The declared list:
+33 → 28 → 25 → 21 → 19.**
+
+**Slice five took the post editor's three companions** (SH1152) — the note rail, the insights panel
+and the translations menu — and turned up **a second shared read and a new class of defect**.
+
+The shared read is SH1151's shape again: the translations menu reads the instance's locale catalogue
+and one site's locale policy, and so does the site editor, and the menu is mounted from the post
+editor. `useLocales()` and `useSiteLocalePolicy()` now serve both.
+
+**The new class is what a cache brings that the reads did not have.** An effect-shaped read cannot be
+stale — it runs, it answers, and the answer is as fresh as the render. A cached one is right when it
+is fetched and **wrong after a write**. Creating a translation changes the group as seen from *every*
+member of it, and the curator is navigated to the new page and may come back, so the write invalidates
+the whole `translation:` scheme rather than the key it was called from; the note rail's
+refresh-after-add is the same thing. This is the half of a migration easiest to leave out, because
+nothing fails until somebody goes back — and it is worth carrying into every remaining slice.
+
+The insights panel's key carries the **revision**, which is what makes its two long-standing wants
+true at once: a save re-lints and a keystroke does not. As an effect dependency that was a re-run; as
+part of the key it is what it actually is — a different subject per revision.
+
+Four new schemes joined `SCHEMES` (`note:`, `translation:`, `insights:`, `locale:`) rather than
+becoming suffixes under `summary:`, and the reason is invalidation: it matches on the key's first
+segment, so folding them together would mean adding a note dropped the locale catalogue with it.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16.**
+
+**Slice six took the two widgets** (SH1153) — Content Select and File — and they are the clearest case
+in the whole task. Both resolved a stored reference into a readable path behind `let alive = true`,
+which is **the flag SH1047's own note names as the thing a signal replaces**: it *ignores* a superseded
+answer where the signal stops the server being asked for it.
+
+The cost a curator could see is the second one. The flag cannot tell a cancellation from a failure, so
+both landed on `{ file: null }` — and that value is not nothing, it is the widget's
+**missing-reference** state, the affordance it draws for "this points at nothing". So leaving a field
+while its file resolved rendered exactly like a broken reference.
+
+Each resolve makes **two** requests — the post, then its folder's path — so a signal threaded into only
+the first cancels half the work and looks finished; the gate counts both. And the seeding guard is
+`isSuccess` rather than a truthy check on the data, because `null` is a legitimate answer here: a
+truthy guard would re-seed for ever on precisely the case the widget exists to show.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14.**
+
+**Slice seven took the two dialogs and paid off part of SH1136** (SH1154). The permissions dialog read
+on mount and fell back to `[]`, and on a permissions dialog "the server did not answer" and "this
+object has no rules of its own" are **opposite facts** — the second says the object inherits, which is
+what a curator acts on.
+
+The publish preview is the one worth reading. Its single effect did two jobs: it **read** the plan and
+the route impact, and it **reset** four pieces of state so a second opening did not show the first
+one's answers. Doing both synchronously is what earned that file one of SH1136's
+`react-hooks/set-state-in-effect` suppressions — so **splitting them removed it**. The reads became a
+query enabled only while the dialog is open, which means closing it *is* the reset for three of the
+four; the two fields a curator types into reset on the open transition, during render. Running
+`eslint --prune-suppressions` then found `post-insights.panel.tsx` stale as well, left over from
+SH1152. Two of the seventeen, off both books — `eslint-suppressions.json` and the baseline that
+declares them — because a slice that pays one has to take it off both or the next reader counts it
+twice.
+
+`publishPlan` is a **POST and takes the signal anyway**, which does not contradict `read-options.ts`'s
+"writes do not take this". That rule is about a request that *changes* something: aborting it does not
+undo it, so a cancelled write is a write whose answer was discarded. `dryRun=true` changes nothing —
+it is a read wearing a write's verb, because the plan is computed by the writer — so hanging up on it
+loses only an answer nobody wants. **The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12.**
+
+**Slice eight took four more** (SH1155), and three of them carried something other than a missing
+signal. `graphql.page.tsx` held `useEffect(() => {}, [t])` — the **second** empty effect on the list
+after SH1150's — and its token list turns an empty state on the difference between `null` (still
+loading) and `[]` (loaded, none usable), so a failure has to become `[]` rather than stay `null`.
+`scheduled.page.tsx` is where the signal is worth most: its read walks up to **fifty pages** of
+`/agent/find`, so a curator who opened the agenda and left immediately left that walk running to its
+own bound. `working-line.tsx` keeps its `mark` as state on purpose, because a timer clears it when the
+claim expires — the line goes away the moment it stops being true without asking again.
+
+**And the setup page records the opposite lesson, which is worth having after seven slices of moving
+reads out of effects: its redirect *belongs* in one.** Navigating is a side effect, and doing it during
+render is what `react-compiler` refuses outright ("This value cannot be modified"). It reads nothing,
+so this list has no business with it, and it sets no state, so `set-state-in-effect` has nothing to
+say either. An effect is simply the right shape for a side effect — the rule was never "no effects".
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8.**
+
+**Slice nine took the create form and one read out of the visual editor** (SH1156). The create form
+repeated the post-type editor's mistake one page over — `t` in the dependency list — and had no failure
+path, so a type that would not load left a form with **no fields**, which a curator would take for a
+type that declares none.
+
+The visual editor is the first file here where the answer is **derived rather than seeded**, and the
+distinction is worth keeping: a form holds a local copy because the curator edits it, and nothing in the
+editor is edited after it arrives, so the framed URL and the error are expressions over the query with
+no second source of truth to disagree with the first.
+
+**And it keeps its entry on the declared list**, which is the honest state: that site read is one of
+eight this page makes — the post-type of a selection, the insertable catalogue, the patterns, a
+section's editable props — and it is the heaviest file on the list. One read done is not the file done,
+and a list that let a partial migration delete the line would stop describing the console. The
+assertion says so explicitly, so the entry cannot quietly go later.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7.**
+
+**Slice ten closed the pattern this task set out to remove** (SH1157). The bento root's command palette
+held a `queryToken` ref compared against itself in three callbacks, so a superseded answer was
+**ignored** — the server was still asked for it and still answered. That is what SH1047's note names as
+the thing a signal replaces, and a query key does the ignoring *for free*: an answer under a key nobody
+is asking for is never rendered. Its debounce is a **committed term** now rather than a timer around a
+request, which is also what makes "searching" honest — true while what was typed and what was asked
+disagree, or while the request is in flight, and not merely because a keystroke happened.
+
+The review queue's list is the most expensive read the task touched: `sessions()` scans 2000 audit rows
+and resolves every post they touched, which is exactly why a separate cheap `pending()` exists for the
+nav badge. Leaving that page mid-read saves real server work. Its `catch(() => setSessions([]))` made
+"the queue could not be read" and "nothing is waiting for you" the same screen, and the second is the
+one a curator stops checking. Its entry stays, because the deep-link detail read did not move.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7 → 6.**
+
+**Slice eleven took the two heaviest screens, and found that slice ten had shipped its report rather
+than its behaviour** (SH1158). SH1157 wrote that "the queue could not be read" and "nothing is waiting
+for you" must not be the same screen, deleted the `catch(() => setSessions([]))` that made them so, and
+left a page where they still were: with the list on the query layer, `read.data ?? []` is `[]` on a
+failure too, so `sessions.length === 0` went on drawing `review.blankTitle` for a queue nobody could
+read. **Its assertion matched the mechanism** — that `catch` being absent — which is the same mistake
+SH1028's guard made, and it is why the review queue now has a `queueFailure` derived from the query, a
+third branch ahead of the two empty ones, and words of its own in both bundles. Three facts, three
+screens.
+
+The rest of the review queue is the more interesting half. Its run detail lived in a
+`Record<string, ShReviewDetail | null>` that **four** call sites wrote to — the expander's click, the
+deep link, a triage and a whole-run verb — and `null` in that map meant both "asked, not answered" and,
+on a read that failed, "asked, never answering", which drew `common.loading` for ever with nothing to
+press. A `ReviewRunDetail` component with its own query keyed on the run fixes all of it at once: the
+signal is aborted when the row closes, two surfaces wanting the same run make one request, a decision
+re-reads by saying the key is stale rather than by a second `setOpen`, and the failure is its own state
+because a query has one. The map now holds only the curator's open/closed choice. The deep link (SH999)
+consequently **reads nothing at all** — it expands a row, once per named run, from the router's
+`useSearchParams` rather than from `window.location.search` — so this page has no effects left.
+
+The post editor is the product's heaviest form, and the shape of its migration is the one worth copying
+for a screen whose reads are not independent: both rows of one post go through **one** `queryFn` with
+`Promise.allSettled`, because which of them is editable decides `state` while whether the PUBLISHED row
+exists is the separate fact Unpublish needs (SH654) — `all` cannot report the second once the first has
+answered, and the sequential try/catch it replaced could not either. The permission read stays a
+*second* query on purpose: it answers a different question, and a failure means something different —
+a permission read that broke leaves the buttons as they were, because the server is what decides and
+hiding a control over a broken side call is the worse guess. `retry: false` on the load, because a 404
+on a deleted post is an answer rather than a transient.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7 → 6 → 4**, and the four left are the
+visual editor's other seven reads and the three paged screens §LXXII.21 says want `useInfiniteQuery`
+and a product decision.
+
+**Slice twelve emptied the visual editor, and found the hazard one level lower than the pages**
+(SH1159). Its three remaining effects were all doing the same thing by hand: a `loadedLabelsRef` so
+selecting a second field of the same post refetches nothing, a `catalogue.key` compared against the
+page the bridge reported, a `loadedSections.key` of `<page>|<length>`. Every one of those is a cache
+key written out, every one *ignored* a superseded answer while the server was still asked for it, and
+every one is a single line as a query key. The two derived answers — the field labels and the declared
+fields — stopped being state at all, for SH1156's reason: nothing edits them, so a local copy could
+only disagree. That also deleted the clear-on-navigation, because `setSelected(null)` makes the label
+source `none` and a disabled query is empty by construction.
+
+The catalogue was **one read of two subjects**, which is SH1150's finding on the site editor met
+again: what a page accepts belongs to the page, and the patterns pushed to this instance are the same
+answer for every page — so walking the frame through four pages asked for the pattern list four times.
+
+The section array is the one with an optimistic write, and it kept its economy exactly: a remove or a
+duplicate changes the length, so the answer is seeded under the key the echoed selection will carry
+with `client.setQueryData`, and the client's 30s `staleTime` is what stops it being refetched the
+moment the query is enabled again. The `!reordering` gate survives verbatim, because its reason
+survives verbatim — the bridge echoes the new position *before* the patch resolves, so a read started
+on that echo can land after the write and put the array back as it was.
+
+**And the finding, which is about the services rather than the pages.** `insertable`, `patterns` and
+`editable` each swallow a failure on purpose — an insert rail that cannot load must not take the panel
+with it, and `editable` falls back to the PUBLISHED row where there is no draft. An aborted request
+**rejects**, so without a rethrow each of those fallbacks reads a navigation as its own case: an empty
+rail that never fills, or a second request for a row nobody is waiting for. §LXXII.21 states this
+hazard about a page's `catch(() => setItems([]))`; the same hazard lives in every service fallback a
+migrated page now cancels, and `isCancelled(error) && throw error` is the whole of the fix. Worth
+looking for before the next slice, not after.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7 → 6 → 4 → 3.** The three left are the
+paged screens §LXXII.21 says want `useInfiniteQuery` **and** a product decision.
+
+One thing the slices keep teaching, in a different spelling each time: the dependency array is where
+an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
+slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key
+cannot be anything else.
+
+**Two gates slice one tripped, and neither was about cancellation.**
+
+- **`react-hooks/set-state-in-effect`.** The natural shape for seeding a form from a query is
+  `useEffect(() => { if (data) setItem(data) }, [data])`, and that rule forbids it — SH1136 is the open
+  task for the ten suppressions of exactly this, so adding a suppression was not available and would
+  have been the wrong answer anyway. These five set state **during render** instead, which is React's
+  documented "adjust state when the input changes" pattern: a `seeded` value holds the subject already
+  poured into the form (the row's id, or `"model"` for a new provider's blank) so each answer seeds
+  once and a curator's edits are never overwritten. eslint is clean on it.
+- **SH1043's headroom check, for a reason that is not this change.** Building the console from the tree
+  under test put the eager total at 1810450 raw / 495034 gzip, leaving 3.70% and 3.69% against the 4%
+  that gate asks for, so both ceilings were raised. This slice's own cost, measured by building HEAD
+  and the change on the same tree, is **1.3 KB raw / 0.2 KB gzip** — the rest is accumulated growth
+  that every previous green run had missed because `pnpm test` never builds the console and the gate
+  measured whatever was sitting in `resources/public`. That is **SH1126** by name, and it is worth
+  knowing before reading the budget's `raised` note: taking that entry for this feature's cost would be
+  wrong by a factor of fifteen.
+
+**Why the five are a second list in the gate and not five more `MIGRATED` entries.** `MIGRATED`
+asserts a file still fetches inside an effect *and* passes a signal, which is right for an
+`AbortController`. These no longer fetch in an effect at all. Asserting they do would be a sentence
+that is no longer true **and that passes anyway**, because the scan sees a `useEffect` and a
+`service.` call in one file and cannot tell they are unrelated — the gate's own failure message says
+to say so rather than delete the line, so `QUERY_LAYER` is that, with its own three claims: the
+`queryFn` takes the signal, `item.name` is not back in any dependency list, and the failure path asks
+`isCancelled`. The declared list is asserted as a **ceiling of 28** that later slices lower and
+nothing raises.
+
 ## A failure that stays in the screen it happened in (SH1049)
 
 `main.tsx` mounted the design system's `ErrorBoundary` around the whole application, so a render
@@ -2493,10 +2799,46 @@ the op is refused, the refusal says the publish already happened (`redirect-not-
 publish committed in its own transaction, and a curator told "this failed" about a page that is
 live is the P7 surprise this exists to avoid.
 
-**What the console still has no screen for is the rename itself.** A post's friendly URL is changed
-by `post.move` on the agent surface; the console's only path to it is a rollback that restores an
-older revision's URL, which is the case this dialog handles. A rename affordance — with the inbound
-count before its button arms — is the console half SH1064 leaves open.
+### And the rename itself, which the console could not do at all (SH1132)
+
+A post's friendly URL is its identity (SH81) and `post.move` on the agent surface was its **only**
+writer: `PUT /post-unified/{id}` takes `data` and a state and nothing else, so the console's single
+path to a URL change was a rollback that restores an older revision's. A curator who wanted
+`/pricing` to become `/plans` had to ask an agent, or create a second post and delete the first —
+the silently destructive workaround `post.move` exists to prevent, which takes the original's id,
+its SH51 audit trail, its SH14 history and every inbound reference with it.
+
+`POST /api/v2/post-unified/{id}/move` composes that op, the way the bulk verbs compose theirs
+(SH1021). Three things it had to get right, and one the design left open:
+
+- **Addressed by `post:`, never `id:`.** The batch refuses a bare `id:` for a *write* — a folder
+  path and a friendly URL are separate namespaces, and guessing which was meant would create
+  content in the wrong place (the SH79 rule in `agents.md`). The bulk verbs may use `id:` because
+  publish, unpublish and delete address no destination; a move does, so it resolves the address
+  where the id and the row are both to hand rather than asking the batch to relax a guard that is
+  right. **The guard caught the first draft**, which is what it is for.
+- **The destination goes in `to`, as an address** — the same field a folder move uses, because
+  moving between folders and moving between URLs are one verb.
+- **The redirect is offered, never assumed**, through SH1064's `ShConsoleRedirects` above. It reads
+  the live row's URL as the destination, which after the move *is* the new address, so the
+  composition is exact. Offered because a redirect is a published object at the old address and a
+  page may be moving precisely so that nothing answers there.
+
+**The open question, and why the answer was already written down.** §LXVIII.19 asked whether a
+console rename should move the draft alone or both rows. `ShPostUnifiedWriteService.move`'s own note
+answers it: moving only the draft would leave the live page at the old URL while every read — which
+is draft-preferred — reported the new one, so *the post's identity would depend on who was asking*.
+Both rows move. The consequence is real and is the surprise P7 forbids: **a rename of a published
+page changes the live URL immediately, with no publish step.**
+
+So it is not sprung. `dryRun` defaults to **true**, and the plan says the three things a curator
+cannot otherwise know — that the page is live and the new address takes effect now, which address
+stops answering, and how many pages link to it (SH140's scanner, the one `post.move` reports with,
+because two counts of "who links here" would eventually disagree). `PostRenameDialog` renders that
+plan and its confirm button does not exist until there is one; editing the URL drops the plan,
+because a plan answers a question about one address and showing it beside another is worse than
+showing none. A curator who reads it and presses Rename has not been surprised; one shown a text
+field and a Save button has.
 
 ## The console lint runs in `pnpm test` (SH1075)
 
@@ -2634,9 +2976,48 @@ itself.
 
 `write-outcome.test.mjs` holds the silent ones as two named lists. EXCEPTIONS covers dry runs,
 preview mints, autosave, the tenant switch and setup, each with a reason and what would falsify
-it. WORKLIST is SH1139's sixteen real gaps. The test prints both counts, fails on a new silent
-write, and fails on a held entry that is no longer silent, so the lists only shrink. A new write
-handler needs a success toast and a catch that calls `reportProblem(error, t("common.error"))`.
+it. The test prints both counts, fails on a new silent write, and fails on a held entry that is no
+longer silent, so the lists only shrink. A new write handler needs a success toast and a catch that
+calls `reportProblem(error, t("common.error"))`.
+
+### WORKLIST is empty, and what its sixteen were (SH1139)
+
+**Five said nothing at all.** The token, auth provider, exchange provider, webhook and tenant
+editors awaited a delete and navigated away — so the row vanished from the list whether the server
+agreed or not, a refusal escaped as an unhandled rejection, and the outcome was indistinguishable
+from a button that worked. They toast `common.deleted` and catch.
+
+**Nine toasted success and let the failure escape**: the user editor's create and update, the
+group/role create, folder create, post-type create, edit and list delete, site create and site
+import. A refused create there looked exactly like a button that did nothing. Each gets the catch
+the rest of the console already had.
+
+**The two static-file deletes were the worst, and are the ones worth remembering.** Both swallowed
+every failure with `.catch(() => {})`, removed the rows from local state, and *then* toasted
+success — so a file the server refused looked deleted until a reload put it back, and a bulk pass in
+which **nothing** went reported all of it deleted. The single delete now moves state only on
+success. The bulk one goes through `deleteEach` (`lib/batch-delete.ts`), which **SH953 wrote for
+this exact shape** in the content browser: refusals are counted and named with `refusalSummary`,
+only what went leaves the list, and a row that refused stays selected so the reason can be read and
+the delete retried. Reusing it rather than writing the counting a second time is the whole reason it
+lives in `lib/`.
+
+**One thing the lint had to learn, and the alternative is why.** `deleteEach` catches internally and
+hands the caller its refusals, so a handler using it has no `catch` of its own — and the reader
+called the bulk delete silent. The other way out was to move the delete behind a local function the
+reader cannot see through, which is how the content browser's equivalent site is invisible to this
+lint: that passes by **hiding from the instrument**, which is worse than the defect. So `paths()`
+takes a `deleteEach` call as a failure report, on the same grounds it already accepts
+`BentoEntityShell` — a helper that owns the reporting contract is not a silent write. The exemption
+is deliberately narrow: calling the helper is not enough, the handler must say something about
+`refusals`, because a caller that took the outcome and toasted only `deleted` would be the original
+swallow with more ceremony. A planted fixture holds both directions.
+
+**Closed with a list rather than a count.** Emptying WORKLIST would make the general rule cover
+these by default, and that is the weaker claim — it passes just as well if one of the sixteen is
+renamed, deleted, or has its write moved somewhere the reader cannot follow. `SH1139: every site the
+worklist held reports both outcomes, and still exists` names all sixteen, so a regression says
+*which* outcome went missing from *which* screen.
 
 ## A refusal is a dock report (SH966)
 
@@ -2900,6 +3281,54 @@ tenant. Saving the same name again replaces it, and only the owner deletes it. T
 
 ## The browser's three views (SH1026, in parts)
 
+### The browser is a directory, and the page is 592 lines (SH1145)
+
+SH1026's design asked for this split "because at that size the next feature makes it unreviewable",
+and moved what each view *draws*. The page kept three concerns tangled in one component and stood at
+**1,593 lines**. The cost was never only size, which is the part worth keeping: SH1026's own live
+check found the listing effect **re-reading page 0 after every render**, because a value built in
+the component body fed a callback the effect depended on. Nothing in a file that size makes that
+visible, and the lint that could have seen it was answering about a different line.
+
+What that argues for is units whose **dependencies are the whole of their inputs**:
+
+| Module | What it owns |
+|---|---|
+| `use-browser-listing.ts` | every read: the page, the next page, the re-read after a write, the facet counts, the breadcrumb, the select-everything walks. Takes the folder, the committed query and the sort. |
+| `use-browser-keyboard.ts` | the listbox: roving focus, ranges, Space, Enter, Delete, and `/`. Takes the rows and what a key ends up doing. |
+| `use-bulk-verbs.ts` | the plan, the run, and the two pieces of state between them. |
+| `use-browser-open.ts` | the three verbs that leave the list: duplicate, open the site, open a page. |
+| `browser-toolbar.tsx` | both toolbars — markup, no state. |
+| `folder-picker.dialog.tsx` · `bulk-plan.dialog.tsx` | the two dialogs the page used to hold inline. |
+| `row-actions.ts` · `browser-listing.ts` | the seven verbs a row offers; the envelope, its rows and the request constants. |
+
+**Fourteen suites read this page by name, and that is the part that could have gone wrong quietly.**
+A test left matching regexes against a 592-line page that no longer holds the code it names keeps
+**passing** — SH1118's failure shape, reached by relocation instead of by a stripper. So
+`test/support/browser-source.mjs` gives a scan whose subject is *the browser* the page plus every
+module under `content-browser/`, read from the directory so tomorrow's module is in the subject
+without anybody remembering. A scan whose subject is one file — every `doesNotMatch` saying a
+particular module must not do a particular thing — keeps naming that file, because widening those
+would weaken them.
+
+Four assertions needed their **spelling** updated rather than their subject, and each says so at the
+call: the delete key now calls the `onDelete` the page supplies (both halves asserted), the plan
+sheet reads a non-null `plan`, the query identity is built from `listKey`, and the picker's blocked
+set is computed by the page and handed over in the request.
+
+Three things the split turned up that were not size:
+
+- **The picker's own read did not cancel.** It walks folders that are clickable while the read is in
+  flight, so a curator going down two quickly could have the first answer land after the second.
+  SH1047's rule applied to it the moment it became a file that rule walks.
+- **An unnamed icon stopped being a page's debt.** The post-type grid button carried a Tooltip and no
+  accessible name, which SH893 tolerated as declared debt *on a page*; in a shared component that
+  rule says fix it, and it is right — a Tooltip needs hover or focus to exist at all.
+- **`SH1142`'s own lint went blind for one run.** The Select menu's items call `onSelectAction` in
+  the toolbar rather than `handleSelectAction`, so five of its six controls vanished from the scan
+  and only the page's Clear was left. Its **count floor** is what said so — the assertion that a
+  reader finding suspiciously little has stopped reading, not started agreeing.
+
 The list, grid and table buttons used to colour themselves and nothing else: the render below was
 one unconditional map. `content/content-browser/` now holds the views. `browser-view.ts` is pure
 (`browserView` reads the URL's `view` word, an unknown one is `list`; `stepFor`, `listboxClass`,
@@ -2932,6 +3361,41 @@ the edit, not to the table's row keys. `ShPostUnifiedAPITest` asserts the refusa
 
 The accent debt, the SH1020 menu guard and the SH1059 label guards read the `content-browser/`
 files, and `browser-views.test.mjs` holds the rest.
+
+### One control for one selection, because the table takes none in (SH1142)
+
+The table **reports** its selection and cannot be told one: `BentoDataTableProps` has
+`onSelectionChange` and no `selectedIds`, where the same component's column `layout` *is* controlled
+beside `onLayoutChange`. One of the two was finished.
+
+So the flow ran one way, and two controls wrote the page's set behind the table's back — the
+toolbar's Select menu (content, folders, everything, invert, nothing) and the selection bar's Clear.
+In the table view nothing on screen changed, and the next click in the table reported its own set and
+overwrote the choice. **Pick "Select all", then Delete, and the rows deleted were whatever the table
+last had ticked while the confirm dialog counted the page's set** — the number and the rows could
+disagree, on a destructive verb.
+
+Both are now absent in the table view rather than inert: the table's own header checkbox selects all
+and Escape clears. `SH1148` is the other half, on the package's side, and this comes back in every
+view the moment it lands — a curator in the table view has no select-everything until then, which is
+a real subtraction and the reason that line exists.
+
+**The assertion is not §LXIX.11's, and the substitution is the point.** That one was to choose
+"Select all" and compare the table's checked rows with the page's selection, which describes the
+*design system's* fix and cannot be written once there is no "Select all" in that view to choose.
+`SH1142: no control outside the table writes the selection in the table view` states what this
+correction actually establishes, and holds it as a **rule over every writer** rather than as two
+spot-checks on the two that were wrong — because the recurrence is a third control added to that
+toolbar by somebody who never read this. It walks braces from each `{viewMode !== "spreadsheet" &&`
+guard and asserts every JSX `onClick` naming `setSelectedItems` or `handleSelectAction` falls inside
+one. Verified both ways: ungating the menu fails it, and so does a newly added ungated button.
+
+One trap worth keeping, met while writing that reader. It blanks comment lines in place to keep its
+offsets, and the first draft's predicate was `//`, `*`, `/*` — so a JSX comment's closing `*&#47;}`
+line was blanked (it starts with `*`) and took its `}` with it, while the opening `{/*` line was not.
+Three such comments on the page, three unbalanced braces, and the brace walk ran to the end of the
+file. `{/*` is in the predicate now. It is SH1118's class again: a per-line comment test that is
+right about the shapes it was written for and silently wrong about one more.
 
 **Cards show an image.** Each listing row carries `thumbnail`, the byte path of an image. A `File`
 post holding an image is its own thumbnail. Any other post uses the first image it references, from
@@ -2981,3 +3445,40 @@ archive state. SH970 already chose trash for the arrival report, and the trash i
 can be restored from. The arrival's caption is still the post type's title and summary fields, not a
 setting of the form. `GET /api/v2/site-form` is declared in `ShConsoleReadAclLintTest`'s `UNCHECKED`:
 it is operator configuration, not content.
+
+## The chip that could not say which language is the original (SH1125)
+
+SH1059 put each post row's locale on a chip beside the post-type badge and named the row by it, so a
+page and its translation are two rows rather than one row and an apparent duplicate. Its design also
+asked that the chip mark the site's **default** locale "where the site's enabled set exists" — and it
+did not exist then: the console could not read a site's policy until SH1056 gave it
+`GET /api/v2/site/{id}/locales`. It could afterwards and the browser still did not ask, so a folder
+holding a page in English and in Portuguese said which row was which and **not which one came first**,
+which is the question a curator deleting one of them is actually asking.
+
+**`declared` is the whole rule**, and it is SH1056's distinction rather than a nicety. A site that has
+chosen nothing still reports a default — the locale its content happens to be written in — and a chip
+saying "default" about something nobody chose is exactly the confusion SH1056 exists to remove. So
+`declaredDefaultLocale` returns a locale only for a declared policy, an undeclared one marks no row,
+and a folder of two translations then says which language each is and stays silent about which came
+first. That is the honest answer, and it is the assertion worth having: the test drives the helper with
+`declared: false` and requires `null`.
+
+Three implementation choices, each for a reason that would otherwise be re-derived:
+
+- **The flag is on the row, not computed at the label.** Whether a row is the site's own language is a
+  fact about *that row in this site*, and four call sites build a label — the checkbox, the title, the
+  actions trigger and the data table. `use-browser-listing` computes `isDefaultLocale` once per listing
+  from one `useSiteLocalePolicy(siteId)`, cached under the key the query layer already uses for the
+  site, so walking a tree inside one site asks once.
+- **The word is passed into `rowLabel` already translated.** That function is pure so
+  `browser-locale.test.mjs` can run it without a browser, and a hard-coded `"default"` would be an
+  English word in a Portuguese console. The locale *tag* is not translated, because a tag is a tag and
+  a sentence about it is not.
+- **All four labels and the chip**, including the spreadsheet view's `getRowLabel`. Leaving the table
+  as the one view without the mark is the half-migration this repository keeps finding, so it has an
+  assertion of its own.
+
+Two guards moved with it and were followed rather than loosened: SH1059's extractor names
+`rowLabel`'s signature, and SH1020's names the actions trigger's call. Both would have kept passing
+against a version that had lost the argument, which is why the regex is the thing that had to change.

@@ -357,9 +357,26 @@ public class ShAgentContextService {
                             ShPostUnifiedWriteService.DEFAULT_LOCALE.equals(locales.defaultLocale())
                                     ? null : locales.defaultLocale(),
                             locales.enabled().size() > 1 ? locales.enabled() : null,
-                            locales.declared() ? Boolean.TRUE : null);
+                            locales.declared() ? Boolean.TRUE : null,
+                            // SH1122 — the two the marker file needs and this row did not have.
+                            // Blank reads as absent, for the same reason the marker treats it so:
+                            // a column is either unset or holds something, and `""` is the first.
+                            blankToNull(site.getFurl()),
+                            blankToNull(site.getDescription()),
+                            // SH1122 — and the stored policy itself, so a projection is exact rather
+                            // than reconstructed from the three discovery fields above (which omit a
+                            // default matching the instance's and carry no fallback at all). Absent
+                            // for every site that has declared nothing, which is most of them.
+                            // Only when somebody declared it: a derived policy is an observation, and
+                            // a marker carrying it would turn that into a declaration on the next push.
+                            locales.declared() ? locales.toNode() : null);
                 })
                 .toList();
+    }
+
+    /** SH1122 — a column that is set to the empty string says nothing, so it is reported as nothing. */
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     /** Post-types by name, with the CDA field schema and a usage count per type. */

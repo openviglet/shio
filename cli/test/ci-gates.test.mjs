@@ -342,3 +342,37 @@ test("SH1076: the Java job checks the viglet-core pin is published before it run
   assert.equal(bomUrl("2026.3.12"),
     "https://repo1.maven.org/maven2/com/viglet/core/viglet-core-bom/2026.3.12/viglet-core-bom-2026.3.12.pom");
 });
+
+/**
+ * SH1126 — the run that must see the console's bytes is the one that builds them.
+ *
+ * <p>SH1043's size comparison runs against whatever build sits in the static root and `pnpm test`
+ * never built one, so the gate measured a build of <em>some</em> tree with nothing saying which. It
+ * went wrong in both directions on consecutive tasks: one passed against bytes older than its own
+ * change, and the next failed the headroom check only because a build made outside the session
+ * happened to include it.</p>
+ *
+ * <p>`build-info.json` lets the test tell (SH1126), and locally a mismatch is a <b>diagnostic</b> —
+ * a source edit must not demand a one-minute build before `pnpm test`. Which means the number is only
+ * real where something builds, and this asserts that somewhere does: the `js` job builds the console
+ * and sets `SHIO_REQUIRE_CONSOLE_BUILD=1`, so "not measured" fails there. Without both halves the
+ * task ships a reader that is allowed to report nothing forever, which is the failure every
+ * instrument in this repository is written against — and a comment in a YAML nobody reads is not the
+ * half that stops it.</p>
+ */
+test("SH1126: CI builds the console and refuses to be told nothing about its size", () => {
+  const suites = read("suites.yml");
+
+  assert.match(suites, /run: pnpm run build:console/,
+    "SH1126: the `js` job does not build the console, so its size gate measures whatever build the "
+      + "runner happens to have — which on a fresh clone is none, and the verdict is then that "
+      + "nothing was measured on every run");
+  assert.match(suites, /SHIO_REQUIRE_CONSOLE_BUILD: "1"/,
+    "SH1126: the run that builds does not require a measurement, so a build step and a suite that "
+      + "disagreed about the tree would pass quietly — which is the same defect one layer along");
+
+  // Order matters and is worth asserting rather than trusting: a build after the suite measures
+  // nothing, and the two lines look equally correct in a diff.
+  assert.ok(suites.indexOf("run: pnpm run build:console") < suites.indexOf('SHIO_REQUIRE_CONSOLE_BUILD: "1"'),
+    "SH1126: the console is built AFTER the run that requires it, so the suite ran against no build");
+});

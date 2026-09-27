@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { addressKey } from "@/lib/query-keys"
+import { isCancelled } from "@/lib/read-options"
+import { useInvalidate } from "@/hooks/use-catalogue"
+import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { AlertTriangle, ImageOff, Lightbulb, Loader2, RefreshCw } from "lucide-react"
 
@@ -47,29 +51,35 @@ interface Props {
  */
 export function PostInsightsPanel({ address, revision, onGoToField }: Readonly<Props>) {
   const { t } = useTranslation()
-  const [findings, setFindings] = useState<ShInsightFinding[]>([])
-  const [digest, setDigest] = useState<ShPageDigest | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [failed, setFailed] = useState(false)
-
-  const load = useCallback(() => {
-    if (!address) return undefined
-    setLoading(true)
-    setFailed(false)
-    return Promise.all([service.verify(address), service.digest(address)])
-      .then(([report, shape]) => {
-        setFindings(report.findings ?? [])
-        setDigest(shape)
-      })
-      // One flag, not a message: what the curator can do about a failed lint is ask again, and the
-      // button that does it is already on screen.
-      .catch(() => setFailed(true))
-      .finally(() => setLoading(false))
-  }, [address])
-
-  useEffect(() => {
-    void load()
-  }, [load, revision])
+  /*
+   * SH1152 — one query per (address, revision), cancelled when either changes or the panel unmounts.
+   *
+   * `revision` is part of the key rather than a dependency that re-runs an effect, which is what makes
+   * the two things this panel has always wanted true at once: a save re-lints, and a keystroke does
+   * not. The refresh button invalidates the key instead of calling the read a second way.
+   *
+   * One flag, not a message, is kept: what a curator can do about a failed lint is ask again, and the
+   * button that does it is already on screen.
+   */
+  const read = useQuery<{ findings: ShInsightFinding[]; digest: ShPageDigest | null }>({
+    queryKey: addressKey(`insights:${address ?? ""}|${revision}`),
+    queryFn: async ({ signal }) => {
+      const [report, shape] = await Promise.all([
+        service.verify(address ?? "", { signal }),
+        service.digest(address ?? "", { signal }),
+      ])
+      return { findings: report.findings ?? [], digest: shape }
+    },
+    enabled: Boolean(address),
+  })
+  const findings = read.data?.findings ?? []
+  const digest = read.data?.digest ?? null
+  const loading = read.isFetching
+  const failed = read.isError && !isCancelled(read.error)
+  const invalidate = useInvalidate()
+  const load = useCallback(
+    () => { void invalidate(`insights:${address ?? ""}|${revision}`) },
+    [invalidate, address, revision])
 
   const blockers = findings.filter((finding) => finding.severity === "error")
   const suggestions = findings.filter((finding) => finding.severity !== "error")

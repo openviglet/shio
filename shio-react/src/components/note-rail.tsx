@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { useCallback, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Check, Loader2, MessageSquare, Undo2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -7,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { ShNoteService } from "@/services/note/note.service"
 import type { ShNote } from "@/models/note/note.model"
 import { reportProblem } from "@/lib/problem"
+import { addressKey } from "@/lib/query-keys"
+import { useInvalidate } from "@/hooks/use-catalogue"
 
 const service = new ShNoteService()
 
@@ -33,19 +36,24 @@ const service = new ShNoteService()
  */
 export function NoteRail({ objectId, field }: { objectId: string; field?: string }) {
   const { t } = useTranslation()
-  const [notes, setNotes] = useState<ShNote[]>([])
   const [body, setBody] = useState("")
   const [kind, setKind] = useState<"COMMENT" | "REQUEST">("COMMENT")
   const [busy, setBusy] = useState(false)
   const [showResolved, setShowResolved] = useState(false)
 
-  const load = useCallback(() => {
-    service.of(objectId).then(setNotes).catch(() => setNotes([]))
-  }, [objectId])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  /*
+   * SH1152 — one read per object, cancelled when the object changes or the rail unmounts, and the
+   * refresh after a write is an invalidation rather than a second call site. `catch(() => setNotes([]))`
+   * had made "the server did not answer" and "no notes on this field" the same empty rail.
+   */
+  const read = useQuery<ShNote[]>({
+    queryKey: addressKey(`note:${objectId}`),
+    queryFn: ({ signal }) => service.of(objectId, { signal }),
+    enabled: Boolean(objectId),
+  })
+  const notes = read.data ?? []
+  const invalidate = useInvalidate()
+  const load = useCallback(() => { void invalidate(`note:${objectId}`) }, [invalidate, objectId])
 
   const add = async () => {
     if (!body.trim()) return

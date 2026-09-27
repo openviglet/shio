@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
+import { browserSource } from "./support/browser-source.mjs"
 
 /**
  * SH1025 — the browser asks for a page of folders, and everything that relied on holding them
@@ -33,7 +34,7 @@ import { fileURLToPath } from "node:url"
  * None of the three fails loudly, which is why they are asserted rather than remembered.
  */
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..")
-const PAGE = readFileSync(join(ROOT, "src", "app", "content", "object.children.page.tsx"), "utf8")
+const PAGE = browserSource()
 
 /** The source with whole-line comments dropped: this file's prose names every symbol it scans. */
 const code = PAGE.split("\n").filter((line) => !/^\s*(\/\/|\*|\/\*)/u.test(line)).join("\n")
@@ -72,8 +73,10 @@ test("SH1025: Select → Folders walks the pages rather than taking what is on s
 })
 
 test("SH1025: the move/copy dialog blocks every selected folder, seen or on screen", () => {
+  // SH1145 — the picker owns its own state now, so the page computes the blocked set and hands it
+  // over as part of the request rather than setting a seventh piece of dialog state.
   assert.match(code,
-    /setFolderDialogBlockedIds\(new Set\(ids\.filter\(\(id\) => knownFolderIds\.current\.has\(id\)\)\)\)/u,
+    /\(ids: string\[\]\) => new Set\(ids\.filter\(\(id\) => knownFolderIds\.current\.has\(id\)\)\)/u,
     "SH1025: against every folder id this page has seen, not the rows it is showing. A selection "
       + "made by the select-everything walk (see SH237) holds ids no row shows, and a missed one "
       + "is a folder offered as a destination for itself — the recursion that dialog's own "

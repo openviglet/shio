@@ -1,4 +1,5 @@
 import axios from "@/lib/axios"
+import type { ShRead } from "@/lib/read-options"
 import type { ShTenant } from "@/models/tenant/tenant.model"
 
 /** The request's resolved tenant (GET /v2/tenant/current). */
@@ -13,8 +14,8 @@ export interface ShProvisionResult {
 }
 
 export class ShTenantService {
-  async current(): Promise<ShCurrentTenant> {
-    const response = await axios.get<ShCurrentTenant>("/v2/tenant/current")
+  async current(read: ShRead = {}): Promise<ShCurrentTenant> {
+    const response = await axios.get<ShCurrentTenant>("/v2/tenant/current", { signal: read.signal })
     return response.data
   }
 
@@ -23,8 +24,8 @@ export class ShTenantService {
     return response.data
   }
 
-  async get(id: string): Promise<ShTenant> {
-    const response = await axios.get<ShTenant>(`/v2/tenant/${id}`)
+  async get(id: string, read: ShRead = {}): Promise<ShTenant> {
+    const response = await axios.get<ShTenant>(`/v2/tenant/${id}`, { signal: read.signal })
     return response.data
   }
 
@@ -61,8 +62,8 @@ export class ShTenantService {
   }
 
   /** The tenants the current user actively belongs to (SH22/C). */
-  async mine(): Promise<ShTenant[]> {
-    const response = await axios.get<ShTenant[]>("/v2/tenant/mine")
+  async mine(read: ShRead = {}): Promise<ShTenant[]> {
+    const response = await axios.get<ShTenant[]>("/v2/tenant/mine", { signal: read.signal })
     return response.data
   }
 

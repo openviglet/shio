@@ -8,12 +8,12 @@
  */
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
+import { BUILD_INFO, buildProvenance, sourceDigest } from "../scripts/console-build-info.mjs";
 import {
   BUDGET_FILE, breaches, eagerOf, kb, measure, report, stemOf,
 } from "../scripts/console-size.mjs";
@@ -42,6 +42,21 @@ import {
  * a chunk the entry statically imports is counted, the same chunk behind a dynamic import is not,
  * and a build whose HTML declares no preloads is refused rather than measured. That runs on every
  * run, with no build and no browser.
+ *
+ * ## SH1126 — and the build has to be THIS tree's
+ *
+ * "Wherever a build exists" was not enough. The gate measured a build of *some* tree with nothing
+ * saying which, and it went wrong in both directions on consecutive tasks: one passed `pnpm test`
+ * against a build that predated its own change, and the next failed the headroom check only because
+ * a build made outside the session happened to include it. Neither verdict was about the bytes the
+ * task under test had produced.
+ *
+ * So `buildProvenance` decides, and there are now three ways to be **not measured** — no build, a
+ * build from before `build-info.json` existed, and a build from another tree. All three say so in
+ * the same breath and produce no total, because a number from a different tree is worse than no
+ * number. A stale build must not *fail* the suite, or every source edit would demand a build before
+ * `pnpm test`; `SHIO_REQUIRE_CONSOLE_BUILD=1` is how the run that does build (CI's `js` job) turns
+ * "not measured" into a failure, which is what makes the number real on every pull request.
  */
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -174,14 +189,28 @@ test("SH1043: the budget is a real document — every entry has a ceiling and a 
   }
 });
 
-test("SH1043: the console's eager load stays inside its budget", async (t) => {
-  if (!existsSync(join(DIST, "index.html"))) {
-    // Said out loud rather than passed over: "there is no build in this tree" and "the console got
-    // smaller" must never read the same.
-    t.diagnostic("SH1043: no built console in this tree, so nothing was measured. Build it with "
-      + "`pnpm --filter shio-react exec vite build`, or run `pnpm --filter shio-react run size`.");
-    return;
+/**
+ * SH1126 — whether this run may measure, said once for both readers below.
+ *
+ * <p>Said out loud rather than passed over: "there is no build from this tree" and "the console got
+ * smaller" must never read the same. `SHIO_REQUIRE_CONSOLE_BUILD` is the other half — the run that
+ * builds refuses to be told nothing, and every other run is told why.</p>
+ */
+function measurable(t) {
+  const provenance = buildProvenance(DIST, ROOT);
+  if (provenance.measurable) return true;
+  const said = `SH1126: not measured — ${provenance.why}`;
+  if (process.env.SHIO_REQUIRE_CONSOLE_BUILD === "1") {
+    assert.fail(`${said}\n  This run set SHIO_REQUIRE_CONSOLE_BUILD=1, which means it built the `
+      + "console and expects the size gate to have a number. A mismatch here is the build step "
+      + "and the suite disagreeing about the tree, not a stale checkout.");
   }
+  t.diagnostic(said);
+  return false;
+}
+
+test("SH1043: the console's eager load stays inside its budget", async (t) => {
+  if (!measurable(t)) return;
   const measured = await measure(DIST);
   // Printed on every run, which is half of what this is for: a number nobody sees is a number
   // nobody argues with.
@@ -194,10 +223,7 @@ test("SH1043: the console's eager load stays inside its budget", async (t) => {
 });
 
 test("SH1043: the ceilings have room under them", async (t) => {
-  if (!existsSync(join(DIST, "index.html"))) {
-    t.diagnostic("SH1043: no built console in this tree; headroom not checked.");
-    return;
-  }
+  if (!measurable(t)) return;
   const measured = await measure(DIST);
   // SH736's lesson, one gate over: a ceiling raised to exactly the total that breached it does not
   // measure the next addition, it refuses it — and the cheapest way to pass then is to delete
@@ -210,4 +236,77 @@ test("SH1043: the ceilings have room under them", async (t) => {
       `SH1043: the eager ${name} total is ${kb(now)} against a ceiling of ${kb(ceiling)} — `
       + `${kb(room)} of room, and this gate needs 4% to still be measuring anything.`);
   }
+});
+
+/*
+ * SH1126 — the planted mismatch, which is this task's own assertion.
+ *
+ * §LXXII.23 names it: a synthetic dist whose digest differs from the tree reports "not measured" and
+ * never a total. Driven through `buildProvenance` rather than by rebuilding, so it runs on every run
+ * with no build — the same discipline the planted-import tests above follow, and the reason this is a
+ * check that has been shown to fail rather than one that has never been asked.
+ */
+test("SH1126: a build from another tree is not measured, and says which", async () => {
+  const dist = await plant({ preloaded: [["vendor-bbbbbbbb.js", 2000]] });
+  await writeFile(join(dist, BUILD_INFO),
+    JSON.stringify({ sourceDigest: "sha256:deadbeef", commit: "0000000" }), "utf8");
+
+  const provenance = buildProvenance(dist, ROOT);
+
+  assert.equal(provenance.measurable, false,
+    "SH1126: a build whose sources are not this tree's must not be measured — that is the whole "
+    + "defect, and it went wrong in both directions: a pass against bytes older than the change, "
+    + "and a failure from a build made outside the session");
+  assert.match(provenance.why, /made from different sources/u);
+  assert.match(provenance.why, /deadbeef/u,
+    "SH1126: and it names both digests, because the reader's next question is which build they have");
+  assert.match(provenance.why, /commit 0000000/u,
+    "SH1126: the commit is recorded for exactly this sentence — it cannot be the comparison, since a "
+    + "working tree is dirty most of the time anybody runs this");
+});
+
+test("SH1126: a build from THIS tree is measured, and one with no build-info is not", async () => {
+  const dist = await plant({ preloaded: [["vendor-bbbbbbbb.js", 2000]] });
+
+  // No `build-info.json` at all: a build from before this existed. Not measured, and the sentence
+  // says so rather than pretending the console has no eager cost.
+  const before = buildProvenance(dist, ROOT);
+  assert.equal(before.measurable, false);
+  assert.match(before.why, new RegExp(`carries no ${BUILD_INFO}`, "u"));
+  assert.match(before.why, /predates SH1126/u);
+
+  // The same dist, now claiming this tree's digest: measurable, and the reader gets a number.
+  await writeFile(join(dist, BUILD_INFO),
+    JSON.stringify({ sourceDigest: sourceDigest(ROOT), commit: "abc1234" }), "utf8");
+  const after = buildProvenance(dist, ROOT);
+  assert.equal(after.measurable, true, "SH1126: a matching digest is the one case that measures");
+  assert.equal(after.why, "");
+  const measured = await measure(dist);
+  assert.ok(measured.raw > 0, "SH1126: and the reader still reads it — the provenance check gates "
+    + "the verdict, it does not replace the measurement");
+});
+
+test("SH1126: an absent build is not measured either, and that is the third sentence", async () => {
+  const empty = await mkdtemp(join(tmpdir(), "sh1126-"));
+  const provenance = buildProvenance(empty, ROOT);
+
+  assert.equal(provenance.measurable, false);
+  assert.match(provenance.why, /no built console in this tree/u);
+  // Three ways to be not-measured, one outcome: "there is no build", "the build predates this" and
+  // "the build is from another tree" all mean no number, because a number from another tree is worse
+  // than no number. What differs is only the sentence, and each one names what to do.
+  assert.match(provenance.why, /pnpm run build:console/u);
+});
+
+test("SH1126: the digest covers the inputs that decide the bundle, and states what it does not", async () => {
+  const inputs = (await import("../scripts/console-build-info.mjs")).SOURCE_INPUTS;
+  assert.deepEqual([...inputs], ["src", "index.html", "vite.config.ts", "package.json"],
+    "SH1126: §LXXII.23 asked for `src`; the other three are the entry, the chunking and the "
+    + "dependency names, all of which decide what the bundle contains. The list is the decision, so "
+    + "a reader asking \"would my change have been caught\" is asking about this line.");
+
+  // The digest is a function of bytes and paths, not of the filesystem's order — so it is stable
+  // across machines and a rename is a different digest (P5).
+  assert.equal(sourceDigest(ROOT), sourceDigest(ROOT));
+  assert.match(sourceDigest(ROOT), /^sha256:[0-9a-f]{64}$/u);
 });

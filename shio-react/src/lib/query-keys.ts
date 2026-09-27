@@ -47,6 +47,18 @@ export const SCHEMES = [
   "post:", "folder:", "site:", "postType:", "id:",
   "widget:", "group:", "role:", "user:", "token:", "webhook:", "staticFile:",
   "authProvider:", "exchangeProvider:", "tenant:", "summary:",
+  // SH1116 — the one singleton among them: there is one email configuration per tenant, so the key
+  // carries no id. It is a scheme rather than a bare string for the reason `addressKey` throws on an
+  // unknown one: every invalidation names a scheme, so a key outside this list would cache and never
+  // be invalidated.
+  "emailConfig:",
+  /*
+   * SH1152 — four more console-local collections, each a scheme of its own rather than a suffix under
+   * `summary:`. The reason is invalidation: it matches by the key's first segment, so folding these
+   * together would mean adding a note dropped the locale catalogue with it. A scheme is what lets one
+   * write invalidate exactly what it changed.
+   */
+  "note:", "translation:", "insights:", "locale:",
 ] as const;
 
 export type ShScheme = (typeof SCHEMES)[number];
