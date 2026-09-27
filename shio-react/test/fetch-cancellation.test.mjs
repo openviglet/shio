@@ -60,14 +60,6 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
  * list working — a debt paid off has to leave it, or the next reader counts it twice.</p>
  */
 const UNCANCELLED = new Set([
-  /*
-   * SH1156 moved this page's **site** read to the query layer and left the entry, which is the honest
-   * state: the visual editor makes seven more reads — the post-type of a selection, the insertable
-   * catalogue, the patterns, a section's editable props — several of them inside effects, and it is
-   * the heaviest file on this list. One read done is not the file done, and a list that let a partial
-   * migration delete the line would stop describing the console.
-   */
-  "src/app/editor/visual-editor.page.tsx",
   "src/components/post-history.panel.tsx",
   "src/components/post-live-preview.tsx",
   "src/components/widgets/content-browser-dialog.tsx",
@@ -144,6 +136,13 @@ const QUERY_LAYER = [
    */
   "src/app/admin/review/review.list.page.tsx",
   "src/app/content/post.edit.page.tsx",
+  /*
+   * Slice twelve (SH1159): the visual editor's last three fetching effects, which is the whole of the
+   * file SH1156 could only take one read out of. Its three hand-written cache keys — a
+   * `loadedLabelsRef`, a `catalogue.key` and a `loadedSections.key` — are query keys now, and the
+   * `{ key, entries }` shape they each carried is what a key is for.
+   */
+  "src/app/editor/visual-editor.page.tsx",
 ];
 
 /** Every source file under the walked roots, as repo-relative paths with forward slashes. */
@@ -275,7 +274,7 @@ test("SH1047: no screen fetches inside an effect without a signal, outside the d
   // The floor is a vacuity guard — it exists so a scan that has stopped matching cannot report a
   // clean console — and it is set below the current measurement rather than at it, so it does not
   // have to be edited by every slice. It may only ever come down alongside a shrinking list.
-  assert.ok(fetching.length >= 22,
+  assert.ok(fetching.length >= 18,
     `SH1047: only ${fetching.length} fetching effect(s) found — this scan is measuring nothing`);
 
   const arrived = uncancelled.filter((path) => !UNCANCELLED.has(path));
@@ -346,9 +345,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 4,
+  assert.ok(UNCANCELLED.size <= 3,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "the slices took it to 28, 25, 21, 19, 16, 14, 12, 8, 7, 6 and 4. It may only ever shrink.");
+      + "the slices took it to 28, 25, 21, 19, 16, 14, 12, 8, 7, 6, 4 and 3. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -777,13 +776,11 @@ test("SH1156: the create form and the visual editor derive rather than mirror", 
     "SH1156: an external front end supplies its own URL, so there is no site to read — asking anyway "
       + "is a request per mount for an answer the page will not use");
 
-  // And the honest half: this file keeps its entry on the declared list, because its site read is one
-  // of eight and the other seven are still in effects. A slice that deleted the line for one read
-  // would leave the list describing something other than the console.
-  assert.ok(UNCANCELLED.has("src/app/editor/visual-editor.page.tsx"),
-    "SH1156: the visual editor is off the declared list. Its site read moved to the query layer and "
-      + "its other reads — the post-type of a selection, the insertable catalogue, the patterns, a "
-      + "section's editable props — did not.");
+  // This file kept its entry until SH1159 took the other three effects, so what stays asserted here is
+  // SH1156's own read rather than the entry: the list is the other test's subject, and a debt paid off
+  // has to leave it. The partial-migration rule it recorded is what SH1159 then satisfied.
+  assert.match(editor, /queryFn: \(\{ signal \}\) => siteService\.get\(siteId \?\? "", \{ signal \}\)/u,
+    "SH1156: the visual editor's site read is being made without a signal again");
 });
 
 test("SH1157: the palette stops ignoring answers, and the review list stops hiding a failure", () => {
@@ -928,6 +925,81 @@ test("SH1158: the heaviest form, and an approval surface that stops saying the w
   assert.match(post, /retry: false/u,
     "SH1158: the post read retries. A 404 on a deleted post is an answer, not a transient, and three "
       + "attempts is three times the wait before the page can say so.");
+});
+
+test("SH1159: the visual editor's three hand-written cache keys become query keys", () => {
+  const editor = stripComments(readFileSync(
+    join(ROOT, "src/app/editor/visual-editor.page.tsx"), "utf8"));
+  const service = stripComments(readFileSync(
+    join(ROOT, "src/services/universal-editor/universal-editor.service.ts"), "utf8"));
+
+  /*
+   * SH1159 — the heaviest file on the declared list, and the three things it was doing by hand were all
+   * one thing: keying a read. A `loadedLabelsRef` so a second field of the same post refetches nothing,
+   * a `catalogue.key` compared against the page the bridge reported, a `loadedSections.key` of
+   * `<page>|<length>`. Each is a cache key written out, each ignored a superseded answer while the
+   * server was still asked for it and still answered, and each is one line as a query key.
+   */
+  for (const gone of [/loadedLabelsRef/u, /setCatalogue\(/u, /setLoadedSections\(/u]) {
+    assert.doesNotMatch(editor, gone,
+      `SH1159: ${gone.source} is back — a read keyed by hand ignores the answer it does not want `
+        + "rather than cancelling the request for it, which is what SH1047's note says a signal is for");
+  }
+  for (const key of [
+    /queryKey: addressKey\(`summary:editorLabels\|\$\{labelSourceKey\(labelling\)\}`\)/u,
+    /queryKey: addressKey\(`summary:insertable\|\$\{pageOfFrame \?\? ""\}`\)/u,
+    /queryKey: addressKey\("summary:patterns"\)/u,
+    /queryKey: addressKey\(`summary:editorSections\|\$\{sectionKey\}`\)/u,
+  ]) {
+    assert.match(editor, key, `SH1159: ${key.source} is not the key this page reads under`);
+  }
+
+  /*
+   * The catalogue was ONE read of two subjects: what this page accepts belongs to the page, and the
+   * patterns pushed to the instance are the same answer for every page. `Promise.all` re-read both
+   * whenever either was wanted, so walking the frame through four pages asked for the pattern list four
+   * times — SH1150's finding on the site editor, met again.
+   */
+  assert.doesNotMatch(editor, /Promise\.all\(\[editorService\.insertable/u,
+    "SH1159: the page's catalogue and the instance's patterns are one read again, so a frame that "
+      + "navigates re-reads a list that cannot have changed");
+
+  /*
+   * The optimistic seed, which is the economy this had as state: a remove or a duplicate changes the
+   * length, so the answer is written under the key the echoed selection will carry rather than re-read.
+   * `setQueryData` is where that answer goes now, and the client's 30s `staleTime` is what stops it
+   * being refetched the moment the query is enabled again.
+   */
+  assert.match(editor,
+    /client\.setQueryData\(\s*addressKey\(`summary:editorSections\|\$\{selectedSection\.pagePostId\}\|\$\{next\.length\}`\), next\)/u,
+    "SH1159: the write no longer seeds the array it just sent, so a reorder costs a round trip for an "
+      + "answer already in hand");
+  assert.match(editor, /enabled: Boolean\(sectionKey\) && Boolean\(pageOfSection\) && !reordering/u,
+    "SH1159: the array is read while a write of it is in flight. The bridge echoes the new position "
+      + "*before* the patch resolves, so a read started on that echo can land after the write and put "
+      + "the array back as it was — which reads as \"this page cannot be reordered\" and stays that way "
+      + "until the curator selects something else.");
+  assert.match(editor, /sections\.isError && !isCancelled\(sections\.error\)/u,
+    "SH1159: `unavailable` is a real answer — a page whose sections live in another field is one this "
+      + "console cannot write — and a cancelled read is not it. Telling a curator a page cannot be "
+      + "reordered because they moved the selection is the reliable version of a rare race.");
+
+  /*
+   * And the finding, which is a level below the page: three of these service methods swallow a failure
+   * on purpose — an insert rail that cannot load must not take the panel with it, and `editable` falls
+   * back to the PUBLISHED row where there is no draft. An aborted request REJECTS, so without a rethrow
+   * every one of those fallbacks reads a navigation as its own case: an empty rail that never fills, or
+   * a second request for a row nobody is waiting for. §LXXII.21 names this hazard on the pages; this is
+   * the same hazard inside the services the pages call.
+   */
+  assert.equal((service.match(/if \(isCancelled\(error\)\) throw error/gu) ?? []).length, 3,
+    `SH1159: ${(service.match(/if \(isCancelled\(error\)\) throw error/gu) ?? []).length} of the three `
+      + "swallowing fallbacks rethrow a cancellation. `insertable` and `patterns` would answer an empty "
+      + "list for a frame the curator navigated, and `editable` would fire its PUBLISHED fallback for a "
+      + "DRAFT read that was aborted — a second request for an answer nobody wants.");
+  for (const read of [/signal: read\.signal/u, /this\.posts\.get\(postId, "DRAFT", read\)/u]) {
+    assert.match(service, read, `SH1159: ${read.source} — the signal does not reach the request`);
+  }
 });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {

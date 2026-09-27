@@ -2617,6 +2617,38 @@ on a deleted post is an answer rather than a transient.
 visual editor's other seven reads and the three paged screens §LXXII.21 says want `useInfiniteQuery`
 and a product decision.
 
+**Slice twelve emptied the visual editor, and found the hazard one level lower than the pages**
+(SH1159). Its three remaining effects were all doing the same thing by hand: a `loadedLabelsRef` so
+selecting a second field of the same post refetches nothing, a `catalogue.key` compared against the
+page the bridge reported, a `loadedSections.key` of `<page>|<length>`. Every one of those is a cache
+key written out, every one *ignored* a superseded answer while the server was still asked for it, and
+every one is a single line as a query key. The two derived answers — the field labels and the declared
+fields — stopped being state at all, for SH1156's reason: nothing edits them, so a local copy could
+only disagree. That also deleted the clear-on-navigation, because `setSelected(null)` makes the label
+source `none` and a disabled query is empty by construction.
+
+The catalogue was **one read of two subjects**, which is SH1150's finding on the site editor met
+again: what a page accepts belongs to the page, and the patterns pushed to this instance are the same
+answer for every page — so walking the frame through four pages asked for the pattern list four times.
+
+The section array is the one with an optimistic write, and it kept its economy exactly: a remove or a
+duplicate changes the length, so the answer is seeded under the key the echoed selection will carry
+with `client.setQueryData`, and the client's 30s `staleTime` is what stops it being refetched the
+moment the query is enabled again. The `!reordering` gate survives verbatim, because its reason
+survives verbatim — the bridge echoes the new position *before* the patch resolves, so a read started
+on that echo can land after the write and put the array back as it was.
+
+**And the finding, which is about the services rather than the pages.** `insertable`, `patterns` and
+`editable` each swallow a failure on purpose — an insert rail that cannot load must not take the panel
+with it, and `editable` falls back to the PUBLISHED row where there is no draft. An aborted request
+**rejects**, so without a rethrow each of those fallbacks reads a navigation as its own case: an empty
+rail that never fills, or a second request for a row nobody is waiting for. §LXXII.21 states this
+hazard about a page's `catch(() => setItems([]))`; the same hazard lives in every service fallback a
+migrated page now cancels, and `isCancelled(error) && throw error` is the whole of the fix. Worth
+looking for before the next slice, not after.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7 → 6 → 4 → 3.** The three left are the
+paged screens §LXXII.21 says want `useInfiniteQuery` **and** a product decision.
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key

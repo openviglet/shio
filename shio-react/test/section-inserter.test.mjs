@@ -65,7 +65,10 @@ test("SH1039: the reference is spelled the way the array already spells its entr
 })
 
 test("SH1039: the rail is offered only where exactly one container could receive it", () => {
-  assert.match(PAGE, /catalogue\.containers\.length === 1/,
+  // SH1159 moved the catalogue onto the query layer, so the `{ key, containers }` state this read is
+  // one query keyed on the page the bridge reported — the comparison against that key went with it,
+  // because an answer under another page's key is not this page's. The claim is unchanged: exactly one.
+  assert.match(PAGE, /pageOfFrame && containers\.length === 1/,
     "`sh:component-selected` says a section's index and how many its container holds, and NOT "
     + "which container. So on a page composing two ordered lists the console cannot tell which one "
     + "an insert belongs to, and a rail offered there would write into whichever it guessed - the "

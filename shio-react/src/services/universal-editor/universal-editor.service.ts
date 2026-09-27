@@ -1,4 +1,5 @@
 import axios from "@/lib/axios"
+import { isCancelled, type ShRead } from "@/lib/read-options"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
 import type { InsertableContainer } from "@/models/universal-editor/universal-editor.model"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
@@ -46,8 +47,9 @@ export class ShUniversalEditorService {
    * console can already read its own post; the fields then come from the post-type API, which is
    * where a label is declared and the one place it should be read from.
    */
-  async postTypeOf(postId: string): Promise<string | null> {
-    const response = await axios.get<ShPostUnified>(`/v2/post-unified/${postId}`)
+  async postTypeOf(postId: string, read: ShRead = {}): Promise<string | null> {
+    const response = await axios.get<ShPostUnified>(`/v2/post-unified/${postId}`,
+      { signal: read.signal })
     return response.data?.shPostType?.name ?? null
   }
 
@@ -65,13 +67,20 @@ export class ShUniversalEditorService {
    * A failure answers an empty list rather than throwing: the catalogue is what the console offers
    * on top of an editor that works without it, and an insert rail that cannot load must not take
    * the rest of the panel with it.
+   *
+   * <p>SH1159 — <b>except a cancellation</b>, which is rethrown past that fallback. This is the
+   * hazard §LXXII.21 names, one level lower than it is usually met: an aborted request rejects, so a
+   * swallowing `catch` turns a curator navigating the frame into "this page accepts nothing" — a
+   * blank rail that never fills, rather than a rail that arrives a moment later. The caller that
+   * cancelled is the one that stopped wanting the answer, and it needs the rejection to know.</p>
    */
-  async insertable(pageId: string): Promise<InsertableContainer[]> {
+  async insertable(pageId: string, read: ShRead = {}): Promise<InsertableContainer[]> {
     try {
       const response = await axios.get<{ containers?: InsertableContainer[] }>("/v2/agent/editable",
-        { params: { address: `id:${pageId}`, include: "insertable" } })
+        { params: { address: `id:${pageId}`, include: "insertable" }, signal: read.signal })
       return response.data?.containers ?? []
-    } catch {
+    } catch (error) {
+      if (isCancelled(error)) throw error
       return []
     }
   }
@@ -96,12 +105,17 @@ export class ShUniversalEditorService {
    * stale order back. The draft is the subject of every write on this surface (`patch` merges into
    * it), so it is the honest thing to read. The fallback is the ordinary case of a page that has
    * never been edited since it was published, where the two rows say the same thing anyway.
+   *
+   * <p>SH1159 — the fallback is for "there is no draft", and a cancellation is not that: without the
+   * rethrow, aborting the DRAFT read fires a <b>second</b> request for the PUBLISHED row that nobody
+   * is waiting for, which is the opposite of what cancelling is for.</p>
    */
-  async editable(postId: string): Promise<ShPostUnified> {
+  async editable(postId: string, read: ShRead = {}): Promise<ShPostUnified> {
     try {
-      return await this.posts.get(postId, "DRAFT")
-    } catch {
-      return await this.posts.get(postId, "PUBLISHED")
+      return await this.posts.get(postId, "DRAFT", read)
+    } catch (error) {
+      if (isCancelled(error)) throw error
+      return await this.posts.get(postId, "PUBLISHED", read)
     }
   }
 
@@ -173,12 +187,18 @@ export class ShUniversalEditorService {
     }
   }
 
-  /** SH1108 — the patterns pushed to this instance; a failure is an empty rail, not a broken panel. */
-  async patterns(): Promise<PatternSummary[]> {
+  /**
+   * SH1108 — the patterns pushed to this instance; a failure is an empty rail, not a broken panel.
+   *
+   * <p>SH1159 — a cancellation is rethrown past that fallback, for the reason `insertable` states.</p>
+   */
+  async patterns(read: ShRead = {}): Promise<PatternSummary[]> {
     try {
-      const response = await axios.get<PatternSummary[]>("/v2/agent/patterns")
+      const response = await axios.get<PatternSummary[]>("/v2/agent/patterns",
+        { signal: read.signal })
       return Array.isArray(response.data) ? response.data : []
-    } catch {
+    } catch (error) {
+      if (isCancelled(error)) throw error
       return []
     }
   }
