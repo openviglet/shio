@@ -124,13 +124,15 @@ test("SH931: opening a link never switches the session — the switch is a click
 
   // The one failure a scan-and-filter cannot catch by itself: a walk that finds nothing reports a
   // clean file for the same reason a correct one does. The notice had two effects — the reads and the
-  // dismissal reset — and SH1151 moved the reads into shared hooks, so it has one. The floor follows
-  // the file rather than the file following the floor, and a slicer that has lost the shape still
-  // says so here rather than passing.
-  assert.ok(bodies.length >= 1,
-    `SH931: the effect scan found ${bodies.length} effects in a file that has one, so the assertion`
-      + " below is measuring nothing. Check that `useEffect(` is still how they are written before"
-      + " concluding no effect touches the switch.")
+  // dismissal reset — SH1151 moved the reads into shared hooks, and SH1136 replaced the reset with a
+  // record of which link was dismissed, so it has none: no effect is the strongest form of "opening a
+  // link never switches". So the guard is that the scan found every effect the file spells, which
+  // still fails for a slicer that has lost the shape and holds at zero.
+  const spelled = (stripComments(NOTICE).match(/useEffect\(/gu) ?? []).length
+  assert.equal(bodies.length, spelled,
+    `SH931: the effect scan found ${bodies.length} of the ${spelled} effects this file spells, so the`
+      + " assertion below is measuring part of it. Check that the slicer still reads `useEffect(`"
+      + " before concluding no effect touches the switch.")
 
   // And the reads it lost are now somewhere else, so the same question is asked of them: a shared
   // hook that switched tenant would be the same P7 defect one file further away.

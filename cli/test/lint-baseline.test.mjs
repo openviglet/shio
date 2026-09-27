@@ -100,15 +100,8 @@ const DECLARED = {
   // SH1075's own job was the instrument — `shio-react/test/lint-gate.test.mjs` now runs ESLint
   // inside `pnpm test`, so the twelfth fails locally. Paying these off is SH1136. None is on the
   // PAID list below; the two paid pages that had regressed were fixed instead, not suppressed.
-  "react-hooks/set-state-in-effect": {
-    "src/app/content/languages.page.tsx": 1,
-    "src/app/content/post-conflict.dialog.tsx": 1,
-    "src/app/content/search.page.tsx": 1,
-    "src/app/system/bento-tenant-link-notice.tsx": 1,
-    // `bento.root.page.tsx` left with SH1157, whose palette query took the effect that set state;
-    // the history panel and the live preview with SH1136's first slice (see PAID).
-    "src/hooks/use-list-state.ts": 1,
-  },
+  // Empty again since SH1136 (see PAID), and left declared like the empty groups below.
+  "react-hooks/set-state-in-effect": {},
   // SH1075 — a ref read during render, the same accrual and the same payoff task (SH1136). Empty
   // since SH1136's second slice, and left declared like the group below: the two hooks write their
   // latest value in a layout effect, and the Activity page's back-stack is state, because whether
@@ -125,10 +118,9 @@ const DECLARED = {
     "src/app/content/static-file.list.page.tsx": 2,
   },
   "react-refresh/only-export-components": {
-    // SH1075 — the two below arrived while nothing local ran the lint, and are the kind the
-    // paragraph above calls the API rather than a defect: helpers exported beside a component.
-    "src/app/content/post-conflict.dialog.tsx": 2,
-    "src/components/field-constraints.tsx": 1,
+    // SH1075 added the conflict dialog's two and field-constraints' one; SH1136 moved those helpers
+    // to `lib/post-conflict.ts` and `lib/constraint-hint.ts`, which read better as modules of pure
+    // functions. What stays is the kind the paragraph above calls the API rather than a defect.
     "src/app/login/login-settings.tsx": 1,
     "src/app/routes/graphql.routes.tsx": 1,
     "src/components/theme-provider.tsx": 1,
@@ -239,6 +231,15 @@ const PAID = [
   // preview's save render is scheduled like its typing render, so neither effect raises a flag.
   "src/components/post-history.panel.tsx",
   "src/components/post-live-preview.tsx",
+  // SH1136, slice three — the last five. The Languages board's spinner is derived from which
+  // site|page the board answers; search holds its answer as one value and shows nothing when nothing
+  // is asked; the tenant notice records which link was dismissed; the list state re-seeds its draft
+  // during render; and the conflict dialog is SH702's keyed remount.
+  "src/app/content/languages.page.tsx",
+  "src/app/content/post-conflict.dialog.tsx",
+  "src/app/content/search.page.tsx",
+  "src/app/system/bento-tenant-link-notice.tsx",
+  "src/hooks/use-list-state.ts",
 ];
 
 test("SH701: every paid-off page stays paid off", async () => {

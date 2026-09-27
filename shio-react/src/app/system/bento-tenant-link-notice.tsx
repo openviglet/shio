@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 import { IconBuildingSkyscraper, IconX } from "@tabler/icons-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useLocation } from "react-router-dom"
 
@@ -63,12 +63,12 @@ export function BentoTenantLinkNotice() {
    */
   const current = useCurrentTenant().data?.tenantId ?? ""
   const memberships = (useMyTenants().data ?? []).map((tenant) => tenant.name)
-  const [dismissed, setDismissed] = useState(false)
+  // A dismissal belongs to the link it was about, so the banner comes back for the next link that
+  // carries the parameter. SH1136 — recorded as *which* link rather than reset by an effect when the
+  // link changes: the effect set state on every navigation, and naming the link says the rule itself.
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null)
+  const dismissed = dismissedFor !== null && dismissedFor === claimed
   const [switching, setSwitching] = useState(false)
-
-
-  // The parameter is reset per navigation, so a dismissal cannot outlive the link it was about.
-  useEffect(() => setDismissed(false), [claimed])
 
   if (!multiTenant || !claimed || dismissed) return null
   // `current` is empty until the first read answers; showing the banner before then would name a
@@ -111,7 +111,7 @@ export function BentoTenantLinkNotice() {
         variant="ghost"
         className="h-7 w-7"
         aria-label={t("tenantLink.dismiss")}
-        onClick={() => setDismissed(true)}
+        onClick={() => setDismissedFor(claimed)}
       >
         <IconX className="h-4 w-4" aria-hidden="true" />
       </Button>

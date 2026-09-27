@@ -45,11 +45,8 @@ import { changedAttrs, isDirty } from "@/lib/dirty"
 import { bufferDraft, clearBuffer, readBuffer } from "@/lib/draft-buffer"
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard"
 import { useAutosave } from "@/hooks/use-autosave"
-import {
-  conflictsBetween,
-  PostConflictDialog,
-  type PostConflictField,
-} from "@/app/content/post-conflict.dialog"
+import { PostConflictDialog } from "@/app/content/post-conflict.dialog"
+import { conflictsBetween, type PostConflictField } from "@/lib/post-conflict"
 
 const unifiedService = new ShPostUnifiedService()
 const previewService = new ShPreviewTokenService()

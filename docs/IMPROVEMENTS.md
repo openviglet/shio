@@ -1483,36 +1483,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.24 The seventeen the console lint still holds (SH1136)
-
-SH1075 found the console lint red in CI with twenty errors, fixed three, and recorded
-the other seventeen in `eslint-suppressions.json`. Each is declared by name in
-`cli/test/lint-baseline.test.mjs` against this task. `lint-gate.test.mjs` now runs
-ESLint inside `pnpm test`, so the list cannot grow unseen. It can only shrink if
-somebody works it.
-
-Three kinds, and they are not one sweep.
-
-Ten are `react-hooks/set-state-in-effect`: languages, search, the conflict dialog, the
-tenant-link notice, the bento root, the history and insights panels, the live preview,
-the publish preview and `use-list-state`. SH701 to SH704 settled which fix fits which
-shape. A mount effect that raises a spinner starts the read first. A dialog synced to
-`open` becomes a keyed remount. Anything else is derived instead of set, as
-`static-file.list.page.tsx`'s spinner now is.
-
-Four are `react-hooks/refs`, a ref read during render: the activity list, the live
-preview, `use-autosave` and `use-change-stream`. The usual fix moves the read into an
-effect or an event handler. For the two hooks, check first whether a state value is what
-they meant.
-
-Three are `react-refresh/only-export-components`, in the conflict dialog and
-`field-constraints.tsx`. The baseline already calls this kind an API rather than a
-defect. Move the helpers to a module only if that reads better. Otherwise declare them
-permanent there, with the reason.
-
-Pay a file off by deleting its lines from both the suppressions file and DECLARED in the
-same diff. A page fixed for `set-state-in-effect` joins PAID.
-
 ### LXXII.26 A fetch the guard cannot parse (SH1140)
 
 SH1047's guard in `shio-react/test/fetch-cancellation.test.mjs` finds a fetching effect

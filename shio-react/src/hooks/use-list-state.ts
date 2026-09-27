@@ -73,12 +73,15 @@ export function useListState<K extends string>(
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const committed = JSON.stringify(value)
 
-  useEffect(() => {
-    // Keyed on the committed values rather than on the params object: Back and a programmatic
-    // write both land here and must re-seed the box, while a render that merely touched the URL
-    // must not — re-seeding mid-keystroke deletes what is being typed.
+  // Keyed on the committed values rather than on the params object: Back and a programmatic write
+  // both change them and must re-seed the box, while a render that merely touched the URL must not —
+  // re-seeding mid-keystroke deletes what is being typed. SH1136 — adjusted during render, React's
+  // pattern for state that follows an input, rather than by an effect that re-rendered once more.
+  const [seededFrom, setSeededFrom] = useState(committed)
+  if (seededFrom !== committed) {
+    setSeededFrom(committed)
     setDraft(JSON.parse(committed) as Record<K, string>)
-  }, [committed])
+  }
 
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current)

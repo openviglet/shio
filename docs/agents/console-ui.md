@@ -2895,6 +2895,27 @@ the one worth knowing: the Activity page kept its "newer" back-stack in a ref **
 during render** to decide whether the button was enabled. That is state wearing a ref's name, and a
 ref change never re-renders — so it is state now. The group stays declared, empty.
 
+**The third slice finished it, and no two of the last five had the same fix** — which is SH701's
+lesson again, that a count of findings is not a count of defects:
+
+- **Languages** raised its spinner at the top of the read. It is derived now, from which
+  `site|page` the board on screen answers; a refresh after asking the agent keeps the board up.
+- **Search** reset four pieces of state in the effect when nothing was asked. It holds its answer
+  as one value, and what it shows is derived from whether anything is being asked, so clearing
+  the filters needs no effect at all.
+- **The tenant-link notice** reset `dismissed` whenever the link changed. It records *which* link
+  was dismissed, which is the rule itself written down rather than enforced by a re-render.
+- **`useListState`** re-seeded its draft from the committed URL in an effect. It adjusts during
+  render against `seededFrom`, React's pattern for state that follows an input.
+- **The conflict dialog** reset its choice when `open` flipped, which is SH702's shape: its body
+  now mounts inside `DialogContent`, so closing unmounts it and reopening starts from the stored
+  values.
+
+And the three non-component exports were **moved, not declared**: `conflictsBetween`/`readable`
+to `lib/post-conflict.ts` and `constraintHint` to `lib/constraint-hint.ts`, pure functions that
+read better as modules. `set-state-in-effect` and `refs` are both empty and stay declared; what
+`only-export-components` still holds is the `ui/` and context API the baseline already names.
+
 ## The Activity page's live update, seen to arrive (SH1087)
 
 `useChangeStream` (SH1005) had only source-scan assertions, and a stream that never delivers looks

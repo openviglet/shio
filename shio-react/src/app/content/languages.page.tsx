@@ -45,16 +45,20 @@ export default function LanguagesPage() {
   const navigate = useNavigate()
   const [board, setBoard] = useState<ShSiteCoverage | null>(null)
   const [page, setPage] = useState(0)
-  const [loading, setLoading] = useState(true)
+  // SH1136 — derived, not raised by the read: the board is loading while the one on screen answers
+  // another site or page than the one asked for. Raising a flag at the top of the read is what put a
+  // synchronous setState in the mount effect. A refresh after an action keeps the board on screen.
+  const [answered, setAnswered] = useState<string | null>(null)
+  const loading = answered !== `${siteId}|${page}`
   const [busy, setBusy] = useState<string | null>(null)
   const agentAvailable = useAgentAvailable()
 
   const load = useCallback((signal?: AbortSignal) => {
-    setLoading(true)
+    const asked = `${siteId}|${page}`
     return siteService.coverage(siteId, page, PAGE_SIZE, { signal })
       .then((answer) => {
         setBoard(answer)
-        setLoading(false)
+        setAnswered(asked)
       })
       .catch((reason) => {
         // SH1047 — an abort is not an empty board: paging quickly would otherwise blank the table
@@ -62,7 +66,7 @@ export default function LanguagesPage() {
         // in it.
         if (isCancelled(reason)) return
         setBoard(null)
-        setLoading(false)
+        setAnswered(asked)
       })
   }, [siteId, page])
 

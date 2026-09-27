@@ -45,7 +45,8 @@ test("SH1010: the pattern and its message are one thing on screen", () => {
 
 test("SH1010: the form says the rule before a save does, and never quotes the expression", () => {
   const form = read("src", "components", "widgets", "post-form-fields.tsx")
-  const editor = read("src", "components", "field-constraints.tsx")
+  // SH1136 moved the hint out of the component file, which may export only components.
+  const editor = read("src", "lib", "constraint-hint.ts")
 
   // SH1052 gave the paragraph an id so the control can point at it — the hint was prose nobody
   // using a screen reader was told about. The claim is unchanged and the spelling moved, so this
@@ -62,7 +63,7 @@ test("SH1010: the form says the rule before a save does, and never quotes the ex
 })
 
 test("SH1010: advice is shown as advice", () => {
-  const editor = read("src", "components", "field-constraints.tsx")
+  const editor = read("src", "lib", "constraint-hint.ts")
 
   assert.match(editor, /content\.hintRecommended/)
   const en = JSON.parse(read("src", "i18n", "locales", "en", "content.json"))

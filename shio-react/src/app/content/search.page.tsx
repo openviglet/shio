@@ -45,6 +45,14 @@ const ASKING = ["q", "site", "type", "state", "locale", "modifiedSince", "modifi
 /** SH1024 — stable empties, so the facets' memo does not recompute on every render. */
 const NO_SITES: { name: string }[] = []
 const NO_TYPES: { name: string; title?: string }[] = []
+const NO_RESULTS: ShConsoleSearchRow[] = []
+
+/** One search's answer: the rows, how many matched, and how many were withheld (SH1027). */
+interface SearchAnswer {
+  results: ShConsoleSearchRow[]
+  total: number
+  withheld: number
+}
 
 export default function SearchPage() {
   const { t } = useTranslation()
@@ -52,11 +60,12 @@ export default function SearchPage() {
   // SH1046 — one cached read of the site list, shared with every other picker.
   const sites = useSites().data ?? NO_SITES
   const postTypes = usePostTypes().data ?? NO_TYPES
-  const [results, setResults] = useState<ShConsoleSearchRow[]>([])
-  const [total, setTotal] = useState(0)
-  /** SH1027 — how many matched and were removed because this reader may not open them. */
-  const [withheld, setWithheld] = useState(0)
-  const [searched, setSearched] = useState(false)
+  /**
+   * The last answer, as one value. SH1136 — what the page shows is derived from it and from whether
+   * anything is being asked, so clearing the filters needs no effect that resets four pieces of state:
+   * not asking is "nothing searched", whatever the last answer was.
+   */
+  const [answer, setAnswer] = useState<SearchAnswer | null>(null)
   // `q` is not a text key here: the bar debounces its own field, and a second debounce would
   // only delay the URL behind what the curator already stopped typing.
   const list = useListState(SEARCH_LIST, { text: ["folder"] })
@@ -64,6 +73,12 @@ export default function SearchPage() {
   const scope = folder ? (subtree === "true" ? "subtree" : "folder") : "site"
   /** Whether anything is being asked. A filter alone is a question: "every draft on Blog". */
   const asking = ASKING.some((key) => list.value[key] !== "")
+  const shown = asking ? answer : null
+  const results = shown?.results ?? NO_RESULTS
+  const total = shown?.total ?? 0
+  /** SH1027 — how many matched and were removed because this reader may not open them. */
+  const withheld = shown?.withheld ?? 0
+  const searched = shown !== null
 
   /*
    * SH1024 — the design system's filter bar over the same URL, the way the content browser draws
@@ -101,13 +116,7 @@ export default function SearchPage() {
    * `/agent/find` takes.</p>
    */
   useEffect(() => {
-    if (!asking) {
-      setResults([])
-      setTotal(0)
-      setWithheld(0)
-      setSearched(false)
-      return
-    }
+    if (!asking) return
     /*
      * SH1047 — the `current` flag this replaced ignored a superseded answer; the signal stops it
      * being sent for. Both keep the wrong rows off the screen, and only one stops the server doing
@@ -118,19 +127,13 @@ export default function SearchPage() {
       q: q.trim(), site, type, state, locale, modifiedSince, modifiedBefore, folder, subtree,
     }, 50, { signal: abort.signal })
       .then((found) => {
-        setResults(found.results)
-        setTotal(found.count)
-        setWithheld(found.withheld)
-        setSearched(true)
+        setAnswer({ results: found.results, total: found.count, withheld: found.withheld })
       })
       .catch((reason: unknown) => {
         // A cancelled search leaves the previous rows alone: the next one is already running, and
         // blanking the list between keystrokes is the flicker the debounce exists to avoid.
         if (isCancelled(reason)) return
-        setResults([])
-        setTotal(0)
-        setWithheld(0)
-        setSearched(true)
+        setAnswer({ results: [], total: 0, withheld: 0 })
       })
     return () => abort.abort()
   }, [asking, q, site, type, state, locale, modifiedSince, modifiedBefore, folder, subtree])
