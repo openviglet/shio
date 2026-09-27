@@ -79,11 +79,15 @@ export default function PostTypeListPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => navigate(`${ROUTES.POST_TYPE_ROOT}/${encodeURIComponent(item.name)}`)}>
-                          <Pencil className="h-4 w-4" />
+                        {/* SH1054 — named, and after the type: axe found 32 unnamed icon buttons here, a
+                            pair per row, each announced as "button" and nothing else. */}
+                        <Button variant="ghost" size="icon" aria-label={`${t("common.edit")} ${item.title || item.name}`}
+                          onClick={() => navigate(`${ROUTES.POST_TYPE_ROOT}/${encodeURIComponent(item.name)}`)}>
+                          <Pencil className="h-4 w-4" aria-hidden="true" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.name)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                        <Button variant="ghost" size="icon" aria-label={`${t("common.delete")} ${item.title || item.name}`}
+                          onClick={() => handleDelete(item.name)}>
+                          <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                         </Button>
                       </div>
                     </TableCell>

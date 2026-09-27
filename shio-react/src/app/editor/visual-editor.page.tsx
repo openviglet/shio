@@ -1216,7 +1216,7 @@ export default function VisualEditorPage() {
       {/* Sticky save bar */}
       <div className="sticky top-0 z-10 flex items-center justify-between bg-orange-50 dark:bg-orange-950/30 px-4 py-3 border-b">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => leave(ROUTES.UNIVERSAL_EDITOR)}>
+          <Button variant="ghost" size="sm" aria-label={t("common.back")} onClick={() => leave(ROUTES.UNIVERSAL_EDITOR)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <span className="font-semibold">{t("universalEditor.title")}</span>

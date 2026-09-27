@@ -66,7 +66,7 @@ type Props = WidgetProps
  * thing. That is a worse WYSIWYG and a better document, and the document is what a front end,
  * an agent and a diff all read.</p>
  */
-export function BlocksWidget({ attr, onChange, labelledBy, describedBy, required }: Props) {
+export function BlocksWidget({ attr, onChange, labelledBy, describedBy }: Props) {
   const { t } = useTranslation()
   const blocks = useMemo(
     () => (attr.blocksValue ?? []) as ShBlock[],
@@ -127,7 +127,7 @@ export function BlocksWidget({ attr, onChange, labelledBy, describedBy, required
       role="group"
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
-      aria-required={required ? "true" : "false"}
+      // SH1054 — no aria-required: a group may not carry it, and its name (the label) already says it
       className="space-y-2"
     >
       {/* Announcements for moves, inserts and removals — polite, so typing is not interrupted. */}

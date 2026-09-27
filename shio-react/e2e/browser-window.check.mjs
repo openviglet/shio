@@ -74,19 +74,19 @@ page.on("request", (request) => { if (/\/object\/[^/]+\/list\?page=0/.test(reque
 
 for (const view of ["list", "grid"]) {
   await page.goto(`${BASE}/bento/content/object/${folderId}?view=${view}`, { waitUntil: "domcontentloaded" })
-  const listbox = page.locator('[role="listbox"]')
-  const options = listbox.locator('[role="option"]')
+  const listbox = page.locator('[role="grid"]') // SH1054 — a grid now, not a listbox
+  const options = listbox.locator('[role="row"]')
   // The listbox renders before its first page arrives, so wait for a row, not for the box.
   await options.first().waitFor({ timeout: 20_000 })
   // The browser pages by fifty; load every page so the folder crosses the threshold on screen.
   for (let i = 0; i < 10; i++) {
     const more = page.getByRole("button", { name: /carregar mais|load more/i })
     if (!(await more.count())) break
-    const before = Number(await options.first().getAttribute("aria-setsize"))
+    const before = Number(await listbox.getAttribute("aria-rowcount"))
     await more.first().click()
     await page.waitForFunction((was) => {
-      const first = document.querySelector('[role="listbox"] [role="option"]')
-      return Number(first?.getAttribute("aria-setsize")) > was
+      const grid = document.querySelector('[role="grid"]')
+      return Number(grid?.getAttribute("aria-rowcount")) > was
     }, before, { timeout: 15_000 })
   }
   await page.waitForTimeout(500)
@@ -95,8 +95,8 @@ for (const view of ["list", "grid"]) {
   claim(firstPageReads === 0, `${view}: an idle page reads nothing (${firstPageReads} page-0 read(s) in 2s)`)
 
   const mounted = await options.count()
-  const size = Number(await options.first().getAttribute("aria-setsize"))
-  console.log(`\n${view}: ${mounted} option(s) mounted of aria-setsize ${size}`)
+  const size = Number(await listbox.getAttribute("aria-rowcount"))
+  console.log(`\n${view}: ${mounted} row(s) mounted of aria-rowcount ${size}`)
   claim(size > 150, `${view}: the folder is past the threshold (${size} rows)`)
   claim(mounted > 0 && mounted < size, `${view}: only a window is mounted (${mounted} of ${size})`)
 
@@ -106,8 +106,8 @@ for (const view of ["list", "grid"]) {
   await page.waitForTimeout(800)
   const focused = await page.evaluate(() => {
     const el = document.activeElement
-    return el?.getAttribute("role") === "option"
-      ? { posinset: el.getAttribute("aria-posinset"), text: el.textContent?.slice(0, 40) } : null
+    return el?.getAttribute("role") === "row"
+      ? { posinset: el.getAttribute("aria-rowindex"), text: el.textContent?.slice(0, 40) } : null
   })
   claim(focused?.posinset === String(size),
     `${view}: End focuses the last row (aria-posinset ${focused?.posinset ?? "none"}, "${focused?.text ?? ""}")`)

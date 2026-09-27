@@ -12,6 +12,53 @@
 @import "@viglet/viglet-design-system/bento.css";
 
 /*
+ * SH1054 — `dark:` means the console's theme, not the operating system's.
+ *
+ * The theme is a `dark` class on <html> (next-themes, via the design system's ThemeProvider), and
+ * the package's own CSS keys on it. Tailwind v4's default `dark:` is `prefers-color-scheme`, so the
+ * 55 `dark:` utilities in Shio's own components followed the OS instead: in the dark console on a
+ * light-mode machine the HTML editor's `dark:prose-invert` never applied, and axe measured its body
+ * text at 1.73:1. One variant, declared the way the theme actually works.
+ *
+ * `:is(.dark *)` and not `:where(...)`: the package's compiled utilities sit in the same `utilities`
+ * layer after Shio's, so at equal specificity its `.bg-orange-50` beat Shio's
+ * `dark:bg-orange-950/40` — the files filter chip rendered dark text on a light chip at 1.6:1.
+ * `:is()` carries the `.dark` class's weight, so a dark variant outranks the plain utility whichever
+ * stylesheet emitted it last.
+ */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * SH1054 — prose in the dark console reads the inverted palette.
+ *
+ * The typography rules come compiled from the design system: `.prose` declares both palettes
+ * (`--tw-prose-*` and `--tw-prose-invert-*`) and nothing swaps them, and Shio has no typography
+ * plugin of its own, so `dark:prose-invert` in a Shio component generated nothing. The HTML editor's
+ * body text stayed gray-700 on the dark ground — 1.73:1, measured by axe. This is the swap
+ * `prose-invert` would have made, keyed on the theme class the rest of the console follows.
+ */
+.dark .prose {
+  --tw-prose-body: var(--tw-prose-invert-body);
+  --tw-prose-headings: var(--tw-prose-invert-headings);
+  --tw-prose-lead: var(--tw-prose-invert-lead);
+  --tw-prose-links: var(--tw-prose-invert-links);
+  --tw-prose-bold: var(--tw-prose-invert-bold);
+  --tw-prose-counters: var(--tw-prose-invert-counters);
+  --tw-prose-bullets: var(--tw-prose-invert-bullets);
+  --tw-prose-hr: var(--tw-prose-invert-hr);
+  --tw-prose-quotes: var(--tw-prose-invert-quotes);
+  --tw-prose-quote-borders: var(--tw-prose-invert-quote-borders);
+  --tw-prose-captions: var(--tw-prose-invert-captions);
+  --tw-prose-kbd: var(--tw-prose-invert-kbd);
+  --tw-prose-kbd-shadows: var(--tw-prose-invert-kbd-shadows);
+  --tw-prose-code: var(--tw-prose-invert-code);
+  --tw-prose-pre-code: var(--tw-prose-invert-pre-code);
+  --tw-prose-pre-bg: var(--tw-prose-invert-pre-bg);
+  --tw-prose-th-borders: var(--tw-prose-invert-th-borders);
+  --tw-prose-td-borders: var(--tw-prose-invert-td-borders);
+}
+
+/*
  * SH890 — Shio's accent, spelled once.
  *
  * The design system's preset ships the console's original blue as four source tokens and

@@ -104,8 +104,6 @@ function unnamedIconButtons() {
 const UNNAMED_DEBT = {
   "app/admin/auth-provider/auth-provider.page.tsx": ["X"],
   "app/admin/exchange-provider/exchange-provider.page.tsx": ["X"],
-  "app/content/post-type.edit.page.tsx": ["Trash2"],
-  "app/content/post-type.list.page.tsx": ["Pencil", "Trash2"],
   // SH922 removed the Download entry: that button lived inside the anchor that already
   // named it, and the fix was to delete the button rather than to label it.
   "app/content/static-file.list.page.tsx": ["Trash2"],

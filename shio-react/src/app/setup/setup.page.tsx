@@ -139,6 +139,7 @@ export default function SetupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t("setup.enterPassword")}
                   className="pl-9 h-11"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- first-run setup is this one field (SH1054)
                   autoFocus
                 />
               </div>

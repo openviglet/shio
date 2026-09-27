@@ -8,6 +8,7 @@
  */
 import { BentoFormHero, BentoHero } from "@viglet/viglet-design-system/bento"
 import type React from "react"
+import { useTranslation } from "react-i18next"
 
 interface PageHeroProps {
   /** Tabler icon component, rendered as the hero's `leading`. */
@@ -19,6 +20,8 @@ interface PageHeroProps {
   subtitle?: string
   /** The hero's back link. */
   urlBase?: string
+  /** SH1054 — its words. Defaults to "Back": the package draws the link with this as its only text. */
+  backLabel?: string
   /** Actions, rendered as the hero's `trailing`. */
   actions?: React.ReactNode
 
@@ -53,6 +56,7 @@ export function PageHero({
   eyebrow,
   subtitle,
   urlBase,
+  backLabel,
   actions,
   saveTitle,
   saveBadges,
@@ -65,12 +69,17 @@ export function PageHero({
   // A page has a save bar when it gave this adapter something only a save bar takes. `actions`
   // alone is not enough — the content browser passes two navigation buttons and wants no bar.
   const hasSaveBar = onCancel !== undefined || saveBadges !== undefined
+  // SH1054 — the package draws the back link as an arrow plus `backLabel`, so with no label it was
+  // an arrow and nothing: axe found that unnamed link on 28 routes, one per page with a way back.
+  const { t } = useTranslation()
+  const back = urlBase ? backLabel ?? t("common.back") : undefined
 
   if (hasSaveBar) {
     return (
       <BentoFormHero
         eyebrow={eyebrow}
         backTo={urlBase}
+        backLabel={back}
         leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}
         title={title}
         subtitle={subtitle}
@@ -90,6 +99,7 @@ export function PageHero({
     <BentoHero
       eyebrow={eyebrow}
       backTo={urlBase}
+      backLabel={back}
       title={title}
       subtitle={subtitle}
       leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}

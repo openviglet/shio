@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { reportProblem } from "@/lib/problem"
 import { isCancelled } from "@/lib/read-options"
 import { viewHref } from "@/lib/saved-view"
@@ -107,7 +107,9 @@ export function SavedViews({ list }: Readonly<{ list: SavedViewList }>) {
         </DropdownMenuContent>
       </DropdownMenu>
       <Popover open={saving} onOpenChange={setSaving}>
-        <PopoverTrigger asChild><span /></PopoverTrigger>
+        {/* SH1054 — an anchor, not a trigger: the menu item opens this, and an empty span dressed as
+            a trigger carried aria-expanded, which a span may not have. */}
+        <PopoverAnchor asChild><span /></PopoverAnchor>
         <PopoverContent align="end" className="w-72 space-y-3">
           <Input aria-label={t("views.name")} placeholder={t("views.name")} value={name}
             onChange={(event) => setName(event.target.value)}

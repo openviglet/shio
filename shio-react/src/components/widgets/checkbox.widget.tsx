@@ -20,7 +20,7 @@ function parseChoices(shPostTypeAttr?: WidgetProps["attr"]["shPostTypeAttr"]): C
   } catch { return [] }
 }
 
-export function CheckBoxWidget({ attr, onChange, labelledBy, describedBy, required }: WidgetProps) {
+export function CheckBoxWidget({ attr, onChange, labelledBy, describedBy }: WidgetProps) {
   const { t } = useTranslation()
   const choices = useMemo(() => parseChoices(attr.shPostTypeAttr), [attr.shPostTypeAttr])
   const selected = new Set(attr.arrayValue || [])
@@ -40,7 +40,7 @@ export function CheckBoxWidget({ attr, onChange, labelledBy, describedBy, requir
       role="group"
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
-      aria-required={required ? "true" : "false"}
+      // SH1054 — no aria-required: a group may not carry it, and its name (the label) already says it
       className="space-y-2"
     >
       {choices.map(choice => (

@@ -104,7 +104,7 @@ async function resolveFullPath(fileId: string, read: ShRead = {}): Promise<Resol
   return null
 }
 
-export function FileWidget({ attr, onChange, labelledBy, describedBy, required }: WidgetProps) {
+export function FileWidget({ attr, onChange, labelledBy, describedBy }: WidgetProps) {
   const { t } = useTranslation()
   const [browserOpen, setBrowserOpen] = useState(false)
   const [browserStartId, setBrowserStartId] = useState<string | undefined>(undefined)
@@ -270,7 +270,7 @@ export function FileWidget({ attr, onChange, labelledBy, describedBy, required }
       role="group"
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
-      aria-required={required ? "true" : "false"}
+      // SH1054 — no aria-required: a group may not carry it, and its name (the label) already says it
       className="space-y-2"
     >
       {attr.strValue ? (
@@ -371,19 +371,20 @@ export function FileWidget({ attr, onChange, labelledBy, describedBy, required }
                 <p className="text-xs text-muted-foreground/60 mt-1">{t("content.orClickToUpload")}</p>
               </>
             )}
-            {/*
-              `sr-only` rather than `hidden`: Tailwind's `hidden` is `display: none`, which removes
-              the input from the accessibility tree AND from the focus order. This keeps it
-              reachable and out of sight, which is what was wanted all along.
-            */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="sr-only"
-              aria-label={t("content.selectFile")}
-              onChange={handleFileInput}
-            />
           </button>
+          {/*
+            SH1054 — outside the button, and out of the tab order. Inside it, the input was a focusable
+            control nested in another (axe: nested-interactive) and a second tab stop for the same act.
+            The button is the keyboard path (SH1052); `sr-only` rather than `hidden` keeps `.click()` working.
+          */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={handleFileInput}
+          />
 
           {/* Or select existing */}
           <Button

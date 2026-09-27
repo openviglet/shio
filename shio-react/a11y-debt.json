@@ -1,0 +1,9 @@
+{
+  "note": "SH1054 — the accessibility violations below serious that a console route is known to have, by route family and axe rule id. console-check.mjs runs axe on every route: a serious or critical violation always fails, a lesser one fails unless its family lists it here, and an entry no run observes any more is reported so it can be deleted. The map shrinks only by deletion.",
+  "vendor": {
+    ".graphiql-container": "GraphiQL's own editor and tab strip, embedded and not authored here: its Monaco theme draws line numbers and comments below 4.5:1 and its tabs hold their close buttons (nested-interactive). Excluded from axe by name, printed on every run, and deleted the day the explorer stops being a vendored component."
+  },
+  "routes": {
+    "bento-editor-sites": ["heading-order"]
+  }
+}

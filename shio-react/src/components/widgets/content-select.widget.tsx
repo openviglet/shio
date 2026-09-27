@@ -97,7 +97,7 @@ async function resolveFullPath(contentId: string, read: ShRead = {}): Promise<Re
   return null
 }
 
-export function ContentSelectWidget({ attr, onChange, labelledBy, describedBy, required }: WidgetProps) {
+export function ContentSelectWidget({ attr, onChange, labelledBy, describedBy }: WidgetProps) {
   const { t } = useTranslation()
   const [browserOpen, setBrowserOpen] = useState(false)
   const [browserStartId, setBrowserStartId] = useState<string | undefined>(undefined)
@@ -167,7 +167,7 @@ export function ContentSelectWidget({ attr, onChange, labelledBy, describedBy, r
       role="group"
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
-      aria-required={required ? "true" : "false"}
+      // SH1054 — no aria-required: a group may not carry it, and its name (the label) already says it
       className="space-y-2"
     >
       {attr.strValue ? (

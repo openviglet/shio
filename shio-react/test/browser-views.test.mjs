@@ -51,7 +51,8 @@ test("SH1026: the chosen view reaches the render, through one renderer per view"
   assert.match(page, /className=\{listboxClass\(viewMode\)\}/, "SH1026: the listbox ignores the view")
   // One listbox for every view, so selection, roving focus and Shift-extend are one implementation.
   // Attributes only: the keyboard handler's comment names the role in backticks.
-  assert.equal(page.match(/role="listbox"(?!`)/g)?.length, 1, "SH1026: a view grew a listbox of its own")
+  // SH1054 — the one list is a grid now (an option may not hold the row's controls).
+  assert.equal(page.match(/role="grid"(?!`)/g)?.length, 1, "SH1026: a view grew a list of its own")
   const views = read("app", "content", "content-browser", "browser-views.tsx")
   for (const renderer of ["ListRow", "GridCard"]) {
     assert.match(views, new RegExp(`function ${renderer}\\(`), `SH1026: the ${renderer} renderer is gone`)
@@ -147,8 +148,9 @@ test("SH1026: past the threshold only the rows a viewport shows are mounted, wit
   const page = browser()
   assert.match(page, /sortedItems\.slice\(rowWindow\.start, rowWindow\.end\)/,
     "SH1026: the listbox maps every row, so the window the hook measured is never used")
-  assert.match(page, /aria-setsize=\{sortedItems\.length\}[\s\S]*?aria-posinset=\{index \+ 1\}/,
-    "SH1026: a windowed listbox must state its size, or a screen reader counts only the mounted rows")
+  // SH1054 — the grid's own terms for the same two facts: the count on the grid, the place on the row.
+  assert.match(page, /aria-rowcount=\{sortedItems\.length\}[\s\S]*?aria-rowindex=\{index \+ 1\}/,
+    "SH1026: a windowed list must state its size, or a screen reader counts only the mounted rows")
   assert.match(page, /pendingFocus\.current = bounded\s*reveal\(bounded\)/,
     "SH1026: an arrow to a row outside the window focuses nothing, so the keyboard stops at the window's edge")
   assert.match(page, /tabIndex=\{index === tabStop \? 0 : -1\}/,

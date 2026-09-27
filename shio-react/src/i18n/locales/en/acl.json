@@ -1,6 +1,8 @@
 {
   "acl.title": "Permissions",
   "acl.permissions": "Permissions",
+  "acl.permission": "Permission",
+  "acl.principalType": "Who",
   "acl.description": "Control who can read, write and publish this content.",
   "acl.descriptionFor": "Control who can read, write and publish \"{{name}}\".",
   "acl.openHint": "No restrictions — anyone signed in can access this. Add a grant to restrict it.",

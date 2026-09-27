@@ -354,7 +354,7 @@ export default function StaticFileListPage() {
           <div className="flex items-start justify-end gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <Select value={targetSite} onValueChange={setTargetSite}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40" aria-label={t("staticFile.uploadTarget")}>
                   <SelectValue placeholder={t("staticFile.uploadTarget")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -588,6 +588,7 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
         selected ? "border-orange-400 ring-2 ring-orange-300" : "hover:border-orange-300",
       )}>
       {/* Selection checkbox (always visible when selected, on hover otherwise) */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- only stops the tile's click; the checkbox inside is the control (SH1054) */}
       <div className={cn("absolute left-2 top-2 z-10 transition-opacity",
         selected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}
         onClick={(e) => e.stopPropagation()}>
@@ -634,6 +635,7 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
         images: a font has no alt to miss, which is the same question `asset-no-alt` asks.
       */}
       {image && (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- only stops the tile's click; the alt-text input inside is the control (SH1054)
         <div className="px-2 pb-2" onClick={(event) => event.stopPropagation()}>
           <Input
             value={alt}

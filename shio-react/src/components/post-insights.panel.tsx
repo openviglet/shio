@@ -160,7 +160,8 @@ export function PostInsightsPanel({ address, revision, onGoToField }: Readonly<P
                 {digest.headings.map((heading, index) => (
                   <li key={`${heading.level}-${heading.text}-${index}`}
                     style={{ paddingLeft: `${(heading.level - 1) * 12}px` }}>
-                    <span className="opacity-60">h{heading.level}</span> {heading.text}
+                    {/* SH1054 — muted by the token, not by opacity: 60% of the text colour measured 3.5:1. */}
+                    <span className="text-muted-foreground">h{heading.level}</span> {heading.text}
                   </li>
                 ))}
               </ul>

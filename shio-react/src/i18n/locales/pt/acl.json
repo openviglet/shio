@@ -1,6 +1,8 @@
 {
   "acl.title": "Permissões",
   "acl.permissions": "Permissões",
+  "acl.permission": "Permissão",
+  "acl.principalType": "Quem",
   "acl.description": "Controle quem pode ler, escrever e publicar este conteúdo.",
   "acl.descriptionFor": "Controle quem pode ler, escrever e publicar \"{{name}}\".",
   "acl.openHint": "Sem restrições — qualquer pessoa autenticada pode acessar. Adicione uma concessão para restringir.",

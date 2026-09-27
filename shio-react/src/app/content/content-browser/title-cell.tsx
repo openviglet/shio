@@ -90,8 +90,10 @@ export function TitleCell({ row, onSaved }: { row: BrowserRow; onSaved: () => vo
 
   if (editing) {
     return (
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- only stops the row's click while renaming (SH1054)
       <span className="flex min-w-0 items-center gap-1" onClick={(event) => event.stopPropagation()}>
         {icon}
+        {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the curator just asked to rename; focus belongs in the field (SH1054) */}
         <Input autoFocus value={editing.value} disabled={busy} className="h-7"
           aria-label={t("content.titleEdit", { title: row.name })}
           onChange={(event) => setEditing({ ...editing, value: event.target.value })}

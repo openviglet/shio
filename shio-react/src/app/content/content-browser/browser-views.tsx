@@ -75,6 +75,7 @@ function Title({ item, onOpen, className }: Pick<BrowserItemProps, "item" | "onO
 function Actions({ item, actions }: Pick<BrowserItemProps, "item" | "actions">) {
   const { t } = useTranslation()
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- only stops the row's click; the menu trigger inside is the control (SH1054)
     <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
       <BentoActionsMenu
         triggerLabel={t("content.rowActions", { name: rowLabel(item, t("content.localeDefault")) })}

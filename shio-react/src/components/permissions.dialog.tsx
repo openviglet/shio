@@ -130,7 +130,7 @@ function PermissionsBody({
             {entries.map((e, i) => (
               <div key={i} className="flex items-center gap-2">
                 <Select value={e.principalType} onValueChange={(v) => updateRow(i, { principalType: v as ShAclPrincipalType })}>
-                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-32" aria-label={t("acl.principalType")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PRINCIPAL_TYPES.map((p) => (
                       <SelectItem key={p} value={p}>{t(`acl.principal.${p}`)}</SelectItem>
@@ -144,7 +144,7 @@ function PermissionsBody({
                   onChange={(ev) => updateRow(i, { principalName: ev.target.value })}
                 />
                 <Select value={e.permission} onValueChange={(v) => updateRow(i, { permission: v as ShAclPermission })}>
-                  <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-28" aria-label={t("acl.permission")}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PERMISSIONS.map((p) => (
                       <SelectItem key={p} value={p}>{t(`acl.permission.${p}`)}</SelectItem>

@@ -195,7 +195,7 @@ function MultiSelectSettings({ settings, onChange, postTypes }: {
           value={ms.postType ?? ""}
           onValueChange={(v) => onChange({ ...settings, multiselect: { ...ms, postType: v } })}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" aria-label={t("content.postType")}>
             <SelectValue placeholder={t("content.pickOne")} />
           </SelectTrigger>
           <SelectContent>
@@ -338,7 +338,7 @@ function SemanticNavigationSettings({ field, onFieldChange }: {
           value={(search.association as string) ?? ""}
           onValueChange={(v) => updateSearch({ ...search, association: v })}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full" aria-label={t("content.searchFieldAssociation")}>
             <SelectValue placeholder={t("content.none")} />
           </SelectTrigger>
           <SelectContent>
@@ -438,7 +438,7 @@ function FieldDetailsSettings({ field, widgets, postTypes, onFieldChange }: {
           value={field.widget ?? ""}
           onValueChange={(widgetName) => onFieldChange({ ...field, widget: widgetName })}
         >
-          <SelectTrigger className="w-full md:w-80">
+          <SelectTrigger className="w-full md:w-80" aria-label={t("content.widget")}>
             <SelectValue placeholder={t("content.pickOne")} />
           </SelectTrigger>
           <SelectContent>
@@ -547,6 +547,7 @@ function SortableFieldRow({ field, index, widgets, postTypes, onFieldChange, onD
       }`}
     >
       {/* Collapsed header */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- the pointer's shortcut; the chevron button is the keyboard's (SH1054) */}
       <div
         className="flex items-center gap-3 px-3 py-2.5 cursor-pointer select-none"
         onClick={() => setIsOpen(!isOpen)}
@@ -555,11 +556,13 @@ function SortableFieldRow({ field, index, widgets, postTypes, onFieldChange, onD
         <button
           type="button"
           className="cursor-grab touch-none text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+          // SH1054 — the relator's and the block editor's handles were named; this one was not.
+          aria-label={t("content.relatorReorder")}
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
         >
-          <GripVertical className="h-4 w-4" />
+          <GripVertical className="h-4 w-4" aria-hidden="true" />
         </button>
 
         {/* Order number */}
@@ -567,13 +570,23 @@ function SortableFieldRow({ field, index, widgets, postTypes, onFieldChange, onD
           {index + 1}
         </span>
 
-        {/* Expand chevron */}
-        <div className="text-muted-foreground">
+        {/* SH1054 — the keyboard's way to expand a field. It was a div, so only a pointer could
+            open one: the header's click below stays as the pointer's shortcut to the same toggle. */}
+        <button
+          type="button"
+          className="text-muted-foreground rounded focus-visible:outline-2 focus-visible:outline-ring"
+          aria-expanded={isOpen ? "true" : "false"}
+          aria-label={field.label || field.name || "Untitled"}
+          onClick={(e) => {
+            e.stopPropagation()
+            setIsOpen(!isOpen)
+          }}
+        >
           {isOpen
-            ? <ChevronDown className="h-4 w-4" />
-            : <ChevronRight className="h-4 w-4" />
+            ? <ChevronDown className="h-4 w-4" aria-hidden="true" />
+            : <ChevronRight className="h-4 w-4" aria-hidden="true" />
           }
-        </div>
+        </button>
 
         {/* Field label + name */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -604,6 +617,8 @@ function SortableFieldRow({ field, index, widgets, postTypes, onFieldChange, onD
               type="button"
               variant="ghost"
               size="icon"
+              // SH1054 — named: the field row's delete was an icon and nothing else.
+              aria-label={t("common.delete")}
               className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
               onClick={(e) => {
                 e.stopPropagation()
@@ -1078,6 +1093,7 @@ export default function PostTypeEditPage() {
             className="font-mono"
             value={renameTo}
             onChange={(e) => setRenameTo(e.target.value)}
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- a rename dialog's one field (SH1054)
             autoFocus
           />
           <div className="flex justify-end gap-2 pt-2">

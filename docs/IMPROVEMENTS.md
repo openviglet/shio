@@ -1393,25 +1393,6 @@ Claim primary through the four base inputs, never by setting the compiled token,
 turn the accent gate into a census of claimable families driven by the preset, so a new
 family fails Shio's build instead of silently rendering grey.
 
-### LXXII.12 Axe against every console route (SH1054)
-
-The four accessibility rules are source scans for unnamed icon buttons, ARIA state
-literals, keyframes and nested interactive elements, and each is blind outside its
-shape: the analysis ran the scanner over raw buttons and anchors and found unnamed
-controls it cannot see, one in a shared widget the gate says must never carry debt.
-There is no jsx-a11y plugin, no axe and one viewport.
-
-The live browser probe already opens about thirty routes against a running backend.
-Inject axe on each, assert zero serious or critical violations, and hold everything else
-as a named per-route debt map that shrinks only by deletion. Run it at three viewports,
-assert the document language matches the active locale, and add the jsx-a11y plugin for
-the class a source rule can catch at edit time.
-
-It depends on BG10 and BG11 so its first debt map is not mostly the fields and landmarks
-those tasks already fix, which would write the map twice. The assertion plants an
-unlabelled input on one route and requires the probe to name the route, the rule and the
-element.
-
 ## LXXIII One content model, many languages (Block BH)
 
 Localization in Shio is complete in the data and thin everywhere above it. ShPostUnified

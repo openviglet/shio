@@ -128,6 +128,7 @@ export function ReviewTriage({
   const count = selected.size > 0 ? selected.size : 1
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex -- a focus region for the triage shortcut keys, not a control; its buttons are the controls (SH1001)
     <div className="space-y-2 py-2" tabIndex={0} onKeyDown={onKeyDown}>
       <div className="flex flex-wrap items-center gap-2">
         <Input

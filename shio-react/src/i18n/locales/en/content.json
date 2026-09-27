@@ -390,6 +390,8 @@
   "content.showingRows": "Showing {{loadedFolders}} of {{totalFolders}} folders and {{loaded}} of {{total}} posts",
   "content.filterSite": "Site",
   "content.scopeSite": "Whole site",
+  "content.sortBy": "Sort by",
+  "content.searchScope": "Where to search",
   "content.scopeFolder": "This folder",
   "content.scopeSubtree": "This folder and below",
   "content.searchWithheld": "and {{count}} you cannot open",

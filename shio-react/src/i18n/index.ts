@@ -87,4 +87,19 @@ i18n
 
 registerVigTranslations(i18n);
 
+/**
+ * SH1054 — the document says which language it is in.
+ *
+ * `index.html` is `lang="en"` and nothing changed it, so a console rendering Portuguese told a
+ * screen reader it was English and every word was pronounced with the wrong rules — measured on
+ * every route by the axe pass in `console-check.mjs`. Stamped from what i18next resolved, at start
+ * and on every change; the detector reads `navigator` first, so this never feeds its own answer back.
+ */
+function stampLanguage(): void {
+  const lng = i18n.resolvedLanguage ?? i18n.language;
+  if (typeof document !== "undefined" && lng) document.documentElement.lang = lng;
+}
+stampLanguage();
+i18n.on("languageChanged", stampLanguage);
+
 export default i18n;

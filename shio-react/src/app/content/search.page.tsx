@@ -175,7 +175,7 @@ export default function SearchPage() {
               value === "site"
                 ? { folder: "", subtree: "" }
                 : { subtree: value === "subtree" ? "true" : "" })}>
-              <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="sm:w-48" aria-label={t("content.searchScope")}><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="site">{t("content.scopeSite")}</SelectItem>
                 <SelectItem value="folder">{t("content.scopeFolder")}</SelectItem>

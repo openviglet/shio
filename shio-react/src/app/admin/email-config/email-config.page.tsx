@@ -79,7 +79,7 @@ export default function EmailConfigPage() {
       <div className="flex items-center gap-2">
         <Label htmlFor={key}>{label}</Label>
         <Tooltip>
-          <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+          <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
           <TooltipContent>{hint}</TooltipContent>
         </Tooltip>
       </div>

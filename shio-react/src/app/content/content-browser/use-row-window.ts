@@ -22,7 +22,8 @@ function scrollParent(node: HTMLElement | null): HTMLElement {
 function geometry(list: HTMLElement): { rowHeight: number; columns: number } {
   const style = getComputedStyle(list)
   const tracks = style.display === "grid" ? style.gridTemplateColumns.split(" ").filter(Boolean).length : 1
-  const option = list.querySelector<HTMLElement>('[role="option"]')
+  // SH1054 — a grid row now, not a listbox option.
+  const option = list.querySelector<HTMLElement>('[role="row"]')
   const gap = Number.parseFloat(style.rowGap) || 0
   return { rowHeight: option ? option.offsetHeight + gap : 0, columns: Math.max(tracks, 1) }
 }

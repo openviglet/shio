@@ -2843,6 +2843,37 @@ not loading. The 10 standing in for content became `components/spinner.tsx`: the
 already say it), and `aria-busy` on the region it stands for. `test/spinner-a11y.test.mjs` fails on a
 `Loader2` anywhere else.
 
+## Axe against every console route, and what it found (SH1054)
+
+`console-check.mjs` injects axe (`axe-core`'s own `source`, evaluated through Playwright, so a
+page's CSP cannot block it) into every route after it settles, and into four routes at phone and
+tablet widths. `scripts/a11y-debt.mjs` decides what a result means. Serious and critical always
+fail. A lesser rule fails unless `a11y-debt.json` holds it for that route family, and a held entry
+no run finds any more is reported for deletion. `a11y-debt.json`'s `vendor` names the one excluded
+subtree, GraphiQL's own editor, with its reason, and every run prints it.
+
+The first pass found 78 violations on 65 routes; the gate now holds zero serious or critical.
+- The page hero's back link rendered with no text on 28 routes: `PageHero` passes a `backLabel`,
+  defaulting to "Back".
+- Icon-only controls had no names: the post-type rows, the admin save bars' back buttons, the
+  `<TooltipTrigger><Info/>` hints, the field-row delete and drag handle, and six `SelectTrigger`s.
+- `aria-required` sat on six `role="group"` wrappers (not allowed). The group's label already says
+  "required".
+- The HTML editor's `role="textbox"` and CodeMirror's surface were unnamed: `<label for>` cannot name
+  a div, so both carry `aria-labelledby`.
+- The content browser was a listbox whose options held three buttons each. It is a grid now: rows
+  in `role="row"` with the controls in a `gridcell`, and SH1020's keys unchanged.
+- **`<html lang="en">` over a Portuguese console.** `i18n/index.ts` stamps the resolved language.
+- **Shio's `dark:` followed the OS, not the theme.** `index.css` declares
+  `@custom-variant dark (&:is(.dark *))`. `:is` rather than `:where`, so a dark utility outranks the
+  design system's same-layer base utility. `.dark .prose` also swaps the invert palette, which the
+  compiled typography declares and never applies.
+
+jsx-a11y's recommended rules run in `eslint.config.js`. 29 of 34 already passed. A post-type field
+could be expanded only with a pointer, and its chevron is now a button with `aria-expanded`. Each
+remaining exception is a pointer shortcut that duplicates a keyboard path, or autofocus inside a
+dialog, and says so at its line.
+
 ## A field with a name, a state, and a way in from the keyboard (SH1052)
 
 The post editor drew a `<Label>` with no `htmlFor` and then a widget whose props were `attr`,

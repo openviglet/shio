@@ -183,7 +183,7 @@ export function BrowserToolbar({
 
         {/* Right: Sort + Select + Batch + Download */}
         <Select value={sortBy} onValueChange={(value) => list.set("sort", value)}>
-          <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-28 h-8 text-xs" aria-label={t("content.sortBy")}><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="order">{t("content.order")}</SelectItem>
             <SelectItem value="name">{t("common.name")}</SelectItem>
@@ -245,7 +245,7 @@ export function BrowserToolbar({
         </DropdownMenu>
 
         {siteId && (
-          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => window.open(`/api/v2/site/${siteId}/export`, "_blank")}>
+          <Button size="sm" className="bg-green-700 hover:bg-green-800 text-white" onClick={() => window.open(`/api/v2/site/${siteId}/export`, "_blank")}>
             <Download className="mr-2 h-4 w-4" /> {t("content.downloadSite")}
           </Button>
         )}

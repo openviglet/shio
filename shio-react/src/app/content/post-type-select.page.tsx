@@ -47,6 +47,7 @@ export default function BentoPostTypeSelectPage() {
         eyebrow={t("content.postLabel")}
         title={t("content.whatToPost")}
         backTo={`${ROUTES.BENTO_CONTENT}/object/${folderId}`}
+        backLabel={t("content.browsing")}
         leading={<IconFileText size={28} aria-hidden="true" />}
       />
 

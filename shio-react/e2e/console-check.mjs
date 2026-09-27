@@ -32,8 +32,10 @@ import { chromium } from "playwright"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import { compare, foldFamilies, headroom, seedCeilings, staleEntries }
+import { compare, familyOf, foldFamilies, headroom, seedCeilings, staleEntries }
   from "../scripts/route-cost.mjs"
+import { a11yFindings, staleDebt } from "../scripts/a11y-debt.mjs"
+import axeCore from "axe-core"
 
 const args = process.argv.slice(2)
 const flag = (name, fallback) => {
@@ -741,6 +743,95 @@ async function checkKeyboardLandmarks(context) {
     probe.errors.push(`could not drive the keyboard: ${String(e).split("\n")[0]}`)
   } finally {
     await page.close()
+  }
+  return probe
+}
+
+/** SH1054 — axe's own bundle (the package exports its source), evaluated into each page. */
+const AXE_SOURCE = axeCore.source
+/** The committed map of accessibility debt below serious, by route family. */
+const A11Y_DEBT = JSON.parse(await readFile(join(dirname(fileURLToPath(import.meta.url)), "..",
+  "a11y-debt.json"), "utf8"))
+/** Every rule id axe found per family in this run, for the entries that have been paid. */
+const a11yObserved = new Map()
+
+/**
+ * SH1054 — one axe pass over the rendered page, and whether the document names its language.
+ *
+ * <p>Evaluated through Playwright rather than injected as a script tag, because a script tag is
+ * subject to the page's CSP and the jar serves one; the evaluation is the browser's debugger
+ * protocol and is not. Violations only: a pass list is thousands of nodes nobody reads.</p>
+ *
+ * <p>The language check compares `<html lang>` with what i18next stored for the reader. They
+ * disagreed on every route before SH1054: `index.html` says `en`, the console rendered Portuguese,
+ * and a screen reader pronounced it with English rules.</p>
+ */
+async function runAxe(page) {
+  try {
+    await page.evaluate(AXE_SOURCE)
+    return await page.evaluate(async (vendor) => {
+      // SH1054 — third-party subtrees the console embeds and does not author, each named with its
+      // reason in a11y-debt.json's `vendor` and printed on every run rather than silently skipped.
+      const context = vendor.length ? { include: [document], exclude: vendor.map((v) => [v]) } : document
+      const result = await window.axe.run(context, { resultTypes: ["violations"] })
+      const lang = document.documentElement.lang || ""
+      let stored = ""
+      try { stored = localStorage.getItem("i18nextLng") || "" } catch { stored = "" }
+      const primary = (tag) => tag.toLowerCase().split("-")[0]
+      return {
+        violations: result.violations.map((v) => ({
+          id: v.id, impact: v.impact, nodes: v.nodes.length, target: v.nodes[0]?.target?.join(" "),
+        })),
+        lang,
+        langMismatch: stored && primary(stored) !== primary(lang)
+          ? `<html lang="${lang}"> but the console renders "${stored}"` : null,
+      }
+    }, Object.keys(A11Y_DEBT.vendor ?? {}))
+  } catch (e) {
+    return { violations: [], lang: "", langMismatch: null, error: String(e).split("\n")[0] }
+  }
+}
+
+/**
+ * SH1054 — the same axe gate at the two other widths a curator uses.
+ *
+ * <p>Every route is axed at the check's own 1600px; this re-runs it on the routes whose layout
+ * changes most with width — the rail collapses, a mosaic reflows, a toolbar wraps — at a phone and a
+ * tablet. A violation composed by a layout (a control pushed under another, a name lost when a label
+ * is hidden below `md`) exists only at the width that draws it.</p>
+ */
+const A11Y_VIEWPORTS = [
+  { name: "phone", width: 390, height: 844 },
+  { name: "tablet", width: 820, height: 1180 },
+]
+const A11Y_VIEWPORT_ROUTES = ["/bento", "/bento/content", "/bento/admin", "/bento/content/files"]
+
+async function checkViewports(browser) {
+  const probe = { name: "a11y-viewports", path: A11Y_VIEWPORT_ROUTES.join(" "), ok: true, errors: [],
+    warnings: [], failedRequests: [], runs: 0 }
+  for (const viewport of A11Y_VIEWPORTS) {
+    const context = await browser.newContext({
+      httpCredentials: { username: USER, password: PASS },
+      viewport: { width: viewport.width, height: viewport.height },
+      extraHTTPHeaders: { Authorization: AUTH },
+    })
+    const page = await context.newPage()
+    try {
+      for (const path of A11Y_VIEWPORT_ROUTES) {
+        await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" })
+        await page.waitForTimeout(800)
+        const result = await runAxe(page)
+        probe.runs++
+        const route = `${viewport.name}:${familyOf(path.replace(/^\//, "").replaceAll("/", "-"))}`
+        const { findings } = a11yFindings(route, route, result.violations, A11Y_DEBT)
+        if (findings.length) {
+          probe.ok = false
+          probe.errors.push(...findings)
+        }
+      }
+    } finally {
+      await context.close()
+    }
   }
   return probe
 }
@@ -1631,6 +1722,20 @@ async function main() {
     await watch.settle()
     probe.cost = watch.cost
 
+    // SH1054 — axe on the page a reader actually gets, and the language the document claims.
+    if (probe.cost.ms != null) {
+      probe.a11y = await runAxe(page)
+      if (probe.a11y) {
+        const family = familyOf(route.name)
+        const { findings, observed } = a11yFindings(route.name, family, probe.a11y.violations, A11Y_DEBT)
+        probe.missing.push(...findings)
+        const seen = a11yObserved.get(family) ?? new Set()
+        observed.forEach((id) => seen.add(id))
+        a11yObserved.set(family, seen)
+        if (probe.a11y.langMismatch) probe.missing.push(`SH1054: ${probe.a11y.langMismatch}`)
+      }
+    }
+
     probe.errors = errors
     probe.warnings = warnings
     probe.failedRequests = failedRequests
@@ -1697,6 +1802,17 @@ async function main() {
   if (RECORD_COST) await recordCost(report)
   else await gateCost(report, server.dev)
 
+  // SH1054 — the debt the map still holds that no route produced: paid, so delete it.
+  const axed = report.probes.filter((p) => p.a11y && !p.a11y.error).length
+  console.log(`\nSH1054: axe ran on ${axed} route(s)`)
+  for (const [selector, why] of Object.entries(A11Y_DEBT.vendor ?? {})) {
+    console.log(`       excluded ${selector}: ${why.slice(0, 120)}…`)
+  }
+  for (const note of staleDebt(A11Y_DEBT, a11yObserved)) console.log(`       note: ${note}`)
+  for (const p of report.probes.filter((q) => q.a11y?.error)) {
+    console.log(`       note: axe could not run on ${p.name}: ${p.a11y.error}`)
+  }
+
   // SH238: not a route, so it runs after the route walk rather than inside it.
   const anyPost = routes.find((r) => r.name.startsWith("post-edit:"))
   const editorProbe = await checkEditorSaveBack(context, anyPost?.path.split("/").pop())
@@ -1722,6 +1838,13 @@ async function main() {
     driveProbe.errors.push(
       `--strict: the drive reached the editor and did not publish — ${driveProbe.publishSkipped}`)
   }
+  // SH1054 — the axe gate at a phone's and a tablet's width, where the layout composes differently.
+  const widthsProbe = await checkViewports(browser)
+  report.probes.push(widthsProbe)
+  console.log(`${widthsProbe.ok ? "ok  " : "FAIL"} ${widthsProbe.name.padEnd(30)} `
+    + `${widthsProbe.runs} axe run(s) at ${A11Y_VIEWPORTS.map((v) => v.width).join(" and ")}px`)
+  for (const e of widthsProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
+
   // SH1053 — what a keyboard reader meets: the skip link first, and focus on the page after a move.
   const keysProbe = await checkKeyboardLandmarks(context)
   report.probes.push(keysProbe)

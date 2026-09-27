@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Bold, Italic, Underline, List, ListOrdered, Link, Code } from "lucide-react"
 import type { WidgetProps } from "./index"
 
-export function HtmlEditorWidget({ attr, onChange, fieldId, describedBy, required, invalid }: WidgetProps) {
+export function HtmlEditorWidget({ attr, onChange, fieldId, labelledBy, describedBy, required, invalid }: WidgetProps) {
   const { t } = useTranslation()
   const editorRef = useRef<HTMLDivElement>(null)
   const isInitialized = useRef(false)
@@ -68,6 +68,9 @@ export function HtmlEditorWidget({ attr, onChange, fieldId, describedBy, require
         id={fieldId}
         role="textbox"
         aria-multiline="true"
+        // SH1054 — `<label for>` names only a real form element, so the label pointing at this div
+        // named nothing: axe found the editor unnamed on every post with an HTML field.
+        aria-labelledby={labelledBy}
         aria-describedby={describedBy}
         aria-required={required ? "true" : "false"}
         aria-invalid={invalid ? "true" : "false"}

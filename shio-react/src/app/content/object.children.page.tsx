@@ -304,7 +304,7 @@ export default function ObjectChildrenPage() {
             <Button
               variant="default"
               size="sm"
-              className="bg-green-600 text-white hover:bg-green-700"
+              className="bg-green-700 text-white hover:bg-green-800"
               onClick={handleViewSite}
             >
               <Eye className="mr-2 h-4 w-4" /> {t("content.viewSite")}
@@ -406,11 +406,13 @@ export default function ObjectChildrenPage() {
               />
             )}
             {viewMode !== "spreadsheet" && (
+            // eslint-disable-next-line jsx-a11y/interactive-supports-focus -- roving focus: the rows are the tab stops, not the grid (SH1020)
             <div
-              role="listbox"
+              // SH1054 — a grid: an option may not hold the row's controls; a grid row may (SH1020's keys unchanged).
+              role="grid"
               aria-multiselectable="true"
               aria-label={t("content.browserList")}
-              aria-orientation={viewMode === "grid" ? "horizontal" : "vertical"}
+              aria-rowcount={sortedItems.length}
               onKeyDown={onListKeyDown}
               data-view={viewMode}
               ref={listRef}
@@ -423,17 +425,16 @@ export default function ObjectChildrenPage() {
             {!loading && sortedItems.slice(rowWindow.start, rowWindow.end).map((item, offset) => {
               const index = rowWindow.start + offset
               return (
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- the grid's onKeyDown is the row's keyboard (SH1020)
               <div
                 key={item.id}
                 // One row is in the tab order at a time (a roving tabindex), so Tab moves past the
                 // list rather than through every row of a hundred-row page. When the focused row is
                 // outside the window, the first mounted row holds the tab stop instead.
-                role="option"
+                role="row"
                 aria-selected={selectedItems.has(item.id) ? "true" : "false"}
-                // The whole list's size and this row's place in it, which a windowed listbox has to
-                // state because the rows a screen reader could count are only the mounted ones.
-                aria-setsize={sortedItems.length}
-                aria-posinset={index + 1}
+                // Its place in the whole list, since a screen reader could count only the mounted rows.
+                aria-rowindex={index + 1}
                 tabIndex={index === tabStop ? 0 : -1}
                 ref={(node) => { rowRefs.current[index] = node }}
                 onFocus={() => setFocusedRow(index)}
@@ -444,17 +445,19 @@ export default function ObjectChildrenPage() {
                   SH1026 — the one thing the view decides: how this row is drawn. SH1020's eight
                   actions stay in the design system's menu with a focusable trigger in every view.
                 */}
-                <BrowserItem
-                  view={viewMode}
-                  item={item}
-                  index={index}
-                  selected={selectedItems.has(item.id)}
-                  when={relativeDate(item.date)}
-                  siteName={siteName ?? undefined}
-                  actions={rowActions(item)}
-                  onToggle={() => toggleSelect(item.id)}
-                  onOpen={() => handleItemClick(item)}
-                />
+                <div role="gridcell" className="contents">
+                  <BrowserItem
+                    view={viewMode}
+                    item={item}
+                    index={index}
+                    selected={selectedItems.has(item.id)}
+                    when={relativeDate(item.date)}
+                    siteName={siteName ?? undefined}
+                    actions={rowActions(item)}
+                    onToggle={() => toggleSelect(item.id)}
+                    onOpen={() => handleItemClick(item)}
+                  />
+                </div>
               </div>
               )
             })}
@@ -539,6 +542,9 @@ export default function ObjectChildrenPage() {
       )}
 
       <DialogDelete
+        // SH1054 — opened from the row menu and the batch bar, never from a trigger of its own. With
+        // none given, the package draws a default: a trash icon with no name, at the foot of the page.
+        trigger={null}
         feature={deleteTarget ? (deleteTarget.objectType === "FOLDER" ? t("content.folder") : t("content.postLabel")) : t("content.batchContent")}
         name={deleteTarget?.name || `${selectedItems.size} item(s)`}
         open={deleteDialogOpen}

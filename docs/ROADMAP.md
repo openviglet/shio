@@ -34,7 +34,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - 📋 **SH1051** (deps: DS VDS137) **Shio's accent fails AA contrast on both grounds, and its primary token is never claimed** — Shio's accent gate asserts the tokens exist and never what they measure, and the primary inputs are unset, so the rail's you-are-here marker renders the preset's neutral. → §LXXII.9
-- 📋 **SH1054** (deps: SH1052 ✅, SH1053 ✅) **no accessibility check runs against a rendered console page** — The existing rules scan source for four patterns, there is no axe run, no jsx-a11y plugin and one viewport, so a violation composed across components ships unseen. → §LXXII.12
 
 ## Block BI — The areas this round did not reach
 

@@ -159,7 +159,7 @@ export default function AuthProviderPage() {
         {/* Sticky save bar */}
         <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.ADMIN_AUTH_PROVIDERS)}>
+            <Button variant="ghost" size="sm" aria-label={t("common.back")} onClick={() => navigate(ROUTES.ADMIN_AUTH_PROVIDERS)}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <span className="font-semibold">{isNew ? t("authProvider.newInstance") : item.name}</span>
@@ -223,7 +223,7 @@ export default function AuthProviderPage() {
               <div className="flex items-center gap-2">
                 <Label htmlFor="enabled">{t("common.enabled")}</Label>
                 <Tooltip>
-                  <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
+                  <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
                   <TooltipContent>{t("authProvider.enabledHint")}</TooltipContent>
                 </Tooltip>
               </div>

@@ -58,7 +58,7 @@ type Props = WidgetProps
  * The removed row is kept until another edit replaces it, so the mistake costs a click rather than
  * a retype.</p>
  */
-export function RelatorWidget({ attr, onChange, postId, labelledBy, describedBy, required }: Props) {
+export function RelatorWidget({ attr, onChange, postId, labelledBy, describedBy }: Props) {
   const { t } = useTranslation()
   const items = attr.shChildrenRelatorItems ?? []
   const declared = attr.shPostTypeAttr?.shPostTypeAttrs ?? []
@@ -164,7 +164,7 @@ export function RelatorWidget({ attr, onChange, postId, labelledBy, describedBy,
       role="group"
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
-      aria-required={required ? "true" : "false"}
+      // SH1054 — no aria-required: a group may not carry it, and its name (the label) already says it
       className="space-y-2"
     >
       {items.length === 0 && (

@@ -36,12 +36,18 @@ const VIEWS = read("src", "app", "content", "content-browser", "browser-views.ts
 // an absence passed by seeing nothing at all.
 const code = (source) => stripComments(source)
 
-test("SH1020: the list is a listbox and every row is an option", () => {
-  assert.match(PAGE, /role="listbox"/u)
+test("SH1020: the list is a multi-select grid and every row is a selectable row", () => {
+  // SH1054 — a grid and not a listbox: an option may not contain controls and every row carries
+  // three, which axe measured as a serious nested-interactive on every folder. The row's controls
+  // live in its gridcell, which the grid pattern allows.
+  assert.match(PAGE, /role="grid"/u)
+  assert.doesNotMatch(code(PAGE), /role="(listbox|option)"/u,
+    "SH1054: a listbox is back, and its options would hold controls again")
   assert.match(PAGE, /aria-multiselectable="true"/u,
     "SH1020: the checkbox column has always been a multi-select — the semantics were what was "
       + "missing, not the behaviour")
-  assert.match(PAGE, /role="option"/u)
+  assert.match(PAGE, /role="row"/u)
+  assert.match(PAGE, /role="gridcell"/u, "SH1054: a row's controls sit in its gridcell")
   assert.match(PAGE, /aria-selected=\{selectedItems\.has\(item\.id\) \? "true" : "false"\}/u,
     "SH1020: a row that is selected and does not say so is selected for the pointer only")
   // SH1026 — the tab stop is the focused row, or the window's first row when it has scrolled away.

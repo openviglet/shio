@@ -3,7 +3,21 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import { globalIgnores } from 'eslint/config'
+
+/*
+ * SH1054 — the accessibility rules a source scan can hold at edit time, beside the axe pass
+ * `console-check.mjs` runs on the rendered page. Measured before enabling: 29 of the 34
+ * recommended rules already passed across the console, and the rest found 17 findings in ten places.
+ * One was a real gap (a post-type field could be expanded only with a pointer) and got a button;
+ * the others are pointer shortcuts that duplicate a keyboard path, or autofocus inside a dialog, and
+ * each says so at its own line.
+ */
+const jsxA11yRecommended = {
+  plugins: { 'jsx-a11y': jsxA11y },
+  rules: jsxA11y.flatConfigs.recommended.rules,
+}
 
 /*
  * SH665 — the react-hooks rules, declared here rather than taken from its preset.
@@ -31,6 +45,7 @@ export default tseslint.config([
       tseslint.configs.recommended,
       reactHooksRecommended,
       reactRefresh.configs.vite,
+      jsxA11yRecommended,
     ],
     languageOptions: {
       ecmaVersion: 2020,
