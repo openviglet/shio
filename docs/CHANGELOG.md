@@ -1872,6 +1872,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1079** — An import answers with the site, what arrived by kind and what it could not do (skipped posts, unresolved types, files it never brings), and the console and shio import show it (design §LXXII.17 recorded in `docs/agents/content-api.md`).
 - **SH1112** — GET /agent/manifest?include=console answers the console's eager load from the build the instance serves, with the ceiling the build now ships beside it; raw matches the script exactly.
 - **SH1137** — a cross-site folder move is refused on the shared writer, where the console reaches it too, with a teaching 409 naming both sites and `shio export`/`shio import` (design §LXXII.25 superseded: the supposition that the agent's folder.move shared the hole — it already refused it, and the refusal belonged on the shared writer instead)
+- **SH1113** — `console:check` records requests, bytes and time-to-first-row per route family against `console-route-budget.json`, held as 43 measured ceilings with a sentence each — and the first run's own findings: a 404 route still makes 7 API calls, the post editor makes 23, and the GraphQL explorer reads 1.13 MB of schema before a keystroke (design §LXXII.19 superseded: its own first implementation, twice: counting every same-origin request re-measured the 1.73 MB eager bundle on every route, and probe.ok as the costing predicate moved the costed set across three runs)
 
 ## Block BH — One content model, many languages
 

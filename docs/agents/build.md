@@ -2096,6 +2096,95 @@ and it now has a number to argue against rather than an impression.
   the cheapest way to pass then is to delete somebody else's feature — the degrade-the-measurement
   non-goal by name.
 
+## A budget per route, and the two things measuring it refuted (SH1113)
+
+SH1043 above measures **one** number for the whole console: what every route pays before the first
+row. That is the right shape for a bundle and the wrong shape for what a curator experiences, which
+is a *page*. A route that fetches three collections to draw two figures costs exactly the same eager
+bytes as one that fetches nothing, so that gate reports it as free — SH1050 was that page, and
+nothing would have caught it.
+
+The instrument was nearly there: `e2e/console-check.mjs` already drives a browser through every
+route against a live instance, which is the only place a page's own requests are observable. So it
+records three numbers per route, `console-route-budget.json` holds the ceilings the way
+`console-size-budget.json` holds its own, and `scripts/route-cost.mjs` is the comparator.
+`--record-cost` seeds the file from a run; `test/route-cost-budget.test.mjs` is the half a
+`pnpm test` can hold, and it carries the design's own assertion: **a planted extra fetch on one
+route fails that route's entry and no other.**
+
+**Two things the first measurement refuted, both of them in the first implementation rather than in
+the design.** This is the part worth reading, because both were invisible until real numbers
+existed:
+
+- **Counting every same-origin request re-measured the bundle.** The eager assets are ~1.73 MB on
+  every route, so the post editor's own reads showed up as 1,747,000 against a site list's
+  1,730,000 — a 20 KB signal under a 1.7 MB constant, which is the *same* "a total hides a page"
+  failure the task was filed about, reproduced one level up. It would also have failed this gate
+  every time the bundler regrouped a chunk, a regression SH1043 already owns: two gates answering
+  for one number, which is what P10 forbids. The filter is now the **data plane** —
+  `/api/v2/**` and `/graphql` — and what is left is small, stable, and exactly the sentence the
+  design wrote. The static assets are not unmeasured; they are measured by the gate whose subject
+  they are.
+- **A single run cannot establish a tight time ceiling.** Across 52 families one seeded at **26x**
+  the baseline and several neighbours at 1.0x, on pages differing by one list read. So `firstRow` is
+  a deliberately **coarse** guard (`FIRST_ROW_SLACK`, with a floor) that catches a page an order of
+  magnitude worse and nothing finer. A tight ceiling seeded from one run is a flaky gate, which this
+  project treats as worse than no gate — it is the one people learn to re-run past.
+
+**The three numbers are therefore held three different ways, and the differences are the design:**
+
+| Number | Held | Why |
+|---|---|---|
+| `requests` | at the measurement, **no headroom** | Discrete and deterministic — the page either asks for the catalogue or it does not. An extra fetch is the defect this exists to catch, so room in the ceiling would let the first one through, and the first one is the only one anybody would notice. |
+| `bytes` | with ~8% of room | Payloads grow with the content on an instance; a ceiling at the measurement refuses the next change instead of measuring it (SH736). |
+| `firstRow` | a **ratio** against a named baseline route, coarsely | Milliseconds move with the machine, so a ceiling in them is one nobody can reproduce and therefore one that gets raised until it means nothing. |
+
+**Two asymmetries that make it runnable on a thin instance without being toothless on a full one.**
+The route list is *discovered* from the instance — one post editor per post-type it finds — so the
+key is the **family** (the name up to its first colon): `post-edit`, not `post-edit:Page`, which is
+also the better claim, since the second is a fact about somebody's content. And a **walked family
+with no entry is a finding** while an **entry nothing walked is only a note**: a new screen must
+declare what it costs, but "this instance has no posts" is a missing fixture and not a regression.
+Where a family has several members the **costliest** is compared — a ceiling tracking the cheapest
+passes on the slow page, which is the same mistake one level down again.
+
+**A route is costed when it put a first row on screen — not when its probe passed.** Both halves
+were bought. The dead page has to be excluded: one that died on navigation made whatever requests it
+got to first, so costing it would teach the budget that a broken page is a cheap one and then fail
+the day somebody fixes it. But `probe.ok` was the first predicate and it was **wrong, and flaky with
+it**: a probe fails for reasons that say nothing about cost — a missing frost surface, a `mustSee`
+string, a hero heading — and which of those fired moved across three consecutive runs against one
+instance (41, 45 and 46 of 57 probes). The costed set moved with them, so families appeared and
+disappeared from the comparison and the gate reported as unbudgeted a route a previous run had
+costed. A page that rendered its rows and then failed an assertion about its chrome made exactly the
+requests it always makes. `cost.ms != null` is the stable predicate and already excludes the page
+that rendered nothing.
+
+**Two numbers out of the first run are worth more than the gate.** Across 43 costed families:
+
+- `unknown-route` — a path the console does not have, rendering a 404 — still makes **7 API calls**.
+  That is the shell's own cost, paid by every route, so an entry at 8 is *one call of its own* rather
+  than eight. It is also the file's own guard: a 404 has no data of its own, so if that entry is ever
+  megabyte-sized, `DATA_READ` has stopped filtering and every number here is measuring the bundle
+  again. `route-cost-budget.test.mjs` asserts it rather than asserting a blanket ceiling, and the
+  blanket was the first draft — see the next point for what refuted it.
+- `post-edit` makes **23**, so sixteen are its own, against a site list's 8. That is the ceiling this
+  budget most exists for, and it is the gap the first implementation reported as 1,747,000 against
+  1,730,000.
+- `graphql` is the one entry measured in **megabytes** — 1.13 MB, all of it the schema introspection
+  the explorer fetches before a curator types a character. It is a genuine data read, not the bundle
+  leaking back in, which is why the blanket `bytes < 1 MB` assertion had to go: it would have failed
+  a real finding as a defect in the instrument. Held rather than fixed here, so shrinking it becomes
+  an argued change rather than a discovery.
+
+**Where it runs, and one position that was bought.** It rides `console-check.yml`, which already
+boots a jar, provisions a site and drives Chromium on every pull request — no second workflow, and a
+regression therefore blocks a merge rather than a commit. The cost record is written **the moment
+the route loop ends**, not at the end of `main`: the first recording run walked all fifty-seven
+routes and then died on a 401 in a later probe, so nothing was written and twenty minutes of
+measurement went in the bin. Nothing after that line costs a route, so nothing after it can be
+allowed to lose what it measured.
+
 ## The chunking rule that caused what it was written to prevent (SH1044)
 
 `vite.config.ts` carried a `manualChunks` function whose own comment said what it was for: keep

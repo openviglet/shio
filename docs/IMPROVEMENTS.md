@@ -1483,31 +1483,6 @@ those tasks already fix, which would write the map twice. The assertion plants a
 unlabelled input on one route and requires the probe to name the route, the rule and the
 element.
 
-### LXXII.19 A budget per route, from the probe that already walks them (SH1113)
-
-SH1043's gate measures one number for the whole console: what every route pays before
-the first row. That is right for a budget and blind to what a curator experiences, which
-is a page. A route fetching three collections to draw two figures costs the same eager
-bytes as one fetching nothing — SH1050 is that page, and nothing would have caught it.
-
-The instrument is nearly there. `e2e/console-check.mjs` already drives a browser through
-every route against a live instance, which is where request count, transfer bytes and
-time to first row are observable and nowhere else: the bundle gate reads files on disk
-and knows nothing about what a page then asks the server for.
-
-So the probe records three numbers per route and holds them the way the bundle budget
-holds its own — ceilings with a sentence each, a raise somebody argues for. The
-per-route shape is what makes it useful: a total would let a new screen's cost hide
-inside the sum.
-
-Two things to settle while building. It needs an instance, so it belongs with
-conformance rather than `pnpm test`, and where it runs decides whether a regression
-blocks a commit. And time to first row moves with the machine, so it wants a ratio
-against a baseline route rather than a millisecond ceiling nobody can reproduce.
-
-The assertion is a planted extra fetch on one route failing that route's entry and no
-other.
-
 ### LXXII.20 One walk over every workspace manifest, not the console's alone (SH1114)
 
 SH1045 found eighteen dead declarations in one manifest and left ten unread. The
