@@ -61,15 +61,6 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
  */
 const UNCANCELLED = new Set([
   /*
-   * SH1157 moved this page's session **list** to the query layer and left the entry. Its other read is
-   * one session's detail, which the deep-link effect makes when a URL names a run — still an effect,
-   * still uncancelled. Same rule as the visual editor: one read done is not the file done.
-   */
-  "src/app/admin/review/review.list.page.tsx",
-  "src/app/content/post.edit.page.tsx",
-  // The one the stripper caught on a real file rather than a planted one: this page's prose says
-  // "an ambient signal", and a raw scan read that as cancellation and passed it.
-  /*
    * SH1156 moved this page's **site** read to the query layer and left the entry, which is the honest
    * state: the visual editor makes seven more reads — the post-type of a selection, the insertable
    * catalogue, the patterns, a section's editable props — several of them inside effects, and it is
@@ -144,6 +135,15 @@ const QUERY_LAYER = [
   "src/app/content/folder.edit.page.tsx",
   "src/app/content/post-type.edit.page.tsx",
   "src/app/content/site.edit.page.tsx",
+  /*
+   * Slice eleven (SH1158): the two heaviest screens on the list, and both stopped fetching in an
+   * effect at all. `post.edit` is the product's heaviest form — two rows of one post in one round
+   * trip, plus the permission read that decides whether Publish is offered. `review.list` is the
+   * curator's approval surface, and it lost four `service.detail` call sites to one query owned by
+   * the row that renders it.
+   */
+  "src/app/admin/review/review.list.page.tsx",
+  "src/app/content/post.edit.page.tsx",
 ];
 
 /** Every source file under the walked roots, as repo-relative paths with forward slashes. */
@@ -346,9 +346,9 @@ test("SH1116: every query-layer screen takes the signal useQuery hands it, and i
 
   // The slice's own arithmetic, so a later slice cannot quietly put one back. Held as a ceiling
   // rather than an equality: the next slice lowers it, and nothing may raise it.
-  assert.ok(UNCANCELLED.size <= 6,
+  assert.ok(UNCANCELLED.size <= 4,
     `SH1116: ${UNCANCELLED.size} screens are still declared. The list was 33 when this task opened; `
-      + "the slices took it to 28, 25, 21, 19, 16, 14, 12, 8, 7 and 6. It may only ever shrink.");
+      + "the slices took it to 28, 25, 21, 19, 16, 14, 12, 8, 7, 6 and 4. It may only ever shrink.");
 });
 
 test("SH1149: the admin area's last three key on their subject, and the singleton reports failure",
@@ -820,10 +820,114 @@ test("SH1157: the palette stops ignoring answers, and the review list stops hidi
     "SH1157: \"the queue could not be read\" and \"nothing is waiting for you\" must not be the same "
       + "screen — the second is the one a curator stops checking");
 
-  // And its entry stays, because the deep-link detail read is still an effect's.
-  assert.ok(UNCANCELLED.has("src/app/admin/review/review.list.page.tsx"),
-    "SH1157: the review queue is off the declared list. Its session list moved to the query layer; "
-      + "the per-session detail the deep-link effect reads did not.");
+  // Its entry stayed on the declared list until SH1158 took the deep-link detail read as well, so what
+  // is asserted here is the read rather than the entry: the list is the other test's subject, and a
+  // debt paid off has to leave it. Note that the `catch` above is a **mechanism** — SH1158's test is
+  // where the property it was standing in for is checked, because this page kept rendering the empty
+  // queue for a failed read long after that line was deleted.
+  assert.doesNotMatch(review, /sessions\(50\)/u,
+    "SH1157: the queue's list read is being made without a signal again");
+});
+
+test("SH1158: the heaviest form, and an approval surface that stops saying the wrong nothing", () => {
+  const post = stripComments(readFileSync(
+    join(ROOT, "src/app/content/post.edit.page.tsx"), "utf8"));
+  const review = stripComments(readFileSync(
+    join(ROOT, "src/app/admin/review/review.list.page.tsx"), "utf8"));
+
+  /*
+   * SH1158 — the two heaviest screens on the declared list, and the second of them is a finding about
+   * SH1157 rather than about the console.
+   *
+   * SH1157 said "the queue could not be read" and "nothing is waiting for you" must not be the same
+   * screen, deleted `catch(() => setSessions([]))`, and shipped a page where they still were: with the
+   * list on the query layer, `read.data ?? []` is `[]` on a failure too, so `sessions.length === 0`
+   * went on drawing `review.blankTitle` for a queue nobody could read. Its assertion matched the
+   * absence of that `catch` — the **mechanism** — which is exactly the mistake SH1028's guard made and
+   * the reason this one asks what the page renders.
+   */
+  assert.match(review, /const queueFailure = read\.isError && !isCancelled\(read\.error\)/u,
+    "SH1158: the review queue has no failure state of its own, so an unreadable queue renders the "
+      + "empty one. `read.data ?? []` is `[]` on a failure, and the empty screen says there is "
+      + "nothing to come back for — on this page, the one message a curator acts on by leaving.");
+  assert.match(review, /\{queueFailure \? \(/u,
+    "SH1158: the failure is derived and never rendered. It has to be the first of the three branches, "
+      + "ahead of the empty queue and the unmatched filter, because the empty one used to speak for it.");
+  assert.match(review, /t\("review\.readFailedTitle"\)/u,
+    "SH1158: and it says so in its own words rather than borrowing `review.blankTitle`");
+  for (const lang of ["en", "pt"]) {
+    const bundle = JSON.parse(readFileSync(
+      join(ROOT, `src/i18n/locales/${lang}/review.json`), "utf8"));
+    for (const key of ["review.readFailedTitle", "review.readFailedHint", "review.runReadFailed"]) {
+      assert.ok(key in bundle, `SH1158: ${key} is missing from the ${lang} bundle, so the screen this `
+        + "task added renders its own key name");
+    }
+  }
+
+  /*
+   * The four `service.detail` call sites this collapsed. The map they wrote to could not be cancelled
+   * and could not tell "asked, not answered" from "asked, never answering" — `null` was both, so a
+   * failed read drew `common.loading` for ever with nothing to press. A query owned by the row that
+   * renders the detail fixes all of it at once, and a decision re-reads by saying the key is stale.
+   */
+  assert.match(review, /function ReviewRunDetail\(/u,
+    "SH1158: the run's detail is read by the list again rather than by the row that renders it");
+  assert.match(review,
+    /queryFn: \(\{ signal \}\) => service\.detail\(session, \{ signal \}\)/u,
+    "SH1158: the detail read does not take the signal, so closing a row leaves it running");
+  assert.doesNotMatch(review, /useState<Record<string, ShReviewDetail \| null>>/u,
+    "SH1158: the detail map is back, and with it the state where `null` means both \"asked, not "
+      + "answered\" and \"asked, never answering\"");
+  assert.equal((review.match(/service\.detail\(/gu) ?? []).length, 1,
+    `SH1158: ${(review.match(/service\.detail\(/gu) ?? []).length} call sites read one run's detail. `
+      + "There were four — an expander, a deep link, a triage and a whole-run verb — and three of them "
+      + "were a cached read's invalidation written out as a second request.");
+  assert.match(review, /await invalidate\(`summary:reviewRun\|\$\{session\}`\)/u,
+    "SH1158: a decision no longer tells the run's detail that it is stale, so the rows under it "
+      + "describe the state before the decision the curator just took (SH207)");
+
+  /*
+   * And the deep link (SH999) reads nothing at all now, which is why it needed neither the read-then-set
+   * shape SH1075 paid this page off for nor a failure path of its own. It comes from the router rather
+   * than `window.location.search` — the same URL the rest of this page's state already reads through
+   * `useListState` — and it expands once per named run, so closing the row is not argued with.
+   */
+  assert.doesNotMatch(review, /window\.location\.search/u,
+    "SH1158: the deep link reads the address out of the global rather than out of the router, which "
+      + "is a render this page cannot repeat and the one URL read it was not already doing properly");
+  assert.match(review, /if \(linked && expandedLink !== linked\)/u,
+    "SH1158: the deep link expands the row on every settle rather than once. Its `wanted in open` "
+      + "guard re-opened a row the curator had just closed.");
+  assert.doesNotMatch(review, /useEffect/u,
+    "SH1158: an effect is back in the review queue. Both of the things one was doing here — reading a "
+      + "run and opening its row — are now a query and a render-phase adjustment.");
+
+  /*
+   * `post.edit` is the product's heaviest form, and the shape of its read is the reason it is here
+   * rather than in the generic list above: two rows of one post in ONE query, because which of them is
+   * editable decides `state` and whether the PUBLISHED row exists is the separate fact Unpublish needs
+   * (SH654). `allSettled` is load-bearing — `all` could not report the second when the first answered.
+   */
+  assert.match(post, /const \[draft, published\] = await Promise\.allSettled\(\[/u,
+    "SH1158: the post editor's two reads stopped being settled together. A sequential try/catch cannot "
+      + "say whether the PUBLISHED row exists once a draft is found, and that is what Unpublish asks.");
+  assert.equal((post.match(/unifiedService\.get\(postId, "(?:DRAFT|PUBLISHED)", \{ signal \}\)/gu) ?? []).length, 2,
+    "SH1158: both rows are read with useQuery's signal — one of the two would otherwise run on to its "
+      + "answer after the curator left the form");
+  assert.match(post, /queryFn: \(\{ signal \}\) => aclService\.allowed\(postId, \{ signal \}\)/u,
+    "SH1158: the permission read is its own query and takes the signal. It is separate on purpose: a "
+      + "permission read that fails leaves the buttons as they were, because the server is what "
+      + "decides and hiding a control over a broken side call is the worse guess.");
+  assert.match(post, /const loadFailure = loaded\.isError && !isCancelled\(loaded\.error\)/u,
+    "SH1158: SH1049's reason for this page's failure state is gone — without it `post` stays `null` on "
+      + "a failed read and the form spins for ever, with a 500, a deleted post and a slow server all "
+      + "rendering the same screen");
+  assert.match(post, /if \(loaded\.isSuccess && seeded !== postId\)/u,
+    "SH1158: the form is seeded on every render rather than once per post, so the query answering "
+      + "again would put the saved copy back over what the curator is typing");
+  assert.match(post, /retry: false/u,
+    "SH1158: the post read retries. A 404 on a deleted post is an answer, not a transient, and three "
+      + "attempts is three times the wait before the page can say so.");
 });
 
 test("SH1047: a planted read with no signal fails by name, and one with a signal does not", () => {

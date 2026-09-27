@@ -143,9 +143,10 @@ export class ShPostUnifiedService {
     return held ? { "If-Match": held } : {}
   }
 
-  async get(id: string, state: ShPostState = "PUBLISHED"): Promise<ShPostUnified> {
+  async get(id: string, state: ShPostState = "PUBLISHED", read: ShRead = {}): Promise<ShPostUnified> {
     const response = await axios.get<ShPostUnified>(`/v2/post-unified/${id}`, {
       params: { state },
+      signal: read.signal,
     })
     this.remember(id, state, response.headers)
     return response.data

@@ -62,9 +62,16 @@ test("SH1001: the page sends one call and re-reads the run", () => {
       + "in a state nobody chose")
   assert.match(service, /import axios from "@\/lib\/axios"/,
     "SH1001: the shared singleton, or CSRF and the base URL arrive by import order")
-  assert.match(page, /const detail = await service\.detail\(session\)/,
-    "SH207: a page that showed the old answer after an action is the one number a curator learns "
-      + "to distrust")
+  /*
+   * SH1158 moved the run's detail onto the query layer, so the re-read this asserts is now an
+   * invalidation of that run's key rather than a second request written out by hand. The claim is the
+   * same one and it is checked in both places a decision is taken — the per-change triage and the two
+   * whole-run verbs — because a page that showed the old answer after an action is the one number a
+   * curator learns to distrust (SH207).
+   */
+  assert.equal((page.match(/await invalidate\(`summary:reviewRun\|\$\{session\}`\)/gu) ?? []).length, 2,
+    "SH207: a decision has to say the run it changed is stale, and both the triage and the whole-run "
+      + "verbs take decisions")
   // SH968 removed the header count this used to refresh: the dock reports what a run did, so an
   // approval here has no second number to keep in step, and a refresh would be a fetch nobody reads.
   assert.doesNotMatch(page, /refreshPending\(\)/,

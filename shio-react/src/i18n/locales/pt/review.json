@@ -28,5 +28,8 @@
   "review.changedFields": "Alterado: {{fields}}",
   "review.filterRuns": "Filtrar execuções por intenção, agente ou quem executou...",
   "review.noMatchTitle": "Nenhuma execução corresponde",
-  "review.noMatchHint": "Nenhuma execução de agente na fila corresponde a estes filtros. Remova um filtro para ver mais."
+  "review.noMatchHint": "Nenhuma execução de agente na fila corresponde a estes filtros. Remova um filtro para ver mais.",
+  "review.readFailedTitle": "Não foi possível ler a fila de revisão",
+  "review.readFailedHint": "Nada está faltando — o servidor não respondeu. Tente novamente; as execuções que aguardam você continuam aguardando.",
+  "review.runReadFailed": "Não foi possível ler as alterações desta execução"
 }

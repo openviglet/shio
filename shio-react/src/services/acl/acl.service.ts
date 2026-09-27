@@ -19,8 +19,9 @@ export class ShAclService {
    * Publish is not offered. Asked so a control can be disabled with an explanation rather than
    * offered and answered with a 403.
    */
-  async allowed(objectId: string): Promise<ShAllowed> {
-    const response = await axios.get<ShAllowed>(`/v2/object/${objectId}/allowed`)
+  async allowed(objectId: string, read: ShRead = {}): Promise<ShAllowed> {
+    const response = await axios.get<ShAllowed>(`/v2/object/${objectId}/allowed`,
+      { signal: read.signal })
     return response.data
   }
 }

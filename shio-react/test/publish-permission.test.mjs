@@ -26,7 +26,9 @@ const read = (...path) => readFileSync(join(ROOT, ...path), "utf8")
 test("SH995: the editor asks what it may do, and disables Publish with the server's sentence", () => {
   const page = read("src", "app", "content", "post.edit.page.tsx")
 
-  assert.match(page, /aclService\s*\n?\s*\.allowed\(postId\)/,
+  // SH1158 — the permission is its own query now, and it takes the signal `useQuery` hands it: a
+  // curator who leaves the form should not have the console still asking what they may do there.
+  assert.match(page, /queryFn: \(\{ signal \}\) => aclService\.allowed\(postId, \{ signal \}\)/,
     "SH995: the permission is asked, not assumed")
   assert.match(page, /disabled=\{isLoading \|\| publishHint !== null\}/)
   assert.match(page, /disabled=\{isLoading \|\| isPublishing \|\| publishHint !== null\}/,
@@ -42,7 +44,7 @@ test("SH995: the reason shown is the server's own, carried rather than reworded"
   assert.match(service, /\/v2\/object\/\$\{objectId\}\/allowed/)
   assert.match(model, /publishHint\?: string \| null/)
   assert.match(read("src", "app", "content", "post.edit.page.tsx"),
-    /allowed\.publishHint/,
+    /allowed\.data\.publishHint/,
     "SH995: the sentence comes from the response; a console that wrote its own would be a second "
       + "authorisation story")
 })

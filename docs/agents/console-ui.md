@@ -2583,6 +2583,40 @@ nav badge. Leaving that page mid-read saves real server work. Its `catch(() => s
 one a curator stops checking. Its entry stays, because the deep-link detail read did not move.
 **The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7 → 6.**
 
+**Slice eleven took the two heaviest screens, and found that slice ten had shipped its report rather
+than its behaviour** (SH1158). SH1157 wrote that "the queue could not be read" and "nothing is waiting
+for you" must not be the same screen, deleted the `catch(() => setSessions([]))` that made them so, and
+left a page where they still were: with the list on the query layer, `read.data ?? []` is `[]` on a
+failure too, so `sessions.length === 0` went on drawing `review.blankTitle` for a queue nobody could
+read. **Its assertion matched the mechanism** — that `catch` being absent — which is the same mistake
+SH1028's guard made, and it is why the review queue now has a `queueFailure` derived from the query, a
+third branch ahead of the two empty ones, and words of its own in both bundles. Three facts, three
+screens.
+
+The rest of the review queue is the more interesting half. Its run detail lived in a
+`Record<string, ShReviewDetail | null>` that **four** call sites wrote to — the expander's click, the
+deep link, a triage and a whole-run verb — and `null` in that map meant both "asked, not answered" and,
+on a read that failed, "asked, never answering", which drew `common.loading` for ever with nothing to
+press. A `ReviewRunDetail` component with its own query keyed on the run fixes all of it at once: the
+signal is aborted when the row closes, two surfaces wanting the same run make one request, a decision
+re-reads by saying the key is stale rather than by a second `setOpen`, and the failure is its own state
+because a query has one. The map now holds only the curator's open/closed choice. The deep link (SH999)
+consequently **reads nothing at all** — it expands a row, once per named run, from the router's
+`useSearchParams` rather than from `window.location.search` — so this page has no effects left.
+
+The post editor is the product's heaviest form, and the shape of its migration is the one worth copying
+for a screen whose reads are not independent: both rows of one post go through **one** `queryFn` with
+`Promise.allSettled`, because which of them is editable decides `state` while whether the PUBLISHED row
+exists is the separate fact Unpublish needs (SH654) — `all` cannot report the second once the first has
+answered, and the sequential try/catch it replaced could not either. The permission read stays a
+*second* query on purpose: it answers a different question, and a failure means something different —
+a permission read that broke leaves the buttons as they were, because the server is what decides and
+hiding a control over a broken side call is the worse guess. `retry: false` on the load, because a 404
+on a deleted post is an answer rather than a transient.
+**The declared list: 33 → 28 → 25 → 21 → 19 → 16 → 14 → 12 → 8 → 7 → 6 → 4**, and the four left are the
+visual editor's other seven reads and the three paged screens §LXXII.21 says want `useInfiniteQuery`
+and a product decision.
+
 One thing the slices keep teaching, in a different spelling each time: the dependency array is where
 an effect-shaped read keeps its mistakes. `item.name` in slice one, `form.reset` and `service` in
 slice two, `t` and `form` in slice three — none of them is the subject being read, and a query key

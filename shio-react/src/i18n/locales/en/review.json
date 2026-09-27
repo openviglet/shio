@@ -28,5 +28,8 @@
   "review.changedFields": "Changed: {{fields}}",
   "review.filterRuns": "Filter runs by intent, agent or who ran them...",
   "review.noMatchTitle": "No run matches",
-  "review.noMatchHint": "No agent run in the queue matches these filters. Remove a chip to see more."
+  "review.noMatchHint": "No agent run in the queue matches these filters. Remove a chip to see more.",
+  "review.readFailedTitle": "The review queue could not be read",
+  "review.readFailedHint": "Nothing is missing — the server did not answer. Try again; runs waiting for you are still waiting.",
+  "review.runReadFailed": "This run's changes could not be read"
 }
