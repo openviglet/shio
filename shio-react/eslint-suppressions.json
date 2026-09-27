@@ -47,11 +47,6 @@
       "count": 1
     }
   },
-  "src/app/system/bento.root.page.tsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
-  },
   "src/components/field-constraints.tsx": {
     "react-refresh/only-export-components": {
       "count": 1

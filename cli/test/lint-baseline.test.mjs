@@ -105,7 +105,7 @@ const DECLARED = {
     "src/app/content/post-conflict.dialog.tsx": 1,
     "src/app/content/search.page.tsx": 1,
     "src/app/system/bento-tenant-link-notice.tsx": 1,
-    "src/app/system/bento.root.page.tsx": 1,
+    // `bento.root.page.tsx` left with SH1157, whose palette query took the effect that set state.
     "src/components/post-history.panel.tsx": 1,
     "src/components/post-live-preview.tsx": 1,
     "src/hooks/use-list-state.ts": 1,
