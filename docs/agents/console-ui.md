@@ -2887,6 +2887,14 @@ because a ref written during render belongs to a render React may discard. Both 
 `PAID`. To see a file's findings without the baseline, run ESLint with `--suppressions-location`
 pointing at a file holding `{}` (written without a BOM, or ESLint cannot parse it).
 
+**The second slice emptied `react-hooks/refs`.** Two of the three were the same "latest value in a
+ref" shape as the preview — `useChangeStream`'s handler and `useAutosave`'s `{attrs, save}` — and
+got the same fix, the assignment moved into a layout effect: the reader in both is a callback that
+runs after a commit, so it still sees the values on screen. The third was different in kind, and is
+the one worth knowing: the Activity page kept its "newer" back-stack in a ref **and read its length
+during render** to decide whether the button was enabled. That is state wearing a ref's name, and a
+ref change never re-renders — so it is state now. The group stays declared, empty.
+
 ## The Activity page's live update, seen to arrive (SH1087)
 
 `useChangeStream` (SH1005) had only source-scan assertions, and a stream that never delivers looks

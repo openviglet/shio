@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ROUTES } from "@/app/routes.const"
 import { Bot, ChevronLeft, ChevronRight, History, RefreshCw, X } from "lucide-react"
 import { Link, useSearchParams } from "react-router-dom"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useChangeStream } from "@/hooks/use-change-stream"
 import { ShHistoryService } from "@/services/history/history.service"
@@ -56,12 +56,16 @@ export default function ActivityListPage() {
   const [loading, setLoading] = useState(true)
   /** SH1005 — the stream said the trail moved; the curator decides when their page moves. */
   const [arrived, setArrived] = useState(false)
-  /** The positions walked past, so "newer" goes back exactly the way "older" came. */
-  const back = useRef<string[]>([])
+  /**
+   * The positions walked past, so "newer" goes back exactly the way "older" came. State rather than a
+   * ref since SH1136: whether there is anywhere to go back to decides whether "Newer" is enabled, and
+   * a ref read during render is a value React never re-renders for.
+   */
+  const [back, setBack] = useState<string[]>([])
 
   /** One narrowing changed: page one again, and the walk starts over from the newest row. */
   const narrow = useCallback((key: string, value: string) => {
-    back.current = []
+    setBack([])
     const next = new URLSearchParams(search)
     if (value) next.set(key, value)
     else next.delete(key)
@@ -120,13 +124,13 @@ export default function ActivityListPage() {
 
   const older = () => {
     if (!cursor) return
-    back.current = [...back.current, before]
+    setBack((walked) => [...walked, before])
     pageAt(cursor)
   }
 
   const newer = () => {
-    const previous = back.current.at(-1)
-    back.current = back.current.slice(0, -1)
+    const previous = back.at(-1)
+    setBack(back.slice(0, -1))
     pageAt(previous ?? "")
   }
 
@@ -312,7 +316,7 @@ export default function ActivityListPage() {
           SH1005 — the trail did not end at row five hundred; that was where the reader stopped.
         */}
         <div className="flex items-center justify-end gap-2">
-          <Button size="sm" variant="outline" disabled={loading || back.current.length === 0}
+          <Button size="sm" variant="outline" disabled={loading || back.length === 0}
             onClick={newer}>
             <ChevronLeft className="mr-1 h-4 w-4" />
             {t("activity.newer")}

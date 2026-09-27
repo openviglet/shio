@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useLayoutEffect, useRef } from "react"
 
 /**
  * SH1005 — the console's half of SH967's stream: a screen that is open learns that something
@@ -20,8 +20,13 @@ import { useEffect, useRef } from "react"
  * listener to leave closes it.</p>
  */
 export function useChangeStream(onChanged: () => void, site?: string) {
+  // The latest handler, so the one subscription per scope calls what the screen renders now.
+  // SH1136 — written after the commit, not during the render: a ref assigned in render belongs to a
+  // render React may discard, and the lint that says so was suppressed for this line until then.
   const handler = useRef(onChanged)
-  handler.current = onChanged
+  useLayoutEffect(() => {
+    handler.current = onChanged
+  })
 
   useEffect(() => subscribeChanges(site, () => handler.current()), [site])
 }

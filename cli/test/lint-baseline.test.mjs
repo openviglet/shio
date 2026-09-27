@@ -109,12 +109,11 @@ const DECLARED = {
     // the history panel and the live preview with SH1136's first slice (see PAID).
     "src/hooks/use-list-state.ts": 1,
   },
-  // SH1075 — a ref read during render, the same accrual and the same payoff task (SH1136).
-  "react-hooks/refs": {
-    "src/app/admin/activity/activity.list.page.tsx": 1,
-    "src/hooks/use-autosave.ts": 1,
-    "src/hooks/use-change-stream.ts": 1,
-  },
+  // SH1075 — a ref read during render, the same accrual and the same payoff task (SH1136). Empty
+  // since SH1136's second slice, and left declared like the group below: the two hooks write their
+  // latest value in a layout effect, and the Activity page's back-stack is state, because whether
+  // "Newer" is enabled is read from it during render.
+  "react-hooks/refs": {},
   // Also empty, and also left declared: SH1046 took the last one off. The content browser's
   // `postTypeService.query().then(...)` was an expression statement, and it went with the effect
   // that read the whole post-type catalogue once per folder.

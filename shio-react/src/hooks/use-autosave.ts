@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 
 /** How long the typing has to stop before the draft is written. */
 const QUIET_MS = 3000
@@ -43,9 +43,13 @@ export function useAutosave(options: {
   const stopped = useRef(false)
   // The latest of each, so the timer closes over a ref rather than over the values it was armed
   // with — an autosave that sent the document from three seconds ago would undo what was typed
-  // since, which is the failure that makes people turn autosave off.
+  // since, which is the failure that makes people turn autosave off. SH1136 — written after the
+  // commit rather than during the render, which is a render React may discard; the timer below fires
+  // well after any commit, so it always reads the values on screen.
   const latest = useRef({ attrs, save })
-  latest.current = { attrs, save }
+  useLayoutEffect(() => {
+    latest.current = { attrs, save }
+  })
 
   const pending = Object.keys(attrs).length > 0
   const signature = JSON.stringify(attrs)

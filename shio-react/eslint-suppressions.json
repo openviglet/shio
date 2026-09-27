@@ -1,9 +1,4 @@
 {
-  "src/app/admin/activity/activity.list.page.tsx": {
-    "react-hooks/refs": {
-      "count": 1
-    }
-  },
   "src/app/content/languages.page.tsx": {
     "react-hooks/set-state-in-effect": {
       "count": 1
@@ -79,16 +74,6 @@
   },
   "src/contexts/user.context.tsx": {
     "react-refresh/only-export-components": {
-      "count": 1
-    }
-  },
-  "src/hooks/use-autosave.ts": {
-    "react-hooks/refs": {
-      "count": 1
-    }
-  },
-  "src/hooks/use-change-stream.ts": {
-    "react-hooks/refs": {
       "count": 1
     }
   },

@@ -46,8 +46,11 @@ test("SH1005: the page walks with the cursor the server hands back", () => {
   assert.match(page, /setMore\(page\.more\)/,
     "SH1005: `more` comes from the server as a fact, so the last page does not cost a round trip "
       + "that returns nothing")
-  assert.match(page, /back\.current/,
+  // SH1136 made the walk state rather than a ref, because "Newer" reads it during render.
+  assert.match(page, /const previous = back\.at\(-1\)/,
     "SH1005: paging back up is the way it came down, so `newer` is not a second guess")
+  assert.match(page, /disabled=\{loading \|\| back\.length === 0\}/,
+    "SH1136: whether there is anywhere to go back to is read during render, so it is state")
 })
 
 test("SH1005: a stream event offers the new rows, it does not impose them", () => {
