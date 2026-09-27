@@ -2383,3 +2383,48 @@ and `expected.json` is what the script measured on it; `ShConsoleCostTest` and
 the byte. Gzip does not, and cannot be made to: Node ships Chromium's zlib and the JVM its own, and
 neither promises the same stream at level 9 — measured on the fixture, 9787 against 9726 (0.6%). A
 comparison against the build gate's ceilings should use `raw`.
+
+## A size verdict about somebody else's build (SH1126)
+
+SH1043's comparison runs against whatever console build sits in
+`shio-app/src/main/resources/public`, and **`pnpm test` never built one**. So the gate measured a build
+of *some* tree with nothing saying which — and it went wrong in both directions, on consecutive tasks:
+one passed `pnpm test` against a build that predated its own change, and the next failed the headroom
+check only because a build made outside the session happened to include it. Neither verdict was about
+the bytes the task under test had produced.
+
+The conformance gate had the same shape and SH460 closed it there — the instance states its build time
+and commit, and the harness refuses one older than HEAD. A console build carries the same identity now:
+a Vite plugin emits **`build-info.json`** beside `index.html`, holding the commit, the build time and a
+digest of the sources the bundle was built from.
+
+**The digest is the comparison; the commit is for a person.** A commit cannot be compared against a
+working tree — the tree is dirty most of the time anybody runs this, and refusing a dirty tree would
+refuse every build made while working. The digest is over file contents, so it matches a dirty tree
+exactly when the build came from it. The commit is recorded because it is what a reader wants when the
+digests differ and they are working out which build they have.
+
+`SOURCE_INPUTS` is the decision: `src`, plus `index.html` (the entry), `vite.config.ts` (the chunking)
+and `package.json` (the dependency names). §LXXII.23 asked for `src`; the other three decide what the
+bundle contains. **The stated limit:** it does not cover the installed dependency *bytes*, so a
+`pnpm update` that changes a vendor chunk without touching any of these leaves the digest matching.
+That is the right trade — the failure this closes was seen twice and both times it was a source edit,
+and hashing `node_modules` would cost more than the build it protects. The lockfile is out too: it
+moves on an install that changes nothing the bundle sees.
+
+**Three ways to be "not measured", one outcome.** No build, a build from before `build-info.json`
+existed, and a build from another tree all produce no total, because a number from a different tree is
+worse than no number. What differs is the sentence, and each names what to do. One function
+(`buildProvenance`) decides, so the three cannot drift apart.
+
+**A stale build must not fail the suite**, or every source edit would demand a build before
+`pnpm test`. So locally it is a diagnostic — which would leave the number real only where somebody
+happened to build. Hence the other half: CI's `js` job now runs `pnpm run build:console` (~10s against
+a 20-minute budget) and sets `SHIO_REQUIRE_CONSOLE_BUILD=1`, which turns "not measured" into a failure
+there. `ci-gates.test.mjs` asserts both halves *and their order* — a build after the suite measures
+nothing, and the two lines look equally correct in a diff.
+
+One shape worth knowing: `scripts/console-build-info.mjs` stays `.mjs` with a hand-written
+`.d.mts` beside it, because `node --test` runs the suites with no build step while `vite.config.ts` is
+type-checked by `tsc -b`. Moving it to TypeScript would mean compiling it before a test could import
+it, which is the build-before-you-can-measure problem this task exists to remove.

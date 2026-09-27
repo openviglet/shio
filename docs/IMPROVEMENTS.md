@@ -1509,30 +1509,6 @@ Worth doing in slices, since each screen's failure path is its own.
 The assertion is the list shrinking with every slice, and the browser probe green after
 each.
 
-### LXXII.23 A size verdict about somebody else's build (SH1126)
-
-SH1043's comparison runs against whatever console build sits in
-`shio-app/src/main/resources/public`, and `pnpm test` never builds one. So the gate
-measures a build of *some* tree, and nothing says which. Seen on consecutive tasks:
-SH1059 passed `pnpm test` against a build that predated its own change, and the next
-task failed the headroom check only because a build made outside the session happened to
-include it. Both verdicts were about bytes the task under test had not produced.
-
-The conformance gate had the same shape and SH460 closed it there: the instance states
-its build time and commit, and the harness refuses one older than HEAD. The console
-build can carry the same identity. A small Vite plugin writes `build-info.json` beside
-`index.html`, holding the commit and a digest of `shio-react/src`, and the size test
-compares that digest with the tree it runs in. A match is measured. A mismatch is said
-out loud, in the same words as the no-build case, rather than measured, because a number
-from a different tree is worse than no number.
-
-A stale build must not fail the suite, or every source edit would demand a one-minute
-build before `pnpm test`. The gate that must see the bytes is the one that already
-builds: CI's `./mvnw package` without `skip.npm`.
-
-The assertion is a planted mismatch: a synthetic dist whose digest differs from the tree
-reports "not measured" and never a total.
-
 ### LXXII.24 The seventeen the console lint still holds (SH1136)
 
 SH1075 found the console lint red in CI with twenty errors, fixed three, and recorded

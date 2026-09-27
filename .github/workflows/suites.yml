@@ -57,7 +57,24 @@ jobs:
         # built SDK. Cheaper than discovering that as a test failure with no line of ours in it.
         run: pnpm run build:sdk && pnpm run build:sections
 
+      # SH1126 — the console, so the size gate has bytes from THIS tree to measure.
+      #
+      # SH1043's comparison runs against whatever build sits in the static root, and `pnpm test` never
+      # built one — so the gate measured a build of *some* tree with nothing saying which, and it went
+      # wrong in both directions on consecutive tasks: one passed against bytes older than its own
+      # change, the next failed the headroom check only because a build made outside the session
+      # happened to include it. `build-info.json` lets the test tell, and this is the run that gives it
+      # something to tell about. ~10s against a job budget of 20 minutes, which is what makes it
+      # affordable to have the number on every pull request rather than whenever somebody built.
+      - name: Build the console, so the size gate measures this tree
+        run: pnpm run build:console
+
+      # SH1126 — and having built it, this run refuses to be told nothing. Locally a stale build is a
+      # diagnostic (a source edit must not demand a build before `pnpm test`); here "not measured"
+      # means the build step and the suite disagree about the tree, which is a failure.
       - run: pnpm test
+        env:
+          SHIO_REQUIRE_CONSOLE_BUILD: "1"
 
       # SH665 — the console's own lint, which had not run since ESLint 10. Its config extended a
       # preset whose `plugins` key ESLint 10 rejects, so `eslint` exited 2 on every file including
