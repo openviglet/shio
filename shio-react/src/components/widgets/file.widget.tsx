@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { ChevronRight, FileText, Folder, Loader2, Search, Upload, X } from "lucide-react"
+import { ChevronRight, FileText, Folder, Search, Upload, X } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import type { ShRead } from "@/lib/read-options"
@@ -10,6 +10,7 @@ import { toast } from "@viglet/viglet-design-system"
 import type { WidgetProps } from "./index"
 import { ContentBrowserDialog, type ContentBrowserSelection } from "./content-browser-dialog"
 import { isObjectReference } from "@/lib/object-reference"
+import { Spinner } from "@/components/spinner"
 
 interface PathSegment {
   id: string
@@ -360,7 +361,7 @@ export function FileWidget({ attr, onChange, labelledBy, describedBy, required }
           >
             {uploading ? (
               <>
-                <Loader2 className="h-8 w-8 text-primary mb-2 animate-spin" />
+                <Spinner labelled className="h-8 w-8 text-primary mb-2" />
                 <p className="text-sm text-muted-foreground">{t("content.uploading")}</p>
               </>
             ) : (

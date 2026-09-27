@@ -4,7 +4,7 @@ import { isCancelled } from "@/lib/read-options"
 import { useInvalidate } from "@/hooks/use-catalogue"
 import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
-import { AlertTriangle, ImageOff, Lightbulb, Loader2, RefreshCw } from "lucide-react"
+import { AlertTriangle, ImageOff, Lightbulb, RefreshCw } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -88,10 +88,8 @@ export function PostInsightsPanel({ address, revision, onGoToField }: Readonly<P
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
-          {loading
-            ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-            : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+        <Button type="button" variant="outline" size="sm" onClick={() => void load()} loading={loading}>
+          {!loading && <RefreshCw className="h-3.5 w-3.5 mr-1" />}
           {t("insights.refresh")}
         </Button>
         {failed && <span className="text-xs text-muted-foreground">{t("insights.unavailable")}</span>}

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useCallback, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Check, Loader2, MessageSquare, Undo2 } from "lucide-react"
+import { Check, MessageSquare, Undo2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -150,8 +150,7 @@ export function NoteRail({ objectId, field }: { objectId: string; field?: string
         >
           {t("note.kindRequest")}
         </Button>
-        <Button size="sm" className="ml-auto" disabled={busy || !body.trim()} onClick={() => void add()}>
-          {busy ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}
+        <Button size="sm" className="ml-auto" disabled={!body.trim()} loading={busy} onClick={() => void add()}>
           {t("note.add")}
         </Button>
       </div>

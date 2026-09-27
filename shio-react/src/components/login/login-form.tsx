@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { ShAuthorizationService } from "@/services/auth/authorization.service"
 import { ShSetupService } from "@/services/auth/setup.service"
-import { AlertCircle, KeyRound, Loader2, LogIn, User } from "lucide-react"
+import { AlertCircle, KeyRound, LogIn, User } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
@@ -100,8 +100,8 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
                 </FormItem>
               )} />
             </div>
-            <Button type="submit" className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold" disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
+            <Button type="submit" className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold" loading={isLoading}>
+              {!isLoading && <LogIn className="mr-2 h-4 w-4" />}
               {isLoading ? t("login.signingIn") : t("login.signIn")}
             </Button>
           </form>

@@ -5,12 +5,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ShSetupService } from "@/services/auth/setup.service"
 import { StartupFirst } from "@viglet/viglet-design-system"
-import { AlertCircle, Check, KeyRound, Loader2, Shield, ShieldCheck } from "lucide-react"
+import { AlertCircle, Check, KeyRound, Shield, ShieldCheck } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { LoginSettingsButton, useLoginSettings } from "../login/login-settings"
+import { Spinner } from "@/components/spinner"
 
 const setupService = new ShSetupService()
 
@@ -72,7 +73,7 @@ export default function SetupPage() {
   if (checking) {
     return (
       <div className="min-h-svh flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        <Spinner className="h-8 w-8 text-orange-500" />
       </div>
     )
   }
@@ -161,9 +162,9 @@ export default function SetupPage() {
             <Button
               type="submit"
               className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold"
-              disabled={isLoading}
+              loading={isLoading}
             >
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+              {!isLoading && <ShieldCheck className="mr-2 h-4 w-4" />}
               {isLoading ? t("common.loading") : t("setup.setPassword")}
             </Button>
           </form>

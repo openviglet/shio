@@ -1904,6 +1904,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1171** — The route cost counts reads and not the held change streams, and gates only the jar: a dev-server run prints its findings as notes and exits clean (design §LXXII.34 recorded in `docs/agents/build.md`).
 - **SH1172** — The route budget is re-seeded from a healthy jar, reads are counted by path, and a ceiling below the shell's floor is refused; a jar run reports no finding (design §LXXII.35 recorded in `docs/agents/build.md`).
 - **SH1176** — The provisioner reads the change count where the apply puts it, so its log says how much a run wrote: changed=45 on a clean instance (design §LXXII.36 recorded in `docs/agents/blueprints.md`).
+- **SH1053** — Every console page has one main, a skip link first and focus on the new page's title, held by a live probe; busy buttons keep focus and every spinner is heard (design §LXXII.11 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Loader2, Monitor, RefreshCw, Smartphone, Tablet } from "lucide-react"
+import { Monitor, RefreshCw, Smartphone, Tablet } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -135,10 +135,9 @@ export function PostLivePreview({ address, data, revision, renderable }: Readonl
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => void render()} disabled={loading || !asks}>
-          {loading
-            ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-            : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+        <Button type="button" variant="outline" size="sm" onClick={() => void render()} disabled={!asks}
+          loading={loading}>
+          {!loading && <RefreshCw className="h-3.5 w-3.5 mr-1" />}
           {t("insights.previewRefresh")}
         </Button>
 

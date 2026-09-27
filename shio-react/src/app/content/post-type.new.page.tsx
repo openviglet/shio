@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { ROUTES } from "@/app/routes.const"
 import { IconFileText } from "@tabler/icons-react"
-import { Loader2, Save } from "lucide-react"
+import { Save } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
@@ -96,8 +96,8 @@ export default function PostTypeNewPage() {
                   )}
                 />
                 <div className="flex gap-2 pt-4">
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  <Button type="submit" loading={isLoading}>
+                    {!isLoading && <Save className="mr-2 h-4 w-4" />}
                     {t("common.save")}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => navigate(ROUTES.POST_TYPE_ROOT)}>

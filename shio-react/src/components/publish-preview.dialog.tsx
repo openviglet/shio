@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Loader2, Upload } from "lucide-react"
+import { Upload } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { ShPublishPlan, ShPublishRoutes } from "@/models/post-unified/post-unified"
+import { Spinner } from "@/components/spinner"
 
 const service = new ShPostUnifiedService()
 
@@ -132,7 +133,7 @@ export function PublishPreviewDialog({
         </DialogHeader>
 
         {loading ? (
-          <Loader2 className="size-4 animate-spin" />
+          <Spinner className="size-4" />
         ) : (
           <div className="space-y-2 text-sm">
             {change && (
@@ -195,9 +196,10 @@ export function PublishPreviewDialog({
               redirect && !!routes?.stops)}
             // A blank reason is refused by the server, which is the rule; the button knows it too, so
             // a curator is not taught the rule by a second refusal.
-            disabled={publishing || loading || (!!gateRefusal && !override.trim())}
+            disabled={loading || (!!gateRefusal && !override.trim())}
+            loading={publishing}
           >
-            {publishing ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+            {!publishing && <Upload className="size-4" />}
             {gateRefusal ? t("content.publishOverrideConfirm") : t("content.publish")}
           </Button>
           <Button variant="ghost" onClick={() => setOpen(false)}>

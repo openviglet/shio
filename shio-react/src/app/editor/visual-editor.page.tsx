@@ -4,21 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { ROUTES } from "@/app/routes.const"
-import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowUp,
-  Copy,
-  Loader2,
-  Monitor,
-  Plus,
-  RefreshCw,
-  Save,
-  Smartphone,
-  Trash2,
-  Undo2,
-  Upload,
-} from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowUp, Copy, Monitor, Plus, RefreshCw, Save, Smartphone, Trash2, Undo2, Upload } from "lucide-react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import type { ShSite } from "@/models/site/site"
@@ -47,6 +33,7 @@ import type {
 } from "@/models/universal-editor/universal-editor.model"
 import { siteDestination } from "@/lib/site-front-end"
 import { useUnsavedGuard } from "@/hooks/use-unsaved-guard"
+import { Spinner } from "@/components/spinner"
 
 const siteService = new ShSiteService()
 const editorService = new ShUniversalEditorService()
@@ -1283,8 +1270,8 @@ export default function VisualEditorPage() {
             <Upload className="h-4 w-4 mr-1" />
             {t("universalEditor.publish")}
           </Button>
-          <Button size="sm" onClick={() => persist(false)} disabled={saving || changes.size === 0}>
-            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+          <Button size="sm" onClick={() => persist(false)} disabled={changes.size === 0} loading={saving}>
+            {!saving && <Save className="h-4 w-4 mr-1" />}
             {saving ? t("universalEditor.saving") : t("universalEditor.save")}
           </Button>
         </div>
@@ -1377,7 +1364,7 @@ export default function VisualEditorPage() {
           )}
           {!siteError && !src && (
             <div className="flex items-center justify-center text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" /> {t("universalEditor.connecting")}
+              <Spinner labelled className="h-5 w-5 mr-2" /> {t("universalEditor.connecting")}
             </div>
           )}
           {/*

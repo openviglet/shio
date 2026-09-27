@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Clock, Loader2, X } from "lucide-react"
+import { Clock, X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -157,8 +157,8 @@ function PostScheduleBody({
         </div>
 
         <DialogFooter className="gap-2">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="size-4 animate-spin" /> : <Clock className="size-4" />}
+          <Button onClick={handleSave} loading={saving}>
+            {!saving && <Clock className="size-4" />}
             {t("content.saveSchedule")}
           </Button>
           <Button variant="ghost" onClick={() => setOpen(false)}>

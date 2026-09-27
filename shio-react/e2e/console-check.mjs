@@ -693,6 +693,58 @@ async function checkGraphiQLFit(page) {
   })
 }
 
+/**
+ * SH1053 — the two facts a keyboard reader depends on, which no source scan can see.
+ *
+ * <p>The first Tab on a console page must land on the skip link (VDS141), or a keyboard reader tabs
+ * through the rail and the header on every page. And after an in-app navigation focus must move to
+ * the new page's heading, or it stays on the rail link just pressed and the reader has no way to
+ * know the page changed. Both are the shell's, measured here because a composition of the shell can
+ * still break them: a page that grabs focus first, or a route that renders no heading.</p>
+ */
+async function checkKeyboardLandmarks(context) {
+  const probe = { name: "keyboard-landmarks", path: "/bento", ok: true, errors: [], warnings: [],
+    failedRequests: [] }
+  const page = await context.newPage()
+  try {
+    await page.goto(`${BASE}/bento`, { waitUntil: "networkidle" })
+    await page.waitForTimeout(1000)
+    await page.keyboard.press("Tab")
+    const first = await page.evaluate(() => {
+      const a = document.activeElement
+      return { tag: a?.tagName.toLowerCase(), href: a?.getAttribute("href") ?? "",
+        target: a?.getAttribute("href")?.startsWith("#")
+          ? Boolean(document.getElementById(a.getAttribute("href").slice(1))) : false }
+    })
+    probe.firstTab = `${first.tag} ${first.href}`
+    if (first.tag !== "a" || !first.href.startsWith("#") || !first.target) {
+      probe.ok = false
+      probe.errors.push(`SH1053: the first Tab reached ${probe.firstTab}, not a skip link to an element`
+        + " on the page")
+    }
+    const rail = page.locator("nav a[href$='/bento/content']").first()
+    if (await rail.count() === 0) {
+      probe.afterNav = "not driven"
+      probe.warnings.push("no rail link to /bento/content, so focus after navigation was not driven")
+    } else {
+      await rail.click()
+      await page.waitForTimeout(1500)
+      probe.afterNav = await page.evaluate(() => document.activeElement?.tagName.toLowerCase() ?? "none")
+      if (probe.afterNav !== "h1") {
+        probe.ok = false
+        probe.errors.push(`SH1053: after navigating, focus is on <${probe.afterNav}>, not the new page's`
+          + " heading — a keyboard reader is left on the link they pressed")
+      }
+    }
+  } catch (e) {
+    probe.ok = false
+    probe.errors.push(`could not drive the keyboard: ${String(e).split("\n")[0]}`)
+  } finally {
+    await page.close()
+  }
+  return probe
+}
+
 /** Count the widget cards a form rendered, without depending on any one widget's markup. */
 async function countFields(page) {
   return page.evaluate(() => {
@@ -1525,6 +1577,10 @@ async function main() {
         // `ok`, so a finding here fails the probe exactly like a missing string does.
         const surface = await checkBentoSurface(page, route.noPanel === true)
         probe.missing.push(...surface.findings)
+        // SH1053 — the shell owns exactly one main landmark (VDS141). A page that renders its own
+        // puts a second one beside it, and a screen reader's "skip to main" then has two answers.
+        const mains = await page.evaluate(() => document.querySelectorAll("main").length)
+        if (mains !== 1) probe.missing.push(`SH1053: ${mains} <main> landmarks, where the shell owns one`)
         const morph = await checkSaveBarMorph(page)
         probe.morph = morph.ran ? (morph.findings.length ? morph.findings.join("; ") : "ok") : morph.why
         if (morph.ran) probe.missing.push(...morph.findings)
@@ -1666,6 +1722,13 @@ async function main() {
     driveProbe.errors.push(
       `--strict: the drive reached the editor and did not publish — ${driveProbe.publishSkipped}`)
   }
+  // SH1053 — what a keyboard reader meets: the skip link first, and focus on the page after a move.
+  const keysProbe = await checkKeyboardLandmarks(context)
+  report.probes.push(keysProbe)
+  console.log(`${keysProbe.ok ? "ok  " : "FAIL"} ${keysProbe.name.padEnd(30)} `
+    + `first tab: ${keysProbe.firstTab}; after navigation: ${keysProbe.afterNav}`)
+  for (const e of keysProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
+
   // SH1046 — what a second folder costs, which is the one claim only a browser can check.
   const navProbe = await checkFolderNavigation(context, site)
   if (STRICT && navProbe.skipped) {

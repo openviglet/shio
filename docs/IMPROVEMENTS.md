@@ -1393,26 +1393,6 @@ Claim primary through the four base inputs, never by setting the compiled token,
 turn the accent gate into a census of claimable families driven by the preset, so a new
 family fails Shio's build instead of silently rendering grey.
 
-### LXXII.11 A shell that owns the landmark, the skip link and focus (SH1053)
-
-The analysis found no aria-live, no sr-only text and no effect moving focus on route
-change, a main element on three of forty-seven page components, and no skip link. The
-primary button's loading state sets disabled, which drops focus from the control just
-pressed. The assistant dock from SH964 now announces outcomes through its aria-live
-caption, which removes the need for a separate announcer; what remains is structure and
-focus.
-
-VDS141 gives BentoShell exactly one labelled main and a skip link as its first focusable
-element, and moves focus to the page heading on navigation; VDS143 keeps a loading
-control focusable with aria-busy. Shio adopts both: the root renders through the shell's
-main, the three page-level main elements are deleted, and every spinner gains an sr-only
-label and an aria-busy ancestor. The selection count in the browser and the review delta
-report through the dock rather than through a second live region.
-
-The instruments: a landmark test asserting exactly one main per route and a
-first-focusable skip link, and a heading-outline probe in the live browser check,
-because heading level depends on composition a source scan cannot see.
-
 ### LXXII.12 Axe against every console route (SH1054)
 
 The four accessibility rules are source scans for unnamed icon buttons, ARIA state

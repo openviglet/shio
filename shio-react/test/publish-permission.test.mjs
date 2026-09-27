@@ -69,8 +69,11 @@ test("SH998: the override appears in the refusal, and never before it", () => {
   assert.match(dialog, /\{gateRefusal && \(/,
     "SH998: a reason box on every publish trains a curator to fill one in, which is how a waiver "
       + "stops meaning anything")
-  assert.match(dialog, /disabled=\{publishing \|\| loading \|\| \(!!gateRefusal && !override\.trim\(\)\)\}/,
+  assert.match(dialog, /disabled=\{loading \|\| \(!!gateRefusal && !override\.trim\(\)\)\}/,
     "SH998: the record is the whole of the override, so a blank one cannot be sent")
+  // SH1053 — `publishing` moved to `loading`, which keeps the pressed button focused and busy.
+  assert.match(dialog, /loading=\{publishing\}/u,
+    "SH1053: the publish button's own work is its `loading`, not a `disabled` that drops focus")
   assert.match(page, /problem\.type\?\.endsWith\("publish-gate-failed"\)/,
     "SH998: branched on the problem's type, never on its sentence — the sentence is for the "
       + "curator and is meant to be improvable")

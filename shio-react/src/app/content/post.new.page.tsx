@@ -5,7 +5,7 @@ import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Loader2, Save, Sparkles } from "lucide-react"
+import { Save, Sparkles } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
@@ -18,6 +18,7 @@ import type { ShPostType } from "@/models/post-type/post-type"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
 import { reportProblem } from "@/lib/problem"
+import { Spinner } from "@/components/spinner"
 
 const postTypeService = new ShPostTypeService()
 const unifiedService = new ShPostUnifiedService()
@@ -87,7 +88,7 @@ export default function PostUnifiedNewPage() {
       <>
         <PageHero icon={IconFileText} title={t("content.newPost")} urlBase={ROUTES.CONTENT_ROOT} />
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Spinner labelled />
           <span>{t("common.loading")}</span>
         </div>
       </>

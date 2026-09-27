@@ -15,10 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { ContentBrowserDialog, type ContentBrowserSelection } from "@/components/widgets/content-browser-dialog"
 import { ROUTES } from "@/app/routes.const"
-import {
-  Image as ImageIcon, Download, Trash2, Upload, Loader2, Search, LayoutGrid, List as ListIcon,
-  X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText, History,
-} from "lucide-react"
+import { Image as ImageIcon, Download, Trash2, Upload, Search, LayoutGrid, List as ListIcon, X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText, History } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 // SH1023 — the search, the category chip and the view mode live in the URL.
@@ -35,6 +32,7 @@ import type { ShSite } from "@/models/site/site"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { reportProblem } from "@/lib/problem"
 import { deleteEach, refusalSummary } from "@/lib/batch-delete"
+import { Spinner } from "@/components/spinner"
 import {
   mediaCategory, mediaCategoryIcon, isImageType, formatBytes,
   SH_MEDIA_CATEGORIES, type ShMediaCategory,
@@ -365,11 +363,9 @@ export default function StaticFileListPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button size="sm" disabled={!targetSite || activeUploads > 0}
+              <Button size="sm" disabled={!targetSite} loading={activeUploads > 0}
                 onClick={() => fileInputRef.current?.click()}>
-                {activeUploads > 0
-                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  : <Upload className="mr-2 h-4 w-4" />}
+                {activeUploads === 0 && <Upload className="mr-2 h-4 w-4" />}
                 {t("staticFile.upload")}
               </Button>
               <input ref={fileInputRef} type="file" multiple className="hidden"
@@ -450,7 +446,7 @@ export default function StaticFileListPage() {
               <div key={u.id} className="flex items-center gap-2 text-sm">
                 {u.status === "done" && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
                 {u.status === "error" && <AlertCircle className="h-4 w-4 text-destructive shrink-0" />}
-                {u.status === "uploading" && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
+                {u.status === "uploading" && <Spinner className="text-muted-foreground shrink-0" />}
                 <span className="truncate flex-1">{u.name}</span>
                 <div className="w-32 h-1.5 rounded bg-muted overflow-hidden">
                   <div className={cn("h-full transition-all",
@@ -970,9 +966,8 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
                 event.target.value = ""
                 if (picked) void replaceBytes(picked)
               }} />
-            <Button variant="outline" size="sm" disabled={replacing}
+            <Button variant="outline" size="sm" loading={replacing}
               onClick={() => replaceInput.current?.click()}>
-              {replacing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {t("staticFile.chooseNewBytes")}
             </Button>
             <span className="text-xs text-muted-foreground">
@@ -1021,8 +1016,7 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
             <Button variant="ghost" size="sm" className="text-destructive" onClick={() => onDelete(item)}>
               <Trash2 className="mr-2 h-4 w-4" />{t("common.delete")}
             </Button>
-            <Button size="sm" disabled={!dirty || saving} onClick={save}>
-              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            <Button size="sm" disabled={!dirty} loading={saving} onClick={save}>
               {t("common.save")}
             </Button>
             <Button variant="secondary" size="sm" onClick={onClose}>

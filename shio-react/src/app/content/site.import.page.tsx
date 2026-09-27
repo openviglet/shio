@@ -9,7 +9,6 @@
 import { IconUpload } from "@tabler/icons-react"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
 import { BentoFormHero, BentoFormSection } from "@viglet/viglet-design-system/bento"
-import { Loader2 } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -77,10 +76,8 @@ export default function BentoSiteImportPage() {
         dirty={Boolean(file)}
         stickyTitle={t("content.importSite")}
         actions={
-          <GradientButton onClick={onImport} disabled={!file || importing}>
-            {importing
-              ? <Loader2 aria-hidden="true" className="mr-2 h-4 w-4 animate-spin" />
-              : <IconUpload size={16} aria-hidden="true" className="mr-2" />}
+          <GradientButton onClick={onImport} disabled={!file} loading={importing}>
+            {!importing && <IconUpload size={16} aria-hidden="true" className="mr-2" />}
             {t("content.uploadFile")}
           </GradientButton>
         }

@@ -8,13 +8,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ChevronRight, FileText, Folder, Globe, Home, Loader2 } from "lucide-react"
+import { ChevronRight, FileText, Folder, Globe, Home } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import axios from "axios"
 import { isCancelled } from "@/lib/read-options"
 import type { ShFolder } from "@/models/folder/folder"
 import type { ShSite } from "@/models/site/site"
+import { Spinner } from "@/components/spinner"
 
 /**
  * SH120: the CDA listing envelope — `folders`/`posts`, rows carrying the CDA's names.
@@ -359,7 +360,7 @@ function ContentBrowserBody({
         <div className="flex-1 overflow-y-auto min-h-75 max-h-100 -mx-2 px-2">
           {loading ? (
             <div className="flex items-center justify-center h-full gap-2 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Spinner labelled className="h-5 w-5" />
               <span>{t("common.loading")}</span>
             </div>
           ) : (

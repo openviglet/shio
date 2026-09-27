@@ -8,7 +8,6 @@
  */
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Loader2 } from "lucide-react"
 import { BentoDiff, type BentoDiffField } from "@viglet/viglet-design-system/bento"
 import { CreatedPagePanel } from "@/components/created-page-panel"
 import { reportProblem } from "@/lib/problem"
@@ -16,6 +15,7 @@ import { isCancelled } from "@/lib/read-options"
 import { DRAFT, PUBLISHED, diffFields } from "@/lib/version-diff"
 import { postFormSchema, type ShPostDiff } from "@/models/post-unified/post-unified"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
+import { Spinner } from "@/components/spinner"
 
 const service = new ShPostUnifiedService()
 
@@ -47,7 +47,7 @@ export function ReviewEntryDiff({ postId }: { postId: string }) {
   if (!answer) {
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" /> {t("common.loading")}
+        <Spinner labelled className="size-4" /> {t("common.loading")}
       </div>
     )
   }

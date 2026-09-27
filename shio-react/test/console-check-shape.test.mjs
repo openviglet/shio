@@ -327,3 +327,14 @@ test("SH1174: the drive hears what Publish answered, and one success said twice 
   assert.match(source, /publish refused: \$\{driveProbe\.publishRefused\}/,
     "SH1174: the summary line can say 'publish skipped: undefined' over a publish it attempted")
 })
+
+test("SH1053: the check measures the landmark on every shell route, and what a keyboard meets", () => {
+  // The shell's single main, skip link and focus move (VDS141) are facts of composition: a page can
+  // add a second main or take focus first, and only a browser sees either.
+  assert.match(source, /querySelectorAll\("main"\)\.length\)[\s\S]{0,80}if \(mains !== 1\)/,
+    "SH1053: the per-route count of <main> landmarks is gone")
+  assert.match(source, /async function checkKeyboardLandmarks\(/,
+    "SH1053: the keyboard probe is gone, so a skip link that stopped being first would pass")
+  assert.match(source, /probe\.afterNav !== "h1"/,
+    "SH1053: focus after navigation is no longer asserted")
+})

@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Check, GitCompare, Loader2, Pause, Undo2 } from "lucide-react"
+import { Check, GitCompare, Pause, Undo2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -137,8 +137,8 @@ export function ReviewTriage({
           placeholder={t("review.notePlaceholder")}
           className="h-8 max-w-xs"
         />
-        <Button size="sm" disabled={busy} onClick={() => void decide("APPROVE")}>
-          {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1 h-3.5 w-3.5" />}
+        <Button size="sm" loading={busy} onClick={() => void decide("APPROVE")}>
+          {!busy && <Check className="mr-1 h-3.5 w-3.5" />}
           {t("review.approveCount", { count })}
         </Button>
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void decide("HOLD")}>

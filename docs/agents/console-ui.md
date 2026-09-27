@@ -2825,6 +2825,24 @@ hour** — once in the pattern, and once in the comment written to explain the p
 use a `(url) => url.pathname…` predicate now, and the shape test anchors on the script's final
 statement, so a cut view fails instead of going quiet.
 
+## One main, a skip link first, focus that follows the page, and spinners a reader can hear (SH1053)
+
+The shell's half is VDS141, already in the installed design system 2026.3.12. It was measured live
+before anything changed: every route has exactly one `<main>` (`BentoShell`'s; SH946 had already
+removed the page-level ones, and the vocabulary harness keeps its own because it is mounted outside
+the shell), the first Tab reaches "Skip to content", and a rail navigation leaves focus on the new
+page's `h1`. `console-check.mjs` now holds all three. Every shell route fails on a `<main>` count
+other than one, and `keyboard-landmarks` drives the first Tab and a rail click.
+
+Shio's half was the spinners: 25 `<Loader2>` across 18 files, no `aria-busy` anywhere. The 15
+inside a button became the design-system button's `loading` (VDS143). It draws the spinner, sets
+`aria-busy` and `aria-disabled`, and keeps focus, where `disabled={saving}` dropped the focus of the
+control just pressed. Any other condition stays on `disabled`, and the idle icon renders only while
+not loading. The 10 standing in for content became `components/spinner.tsx`: the icon
+`aria-hidden`, an `sr-only` label (the console's "Loading…", or none when visible words beside it
+already say it), and `aria-busy` on the region it stands for. `test/spinner-a11y.test.mjs` fails on a
+`Loader2` anywhere else.
+
 ## A field with a name, a state, and a way in from the keyboard (SH1052)
 
 The post editor drew a `<Label>` with no `htmlFor` and then a widget whose props were `attr`,

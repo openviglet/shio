@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { History, RotateCcw, Loader2 } from "lucide-react"
+import { History, RotateCcw } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import { reportProblem } from "@/lib/problem"
 import { isCancelled } from "@/lib/read-options"
 import { DRAFT, PUBLISHED, diffFields, railVersions, revisionOf } from "@/lib/version-diff"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
+import { Spinner } from "@/components/spinner"
 import type {
   ShPostDiff,
   ShPostTypeSchemaField,
@@ -202,7 +203,7 @@ function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "
         />
         {loading ? (
           <div className="flex items-center gap-2 py-10 justify-center text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
+            <Spinner labelled className="size-4" />
             <span>{t("common.loading")}</span>
           </div>
         ) : (
@@ -228,8 +229,8 @@ function PostVersionsBody({ postId, schema, setOpen, onRestored }: Omit<Props, "
 
       <DialogFooter className="gap-2">
         {restoreSide && (
-          <Button variant="destructive" onClick={handleRestore} disabled={restoring || loading}>
-            {restoring ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
+          <Button variant="destructive" onClick={handleRestore} disabled={loading} loading={restoring}>
+            {!restoring && <RotateCcw className="size-4" />}
             {confirming
               ? t("content.restoreConfirm")
               : restoreSide === PUBLISHED
