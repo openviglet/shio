@@ -1615,30 +1615,6 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline.
 
-### LXXIV.15 The replication round the instance never hears about (SH1067) (SH1135)
-
-SH1067 classified replication and left one thing out on purpose: a curator who finds a
-page worth replicating still cannot start from the console, and nobody can ask an
-instance what replications have been run against it. The capture half cannot move to the
-server — a crawler behind an endpoint is SH101's request-forgery surface, and "the
-instance does not run a browser" is a standing non-goal — so the naive shape, a request
-the instance records and something executes, is a queue whose worker does not exist.
-
-What could exist is the **record**. A round is a sequence of artefacts on disk —
-inventory, proposal, plan, conversion — and the instance sees only the site that came
-out. `shio convert` could report the round it just applied (source URL, page counts, the
-plan's digest, what was accepted) and the instance could hold it beside the site. A
-console entry then answers what a curator opening an unfamiliar site asks: where did
-this come from.
-
-Starting a run from the console is the harder half and should be argued separately: it
-means either a worker the product does not have, or a console that hands the curator a
-command to run. The second is honest and unglamorous, and it is what `shio remember`'s
-notes already do for other hand-offs.
-
-Open question this must answer first: whether the record belongs in instance memory
-(SH161, which already travels with an export) or in a table of its own.
-
 ### LXXIV.16 A fresh instance refuses the marketing-site blueprint (SH1144)
 
 Found by running SH1026's browser check against a clean store (2026-09-26). `node

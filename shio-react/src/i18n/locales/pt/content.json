@@ -151,6 +151,8 @@
   "content.addTranslation": "Adicionar tradução",
   "content.translationCreated": "Tradução criada",
   "content.siteIndex": "Índice de busca",
+  "content.siteProvenance": "De onde este site veio",
+  "content.siteProvenanceBy": "Registrado por {{author}} em {{date}}",
   "content.siteIndexTarget": "Indexando para {{target}}",
   "content.siteIndexRouted": "As páginas deste site são enviadas para {{searchSite}}",
   "content.siteIndexUnroutable": "Este site não aponta para nenhum site de busca, então nada que ele publica é indexado",

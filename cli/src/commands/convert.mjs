@@ -30,6 +30,7 @@
  * *new* site is the normal shape of a replication, so `--create-site` exists — the same flag `apply`
  * has, compiled to the same op — and the refusal now names it.
  */
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 
 import { ShioAdminClient } from "../admin-client.mjs";
@@ -209,11 +210,63 @@ export async function run(flags, positionals, ctx) {
         + `${planOnly ? " (nothing was written)" : " - in DRAFT"}\n`,
     );
   }
+  // SH1135 — the round, told to the instance. Every other artefact of it stays on this disk, so
+  // without this the site cannot say where it came from once the shell that ran it is closed.
+  if (!planOnly) {
+    await recordRound(client, site, replicationNote({
+      inventory, plan, pages, verbatim, mixed, sections, changed: result?.changed ?? 0,
+      when: ctx.now ? ctx.now() : new Date(),
+    }), ctx);
+  }
+
   // `--check` is a drift guard, so a non-empty plan is the failure it exists to report.
   const drifted = Boolean(flags.check) && Number(result?.changed ?? 0) > 0;
   return {
     document, applied: !planOnly, assets, changed: result?.changed ?? 0, exitCode: drifted ? 1 : 0,
   };
+}
+
+/** The site-scoped memory key a replication round is recorded under (SH1135). */
+export const REPLICATION_NOTE_KEY = "replication";
+
+/**
+ * SH1135 — what a converted site says about where it came from.
+ *
+ * <h2>Memory, not a table of its own</h2>
+ *
+ * <p>The design left this open. A site-scoped note (SH161) already travels with `shio export`,
+ * already reaches an agent through `shio_memory` and the context pack, and the console already
+ * reads memory, so a table would be a second home for one fact. The key is fixed and the write is
+ * idempotent by key: a later round replaces the record, because "where did this come from" has one
+ * current answer and the history of rounds is `git log` of whoever ran them.</p>
+ *
+ * <p>Plain text, well under the 2000-character note limit: a curator reads it and an agent reads it,
+ * and the digest is there so two rounds can be told apart without the plan file.</p>
+ */
+export function replicationNote({ inventory, plan, pages = [], verbatim = 0, mixed = 0,
+                                  sections = [], changed = 0, when = new Date() }) {
+  const source = inventory?.source?.origin ?? inventory?.source?.seed ?? "an unrecorded source";
+  const accepted = Array.isArray(plan?.accepted) ? plan.accepted.length : 0;
+  const digest = createHash("sha256").update(JSON.stringify(plan ?? {})).digest("hex").slice(0, 12);
+  return `Replicated from ${source} on ${new Date(when).toISOString().slice(0, 10)} by shio convert: `
+    + `${pages.length} page(s) (${verbatim} verbatim, ${mixed} mixed), ${sections.length} composed `
+    + `section(s) from ${accepted} accepted block(s), ${changed} object(s) written in DRAFT; `
+    + `plan ${digest}. To run it again: shio clone ${inventory?.source?.seed ?? source} --markup `
+    + "--assets, then shio propose and shio convert.";
+}
+
+/**
+ * Write the record, and say so. The content has already been written when this runs, so a refused
+ * note is reported rather than thrown: failing the command here would describe a conversion that
+ * happened as one that did not.
+ */
+async function recordRound(client, site, note, ctx) {
+  try {
+    await client.remember({ scope: site, key: REPLICATION_NOTE_KEY, note });
+    ctx.stdout.write(`  recorded: site:${site} memory "${REPLICATION_NOTE_KEY}" names the source\n`);
+  } catch (error) {
+    ctx.stderr?.write(`  not recorded: the site's replication note was refused (${error.message})\n`);
+  }
 }
 
 /**

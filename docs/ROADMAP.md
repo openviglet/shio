@@ -48,7 +48,6 @@
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
-- 📋 **SH1135** (deps: —) **an instance cannot say what a site was replicated from, and the console cannot start a run** — Every artefact of a round lives on the CLI's disk and the instance sees only the site that came out, so the source URL behind a page is lost the moment the shell closes. → §LXXIV.15
 - 📋 **SH1144** (deps: —) **the console smoke check's provisioning cannot fill a fresh instance: marketing-site's Page is refused** — A fresh instance already has Page with title and content, the blueprint's Page adds description and sections, and provision.mjs applies without the merge opt-in. → §LXXIV.16
 
 ## Priority

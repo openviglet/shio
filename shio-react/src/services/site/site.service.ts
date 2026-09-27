@@ -1,6 +1,6 @@
 import type {
   ShImportOutcome, ShIndexStatus, ShSite, ShSiteCoverage, ShSiteLocaleDeclaration,
-  ShSiteLocalePolicy,
+  ShSiteLocalePolicy, ShSiteMemoryNote,
 } from "@/models/site/site";
 import axios from "axios";
 import type { ShRead } from "@/lib/read-options"
@@ -54,6 +54,16 @@ export class ShSiteService {
   }
 
   /** SH1056 — the languages the site reports: declared, or read off its content. */
+  /**
+   * SH1135 — what the instance remembers about one site: the same notes an agent reads through
+   * `shio_memory`, which is where `shio convert` records the round a site was replicated by.
+   */
+  async memory(siteName: string, read: ShRead = {}): Promise<ShSiteMemoryNote[]> {
+    const response = await axios.get<{ notes?: ShSiteMemoryNote[] }>("/v2/agent/memory",
+      { params: { site: siteName }, signal: read.signal });
+    return response.data?.notes ?? [];
+  }
+
   async locales(id: string, read: ShRead = {}): Promise<ShSiteLocalePolicy> {
     const response = await axios.get<ShSiteLocalePolicy>(`/v2/site/${id}/locales`,
       { signal: read.signal });

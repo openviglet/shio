@@ -674,6 +674,45 @@ test("SH417: --dry-run plans and writes nothing; a bare run applies", async () =
   assert.match(wet.stdout.text, /in DRAFT/);
 });
 
+test("SH1135: an applied conversion tells the site where it came from; a dry run does not", async () => {
+  const probe = ctxWith();
+  const id = await idOf(probe);
+  const plan = { accepted: [{ block: id, type: "SectionHero" }] };
+
+  const wet = ctxWith({ plan });
+  await convert.run({ site: "Acme" }, [], wet);
+  const recorded = wet.calls.filter((call) => call.url.includes("/agent/memory") && call.method === "PUT");
+  assert.equal(recorded.length, 1,
+    "SH1135: every other artefact of the round stays on this disk, so the instance hears about it here");
+  const body = JSON.parse(recorded[0].body);
+  assert.equal(body.scope, "Acme", "SH1135: scoped to the site, so it travels with `shio export`");
+  assert.equal(body.key, convert.REPLICATION_NOTE_KEY);
+  assert.match(body.note, /^Replicated from https:\/\/x\.test on \d{4}-\d{2}-\d{2} by shio convert/);
+  assert.match(wet.stdout.text, /recorded: site:Acme memory "replication"/);
+
+  const dry = ctxWith({ plan });
+  await convert.run({ site: "Acme", dryRun: true }, [], dry);
+  assert.ok(!dry.calls.some((call) => call.url.includes("/agent/memory")),
+    "SH1135: a dry run writes nothing, and a record of a round that did not happen is a false one");
+});
+
+test("SH1135: the note names the source, the counts, the plan's digest and how to run it again", () => {
+  const plan = { accepted: [{ block: "b1" }, { block: "b2" }] };
+  const note = convert.replicationNote({
+    inventory: { source: { origin: "https://acme.test", seed: "https://acme.test/start" } },
+    plan, pages: [{}, {}, {}], verbatim: 1, mixed: 2, sections: [{}, {}], changed: 9,
+    when: new Date("2026-09-27T12:00:00Z"),
+  });
+  assert.match(note, /^Replicated from https:\/\/acme\.test on 2026-09-27 by shio convert/);
+  assert.match(note, /3 page\(s\) \(1 verbatim, 2 mixed\), 2 composed section\(s\) from 2 accepted/);
+  assert.match(note, /9 object\(s\) written in DRAFT; plan [0-9a-f]{12}\./);
+  assert.match(note, /shio clone https:\/\/acme\.test\/start --markup --assets/,
+    "SH1135: the record hands the next person the command, which is the console's half as well");
+  assert.notEqual(convert.replicationNote({ plan: { accepted: [] } }).match(/plan (\w+)/)[1],
+    note.match(/plan (\w+)/)[1], "SH1135: two different plans are two different digests");
+  assert.ok(note.length < 2000, "SH1135: under the instance's note limit");
+});
+
 test("SH449: nothing accepted writes the page verbatim, which is what fidelity mode always meant", async () => {
   // SH417 refused here, and SH438 wrote no Page for a wholly-unaccepted capture — so the two
   // documented modes were one mode and a label. Measured before this: convert emitted the Theme

@@ -191,6 +191,27 @@ CLI-only all the way down:
   thing the standing "the instance does not run a browser" non-goal refuses — flips the key and
   this paragraph with it.
 
-What is deliberately *not* here is a replication run the instance records and the console starts.
-That needs a worker on the server for the half the server must not do, and the shape it would take
-is its own task rather than a corner of this one.
+What is deliberately *not* here is a replication run the console starts: that needs a worker on
+the server for the half the server must not do.
+
+## The record the instance keeps of a round (SH1135)
+
+What the instance *can* hold is the record. After a real apply, `shio convert` writes one
+site-scoped memory note under the fixed key `replication`: the source origin, the date, the page
+counts (verbatim and mixed), the composed sections and accepted blocks, the objects written, a
+12-character digest of the plan, and the `shio clone … --markup --assets` command that runs it
+again. A dry run, `--check` and `--out` write nothing, because a record of a round that did not
+happen is a false one. A refused note is reported and does not fail the command: the content has
+already landed by then.
+
+**Memory rather than a table**, which was the open question. A site-scoped note (SH161) already
+travels with `shio export`, already reaches an agent through `shio_memory` and the context pack,
+and needs no schema. The key is fixed and the write is idempotent by key, so a later round replaces
+the record: "where did this come from" has one current answer.
+
+The console reads it on the site editor (`SiteProvenanceSection`, `summary:provenance|<site>` on
+the query layer) and renders nothing without one. That card is also the honest version of
+"start a run from the console": the instance cannot capture, so it hands the curator the command
+the record carries. The note's key is written in `cli/src/commands/convert.mjs` and read in
+`shio-react/src/components/site-provenance.section.tsx`, and `site-provenance.test.mjs` holds the
+two spellings equal.

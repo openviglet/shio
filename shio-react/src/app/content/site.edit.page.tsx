@@ -25,6 +25,7 @@ import { siteDestination } from "@/lib/site-front-end"
 import type { ShSite, ShSiteLocalePolicy } from "@/models/site/site"
 import { ShSiteService } from "@/services/site/site.service"
 import { SiteIndexSection } from "@/components/site-index.section"
+import { SiteProvenanceSection } from "@/components/site-provenance.section"
 import { SiteLanguagesSection } from "@/components/site-languages.section"
 import { declarationOf, draftOf, type LanguagesDraft } from "@/lib/site-languages"
 import { reportProblem } from "@/lib/problem"
@@ -291,6 +292,7 @@ export default function BentoSiteEditPage() {
         {/* SH1063 — silent unless this instance indexes; then it says whether this site reaches
             the index at all, which nothing anywhere used to answer. */}
         <SiteIndexSection siteName={site?.name} />
+        <SiteProvenanceSection siteName={site?.name} />
         {languages && (
           <SiteLanguagesSection
             catalogue={catalogue}

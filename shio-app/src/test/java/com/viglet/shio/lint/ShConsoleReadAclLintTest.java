@@ -110,6 +110,9 @@ class ShConsoleReadAclLintTest {
                     "SH970 — an address the stream already handed this reader, turned into the id"
                             + " a console route needs; the stream applied the ACL to the row, and"
                             + " the page the id opens goes through requireRead"),
+            Map.entry("/api/v2/agent/memory", "SH1135 — the site editor's provenance card reads the "
+                    + "site-scoped notes: decisions and records about a site, never a page's "
+                    + "content, scoped by the credential's site allow-list like every agent read"),
             Map.entry("/api/v2/agent/verify",
                     "a report about a site, not a row of content: it names findings, and the site "
                             + "itself is already allow-listed"),

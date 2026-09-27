@@ -77,6 +77,15 @@ export type ShSiteLocaleDeclaration = {
   fallback: Record<string, string>;
 };
 
+/** SH1135 — one note the instance remembers, as `GET /v2/agent/memory` answers it. */
+export type ShSiteMemoryNote = {
+  scope?: string | null;
+  key: string;
+  note: string;
+  author?: string | null;
+  updated?: string | null;
+};
+
 /**
  * SH1079 — what `POST /v2/import` answers: the site, what arrived in it, and what the import could
  * not do. `code` is one of `post-skipped`, `post-type-unresolved` or `file-bytes-missing` (SH1134).
