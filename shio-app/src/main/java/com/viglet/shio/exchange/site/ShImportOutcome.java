@@ -30,17 +30,18 @@ public record ShImportOutcome(ShSite site, Arrived arrived, List<Problem> proble
     /**
      * Counts by kind. {@code posts} counts logical posts, so a DRAFT and a PUBLISHED row of one
      * post are one. {@code postTypesCreated} counts only the types that were new here; a type the
-     * instance already had is reused and not counted.
+     * instance already had is reused and not counted. {@code files} counts the {@code File} posts
+     * whose bytes were restored (SH1134).
      */
-    public record Arrived(int sites, int folders, int posts, int postTypesCreated) {
+    public record Arrived(int sites, int folders, int posts, int postTypesCreated, int files) {
     }
 
     /**
      * One thing the import could not do.
      *
      * @param code    stable, for a caller to branch on: {@code post-skipped},
-     *                {@code post-type-unresolved} or {@code files-not-imported}
-     * @param subject what it is about: a post's title, a post type's name, or a count of files
+     *                {@code post-type-unresolved} or {@code file-bytes-missing}
+     * @param subject what it is about: a post's title, a post type's name, or a file's name
      * @param message the sentence a person reads
      */
     public record Problem(String code, String subject, String message) {

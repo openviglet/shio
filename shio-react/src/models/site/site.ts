@@ -79,10 +79,11 @@ export type ShSiteLocaleDeclaration = {
 
 /**
  * SH1079 — what `POST /v2/import` answers: the site, what arrived in it, and what the import could
- * not do. `code` is one of `post-skipped`, `post-type-unresolved` or `files-not-imported`.
+ * not do. `code` is one of `post-skipped`, `post-type-unresolved` or `file-bytes-missing` (SH1134).
  */
 export type ShImportOutcome = {
   site: ShSite;
-  arrived: { sites: number; folders: number; posts: number; postTypesCreated: number };
+  /** `files` counts the File posts whose bytes were restored (SH1134). */
+  arrived: { sites: number; folders: number; posts: number; postTypesCreated: number; files: number };
   problems: { code: string; subject: string | null; message: string }[];
 };

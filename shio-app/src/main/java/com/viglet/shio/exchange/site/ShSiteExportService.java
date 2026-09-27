@@ -10,6 +10,7 @@ package com.viglet.shio.exchange.site;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.Instant;
@@ -33,7 +34,10 @@ import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.api.post.type.dto.ShPostTypeDef;
 import com.viglet.shio.exchange.ShExchangeException;
 import com.viglet.shio.exchange.ShExchangePackageCodec;
+import com.viglet.shio.api.staticfile.ShFileStorageService;
+import com.viglet.shio.exchange.model.ShExchangeFile;
 import com.viglet.shio.exchange.model.ShExchangeFolder;
+import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.exchange.model.ShExchangePackage;
 import com.viglet.shio.exchange.model.ShExchangePost;
 import com.viglet.shio.exchange.model.ShExchangeSite;
@@ -62,11 +66,10 @@ import tools.jackson.databind.ObjectMapper;
  * {@link ShPostTypeDef}). Post content is carried verbatim — the {@code data}
  * CLOB is parsed back to a {@code JsonNode} and embedded as-is.</p>
  *
- * <p>Static binary assets are not exported yet: the file_source upload/serve
- * subsystem isn't implemented in the current backend (SH38), so there is nothing
- * to walk — {@link ShExchangePackage#files()} is empty and the package has no
- * {@code files/} directory. When SH38 lands, this is the one place that grows a
- * file-collection pass.</p>
+ * <p>Binary assets travel with the site (SH1134): every {@code File} post whose bytes are on disk
+ * is listed in {@link ShExchangePackage#files()} and its bytes written to {@code files/<postId>},
+ * which is what {@link ShSiteImportService} restores. The tenant package does not carry them: it is
+ * provisioned in memory and has no directory to carry them in.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.2
@@ -77,6 +80,9 @@ public class ShSiteExportService {
     private static final List<ShPostState> ALL_STATES =
             List.of(ShPostState.DRAFT, ShPostState.PUBLISHED);
 
+    /** The {@code File} post type's own field holding the stored file's name. */
+    private static final String FILE_FIELD = "FILE";
+
     private final ShSiteRepository shSiteRepository;
     private final ShFolderRepository shFolderRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
@@ -85,6 +91,8 @@ public class ShSiteExportService {
     private final ShExchangePackageCodec codec;
     private final ObjectMapper objectMapper;
     private final ShAgentMemoryService shAgentMemoryService;
+    /** SH1134 — where a {@code File} post's bytes are read from. */
+    private final ShFileStorageService fileStorage;
 
     public ShSiteExportService(ShSiteRepository shSiteRepository,
                                ShFolderRepository shFolderRepository,
@@ -93,7 +101,9 @@ public class ShSiteExportService {
                                ShPostTypeAdminService shPostTypeAdminService,
                                ShExchangePackageCodec codec,
                                ObjectMapper objectMapper,
-                               ShAgentMemoryService shAgentMemoryService) {
+                               ShAgentMemoryService shAgentMemoryService,
+                               ShFileStorageService fileStorage) {
+        this.fileStorage = fileStorage;
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -130,13 +140,16 @@ public class ShSiteExportService {
 
         List<ShExchangePost> posts = new ArrayList<>();
         Map<String, ShPostTypeDef> postTypes = new LinkedHashMap<>();
+        Map<String, ShExchangeFile> files = new LinkedHashMap<>();
         for (ShFolder folder : folders) {
             for (ShPostUnified row : shPostUnifiedRepository.findByShFolderAndStateIn(folder, ALL_STATES)) {
-                posts.add(toExchangePost(row));
+                ShExchangePost exPost = toExchangePost(row);
+                posts.add(exPost);
                 ShPostType postType = row.getShPostType();
                 if (postType != null) {
                     postTypes.computeIfAbsent(postType.getName(), n -> postTypeMapper.toDef(postType));
                 }
+                fileOf(row, exPost.data()).ifPresent(file -> files.putIfAbsent(file.id(), file));
             }
         }
 
@@ -144,7 +157,7 @@ public class ShSiteExportService {
 
         return new ShExchangePackage(ShExchangePackage.CURRENT_VERSION, Instant.now().toString(),
                 "shio-export", List.of(toExchangeSite(site, roots)), List.copyOf(postTypes.values()),
-                exFolders, posts, List.of(),
+                exFolders, posts, List.copyOf(files.values()),
                 // SH161: what earlier sessions worked out about this site travels with it.
                 // Site-scoped only — see ShAgentMemoryService#scopedNotes.
                 shAgentMemoryService.scopedNotes(site.getName()));
@@ -183,6 +196,29 @@ public class ShSiteExportService {
         return new ShExchangePackage(ShExchangePackage.CURRENT_VERSION, Instant.now().toString(),
                 "shio-tenant-export", exSites, shPostTypeAdminService.list(),
                 exFolders, exPosts, List.of(), exNotes);
+    }
+
+    /**
+     * SH1134 — the bytes a {@code File} post points at, when this instance has them.
+     *
+     * <p>Once per post, not per row: a post's DRAFT and PUBLISHED rows share one id, and storage is
+     * keyed by that id, so they share one set of bytes. The name is the post type's own
+     * {@code FILE} field. A post whose bytes are not on disk is not listed — the import would report
+     * it as missing bytes, which is the true state of the source too, and {@code verify}'s
+     * {@code asset-missing} already says so here.</p>
+     */
+    private Optional<ShExchangeFile> fileOf(ShPostUnified row, JsonNode data) {
+        if (row.getShPostType() == null
+                || !ShSystemPostType.FILE.equals(row.getShPostType().getName())
+                || data == null || !data.path(FILE_FIELD).isString()) {
+            return Optional.empty();
+        }
+        String name = data.path(FILE_FIELD).stringValue();
+        if (!hasText(name) || !fileStorage.exists(row.getId(), name)) {
+            return Optional.empty();
+        }
+        return Optional.of(new ShExchangeFile(row.getId(), name,
+                fileStorage.probeContentType(fileStorage.resolve(row.getId(), name))));
     }
 
     private ShExchangeSite toExchangeSite(ShSite site, Set<ShFolder> roots) {
@@ -275,6 +311,13 @@ public class ShSiteExportService {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             dir = ShExchangeTempDir.create("shio-export-");
             codec.writePackage(pkg, dir);
+            // SH1134 — the bytes each listed file names, under files/<postId>, which is the layout
+            // the codec reads back and the import restores from.
+            for (ShExchangeFile file : pkg.files()) {
+                Path target = codec.resolveFile(dir, file.id());
+                Files.createDirectories(target.getParent());
+                Files.copy(fileStorage.resolve(file.id(), file.fileName()), target);
+            }
             codec.zip(dir, out);
             return out.toByteArray();
         } catch (IOException e) {

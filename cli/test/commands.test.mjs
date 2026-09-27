@@ -261,8 +261,8 @@ test("SH1079: import prints what arrived and every problem the instance named", 
     status: 201,
     body: {
       site: { id: "site-1", name: "Bootstrap" },
-      arrived: { sites: 1, folders: 3, posts: 12, postTypesCreated: 2 },
-      problems: [{ code: "files-not-imported", subject: "4 file(s)", message: "upload them" }],
+      arrived: { sites: 1, folders: 3, posts: 12, postTypesCreated: 2, files: 4 },
+      problems: [{ code: "file-bytes-missing", subject: "logo.png", message: "upload it" }],
     },
   }));
   const ctx = {
@@ -279,9 +279,29 @@ test("SH1079: import prints what arrived and every problem the instance named", 
   const lines = stdout.text.split(String.fromCharCode(10));
   assert.equal(lines[0], "imported site:Bootstrap",
     "SH1079: the first line is still the address the next command uses");
-  assert.equal(lines[1], "arrived: 3 folder(s), 12 post(s), 2 new post type(s)");
-  assert.equal(lines[2], "problem: files-not-imported 4 file(s) — upload them",
+  assert.equal(lines[1], "arrived: 3 folder(s), 12 post(s), 2 new post type(s), 4 file(s)",
+    "SH1134: the restored files are counted with everything else that arrived");
+  assert.equal(lines[2], "problem: file-bytes-missing logo.png — upload it",
     "SH1079: a problem the instance named is printed, not left for a verify run to find");
+});
+
+test("SH1134: an instance that predates the file count prints the line it always did", async () => {
+  const stdout = sink();
+  const fetch = fetchScript(() => ({
+    status: 201,
+    body: { site: { id: "s", name: "Old" }, arrived: { sites: 1, folders: 1, posts: 1, postTypesCreated: 0 } },
+  }));
+  const ctx = {
+    env: { SHIO_URL: "http://shio.test", SHIO_USER: "u", SHIO_PASSWORD: "p" },
+    cwd: "/proj", stdout, stderr: sink(), fetch,
+    readFile: async () => new Uint8Array([0x50, 0x4b, 0x03, 0x04]),
+  };
+
+  await importCmd.run({}, ["/packages/old.zip"], ctx);
+
+  assert.equal(stdout.text.split(String.fromCharCode(10))[1],
+    "arrived: 1 folder(s), 1 post(s), 0 new post type(s)",
+    "SH1134: an absent count is not a zero, and printing one would say no file arrived");
 });
 
 test("SH268: import with no file says what to pass, and never calls the instance", async () => {

@@ -10,6 +10,7 @@ package com.viglet.shio.exchange.site;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.Instant;
@@ -32,6 +33,8 @@ import org.springframework.util.FileSystemUtils;
 import com.viglet.shio.api.post.type.ShPostTypeAdminService;
 import com.viglet.shio.exchange.ShExchangeException;
 import com.viglet.shio.exchange.ShExchangePackageCodec;
+import com.viglet.shio.api.staticfile.ShFileStorageService;
+import com.viglet.shio.exchange.model.ShExchangeFile;
 import com.viglet.shio.exchange.model.ShExchangeFolder;
 import com.viglet.shio.exchange.model.ShExchangePackage;
 import com.viglet.shio.exchange.model.ShExchangePost;
@@ -77,8 +80,8 @@ import tools.jackson.databind.ObjectMapper;
  *       Select / File targets pointing at other cloned posts).</li>
  * </ol>
  *
- * <p>Binary assets are not handled yet — the package carries none until the
- * file_source subsystem exists (SH38), matching the export side.</p>
+ * <p>Binary assets are restored from the package's {@code files/} directory, each under its
+ * {@code File} post's new id (SH1134, {@link #restoreFiles}).</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.2
@@ -99,6 +102,8 @@ public class ShSiteImportService {
     private final ShAgentMemoryService shAgentMemoryService;
     /** SH744 — the one writer of a site's address, shared with ShSiteWriteService. */
     private final ShSiteFurlNaming shSiteFurlNaming;
+    /** SH1134 — where a restored {@code File} post's bytes are written. */
+    private final ShFileStorageService fileStorage;
 
     public ShSiteImportService(ShExchangePackageCodec codec,
                                ShPostTypeAdminService shPostTypeAdminService,
@@ -109,8 +114,10 @@ public class ShSiteImportService {
                                ObjectMapper objectMapper,
                                ShAgentMemoryService shAgentMemoryService,
                                ShSiteFurlNaming shSiteFurlNaming,
-                               ShObjectReferenceService shObjectReferenceService) {
+                               ShObjectReferenceService shObjectReferenceService,
+                               ShFileStorageService fileStorage) {
         this.shObjectReferenceService = shObjectReferenceService;
+        this.fileStorage = fileStorage;
         this.codec = codec;
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shSiteRepository = shSiteRepository;
@@ -146,7 +153,7 @@ public class ShSiteImportService {
                 throw new ShExchangeException(ShExchangeException.Kind.NO_SITE,
                         "Package contains no site to import");
             }
-            return cloneInto(pkg, owner).outcome();
+            return cloneInto(pkg, owner, root).outcome();
         } catch (IOException e) {
             // The upload itself: a truncated or non-zip stream. Before SH267 the message named
             // neither "manifest" nor "zip", so this reached the caller as the catch-all.
@@ -225,7 +232,13 @@ public class ShSiteImportService {
                 sites, pkg.postTypes(), pkg.folders(), pkg.posts(), pkg.files(), notes);
     }
 
+    /** A package parsed in memory: there is no directory, so no file bytes to restore. */
     private CloneResult cloneInto(ShExchangePackage pkg, String owner) {
+        return cloneInto(pkg, owner, null);
+    }
+
+    /** @param root the unzipped package, whose {@code files/} holds the bytes (SH1134); or null */
+    private CloneResult cloneInto(ShExchangePackage pkg, String owner, Path root) {
         // 1. Ensure the content model exists (idempotent — reuses live post-types).
         int postTypesCreated = 0;
         for (var def : pkg.postTypes()) {
@@ -325,19 +338,54 @@ public class ShSiteImportService {
             shObjectReferenceService.reindex(shPostUnifiedRepository.save(row));
         }
 
-        // The package format lists files and this import brings over none of them (SH1065 says
-        // what a package does and does not carry). Named, so an absent image is not a surprise.
-        int files = pkg.files() == null ? 0 : pkg.files().size();
-        if (files > 0) {
-            problems.add(new ShImportOutcome.Problem("files-not-imported", files + " file(s)",
-                    "the package lists files and an import does not bring them over; upload them "
-                            + "to the new site's library"));
-        }
+        int files = restoreFiles(pkg, root, idRemap, postsArrived, problems);
         ShImportOutcome outcome = new ShImportOutcome(firstSite,
                 new ShImportOutcome.Arrived(sitesByOldId.size(), foldersByOldId.size(),
-                        postsArrived.size(), postTypesCreated),
+                        postsArrived.size(), postTypesCreated, files),
                 List.copyOf(problems));
         return new CloneResult(firstSite, postTypesCreated, outcome);
+    }
+
+    /**
+     * SH1134 — each listed file's bytes, stored under the {@code File} post's <b>new</b> id.
+     *
+     * <p>Storage is keyed by the post id ({@code <root>/<tenant>/<postId>/<fileName>}), and the
+     * clone gives every post a fresh one, so bytes written under the exported id would belong to no
+     * post here. A file whose post did not arrive is not stored: nothing would serve it. A listed file
+     * with no bytes in the package — a package parsed without its directory, or one written by hand
+     * — is a named problem rather than a broken image somebody finds by opening the page.</p>
+     *
+     * <p>Unreadable bytes fail the import rather than being counted as missing: the zip extracted, so
+     * a file that then cannot be read is the archive being wrong, which is the caller's to hear. The
+     * database half rolls back with the transaction; bytes already stored stay on disk under ids no
+     * post has, which the storage meter counts and nothing serves.</p>
+     *
+     * @param root the unzipped package, or null for a package parsed in memory
+     * @return how many files were restored
+     */
+    private int restoreFiles(ShExchangePackage pkg, Path root, Map<String, String> idRemap,
+                             Set<String> postsArrived, List<ShImportOutcome.Problem> problems) {
+        int restored = 0;
+        for (ShExchangeFile file : pkg.files() == null ? List.<ShExchangeFile>of() : pkg.files()) {
+            if (file == null || file.id() == null || !postsArrived.contains(file.id())) {
+                continue;
+            }
+            Path source = root == null ? null : codec.resolveFile(root, file.id());
+            if (source == null || !Files.isRegularFile(source)) {
+                problems.add(new ShImportOutcome.Problem("file-bytes-missing", file.fileName(),
+                        "the package lists this file and carries no bytes for it; upload it to the "
+                                + "new site's library"));
+                continue;
+            }
+            try (InputStream in = Files.newInputStream(source)) {
+                fileStorage.store(idRemap.get(file.id()), file.fileName(), in);
+                restored++;
+            } catch (IOException e) {
+                throw new ShExchangeException(ShExchangeException.Kind.ARCHIVE_UNREADABLE,
+                        "Failed to read " + file.fileName() + " from the import package", e);
+            }
+        }
+        return restored;
     }
 
     /**

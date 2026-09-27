@@ -234,13 +234,20 @@ bindings, the searchable types, the form-success page), every **folder** under i
 catalogue — and the site's **notes** (SH161, site-scoped only, so what an earlier session worked
 out travels with it).
 
-It does **not** carry users, tokens, ACLs, revisions, releases, gates, schedules, notes scoped to
-another site or to the instance, or the **bytes of uploaded files**: `files` is an empty list on a
-site export, so a `File` post arrives pointing at bytes the target instance does not have. That
-one is a **gap rather than a decision** (SH1134): the format has a `files/` directory and the
-import restores from it, and nothing on either side says the bytes were left out. Neither
-does it carry the tenant — `buildTenantPackage` is a different call, and SH72 provisioning is its
-only caller.
+**And the bytes of every `File` post it carries (SH1134).** `files` lists each one whose bytes are on
+disk, once per post (its two rows share an id, and storage is keyed by it), named by the post type's
+own `FILE` field, and the bytes go in `files/<postId>`. The import stores each under the post's
+**new** id, because the clone gives every post a fresh one and bytes left under the exported id
+would belong to nothing; `arrived.files` counts them. A listed file with no bytes in the package is
+`file-bytes-missing`, by name. A File post with no bytes on the source is simply not listed, which is
+the true state of the source too (`asset-missing` says so there). This was a gap the design called a
+choice: the SH1065 prose said the export carries no bytes, and nobody had decided that. The design
+also claimed the import already restored `files/`; it did not, so both halves were written here.
+
+It does **not** carry users, tokens, ACLs, revisions, releases, gates, schedules, or notes scoped to
+another site or to the instance. Neither does it carry the tenant — `buildTenantPackage` is a
+different call, SH72 provisioning is its only caller, and it is cloned in memory, so it has no
+directory to carry bytes in.
 
 That makes it a **hand-over**, not a backup and not a promotion. `shio pull --content` is the other
 shape and answers a different question: it projects one site's content to files for authoring and
@@ -252,11 +259,11 @@ reaching for a zip because it is the thing that exists.
 
 Multipart (`file`), accepts an SH68 package zip and clones it in via `ShSiteImportService`.
 **It answers `ShImportOutcome` (SH1079):** `{site, arrived, problems}`. `arrived` counts sites,
-folders, logical posts and post types created here (a reused type is not counted). `problems` holds
-what the clone loop already knew and used to drop. `post-skipped` is a post whose folder the package
-does not carry. `post-type-unresolved` is a type the package does not define and the instance does
-not have, so its posts land typeless. `files-not-imported` is raised because an import brings over
-none of the files a package lists. The console warns with the first problem, and `shio import` prints
+folders, logical posts, post types created here (a reused type is not counted) and restored files
+(SH1134). `problems` holds what the clone loop already knew and used to drop. `post-skipped` is a
+post whose folder the package does not carry. `post-type-unresolved` is a type the package does not
+define and the instance does not have, so its posts land typeless. `file-bytes-missing` is a listed
+file the package carries no bytes for. The console warns with the first problem, and `shio import` prints
 an `arrived:` line and a `problem:` line for each. `importPackage` still returns the bare site for
 the bootstrap and provisioning callers.
 **Every failure teaches (SH189)** — it used to answer `ResponseEntity.badRequest().build()` for all

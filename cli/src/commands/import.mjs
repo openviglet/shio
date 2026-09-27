@@ -61,8 +61,10 @@ export async function run(flags, positionals, ctx) {
   ctx.stdout.write(`imported site:${site.name ?? site.id}\n`);
   const arrived = answer?.arrived;
   if (arrived) {
+    // SH1134 — `files` counts the File posts whose bytes were restored; an older instance omits it.
     ctx.stdout.write(`arrived: ${arrived.folders} folder(s), ${arrived.posts} post(s), `
-      + `${arrived.postTypesCreated} new post type(s)\n`);
+      + `${arrived.postTypesCreated} new post type(s)`
+      + `${arrived.files === undefined ? "" : `, ${arrived.files} file(s)`}\n`);
   }
   // One line each, so a skipped post or a missing type is something the caller sees rather than
   // something it finds later with a verify run.

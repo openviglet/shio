@@ -1615,30 +1615,6 @@ source. For example, recognise `.roadkeep/` or the `ROADKEEP_HOME` the launcher 
 Done when a roadkeep release carries that, Shio re-vendors it, and `lint` exits clean
 here with no baseline.
 
-### LXXIV.14 A hand-over with no bytes in it (SH1065) (SH1134)
-
-The exchange format has carried binaries since SH68: `ShExchangePackageCodec` writes a
-`files/` directory with one entry per `ShExchangeFile`, named by id, and
-`ShSiteImportService` hands `pkg.files()` straight back to the writer that restores
-them. A **site** export does not use any of it. `ShSiteExportService.buildPackage`
-passes `List.of()` for that component, so the zip holds `export.json` and nothing else,
-and the posts inside it include every `File` post the site had — each pointing at bytes
-the receiving instance has never seen.
-
-Nothing reports it. The import succeeds, the pages render, the images are broken:
-SH767's shape, where it looks authored and the symptom is somebody opening the page.
-`verify` would say so on the target, if anybody ran it there.
-
-Two ways to close it, and choosing is the task. **Carry the bytes**: collect the `File`
-posts while walking the folders and write each through the codec's `files/` path, which
-the existing import already restores — the cost is a zip the size of the media library.
-**Or refuse to pretend**: keep the package textual and have the export say, in its
-answer and in `shio export`'s output, how many File posts it wrote without bytes.
-
-The first is what a hand-over means. The second is honest and cheap, and is what
-SH1065's boundary paragraph currently documents as the deliberate shape — the paragraph
-says it carries no bytes, but nobody decided that; it is what the code does.
-
 ### LXXIV.15 The replication round the instance never hears about (SH1067) (SH1135)
 
 SH1067 classified replication and left one thing out on purpose: a curator who finds a
