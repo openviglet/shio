@@ -48,15 +48,16 @@ test("SH1014: re-rendering as you type is a switch, and it starts off", () => {
   assert.match(preview, /const \[live, setLive\] = useState\(false\)/u,
     "SH1014: each render composes a whole page on the server — layout, regions, theme — and a "
       + "curator fixing a typo has not asked for one per pause in their typing")
-  assert.match(preview, /if \(!live\) return undefined/u)
+  // SH1167 — and only for a type the site renders as a page.
+  assert.match(preview, /if \(!live \|\| !asks\) return undefined/u)
   // SH1136 named the value, so the dependency is a variable the lint can check.
   assert.match(preview, /const typed = JSON\.stringify\(data\)/u)
-  assert.match(preview, /\}, \[live, render, typed\]\)/u,
+  assert.match(preview, /\}, \[live, asks, render, typed\]\)/u,
     "SH1014: debounced by VALUE — depending on the object the caller rebuilds every render would "
       + "re-arm the timer forever and never fire it")
   // SH1116: the effect also aborts the render in flight, and so depends on `cancel`. SH1136: the
   // render is scheduled rather than called, so the effect body itself sets no state.
-  assert.match(preview, /const timer = setTimeout\(\(\) => void render\(\), 0\)[\s\S]*?\}, \[render, cancel, revision\]\)/u,
+  assert.match(preview, /const timer = setTimeout\(\(\) => void render\(\), 0\)[\s\S]*?\}, \[asks, render, cancel, revision\]\)/u,
     "SH1014: and it still refreshes on every save, which is the question being asked most of the time")
 })
 
@@ -72,7 +73,7 @@ test("SH1014: the console asks for the markup, and says the values are not saved
   assert.match(preview, /t\("insights\.previewNotSaved"\)/u,
     "SH1014: a preview that looks like the page is exactly the thing a curator could mistake for "
       + "having saved it")
-  assert.match(page, /<PostLivePreview address=\{`id:\$\{postId\}`\} data=\{data\} revision=\{insightsAt\} \/>/u)
+  assert.match(page, /<PostLivePreview address=\{`id:\$\{postId\}`\} data=\{data\} revision=\{insightsAt\}\s+renderable=\{renderable\} \/>/u)
 })
 
 test("SH1014: every width is reachable and announced", () => {

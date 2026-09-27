@@ -29,6 +29,13 @@ interface Props {
   data: Record<string, unknown>
   /** Bumped by the editor on a save, so the frame refreshes even with live rendering off. */
   revision: number
+  /**
+   * SH1167 — whether the site binds a layout to this post's type: `false` asks nothing and says so,
+   * `undefined` waits for the answer, and `true` renders as before. Required and never defaulted:
+   * a destructuring default turns the caller's `undefined` into `true`, which is how the first
+   * version still rendered every menu once before its site had answered.
+   */
+  renderable: boolean | undefined
 }
 
 /**
@@ -54,7 +61,7 @@ interface Props {
  * a preview renders content from this instance, but it is still a page being displayed inside the
  * console's own origin, and the console's session is exactly what it must not be able to reach.</p>
  */
-export function PostLivePreview({ address, data, revision }: Readonly<Props>) {
+export function PostLivePreview({ address, data, revision, renderable }: Readonly<Props>) {
   const { t } = useTranslation()
   const [html, setHtml] = useState<string>("")
   const [width, setWidth] = useState<Width>("desktop")
@@ -101,27 +108,34 @@ export function PostLivePreview({ address, data, revision }: Readonly<Props>) {
   // On mount and on every save the curator asked for. SH1136 — scheduled, like the render a pause in
   // typing asks for below, so the spinner is raised from the timer's callback and not from the effect
   // body: the render is a request to an external system, and this is the effect subscribing to it.
+  // SH1167 — only a type the site renders as a page is asked for, and only once that is known.
+  const asks = renderable === true
   useEffect(() => {
+    if (!asks) return undefined
     const timer = setTimeout(() => void render(), 0)
     return () => {
       clearTimeout(timer)
       cancel()
     }
-  }, [render, cancel, revision])
+  }, [asks, render, cancel, revision])
 
   // And on a pause in typing, only while the switch is on. By value: the caller rebuilds `data`
   // every render, so depending on the object would re-arm this timer forever and never fire it.
   const typed = JSON.stringify(data)
   useEffect(() => {
-    if (!live) return undefined
+    if (!live || !asks) return undefined
     const timer = setTimeout(() => void render(), QUIET_MS)
     return () => clearTimeout(timer)
-  }, [live, render, typed])
+  }, [live, asks, render, typed])
+
+  if (renderable === false) {
+    return <p className="text-xs text-muted-foreground">{t("insights.previewNoLayout")}</p>
+  }
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => void render()} disabled={loading}>
+        <Button type="button" variant="outline" size="sm" onClick={() => void render()} disabled={loading || !asks}>
           {loading
             ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
             : <RefreshCw className="h-3.5 w-3.5 mr-1" />}

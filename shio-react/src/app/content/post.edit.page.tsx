@@ -22,6 +22,9 @@ import axios from "axios"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
 import { ShAclService } from "@/services/acl/acl.service"
+import { ShSiteService } from "@/services/site/site.service"
+import type { ShSite } from "@/models/site/site"
+import { isRenderable } from "@/lib/layout-bindings"
 import { NoteRail } from "@/components/note-rail"
 import { PostHistoryPanel } from "@/components/post-history.panel"
 import { PostInsightsPanel } from "@/components/post-insights.panel"
@@ -52,6 +55,7 @@ const unifiedService = new ShPostUnifiedService()
 const previewService = new ShPreviewTokenService()
 // SH995 — asked once per post: whether this curator may put it live.
 const aclService = new ShAclService()
+const siteService = new ShSiteService()
 
 export default function PostUnifiedEditPage() {
   const { postId } = useParams() as { postId: string }
@@ -277,6 +281,23 @@ export default function PostUnifiedEditPage() {
   )
 
   const hasSite = Boolean(post?.shFolder?.shSite?.id || post?.shSite?.id)
+
+  /*
+   * SH1167 — whether this post is a page at all on its site. A menu, a section or a theme has no
+   * layout binding, and asking the server to render one is a 400 the browser logs on every such
+   * editor. Keyed like the visual editor's read of the same site, so the two share one cache entry.
+   * Unknown while loading (nothing is rendered yet), and a read that fails leaves the preview asking
+   * as it always did: a missing answer must not hide a preview that would have worked.
+   */
+  const siteId = post?.shSite?.id ?? post?.shFolder?.shSite?.id
+  const site = useQuery<ShSite>({
+    queryKey: addressKey(`id:${siteId ?? ""}`),
+    queryFn: ({ signal }) => siteService.get(siteId ?? "", { signal }),
+    enabled: Boolean(siteId),
+  })
+  const renderable = isRenderable({
+    siteId, failed: site.isError, layouts: site.data?.postTypeLayout, typeName: post?.shPostType?.name,
+  })
 
   const navigateBack = () => {
     // SH1090 — no confirm of its own: useUnsavedGuard's router blocker asks for this exit as it
@@ -740,7 +761,8 @@ export default function PostUnifiedEditPage() {
         <AdaptiveSectionCard>
           <AdaptiveSectionCard.StaticHeader icon={IconEye} title={t("insights.previewSection")} />
           <AdaptiveSectionCard.Content>
-            <PostLivePreview address={`id:${postId}`} data={data} revision={insightsAt} />
+            <PostLivePreview address={`id:${postId}`} data={data} revision={insightsAt}
+              renderable={renderable} />
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
 

@@ -1962,6 +1962,18 @@ refreshes on demand and on every save, which is the question being asked most of
 The panel says, under the frame, that nothing in it is saved. A preview that looks like the page is
 exactly the thing a curator could mistake for having saved it.
 
+**A type that is not a page is not asked for (SH1167).** A menu, a section or a theme has no layout
+binding on its site, and the server refuses to render it with `render-no-layout-binding`. That 400 is
+correct, but the browser logs every 4xx as a console error, so eleven editor routes opened on one.
+`lib/layout-bindings.ts` mirrors `ShPageRenderService.bindingsOf` (the site's `postTypeLayout`, a
+JSON object, string values only). The post editor reads the site under `id:<siteId>`, which is the
+visual editor's key, so they share one cache entry, and passes `renderable`. `false` shows
+`insights.previewNoLayout` and requests nothing. `undefined` means not known yet and waits. A failed
+site read gives `true`, because a missing answer must not hide a preview that would have worked.
+The prop is required and never defaulted: `renderable = true` in the destructuring turned the
+caller's `undefined` into `true`, and the first version rendered every menu once before its site
+answered.
+
 **Not done:** the split view with a persisted ratio. The editor is a vertical stack of section
 cards, and a two-pane layout is a change to the page's shape rather than an addition to it. The
 preview is a card in that stack for now.
