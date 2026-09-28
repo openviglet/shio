@@ -6,15 +6,16 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import type { Icon as TablerIcon } from "@tabler/icons-react"
 import { useQuery } from "@tanstack/react-query"
-import { BentoEntityTile, BentoListPage, type BentoTone } from "@viglet/viglet-design-system/bento"
-import type { ReactNode } from "react"
+import { BentoListPage, type BentoDataTableColumn, type BentoTone } from "@viglet/viglet-design-system/bento"
+import { useMemo, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
+import { Link, useNavigate } from "react-router-dom"
 
 import { headlineOf, problemOf } from "@/lib/problem"
 import { addressKey } from "@/lib/query-keys"
 
-/** What one row becomes on the mosaic. Every field the package's tile takes, and no more. */
+/** What one record shows. SH1194 — a row of the table now, with the fields the mosaic tile took. */
 export interface AdminTile {
   to: string
   title: string
@@ -39,7 +40,6 @@ export interface AdminListPageProps<T> {
   query: () => Promise<T[]>
   listRoute: string
   newRoute: string
-  icon: TablerIcon
   tone: BentoTone
   eyebrow: string
   title: string
@@ -88,7 +88,6 @@ export function AdminListPage<T>({
   query,
   listRoute,
   newRoute,
-  icon,
   tone,
   eyebrow,
   title,
@@ -118,6 +117,57 @@ export function AdminListPage<T>({
   // this replaced and it is still true: `useQuery` leaves `data` undefined on a failed first read.
   const items = data ?? (error ? [] : undefined)
 
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  /*
+   * SH1194 — records a reader compares are rows (VDS183). The mosaic drew one user as a 390 x 300
+   * card with a glow, gave the first of fifteen sites a double cell for no reason the data had, and
+   * could not sort, filter by a column or show more than two fields. The columns are the tile's own
+   * fields, so no list lost anything it showed; the name links to the record, and Enter opens it.
+   */
+  const columns = useMemo<BentoDataTableColumn<T>[]>(() => {
+    const status = items?.some((item) => tileOf(item).hasStatus) ?? false
+    return [
+      {
+        id: "name",
+        header: t("common.name"),
+        width: "minmax(14rem, 2fr)",
+        hideable: false,
+        sortValue: (item) => tileOf(item).title.toLowerCase(),
+        cell: (item) => {
+          const tile = tileOf(item)
+          return <Link to={tile.to} className="font-medium hover:underline">{tile.title}</Link>
+        },
+      },
+      {
+        id: "description",
+        header: t("common.description"),
+        width: "minmax(14rem, 3fr)",
+        cell: (item) => <span className="text-muted-foreground">{tileOf(item).description ?? ""}</span>,
+      },
+      {
+        id: "details",
+        header: t("admin.listDetails"),
+        cell: (item) => <span className="text-muted-foreground">{tileOf(item).meta}</span>,
+      },
+      ...(status ? [{
+        id: "status",
+        header: t("common.status"),
+        width: "minmax(8rem, 0.8fr)",
+        sortValue: (item: T) => tileOf(item).enabled ?? 0,
+        cell: (item: T) => {
+          const on = tileOf(item).enabled === 1
+          return (
+            <span className="inline-flex items-center gap-2 text-muted-foreground">
+              <span aria-hidden="true" className={`size-2 rounded-full ${on ? "bg-emerald-500" : "bg-muted-foreground/50"}`} />
+              {on ? t("common.enabled") : t("common.disabled")}
+            </span>
+          )
+        },
+      }] : []),
+    ]
+  }, [items, t, tileOf])
+
   return (
     <BentoListPage
       items={items}
@@ -131,22 +181,9 @@ export function AdminListPage<T>({
       newRoute={newRoute}
       newLabel={newLabel}
       itemKey={itemKey}
-      renderTile={(item: T, emphasis) => {
-        const tile = tileOf(item)
-        return (
-          <BentoEntityTile
-            to={tile.to}
-            emphasis={emphasis}
-            defaultIcon={icon}
-            tone={tone}
-            title={tile.title}
-            description={tile.description}
-            meta={tile.meta}
-            enabled={tile.enabled}
-            hasStatus={tile.hasStatus}
-          />
-        )
-      }}
+      columns={columns}
+      getRowLabel={(item) => tileOf(item).title}
+      onRowOpen={(item) => navigate(tileOf(item).to)}
       emptyTitle={emptyTitle}
       emptyDescription={emptyDescription}
     />

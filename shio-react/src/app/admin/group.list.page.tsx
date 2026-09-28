@@ -6,7 +6,6 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { IconShieldCog } from "@tabler/icons-react"
 import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
@@ -27,7 +26,6 @@ export default function BentoGroupListPage() {
       newRoute={ROUTES.BENTO_GROUP_NEW}
       itemKey={(group) => group.id}
       tileOf={(group) => ({ to: `${ROUTES.BENTO_GROUPS}/${group.id}`, title: group.name, description: group.description })}
-      icon={IconShieldCog}
       tone="violet"
       eyebrow={t("admin.title")}
       title={t("admin.groups")}

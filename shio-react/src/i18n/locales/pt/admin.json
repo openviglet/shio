@@ -18,5 +18,6 @@
   "admin.username": "Usuário",
   "admin.firstName": "Nome",
   "admin.lastName": "Sobrenome",
-  "admin.email": "Email"
+  "admin.email": "Email",
+  "admin.listDetails": "Detalhes"
 }

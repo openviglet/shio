@@ -6,7 +6,6 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { IconLock } from "@tabler/icons-react"
 import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
@@ -27,7 +26,6 @@ export default function BentoRoleListPage() {
       newRoute={ROUTES.BENTO_ROLE_NEW}
       itemKey={(role) => role.id}
       tileOf={(role) => ({ to: `${ROUTES.BENTO_ROLES}/${role.id}`, title: role.name, description: role.description })}
-      icon={IconLock}
       tone="rose"
       eyebrow={t("admin.title")}
       title={t("admin.roles")}

@@ -938,24 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.31 LV.31 Tables for records, tiles for a few visual things (SH1194)
-
-Sites, Users, Groups, Roles, Tokens, Auth providers, Exchange providers, Webhooks and
-Tenants all render through the bento list page. It shows a dashed create tile first,
-then one entity tile per record, and the first record gets a double-size tile with a
-radial glow in the area's tone. With one user or one tenant that leaves a single glowing
-card and empty space. With fifteen sites it makes a mosaic where VigR3 is visually more
-important than Vitalis for no reason the data gives. None of these lists can be sorted,
-filtered by a column or acted on in bulk, and a tile shows two fields where a row shows
-five. Meanwhile Activity, Search, Trash and Post types already use tables, so the
-console answers "how do I see a list" two ways. The concept (artboard 04) puts every
-record list on BentoDataTable: a filter input and filter chips above; columns for name,
-identifier in mono, the one or two fields that differ per entity, status as a dot plus a
-word, and a row menu; the create action as the page's single primary button. Where a
-list has one or zero rows, an inline empty-state card says what to do next rather than
-showing a lone tile. Grid view stays available where the item is visual: media,
-blueprints, sites with a screenshot.
-
 ### LV.32 LV.32 One primary action, and where the rest go (SH1195)
 
 In the 2026-09-28 captures the site browser header and toolbar hold Ver Site (filled

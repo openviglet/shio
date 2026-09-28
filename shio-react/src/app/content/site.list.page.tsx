@@ -6,13 +6,12 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { IconUpload, IconWorld } from "@tabler/icons-react"
-import { BentoEntityTile, BentoListPage } from "@viglet/viglet-design-system/bento"
-import { formatDistanceToNow } from "date-fns"
+import { IconUpload } from "@tabler/icons-react"
+import { BentoListPage, type BentoDataTableColumn } from "@viglet/viglet-design-system/bento"
 import { Search } from "lucide-react"
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { Input } from "@/components/ui/input"
 import type { ShSite } from "@/models/site/site"
@@ -52,8 +51,12 @@ import { headlineOf, problemOf } from "@/lib/problem"
  * state, since it was written — a tab that is always empty is a tab that teaches a curator not to
  * look at tabs. The console page keeps it until SH909 removes that tree.
  */
+/** Where a site's row leads: its root listing in the content browser. */
+const browse = (site: ShSite) => `${ROUTES.CONSOLE}/content/object/${site.id}`
+
 export default function BentoSiteListPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   const [filter, setFilter] = useState("")
   // SH1046 — one cached read under `site:`, shared with the nine other screens that ask.
   const { data, error: failure } = useSites()
@@ -66,6 +69,32 @@ export default function BentoSiteListPage() {
     () => sites?.filter((s) => s.name.toLowerCase().includes(filter.toLowerCase().trim())),
     [sites, filter],
   )
+
+  /*
+   * SH1194 — fifteen sites are records a curator compares by name and by when they last changed,
+   * not by picture, so they are rows (VDS183). The mosaic gave the first site a double cell with a
+   * glow, which made it look more important than the other fourteen for no reason the data had.
+   */
+  const columns = useMemo<BentoDataTableColumn<ShSite>[]>(() => [
+    {
+      id: "name", header: t("common.name"), width: "minmax(14rem, 2fr)", hideable: false,
+      sortValue: (site) => site.name.toLowerCase(),
+      cell: (site) => <Link to={browse(site)} className="font-medium hover:underline">{site.name}</Link>,
+    },
+    {
+      id: "description", header: t("common.description"), width: "minmax(14rem, 3fr)",
+      cell: (site) => <span className="text-muted-foreground">{site.description ?? ""}</span>,
+    },
+    {
+      id: "changed", header: t("content.filterModified"), width: "minmax(9rem, 1fr)",
+      sortValue: (site) => (site.date ? new Date(site.date) : null),
+      cell: (site) => (
+        <span className="text-muted-foreground">
+          {site.date ? new Date(site.date).toLocaleDateString(i18n.language) : ""}
+        </span>
+      ),
+    },
+  ], [t, i18n.language])
 
   return (
     <BentoListPage
@@ -101,17 +130,9 @@ export default function BentoSiteListPage() {
       newRoute={ROUTES.BENTO_SITE_NEW}
       newLabel={t("content.newSite")}
       itemKey={(site: ShSite) => site.id}
-      renderTile={(site: ShSite, emphasis) => (
-        <BentoEntityTile
-          to={`${ROUTES.CONSOLE}/content/object/${site.id}`}
-          emphasis={emphasis}
-          defaultIcon={IconWorld}
-          tone="blue"
-          title={site.name}
-          description={site.description}
-          meta={site.date ? formatDistanceToNow(new Date(site.date), { addSuffix: true }) : undefined}
-        />
-      )}
+      columns={columns}
+      getRowLabel={(site: ShSite) => site.name}
+      onRowOpen={(site: ShSite) => navigate(browse(site))}
       emptyTitle={t("common.noResults")}
       emptyDescription={t("content.createFirstSite")}
     />

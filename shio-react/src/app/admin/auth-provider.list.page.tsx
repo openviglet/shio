@@ -6,7 +6,6 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { IconFingerprint } from "@tabler/icons-react"
 import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
@@ -27,7 +26,6 @@ export default function BentoAuthProviderListPage() {
       query={query}
       listRoute={ROUTES.BENTO_AUTH_PROVIDERS}
       newRoute={`${ROUTES.BENTO_AUTH_PROVIDERS}/new`}
-      icon={IconFingerprint}
       tone="indigo"
       eyebrow={t("admin.title")}
       title={t("authProvider.title")}

@@ -6,7 +6,6 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { IconBuilding } from "@tabler/icons-react"
 import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
@@ -27,7 +26,6 @@ export default function BentoTenantListPage() {
       query={query}
       listRoute={ROUTES.BENTO_TENANTS}
       newRoute={`${ROUTES.BENTO_TENANTS}/new`}
-      icon={IconBuilding}
       tone="emerald"
       eyebrow={t("admin.title")}
       title={t("tenantAdmin.title")}

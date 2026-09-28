@@ -1,0 +1,49 @@
+/*
+ * Copyright (C) 2016-2026 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0.
+ *
+ * SH1194 — the admin lists and the site list were tile mosaics: one user filled a 390 x 300 card
+ * with a glow and two thirds of the screen stayed empty, and the first of fifteen sites got a double
+ * cell for no reason the data gave. Records a reader compares are rows (VDS183), and the look census
+ * counted nine routes still drawing them as tiles. These hold that none do.
+ */
+import { strict as assert } from "node:assert"
+import { readdirSync, readFileSync } from "node:fs"
+import { dirname, join, relative } from "node:path"
+import { test } from "node:test"
+import { fileURLToPath } from "node:url"
+import { stripComments } from "./support/source-text.mjs"
+
+const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src")
+const read = (...parts) => stripComments(readFileSync(join(SRC, ...parts), "utf8"))
+
+test("SH1194: the shared admin list and the site list render a table, not a mosaic", () => {
+  for (const file of [["app", "admin", "admin-list.page.tsx"], ["app", "content", "site.list.page.tsx"]]) {
+    const code = read(...file)
+    assert.match(code, /<BentoListPage[\s\S]*\bcolumns=\{columns\}/, `SH1194: ${file.at(-1)} passes no columns`)
+    assert.doesNotMatch(code, /\brenderTile=/,
+      `SH1194: ${file.at(-1)} passes renderTile, which asks the package for the mosaic again`)
+    assert.match(code, /\bonRowOpen=/, `SH1194: ${file.at(-1)}'s rows do not open their record from the keyboard`)
+  }
+})
+
+test("SH1194: no list page asks for tiles without saying why", () => {
+  // The vocabulary harness renders the mosaic on purpose; a real list that wants tiles (media,
+  // blueprints) names itself here with its reason, so the exception is a line and not a habit.
+  const VISUAL = new Map([["app/system/bento-vocabulary.page.tsx", "the harness proves the mosaic itself"]])
+  const offenders = []
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) walk(path)
+      else if (entry.name.endsWith(".tsx")) {
+        const name = relative(SRC, path).replace(/\\/g, "/")
+        const code = stripComments(readFileSync(path, "utf8"))
+        if (/<BentoListPage\b[\s\S]*?\brenderTile=/.test(code) && !VISUAL.has(name)) offenders.push(name)
+      }
+    }
+  }
+  walk(join(SRC, "app"))
+  assert.deepEqual(offenders, [], "SH1194: a list of records renders as tiles again")
+})

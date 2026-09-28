@@ -6,7 +6,6 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { IconWebhook } from "@tabler/icons-react"
 import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
@@ -27,7 +26,6 @@ export default function BentoSiteWebhookListPage() {
       query={query}
       listRoute={ROUTES.BENTO_WEBHOOKS}
       newRoute={`${ROUTES.BENTO_WEBHOOKS}/new`}
-      icon={IconWebhook}
       tone="violet"
       eyebrow={t("admin.title")}
       title={t("siteWebhook.title")}

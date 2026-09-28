@@ -3858,3 +3858,15 @@ four groups or fewer per hub. The grouping is presentation, so it lives in the c
 it is never a tile on it; `/bento/admin` redirects there. Users, groups and roles are the `users`
 surface, declared operator-only. `bento-hub.test.mjs` fails a surface declared without a group, a
 group over four, and a hub that lists itself.
+
+## Records are rows (SH1194)
+
+`AdminListPage` (users, groups, roles, tokens, auth and exchange providers, webhooks, tenants) and the
+site list pass `columns` to `BentoListPage` and no `renderTile`, so the package draws a sortable
+`BentoDataTable` under the hero with the create action as its one primary (VDS183). The columns are
+the fields the tile showed (name linked to the record, description, the tile's meta line as
+Details, and status as a dot and a word when the model has one), so no list lost information, and
+Enter or a double click opens the row. Tiles are for entities a reader picks by sight or that are
+few, such as media, blueprints and a hub; a list page that asks for them is named in
+`record-lists.test.mjs` with its reason. The look census counted nine tiled lists before and none
+after.
