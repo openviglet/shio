@@ -12,7 +12,7 @@
 ## Block AR — The curator's console, surface by surface (§LV)
 
 - 📋 **SH1192** (deps: SH1191) **Four page-header anatomies: the title starts at 140, 188, 208 or 380 px depending on the route** — One header (trail, H1, one-line description, actions right) on every route is what makes the pages read as one product. → §LV.29
-- 📋 **SH1193** (deps: —) **The nav rail is three unlabelled icons over 45 routes; Trash, Media and Tokens are reachable only by URL or tiles** — A labelled, grouped sidebar with a site switcher makes every area findable in one glance instead of by memory. → §LV.30
+- 📋 **SH1193** (deps: —) **The nav rail is three unlabelled icons over 45 routes; Trash, Media and Tokens are reachable only by URL or tiles** — Keep bento's six-or-fewer choices per level: six labelled areas in the rail, each area's sections as header tabs, so everything is one click away. → §LV.30
 - 📋 **SH1194** (deps: SH1192) **Admin lists are tile mosaics: one user fills a 390x300 card with a glow and two thirds of the screen stay empty** — Records people scan and compare belong in a table with columns, filters and row actions; tiles only suit a few visual items. → §LV.31
 - 📋 **SH1195** (deps: SH1192) **Screens carry several primary styles: the site browser shows 8 toolbar buttons in 4 styles and two greens beside orange** — One filled primary per screen, secondary outlined, destructive in the overflow menu, is what tells a curator where the next step is. → §LV.32
 - 📋 **SH1196** (deps: SH1192) **Settings forms are stacks of icon-headed cards with the save button in the hero; nothing says a field was changed** — A settings-row layout with one sticky save bar that names the unsaved change stops edits being lost and makes every form look alike. → §LV.33

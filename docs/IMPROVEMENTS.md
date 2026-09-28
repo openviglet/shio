@@ -954,23 +954,24 @@ right. The body is one of three layouts: full-width list, 720 px form with a sid
 or the editor split. The icon chip and the area tones leave the header entirely. Done
 when SH1191's census reports a single title offset per layout.
 
-### LV.30 LV.30 A navigation that names what is there (SH1193)
+### LV.30 LV.30 Six labelled areas, and each area's sections one level down (SH1193)
 
-The bento rail shows three icons: home, content and administration. Behind the last two
-sit about forty routes, and the only way to see them is to know the URL or to find a
-Quick Actions tile on the home page, which offers six of them. A curator's second
-question after "what needs me" is "where is X", and the rail cannot answer it without a
-click-and-guess. The concept (canvas artboard Sidebar) replaces it with a 232 px
-sidebar. At the top sit the product mark, the tenant and a site switcher, because nearly
-every content route is scoped to one site and today that scope is only in the URL. Below
-come labelled groups: Painel and Revisão (with the pending count), then Conteúdo (Sites,
-Busca, Mídia, Agendados, Formulários, Lixeira), Modelo (Tipos de post, Blueprints),
-Integração (Tokens de API, Webhooks, GraphQL, Editor universal) and Administração
-(Usuários e acesso, Autenticação, Tenants, E-mail, Atividade). The current item gets a
-neutral fill and an orange inset bar. The rail's collapsed form stays for narrow
-viewports, and on a phone the sidebar becomes a drawer behind a menu button.
-BentoNavRail already takes groups, so this is a presentation change in the design
-system, not a new routing model.
+The bento rail exists because the 1.0 console's sidebar listed everything at once, and a
+curator could not find an item in it. That constraint is kept: no level of the
+navigation offers more than six choices. The rail's problem is narrower. It shows three
+unlabelled icons (home, content, administration), and the forty or so routes behind the
+last two are reachable only by URL or through the six Quick Actions tiles on the home
+page. So Trash, Media, Tokens and GraphQL have no path a curator can see. The first
+concept drew a 232 px sidebar with nineteen items open at once, which is the 1.0 shape
+again, and it was withdrawn on 2026-09-28. The adopted shape (canvas artboard Shell) is
+an 88 px rail with six areas, each an icon above a short label: Painel, Revisão (with
+its pending count), Conteúdo, Modelo, Integração and Admin. The mascot and the account
+sit at its foot. Each area's sections appear as tabs in the top bar, never more than
+six: Conteúdo holds Sites, Busca, Mídia, Agendados, Formulários and Lixeira; Integração
+holds Tokens de API, Webhooks, GraphQL and Editor universal; Admin holds Usuários e
+acesso, Autenticação, Tenants, E-mail and Atividade. The breadcrumb moves above the H1,
+and its site segment doubles as the site switcher. BentoCommandPalette (Ctrl K) stays
+the shortcut to any route by name.
 
 ### LV.31 LV.31 Tables for records, tiles for a few visual things (SH1194)
 
@@ -1050,11 +1051,11 @@ viewport, above page content. It covers the last Excluir permanentemente in Tras
 delete icon on the FAQ row in Post types, the Reverter button on a review row, a site
 tile's corner, and the preview frame's corner in the post editor. On a 390 px phone it
 sits over the Sections field. The top bar also still shows a bell, so there are two
-notice affordances. The concept puts the mascot in a reserved slot at the bottom of the
-sidebar, above the user row: a 26 px orb, a short "Shio tem 2 avisos" line and a count
-badge. It opens as a popover anchored to that slot, with its items and Marcar como lidos
-(artboard 01). On a phone the orb moves into the top bar where the bell was. The bell is
-removed, so the mascot stays the only notice, and no page content is ever under it.
+notice affordances. The concept puts the mascot in a reserved slot at the foot of the
+rail, above the account button: a 30 px orb with a count badge. It opens as a popover
+anchored to that slot, with its items and Marcar como lidos (artboard 01). On a phone
+the orb moves into the top bar where the bell was. The bell is removed, so the mascot
+stays the only notice, and no page content is ever under it.
 
 ### LV.36 LV.36 A closed visual scale in the design system (SH1199)
 
