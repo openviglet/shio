@@ -47,6 +47,7 @@ import LanguagesPage from "./app/content/languages.page"
 import ScheduledPage from "./app/content/scheduled.page"
 import TranslatePage from "./app/content/translate.page"
 import NotFoundPage from "./app/system/not-found.page"
+import BentoAreaPage from "./app/system/bento-area.page"
 import LoginPage from "./app/login/login.page"
 import SetupPage from "./app/setup/setup.page"
 import { BentoGraphQLRoute } from "./app/routes"
@@ -216,11 +217,13 @@ const router = createBrowserRouter(createRoutesFromElements(
                   static `admin/groups/new` route beside `:groupId` matches first and carries no
                   param at all, so `useParams().groupId` is undefined and the page renders `null`.
 
-                  SH909 — `admin` is a redirect and nothing else, and it has to exist: `ADMIN_ROOT`
-                  is the rail's Administration area route, and old bookmarks point here. Hero back
-                  links do not: each editor goes back to its own list, each top-level page to home.
+                  SH909 — `admin` is a redirect and nothing else, and it has to exist: old bookmarks
+                  point here. Since SH1193 it lands on Administration's hub, which is where the rail
+                  goes too. Hero back links do not: each editor goes back to its own list.
                 */}
-                <Route path="admin" element={<Navigate to={ROUTES.BENTO_USERS} replace />} />
+                {/* SH1193 — each rail section's hub, and the old admin root lands on its own. */}
+                <Route path="areas/:sectionId" element={<BentoAreaPage />} />
+                <Route path="admin" element={<Navigate to={`${ROUTES.BENTO_AREAS}/administration`} replace />} />
                 <Route path="admin/groups" element={<BentoGroupListPage />} />
                 <Route path="admin/groups/:groupId" element={<BentoGroupEditPage />} />
                 <Route path="admin/roles" element={<BentoRoleListPage />} />

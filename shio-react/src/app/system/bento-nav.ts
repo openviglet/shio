@@ -22,6 +22,7 @@ import {
   IconRobot,
   IconSearch,
   IconShieldCog,
+  IconUsers,
   IconTrash,
   IconCalendarTime,
   IconWebhook,
@@ -84,14 +85,14 @@ const SECTIONS = {
     labelKey: "sidebar.content",
     descriptionKey: "nav.desc.section.content",
     icon: IconFileText,
-    areaRoute: `${ROUTES.CONSOLE}/content`,
+    areaRoute: `${ROUTES.BENTO_AREAS}/content`,
   },
   administration: {
     id: "administration",
     labelKey: "sidebar.administration",
     descriptionKey: "nav.desc.section.administration",
     icon: IconShieldCog,
-    areaRoute: ROUTES.ADMIN_ROOT,
+    areaRoute: `${ROUTES.BENTO_AREAS}/administration`,
   },
 } as const
 
@@ -143,7 +144,8 @@ const DECORATION: Record<string, Omit<ShioNavItem, "id" | "section" | "bentoRout
   "forms": { titleKey: "content.formsTitle", descriptionKey: "nav.desc.forms", icon: IconMail, tone: "blue", route: ROUTES.FORMS },
   "scheduled": { titleKey: "content.scheduledTitle", descriptionKey: "nav.desc.scheduled", icon: IconCalendarTime, tone: "blue", route: ROUTES.SCHEDULED },
   "universal-editor": { titleKey: "sidebar.universalEditor", descriptionKey: "nav.desc.universalEditor", icon: IconLayersIntersect, tone: "violet", route: ROUTES.UNIVERSAL_EDITOR },
-  "admin": { titleKey: "admin.title", descriptionKey: "nav.desc.admin", icon: IconShieldCog, tone: "amber", route: ROUTES.ADMIN_ROOT },
+  "admin": { titleKey: "admin.title", descriptionKey: "nav.desc.section.administration", icon: IconShieldCog, tone: "amber", route: ROUTES.ADMIN_ROOT },
+  "users": { titleKey: "admin.users", descriptionKey: "nav.desc.admin", icon: IconUsers, tone: "amber", route: ROUTES.BENTO_USERS },
   "api-tokens": { titleKey: "apiToken.title", descriptionKey: "nav.desc.apiTokens", icon: IconKey, tone: "amber", route: ROUTES.ADMIN_TOKENS },
   "tenants": { titleKey: "tenantAdmin.title", descriptionKey: "nav.desc.tenants", icon: IconBuildingSkyscraper, tone: "amber", route: ROUTES.ADMIN_TENANTS, requires: "multiTenant" },
   "auth-providers": { titleKey: "authProvider.title", descriptionKey: "nav.desc.authProviders", icon: IconFingerprint, tone: "amber", route: ROUTES.ADMIN_AUTH_PROVIDERS },
@@ -217,4 +219,51 @@ export function useBentoNavItems(): BentoNavItem[] {
  */
 export function useMultiTenant(): boolean {
   return useDiscovery()?.multiTenant === true
+}
+
+/**
+ * SH1193 — how a section's hub groups its surfaces.
+ *
+ * <p>The rail offers three choices and a hub is the second level: every surface of the section,
+ * one click from the rail. A mosaic of eleven tiles is the 1.0 sidebar again, laid out as a grid, so
+ * each hub is chunked into groups of four or fewer. The grouping is presentation, which is why it is
+ * here and not in `console/surfaces.json`: the declaration says which surfaces exist and in which
+ * section, and an agent reading the manifest has no use for how the console lays them out.</p>
+ *
+ * <p>Every surface of a section appears in exactly one of its groups, except the one the declaration
+ * marks as the section's own hub (`admin`, reason `navigation`), which is this page and not a tile on
+ * it; `bento-hub.test.mjs` holds that, so a surface declared without a group fails rather than
+ * vanishing.</p>
+ */
+export const HUB_GROUPS: Record<string, readonly { labelKey: string; ids: readonly string[] }[]> = {
+  content: [
+    { labelKey: "nav.hub.content.library", ids: ["sites", "search", "files", "trash"] },
+    { labelKey: "nav.hub.content.publishing", ids: ["scheduled", "forms", "universal-editor"] },
+    { labelKey: "nav.hub.content.model", ids: ["post-types"] },
+  ],
+  administration: [
+    { labelKey: "nav.hub.administration.access", ids: ["users", "auth-providers", "tenants"] },
+    { labelKey: "nav.hub.administration.oversight", ids: ["review", "activity"] },
+    { labelKey: "nav.hub.administration.integration", ids: ["api-tokens", "webhooks", "graphql", "exchange-providers"] },
+    { labelKey: "nav.hub.administration.instance", ids: ["email-config", "marketplace"] },
+  ],
+}
+
+/** One hub: its section and its groups, holding only the surfaces this reader may see. */
+export function useBentoHub(sectionId: string | undefined) {
+  const groups = useBentoNav()
+  return useMemo(() => {
+    const group = groups.find((one) => one.section.id === sectionId)
+    if (!group) return null
+    const byId = new Map(group.items.map((item) => [item.id, item]))
+    return {
+      section: group.section,
+      groups: (HUB_GROUPS[group.section.id] ?? [])
+        .map(({ labelKey, ids }) => ({
+          labelKey,
+          items: ids.map((id) => byId.get(id)).filter((item): item is BentoNavItem => item !== undefined),
+        }))
+        .filter(({ items }) => items.length > 0),
+    }
+  }, [groups, sectionId])
 }

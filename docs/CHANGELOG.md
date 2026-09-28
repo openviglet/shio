@@ -1660,6 +1660,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH932** — The three adapters are `PageHero`, `Panel` and `EmptyState`; two had no chrome branch left and the third branches on inside-versus-outside the shell, which is permanent.
 - 🗑 **SH938** — abandoned: Filed off a printed log line without reading the declaration under it: the census documents that it measures the console tree's own chrome and not migration progress, which `bento-nav` carries by route and is unaffected by the seams.
 - **SH1192** — Page heroes draw no icon beside the title, multi-section editors left the narrow column, and folders and posts name their ancestors in a trail; each column has one title offset.
+- **SH1193** — Each rail section opens its hub at /bento/areas/<section>, every surface grouped four or fewer, so Trash, Media and Tokens are one click from the rail; Users is a declared surface.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

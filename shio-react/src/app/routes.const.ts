@@ -114,6 +114,11 @@ export const ROUTES = {
    * with the surfaces that need it (SH905), not with the ones that do not.
    */
   BENTO_CONTENT: "/bento/content",
+  /**
+   * SH1193 — a rail section's hub: every surface of the section, grouped, one click from the rail.
+   * `/bento/areas/content` and `/bento/areas/administration`; the section id is the segment.
+   */
+  BENTO_AREAS: "/bento/areas",
   BENTO_SITE_NEW: "/bento/content/site/new",
   BENTO_SITE_IMPORT: "/bento/content/site/import",
   /**

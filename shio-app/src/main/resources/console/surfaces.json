@@ -154,6 +154,17 @@
       }
     },
     {
+      "id": "users",
+      "section": "administration",
+      "route": "/bento/admin/users",
+      "capability": "who may sign in, their groups and what each role permits",
+      "exception": {
+        "reason": "operator-only",
+        "why": "an agent that could add a user or widen a role could grant itself a human's access, which is the escalation minting its own token would be",
+        "closedBy": ""
+      }
+    },
+    {
       "id": "api-tokens",
       "section": "administration",
       "route": "/bento/admin/tokens",

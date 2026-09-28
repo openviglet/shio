@@ -938,25 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.30 LV.30 The bento hubs, restored as the second level (SH1193)
-
-The bento navigation is rail, then hub, then item: `BentoNavSection.areaRoute` names the
-section's hub, and the hub renders every visible item of the section as a mosaic. That
-keeps each level to a handful of choices, which is why the console left the 1.0 sidebar,
-and it keeps the header free of a second nav, as BENTO-AUTHORING.md requires. Shio
-declares both sections with an `areaRoute` that is not a hub. Content points at the
-Sites list, and Administration points at ADMIN_ROOT, which App.tsx redirects to Users.
-So the second level never renders. Trash, Media, Scheduled, Forms, Tokens, Webhooks,
-GraphQL, Tenants, E-mail and Activity are reachable only by URL, through the six Quick
-Actions tiles on the home page, or through the command palette if the reader already
-knows the name. The fix is in Shio and uses what the package has: each section's
-`areaRoute` renders the package's hub for that section, the Sites list becomes one tile
-among Content's items, and the Administration redirect is removed. Two earlier drafts of
-this section were withdrawn on 2026-09-28: a 232 px sidebar listing nineteen items at
-once, which is the 1.0 shape again, and section tabs in the top bar, which the contract
-forbids. The rail's labels and its count badge are the design system's change (VDS181),
-and Shio takes them by upgrading.
-
 ### LV.31 LV.31 Tables for records, tiles for a few visual things (SH1194)
 
 Sites, Users, Groups, Roles, Tokens, Auth providers, Exchange providers, Webhooks and

@@ -3845,3 +3845,16 @@ why the six multi-section infrastructure editors left it), `full` 112 px, and an
 chip, measured at 1440 px. Content that nests takes the hero's `trail` (VDS184): the folder browser
 titles itself with the folder and names its ancestors, and the post editor names the folders it sits
 in, from `heroTrail` over the same `/path` read. `page-anatomy.test.mjs` holds all three.
+
+## The rail's second level is a hub, and every surface is on one (SH1193)
+
+The bento navigation is rail, then hub, then item. Each rail section's `areaRoute` is its hub,
+`/bento/areas/<section>` (`bento-area.page.tsx`). The rail never links to one of a section's surfaces:
+Content used to point at the Sites list and Administration at a redirect to Users, so the second
+level never rendered and ten surfaces had no path from the rail. A hub draws its section's surfaces
+as tiles in the groups `HUB_GROUPS` declares in `bento-nav.ts`, four tiles or fewer per group and
+four groups or fewer per hub. The grouping is presentation, so it lives in the console and not in
+`console/surfaces.json`. The surface the declaration marks `navigation` (`admin`) *is* the hub, so
+it is never a tile on it; `/bento/admin` redirects there. Users, groups and roles are the `users`
+surface, declared operator-only. `bento-hub.test.mjs` fails a surface declared without a group, a
+group over four, and a hub that lists itself.
