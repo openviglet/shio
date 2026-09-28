@@ -85,7 +85,7 @@ export default function AdminUserPage() {
         title={isNew ? t("admin.newUser") : t("admin.editUser")}
         eyebrow={t("admin.users")}
         subtitle={t("admin.usersSubtitle")}
-        urlBase={ROUTES.ADMIN_ROOT}
+        urlBase={ROUTES.ADMIN_USERS}
       />
       <div>
         <Panel contentClassName="p-6">

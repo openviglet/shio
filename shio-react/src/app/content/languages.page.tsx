@@ -214,7 +214,8 @@ export default function LanguagesPage() {
         icon={Languages}
         title={t("content.coverageTitle")}
         subtitle={t("content.coverageDescription")}
-        urlBase={`${ROUTES.CONSOLE}/content`}
+        urlBase={`${ROUTES.CONTENT_ROOT}/site/${siteId}`}
+        backLabel={t("content.siteLabel")}
       />
       <div className="space-y-3">
         {/* The totals are the site's, so they do not move as the reader pages. */}

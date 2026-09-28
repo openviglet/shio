@@ -65,6 +65,11 @@ export default function BentoFolderEditPage() {
 
   if (!folder) return null
 
+  // The folder is edited from its parent's listing, so that listing is the way back: the parent
+  // folder, or the site itself for a top-level folder. Only a root folder carries `shSite`.
+  const parentId = folder.parentFolder?.id ?? folder.shSite?.id
+  const listRoute = parentId ? `${ROUTES.BENTO_CONTENT}/object/${parentId}` : ROUTES.BENTO_CONTENT
+
   return (
     <BentoEntityShell
       entity={{ ...folder, title: folder.name }}
@@ -72,7 +77,7 @@ export default function BentoFolderEditPage() {
       autosaveOnly
       headlineFallback={t("content.editFolder")}
       eyebrow={t("content.folder")}
-      listRoute={ROUTES.BENTO_CONTENT}
+      listRoute={listRoute}
       icon={IconFolder}
       tone="amber"
       formId="folder-edit"
@@ -85,7 +90,7 @@ export default function BentoFolderEditPage() {
       }}
       onDelete={async () => {
         await service.delete(folderId)
-        navigate(ROUTES.BENTO_CONTENT)
+        navigate(listRoute)
         return true
       }}
     >

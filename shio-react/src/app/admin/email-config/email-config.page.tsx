@@ -113,8 +113,9 @@ export default function EmailConfigPage() {
         title={t("emailConfig.title")}
         eyebrow={t("admin.title")}
         subtitle={t("emailConfig.description")}
-        urlBase={ROUTES.ADMIN_ROOT}
-        onCancel={() => navigate(ROUTES.ADMIN_ROOT)}
+        urlBase={ROUTES.HOME}
+        backLabel={t("home.title")}
+        onCancel={() => navigate(ROUTES.HOME)}
         loading={saving}
         actions={
           <Button size="sm" onClick={handleSave} disabled={saving}>

@@ -218,7 +218,8 @@ export default function ReviewListPage() {
         title={t("review.title")}
         eyebrow={t("admin.title")}
         subtitle={t("review.description")}
-        urlBase={ROUTES.ADMIN_ROOT}
+        urlBase={ROUTES.HOME}
+        backLabel={t("home.title")}
         actions={
           <Button onClick={load} size="sm" variant="outline" disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />

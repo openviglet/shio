@@ -60,7 +60,7 @@ export default function SearchPage() {
   const navigate = useNavigate()
   const location = useLocation()
   // SH1188 — read once: a filter change rewrites the URL and drops the router state with it.
-  const [backTo] = useState(() => searchBackTo(location.state, `${ROUTES.CONSOLE}/content`))
+  const [backTo] = useState(() => searchBackTo(location.state, ROUTES.HOME))
   // SH1046 — one cached read of the site list, shared with every other picker.
   const sites = useSites().data ?? NO_SITES
   const postTypes = usePostTypes().data ?? NO_TYPES
@@ -149,6 +149,7 @@ export default function SearchPage() {
         title={t("content.searchTitle")}
         subtitle={t("content.searchDescription")}
         urlBase={backTo}
+        backLabel={backTo === ROUTES.HOME ? t("home.title") : t("content.browsing")}
       />
       <div>
 

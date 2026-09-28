@@ -130,7 +130,8 @@ export default function ApiTokenPage() {
         title={t("apiToken.title")}
         eyebrow={t("admin.title")}
         subtitle={t("apiToken.description")}
-        urlBase={ROUTES.ADMIN_ROOT}
+        urlBase={ROUTES.ADMIN_TOKENS}
+        backLabel={t("apiToken.title")}
       />
       <div>
         {/* Sticky save bar */}

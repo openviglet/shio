@@ -132,7 +132,8 @@ export default function FormsPage() {
         icon={Mail}
         title={t("content.formsTitle")}
         subtitle={t("content.formsDescription")}
-        urlBase={`${ROUTES.CONSOLE}/content`}
+        urlBase={ROUTES.HOME}
+        backLabel={t("home.title")}
       />
       <div className="space-y-4">
         <Select value={siteName} onValueChange={(value) => list.set("site", value)}>

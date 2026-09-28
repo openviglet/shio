@@ -899,7 +899,8 @@ export default function PostTypeEditPage() {
         icon={IconFileText}
         eyebrow={t("content.postType")}
         title={t("content.editPostType")}
-        urlBase={ROUTES.CONTENT_ROOT}
+        urlBase={ROUTES.POST_TYPE_ROOT}
+        backLabel={t("content.postTypes")}
         saveTitle={t("content.modelPostType", { title: title ?? "" })}
         onCancel={() => navigate(ROUTES.POST_TYPE_ROOT)}
         loading={isLoading}

@@ -30,5 +30,6 @@
   "home.runPending": "{{count}} aguardando",
   "home.runSettled": "resolvido",
   "home.runChanges": "{{count}} alterações",
+  "home.runSession": "Sessão {{id}}",
   "home.attentionIncidents": "Incidentes desde o início"
 }

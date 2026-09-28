@@ -158,7 +158,8 @@ export default function TranslatePage() {
         icon={Languages}
         title={t("content.translateTitle")}
         subtitle={t("content.translateDescription")}
-        urlBase={`${ROUTES.CONSOLE}/content`}
+        urlBase={`${ROUTES.CONTENT_ROOT}/post/${postId}`}
+        backLabel={t("content.postLabel")}
       />
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">

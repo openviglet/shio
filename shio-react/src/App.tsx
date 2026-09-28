@@ -217,7 +217,8 @@ const router = createBrowserRouter(createRoutesFromElements(
                   param at all, so `useParams().groupId` is undefined and the page renders `null`.
 
                   SH909 — `admin` is a redirect and nothing else, and it has to exist: `ADMIN_ROOT`
-                  is the `urlBase` of eleven admin surfaces, and their hero back-links point here.
+                  is the rail's Administration area route, and old bookmarks point here. Hero back
+                  links do not: each editor goes back to its own list, each top-level page to home.
                 */}
                 <Route path="admin" element={<Navigate to={ROUTES.BENTO_USERS} replace />} />
                 <Route path="admin/groups" element={<BentoGroupListPage />} />

@@ -2,5 +2,14 @@
   "note": "SH579 — the declared exceptions to 'a red suite is a stop'. A suite that is red either blocks the next commit or has an entry here: dated, time-boxed, and pointing at the open task that removes it. Nothing else. cli/test/red-suites.test.mjs enforces the shape and kills an entry whose task has shipped or whose date has passed, so a forgotten exception goes red instead of quiet. Read docs/agents/build.md before adding one.",
   "doc": "docs/agents/build.md",
   "emptied": "SH789 — the `fixture-traits` entry was deleted here rather than by SH780, which is what its own text expected. The grounds are different and that is the point: an exception is a licence to commit over a red, and there was no red. Roughly fifty consecutive green `pnpm test` runs, and the two comparators that should have said so were blind to this gate in exactly this direction (that hole is what SH789 fixed). SH778 and SH780 stay open: they are about diagnosing the flake, not about licensing it, and SH778's third instrument now prints the process exit code — so a third sighting arrives with a diagnosis instead of a mystery, and the correct response to it is SH579's rule from the top, not a licence that was already sitting here.",
-  "exceptions": []
+  "exceptions": [
+    {
+      "suite": "js",
+      "test": "cli/test/block-sweep.test.mjs (SH861: a block that claims it was swept has moved a surface since its own last ship) and cli/test/coverage-obligation.test.mjs (SH758: what shipped since the matrix was refreshed, named while somebody remembers)",
+      "task": "SH1190",
+      "declared": "2026-09-28",
+      "expires": "2026-10-12",
+      "why": "One docs debt seen from two sides, and neither is a code defect. SH861: Blocks AX (since SH1182) and BI (since SH1183) declare their end-user sweep done, and no commit since touched README.md, shio-site or the coverage mirror. SH758: seven shipped ids (SH1182-SH1187, and SH1189 with the commit that declared this) wait to be named in vigletdocs/docs-shio/COVERAGE.md, over the five SH799 carries. The fix is the vigletdocs pass plus `pnpm run coverage:mirror` here, which is SH1190. Safe to commit over: nothing the console ships changes either count, and both tests keep listing every id they are owed, so nothing is forgotten while this is declared."
+    }
+  ]
 }

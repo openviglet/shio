@@ -492,7 +492,7 @@ async function discoverRoutes(siteName) {
     })
   }
   // And the admin hub, which under the console was a bare Outlet with an index redirect. It is the
-  // `urlBase` of eleven admin surfaces, so a hero back-link is what lands on it.
+  // rail's Administration area route, so the rail and old bookmarks are what land on it.
   routes.push({ name: "bento-admin-hub", path: "/bento/admin", redirectsTo: "/bento/admin/users", bento: true, mustSee: [] })
 
   routes.push({ name: "graphql", path: "/console/graphql", graphiql: true, redirectsTo: "/bento/graphql", mustSee: [] })

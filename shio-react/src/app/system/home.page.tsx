@@ -10,17 +10,24 @@ import {
   IconAlertTriangle,
   IconCalendarClock,
   IconChecklist,
+  IconChevronRight,
+  IconEyeOff,
   IconFileText,
   IconForms,
   IconHistory,
   IconHome,
   IconMessage,
+  IconPencil,
   IconPlus,
+  IconRestore,
+  IconRobot,
   IconSearch,
+  IconTrash,
   IconWebhook,
+  IconWorldUpload,
+  type Icon as TablerIcon,
 } from "@tabler/icons-react"
 import {
-  BENTO_TONE_CLASS,
   BentoCountTile,
   BentoEmptyState,
   BentoHero,
@@ -81,6 +88,31 @@ const ACTION_TONE: Record<string, BentoTone> = {
   UNPUBLISH: "amber",
   DELETE: "rose",
   RESTORE: "violet",
+}
+
+const ACTION_ICON: Record<string, TablerIcon> = {
+  CREATE: IconPlus,
+  UPDATE: IconPencil,
+  PUBLISH: IconWorldUpload,
+  UNPUBLISH: IconEyeOff,
+  DELETE: IconTrash,
+  RESTORE: IconRestore,
+}
+
+/*
+ * `bentoChipClass` is the tile's gradient *icon* chip, not a text badge: wrapped around a label it
+ * painted a gradient block with dark text on top. The lists carry the tone on a small icon chip and
+ * keep the words in plain type, the way the tiles above them do.
+ */
+const LIST_CLASS = "bg-card divide-border/60 divide-y overflow-hidden rounded-xl border"
+const ROW_CLASS = "hover:bg-muted/40 flex items-center gap-3 px-4 py-3 transition-colors"
+
+function RowIcon({ icon: Icon, tone }: Readonly<{ icon: TablerIcon; tone: BentoTone }>) {
+  return (
+    <span className={`${bentoChipClass(tone)} grid size-8 shrink-0 place-items-center rounded-lg text-white`}>
+      <Icon size={16} aria-hidden="true" />
+    </span>
+  )
 }
 
 export default function BentoHomePage() {
@@ -267,31 +299,32 @@ export default function BentoHomePage() {
           titleHref={ROUTES.ADMIN_REVIEW}
           gridClassName="block"
         >
-          <ul className="divide-border/60 divide-y">
-            {runs.map((run) => (
-              <li key={run.session} className="flex items-center gap-3 py-2.5">
-                <span className={bentoChipClass(run.pending > 0 ? "amber" : "slate")}>
-                  <span
-                    className={BENTO_TONE_CLASS[run.pending > 0 ? "amber" : "slate"]}
-                    aria-hidden="true"
-                  />
-                  {run.pending > 0
-                    ? t("home.runPending", { count: run.pending })
-                    : t("home.runSettled")}
-                </span>
-                <Link
-                  to={ROUTES.ADMIN_REVIEW}
-                  className="flex-1 truncate text-sm font-medium hover:underline"
-                >
-                  {/* The intent, or the agent's name, or the session — in that order, because the
-                      first is what a person can act on and the last is what is always there. */}
-                  {run.intent || run.agent || run.session}
-                </Link>
-                <span className="text-muted-foreground shrink-0 text-xs">
-                  {t("home.runChanges", { count: run.changes })}
-                </span>
-              </li>
-            ))}
+          <ul className={LIST_CLASS}>
+            {runs.map((run) => {
+              const pending = run.pending > 0
+              return (
+                <li key={run.session}>
+                  <Link to={ROUTES.ADMIN_REVIEW} className={ROW_CLASS}>
+                    <RowIcon icon={IconRobot} tone={pending ? "amber" : "slate"} />
+                    <span className="min-w-0 flex-1">
+                      {/* The intent, or the agent's name, or the session — in that order, because
+                          the first is what a person can act on and the last is what is always
+                          there. A bare session is shortened: a full UUID is noise to a reader. */}
+                      <span className="block truncate text-sm font-medium">
+                        {run.intent || run.agent || t("home.runSession", { id: run.session.slice(0, 8) })}
+                      </span>
+                      <span className={pending ? "text-foreground block text-xs font-medium" : "text-muted-foreground block text-xs"}>
+                        {pending ? t("home.runPending", { count: run.pending }) : t("home.runSettled")}
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                      {t("home.runChanges", { count: run.changes })}
+                    </span>
+                    <IconChevronRight size={16} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
         </BentoSection>
       )}
@@ -310,17 +343,22 @@ export default function BentoHomePage() {
             action={<Link to={ROUTES.ADMIN_ACTIVITY}>{t("home.viewAll")}</Link>}
           />
         ) : (
-          <ul className="divide-border/60 divide-y">
+          <ul className={LIST_CLASS}>
             {activity.map((item) => (
-              <li key={item.id} className="flex items-center gap-3 py-2.5">
-                <span className={bentoChipClass(ACTION_TONE[item.action])}>
-                  <span className={BENTO_TONE_CLASS[ACTION_TONE[item.action] ?? "slate"]} aria-hidden="true" />
-                  {actionLabel(item.action)}
+              <li key={item.id} className={ROW_CLASS}>
+                <RowIcon icon={ACTION_ICON[item.action] ?? IconHistory} tone={ACTION_TONE[item.action] ?? "slate"} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{item.description}</span>
+                  <span className="text-muted-foreground block text-xs">{actionLabel(item.action)}</span>
                 </span>
-                <span className="flex-1 truncate text-sm font-medium">{item.description}</span>
-                <span className="text-muted-foreground shrink-0 text-xs">
-                  {item.date ? new Date(item.date).toLocaleString() : ""}
-                </span>
+                {item.date && (
+                  <time
+                    dateTime={item.date}
+                    className="text-muted-foreground shrink-0 text-xs tabular-nums"
+                  >
+                    {new Date(item.date).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}
+                  </time>
+                )}
               </li>
             ))}
           </ul>

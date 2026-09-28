@@ -186,7 +186,8 @@ export default function TrashPage() {
         icon={Trash2}
         title={t("content.trash")}
         subtitle={t("content.trashDescription")}
-        urlBase={`${ROUTES.CONSOLE}/content`}
+        urlBase={ROUTES.HOME}
+        backLabel={t("home.title")}
       />
       <div className="space-y-3">
         <BentoFilterBar

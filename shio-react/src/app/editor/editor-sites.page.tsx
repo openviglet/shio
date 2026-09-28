@@ -37,7 +37,8 @@ export default function EditorSitesPage() {
         title={t("universalEditor.title")}
         eyebrow={t("sidebar.content")}
         subtitle={t("universalEditor.description")}
-        urlBase={ROUTES.CONTENT_ROOT}
+        urlBase={ROUTES.HOME}
+        backLabel={t("home.title")}
       />
       <div className="space-y-6">
         {/* Sites */}

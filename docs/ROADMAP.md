@@ -13,6 +13,10 @@
 
 - 🛠 **SH1188** (deps: —) **Back from a folder search returns to the site list instead of the folder the curator was searching** — The search page's back link was hardwired to /bento/content; the browser now passes its own location in router state and the page returns there. → §LXXV.1
 
+## Block U — Documentation the matrix still names
+
+- 📋 **SH1190** (deps: —) **The docs pass owed since SH1182 is unpaid: COVERAGE.md misses six ids and Blocks AX and BI claim a sweep** — Two pnpm test assertions stay red until vigletdocs names the ids and the AX and BI sweep touches README or shio-site. → §LXXVI.1
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

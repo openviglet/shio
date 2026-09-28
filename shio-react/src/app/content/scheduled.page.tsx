@@ -100,7 +100,8 @@ export default function ScheduledPage() {
         icon={CalendarClock}
         title={t("content.scheduledTitle")}
         subtitle={t("content.scheduledDescription")}
-        urlBase={`${ROUTES.CONSOLE}/content`}
+        urlBase={ROUTES.HOME}
+        backLabel={t("home.title")}
       />
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

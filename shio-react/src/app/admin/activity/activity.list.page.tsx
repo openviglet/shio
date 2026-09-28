@@ -152,7 +152,8 @@ export default function ActivityListPage() {
         title={t("activity.title")}
         eyebrow={t("admin.title")}
         subtitle={t("activity.description")}
-        urlBase={ROUTES.ADMIN_ROOT}
+        urlBase={ROUTES.HOME}
+        backLabel={t("home.title")}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {/*

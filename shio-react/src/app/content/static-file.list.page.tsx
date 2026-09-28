@@ -332,7 +332,8 @@ export default function StaticFileListPage() {
         icon={ImageIcon}
         title={t("staticFile.title")}
         subtitle={t("staticFile.description")}
-        urlBase={ROUTES.CONTENT_ROOT}
+        urlBase={ROUTES.HOME}
+        backLabel={t("home.title")}
       />
       <div
         className="relative"

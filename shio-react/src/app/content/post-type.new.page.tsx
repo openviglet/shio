@@ -45,7 +45,8 @@ export default function PostTypeNewPage() {
         icon={IconFileText}
         eyebrow={t("content.postType")}
         title={t("content.newPostType")}
-        urlBase={ROUTES.CONTENT_ROOT}
+        urlBase={ROUTES.POST_TYPE_ROOT}
+        backLabel={t("content.postTypes")}
       />
       <div>
         {/* SH902 — the hero above says "New Post Type", so this section says what it holds. */}

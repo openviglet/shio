@@ -125,7 +125,8 @@ export default function TenantPage() {
         title={t("tenantAdmin.title")}
         eyebrow={t("admin.title")}
         subtitle={t("tenantAdmin.description")}
-        urlBase={ROUTES.ADMIN_ROOT}
+        urlBase={ROUTES.ADMIN_TENANTS}
+        backLabel={t("tenantAdmin.title")}
       />
       <div>
         {/* Sticky save bar */}

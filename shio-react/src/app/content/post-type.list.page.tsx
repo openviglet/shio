@@ -47,7 +47,8 @@ export default function PostTypeListPage() {
         icon={IconFileText}
         eyebrow={t("sidebar.content")}
         title={t("content.postTypes")}
-        urlBase={ROUTES.CONTENT_ROOT}
+        urlBase={ROUTES.HOME}
+        backLabel={t("home.title")}
       />
       <div>
         <div className="flex items-center justify-between mb-4">

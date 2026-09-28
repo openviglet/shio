@@ -1127,3 +1127,24 @@ or no state at all, falls back to the site list as before. Router state rather t
 URL parameter keeps the search URL the shareable question SH1023 made it.
 
 ## XCI Finding, selecting and acting on content
+
+## LXXVI Documentation the matrix still names
+
+### LXXVI.1 The docs pass that fell behind the console round (SH1190)
+
+Two assertions in the cli suite went red during the console round that shipped SH1182 to
+SH1187, and neither is about code. SH758's coverage obligation counts the ids shipped
+since vigletdocs' COVERAGE.md was last mirrored here; it prints while the queue is short
+and fails past five, and it now holds six. SH861's sweep check reads the block
+declarations: Blocks AX and BI say their end-user sweep was done, and no commit since
+their last ship (SH1182 for AX, SH1183 for BI) touched README.md, shio-site or the
+coverage mirror.
+
+Both are the same debt from two sides. The fix is two commits in two repositories: name
+the ids in their cluster rows in vigletdocs/docs-shio/COVERAGE.md, and here run `pnpm
+run coverage:mirror`, together with whatever README or shio-site sentence the AX and BI
+surfaces now owe. If a surface owes no public sentence, the sweep claim is what changes,
+not a doc written to satisfy a check.
+
+Until this lands, both assertions are declared in red-suites.json against this task, so
+work on the console can commit over them without the red going quiet.

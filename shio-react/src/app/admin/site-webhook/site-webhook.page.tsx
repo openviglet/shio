@@ -134,7 +134,8 @@ export default function SiteWebhookPage() {
         title={t("siteWebhook.title")}
         eyebrow={t("admin.title")}
         subtitle={t("siteWebhook.description")}
-        urlBase={ROUTES.ADMIN_ROOT}
+        urlBase={ROUTES.ADMIN_WEBHOOKS}
+        backLabel={t("siteWebhook.title")}
       />
       <div>
         {/* Sticky save bar */}

@@ -30,5 +30,6 @@
   "home.runPending": "{{count}} waiting",
   "home.runSettled": "settled",
   "home.runChanges": "{{count}} changes",
+  "home.runSession": "Session {{id}}",
   "home.attentionIncidents": "Incidents since boot"
 }

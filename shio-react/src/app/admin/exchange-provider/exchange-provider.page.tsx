@@ -153,7 +153,8 @@ export default function ExchangeProviderPage() {
         title={t("exchangeProvider.title")}
         eyebrow={t("admin.title")}
         subtitle={t("exchangeProvider.description")}
-        urlBase={ROUTES.ADMIN_ROOT}
+        urlBase={ROUTES.ADMIN_EXCHANGE_PROVIDERS}
+        backLabel={t("exchangeProvider.title")}
       />
       <div>
         {/* Sticky save bar */}

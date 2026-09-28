@@ -153,7 +153,8 @@ export default function AuthProviderPage() {
         title={t("authProvider.title")}
         eyebrow={t("admin.title")}
         subtitle={t("authProvider.description")}
-        urlBase={ROUTES.ADMIN_ROOT}
+        urlBase={ROUTES.ADMIN_AUTH_PROVIDERS}
+        backLabel={t("authProvider.title")}
       />
       <div>
         {/* Sticky save bar */}

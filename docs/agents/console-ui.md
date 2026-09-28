@@ -657,7 +657,12 @@ that switch.
 - **Large working surfaces compose the seams**, so their logic exists once — the content browser,
   the post and post-type editors, the infrastructure editors, review, activity, marketplace:
   - `PageHero` for the header, and for the save bar when the page has one: it renders
-    `BentoFormHero`, which owns both halves of the morph (SH901);
+    `BentoFormHero`, which owns both halves of the morph (SH901). Its `urlBase` is the page's
+    **real parent** in the rail's tree, never the nearest root constant: a rail surface goes to
+    `ROUTES.HOME` labelled "Home", an editor to its own list, a folder to its parent listing, a
+    translation or language board to its post or site. `/bento/content` is the site list and
+    `/bento/admin` only redirects to users, so neither is a parent of anything else
+    (`hero-back-links.test.mjs`, SH1189);
   - `Panel` for a panel with nothing to title — a count, a toolbar, a listing;
   - `AdaptiveSectionCard` for a titled section, with `StaticHeader`/`Header` and `Content` as its
     **direct** children. Without a header it renders a plain card rather than the frosted section,
