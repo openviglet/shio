@@ -1454,6 +1454,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH700** — The docs repo's thirteen commits are on origin, so the gate reads 19 of 19 against the same published state CI reads, and the dated exception comes out with it.
 - **SH715** — The redirect plugin lands first and the hub moves to curator-approves-it second, so the old address still answers - proved by a build where removing the redirect makes it vanish.
 - **SH747** — docs-coverage.conformance.mjs ratchets the count of shipped ids the matrix does not name: 510 today, and the 511th fails the run naming it, where a per-id rule would have opened at 524 of 703.
+- **SH1190** — COVERAGE.md names SH1182-SH1189 in their cluster rows and the mirror is regenerated, so the AX, BD and BI sweep claims hold and red-suites.json is empty again.
 
 ## Block V — The vocabulary proved live (integration tests against a running instance)
 

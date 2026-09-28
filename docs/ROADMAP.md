@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block U — Documentation the matrix still names
-
-- 📋 **SH1190** (deps: —) **The docs pass owed since SH1182 is unpaid: COVERAGE.md misses six ids and Blocks AX and BI claim a sweep** — Two pnpm test assertions stay red until vigletdocs names the ids and the AX and BI sweep touches README or shio-site. → §LXXVI.1
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

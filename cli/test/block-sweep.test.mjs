@@ -81,6 +81,14 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  U: {
+    swept: true,
+    why: "documentation the matrix still names, closed by SH1190: the console round's ids "
+      + "SH1182-SH1189 named in COVERAGE's Block AX, Block BD and instruments rows, committed in "
+      + "vigletdocs and the mirror regenerated here, which is also what paid the AX, BD and BI sweep "
+      + "claims. README and shio-site are NOT moved: the pass named work in the matrix and changed "
+      + "no claim either of them makes",
+  },
   AY: {
     swept: true,
     why: "what the conformance instruments cannot see: a line of instrument rounds and their "
@@ -104,18 +112,21 @@ const SWEEP = {
     why: "the areas the round did not reach, closing with SH1177 (peer ranges checked on every test "
       + "run) and SH1102 (the roadmap's docs gate bare and on every push, once roadkeep 0.2.511 fixed "
       + "RK1707 and RK1708), then reopened once for SH1181 (the build's ten deprecation warnings, "
-      + "replaced and held by a lint). docs-shio moved: COVERAGE's instruments row names all three, "
-      + "with the mirror regenerated. README and shio-site are NOT moved: neither describes the "
-      + "build's own gates",
+      + "replaced and held by a lint), and once more for SH1183 (the Java gate green without a React "
+      + "build). docs-shio moved: COVERAGE's instruments row names all four, with the mirror "
+      + "regenerated (SH1190). README and shio-site are NOT moved: neither describes the build's own "
+      + "gates",
   },
   BD: {
     swept: true,
     why: "finding, selecting and acting on content: the filter bar over the query vocabulary, the "
       + "browser's views and keyboard, bulk verbs through the writer an agent's batch uses, and the "
       + "round closing with SH1148 (the table view controlled by the page's selection, so select-all "
-      + "and invert are back) and SH1178 (the bulk plan marked the way the diff marks a change). "
-      + "docs-shio moved: content-console gained both and COVERAGE's rows name them, with the mirror "
-      + "regenerated. README and shio-site are NOT moved: their batch claims are about the agent's "
+      + "and invert are back) and SH1178 (the bulk plan marked the way the diff marks a change), "
+      + "then reopened for SH1184-SH1189 (search in a folder and back to it, empty facets gone, real "
+      + "back links). docs-shio moved: content-console gained SH1148 and SH1178 and COVERAGE's Block "
+      + "BD row names every id, with the mirror regenerated (SH1190). README and shio-site are NOT "
+      + "moved: their batch claims are about the agent's "
       + "planned batches, which this block did not change",
   },
   BA: {
@@ -133,8 +144,9 @@ const SWEEP = {
     why: "the Viglet assistant: one dock where the console reports how things ended, agent runs "
       + "and scheduled publishing in it, a conversation with the connected agent, the same dock in "
       + "the Universal Editor, and SH971 closing it with a per-curator choice of what it reports and "
-      + "whether its mascot moves. docs-shio moved: content-console gained the mascot switch and "
-      + "COVERAGE's Block AX row names SH971 whole, with the mirror regenerated. README and shio-site "
+      + "whether its mascot moves, reopened for SH1182 (toasts hidden while a dock is mounted). "
+      + "docs-shio moved: content-console gained the mascot switch and COVERAGE's Block AX row names "
+      + "SH971 and SH1182, with the mirror regenerated (SH1190). README and shio-site "
       + "are NOT moved: neither describes the console's dock",
   },
   AU: {
