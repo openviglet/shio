@@ -938,24 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.32 LV.32 One primary action, and where the rest go (SH1195)
-
-In the 2026-09-28 captures the site browser header and toolbar hold Ver Site (filled
-green), Propriedades do Site, Novo Menu, a tile icon, Nova Pasta, Importar, Mais
-filtros, Ordem, Selecionar, a disabled Ação em Lote and Baixar Site (filled green
-again). That is two filled primaries, neither in the brand colour, and a disabled bulk
-menu shown before anything is selected. The post editor puts Visualizar, EN and Ações
-all in orange outline or fill. Post-type edit shows Gerenciado por código, Salvar,
-Salvar e Fechar and Cancelar, in three styles, on a type the banner below says is
-read-only. Site edit and Novo Site pair a dim filled Salvar Alterações with a bright
-orange-outlined Cancelar, so the escape hatch is louder than the goal. Trash repeats
-Excluir permanentemente in red on every row. The rule the concept applies (artboards 02,
-03 and 05) is that each screen has one filled orange primary (Novo, Publicar, Salvar),
-at most two outlined secondaries, and a ⋯ overflow for the rest. Destructive actions
-live in that menu or at the end of a form, and bulk actions appear in a selection bar
-only once a row is checked. A read-only screen shows no save buttons at all. SH1191's
-census counts filled primaries per route, so this lands as that number reaching one.
-
 ### LV.33 LV.33 Forms as setting rows, with one save bar (SH1196)
 
 Token, E-mail, Site, Post type and Auth provider editors are built as cards. Each

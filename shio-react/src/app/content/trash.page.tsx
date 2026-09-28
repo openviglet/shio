@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { RotateCcw, X, Folder, FileText, Globe } from "lucide-react"
+import { RotateCcw, Trash2, Folder, FileText, Globe } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { BentoFilterBar, type BentoFilterFacet, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
+import { BentoActionsMenu, BentoFilterBar, type BentoFilterFacet, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { FACET_TYPE, countLocally, fromBarValue, matchesLocally, toBarValue, withCounts } from "@/lib/filter-bar"
 // SH1024 — the trash's filters live in its URL, like every other list's (SH1023).
 import { useListState } from "@/hooks/use-list-state"
@@ -235,14 +235,20 @@ export default function TrashPage() {
                       <Badge variant="outline">{row.label}</Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      {/*
+                        SH1195 — the destructive verb lives in the row's menu, not beside Restore:
+                        "Excluir permanentemente" in red on every row was the loudest thing on the
+                        page, on the page whose point is getting things back.
+                      */}
+                      <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={() => restore(row)}>
                           <RotateCcw className="mr-2 h-4 w-4" /> {t("content.trashRestore")}
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive"
-                          onClick={() => purge(row)}>
-                          <X className="mr-2 h-4 w-4" /> {t("content.trashPurge")}
-                        </Button>
+                        <BentoActionsMenu
+                          triggerLabel={t("content.trashMoreActions", { name: row.title })}
+                          actions={[{ id: `${row.kind}.purge`, label: t("content.trashPurge"), icon: Trash2,
+                            tone: "destructive", onSelect: () => void purge(row) }]}
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

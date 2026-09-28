@@ -1662,6 +1662,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1192** — Page heroes draw no icon beside the title, multi-section editors left the narrow column, and folders and posts name their ancestors in a trail; each column has one title offset.
 - **SH1193** — Each rail section opens its hub at /bento/areas/<section>, every surface grouped four or fewer, so Trash, Media and Tokens are one click from the rail; Users is a declared surface.
 - **SH1194** — The eight admin lists and the site list render a sortable table with the tile's fields as columns; the look census counted nine tiled lists before and none after.
+- **SH1195** — No button fills itself outside --primary, site and trash verbs moved into their ⋯ menus, bulk verbs wait for a selection and a read-only type offers no save; primary fills went from five colours to four.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

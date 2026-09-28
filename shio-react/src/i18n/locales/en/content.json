@@ -208,6 +208,7 @@
   "content.trashRestored": "Restored from trash",
   "content.trashSection": "Folder",
   "content.trashPurge": "Delete permanently",
+  "content.trashMoreActions": "More actions for {{name}}",
   "content.trashPurgeConfirm": "Permanently delete \"{{name}}\"? This cannot be undone.",
   "content.trashPurgeSectionConfirm": "Permanently delete \"{{name}}\" and everything inside it? This cannot be undone.",
   "content.trashPurged": "Permanently deleted",

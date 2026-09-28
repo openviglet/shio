@@ -11,14 +11,13 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1195** (deps: SH1192 ✅) **Screens carry several primary styles: the site browser shows 8 toolbar buttons in 4 styles and two greens beside orange** — One filled primary per screen, secondary outlined, destructive in the overflow menu, is what tells a curator where the next step is. → §LV.32
 - 📋 **SH1196** (deps: SH1192 ✅) **Settings forms are stacks of icon-headed cards with the save button in the hero; nothing says a field was changed** — A settings-row layout with one sticky save bar that names the unsaved change stops edits being lost and makes every form look alike. → §LV.33
-- 📋 **SH1197** (deps: SH1195) **Review queue rows all read "Nenhuma intenção declarada", each with its own filled Aprovar button** — A triage list that leads with the run id and change counts, and approves a selection in one action, is what makes reviewing 25 runs feasible. → §LV.34
+- 📋 **SH1197** (deps: SH1195 ✅) **Review queue rows all read "Nenhuma intenção declarada", each with its own filled Aprovar button** — A triage list that leads with the run id and change counts, and approves a selection in one action, is what makes reviewing 25 runs feasible. → §LV.34
 - 📋 **SH1198** (deps: VDS185 in viglet-design-system) **The mascot notice floats bottom-right over content: it covers row actions in Trash, Post types and tables** — Keeping the mascot as the one notice but docking it in a reserved shell slot means it can never hide a control the curator needs. → §LV.35
 - 📋 **SH1200** (deps: SH1194 ✅) **A group's page is a hero over empty space: it shows neither members nor roles, only an orange Cancelar** — The reason to open a group is to see who is in it and what it may do; a page without that sends the curator elsewhere. → §LV.38
 - 📋 **SH1202** (deps: —) **Copy contradicts itself: Search promises published content but lists drafts; Activity rows are English in pt** — A curator trusts what a page says it shows; one wrong subtitle and a mixed language log both read as the product being unsure of itself. → §LV.37
-- 📋 **SH1203** (deps: SH1195) **Content browser rows are 80 px cards with a numbered circle, blue link titles and five pills each; 12 rows fill a screen** — A site tree beside a dense table (type, state, language, changed as columns) is how a curator scans and acts on a folder of fifty posts. → §LV.39
-- 📋 **SH1204** (deps: SH1195) **The post editor labels every field with widget-type pills (Title, Text, Ace Editor - HTML) and hides the post's state** — A curator edits content, not widgets: state and address belong in the header, and field chrome should be a label and a help line. → §LV.40
+- 📋 **SH1203** (deps: SH1195 ✅) **Content browser rows are 80 px cards with a numbered circle, blue link titles and five pills each; 12 rows fill a screen** — A site tree beside a dense table (type, state, language, changed as columns) is how a curator scans and acts on a folder of fifty posts. → §LV.39
+- 📋 **SH1204** (deps: SH1195 ✅) **The post editor labels every field with widget-type pills (Title, Text, Ace Editor - HTML) and hides the post's state** — A curator edits content, not widgets: state and address belong in the header, and field chrome should be a label and a help line. → §LV.40
 
 ## Block AV — The live defects, fixed before anything is built on them
 

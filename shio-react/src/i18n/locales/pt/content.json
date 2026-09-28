@@ -208,6 +208,7 @@
   "content.trashRestored": "Restaurado da lixeira",
   "content.trashSection": "Pasta",
   "content.trashPurge": "Excluir permanentemente",
+  "content.trashMoreActions": "Mais ações para {{name}}",
   "content.trashPurgeConfirm": "Excluir permanentemente \"{{name}}\"? Esta ação não pode ser desfeita.",
   "content.trashPurgeSectionConfirm": "Excluir permanentemente \"{{name}}\" e todo o seu conteúdo? Esta ação não pode ser desfeita.",
   "content.trashPurged": "Excluído permanentemente",

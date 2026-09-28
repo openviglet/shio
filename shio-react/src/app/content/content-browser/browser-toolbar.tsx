@@ -43,7 +43,6 @@ import { searchBackState, type BrowserView } from "./browser-view"
 
 export interface BrowserToolbarProps {
   objectId: string
-  siteId: string | null
   /** The list state: the filters, the sort and the view, all of which live in the URL (SH1023). */
   list: ReturnType<typeof useListState<keyof typeof BROWSER_LIST & string>>
   sortBy: string
@@ -64,7 +63,7 @@ export interface BrowserToolbarProps {
 }
 
 export function BrowserToolbar({
-  objectId, siteId, list, sortBy, viewMode, lastPostType, breadcrumbPath, searchHereHref,
+  objectId, list, sortBy, viewMode, lastPostType, breadcrumbPath, searchHereHref,
   selectedItems, onSelectAction, onBatchAction, onPlanBulk, onPick, navigate, t,
 }: BrowserToolbarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -214,9 +213,10 @@ export function BrowserToolbar({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DropdownMenu>
+        {/* SH1195 — the bulk verbs appear once there is a selection to act on, not disabled before it. */}
+        {selectedItems.size > 0 && <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={selectedItems.size === 0}>{t("content.actionInBatch")} <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
+            <Button variant="outline" size="sm">{t("content.actionInBatch")} <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onPick("copy", [...selectedItems])}><Copy className="mr-2 h-4 w-4" /> {t("content.copy")}</DropdownMenuItem>
@@ -232,13 +232,8 @@ export function BrowserToolbar({
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onBatchAction("delete")} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> {t("common.delete")}</DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu>}
 
-        {siteId && (
-          <Button size="sm" className="bg-green-700 hover:bg-green-800 text-white" onClick={() => window.open(`/api/v2/site/${siteId}/export`, "_blank")}>
-            <Download className="mr-2 h-4 w-4" /> {t("content.downloadSite")}
-          </Button>
-        )}
       </div>
 
       {/* Sub-toolbar: breadcrumb path + search/view icons */}

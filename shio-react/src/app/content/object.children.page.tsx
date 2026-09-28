@@ -8,7 +8,7 @@ import { PermissionsDialog } from "@/components/permissions.dialog"
 import { Folder, FileText, Download, Eye, Settings, Copy, Move, Trash2 } from "lucide-react"
 // SH1020 — the row actions live in the design system's menu, which is where the site list put
 // its four in its own sweep.
-import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
+import { BentoActionsMenu, BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { contentFacets, fromBarValue, toBarValue, withCounts } from "@/lib/filter-bar"
 import {
   browserView, heroTrail, listboxClass, optionClass, relativeDate, searchHereFor,
@@ -287,8 +287,8 @@ export default function ObjectChildrenPage() {
   return (
     <>
       {/*
-        SH900 — the two site-level actions ride in the hero as `actions`, beside the title, where
-        the save-bar morph expects them.
+        SH900 — the site-level actions ride in the hero. SH1195 — none of them is the page's primary:
+        Ver Site is a secondary, and Properties and Download Site share the overflow menu.
       */}
       <PageHero
         title={breadcrumbPath.at(-1)?.name || siteName || t("content.browsing")}
@@ -298,25 +298,15 @@ export default function ObjectChildrenPage() {
         backLabel={t("content.sites")}
         actions={siteId ? (
           <>
-            {/*
-              A hardcoded green, carried over when these actions moved into the hero. The package
-              expresses a primary action as a tone, and choosing that tone is still open.
-            */}
-            <Button
-              variant="default"
-              size="sm"
-              className="bg-green-700 text-white hover:bg-green-800"
-              onClick={handleViewSite}
-            >
+            <Button variant="outline" size="sm" onClick={handleViewSite}>
               <Eye className="mr-2 h-4 w-4" /> {t("content.viewSite")}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/site/${siteId}`)}
-            >
-              <Settings className="mr-2 h-4 w-4" /> {t("content.siteProperties")}
-            </Button>
+            <BentoActionsMenu actions={[
+              { id: "site.properties", label: t("content.siteProperties"), icon: Settings,
+                onSelect: () => navigate(`${ROUTES.CONTENT_ROOT}/site/${siteId}`) },
+              { id: "site.export", label: t("content.downloadSite"), icon: Download,
+                onSelect: () => window.open(`/api/v2/site/${siteId}/export`, "_blank") },
+            ]} />
           </>
         ) : undefined}
       />
@@ -339,7 +329,6 @@ export default function ObjectChildrenPage() {
         */}
         <BrowserToolbar
           objectId={objectId}
-          siteId={siteId}
           list={list}
           sortBy={sortBy}
           viewMode={viewMode}

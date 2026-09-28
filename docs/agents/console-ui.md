@@ -3870,3 +3870,16 @@ Enter or a double click opens the row. Tiles are for entities a reader picks by 
 few, such as media, blueprints and a hub; a list page that asks for them is named in
 `record-lists.test.mjs` with its reason. The look census counted nine tiled lists before and none
 after.
+
+## One filled primary per screen (SH1195)
+
+The primary is `--primary`, which the default `Button` variant already reads, so no button in the
+console paints a saturated colour of its own; the site browser's two hardcoded greens were a second
+primary by construction. Secondary verbs are outlined, and verbs that are destructive or merely
+occasional go in `BentoActionsMenu`: the browser's site actions (Properties, Download Site) and the
+trash's permanent delete, one menu per row beside Restore. A verb that cannot run yet is not drawn
+disabled: the bulk menu appears once there is a selection. A read-only screen offers no save; a post
+type managed by code gets a plain hero and its banner. `one-primary.test.mjs` holds each rule. The
+census's `primary-fill` fell from five colours to four; its "more than one filled primary" count
+still names the e-mail, token and webhook editors, where the second fill is the save bar's hidden
+morph copy and the switches that are on, which is a reading to fix in the census rather than here.

@@ -901,30 +901,19 @@ export default function PostTypeEditPage() {
         urlBase={ROUTES.POST_TYPE_ROOT}
         backLabel={t("content.postTypes")}
         saveTitle={t("content.modelPostType", { title: title ?? "" })}
-        onCancel={() => navigate(ROUTES.POST_TYPE_ROOT)}
+        /*
+         * SH1195 — a type managed by code is read-only here, and the banner below says so. It showed
+         * Save, Save and Close and Cancel in three styles, all disabled but one: a read-only screen
+         * offers no save, so it gets a plain hero and the back link.
+         */
+        onCancel={managed ? undefined : () => navigate(ROUTES.POST_TYPE_ROOT)}
         loading={isLoading}
-        saveDisabled={managed}
-        actions={
+        actions={managed ? undefined : (
             <>
-              {managed && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      variant="outline"
-                      className="gap-1.5 border-violet-300 text-violet-600 dark:border-violet-700 dark:text-violet-400"
-                    >
-                      <Lock className="size-3.5" />
-                      {t("content.managedByCode")}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>{t("content.managedByCodeHint")}</TooltipContent>
-                </Tooltip>
-              )}
               <GradientButton
                 type="button"
                 size="sm"
                 loading={isLoading}
-                disabled={managed}
                 onClick={form.handleSubmit((data) => save(data, false))}
               >
                 <Save className="size-4" />
@@ -934,7 +923,7 @@ export default function PostTypeEditPage() {
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={isLoading || managed}
+                disabled={isLoading}
                 onClick={form.handleSubmit((data) => save(data, true))}
               >
                 {t("content.saveAndClose")}
@@ -943,7 +932,7 @@ export default function PostTypeEditPage() {
                 {t("common.cancel")}
               </GradientButton>
             </>
-          }
+          )}
       />
       <div className="space-y-6">
 
