@@ -1232,23 +1232,6 @@ exist to ration.
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
 
-### LXIV.26 LXIV.26 A census of the console's visual vocabulary (SH1191)
-
-A Playwright walk of all 45 console routes (dark, light and a 390 px phone) on
-2026-09-28 measured what no suite asserts. The page title starts at four different x
-offsets (140, 188, 208 and 380 px) because four header anatomies coexist: hero with a
-gradient chip, hero with a bare icon, a centred 832 px form column, and a flush editor.
-Visible buttons come in fifteen heights between 16 and 44 px and ten border radii;
-inputs are 36, 42 or 44 px; three monospace faces render (ui-monospace, JetBrains Mono,
-Fira Code); and two colours act as primary, the brand orange and a green on Ver Site and
-Baixar Site. None of this fails a test, which is why it accumulated one reasonable page
-at a time. The deliverable is the instrument, not the fix: an e2e check that visits
-every route declared in App.tsx, records title offset, control heights, radii, font
-families and the count of filled primary buttons per screen, writes the inventory to a
-JSON file, and asserts it against a declared allowance. The first run lands with today's
-numbers as the allowance and a named list of offenders, so every later task in the
-console redesign lowers a number instead of claiming an improvement.
-
 ## LXV What the content said before (Block AZ)
 
 A post in Shio has at most two rows, one draft and one published, under a composite key

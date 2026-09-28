@@ -3822,3 +3822,14 @@ states: `create` is added, `delete` is removed, `noop` is unchanged, and `update
 destructive badge, because a refusal is not a change. `change-mark.test.mjs` holds the mapping for
 every action, renders the real mark for each state, and reads the dialog's wiring. The dialog is
 TSX, which Node's type stripping cannot import.
+
+## How the console looks is measured, not reviewed (SH1191)
+
+`pnpm look` runs the design system's census (VDS180) against this console. It walks every route
+under `/bento` in desktop dark, desktop light and a 390 px phone, attributes each button height,
+radius, font, primary fill and title offset to package or product code, and fails when a figure grows
+past the allowance the design system keeps for `shio`. The census is not copied here, because a
+second census would be a second allowance. `scripts/look-census.mjs` finds the design system's
+checkout on the same version line (or `VIGLET_DS_CHECKOUT`) and passes this console's URL and
+`SHIO_USER`/`SHIO_PASSWORD`. A console task in the look round proves itself by the figure it lowers,
+and `pnpm look -- --write` records the lower reading in the design system's checkout.

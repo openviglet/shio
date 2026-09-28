@@ -42,6 +42,7 @@
     "conformance:docs": "node scripts/run-gate.mjs docs",
     "gates": "node scripts/gates-report.mjs",
     "gates:clear": "node scripts/gates-clear.mjs",
+    "look": "node scripts/look-census.mjs",
     "clean": "rimraf \"**/node_modules\" \"**/dist\" \"**/build\""
   },
   "devDependencies": {

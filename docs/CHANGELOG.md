@@ -1751,6 +1751,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1115** — `refresh` now records the matrix repository's own revision beside the ids — `matrix: { at, clean, provisional }`, where `provisional` names the ids `git show HEAD:./COVERAGE.md` does not carry — and `coverage-obligation.test.mjs` declines to credit those, so an id named only by an uncommitted edit still owes a row instead of reading as named forever. Marked rather than refused on purpose: a refusal makes the state unholdable and blocks the session that edits the matrix, mirrors and commits both, where naming the ids makes a re-run against the same dirty tree keep reporting; `at` stays this repository's HEAD, which is the field that looked like it covered this and answers a different question (design §LXIV.18 recorded in `docs/agents/docs-process.md`).
 - **SH1162** — SH1146's premise test asserts each platform's measured answer — reclaimed on Linux, held on Windows — so the JS gate is green on Windows again and a platform that changes fails by name (design §LXIV.26 recorded in `docs/agents/build.md`).
 - **SH1147** — No naive comment stripper is left: the five CLI scans read through the shared per-line uncommented, and the surface digest has its own per-line reading with byte-identical output (design §LXIV.25 recorded in `docs/agents/build.md`).
+- **SH1191** — pnpm look runs the design system's census (VDS180) against this console; its first run after 2026.3.15 read 23 button heights and 9 dock overlaps, both lower.
 
 ## Block AZ — What the content said before
 

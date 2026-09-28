@@ -11,7 +11,7 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1192** (deps: SH1191) **Four page-header anatomies: the title starts at 140, 188, 208 or 380 px depending on the route** — One header (trail, H1, one-line description, actions right) on every route is what makes the pages read as one product. → §LV.29
+- 📋 **SH1192** (deps: SH1191 ✅) **Four page-header anatomies: the title starts at 140, 188, 208 or 380 px depending on the route** — One header (trail, H1, one-line description, actions right) on every route is what makes the pages read as one product. → §LV.29
 - 📋 **SH1193** (deps: VDS181 in viglet-design-system) **The nav rail is three unlabelled icons over 45 routes; Trash, Media and Tokens are reachable only by URL or tiles** — Restore the bento hubs as the second level, so every section's items are one click from the rail; rail labels come from the DS. → §LV.30
 - 📋 **SH1194** (deps: SH1192) **Admin lists are tile mosaics: one user fills a 390x300 card with a glow and two thirds of the screen stay empty** — Records people scan and compare belong in a table with columns, filters and row actions; tiles only suit a few visual items. → §LV.31
 - 📋 **SH1195** (deps: SH1192) **Screens carry several primary styles: the site browser shows 8 toolbar buttons in 4 styles and two greens beside orange** — One filled primary per screen, secondary outlined, destructive in the overflow menu, is what tells a curator where the next step is. → §LV.32
@@ -22,10 +22,6 @@
 - 📋 **SH1202** (deps: —) **Copy contradicts itself: Search promises published content but lists drafts; Activity rows are English in pt** — A curator trusts what a page says it shows; one wrong subtitle and a mixed language log both read as the product being unsure of itself. → §LV.37
 - 📋 **SH1203** (deps: SH1195) **Content browser rows are 80 px cards with a numbered circle, blue link titles and five pills each; 12 rows fill a screen** — A site tree beside a dense table (type, state, language, changed as columns) is how a curator scans and acts on a folder of fifty posts. → §LV.39
 - 📋 **SH1204** (deps: SH1195) **The post editor labels every field with widget-type pills (Title, Text, Ace Editor - HTML) and hides the post's state** — A curator edits content, not widgets: state and address belong in the header, and field chrome should be a label and a help line. → §LV.40
-
-## Block AY — What the conformance instruments cannot see
-
-- 📋 **SH1191** (deps: VDS180 in viglet-design-system) **Nothing measures console visual consistency: 15 button heights, 10 radii and 4 title offsets pass every gate** — SH338 applies to a look as much as a law: a census of every route lands first, so the redesign is measured rather than argued. → §LXIV.26
 
 ## Block AV — The live defects, fixed before anything is built on them
 

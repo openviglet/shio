@@ -93,8 +93,9 @@ const SWEEP = {
     swept: true,
     why: "what the conformance instruments cannot see: a line of instrument rounds and their "
       + "corrections, ending with SH1162 (a socket premise measured on one platform) and SH1147 (the last "
-      + "hand-written comment strippers). docs-shio moved: COVERAGE's instruments row names both and the "
-      + "mirror is regenerated. README and shio-site are NOT moved: neither describes the test "
+      + "hand-written comment strippers), then reopened for SH1191 (pnpm look, the design system's look "
+      + "census run against this console). docs-shio moved: COVERAGE's instruments row names all three and "
+      + "the mirror is regenerated. README and shio-site are NOT moved: neither describes the test "
       + "instruments, and no count or claim they state changed",
   },
   BC: {
