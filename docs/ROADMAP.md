@@ -15,7 +15,6 @@
 
 ## Block BD — Finding, selecting and acting on content
 
-- 📋 **SH1148** (deps: design system: BentoDataTable gains a controlled selectedIds beside onSelectionChange) **the table view has no select-everything and no invert, because the table takes no selection in** — SH1142 removed the two rather than leave them inert; they return when the table can be told. → §LXIX.13
 - 📋 **SH1178** (deps: —) **the bulk plan labels each change with the server's raw English action word, and a delete looks like a no-op** — It is where a curator confirms a batch, and design system 2026.3.13 ships BentoChangeMark for exactly this list. → §LXIX.14
 
 ## Block BI — The areas this round did not reach

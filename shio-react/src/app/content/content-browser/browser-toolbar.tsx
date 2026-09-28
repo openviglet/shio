@@ -53,7 +53,7 @@ export interface BrowserToolbarProps {
   /** SH1027 — where "search this folder" goes, or null before the breadcrumb has landed. */
   searchHereHref: string | null
   selectedItems: Set<string>
-  /** SH1142 — the Select menu; absent in the table view, where the table owns the selection. */
+  /** The Select menu (SH1148: in every view, since the table is controlled by the page's set). */
   onSelectAction: (action: string) => void
   onBatchAction: (action: string) => void
   onPlanBulk: (op: "PUBLISH" | "UNPUBLISH") => void
@@ -192,23 +192,12 @@ export function BrowserToolbar({
         </Select>
 
         {/*
-          SH1142 — not in the table view, because there it would lie.
-
-          `BentoDataTable` owns its selection and reports it through `onSelectionChange`, which
-          this page copies into `selectedItems`. It takes no selection IN: its props have no
-          `selectedIds`, where `layout` *is* controlled beside `onLayoutChange`. So the flow runs
-          one way, and every item in this menu writes `selectedItems` without the table hearing
-          it — nothing on screen changed, and the next click in the table reported its own set and
-          overwrote the choice. A curator who picked "Select all" and then Delete deleted whatever
-          the table last had ticked, while the confirm dialog counted this page's set: the number
-          and the rows could disagree.
-
-          One control for one selection, then: in the table view the table's own header checkbox
-          selects all and Escape clears, and this menu is absent rather than inert. The real fix
-          is a controlled `selectedIds` on the component, and this comes back the moment the
-          design system ships it.
+          SH1148 — in every view again. SH1142 took this menu out of the table view because the
+          table took no selection in: every item wrote `selectedItems` and nothing on screen
+          changed, so "Select all" then Delete could delete whatever the table last had ticked while
+          the dialog counted another set. Since VDS174 the table is controlled by `selectedIds`, so
+          what this menu writes is what the table ticks, and there is one selection in every view.
         */}
-        {viewMode !== "spreadsheet" && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">{t("content.select")} <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
@@ -222,7 +211,6 @@ export function BrowserToolbar({
             <DropdownMenuItem onClick={() => onSelectAction("nothing")}>{t("content.selectNothing")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

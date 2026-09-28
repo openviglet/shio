@@ -1121,33 +1121,6 @@ verbs are the agent's verbs wearing a console shape. The command palette stops l
 seventeen routes and starts finding content and running actions compiled from the same
 operation registry the agent reads.
 
-### LXIX.13 A selection the page can set, from the component's side (SH1148)
-
-SH1142 took the correction available on this side: the toolbar's Select menu and the
-selection bar's Clear do not render in the table view, so the table's header checkbox
-and Escape are the one control for the one selection. That is right and it is a
-subtraction — a curator in the table view has no "select every post in this folder",
-which the list view has had since SH237, and no invert.
-
-The cause is a prop that is missing rather than anything wrong here. `BentoDataTable`
-reports its selection through `onSelectionChange` and takes none in, where the same
-component's column `layout` **is** controlled beside `onLayoutChange`. One of the two
-was finished.
-
-So the package gains `selectedIds` beside `onSelectionChange`, the browser passes
-`selectedItems` in, and the two controls come back in every view — with `SH1142`'s lint
-then holding the stronger property it cannot state today: that the page's set and the
-ticked rows are the same object rather than two that agree by habit. the assertion
-SH1142 could not write becomes writable at that point — choose "Select all", and the
-table's checked rows are the page's selection.
-
-Not by remounting the table with a `key`: it mounts only the visible rows of a folder of
-four thousand, and remounting to communicate a checkbox throws that window away on every
-click.
-
-The assertion is the restored menu selecting every row in the table view, and the count
-in the confirm dialog equal to the ticked rows.
-
 ### LXIX.14 The bulk plan marks its changes the way the diff does (SH1178)
 
 The content browser's bulk plan (`bulk-plan.dialog.tsx`) lists what a batch would do,

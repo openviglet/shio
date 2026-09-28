@@ -38,6 +38,11 @@ export interface BrowserTableProps {
    * are the toolbar's own, which act on the selection `onSelectionChange` has just reported.
    */
   selectionActions: readonly BentoDataTableAction<BrowserRow>[]
+  /**
+   * SH1148 — the page's selection, handed IN (VDS174), so the table ticks exactly these rows and the
+   * toolbar's Select menu and the selection bar's Clear write the one set the table shows.
+   */
+  selectedIds: readonly string[]
   onSelectionChange: (ids: string[]) => void
   onOpen: (row: BrowserRow) => void
   /** After an inline edit saved: the page reads its rows again, so the listing shows the new title. */
@@ -67,7 +72,7 @@ function useStoredLayout(key: string): [BentoDataTableLayout, (layout: BentoData
 }
 
 export function BrowserTable({
-  rows, scope, actionsFor, selectionActions, onSelectionChange, onOpen, onEdited,
+  rows, scope, actionsFor, selectionActions, selectedIds, onSelectionChange, onOpen, onEdited,
 }: BrowserTableProps) {
   const { t } = useTranslation()
   const { user } = useCurrentUser()
@@ -134,6 +139,7 @@ export function BrowserTable({
       label={t("content.browserList")}
       rowActions={rowActions}
       selectionActions={selectionActions}
+      selectedIds={selectedIds}
       onSelectionChange={onSelectionChange}
       selectionScope={scope}
       layout={layout}

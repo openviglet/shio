@@ -62,6 +62,7 @@ export default function ObjectChildrenPage() {
     () => ({ folder: objectId, ids: new Set() }),
   )
   const selectedItems = selection.folder === objectId ? selection.ids : EMPTY_SELECTION
+  const selectedIdList = useMemo(() => [...selectedItems], [selectedItems])
   const setSelectedItems = useCallback(
     (next: Set<string> | ((prev: Set<string>) => Set<string>)) =>
       setSelection((prev) => {
@@ -400,6 +401,7 @@ export default function ObjectChildrenPage() {
                 scope={`${objectId}|${list.key}`}
                 actionsFor={rowActions}
                 selectionActions={tableSelectionActions}
+                selectedIds={selectedIdList}
                 onSelectionChange={(ids) => setSelectedItems(new Set(ids))}
                 onOpen={handleItemClick}
                 onEdited={() => void refreshList()}
@@ -495,10 +497,8 @@ export default function ObjectChildrenPage() {
         </Panel>
 
         {/*
-          Selection info bar — SH1142: not in the table view, for the same reason as the menu above.
-          Its Clear writes `selectedItems` and the table would go on showing the rows ticked, and the
-          count beside it would be a second count next to the one the table's own selection bar
-          draws. Escape clears there.
+          Selection info bar, not in the table view: the table draws its own count and Clear there,
+          and since SH1148 both act on this same set, so this would be the same count drawn twice.
         */}
         {viewMode !== "spreadsheet" && selectedItems.size > 0 && (
           <div className="flex items-center gap-3 text-sm text-muted-foreground">

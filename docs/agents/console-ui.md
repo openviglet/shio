@@ -3749,3 +3749,17 @@ showed one pane with the phone switch still visible. Both panes were in the DOM,
 source test passed over it. `console-check.mjs`'s `split-pages` probe reads what is **visible**:
 two labelled sections at 1440px, and one plus two tabs at 390px, on both routes. Run against the
 old workspace, it fails.
+
+## The table view is controlled by the page's selection (SH1148)
+
+`BrowserTable` hands `BentoDataTable` the page's own set as `selectedIds` (design system 2026.3.13,
+VDS174, filed from here). The page builds that array once per set with `useMemo`, so an
+unchanged selection is an unchanged prop. So the table ticks exactly what the page holds, and the
+toolbar's Select menu is back in every view. SH1142 had taken it out of the table view because
+the menu wrote a set the table never heard. The page's own selection bar stays out of the table
+view only because the table draws a count and **Clear selection** of its own on the same set.
+
+`browser-views.test.mjs` reads both ends of the flow. `console-check.mjs`'s `table-select-all`
+chooses "Everything" and then "Invert" in the table view and reads the table's own
+`aria-selected` rows and count: 7/7, then 0/7. With `selectedIds` removed it reads 0/7 and fails,
+which is SH1142's defect exactly.

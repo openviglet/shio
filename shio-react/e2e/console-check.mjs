@@ -963,6 +963,76 @@ async function checkSplitPages(browser, postId) {
   return probe
 }
 
+/**
+ * SH1148 — in the table view, the Select menu's "Everything" ticks every row the table shows, and
+ * "Invert" then unticks them.
+ *
+ * SH1142's defect was invisible on screen by construction: the menu wrote a set the table never
+ * heard, so the rows stayed as they were. So this reads the table's own ticks (`aria-selected`)
+ * and its own count, not the page's state, after choosing from the menu the page renders.
+ */
+async function checkTableSelectAll(context, site) {
+  const probe = { name: "table-select-all", path: "/console/content/object/{folder} (table view)", ok: true,
+    errors: [], warnings: [], failedRequests: [] }
+  let folder
+  try {
+    const root = await api(`/object/${site.id}/list?page=0`)
+    for (const candidate of root.folders ?? []) {
+      const listing = await api(`/object/${candidate.id}/list?page=0`)
+      const size = (listing.folders ?? []).length + (listing.posts ?? []).length
+      if (size >= 3) { folder = { id: candidate.id, size }; break }
+    }
+  } catch (e) {
+    probe.skipped = `could not list the site's folders: ${e.message}`
+    return probe
+  }
+  if (!folder) {
+    probe.skipped = "no folder of this site holds three items, so select-all would prove little"
+    return probe
+  }
+  const page = await context.newPage()
+  try {
+    await page.goto(`${BASE}/console/content/object/${folder.id}`, { waitUntil: "networkidle" })
+    await page.getByRole("button", { name: /^(table view|ver como tabela)$/i }).click()
+    await page.locator("[role=row][aria-selected]").first().waitFor({ timeout: 10_000 })
+    const choose = async (item) => {
+      await page.getByRole("button", { name: /^(select|selecionar)$/i }).click()
+      await page.getByRole("menuitem", { name: item }).click()
+      await page.waitForTimeout(300)
+    }
+    const ticks = () => page.evaluate(() => ({
+      rows: document.querySelectorAll("[role=row][aria-selected]").length,
+      ticked: document.querySelectorAll("[role=row][aria-selected=true]").length,
+    }))
+    await choose(/^(everything|tudo)$/i)
+    const all = await ticks()
+    probe.afterAll = `${all.ticked}/${all.rows}`
+    if (all.rows < 3 || all.ticked !== all.rows) {
+      probe.ok = false
+      probe.errors.push(`SH1148: "Everything" in the table view left ${all.ticked} of ${all.rows} row(s) ticked`
+        + " — the menu wrote a selection the table did not show, which is SH1142's defect")
+    }
+    const counted = await page.getByText(new RegExp(`\\b${all.rows} (selected|selecionad)`, "i")).count()
+    if (counted === 0) {
+      probe.ok = false
+      probe.errors.push(`SH1148: the table's own count does not read ${all.rows} after "Everything"`)
+    }
+    await choose(/^(invert selection|inverter seleção)$/i)
+    const inverted = await ticks()
+    probe.afterInvert = `${inverted.ticked}/${inverted.rows}`
+    if (inverted.ticked !== 0) {
+      probe.ok = false
+      probe.errors.push(`SH1148: "Invert" after "Everything" left ${inverted.ticked} row(s) ticked`)
+    }
+  } catch (e) {
+    probe.ok = false
+    probe.errors.push(`could not drive the table's selection: ${String(e).split("\n")[0]}`)
+  } finally {
+    await page.close()
+  }
+  return probe
+}
+
 /** Count the widget cards a form rendered, without depending on any one widget's markup. */
 async function countFields(page) {
   return page.evaluate(() => {
@@ -1971,6 +2041,18 @@ async function main() {
   console.log(`${widthsProbe.ok ? "ok  " : "FAIL"} ${widthsProbe.name.padEnd(30)} `
     + `${widthsProbe.runs} axe run(s) at ${A11Y_VIEWPORTS.map((v) => v.width).join(" and ")}px`)
   for (const e of widthsProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
+
+  // SH1148 — the restored Select menu, read back from the table's own ticks.
+  const selectProbe = await checkTableSelectAll(context, site)
+  if (STRICT && selectProbe.skipped) {
+    selectProbe.ok = false
+    selectProbe.errors.push(`--strict: the table's select-all must run, and it skipped — ${selectProbe.skipped}`)
+  }
+  report.probes.push(selectProbe)
+  console.log(`${selectProbe.ok ? "ok  " : "FAIL"} ${selectProbe.name.padEnd(30)} `
+    + (selectProbe.skipped ? `skipped: ${selectProbe.skipped}`
+      : `everything ${selectProbe.afterAll}, then invert ${selectProbe.afterInvert}`))
+  for (const e of selectProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   // SH1094 — both panes where there is room, one and a switch where there is not.
   const splitProbe = await checkSplitPages(browser, anyPost?.path.split("/").pop())
