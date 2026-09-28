@@ -1,6 +1,6 @@
 ---
 name: shio-roadmap-docs
-description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), which are owned by the roadkeep CLI and never hand-edited, plus their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule, the per-task end-user documentation decision (vigletdocs docs-shio), and the block-completion sweep — when a block's last task ships, docs-shio + shio-site + README.md are brought up to date in one pass. Use whenever adding a new task, choosing which block a task goes under (reuse an existing block; open a new one only when nothing can hold it, and title it generically), marking a task shipped, shipping, retiring, linting, editing any of those files or agents.md, picking the next SH-number, or finishing a block. Covers roadkeep, roadkeep.toml, task numbering, non-goals, keeping the files in sync, COVERAGE.md, sidebars-shio.ts, site-content.ts, and batching under /loop.
+description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), which are owned by the roadkeep CLI and never hand-edited, plus their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule, the per-task end-user documentation decision (vigletdocs docs-shio), and the block-completion sweep — when a block's last task ships, docs-shio + shio-site + README.md are brought up to date in one pass. Use whenever adding a new task, choosing which block a task goes under (route by job to a standing home block, reopen a finished one with block add <label>, open a new one only when nothing can hold it and title it generically, never one per round or finding), marking a task shipped, shipping, retiring, linting, editing any of those files or agents.md, picking the next SH-number, or finishing a block. Covers roadkeep, roadkeep.toml, task numbering, non-goals, keeping the files in sync, COVERAGE.md, sidebars-shio.ts, site-content.ts, and batching under /loop.
 ---
 
 # Roadmap & docs maintenance
@@ -94,12 +94,46 @@ real maximum block letter** — grep it to confirm before creating a block.
    irreversible outward-facing change.** A wrong task line is one `amend`; a wrong
    block is a heading, a ledger region that keeps it forever, and a four-surface
    sweep when it empties.
-   - **Read the candidates first.** `stats` lists the blocks that still hold open
-     lines. `grep -nE '^## Block' docs/CHANGELOG.md` lists **every** block ever
-     opened — including the ones the roadmap was pruned of, which are still
-     legitimate homes: a block emptied by a completed sweep is reopened simply by
-     adding a line to it. `list --block <x>` prints what an ambiguously-titled block
-     actually holds.
+   - **Read the candidates first: `block list`.** It prints **every** block ever
+     opened, with its title and counts, and names the ones the roadmap no longer
+     declares. A finished block is still a legitimate home, and **reopening one is
+     reuse, not a new block**: `block add <label> --title "<its ledger title,
+     verbatim>"` re-declares the heading, and `add --block <label>` then works. That
+     needs no proposal to the user. When the reopened block empties again, amend its
+     existing `SWEEP` entry in `cli/test/block-sweep.test.mjs` and don't add a second one
+     (Block BI was reopened this way for SH1181). `list --block <x>` prints what an
+     ambiguously-titled block actually holds.
+   - **Route by job to a standing home.** These blocks have titles generic enough
+     to take the next task of their kind. Look here before anything else:
+
+     | Job | Home |
+     |---|---|
+     | Agent surface: MCP, manifest, context pack, `/api/v2/agent/**` | **H** |
+     | Agent safety, review queue, confirm tokens, human-in-the-loop | **L** |
+     | Verification loop: verify, lint, render digest, perception | **K** |
+     | Gates, lints, conformance and the build's own instruments | **AY** |
+     | Token economy and response budgets | **M** |
+     | Content as files, the `shio` CLI | **I** |
+     | Blueprints and the Claude Code plugin | **J** |
+     | Renderer, layouts, regions, the visible site | **P** |
+     | Replication (`shio clone` and after) | **Q** |
+     | CDA / headless delivery · JS SDK DX | **A** · **B** |
+     | Import/export, portability · another CMS's model or editor | **G** · **AP** |
+     | Console: a surface the curator uses | **AR** |
+     | Console: cost, resilience, access, load budgets | **BG** |
+     | Console: authoring fields · finding/bulk · media · visual editor | **BC** · **BD** · **BE** · **BF** |
+     | Releases, scheduling, the publish gate · revisions | **BA** · **AZ** |
+     | The curator↔agent return channel, the assistant dock | **BB** · **AX** |
+     | Localization · the design system contract · Turing indexing | **BH** · **AU** · **AS** |
+     | A live defect found on a running instance | **AV** |
+     | End-user docs (docs-shio) · the public site | **R** · **S** |
+
+     The table routes a task. `block list` is still the authority on what exists.
+     A home that turns out wrong is fixed with one `amend`.
+   - **A finding filed mid-task goes where its parent is.** Put a follow-up, a bug
+     or an improvement found while working on SH\<n\> in SH\<n\>'s block if that block
+     is still open. If it isn't, use the home for the finding's job. Don't give a
+     round of work its own block, and don't give its findings one either.
    - **Match on the *job*, not the surface.** A block groups work by what it
      accomplishes, not by which directory it edits. A task touching `shio-react/`
      belongs to whichever block owns the human-curation job, not to a new block
@@ -107,11 +141,21 @@ real maximum block letter** — grep it to confirm before creating a block.
      title as covering the task, that is the block — even if the fit is loose.
    - **A new block requires a job no existing heading can honestly hold**, not merely
      work that feels new. Two tasks of a kind is not a block; it is two lines under
-     an existing one.
+     an existing one. **Under an autonomous run** (`/loop`, `execute-roadkeep-tasks`)
+     nobody can approve a new block. File the task under the closest home and name the
+     misfit in the run's report. Never run `block add` with a new label there.
+   - **The measured failure.** Blocks **X–AO** are 18 blocks holding 25 tasks, one to
+     three each. Their titles describe a moment ("What the gate round left", "Two
+     removals nobody is watching", "The revealed debt, next file", which repeats
+     AF). Nearly all of that work was gates and lints, and it belonged under one
+     instruments home. If a title names a round, a count, a sequel ("next", "the
+     rest of", "left behind", "follow-ups"), a task id or a single finding, it
+     describes a task line, not a block.
    - **When you genuinely must open one, name it for the capability, not for the
      task in hand.** `block add <label> --title "…"` (`--after` places it; the
-     **CHANGELOG** is authoritative for the highest letter, and retired labels are
-     never reused). The title has to be generic enough to hold *the next few
+     **CHANGELOG** is authoritative for the highest letter, and a new label never
+     takes a letter the ledger already has; reopening that letter is the reuse
+     above). The title has to be generic enough to hold *the next few
      plausible tasks of the same kind* — the block is a container for future work,
      not a label for this one. **The test is answerable before you type the title:
      name three plausible *future* tasks the heading would hold. If the second and
