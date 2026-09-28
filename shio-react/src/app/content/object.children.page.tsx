@@ -283,7 +283,7 @@ export default function ObjectChildrenPage() {
 
   // SH1027 — the search page's `folder:` address for this folder, or null before the breadcrumb
   // has landed. Pure, and beside the other pure view helpers since SH1145.
-  const searchHereHref = searchHereFor(siteName, breadcrumbPath)
+  const searchHereHref = searchHereFor(siteName, breadcrumbPath, ROUTES.SEARCH)
 
   return (
     <>

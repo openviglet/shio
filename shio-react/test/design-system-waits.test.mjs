@@ -101,7 +101,7 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.13"
+const PINNED = "2026.3.14"
 
 function manifest() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))

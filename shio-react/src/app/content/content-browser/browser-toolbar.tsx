@@ -20,6 +20,7 @@ import {
   Sheet, SlidersHorizontal, Trash2, Upload,
 } from "lucide-react"
 import { useState } from "react"
+import { useLocation } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -38,7 +39,7 @@ import type { ShPostType } from "@/models/post-type/post-type"
 import type { useListState } from "@/hooks/use-list-state"
 
 import { MORE_IGNORES, type BreadcrumbPathItem, type BROWSER_LIST } from "./browser-listing"
-import type { BrowserView } from "./browser-view"
+import { searchBackState, type BrowserView } from "./browser-view"
 
 export interface BrowserToolbarProps {
   objectId: string
@@ -58,7 +59,7 @@ export interface BrowserToolbarProps {
   onBatchAction: (action: string) => void
   onPlanBulk: (op: "PUBLISH" | "UNPUBLISH") => void
   onPick: (mode: "copy" | "move", ids: string[]) => void
-  navigate: (to: string) => void
+  navigate: (to: string, options?: { state?: unknown }) => void
   t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -67,6 +68,7 @@ export function BrowserToolbar({
   selectedItems, onSelectAction, onBatchAction, onPlanBulk, onPick, navigate, t,
 }: BrowserToolbarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const location = useLocation()
   return (
     <>
       {/* Toolbar: New Article | Grid | New Folder | Import || Order | Select | Action in Batch */}
@@ -257,7 +259,7 @@ export function BrowserToolbar({
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7"
                     aria-label={t("content.searchHere")}
-                    onClick={() => navigate(searchHereHref)}>
+                    onClick={() => navigate(searchHereHref, { state: searchBackState(location) })}>
                     <SlidersHorizontal className="h-4 w-4 rotate-90" />
                   </Button>
                 </TooltipTrigger>

@@ -2265,6 +2265,10 @@ folder and flags it `root`; `breadcrumbFrom` keeps that flag, and `searchHereFor
 name is dropped — `createBlank` names it after the site, which drew `site/site/menu` — while a root
 with a name of its own ("Home") stays as a step.
 
+**The search route is passed, never defaulted (SH1187).** `searchHereFor` takes the route as a
+required argument and the browser passes `ROUTES.SEARCH`. Its old default, a bare `/search`, is
+not a route the router declares, so the button opened a 404.
+
 Rows show their state, because a draft and what is live are now both in the answer, and the count
 line carries `withheld` when the reader's ACL removed anything — "and 6 you cannot open" rather
 than a shorter list with no explanation.

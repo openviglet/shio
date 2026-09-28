@@ -250,11 +250,14 @@ export function breadcrumbFrom(data: {
  * <p>A path from the breadcrumb, not an id: the search takes the vocabulary's own addressing (SH79),
  * and an id in that parameter would be a fourth spelling of where content is. Null before the
  * breadcrumb has landed, because there is no honest address until it has.</p>
+ *
+ * <p>The route is required (SH1187): its old default, a bare `/search`, is no route the router
+ * declares, and the button opened a 404.</p>
  */
 export function searchHereFor(
   siteName: string | null,
   breadcrumbPath: readonly { name: string; type: string; root?: boolean }[],
-  searchRoute = "/search",
+  searchRoute: string,
 ): string | null {
   if (!siteName) return null
   // SH1184 — the root folder is the site's own place, and the grammar spells it as the site: it is
@@ -264,6 +267,23 @@ export function searchHereFor(
     folder: `folder:${siteName}/${chain.join("/")}`,
     subtree: "true",
   })}`
+}
+
+/**
+ * SH1188 — the router state "search in this folder" carries: the browser page it was opened from,
+ * so the search page's back link returns there rather than to the site list.
+ */
+export function searchBackState(location: { pathname: string; search: string }): { from: string } {
+  return { from: `${location.pathname}${location.search}` }
+}
+
+/**
+ * SH1188 — where the search page's back link goes: the page that opened it when that page said so,
+ * else `fallback`. Only an in-app path is taken, so a state nobody set can send the curator nowhere odd.
+ */
+export function searchBackTo(state: unknown, fallback: string): string {
+  const from = (state as { from?: unknown } | null)?.from
+  return typeof from === "string" && from.startsWith("/") && !from.startsWith("//") ? from : fallback
 }
 
 /** SH1145 — "3 days ago", or nothing at all for a date the row does not carry or cannot parse. */

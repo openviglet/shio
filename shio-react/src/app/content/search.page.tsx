@@ -13,7 +13,8 @@ import { contentFacets, countLocally, fromBarValue, toBarValue, withCounts, with
 // SH1023 — the search term and the site live in the URL, so a search can be sent to somebody.
 import { useListState } from "@/hooks/use-list-state"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
+import { searchBackTo } from "./content-browser/browser-view"
 import { ShSearchService, type ShConsoleSearchRow } from "@/services/search/search.service"
 import { usePostTypes, useSites } from "@/hooks/use-catalogue"
 import { isCancelled } from "@/lib/read-options"
@@ -57,6 +58,9 @@ interface SearchAnswer {
 export default function SearchPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
+  // SH1188 — read once: a filter change rewrites the URL and drops the router state with it.
+  const [backTo] = useState(() => searchBackTo(location.state, `${ROUTES.CONSOLE}/content`))
   // SH1046 — one cached read of the site list, shared with every other picker.
   const sites = useSites().data ?? NO_SITES
   const postTypes = usePostTypes().data ?? NO_TYPES
@@ -144,7 +148,7 @@ export default function SearchPage() {
         icon={SearchIcon}
         title={t("content.searchTitle")}
         subtitle={t("content.searchDescription")}
-        urlBase={`${ROUTES.CONSOLE}/content`}
+        urlBase={backTo}
       />
       <div>
 

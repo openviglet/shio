@@ -12,7 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import {
-  breadcrumbFrom, browserView, editableTitleField, listboxClass, readTableLayout, searchHereFor, stepFor,
+  breadcrumbFrom, browserView, editableTitleField, listboxClass, readTableLayout, searchBackState, searchBackTo, searchHereFor, stepFor,
   tableLayoutKey, thumbnailSrc, fullWindow, visibleWindow, WINDOW_THRESHOLD,
 } from "../src/app/content/content-browser/browser-view.ts"
 import { browserSource } from "./support/browser-source.mjs"
@@ -44,7 +44,7 @@ test("SH1184: a root folder named after its site is not drawn twice, and no root
   })
   assert.deepEqual(blank.map((crumb) => crumb.name), ["sh8844001", "menu"],
     "SH1184: the breadcrumb read sh8844001/sh8844001/menu — the site, then its root folder of the same name")
-  assert.equal(new URLSearchParams(searchHereFor(site.name, blank).split("?")[1]).get("folder"),
+  assert.equal(new URLSearchParams(searchHereFor(site.name, blank, "/bento/content/search").split("?")[1]).get("folder"),
     "folder:sh8844001/menu")
 
   const home = breadcrumbFrom({
@@ -53,10 +53,31 @@ test("SH1184: a root folder named after its site is not drawn twice, and no root
   })
   assert.deepEqual(home.map((crumb) => crumb.name), ["Stock", "Home", "News"],
     "SH1184: a root folder with a name of its own is a real step and stays on the path")
-  assert.equal(new URLSearchParams(searchHereFor("Stock", home).split("?")[1]).get("folder"),
+  assert.equal(new URLSearchParams(searchHereFor("Stock", home, "/bento/content/search").split("?")[1]).get("folder"),
     "folder:Stock/News",
     "SH1184: the address grammar stops below the root folder (ShAddressResolver.addressOf), so it is no segment")
   assert.deepEqual(breadcrumbFrom(undefined), [])
+})
+
+test("SH1187: \"search in this folder\" opens the console's search route, not a bare /search", () => {
+  const crumbs = [{ name: "favicons", type: "FOLDER" }]
+  assert.ok(searchHereFor("VigR3", crumbs, "/bento/content/search").startsWith("/bento/content/search?"))
+  const page = stripComments(read("app", "content", "object.children.page.tsx"))
+  assert.match(page, /searchHereFor\([^)]*ROUTES\.SEARCH\)/,
+    "SH1187: the browser linked to /search, which the router does not declare, and the button opened a 404")
+})
+
+test("SH1188: the search page's back link returns to the folder that opened it", () => {
+  const from = searchBackState({ pathname: "/bento/content/object/abc", search: "?view=grid" })
+  assert.equal(searchBackTo(from, "/bento/content"), "/bento/content/object/abc?view=grid",
+    "SH1188: back from a folder search went to the site list, not to the folder being searched")
+  assert.equal(searchBackTo(null, "/bento/content"), "/bento/content")
+  assert.equal(searchBackTo({ from: "//evil.example" }, "/bento/content"), "/bento/content")
+  const toolbar = stripComments(read("app", "content", "content-browser", "browser-toolbar.tsx"))
+  assert.match(toolbar, /navigate\(searchHereHref, \{ state: searchBackState\(location\) \}\)/)
+  const search = stripComments(read("app", "content", "search.page.tsx"))
+  assert.match(search, /searchBackTo\(location\.state/)
+  assert.match(search, /urlBase=\{backTo\}/)
 })
 
 test("SH1026: a grid steps across as well as down; the list and the table do not", () => {

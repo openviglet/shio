@@ -1838,6 +1838,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1184** — The content browser names a blank site once (sh8844001/menu), and "search this folder" builds a `folder:` address without the root folder, which now resolves (design §LXXV.1 recorded in `docs/agents/console-ui.md`).
 - **SH1185** — A facet option the listing has none of leaves the menu unless it is the chosen one, and a choice facet with nothing to offer leaves the bar, on all four lists.
 - **SH1186** — The note rail's Comment/Request pick is a segmented radio group with arrow-key switching, so the submit is the only filled button on the row (recorded in `docs/agents/console-ui.md`) (design §XCI.1 recorded in `docs/agents/console-ui.md`).
+- **SH1187** — "Search in this folder" opens /bento/content/search scoped to the folder: the route is a required argument and the browser passes ROUTES.SEARCH (design §LXXV.1 recorded in `docs/agents/console-ui.md`).
 
 ## Block BE — Media: what the bytes mean
 

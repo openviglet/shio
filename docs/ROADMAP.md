@@ -11,6 +11,8 @@
 
 ## Block BD — Finding, selecting and acting on content
 
+- 🛠 **SH1188** (deps: —) **Back from a folder search returns to the site list instead of the folder the curator was searching** — The search page's back link was hardwired to /bento/content; the browser now passes its own location in router state and the page returns there. → §LXXV.1
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
