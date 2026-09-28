@@ -89,6 +89,16 @@ const SWEEP = {
       + "mirror is regenerated. README and shio-site are NOT moved: neither describes the test "
       + "instruments, and no count or claim they state changed",
   },
+  BA: {
+    swept: true,
+    why: "releases, scheduling and the publish gate: one version grammar on every read, scheduled "
+      + "transitions on find and the CLI, releases and their rollback, PUBLISH as a permission, gates "
+      + "a site declares, and the round closing with SH1179 (a console schedule was refused by the "
+      + "endpoint) and SH1082 (the Scheduled page's calendar). docs-shio moved: content-lifecycle "
+      + "gained the calendar and COVERAGE's Block BA and Block C rows name both, with the mirror "
+      + "regenerated. shio-site is NOT moved: it already said a curator can schedule from the "
+      + "browser, which SH1179 made true rather than changed. README makes no scheduling claim",
+  },
   AX: {
     swept: true,
     why: "the Viglet assistant: one dock where the console reports how things ended, agent runs "

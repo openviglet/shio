@@ -747,6 +747,79 @@ async function checkKeyboardLandmarks(context) {
   return probe
 }
 
+/**
+ * A write from inside a console page, on its session: the CSRF token the console itself fetches,
+ * since Basic auth is not a stateless caller here (the instance answers `csrf-token-unobtainable`).
+ */
+async function pageWrite(page, path, body) {
+  const answer = await page.evaluate(async ({ path, body }) => {
+    const csrf = await fetch("/api/v2/csrf", { credentials: "include" }).then((r) => r.json())
+    const res = await fetch(`/api/v2${path}`, {
+      method: "POST", credentials: "include", body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json", [csrf.headerName || "X-XSRF-TOKEN"]: csrf.token },
+    })
+    return { status: res.status, text: res.ok ? "" : await res.text() }
+  }, { path, body })
+  if (answer.status >= 400) throw new Error(`POST ${path} → ${answer.status} ${answer.text.slice(0, 200)}`)
+}
+
+/**
+ * SH1082 — a drop on the Scheduled page's calendar reschedules the post, read back the way an
+ * agent reads what is scheduled.
+ *
+ * Driven from the keyboard, because that is the path the calendar promises beside dragging, and
+ * because a keyboard move is deterministic where a drag's coordinates are not. The post is given a
+ * go-live on the 10th of next month at noon UTC — noon so no zone this runs in draws it on another
+ * day, next month so today's date cannot make the move cross a month — and the drive moves it one
+ * day right. The instance's own `/agent/find?scheduled=any` must then answer the 11th, same time.
+ * The schedule is cleared afterwards, whatever happened.
+ */
+async function checkScheduleCalendarDrive(context, postId) {
+  const probe = { name: "scheduled-calendar-drive", path: "/bento/content/scheduled", ok: true,
+    errors: [], warnings: [], failedRequests: [] }
+  if (!postId) {
+    probe.skipped = "no post discovered to schedule"
+    return probe
+  }
+  const now = new Date()
+  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 10, 12, 0, 0))
+  const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 11, 12, 0, 0))
+  const page = await context.newPage()
+  try {
+    await page.goto(`${BASE}/bento/content/scheduled`, { waitUntil: "networkidle" })
+    await pageWrite(page, `/post-unified/${postId}/schedule`, { publishAt: from.toISOString(), unpublishAt: null })
+    await page.reload({ waitUntil: "networkidle" })
+    await page.getByRole("tab", { name: /calendar|calendário/i }).click()
+    await page.getByRole("button", { name: /next|próximo/i }).first().click()
+    const day = (d) => d.toISOString().slice(0, 10)
+    const entry = page.locator(`td[data-day="${day(from)}"] button`).first()
+    await entry.waitFor({ timeout: 10_000 })
+    await entry.focus()
+    await page.keyboard.press("Space")
+    await page.keyboard.press("ArrowRight")
+    const wrote = page.waitForResponse((r) => r.url().includes(`/post-unified/${postId}/schedule`)
+      && r.request().method() === "POST", { timeout: 10_000 })
+    await page.keyboard.press("Enter")
+    probe.status = (await wrote).status()
+    const found = await api("/agent/find?scheduled=any&ids=true&limit=500")
+    const row = (found.results ?? []).find((r) => r.id === postId)
+    probe.movedTo = row?.publishAt ?? null
+    if (!row || new Date(row.publishAt).getTime() !== to.getTime()) {
+      probe.ok = false
+      probe.errors.push(`SH1082: the post was moved on the calendar and /agent/find answers ${probe.movedTo},`
+        + ` not ${to.toISOString()} — the drop did not reach the schedule, or it lost the time of day`)
+    }
+  } catch (e) {
+    probe.ok = false
+    probe.errors.push(`could not drive the calendar: ${String(e).split("\n")[0]}`)
+  } finally {
+    await pageWrite(page, `/post-unified/${postId}/schedule`, { publishAt: null, unpublishAt: null })
+      .catch((e) => probe.warnings.push(`could not clear the schedule it set: ${e.message}`))
+    await page.close()
+  }
+  return probe
+}
+
 /** SH1054 — axe's own bundle (the package exports its source), evaluated into each page. */
 const AXE_SOURCE = axeCore.source
 /** The committed map of accessibility debt below serious, by route family. */
@@ -1844,6 +1917,17 @@ async function main() {
   console.log(`${widthsProbe.ok ? "ok  " : "FAIL"} ${widthsProbe.name.padEnd(30)} `
     + `${widthsProbe.runs} axe run(s) at ${A11Y_VIEWPORTS.map((v) => v.width).join(" and ")}px`)
   for (const e of widthsProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
+
+  // SH1082 — a calendar drop, read back through the agent's scheduled listing.
+  const calendarProbe = await checkScheduleCalendarDrive(context, anyPost?.path.split("/").pop())
+  if (STRICT && calendarProbe.skipped) {
+    calendarProbe.ok = false
+    calendarProbe.errors.push(`--strict: the calendar drive must run, and it skipped — ${calendarProbe.skipped}`)
+  }
+  report.probes.push(calendarProbe)
+  console.log(`${calendarProbe.ok ? "ok  " : "FAIL"} ${calendarProbe.name.padEnd(30)} `
+    + (calendarProbe.skipped ? `skipped: ${calendarProbe.skipped}` : `moved to ${calendarProbe.movedTo}`))
+  for (const e of calendarProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   // SH1053 — what a keyboard reader meets: the skip link first, and focus on the page after a move.
   const keysProbe = await checkKeyboardLandmarks(context)

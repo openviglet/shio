@@ -17,6 +17,12 @@ export interface ShScheduleEntry {
   address: string
   title?: string
   postId?: string
+  /**
+   * SH1082 — the post's whole pair, because the schedule write replaces both: moving the go-live
+   * must send the come-down it already has, or the move clears it.
+   */
+  publishAt?: string
+  unpublishAt?: string
 }
 
 interface FindPage {
@@ -60,11 +66,12 @@ export class ShScheduleService {
 export function agendaOf(rows: ShScheduledRow[]): ShScheduleEntry[] {
   const entries: ShScheduleEntry[] = []
   for (const row of rows) {
+    const pair = { publishAt: row.publishAt, unpublishAt: row.unpublishAt }
     if (row.publishAt) {
-      entries.push({ at: row.publishAt, action: "publish", address: row.address, title: row.title, postId: row.id })
+      entries.push({ at: row.publishAt, action: "publish", address: row.address, title: row.title, postId: row.id, ...pair })
     }
     if (row.unpublishAt) {
-      entries.push({ at: row.unpublishAt, action: "unpublish", address: row.address, title: row.title, postId: row.id })
+      entries.push({ at: row.unpublishAt, action: "unpublish", address: row.address, title: row.title, postId: row.id, ...pair })
     }
   }
   return entries.sort((a, b) => a.at.localeCompare(b.at) || a.address.localeCompare(b.address))

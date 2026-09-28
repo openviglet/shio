@@ -1035,46 +1035,6 @@ transaction, the reads and a rollback verb over it, a diff that works for a crea
 page, and audit rows that name the fields they changed. Releases, review and translation
 all read what this block stores.
 
-## LXVI Releases, scheduling and the publish gate (Block BA)
-
-Publishing in Shio is one post at a time. ShPostScheduler fires each due row in its own
-transaction, which is right for independent posts and wrong for a launch: forty pages
-that belong together go live forty times, in sweep order, and a failure halfway leaves
-half a launch. Nothing lists what is scheduled. The curator's publish button has none of
-the three safeguards the agent's path has, no dry run, no impact preview and no confirm,
-and there is no publish permission for a person at all, so any user who may write may
-also put content live.
-
-The block gives a launch a unit and a publish a gate, over primitives Shio already owns.
-One state grammar on every read path is the substrate: a release is read as a
-perspective, as a revision is. Scheduling becomes visible and reliable on every surface.
-A release is a named set of post versions that publish atomically through the existing
-batch runner, never a second writer, with a rollback that restores each item to its
-anchor revision. Publishing gains a permission above write, a dry run with the routes it
-changes, and gates declared as appliable checklists in the content tree.
-
-The gate is a checklist, not an orchestrator; that line is drawn in the non-goals.
-
-### LXVI.11 A calendar over the Scheduled page (SH1082)
-
-SH991 gave the console a Scheduled page: an agenda list, earliest first, each row linked
-to its post, with the reader's timezone stated. The design also asked for a month and a
-week calendar, and for rescheduling by dragging an entry to another day, through the
-same schedule write the dialog uses.
-
-That half is waiting on a component rather than on a decision. The console's
-design-system notes list calendar as unavailable, and a calendar grid built inside Shio
-would be exactly the second copy the no-duplicate-components gate refuses, since the
-design system is where a bento-shaped date grid belongs and where its keyboard and
-screen-reader behaviour would be checked.
-
-When the design system ships one, the Scheduled page gains a view switch between the
-list it has, a month grid and a week grid, fed by the same ShScheduleService entries.
-Dropping an entry on a day keeps its time of day and calls the post-unified schedule
-endpoint with the new instant, which records the dropper as the requester SH991 stores.
-The zone line stays above every view. A test drives a drop and reads the change back
-through the agent's scheduled listing.
-
 ## LXVII The curator's return channel, and the conversation with the agent (Block BB)
 
 Shio's thesis is that an agent builds and a curator approves. Today that is a one-way

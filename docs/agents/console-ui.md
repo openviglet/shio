@@ -3716,3 +3716,19 @@ Three implementation choices, each for a reason that would otherwise be re-deriv
 Two guards moved with it and were followed rather than loosened: SH1059's extractor names
 `rowLabel`'s signature, and SH1020's names the actions trigger's call. Both would have kept passing
 against a version that had lost the argument, which is why the regex is the thing that had to change.
+
+## The Scheduled page has a calendar (SH1082)
+
+`scheduled.page.tsx` switches between its agenda table and design system 2026.3.13's
+`BentoCalendar` (VDS172, filed from here), drawn in the zone the page states. Each agenda entry
+carries its post's whole pair (`publishAt`, `unpublishAt`), because the schedule write replaces
+both. `movedSchedule` in `src/lib/schedule-move.ts` sends the moved side's new instant and the
+other side as it was; sending only the moved one would clear the other. The calendar keeps the
+time of day, and the page only writes and refetches. `entryKey` is `action|address`, since a post
+has at most one of each transition. `onEntrySelect` opens the post.
+
+`e2e/console-check.mjs`'s `scheduled-calendar-drive` is the live half. It schedules a provisioned
+post for the 10th of next month at noon UTC, moves it one day with Space, the Right arrow and
+Enter, and reads `/agent/find?scheduled=any` back. Noon keeps every runner's zone on the same day,
+and next month keeps today's date from making the move cross a month. On its first run the drive
+found SH1179: the endpoint had refused every console schedule.

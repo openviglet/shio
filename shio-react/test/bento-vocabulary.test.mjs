@@ -139,7 +139,7 @@ const DEFERRED = {
   BentoDataTable: "SH1026 — the table view the content browser offers and does not render.",
   // SH971 — 2026.3.13 answered four requests Shio filed (VDS171-VDS174) and VDS170; each whole
   // surface belongs to the line that adopts it.
-  BentoCalendar: "SH1082 — the month and week views over the Scheduled page, with drag to reschedule.",
+  BentoCalendar: "SH1082 — rendered by scheduled.page.tsx as its calendar view; a harness has no schedule to draw.",
   BentoSplitPage: "SH1094 — the post editor's form beside its live preview, and the translation workspace.",
   BentoChangeMark: "SH1178 — the bulk plan's per-item mark, in place of the raw action word.",
 }
