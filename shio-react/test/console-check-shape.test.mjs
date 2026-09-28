@@ -319,9 +319,11 @@ test("SH1171: the route cost leaves out held streams, and gates only the product
 test("SH1174: the drive hears what Publish answered, and one success said twice is still one", () => {
   // Measured: the toast and the assistant dock both said "Publicado", the two-element locator made
   // `waitFor` throw, and the catch read a successful publish as "reported nothing".
-  assert.match(source, /getByText\(\/\^\(Publicado\|Published\)\$\/\)\.first\(\)\.waitFor/,
-    "SH1174: the published text is matched without .first(), so a toast and a dock report saying"
-      + " the same word read as silence")
+  // SH1182 — and only the visible match: the toast is hidden while a dock is mounted, and it is
+  // first in the DOM, so `.first()` alone would wait on an element that never becomes visible.
+  assert.match(source, /getByText\(\/\^\(Publicado\|Published\)\$\/\)\.filter\(\{ visible: true \}\)\.first\(\)\.waitFor/,
+    "SH1174/SH1182: the published text is not matched as the first visible element, so either two"
+      + " matches read as silence or the hidden toast is waited on")
   assert.match(source, /page\.on\("response", hear\)/,
     "SH1174: the drive no longer hears the publish write, so a refusal reads as silence again")
   assert.match(source, /publish refused: \$\{driveProbe\.publishRefused\}/,

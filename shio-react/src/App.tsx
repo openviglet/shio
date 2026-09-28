@@ -56,6 +56,22 @@ import { ThemeProvider } from "./components/theme-provider"
 import { SHIO_DEFAULT_THEME, SHIO_THEME_STORAGE_KEY } from "./theme"
 import { Toaster } from "./components/ui/sonner"
 import { ShioQueryProvider } from "./contexts/query.provider"
+import { useDockMounted } from "./lib/dock-reports"
+
+/**
+ * The toast region, hidden while a dock is mounted: the mascot reports the same outcome, and the
+ * curator should hear it once. Hidden, not unmounted — the mascot reads the live toast list, and it
+ * is the mounted `Toaster` that expires each toast, so without it the mascot would never go idle.
+ * The wrapper is always rendered so toggling it never remounts the region and drops a toast.
+ */
+function ConsoleToaster() {
+  const docked = useDockMounted()
+  return (
+    <div hidden={docked} data-toasts={docked ? "dock" : "shown"}>
+      <Toaster />
+    </div>
+  )
+}
 
 /** SH1164 — any type React does not read as JavaScript makes the theme script a data block. */
 const INERT_THEME_SCRIPT = { type: "text/x-inert-theme" } as const
@@ -80,7 +96,7 @@ function AppLayout() {
       <ThemeProvider defaultTheme={SHIO_DEFAULT_THEME} storageKey={SHIO_THEME_STORAGE_KEY}
         scriptProps={INERT_THEME_SCRIPT}>
           <ShioQueryProvider>
-            <Toaster />
+            <ConsoleToaster />
             <Outlet />
           </ShioQueryProvider>
       </ThemeProvider>

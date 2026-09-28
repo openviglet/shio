@@ -79,6 +79,31 @@ export function useMascotStill(): boolean {
   return useSyncExternalStore(subscribe, currentStill, currentStill)
 }
 
+/**
+ * Whether a dock is on screen. The mascot already says what a toast says, so while one is mounted
+ * the toast list is hidden rather than repeated beside it. A count, not a flag: the shell and the
+ * visual editor each mount their own, and one unmounting must not bring the toasts back for the
+ * other. Where no dock is mounted (login, setup), toasts are the only surface and stay visible.
+ */
+let docks = 0
+
+export function registerDock(): () => void {
+  docks += 1
+  for (const listener of listeners) listener()
+  return () => {
+    docks -= 1
+    for (const listener of listeners) listener()
+  }
+}
+
+function currentDocked(): boolean {
+  return docks > 0
+}
+
+export function useDockMounted(): boolean {
+  return useSyncExternalStore(subscribe, currentDocked, currentDocked)
+}
+
 export function pushReport(report: Omit<DockReport, "id" | "role" | "at" | "read">, kind?: string): string | undefined {
   if (kind && muted.has(kind) && report.tone !== "error") return undefined
   next += 1

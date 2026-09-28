@@ -3361,6 +3361,22 @@ it in `finally`, toasts the saved field names on success, and routes a refusal t
 browser probe on a fresh instance measured the preview iframe at 1046×809 with and without the
 dock, found the dock inside the panel, and logged no page errors.
 
+## The mascot is the one notice (SH1182)
+
+While a dock is mounted the toast region is hidden, so an outcome is shown once, by the mascot.
+`registerDock` in `lib/dock-reports.ts` counts mounted docks (`BentoStatusDock` registers in an
+effect) and `useDockMounted` reads the count. It is a count because the shell and the visual editor
+each mount one. `ConsoleToaster` in `App.tsx` wraps `<Toaster />` in a `<div hidden={docked}>`.
+
+Hidden, never unmounted. `useAssistantNotifications` reads sonner's store, but the mounted
+`Toaster` runs each toast's timer and dismisses it, so without it no toast leaves the list and the
+mascot stays on its last state. The wrapper is always rendered, because a conditional wrapper
+remounts the region and drops the toast on screen. Login and setup mount no dock and keep visible
+toasts. `toast(...)` stays the way a page reports an outcome: nothing calling it changes. With
+`saves` muted, a successful save is now silent, since the toast that used to carry it is hidden.
+A browser locator for an outcome's text matches the hidden toast first, so it needs
+`.filter({ visible: true })` (the Universal Editor drive in `e2e/console-check.mjs` does).
+
 ## One diff, answered by the server (SH988, first half)
 
 `GET /api/v2/post-unified/{id}/diff?from=&to=` (`ShPostDiffAPI` / `ShPostDiffService`,

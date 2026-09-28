@@ -1600,7 +1600,9 @@ async function checkEditorDrive(context, sites) {
       // SH1174 — `.first()`: the toast and the assistant dock (SH965) both say it, and a locator
       // matching two elements makes `waitFor` throw a strict-mode error — which the catch below read
       // as "Publish reported nothing" over a publish that had succeeded and said so twice.
-      const published = await page.getByText(/^(Publicado|Published)$/).first().waitFor(
+      // SH1182 — the toast is now in the DOM but hidden while a dock is mounted, and it comes first,
+      // so the visible match is the dock's; `.first()` alone would wait on the hidden toast.
+      const published = await page.getByText(/^(Publicado|Published)$/).filter({ visible: true }).first().waitFor(
         { state: "visible", timeout: 15_000 }).then(() => true).catch(() => false)
       page.off("response", hear)
       probe.publishWrites = await Promise.all(writes)

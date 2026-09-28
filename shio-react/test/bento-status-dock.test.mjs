@@ -292,6 +292,42 @@ test("SH972: the editor docks it in the properties panel, and its saves drive it
 })
 
 /*
+ * SH1182 — the mascot is the one notice. While a dock is mounted the toast region is hidden, so an
+ * outcome is not shown twice; where none is (login, setup) the toasts are the only surface left.
+ */
+test("SH1182: a mounted dock hides the toasts, and they return only when the last dock goes", async () => {
+  const { registerDock, useDockMounted } = await import("../src/lib/dock-reports.ts")
+  let docked
+  const Probe = () => { docked = useDockMounted(); return null }
+  const holder = dom.window.document.createElement("div")
+  dom.window.document.body.append(holder)
+  const probeRoot = createRoot(holder)
+  await act(() => probeRoot.render(h(Probe)))
+  assert.equal(docked, true, "SH1182: the shell's dock is mounted and the toasts would still show beside it")
+
+  const second = createRoot(dom.window.document.createElement("div"))
+  await act(() => second.render(h(BentoStatusDock, { inline: true })))
+  await act(() => second.unmount())
+  assert.equal(docked, true,
+    "SH1182: one dock unmounting brought the toasts back while another dock is still on screen")
+
+  const release = registerDock()
+  release()
+  assert.equal(docked, true, "SH1182: registering and releasing a dock left the count wrong")
+  await act(() => probeRoot.unmount())
+  holder.remove()
+})
+
+test("SH1182: the console's toast region stays mounted and is hidden while a dock is", () => {
+  const app = readFileSync(join(HERE, "..", "src", "App.tsx"), "utf8")
+  assert.match(app, /<div hidden=\{docked\}[^>]*>\s*<Toaster \/>\s*<\/div>/,
+    "SH1182: the Toaster is unmounted or conditionally rendered instead of hidden. The mascot reads the"
+      + " live toast list and the mounted Toaster is what expires each toast, so without it the mascot"
+      + " never returns to idle; a conditional wrapper remounts the region and drops a toast.")
+  assert.match(app, /<ConsoleToaster \/>/, "SH1182: the hidden toast region is not the one the app mounts")
+})
+
+/*
  * SH1006 — the dock's chat reaches the connected agent over notes. ShNoteRelayTest proves the
  * server half (the request is listed on shio://requests and the agent's note.add reply lands under
  * it); this proves the dock half on the real store and the mounted component.

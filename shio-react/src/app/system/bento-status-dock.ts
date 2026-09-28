@@ -6,9 +6,9 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { createElement } from "react"
+import { createElement, useEffect } from "react"
 import { VigletAssistant, useAssistantNotifications } from "@viglet/viglet-design-system"
-import { dismissReport, markReportRead, useDockAmbient, useDockReports, useMascotStill, useMutedKinds } from "../../lib/dock-reports.ts"
+import { dismissReport, markReportRead, registerDock, useDockAmbient, useDockReports, useMascotStill, useMutedKinds } from "../../lib/dock-reports.ts"
 import type { VigletAssistantMessage } from "@viglet/viglet-design-system"
 import { markRepliesSeen, transcript, unseenReplies, useDockChat, waiting } from "../../lib/dock-chat.ts"
 
@@ -42,10 +42,13 @@ export function BentoStatusDock({ inline = false, onSend }: { inline?: boolean; 
   const { state, caption, activity } = useAssistantNotifications()
   const reports = useDockReports()
   const { working, bumps } = useDockAmbient()
-  // SH971 — with saves muted, only a failing toast moves the mascot; the toast itself still shows.
+  // SH971 — with saves muted, only a failing toast moves the mascot, and the toast list is hidden
+  // while a dock is mounted, so a muted success says nothing at all. That is what muting asks for.
   const muted = useMutedKinds()
   const still = useMascotStill()
   const chat = useDockChat()
+  // While this is mounted the console's toasts are hidden: the mascot is the one notice (App.tsx).
+  useEffect(registerDock, [])
   const toasting = state !== "idle" && (state === "error" || !muted.has("saves"))
   // A toast is the freshest thing and wins; then an agent run that is writing (SH968); then the
   // dock's own reading of its newest unread report, which it does when both are left undefined.
