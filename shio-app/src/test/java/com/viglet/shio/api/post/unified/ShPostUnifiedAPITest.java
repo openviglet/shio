@@ -439,6 +439,51 @@ class ShPostUnifiedAPITest {
     }
 
     @Test
+    void stage07dbScheduleAcceptsTheIsoInstantTheConsoleSends() throws Exception {
+        // SH1179 — the console's schedule dialog (and SH1082's calendar) send ISO-8601 strings, the
+        // shape /agent/find returns; the endpoint read only epoch millis, so every console schedule
+        // was a 400 the dialog reported as a generic failure.
+        Instant at = SCHED_REF.plus(2, ChronoUnit.DAYS);
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("publishAt", at.toString());
+        payload.putNull("unpublishAt");
+
+        mockMvc.perform(post("/api/v2/post-unified/" + newPostId + "/schedule")
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.publishScheduledDate").exists());
+
+        // Due a second after the instant and not a second before: it was stored as that instant.
+        org.junit.jupiter.api.Assertions.assertTrue(
+                shPostUnifiedWriteService.findScheduledPublishDue(at.plusSeconds(1)).stream()
+                        .anyMatch(due -> newPostId.equals(due.id())),
+                "SH1179: an ISO instant was accepted but is not due just after it");
+        org.junit.jupiter.api.Assertions.assertFalse(
+                shPostUnifiedWriteService.findScheduledPublishDue(at.minusSeconds(1)).stream()
+                        .anyMatch(due -> newPostId.equals(due.id())),
+                "SH1179: an ISO instant was stored earlier than the instant sent");
+    }
+
+    @Test
+    void stage07dcScheduleRefusesAnInstantInNeitherShapeWithTheFix() throws Exception {
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("publishAt", "next tuesday");
+
+        mockMvc.perform(post("/api/v2/post-unified/" + newPostId + "/schedule")
+                        .principal(mockPrincipal)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.type").value(org.hamcrest.Matchers.endsWith("schedule-instant")))
+                .andExpect(jsonPath("$.at").value("publishAt"))
+                .andExpect(jsonPath("$.fix").exists());
+    }
+
+    @Test
     void stage07eScheduledPublishFires() throws Exception {
         // Diverge the draft, schedule a publish in the past, then run the sweep step.
         ObjectNode update = objectMapper.createObjectNode();

@@ -10,8 +10,11 @@ package com.viglet.shio.api.post.unified;
 
 import java.security.Principal;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 
 import com.viglet.shio.api.agent.ShAgentSessionContext;
+import com.viglet.shio.api.error.ShProblem;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.api.gate.ShPublishGateService;
 import java.util.List;
 import java.util.Map;
@@ -576,18 +579,53 @@ public class ShPostUnifiedAPI {
         shContentAclService.requirePublish(id);
         try {
             return ResponseEntity.ok(shConsolePostReadService.written(shPostUnifiedWriteService.schedule(
-                    id, toInstant(payload.publishAt()), toInstant(payload.unpublishAt()),
+                    id, instantOf(payload.publishAt(), "publishAt"), instantOf(payload.unpublishAt(), "unpublishAt"),
                     principal != null ? principal.getName() : null)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    private static Instant toInstant(Long epochMillis) {
-        return epochMillis != null ? Instant.ofEpochMilli(epochMillis) : null;
+    /**
+     * SH1179 — an instant as either shape a caller has in hand: epoch millis, or the ISO-8601
+     * string {@code /agent/find} returns for the same field and the console sends. The endpoint
+     * read only millis, so every schedule saved from the console was a 400 the dialog reported as
+     * a generic failure. Absent or {@code null} clears; anything else is a teaching 400 (P6).
+     */
+    static Instant instantOf(JsonNode value, String field) {
+        if (value == null || value.isNull() || value.isMissingNode()) {
+            return null;
+        }
+        if (value.isIntegralNumber()) {
+            return Instant.ofEpochMilli(value.asLong());
+        }
+        if (value.isString()) {
+            try {
+                return Instant.parse(value.asString());
+            } catch (DateTimeParseException e) {
+                throw new ScheduleInstantException(field, value.asString());
+            }
+        }
+        throw new ScheduleInstantException(field, value.toString());
     }
 
-    /** {@code publishAt}/{@code unpublishAt} arrive as epoch millis in the JSON body. */
-    public record SchedulePayload(Long publishAt, Long unpublishAt) {
+    /**
+     * {@code publishAt}/{@code unpublishAt}: an ISO-8601 instant or epoch millis each, and
+     * {@code null} clears that side.
+     */
+    public record SchedulePayload(JsonNode publishAt, JsonNode unpublishAt) {
+    }
+
+    /** SH1179 — a schedule instant that is neither shape, refused with both spelled out. */
+    static final class ScheduleInstantException extends ShTeachingException {
+        ScheduleInstantException(String field, String sent) {
+            super(ShProblem.badRequest("schedule-instant", "A schedule time must be an instant")
+                    .withDetail("`" + field + "` was " + sent + ", which is neither an ISO-8601 instant"
+                            + " nor epoch milliseconds.")
+                    .withFix("Send an ISO-8601 instant in UTC, as /agent/find returns it, or epoch"
+                            + " milliseconds; send null to clear that side.")
+                    .withAt(field)
+                    .withExample(Map.of(field, "2026-10-10T12:00:00Z")));
+        }
     }
 }

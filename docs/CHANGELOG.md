@@ -1775,6 +1775,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1084** — A lint now holds every publishing method to the publish gate or a reasoned exemption, and Approve, PATCH with publish and the CDA publish evaluate it, with SH998's waiver where a person acts (design §LXVI.13 recorded in `docs/agents/agent-surface.md`).
 - **SH1085** — Every casing call in shio-app names Locale.ROOT and a lint refuses a bare one, so a Turkish JVM emits publish, not publısh, and mints the same URLs and slugs as any other (design §LXVI.14 recorded in `docs/agents/build.md`).
 - **SH1138** — The sweep asks the site's gates before each scheduled publish and release; a stopped one stays scheduled and the feed carries an incident naming the gate, with a retry for a post (design §LXVI.15 superseded: it had the release runner report the stopped page and go on; a release stops whole, since a half-live launch is what it exists to prevent) (design §LXVI.15 recorded in `docs/agents/agent-surface.md`).
+- **SH1179** — The schedule endpoint takes each instant as ISO-8601 or epoch millis, so the console's schedule dialog saves again; anything else is a teaching 400 naming the field (design §LXVI.16 recorded in `docs/agents/content-api.md`).
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 

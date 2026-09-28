@@ -11,7 +11,7 @@
 
 ## Block BA — Releases, scheduling and the publish gate
 
-- 📋 **SH1082** (deps: SH991 ✅, a calendar component in the viglet design system) **the Scheduled page is a list only, with no month or week calendar and no drag to reschedule** — The console has no calendar component, and one built inside Shio is a copy the duplicate gate refuses. → §LXVI.11
+- 🛠 **SH1082** (deps: SH991 ✅) **the Scheduled page is a list only, with no month or week calendar and no drag to reschedule** — The console has no calendar component, and one built inside Shio is a copy the duplicate gate refuses. → §LXVI.11
 
 ## Block BC — The authoring surface, field by field
 

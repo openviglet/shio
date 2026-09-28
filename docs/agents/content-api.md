@@ -49,6 +49,14 @@ deleted in the nuclear refactor). All post CRUD is the unified API:
 - `PUT /api/v2/post-unified/{id}`, `POST .../publish|unpublish|restore|schedule`
 - `DELETE /api/v2/post-unified/{id}`
 
+**`.../schedule` takes each instant in either shape a caller holds (SH1179).** The body is
+`{ publishAt, unpublishAt }`. Each field is an ISO-8601 instant, which is what `/agent/find`
+returns and the console sends, or epoch millis, which the older tests post. `null` or an absent
+field clears that side. Anything else is a teaching 400, `schedule-instant`, with `at` naming the
+field. It read only millis until then, so every schedule saved from the console was a 400 with a
+generic toast, and nothing noticed because nothing else writes through it.
+`ShPostUnifiedAPITest.stage07db` posts the console's shape.
+
 **Every post-shaped response on this controller is a `ShConsolePost`, never the entity (SH176)**
 — reads *and* writes, owned by `ShConsolePostMapper` + `ShConsolePostReadService`. It carries
 `data` **parsed** (the column is a JSON string) and the post-type as its SH16 `ShPostTypeDef`,
