@@ -194,7 +194,7 @@
       "x": 0,
       "y": -190,
       "w": 700,
-      "text": "Almost every screen is one of four shapes plus data: a detail is BentoEntityShell wrapping a form, a list is one BentoListPage call with a renderTile, a form with no entity behind it yet is BentoFormHero as the first child of its form, and a form beside its preview is BentoSplitPage under one hero.\nThe panel is the fifth thing and not a shape: a frosted box with no heading, for whatever a hero already named.\nThe last artboard is the same components on both grounds, because one look means one look twice."
+      "text": "Almost every screen is one of four shapes plus data: a detail is BentoEntityShell wrapping a form, a list is one BentoListPage call with a renderTile, a form with no entity behind it yet is BentoFormHero as the first child of its form, and a form beside its preview is BentoSplitPage under one hero.\nThe panel is the fifth thing and not a shape: a plain card with no heading, for whatever a hero already named.\nThe last artboard is the same components on both grounds, because one look means one look twice."
     }
   ],
   "launch": {

@@ -21,7 +21,15 @@
     .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    /* Frost is kept for the one surface content scrolls under: the save bar. */
     .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+    /* VDS182 — a solid card, not frosted glass: --card on --border. */
+    .card { background: #ffffff; border: 1px solid #e5e5e5; }
+    /* State, not area: a dot and a word, the shape BentoStatusMarker draws. */
+    .state { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #404040; }
+    .state i { width: 6px; height: 6px; border-radius: 999px; }
+    .s-published i { background: #00bc7d; } .s-draft i { background: #62748e; } .s-scheduled i { background: #8e51ff; }
+    .s-changed i { background: #fe9a00; } .s-archived i { background: #d4d4d4; } .s-archived { color: #737373; }
     .chip { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background-image: linear-gradient(to bottom right, #155dfc, #4f39f6); color: #ffffff; flex: 0 0 auto; }
     .field { height: 30px; border: 1px solid #e5e5e5; border-radius: 10px; background: #ffffff; }
     .flabel { font-size: 10px; color: #737373; margin-bottom: 4px; }
@@ -56,7 +64,7 @@
           <div style="display:flex;align-items:flex-start;gap:11px">
             <div class="chip" style="width:40px;height:40px;border-radius:13px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"></circle></svg></div>
             <div style="flex:1;min-width:0">
-              <div style="font-size:18px;font-weight:600;letter-spacing:-0.015em">Entity name</div>
+              <div style="display:flex;align-items:center;gap:9px"><div style="font-size:16px;font-weight:600;letter-spacing:-0.01em">Entity name</div><span class="state s-changed"><i></i>Changed</span></div>
               <div style="font-size:11.5px;color:#737373;margin-top:2px">Description. Icon, title, description and enabled state are all here.</div>
             </div>
             <div style="display:flex;align-items:center;gap:7px">
@@ -71,22 +79,16 @@
         </div>
 
         <!-- form sections -->
-        <div class="glass" style="border-radius:24px;padding:14px;margin-bottom:11px">
-          <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
-            <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
-            <div style="font-size:13px;font-weight:600">Field group</div>
-          </div>
+        <div class="card" style="border-radius:24px;padding:14px;margin-bottom:11px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:11px">Field group</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div><div class="flabel">Label</div><div class="field"></div></div>
             <div><div class="flabel">Label</div><div class="field"></div></div>
             <div style="grid-column:span 2"><div class="flabel">Label</div><div class="field" style="height:52px"></div></div>
           </div>
         </div>
-        <div class="glass" style="border-radius:24px;padding:14px">
-          <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
-            <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
-            <div style="font-size:13px;font-weight:600">Field group</div>
-          </div>
+        <div class="card" style="border-radius:24px;padding:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:11px">Field group</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div><div class="flabel">Label</div><div class="field"></div></div>
             <div><div class="flabel">Label</div><div class="field"></div></div>
@@ -94,7 +96,7 @@
         </div>
       </div>
 
-      <div style="font-size:11px;color:#404040;line-height:1.45">The form is a render prop taking <span class="mono" style="font-size:10.5px">{ staged, onStateChange }</span>. It groups fields and nothing else -- no shell mechanics, no identity field.</div>
+      <div style="font-size:11px;color:#404040;line-height:1.45">The form is a render prop taking <span class="mono" style="font-size:10.5px">{ staged, onStateChange }</span>. It groups fields and nothing else -- no shell mechanics, no identity field, and no chip: only the hero names the entity.</div>
     </div>
 
     <!-- scrolled -->
@@ -122,22 +124,16 @@
         </div>
         <div class="mono" style="position:absolute;right:20px;top:62px;z-index:5;font-size:9px;color:#1447e6">the same two controls, not a second pair</div>
 
-        <div class="glass" style="border-radius:24px;padding:14px;margin-top:34px;margin-bottom:11px">
-          <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
-            <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
-            <div style="font-size:13px;font-weight:600">Field group</div>
-          </div>
+        <div class="card" style="border-radius:24px;padding:14px;margin-top:34px;margin-bottom:11px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:11px">Field group</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div><div class="flabel">Label</div><div class="field"></div></div>
             <div><div class="flabel">Label</div><div class="field" style="border-color:rgba(20,71,230,0.6)"></div></div>
             <div style="grid-column:span 2"><div class="flabel">Label</div><div class="field" style="height:52px"></div></div>
           </div>
         </div>
-        <div class="glass" style="border-radius:24px;padding:14px">
-          <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
-            <div class="chip" style="width:26px;height:26px;border-radius:9px"></div>
-            <div style="font-size:13px;font-weight:600">Field group</div>
-          </div>
+        <div class="card" style="border-radius:24px;padding:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:11px">Field group</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div><div class="flabel">Label</div><div class="field"></div></div>
             <div><div class="flabel">Label</div><div class="field"></div></div>

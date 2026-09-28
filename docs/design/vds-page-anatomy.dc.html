@@ -21,7 +21,8 @@
     .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
-    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); }
+    /* VDS182 — a solid card on --card and --border, not frosted glass. */
+    .card { background: #ffffff; border: 1px solid #e5e5e5; }
     /* One label per row of the gutter, so no two can ever land on each other. */
     .lab { position: absolute; right: 0; display: flex; align-items: center; gap: 7px; justify-content: flex-end; width: 100%; }
     .lab b { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
@@ -48,7 +49,7 @@
     <!-- the gutter. one row per label. -->
     <div style="position:relative;width:168px;flex:0 0 auto">
       <div class="lab" style="top:26px"><b style="color:#1447e6">SHELL &middot; HEADER</b><i>80px</i><span class="lead" style="background:#1447e6"></span></div>
-      <div class="lab" style="top:132px"><b style="color:#1447e6">SHELL &middot; NAV</b><i>64px, fixed</i><span class="lead" style="background:#1447e6"></span></div>
+      <div class="lab" style="top:132px"><b style="color:#1447e6">SHELL &middot; NAV</b><i>80px, fixed</i><span class="lead" style="background:#1447e6"></span></div>
       <div class="lab" style="top:186px"><b style="color:#1447e6">SHELL &middot; COLUMN</b><i>set once</i><span class="lead" style="background:#1447e6"></span></div>
       <div class="lab" style="top:250px"><b style="color:#7f22fe">PAGE &middot; ASIDE</b><i>optional</i><span class="lead" style="background:#7f22fe"></span></div>
       <div class="lab" style="top:304px"><b style="color:#7f22fe">PAGE &middot; CONTENT</b><span class="lead" style="background:#7f22fe"></span></div>
@@ -77,15 +78,15 @@
         <div style="width:28px;height:28px;border-radius:999px;background-image:linear-gradient(to bottom right,#155dfc,#4f39f6)"></div>
       </div>
 
-      <!-- rail, 64px -->
-      <div style="position:absolute;left:0;top:80px;bottom:0;width:64px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 0;background:rgba(20,71,230,0.05);border-right:1px solid rgba(229,229,229,0.7)">
+      <!-- rail, 80px -->
+      <div style="position:absolute;left:0;top:80px;bottom:0;width:80px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 0;background:rgba(20,71,230,0.05);border-right:1px solid rgba(229,229,229,0.7)">
         <div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px;border:1px solid rgba(23,23,23,0.4);background:rgba(23,23,23,0.09);color:#171717"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 11.5 12 5l8 6.5"></path><path d="M6 10.5V19h12v-8.5"></path></svg></div>
         <div style="width:38px;height:38px;border-radius:12px;background:#f0f0f0"></div>
         <div style="width:38px;height:38px;border-radius:12px;background:#f0f0f0"></div>
       </div>
 
       <!-- everything the shell hands to a page -->
-      <div style="position:absolute;left:64px;right:0;top:80px;bottom:0;display:flex;flex-direction:column">
+      <div style="position:absolute;left:80px;right:0;top:80px;bottom:0;display:flex;flex-direction:column">
         <div style="flex:1;min-height:0;display:flex;justify-content:center;padding:0 28px">
           <!-- the column: one max-width, one pair of gutters, set here -->
           <div style="width:100%;max-width:940px;border-left:1px dashed rgba(20,71,230,0.5);border-right:1px dashed rgba(20,71,230,0.5);padding:22px 22px 0;display:flex;gap:16px;min-height:0">
@@ -105,10 +106,10 @@
               <div style="height:11px;width:120px;border-radius:999px;background:#ededed;margin-bottom:9px"></div>
               <div style="height:22px;width:260px;border-radius:8px;background:#e6e6e6;margin-bottom:16px"></div>
               <div style="display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:12px">
-                <div class="glass" style="grid-column:span 2;border-radius:24px;height:104px"></div>
-                <div class="glass" style="grid-column:span 2;border-radius:24px;height:104px"></div>
-                <div class="glass" style="grid-column:span 2;border-radius:24px;height:88px"></div>
-                <div class="glass" style="grid-column:span 2;border-radius:24px;height:88px"></div>
+                <div class="card" style="grid-column:span 2;border-radius:24px;height:104px"></div>
+                <div class="card" style="grid-column:span 2;border-radius:24px;height:104px"></div>
+                <div class="card" style="grid-column:span 2;border-radius:24px;height:88px"></div>
+                <div class="card" style="grid-column:span 2;border-radius:24px;height:88px"></div>
               </div>
             </div>
           </div>

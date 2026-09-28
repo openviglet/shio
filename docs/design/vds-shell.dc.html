@@ -40,15 +40,18 @@
   <!-- the shell -->
   <div style="margin:14px 24px 0;flex:1;min-height:0;position:relative;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;overflow:hidden;box-shadow:0 24px 50px -36px rgba(0,0,0,0.4)">
 
-    <!-- rail: w-16, hidden below md, items start below the header -->
-    <div style="position:absolute;left:0;top:0;bottom:0;width:64px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:4px;padding:80px 0 16px;background:rgba(255,255,255,0.55);backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);border-right:1px solid rgba(229,229,229,0.4)">
+    <!-- rail: w-20, hidden below md, items start below the header; a label under each icon -->
+    <div style="position:absolute;left:0;top:0;bottom:0;width:80px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:4px;padding:80px 0 16px;background:rgba(255,255,255,0.55);backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);border-right:1px solid rgba(229,229,229,0.4)">
       <div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;border:1px solid rgba(23,23,23,0.4);background:rgba(23,23,23,0.09);color:#171717" title="aria-current=page">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5"></path><path d="M6 10.5V19h12v-8.5"></path></svg>
       </div>
+      <div style="font-size:11px;line-height:16px;color:#171717;margin:-2px 0 4px">Home</div>
       <div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;color:#737373"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect></svg></div>
+      <div style="font-size:11px;line-height:16px;color:#737373;margin:-2px 0 4px">Content</div>
       <div style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;color:#737373"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"></path></svg></div>
+      <div style="font-size:11px;line-height:16px;color:#737373;margin:-2px 0 4px">Admin</div>
       <div style="flex:1"></div>
-      <div class="mono" style="font-size:9px;color:#a1a1a1;transform:rotate(180deg);writing-mode:vertical-rl">64px</div>
+      <div class="mono" style="font-size:9px;color:#a1a1a1;transform:rotate(180deg);writing-mode:vertical-rl">80px</div>
     </div>
 
     <!-- header -->
@@ -78,7 +81,7 @@
     <div class="mono" style="position:absolute;left:74px;top:58px;z-index:5;font-size:9px;color:#a1a1a1">header 80px, so the rail's items start at 80</div>
 
     <!-- routed page, in the gutter the rail reserves -->
-    <div style="position:absolute;left:64px;right:0;top:80px;bottom:0;overflow:hidden">
+    <div style="position:absolute;left:80px;right:0;top:80px;bottom:0;overflow:hidden">
       <div style="max-width:1120px;margin:0 auto;padding:28px 32px">
         <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px">
           <span class="pin">7</span>

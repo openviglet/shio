@@ -75,6 +75,13 @@ import { fileURLToPath } from "node:url"
  * the state the header had always called fine. So both directions are asserted now, and the
  * line-shape proof reads a sample line instead of requiring the backlog to hold a wait (SH948).
  *
+ * <h2>2026.3.15, and a round that named its waits another way</h2>
+ *
+ * 2026.3.15 carried VDS180–VDS185, the cross-product round SH1191–SH1204 was filed against. No
+ * entry was waiting here, because those lines name the tasks as `VDS<n> in viglet-design-system`
+ * rather than as `DS VDS<n>` waits, so the pin moved on its own. Their deps are dropped one by one
+ * as each line ships against the release.
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -101,7 +108,7 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.14"
+const PINNED = "2026.3.15"
 
 function manifest() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))

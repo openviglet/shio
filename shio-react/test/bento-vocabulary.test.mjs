@@ -128,6 +128,9 @@ const DEFERRED = {
   // SH1088 — 2026.3.11 and .12 ended eleven design-system waits, and these are what they shipped.
   // Each is a whole surface or a shell piece, so each belongs to the task that adopts it rather
   // than to a harness that fetches nothing.
+  // SH1191 round — 2026.3.15 shipped VDS184's ancestor trail. It is a hero's way back, so it
+  // belongs to the task that gives every route one page anatomy.
+  BentoTrail: "SH1192 — a hero's ancestor trail; it renders inside a hero, which this harness has one of.",
   BentoShell: "SH946 — rendered by bento.root.page.tsx as the console's shell; a harness has no route tree to wrap.",
   BentoPaletteTrigger: "SH946 — the shell's palette control, mounted with the shell.",
   BENTO_SHELL_SHORTCUTS: "SH946 — the shell's shortcut table, read by the shell it belongs to.",
