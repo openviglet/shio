@@ -90,9 +90,9 @@ export default function TrashPage() {
     const counts = { type: countLocally(items.filter((row) => matchesLocally(row, q, "")), (row) => [row.type]) }
     return types.length > 1
       ? withCounts([{ id: FACET_TYPE, kind: "choice", label: t("content.filterType"),
-        options: types.map(([value, label]) => ({ value, label })) }], counts)
+        options: types.map(([value, label]) => ({ value, label })) }], counts, barValue)
       : []
-  }, [items, q, t])
+  }, [items, q, barValue, t])
   const shown = useMemo(() => items.filter((row) => matchesLocally(row, q, type)), [items, q, type])
 
   /** The read. It raises no state before the request, which is what lets the mount effect call it. */

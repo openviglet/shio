@@ -1,0 +1,11 @@
+<!doctype html>
+<!--
+  SH1183: the SPA shell for the test classpath. The real one is a React build output under
+  src/main/resources/public/, which is git-ignored and absent whenever the build runs with
+  -Dskip.npm=true - that is, on CI. test-classes precedes classes on the test classpath, so this
+  file is what every test resolves, on a dev box with a stale build and on a clean runner alike.
+-->
+<html lang="en">
+<head><meta charset="utf-8"><title>Shio test shell</title></head>
+<body><div id="root"></div></body>
+</html>

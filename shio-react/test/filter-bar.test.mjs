@@ -115,10 +115,20 @@ test("SH1024: the browser's facet options carry the server's counts, asked for w
     { id: "modified", kind: "date", label: "Changed" },
   ]
   const counted = withCounts(facets, { type: { Article: 12 } })
-  assert.deepEqual(counted[0].options.map((option) => option.label), ["Article · 12", "Page · 0"],
-    "SH1024: a value the listing has none of says 0 rather than leaving the menu, so a chosen one can be seen and cleared")
+  assert.deepEqual(counted[0].options.map((option) => option.label), ["Article · 12"],
+    "SH1185: a value the listing has none of leaves the menu — sixteen types at 0 around one at 13 is a menu nobody can read")
   assert.equal(counted[1], facets[1], "SH1024: a date facet has no counts and is passed through untouched")
   assert.deepEqual(withCounts(facets, undefined), facets)
+  const chosen = { query: "", facets: { type: ["Page"] } }
+  assert.deepEqual(withCounts(facets, { type: { Article: 12 } }, chosen)[0].options.map((option) => option.label),
+    ["Article · 12", "Page · 0"], "SH1185: the chosen value stays at 0, so it can still be seen and cleared")
+  assert.deepEqual(withCounts(facets, { type: {} }).map((facet) => facet.id), ["modified"],
+    "SH1185: a choice facet with nothing to offer leaves the bar")
+  for (const page of [["app", "content", "object.children.page.tsx"], ["app", "content", "search.page.tsx"],
+    ["app", "content", "trash.page.tsx"], ["app", "admin", "review", "review.list.page.tsx"]]) {
+    assert.match(readFileSync(join(SRC, ...page), "utf8"), /, barValue\)/,
+      `SH1185: ${page.at(-1)} counts its facets without saying what is chosen, so a chosen 0 would vanish`)
+  }
 
   const page = browserSource()
   assert.match(page, /if \(counted\) params\.set\("facets", "true"\)/,

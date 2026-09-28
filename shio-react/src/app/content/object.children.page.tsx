@@ -135,7 +135,7 @@ export default function ObjectChildrenPage() {
     counts?.locale ? Object.keys(counts.locale) : listData.posts.map((post) => post.locale ?? ""), {
       type: t("content.filterType"), state: t("content.filterState"), locale: t("content.filterLocale"),
       modified: t("content.filterModified"), draft: t("content.filterDraft"), published: t("content.filterPublished"),
-    }), counts), [postTypes, counts, listData.posts, t])
+    }), counts, barValue), [postTypes, counts, listData.posts, barValue, t])
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ObjectChild | null>(null)
   const [permsTarget, setPermsTarget] = useState<ObjectChild | null>(null)
@@ -293,9 +293,9 @@ export default function ObjectChildrenPage() {
       */}
       <PageHero
         icon={IconFileText}
-        eyebrow={t("sidebar.content")}
         title={siteName || t("content.browsing")}
         urlBase={ROUTES.CONTENT_ROOT}
+        backLabel={t("content.sites")}
         actions={siteId ? (
           <>
             {/*

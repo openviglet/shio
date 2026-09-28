@@ -1112,3 +1112,7 @@ rather than a diff, and gives curators a coverage board and a side-by-side works
 The MCP write path that silently dropped locale and translationOf was a live defect and
 is fixed first in Block AV. Machine translation stays outside Shio: the connected agent
 translates, reached through the assistant, and every result lands as a reviewable draft.
+
+## LXXV The areas this round did not reach
+
+## XCI Finding, selecting and acting on content

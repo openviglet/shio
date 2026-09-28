@@ -43,8 +43,8 @@ export default function BentoPostTypeSelectPage() {
   return (
     <div className="space-y-8">
       {/* The package's hero directly: this page has no save bar, so `PageHero` would add nothing. */}
+      {/* No `eyebrow`: `BentoHero` draws it instead of the back link when given both. */}
       <BentoHero
-        eyebrow={t("content.postLabel")}
         title={t("content.whatToPost")}
         backTo={`${ROUTES.BENTO_CONTENT}/object/${folderId}`}
         backLabel={t("content.browsing")}

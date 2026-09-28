@@ -1871,6 +1871,12 @@ the curator last clicked.
 Two kinds in the composer, not three: a reply is a note under another one, and the rail threads by
 page, so offering it would be a control that means nothing until a thread exists to reply into.
 
+The two kinds are a **segmented radio group** (SH1186), not two buttons: `role="radiogroup"` on a
+muted track, the picked kind raised, arrow keys switch. Drawn as two solid `Button`s beside the
+submit they read as three actions, and the picked kind looked like the one that sends the note. The
+submit is the only filled button on the row. There is no shared toggle-group in `components/ui`, so
+the control lives in the rail until a second choice-of-few needs it.
+
 ## Unsaved work, and the guard this router cannot have (SH1011)
 
 The post editor held its data in `useState` and never compared it with the post it loaded, so
@@ -2252,6 +2258,12 @@ The page has no folder of its own, so the scoped options arrive from the content
 toolbar carries a *Search in this folder* action that hands the search page a `folder:` **address**
 built from the breadcrumb. A path rather than an id, because the vocabulary addresses content by
 path (SH79) and an id there would be a fourth spelling of where something is.
+
+**The root folder is not a segment (SH1184).** `/path` opens its breadcrumb at the site's root
+folder and flags it `root`; `breadcrumbFrom` keeps that flag, and `searchHereFor` skips it, because
+`ShAddressResolver.addressOf` stops below the root. On screen a root folder that repeats its site's
+name is dropped — `createBlank` names it after the site, which drew `site/site/menu` — while a root
+with a name of its own ("Home") stays as a step.
 
 Rows show their state, because a draft and what is live are now both in the answer, and the count
 line carries `withheld` when the reader's ACL removed anything — "and 6 you cannot open" rather
@@ -3513,7 +3525,9 @@ an owner: its writes carry the credential's user, so no name typed there could m
 page and to a re-read after a write. The response then carries `facets`, the filtered posts counted
 by type name, state and locale. `withCounts` writes each count into its option's label ("Article ·
 12"), since the bar has no count slot and its labels are the product's. An option the listing has
-none of says 0 instead of leaving the menu, so a chosen value stays visible and clearable. With
+none of leaves the menu (SH1185), except the chosen one: every caller passes its `barValue`, and a
+chosen value stays at 0 so it can be seen and cleared. A choice facet left with nothing to offer
+leaves the bar. With
 counts, the locale facet is built from their keys, which cover the whole listing, not from one page's
 rows. A "load more" page keeps the first page's counts.
 

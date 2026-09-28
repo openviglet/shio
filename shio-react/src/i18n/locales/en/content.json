@@ -89,6 +89,8 @@
   "content.workflow": "Workflow",
   "content.responsiblePublishing": "Responsible for Publishing",
   "content.saveAndClose": "Save and Close",
+  "content.actions": "Actions",
+  "content.closeWithoutSaving": "Close without saving",
   "content.previewDraft": "Preview Draft",
   "content.previewNoUrl": "This site has no front-end URL configured for preview.",
   "content.previewError": "Could not open the draft preview.",

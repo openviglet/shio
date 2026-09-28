@@ -113,16 +113,22 @@ export interface FacetCounts {
  *
  * The bar holds no product words, so the count is part of the label the product passes: "Article
  * · 12". The counts are the server's, under every filter the listing carries, so choosing an
- * option lists as many posts as it said. An option the listing has none of says 0 rather than
- * disappearing, because the chosen value must stay in its menu to be seen and cleared.
+ * option lists as many posts as it said. An option the listing has none of leaves the menu — a
+ * choice that empties the list is not worth a line — except the chosen one, which stays, at 0, so
+ * it can be seen and cleared. A facet left with no option leaves the bar.
  */
-export function withCounts(facets: readonly BentoFilterFacet[], counts: FacetCounts | undefined): BentoFilterFacet[] {
+export function withCounts(facets: readonly BentoFilterFacet[], counts: FacetCounts | undefined,
+  chosen?: BentoFilterValue): BentoFilterFacet[] {
   if (!counts) return [...facets]
-  return facets.map((facet) => {
+  return facets.flatMap((facet) => {
     const byValue = counts[facet.id as keyof FacetCounts]
-    if (facet.kind !== "choice" || !byValue) return facet
-    return { ...facet,
-      options: facet.options.map((option) => ({ ...option, label: `${option.label} · ${byValue[option.value] ?? 0}` })) }
+    if (facet.kind !== "choice" || !byValue) return [facet]
+    const picked = chosen?.facets[facet.id]
+    const isChosen = (value: string) => Array.isArray(picked) && picked.map(String).includes(value)
+    const options = facet.options
+      .filter((option) => (byValue[option.value] ?? 0) > 0 || isChosen(option.value))
+      .map((option) => ({ ...option, label: `${option.label} · ${byValue[option.value] ?? 0}` }))
+    return options.length ? [{ ...facet, options }] : []
   })
 }
 

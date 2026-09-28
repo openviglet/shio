@@ -206,6 +206,39 @@ export function rowLabel(item: BrowserRow, defaultWord?: string): string {
   return `${item.name} (${marked})`
 }
 
+/** One step of the browser's path: the site, then its folders down to the one on screen. */
+export interface BreadcrumbPathItem {
+  id: string
+  name: string
+  type: string
+  /** The site's root folder — `/path` says so, and the address grammar does not count it. */
+  root?: boolean
+}
+
+/**
+ * SH1184 — the browser's path from `GET /v2/object/{id}/path` (`ShCdaPath`).
+ *
+ * <p>The breadcrumb opens at the site's root folder, and a blank site's root folder is created
+ * with the site's own name (`ShSiteWriteService.createBlank`), so drawing the site and then every
+ * folder read `sh8844001/sh8844001/menu`. A root folder that repeats the site's name is the same
+ * place said twice and is left out; one with a name of its own ("Home") is a real step and stays,
+ * marked `root` so the address built from these crumbs can still skip it.</p>
+ */
+export function breadcrumbFrom(data: {
+  site?: { id: string; name: string } | null
+  breadcrumb?: readonly { id: string; name: string; root?: boolean }[] | null
+} | null | undefined): BreadcrumbPathItem[] {
+  const items: BreadcrumbPathItem[] = []
+  const site = data?.site
+  if (site) items.push({ id: site.id, name: site.name, type: "SITE" })
+  for (const crumb of data?.breadcrumb ?? []) {
+    const root = crumb.root === true
+    if (root && site && crumb.name?.toLowerCase() === site.name?.toLowerCase()) continue
+    items.push({ id: crumb.id, name: crumb.name, type: "FOLDER", root })
+  }
+  return items
+}
+
 /**
  * SH1027/SH1145 — "search this folder", as the search page's own address.
  *
@@ -220,11 +253,13 @@ export function rowLabel(item: BrowserRow, defaultWord?: string): string {
  */
 export function searchHereFor(
   siteName: string | null,
-  breadcrumbPath: readonly { name: string; type: string }[],
+  breadcrumbPath: readonly { name: string; type: string; root?: boolean }[],
   searchRoute = "/search",
 ): string | null {
   if (!siteName) return null
-  const chain = breadcrumbPath.filter((crumb) => crumb.type === "FOLDER").map((crumb) => crumb.name)
+  // SH1184 — the root folder is the site's own place, and the grammar spells it as the site: it is
+  // not a segment of the chain (`ShAddressResolver.addressOf` stops below it).
+  const chain = breadcrumbPath.filter((crumb) => crumb.type === "FOLDER" && !crumb.root).map((crumb) => crumb.name)
   return `${searchRoute}?${new URLSearchParams({
     folder: `folder:${siteName}/${chain.join("/")}`,
     subtree: "true",

@@ -10,8 +10,11 @@ import type { ShNote } from "@/models/note/note.model"
 import { reportProblem } from "@/lib/problem"
 import { addressKey } from "@/lib/query-keys"
 import { useInvalidate } from "@/hooks/use-catalogue"
+import { cn } from "@/lib/utils"
 
 const service = new ShNoteService()
+
+const NOTE_KINDS = [["COMMENT", "note.kindComment"], ["REQUEST", "note.kindRequest"]] as const
 
 /**
  * SH1003 — the corrections on this page, and the box that adds one.
@@ -136,20 +139,43 @@ export function NoteRail({ objectId, field }: { objectId: string; field?: string
           threads by page rather than by parent — so offering it here would be a control that means
           nothing until a thread exists to reply into.
         */}
-        <Button
-          size="sm"
-          variant={kind === "COMMENT" ? "default" : "outline"}
-          onClick={() => setKind("COMMENT")}
+        {/*
+          SH1186 — one choice of two, so it is drawn as a segmented radio group: two solid buttons beside
+          the submit read as three actions, and the picked kind looked like the one to press.
+        */}
+        <div
+          role="radiogroup"
+          aria-label={t("note.kind")}
+          className="inline-flex rounded-md border bg-muted p-0.5"
         >
-          {t("note.kindComment")}
-        </Button>
-        <Button
-          size="sm"
-          variant={kind === "REQUEST" ? "default" : "outline"}
-          onClick={() => setKind("REQUEST")}
-        >
-          {t("note.kindRequest")}
-        </Button>
+          {NOTE_KINDS.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              data-kind={value}
+              aria-checked={kind === value ? "true" : "false"}
+              tabIndex={kind === value ? 0 : -1}
+              onClick={() => setKind(value)}
+              onKeyDown={(event) => {
+                if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return
+                event.preventDefault()
+                const next = value === "COMMENT" ? "REQUEST" : "COMMENT"
+                setKind(next)
+                event.currentTarget.parentElement
+                  ?.querySelector<HTMLButtonElement>(`[data-kind="${next}"]`)?.focus()
+              }}
+              className={cn(
+                "rounded px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                kind === value
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t(label)}
+            </button>
+          ))}
+        </div>
         <Button size="sm" className="ml-auto" disabled={!body.trim()} loading={busy} onClick={() => void add()}>
           {t("note.add")}
         </Button>

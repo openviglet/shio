@@ -62,7 +62,9 @@ export default function PostUnifiedNewPage() {
     [schema]
   )
 
-  const navigateBack = () => navigate(`${ROUTES.CONTENT_ROOT}/object/${folderId}`)
+  // Back returns to the folder the post is being created in, the same place Cancel does.
+  const backUrl = `${ROUTES.CONTENT_ROOT}/object/${folderId}`
+  const navigateBack = () => navigate(backUrl)
 
   async function handleSave() {
     if (!postType) return
@@ -86,7 +88,7 @@ export default function PostUnifiedNewPage() {
   if (!postType) {
     return (
       <>
-        <PageHero icon={IconFileText} title={t("content.newPost")} urlBase={ROUTES.CONTENT_ROOT} />
+        <PageHero icon={IconFileText} title={t("content.newPost")} urlBase={backUrl} />
         <div className="flex items-center gap-2 text-muted-foreground">
           <Spinner labelled />
           <span>{t("common.loading")}</span>
@@ -104,7 +106,7 @@ export default function PostUnifiedNewPage() {
         icon={IconFileText}
         eyebrow={t("content.postLabel")}
         title={t("content.newPost")}
-        urlBase={ROUTES.CONTENT_ROOT}
+        urlBase={backUrl}
         onCancel={navigateBack}
         loading={isLoading}
         saveBadges={

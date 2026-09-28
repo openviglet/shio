@@ -6,6 +6,7 @@
   "note.reopen": "Reabrir",
   "note.showResolved": "Mostrar {{count}} resolvida(s)",
   "note.hideResolved": "Ocultar resolvidas",
+  "note.kind": "Tipo de nota",
   "note.kindComment": "Comentário",
   "note.kindRequest": "Pedido",
   "note.placeholder": "O que deveria mudar nesta página?",

@@ -68,11 +68,8 @@ export interface ConsolePostRow {
   thumbnail?: string
 }
 
-export interface BreadcrumbPathItem {
-  id: string
-  name: string
-  type: string
-}
+/** SH1184 — declared beside `breadcrumbFrom`, which builds it. */
+export type { BreadcrumbPathItem } from "./browser-view"
 
 /** SH1026 — the row every view draws; it and its label moved beside the renderers. */
 export type ObjectChild = BrowserRow

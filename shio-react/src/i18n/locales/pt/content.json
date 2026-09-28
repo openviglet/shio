@@ -89,6 +89,8 @@
   "content.workflow": "Workflow",
   "content.responsiblePublishing": "Responsável pela Publicação",
   "content.saveAndClose": "Salvar e Fechar",
+  "content.actions": "Ações",
+  "content.closeWithoutSaving": "Fechar sem salvar",
   "content.previewDraft": "Visualizar Rascunho",
   "content.previewNoUrl": "Este site não tem uma URL de front-end configurada para visualização.",
   "content.previewError": "Não foi possível abrir a visualização do rascunho.",

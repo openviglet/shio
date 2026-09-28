@@ -95,11 +95,17 @@ export function PageHero({
     )
   }
 
+  /*
+   * The two package heroes disagree when given both an eyebrow and a back link: `BentoFormHero`
+   * draws the link, `BentoHero` draws the eyebrow and drops the link. So every page without a save
+   * bar that passed both — the content browser, the admin lists — had no way back. Here the link
+   * wins in both, and its words fall back to the eyebrow's, which on these pages names the parent.
+   */
   return (
     <BentoHero
-      eyebrow={eyebrow}
+      eyebrow={urlBase ? undefined : eyebrow}
       backTo={urlBase}
-      backLabel={back}
+      backLabel={urlBase ? backLabel ?? eyebrow ?? back : undefined}
       title={title}
       subtitle={subtitle}
       leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}

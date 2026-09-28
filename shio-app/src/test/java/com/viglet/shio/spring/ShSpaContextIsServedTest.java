@@ -24,6 +24,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -96,6 +97,26 @@ class ShSpaContextIsServedTest {
 	@BeforeAll
 	void setUp() {
 		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+	}
+
+	/**
+	 * SH1183 — the shell this class serves is the test fixture, not a leftover React build.
+	 *
+	 * <p>{@code src/main/resources/public/} is a build output, git-ignored and absent under
+	 * {@code -Dskip.npm=true}. Without a fixture the fallback resolver throws
+	 * {@code FileNotFoundException} on CI while a dev box with a stale build stays green, and that
+	 * pair kept the Java gate red on CI for every push it ran on. If the fixture goes, this fails
+	 * locally too, which is the whole point.</p>
+	 */
+	@Test
+	@DisplayName("SH1183: the SPA shell resolves from the test fixture, not from a React build")
+	void theShellIsTheTestFixture() throws Exception {
+		ClassPathResource shell = new ClassPathResource("public/index.html");
+		assertTrue(shell.exists(),
+				"SH1183: public/index.html is not on the test classpath. Restore shio-app/src/test/resources/public/index.html — the React build that would otherwise supply it is skipped on CI.");
+		assertTrue(shell.getURL().toString().contains("test-classes"),
+				"SH1183: public/index.html resolved from %s, not from the test fixture. This passes on a box with a React build and fails on CI."
+						.formatted(shell.getURL()));
 	}
 
 	@Test

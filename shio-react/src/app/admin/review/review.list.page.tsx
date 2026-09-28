@@ -116,8 +116,8 @@ export default function ReviewListPage() {
 
   // SH1024 — each site counts the runs `q` leaves that touched it, which is what choosing it lists.
   const facets = useMemo(() => withCounts(withSiteFacet([], runSites(sessions), t("content.filterSite")),
-    { site: countLocally(sessions.filter((run) => matchesRun(run, q, "")), (run) => Object.keys(run.bySite ?? {})) }),
-  [sessions, q, t])
+    { site: countLocally(sessions.filter((run) => matchesRun(run, q, "")), (run) => Object.keys(run.bySite ?? {})) }, barValue),
+  [sessions, q, barValue, t])
   const shown = useMemo(() => sessions.filter((run) => matchesRun(run, q, site)), [sessions, q, site])
 
 

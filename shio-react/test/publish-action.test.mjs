@@ -90,7 +90,8 @@ test("SH654: Unpublish is offered on a live page, not only on a post with no dra
   // guarded the same way, and a whole-file match passed with the wrong gate on the button.
   const label = page.indexOf('t("content.unpublish")');
   assert.ok(label !== -1, "the label has to be rendered before its guard can be read");
-  const guard = page.slice(page.lastIndexOf("{", page.lastIndexOf("<GradientButton", label)), label);
+  // Unpublish is an item of the header's commit menu, so its guard wraps a DropdownMenuItem.
+  const guard = page.slice(page.lastIndexOf("{", page.lastIndexOf("<DropdownMenuItem", label)), label);
 
   assert.match(
     guard,

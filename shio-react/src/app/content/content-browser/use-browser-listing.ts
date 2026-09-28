@@ -37,7 +37,7 @@ import {
   type BreadcrumbPathItem, type BROWSER_LIST as BrowserListShape, type ConsoleFolderRow,
   type ObjectChild, type ObjectListResponse,
 } from "./browser-listing"
-import { declaredDefaultLocale } from "./browser-view"
+import { breadcrumbFrom, declaredDefaultLocale } from "./browser-view"
 
 /** What the page hands in: where it is, and which query is committed. */
 export interface BrowserListing {
@@ -177,16 +177,8 @@ export function useBrowserListing({ objectId, listKey, sortBy, t }: BrowserListi
 
   useEffect(() => {
     axios.get(`/v2/object/${objectId}/path`).then((res) => {
-      const data = res.data
-      const items: BreadcrumbPathItem[] = []
       // SH120: `ShCdaPath` — { site, breadcrumb: [...folders], currentFolder }.
-      if (data.site) {
-        items.push({ id: data.site.id, name: data.site.name, type: "SITE" })
-      }
-      for (const crumb of data.breadcrumb ?? []) {
-        items.push({ id: crumb.id, name: crumb.name, type: "FOLDER" })
-      }
-      setBreadcrumbPath(items)
+      setBreadcrumbPath(breadcrumbFrom(res.data))
     }).catch(() => {
       setBreadcrumbPath([])
     })

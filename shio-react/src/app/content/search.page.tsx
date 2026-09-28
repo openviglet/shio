@@ -101,7 +101,7 @@ export default function SearchPage() {
       type: countLocally(results, (row) => [row.type]),
       state: countLocally(results, (row) => [row.state?.toLowerCase(), row.live ? "published" : null]),
       locale: countLocally(results, (row) => [row.locale]),
-    } : undefined), [postTypes, results, sites, searched, t])
+    } : undefined, barValue), [postTypes, results, sites, searched, barValue, t])
 
   /**
    * The search runs from the URL, not from the button.

@@ -50,6 +50,17 @@ test("SH1003: the field anchor is carried, never inferred", () => {
       + "last clicked")
 })
 
+test("SH1186: the note kind is one choice of two, drawn as a radio group rather than two buttons", () => {
+  const rail = read("src", "components", "note-rail.tsx")
+
+  assert.match(rail, /role="radiogroup"/)
+  assert.match(rail, /role="radio"/)
+  assert.match(rail, /aria-checked=\{kind === value \? "true" : "false"\}/)
+  assert.doesNotMatch(rail, /variant=\{kind === "(COMMENT|REQUEST)"/,
+    "SH1186: two solid buttons beside the submit read as three actions, and the picked kind looked "
+      + "like the one that sends the note")
+})
+
 test("SH1003: the service uses the shared axios and the same rows the ops write", () => {
   const service = read("src", "services", "note", "note.service.ts")
 

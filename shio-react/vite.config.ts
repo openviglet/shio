@@ -170,6 +170,11 @@ export default defineConfig({
       "/graphql": "http://localhost:2710",
       "/oauth2": "http://localhost:2710",
       "/login/oauth2": "http://localhost:2710",
+      // Pages the console opens in a new tab: without these the dev server answers
+      // with the SPA shell and the React router renders its 404.
+      "/preview": "http://localhost:2710",
+      "/sites": "http://localhost:2710",
+      "/store": "http://localhost:2710",
     },
   },
 });

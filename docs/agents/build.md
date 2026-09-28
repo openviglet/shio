@@ -1474,6 +1474,17 @@ automatically — which is why the order is load-bearing, since `shio-sections` 
 - `/thirdparty/**` → `classpath:/META-INF/resources/webjars/`
 - `/console/**` → React SPA (permitAll in security)
 
+#### The test classpath carries its own SPA shell (SH1183)
+
+`classpath:/public/` is the React build output. It is git-ignored and absent whenever the build
+runs with `-Dskip.npm=true`, which is every CI run. A test that needs the shell resolves
+`shio-app/src/test/resources/public/index.html`, a stub that `target/test-classes` puts ahead of
+any real build in `target/classes`. Without it, `ShSpaContextIsServedTest` passed on every dev box
+(a stale build was lying there) and errored on every CI push, so the Java job was red on all eight
+failing Suites runs checked (back to `2de22289f`) while the local gate said green. `theShellIsTheTestFixture` asserts the shell comes from `test-classes`,
+so removing the stub now fails locally as well. A backend test must never depend on a file that only
+the frontend build produces.
+
 
 ## The gate whose fallback was null in the shape it demands (SH609)
 

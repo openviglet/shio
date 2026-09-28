@@ -6,12 +6,19 @@ import { PageHero } from "@/components/page-hero"
  * frames them. Imported from the bento subpath, the only entry that exports it.
  */
 import { AdaptiveSectionCard, BentoSplitPage } from "@viglet/viglet-design-system/bento"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconEye, IconFileText, IconHistory, IconMessage, IconSparkles } from "@tabler/icons-react"
-import { Clock, Eye, EyeOff, History, Link2, Save, Sparkles, Upload } from "lucide-react"
+import { ChevronDown, Clock, Eye, EyeOff, History, Link2, LogOut, Save, Sparkles, Upload, X } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
@@ -299,15 +306,13 @@ export default function PostUnifiedEditPage() {
     siteId, failed: site.isError, layouts: site.data?.postTypeLayout, typeName: post?.shPostType?.name,
   })
 
-  const navigateBack = () => {
-    // SH1090 — no confirm of its own: useUnsavedGuard's router blocker asks for this exit as it
-    // does for every other, so Cancel with unsaved work still says "discard" before it does.
-    if (parentFolderId) {
-      navigate(`${ROUTES.CONTENT_ROOT}/object/${parentFolderId}`)
-    } else {
-      navigate(ROUTES.CONTENT_ROOT)
-    }
-  }
+  // The folder the post lives in: Cancel and the hero's Back link both return there, not to the
+  // site list — the link used to be the bare content root, so Back skipped the site entirely.
+  const backUrl = parentFolderId ? `${ROUTES.CONTENT_ROOT}/object/${parentFolderId}` : ROUTES.CONTENT_ROOT
+
+  // SH1090 — no confirm of its own: useUnsavedGuard's router blocker asks for this exit as it
+  // does for every other, so Cancel with unsaved work still says "discard" before it does.
+  const navigateBack = () => navigate(backUrl)
 
   async function handlePreview() {
     setIsPreviewing(true)
@@ -486,7 +491,7 @@ export default function PostUnifiedEditPage() {
         icon={IconFileText}
         eyebrow={t("content.postLabel")}
         title={t("content.editPost")}
-        urlBase={ROUTES.CONTENT_ROOT}
+        urlBase={backUrl}
         saveTitle={post.title || t("content.editPost")}
         onCancel={navigateBack}
         loading={isLoading}
@@ -532,6 +537,11 @@ export default function PostUnifiedEditPage() {
               </Badge>
             </>
           }
+        /*
+          Three controls, flush right: the two a curator reaches for while writing (preview,
+          language) and one menu for everything that commits or leaves. Ten
+          equal-weight outlined buttons gave no primary at all.
+        */
         actions={
             <>
               {hasSite && (
@@ -540,94 +550,104 @@ export default function PostUnifiedEditPage() {
                   size="sm"
                   variant="outline"
                   loading={isPreviewing}
+                  title={t("content.previewDraft")}
                   onClick={handlePreview}
                 >
                   <Eye className="size-4" />
-                  {t("content.previewDraft")}
+                  {t("content.preview")}
                 </GradientButton>
               )}
               <PostTranslationsMenu postId={postId} siteId={post.shSite?.id ?? post.shFolder?.shSite?.id}
                 currentLocale={post.locale} />
-              <GradientButton
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setVersionsOpen(true)}
-              >
-                <History className="size-4" />
-                {t("content.versionHistory")}
-              </GradientButton>
-              {/*
-                SH1132 — a rename a curator can do. Only where the page has a URL to change: a post
-                with none has nothing to move FROM, which the service refuses rather than guesses.
-              */}
-              {post.furl && (
-                <GradientButton
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setRenameOpen(true)}
-                >
-                  <Link2 className="size-4" />
-                  {t("content.renameTitle")}
-                </GradientButton>
-              )}
-              <GradientButton
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setScheduleOpen(true)}
-              >
-                <Clock className="size-4" />
-                {t("content.schedule")}
-              </GradientButton>
-              <GradientButton type="button" size="sm" loading={isLoading} onClick={() => handleSave(false)}>
-                <Save className="size-4" />
-                {t("common.save")}
-              </GradientButton>
-              {/*
-                Publish needs a DRAFT row to promote — `POST /{id}/publish` answers
-                "Draft not found" without one — so a post that only ever existed as
-                PUBLISHED is not offered a button that cannot work. Saving it already
-                writes the live row, so nothing is out of reach (SH654).
-              */}
-              {state === "DRAFT" && (
-                <GradientButton
-                  type="button"
-                  size="sm"
-                  loading={isPublishing}
-                  disabled={isLoading || publishHint !== null}
-                  title={publishHint ?? undefined}
-                  onClick={() => setPublishPreviewOpen(true)}
-                >
-                  <Upload className="size-4" />
-                  {t("content.publish")}
-                </GradientButton>
-              )}
-              {isLive && (
-                <GradientButton
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={isLoading || isPublishing || publishHint !== null}
-                  title={publishHint ?? undefined}
-                  onClick={handleUnpublish}
-                >
-                  <EyeOff className="size-4" />
-                  {t("content.unpublish")}
-                </GradientButton>
-              )}
               {publishHint && (
                 <span className="text-xs text-muted-foreground max-w-xs">
                   {t("content.publishNotAllowed", { reason: publishHint })}
                 </span>
               )}
-              <GradientButton type="button" size="sm" variant="outline" disabled={isLoading} onClick={() => handleSave(true)}>
-                {t("content.saveAndClose")}
-              </GradientButton>
-              <GradientButton type="button" size="sm" variant="ghost" onClick={navigateBack}>
-                {t("common.cancel")}
-              </GradientButton>
+              {/*
+                One filled "Actions" menu carries every commit verb, grouped by what they touch:
+                publish and save first, then the page (history, address, schedule), leaving the
+                form, and taking the page down — kept last and tinted, since it is the one visitors
+                notice. Autosave (SH1011) is why saving can sit one click deep.
+              */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <GradientButton type="button" size="sm" loading={isLoading || isPublishing}>
+                    {t("content.actions")}
+                    <ChevronDown className="size-4" />
+                  </GradientButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                    {/*
+                      Publish needs a DRAFT row to promote — `POST /{id}/publish` answers
+                      "Draft not found" without one — so a post that only ever existed as
+                      PUBLISHED is not offered an item that cannot work. Saving it already
+                      writes the live row, so nothing is out of reach (SH654).
+                    */}
+                    {state === "DRAFT" && (
+                      <DropdownMenuItem
+                        data-action-id="post.publish"
+                        className="font-medium"
+                        disabled={isLoading || publishHint !== null}
+                        title={publishHint ?? undefined}
+                        onClick={() => setPublishPreviewOpen(true)}
+                      >
+                        <Upload className="size-4" />
+                        {t("content.publish")}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem data-action-id="post.save" disabled={isLoading}
+                      onClick={() => handleSave(false)}>
+                      <Save className="size-4" />
+                      {t("common.save")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem data-action-id="post.saveAndClose" disabled={isLoading}
+                      onClick={() => handleSave(true)}>
+                      <LogOut className="size-4" />
+                      {t("content.saveAndClose")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem data-action-id="post.schedule" onClick={() => setScheduleOpen(true)}>
+                      <Clock className="size-4" />
+                      {t("content.schedule")}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem data-action-id="post.history" onClick={() => setVersionsOpen(true)}>
+                      <History className="size-4" />
+                      {t("content.versionHistory")}
+                    </DropdownMenuItem>
+                    {/*
+                      SH1132 — a rename a curator can do. Only where the page has a URL to change: a
+                      post with none has nothing to move FROM, which the service refuses rather than
+                      guesses.
+                    */}
+                    {post.furl && (
+                      <DropdownMenuItem data-action-id="post.move" onClick={() => setRenameOpen(true)}>
+                        <Link2 className="size-4" />
+                        {t("content.renameTitle")}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={navigateBack}>
+                      <X className="size-4" />
+                      {t("content.closeWithoutSaving")}
+                    </DropdownMenuItem>
+                    {isLive && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          data-action-id="post.unpublish"
+                          variant="destructive"
+                          disabled={isLoading || isPublishing || publishHint !== null}
+                          title={publishHint ?? undefined}
+                          onClick={handleUnpublish}
+                        >
+                          <EyeOff className="size-4" />
+                          {t("content.unpublish")}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
             </>
           }
       />

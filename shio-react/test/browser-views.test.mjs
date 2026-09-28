@@ -12,8 +12,8 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import {
-  browserView, editableTitleField, listboxClass, readTableLayout, stepFor, tableLayoutKey, thumbnailSrc,
-  fullWindow, visibleWindow, WINDOW_THRESHOLD,
+  breadcrumbFrom, browserView, editableTitleField, listboxClass, readTableLayout, searchHereFor, stepFor,
+  tableLayoutKey, thumbnailSrc, fullWindow, visibleWindow, WINDOW_THRESHOLD,
 } from "../src/app/content/content-browser/browser-view.ts"
 import { browserSource } from "./support/browser-source.mjs"
 import { stripComments } from "./support/source-text.mjs"
@@ -34,6 +34,29 @@ test("SH1026: the URL's view word is read as a view, and an unknown one is the l
   for (const view of ["list", "grid", "spreadsheet"]) assert.equal(browserView(view), view)
   assert.equal(browserView("kanban"), "list", "SH1026: an unknown view word drew nothing")
   assert.equal(browserView(""), "list")
+})
+
+test("SH1184: a root folder named after its site is not drawn twice, and no root is in the address", () => {
+  const site = { id: "s", name: "sh8844001" }
+  const blank = breadcrumbFrom({
+    site,
+    breadcrumb: [{ id: "r", name: "sh8844001", root: true }, { id: "m", name: "menu", root: false }],
+  })
+  assert.deepEqual(blank.map((crumb) => crumb.name), ["sh8844001", "menu"],
+    "SH1184: the breadcrumb read sh8844001/sh8844001/menu — the site, then its root folder of the same name")
+  assert.equal(new URLSearchParams(searchHereFor(site.name, blank).split("?")[1]).get("folder"),
+    "folder:sh8844001/menu")
+
+  const home = breadcrumbFrom({
+    site: { id: "s", name: "Stock" },
+    breadcrumb: [{ id: "r", name: "Home", root: true }, { id: "n", name: "News", root: false }],
+  })
+  assert.deepEqual(home.map((crumb) => crumb.name), ["Stock", "Home", "News"],
+    "SH1184: a root folder with a name of its own is a real step and stays on the path")
+  assert.equal(new URLSearchParams(searchHereFor("Stock", home).split("?")[1]).get("folder"),
+    "folder:Stock/News",
+    "SH1184: the address grammar stops below the root folder (ShAddressResolver.addressOf), so it is no segment")
+  assert.deepEqual(breadcrumbFrom(undefined), [])
 })
 
 test("SH1026: a grid steps across as well as down; the list and the table do not", () => {
