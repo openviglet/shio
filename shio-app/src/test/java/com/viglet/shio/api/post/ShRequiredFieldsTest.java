@@ -228,12 +228,12 @@ class ShRequiredFieldsTest {
     @Test
     @DisplayName("SH1009: whitespace is empty, which is what a converted page leaves behind")
     void whitespaceIsEmpty() {
-        assertThat(ShRequiredFields.isEmpty(objectMapper.getNodeFactory().textNode("   ")))
+        assertThat(ShRequiredFields.isEmpty(objectMapper.getNodeFactory().stringNode("   ")))
                 .as("SH1009: a whitespace-only title satisfies 'a value is present' and is not a "
                         + "title")
                 .isTrue();
         assertThat(ShRequiredFields.isEmpty(objectMapper.getNodeFactory().arrayNode())).isTrue();
-        assertThat(ShRequiredFields.isEmpty(objectMapper.getNodeFactory().textNode("x"))).isFalse();
+        assertThat(ShRequiredFields.isEmpty(objectMapper.getNodeFactory().stringNode("x"))).isFalse();
     }
 
     @Test

@@ -581,7 +581,7 @@ public class ShAgentDesiredStateService {
                 }
                 continue;
             }
-            String text = value.isTextual() ? value.stringValue() : null;
+            String text = value.isString() ? value.stringValue() : null;
             if (text != null && !text.isBlank()) {
                 data.put(key, text);
             }

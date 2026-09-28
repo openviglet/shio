@@ -26,6 +26,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.viglet.shio.lint.ShSourceScan;
+import com.viglet.shio.lint.ShSourceText;
+
 /**
  * SH271 — the two build warnings that are <em>checkable</em> fail the build instead of scrolling past.
  *
@@ -67,6 +70,7 @@ import org.junit.jupiter.api.Test;
  *
  * @author Alexandre Oliveira
  */
+@ShSourceScan(ShSourceScan.Reads.CODE)
 class ShBuildWarningLintTest {
 
     /** {@code <plugin>…</plugin>}, non-greedy so each declaration is its own match. */
@@ -198,6 +202,65 @@ class ShBuildWarningLintTest {
 
                         Fix: keep <showDeprecation>true</showDeprecation> on maven-compiler-plugin.""")
                 .contains("<showDeprecation>true</showDeprecation>");
+    }
+
+    /**
+     * SH1181 — the deprecations the build names, held by their spelling, since one came back.
+     *
+     * <p>{@code showDeprecation} makes javac name each one, and that is all it does: SH271 fixed
+     * {@code textNode} → {@code stringNode} and it was back in two tests, beside three
+     * {@code isTextual()}, two {@code asText()} and a Testcontainers 1.x container, all printed as
+     * warnings on every build that nobody failed on. So the replaced forms fail here instead, each
+     * with the call that replaces it.</p>
+     */
+    private static final Map<Pattern, String> REPLACED = Map.of(
+            Pattern.compile("\\.isTextual\\("), "isString() (Jackson 3)",
+            Pattern.compile("\\.asText\\("), "asString() (Jackson 3)",
+            Pattern.compile("\\.textNode\\("), "stringNode() (Jackson 3)",
+            Pattern.compile("org\\.testcontainers\\.containers\\.(MariaDB|PostgreSQL|MySQL)Container"),
+            "org.testcontainers.<db>.<Db>Container (Testcontainers 2)");
+
+    @Test
+    @DisplayName("SH1181: no source uses an API the build warns is deprecated and replaced")
+    void noSourceUsesAReplacedApi() {
+        Path src = repositoryRoot().resolve("shio-app").resolve("src");
+        Map<String, String> found = new TreeMap<>();
+        int[] read = {0};
+        try (Stream<Path> files = Files.walk(src)) {
+            files.filter(file -> file.toString().endsWith(".java"))
+                    .filter(file -> !file.getFileName().toString().equals("ShBuildWarningLintTest.java"))
+                    .forEach(file -> {
+                        read[0]++;
+                        // Code only: a comment explaining the rename names the old call, and a lint
+                        // that fired on it would accuse the file that just got it right (SH613).
+                        String code = ShSourceText.code(read(file));
+                        for (Map.Entry<Pattern, String> rule : REPLACED.entrySet()) {
+                            if (rule.getKey().matcher(code).find()) {
+                                found.merge(src.relativize(file).toString(), "use " + rule.getValue(),
+                                        (a, b) -> a + "; " + b);
+                            }
+                        }
+                    });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        assertThat(read[0]).as("SH1181: the walk read no sources, so the check below is vacuous")
+                .isGreaterThan(500);
+        assertThat(found)
+                .as("SH1181: javac warns on these on every build and nothing failed; replace each")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH1181: the resources plugin forces the copy with changeDetection, not overwrite")
+    void theResourcesPluginUsesChangeDetection() {
+        String pom = withoutComments(read(repositoryRoot().resolve("shio-app").resolve("pom.xml")));
+        assertThat(pom)
+                .as("SH1181: <overwrite> is deprecated in maven-resources-plugin 3.5.0 and warned on every "
+                        + "build; changeDetection=always is its own 'equivalent of overwrite=true', and the "
+                        + "forced copy is load-bearing (index.html must reach target/classes/public)")
+                .doesNotContain("<overwrite>")
+                .contains("<changeDetection>always</changeDetection>");
     }
 
     @Test

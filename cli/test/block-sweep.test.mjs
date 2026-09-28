@@ -103,8 +103,10 @@ const SWEEP = {
     swept: true,
     why: "the areas the round did not reach, closing with SH1177 (peer ranges checked on every test "
       + "run) and SH1102 (the roadmap's docs gate bare and on every push, once roadkeep 0.2.511 fixed "
-      + "RK1707 and RK1708). docs-shio moved: COVERAGE's instruments row names both, with the mirror "
-      + "regenerated. README and shio-site are NOT moved: neither describes the build's own gates",
+      + "RK1707 and RK1708), then reopened once for SH1181 (the build's ten deprecation warnings, "
+      + "replaced and held by a lint). docs-shio moved: COVERAGE's instruments row names all three, "
+      + "with the mirror regenerated. README and shio-site are NOT moved: neither describes the "
+      + "build's own gates",
   },
   BD: {
     swept: true,

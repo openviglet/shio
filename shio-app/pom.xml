@@ -422,8 +422,10 @@
                  in the same invocation; maven-resources' incremental copy otherwise
                  skips that stable-named file (while copying the freshly-hashed
                  assets/*), so index.html never reaches target/classes/public and the
-                 SPA 404s at runtime and in the packaged jar. overwrite=true disables
-                 the staleness check so index.html is always copied. -->
+                 SPA 404s at runtime and in the packaged jar. changeDetection=always
+                 disables the staleness check so index.html is always copied; it is
+                 the plugin's own spelling of the old overwrite=true (deprecated in
+                 3.5.0, "Equivalent of overwrite=true" per its descriptor). -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -434,7 +436,7 @@
                      `overwrite` behaviour below is load-bearing and an upgrade is its own decision. -->
                 <version>3.5.0</version>
                 <configuration>
-                    <overwrite>true</overwrite>
+                    <changeDetection>always</changeDetection>
                 </configuration>
             </plugin>
             <plugin>

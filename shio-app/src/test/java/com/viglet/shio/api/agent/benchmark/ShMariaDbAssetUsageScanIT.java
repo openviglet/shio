@@ -17,7 +17,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.mariadb.MariaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 

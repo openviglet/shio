@@ -161,7 +161,7 @@ public class ShTuringDocumentMapper {
     }
 
     private static String plain(JsonNode value) {
-        String text = value.isTextual() ? value.stringValue() : value.toString();
+        String text = value.isString() ? value.stringValue() : value.toString();
         return Jsoup.parse(text).text().trim();
     }
 
@@ -306,7 +306,7 @@ public class ShTuringDocumentMapper {
     }
 
     private static void collect(JsonNode node, List<String> parts) {
-        if (node.isTextual()) {
+        if (node.isString()) {
             String text = Jsoup.parse(node.stringValue()).text().trim();
             if (!text.isEmpty()) {
                 parts.add(text);

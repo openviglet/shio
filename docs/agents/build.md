@@ -1084,6 +1084,17 @@ inherits from the same POM's `<build>`, which is how Maven merges them), no logb
 deprecated API instead of saying "recompile with `-Xlint:deprecation`". **So a second warning line in a
 build log is news** — which is the property SH250's verification depended on and got by luck.
 
+**Naming a deprecation is not failing on it (SH1181).** `showDeprecation` made javac name ten
+deprecated calls, and they sat in every log anyway. One of them was SH271's own `textNode`, fixed
+once and back again. `ShBuildWarningLintTest` now fails on the replaced spellings, read as code
+through `ShSourceText`, and names the replacement for each: `isTextual`→`isString`,
+`asText`→`asString`, `textNode`→`stringNode`, and Testcontainers 1.x
+`org.testcontainers.containers.*Container`→`org.testcontainers.<db>.*Container`. The resources
+plugin's forced copy is `<changeDetection>always</changeDetection>`, which its descriptor calls the
+equivalent of the deprecated `overwrite=true`. The copy is still load-bearing (`index.html` into
+`target/classes/public`), and a test holds that too. A new deprecation that javac names belongs in
+that list, not in the log.
+
 **Measure the suite from the run, not from `target/` (SH283) — and keep the run (SH354).**
 The verified command:
 

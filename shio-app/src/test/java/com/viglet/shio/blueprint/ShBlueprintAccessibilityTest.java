@@ -173,7 +173,7 @@ class ShBlueprintAccessibilityTest {
     private static boolean shipsALayout(ShBlueprint blueprint) {
         for (JsonNode document : blueprint.content()) {
             for (JsonNode post : document.path("posts")) {
-                if (LAYOUT_TYPE.equals(post.path("type").asText(""))) {
+                if (LAYOUT_TYPE.equals(post.path("type").asString(""))) {
                     return true;
                 }
             }
@@ -193,7 +193,7 @@ class ShBlueprintAccessibilityTest {
     private static JsonNode paramsFor(ShBlueprint blueprint) {
         ObjectNode params = new ObjectMapper().createObjectNode();
         for (JsonNode required : blueprint.manifest().params().path("required")) {
-            params.put(required.asText(), "Acme");
+            params.put(required.asString(), "Acme");
         }
         return params;
     }
