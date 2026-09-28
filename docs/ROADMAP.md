@@ -15,7 +15,7 @@
 
 ## Block BI — The areas this round did not reach
 
-- ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
+- ⏳ **SH1102** (deps: roadkeep RK1707, roadkeep RK1708) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
 
 ## Priority
 
