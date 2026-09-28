@@ -175,6 +175,9 @@ export default defineConfig({
       "/preview": "http://localhost:2710",
       "/sites": "http://localhost:2710",
       "/store": "http://localhost:2710",
+      // SH1201 — the media library's thumbnails and every byte URL the console builds. Without it
+      // the dev server answers the SPA shell with a 200, so no request fails and every image breaks.
+      "/file_source": "http://localhost:2710",
     },
   },
 });

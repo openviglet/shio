@@ -239,7 +239,9 @@ const SWEEP = {
       + "a curator (SH953, SH955). SH954 deleted a button no page had ever described. COVERAGE.md "
       + "names all nine and the mirror is regenerated. README and shio-site are NOT moved, and that "
       + "is the finding: neither describes asset headers, upload policy, the console's error "
-      + "reporting or shio_write's argument list, and the tool count did not change",
+      + "reporting or shio_write's argument list, and the tool count did not change. Reopened once "
+      + "for SH1201 (the dev server's proxy missed the media byte route), which COVERAGE's instruments "
+      + "row names, with the mirror regenerated; nothing outward describes the dev server",
   },
   AR: {
     swept: true,

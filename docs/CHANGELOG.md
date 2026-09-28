@@ -1701,6 +1701,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH956** — A dry run now names what the allow-list would strip, and verify reports html-unsafe on published rich text written before the sanitizer — all three through the same sanitizer (design §LXI.7 recorded in `docs/agents/security.md`).
 - **SH1071** — An asset's download name is quoted by Spring's ContentDisposition: a quote, a control character or a smuggled filename* no longer escapes it, and a name outside ASCII downloads as itself (design §LXI.8 recorded in `docs/agents/security.md`).
 - **SH1073** — shio_write declares locale, translationOf, url and expect, shio_read returns the digest expect takes, and a tool reading an argument its schema omits fails the build by name (design §LXI.9 recorded in `docs/agents/agent-surface.md`).
+- **SH1201** — The dev server proxies /file_source, so media thumbnails load under Vite, and a test fails any backend prefix the console links to that the proxy leaves out.
 
 ## Block AW — One chrome: bento, and nothing left that names another
 

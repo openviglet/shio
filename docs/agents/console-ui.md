@@ -3883,3 +3883,12 @@ type managed by code gets a plain hero and its banner. `one-primary.test.mjs` ho
 census's `primary-fill` fell from five colours to four; its "more than one filled primary" count
 still names the e-mail, token and webhook editors, where the second fill is the save bar's hidden
 morph copy and the switches that are on, which is a reading to fix in the census rather than here.
+
+## The dev server proxies every backend prefix the console links to (SH1201)
+
+`vite.config.ts` proxies `/api` and each other top-level prefix the backend serves that the console
+builds a URL on: `/file_source` (media bytes and thumbnails), `/preview`, `/sites`, `/store`,
+`/graphql`, `/graphiql`, `/logout`, `/csrf` and `/oauth2`. A prefix left out is answered by the dev
+server with the SPA shell and a 200, so nothing fails loudly: the media library showed fifteen broken
+thumbnails and no request error. `dev-proxy.test.mjs` reads every URL the console source builds and
+fails on a backend prefix the proxy does not name.

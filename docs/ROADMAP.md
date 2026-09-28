@@ -19,10 +19,6 @@
 - 📋 **SH1203** (deps: SH1195 ✅) **Content browser rows are 80 px cards with a numbered circle, blue link titles and five pills each; 12 rows fill a screen** — A site tree beside a dense table (type, state, language, changed as columns) is how a curator scans and acts on a folder of fifty posts. → §LV.39
 - 📋 **SH1204** (deps: SH1195 ✅) **The post editor labels every field with widget-type pills (Title, Text, Ace Editor - HTML) and hides the post's state** — A curator edits content, not widgets: state and address belong in the header, and field chrome should be a label and a help line. → §LV.40
 
-## Block AV — The live defects, fixed before anything is built on them
-
-- 📋 **SH1201** (deps: —) **Media thumbnails are broken under the Vite dev server: /file_source is not proxied and answers index.html** — Every console e2e check runs against Vite, so a dev-only broken image hides real media regressions and makes the library look empty. → §LXI.20
-
 ## Block AU — The design system's consumer contract, adopted and gated
 
 - 📋 **SH1199** (deps: VDS182 and VDS183 in the DS) **The design system allows any control height, radius and tone, so the console renders 15 heights, 10 radii and 3 monos** — A closed scale in the DS (two control heights, three radii, one mono, tones as state) makes consistency the default, not a review. → §LV.36

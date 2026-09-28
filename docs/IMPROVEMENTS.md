@@ -1108,19 +1108,6 @@ They come first because later blocks stand on them: the assistant reports outcom
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
 
-### LXI.20 LXI.20 The dev server proxies only /api (SH1201)
-
-In the 2026-09-28 capture of Biblioteca de Mídia all 15 image thumbnails render as
-broken images showing their alt text. The page asks for
-/file_source/<id>/hero.png?w=300&h=300&crop=fill&format=webp. Through Vite on :5173 that
-URL answers 200 text/html, 11 547 bytes, which is the SPA fallback, while the backend on
-:2710 answers 200 image/webp for the same path. shio-react/vite.config.ts proxies "/api"
-to 2710 and nothing else, so any asset path the backend serves outside /api is swallowed
-by the dev server in the same way. No request fails, so no console error or
-failed-response listener sees it. The fix adds the backend's non-API delivery prefixes
-to the dev proxy, and the assertion that closes it loads the media page in an e2e check
-and fails when any img has naturalWidth 0.
-
 ## LXII One chrome: bento, and nothing left that names another (Block AW)
 
 Blocks AQ and AR moved every console surface onto the bento shell and deleted the
