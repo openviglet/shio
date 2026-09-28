@@ -32,5 +32,15 @@
   "activity.compare": "Compare this page's versions",
   "activity.more": "Show older",
   "activity.working": "{{who}} is working on this page right now",
-  "activity.workingFor": "{{who}} is working on this page right now — {{intent}}"
+  "activity.workingFor": "{{who}} is working on this page right now — {{intent}}",
+  "activity.verb.CREATE": "Created",
+  "activity.verb.UPDATE": "Updated",
+  "activity.verb.PUBLISH": "Published",
+  "activity.verb.UNPUBLISH": "Unpublished",
+  "activity.verb.DELETE": "Deleted",
+  "activity.verb.RESTORE": "Restored",
+  "activity.detail.renamed": "(renamed from “{{name}}”)",
+  "activity.detail.in": "(in {{name}})",
+  "activity.subject.FOLDER": "folder",
+  "activity.subject.SITE": "site"
 }

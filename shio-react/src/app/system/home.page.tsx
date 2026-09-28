@@ -6,6 +6,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
+import { activitySentence } from "@/lib/activity-text"
 import {
   IconAlertTriangle,
   IconCalendarClock,
@@ -346,7 +347,7 @@ export default function BentoHomePage() {
               <li key={item.id} className={ROW_CLASS}>
                 <RowIcon icon={ACTION_ICON[item.action] ?? IconHistory} tone={ACTION_TONE[item.action] ?? "slate"} />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{item.description}</span>
+                  <span className="block truncate text-sm font-medium">{activitySentence(item.description, item.action, t)}</span>
                   <span className="text-muted-foreground block text-xs">{actionLabel(item.action)}</span>
                 </span>
                 {item.date && (

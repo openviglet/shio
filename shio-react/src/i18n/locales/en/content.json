@@ -40,7 +40,7 @@
   "content.uploadFile": "Upload & Import",
   "content.searchPlaceholder": "Search content...",
   "content.searchTitle": "Search",
-  "content.searchDescription": "Full-text search across published content — titles, summaries and field values.",
+  "content.searchDescription": "Full-text search across every draft and published post — titles, summaries and field values. The State filter narrows it to one.",
   "content.searchNoResults": "No matching content",
   "content.searchPromptTitle": "Search this instance",
   "content.searchPromptHint": "Enter a term or choose a filter above to find posts across one site or all of them.",

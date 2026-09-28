@@ -3927,3 +3927,16 @@ its short id in mono and a muted "no intent declared"; the `--intent` instructio
 under the list. The typed change counts use Activity's action labels. A row's Approve is a
 secondary, and ticking rows raises a bar whose "Approve and publish" is the page's one primary,
 deciding every ticked run in one pass with one report. `review-queue.test.mjs` holds the shape.
+
+## An audit row reads in the console's language (SH1202)
+
+The server writes each audit row's description as an English sentence at write time
+(`ShContentAuditService.describe`: a verb, the subject in quotes, and optionally a detail such as
+`in Home` or `renamed from "VigR3"`), so no i18n scan of the console could see it. `activitySentence`
+in `lib/activity-text.ts` rebuilds it from the row's action and locale keys (`activity.verb.*`,
+`activity.detail.*`), turns a literal `&nbsp;` in a replicated title back into a space, and returns
+any sentence of another shape unchanged, because a wrong translation is worse than an English one.
+The Activity page and the home page's recent activity both use it, and the subject chip is
+localized too. The same task corrected two claims the pages made: Search covers drafts and published
+posts with a State filter (its subtitle said published only), and the login page's renderer is
+Handlebars.java, not Nashorn. `copy-matches-page.test.mjs` runs the captured sentences through it.

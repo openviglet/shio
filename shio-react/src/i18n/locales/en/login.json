@@ -13,12 +13,11 @@
   "login.heroTagline": "Headless CMS for modern applications",
   "login.featureCms": "Content Management System",
   "login.featureApi": "REST API for any frontend",
-  "login.featureTemplates": "Server-side rendering with Nashorn",
+  "login.featureTemplates": "Server-side rendering with Handlebars templates",
   "login.settingsAnimations": "Animations",
   "login.settingsExplosion": "Explosion",
   "login.settingsTokens": "Formulas",
   "login.settingsLanguage": "Language",
-
   "setup.title": "Welcome to Shio CMS",
   "setup.description": "Set up the administrator password to get started.",
   "setup.hint": "First-time setup",

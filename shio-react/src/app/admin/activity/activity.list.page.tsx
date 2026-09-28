@@ -1,3 +1,4 @@
+import { activitySentence } from "@/lib/activity-text"
 import { IconHistory } from "@tabler/icons-react"
 import { EmptyState } from "@/components/empty-state"
 import { PageHero } from "@/components/page-hero"
@@ -249,12 +250,12 @@ export default function ActivityListPage() {
                         */}
                         {item.subjectKind && item.subjectKind !== "POST" && (
                           <Badge variant="outline" className="ml-1 text-[10px]">
-                            {item.subjectKind.toLowerCase()}
+                            {t(`activity.subject.${item.subjectKind}`, { defaultValue: item.subjectKind.toLowerCase() })}
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{item.description}</div>
+                        <div className="font-medium">{activitySentence(item.description, item.action, t)}</div>
                         {/*
                           SH989 — what the write changed, by name. After an approve the draft and
                           the live row are one document, so this line is what still describes it.

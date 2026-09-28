@@ -973,22 +973,6 @@ membership data is reachable from the console services today is the first thing 
 establish; if it is not, the agent surface needs it too (P1), and the task grows a
 dependency rather than a console-only read.
 
-### LV.37 LV.37 Page copy that matches what the page shows (SH1202)
-
-Three mismatches in the 2026-09-28 capture. First, Pesquisa's description says "Pesquisa
-de texto completo no conteúdo publicado", but all 27 results for "home" carry a Rascunho
-badge. Either the subtitle or the query scope is wrong, and the answer decides whether a
-curator can trust a search result to be live. Second, Atividade and the home page's
-Atividade Recente render each entry as an English sentence ("Updated \"Home\" (renamed
-from \"VigR3\")", "Published \"Acme&nbsp;\"") under Portuguese column headings and
-labels. The raw entity &nbsp; also shows in two titles. Block AH swept the console's own
-strings, but these are server-built summaries, so no i18n scan sees them. The concept
-(artboard 01) renders them from the event's fields as a localized verb plus the object
-("Renomeou a pasta VigR3 → Home"). Third, the login page is a different visual world, a
-navy ground with orange chemistry formulas and a claim about server-side rendering with
-Nashorn; SH1199 moves its ground onto the console's, and this task corrects its copy.
-The task also adds an assertion that an Activity row in pt contains no English verb.
-
 ### LV.39 LV.39 The content browser as tree plus table (SH1203)
 
 In VigR3 / Home each row is a 79 px bordered card. It holds an orange or blue numbered

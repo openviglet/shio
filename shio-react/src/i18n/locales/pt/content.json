@@ -40,7 +40,7 @@
   "content.uploadFile": "Enviar e Importar",
   "content.searchPlaceholder": "Pesquisar conteúdo...",
   "content.searchTitle": "Pesquisa",
-  "content.searchDescription": "Pesquisa de texto completo no conteúdo publicado — títulos, resumos e valores dos campos.",
+  "content.searchDescription": "Pesquisa de texto completo em rascunhos e publicados — títulos, resumos e valores dos campos. O filtro Estado restringe a um deles.",
   "content.searchNoResults": "Nenhum conteúdo encontrado",
   "content.searchPromptTitle": "Pesquise nesta instância",
   "content.searchPromptHint": "Digite um termo ou escolha um filtro acima para encontrar posts em um site ou em todos.",

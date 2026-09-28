@@ -32,5 +32,15 @@
   "activity.compare": "Comparar as versões desta página",
   "activity.more": "Mostrar mais antigas",
   "activity.working": "{{who}} está trabalhando nesta página agora",
-  "activity.workingFor": "{{who}} está trabalhando nesta página agora — {{intent}}"
+  "activity.workingFor": "{{who}} está trabalhando nesta página agora — {{intent}}",
+  "activity.verb.CREATE": "Criou",
+  "activity.verb.UPDATE": "Atualizou",
+  "activity.verb.PUBLISH": "Publicou",
+  "activity.verb.UNPUBLISH": "Despublicou",
+  "activity.verb.DELETE": "Excluiu",
+  "activity.verb.RESTORE": "Restaurou",
+  "activity.detail.renamed": "(renomeado de “{{name}}”)",
+  "activity.detail.in": "(em {{name}})",
+  "activity.subject.FOLDER": "pasta",
+  "activity.subject.SITE": "site"
 }
