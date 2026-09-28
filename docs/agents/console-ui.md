@@ -3903,3 +3903,16 @@ hidden. The visual editor mounts it `inline` in its own layout; nothing else mou
 `dock-slot.test.mjs` holds both. The bell-with-a-cog in the header is not a second notice: it is the
 dock's preferences (SH971), which sit in the header only because neither the assistant nor the user
 menu has a slot for them yet.
+
+## An editor's save bar is the morph, and it says when something changed (SH1196)
+
+The token, webhook, tenant and two provider editors each drew a second bar under the hero, a
+hand-rolled `sticky top-0` div repeating the record's name with Delete beside Save, and it stayed on
+screen for good. Each now gives `PageHero` the save props, so `BentoFormHero` renders the controls
+in the hero and the fixed bar only once the hero scrolls away. The hero's title is the record, and
+its occasional or destructive verbs (Delete, and a tenant's Suspend or Activate) go in `trailing`
+as a `BentoActionsMenu`, which is where the contract keeps them. Every infrastructure editor passes
+`dirty`, computed by `isDirty` in `lib/form-dirty.ts` against the record as the form seeded it, and
+re-reads the record after a save so the cue clears. A setting's help is a visible line under its
+label, not a tooltip behind an info icon. `form-save-bar.test.mjs` fails a hand-rolled sticky bar on
+any page, an editor with no dirty cue, a Delete drawn beside Save, and a hint behind an icon.

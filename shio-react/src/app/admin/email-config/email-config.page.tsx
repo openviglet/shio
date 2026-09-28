@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { Mail, Save, Info } from "lucide-react"
+import { Mail, Save } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
+import { isDirty } from "@/lib/form-dirty"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -65,6 +65,8 @@ export default function EmailConfigPage() {
       const saved = await service.update(config)
       setConfig(saved)
       toast.success(t("emailConfig.saved"))
+      // SH1196 — the saved settings are the new baseline, so the save bar stops saying "unsaved".
+      await loaded.refetch()
     } catch (error) {
       reportProblem(error, t("common.error"))
     } finally {
@@ -76,12 +78,9 @@ export default function EmailConfigPage() {
     key: keyof ShEmailConfig, label: string, hint: string,
   ) => (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
+      <div className="space-y-0.5">
         <Label htmlFor={key}>{label}</Label>
-        <Tooltip>
-          <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-          <TooltipContent>{hint}</TooltipContent>
-        </Tooltip>
+        <p className="text-xs text-muted-foreground">{hint}</p>
       </div>
       <Switch id={key} checked={config[key] as boolean}
         onCheckedChange={(checked) => set(key, checked as ShEmailConfig[typeof key])} />
@@ -116,6 +115,7 @@ export default function EmailConfigPage() {
         backLabel={t("home.title")}
         onCancel={() => navigate(ROUTES.HOME)}
         loading={saving}
+        dirty={isDirty(config, loaded.data)}
         actions={
           <Button size="sm" onClick={handleSave} disabled={saving}>
             <Save className="h-4 w-4 mr-1" />

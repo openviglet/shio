@@ -1,5 +1,5 @@
 import { PageHero } from "@/components/page-hero"
-import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
+import { AdaptiveSectionCard, BentoActionsMenu } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -8,9 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { KeyRound, Save, ArrowLeft, Copy, Check, Trash2, Info } from "lucide-react"
+import { KeyRound, Save, Copy, Check, Trash2 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -22,11 +21,23 @@ import { useSites } from "@/hooks/use-catalogue"
 import { reportProblem } from "@/lib/problem"
 import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
+import { isDirty } from "@/lib/form-dirty"
 
 const service = new ShApiTokenService()
 
 const SCOPES: ShApiTokenScope[] = ["READ", "PREVIEW", "WRITE", "AGENT"]
 const ENVS: ShApiTokenEnv[] = ["PROD", "PREVIEW"]
+
+const EMPTY: ShApiToken = {
+  id: "", title: "", description: "", token: "", owner: "", createdDate: "", enabled: true,
+  scope: "READ", siteIds: [], env: "PROD", mayPublish: false,
+}
+
+/** The form's shape for a loaded token: the defaults it fills, so a pristine form is not dirty. */
+const seedFrom = (token: ShApiToken): ShApiToken => ({
+  ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [], env: token.env ?? "PROD",
+  mayPublish: token.mayPublish ?? false,
+})
 
 export default function ApiTokenPage() {
   const { t } = useTranslation()
@@ -34,10 +45,7 @@ export default function ApiTokenPage() {
   const { tokenId } = useParams() as { tokenId: string }
   const isNew = tokenId === "new"
 
-  const [item, setItem] = useState<ShApiToken>({
-    id: "", title: "", description: "", token: "", owner: "", createdDate: "", enabled: true,
-    scope: "READ", siteIds: [], env: "PROD", mayPublish: false,
-  })
+  const [item, setItem] = useState<ShApiToken>(EMPTY)
   // SH1046 — the site list is one cached read, shared with every other screen that fills a picker
   // from it. An empty array while it loads is what this form drew before and still draws.
   const sites = useSites().data ?? []
@@ -61,7 +69,7 @@ export default function ApiTokenPage() {
   const token = loaded.data
   if (token && seeded !== token.id) {
     setSeeded(token.id)
-    setItem({ ...token, scope: token.scope ?? "READ", siteIds: token.siteIds ?? [], env: token.env ?? "PROD", mayPublish: token.mayPublish ?? false })
+    setItem(seedFrom(token))
   }
 
   useEffect(() => {
@@ -89,6 +97,8 @@ export default function ApiTokenPage() {
       } else {
         await service.update(item)
         toast.success(t("apiToken.updated"))
+        // SH1196 — the saved row is the new baseline, so the save bar stops saying "unsaved".
+        await loaded.refetch()
       }
     } catch (error) {
       reportProblem(error, t("common.error"))
@@ -125,37 +135,32 @@ export default function ApiTokenPage() {
 
   return (
     <>
+      {/*
+        SH1196 — one hero and the save-bar morph, which the contract asks for. A second bar under the
+        hero repeated the token's title, stayed on screen for good and held Delete beside Save.
+      */}
       <PageHero
-        title={t("apiToken.title")}
-        eyebrow={t("admin.title")}
+        title={isNew ? t("apiToken.newInstance") : item.title || t("apiToken.title")}
         subtitle={t("apiToken.description")}
         urlBase={ROUTES.ADMIN_TOKENS}
         backLabel={t("apiToken.title")}
+        saveBadges={<Badge variant="outline" className="text-xs">CDA</Badge>}
+        onCancel={() => navigate(ROUTES.ADMIN_TOKENS)}
+        loading={saving}
+        dirty={isNew ? isDirty(item, EMPTY) : isDirty(item, token && seedFrom(token))}
+        titleMissing={!item.title.trim()}
+        actions={
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            <Save className="h-4 w-4 mr-1" />
+            {saving ? t("common.loading") : t("common.save")}
+          </Button>
+        }
+        trailing={isNew ? undefined : (
+          <BentoActionsMenu actions={[{ id: "token.delete", label: t("common.delete"), icon: Trash2,
+            tone: "destructive", onSelect: () => void handleDelete() }]} />
+        )}
       />
       <div>
-        {/* Sticky save bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" aria-label={t("common.back")} onClick={() => navigate(ROUTES.ADMIN_TOKENS)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <span className="font-semibold">{isNew ? t("apiToken.newInstance") : item.title}</span>
-            <Badge variant="outline" className="text-xs">CDA</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            {!isNew && (
-              <Button variant="ghost" size="sm" className="text-destructive" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-1" />
-                {t("common.delete")}
-              </Button>
-            )}
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-1" />
-              {saving ? t("common.loading") : t("common.save")}
-            </Button>
-          </div>
-        </div>
-
         {/* General section */}
         <AdaptiveSectionCard className="mb-6">
           <AdaptiveSectionCard.StaticHeader
@@ -178,12 +183,9 @@ export default function ApiTokenPage() {
             </div>
             {!isNew && (
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="space-y-0.5">
                   <Label htmlFor="enabled">{t("common.enabled")}</Label>
-                  <Tooltip>
-                    <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                    <TooltipContent>{t("apiToken.enabledHint")}</TooltipContent>
-                  </Tooltip>
+                  <p className="text-xs text-muted-foreground">{t("apiToken.enabledHint")}</p>
                 </div>
                 <Switch id="enabled" checked={item.enabled}
                   onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />
@@ -201,12 +203,9 @@ export default function ApiTokenPage() {
           />
           <AdaptiveSectionCard.Content className="space-y-5">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="space-y-0.5">
                 <Label htmlFor="scope">{t("apiToken.scope")}</Label>
-                <Tooltip>
-                  <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                  <TooltipContent>{t("apiToken.scopeHint")}</TooltipContent>
-                </Tooltip>
+                <p className="text-xs text-muted-foreground">{t("apiToken.scopeHint")}</p>
               </div>
               <Select value={item.scope}
                 onValueChange={(value) => setItem({ ...item, scope: value as ShApiTokenScope })}>
@@ -232,12 +231,9 @@ export default function ApiTokenPage() {
               otherwise. A console user has no token and is unaffected.
             */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="space-y-0.5">
                 <Label htmlFor="mayPublish">{t("apiToken.mayPublish")}</Label>
-                <Tooltip>
-                  <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                  <TooltipContent>{t("apiToken.mayPublishHint")}</TooltipContent>
-                </Tooltip>
+                <p className="text-xs text-muted-foreground">{t("apiToken.mayPublishHint")}</p>
               </div>
               <Switch id="mayPublish" checked={Boolean(item.mayPublish)}
                 onCheckedChange={(checked) => setItem({ ...item, mayPublish: checked })} />
@@ -245,12 +241,9 @@ export default function ApiTokenPage() {
 
             {/* Environment (SH5 — prod / preview) */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="space-y-0.5">
                 <Label htmlFor="env">{t("apiToken.env")}</Label>
-                <Tooltip>
-                  <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                  <TooltipContent>{t("apiToken.envHint")}</TooltipContent>
-                </Tooltip>
+                <p className="text-xs text-muted-foreground">{t("apiToken.envHint")}</p>
               </div>
               <Select value={item.env}
                 onValueChange={(value) => setItem({ ...item, env: value as ShApiTokenEnv })}>
@@ -272,12 +265,9 @@ export default function ApiTokenPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="space-y-0.5">
                   <Label htmlFor="allSites">{t("apiToken.allSites")}</Label>
-                  <Tooltip>
-                    <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                    <TooltipContent>{t("apiToken.siteAccessHint")}</TooltipContent>
-                  </Tooltip>
+                  <p className="text-xs text-muted-foreground">{t("apiToken.siteAccessHint")}</p>
                 </div>
                 <Switch id="allSites" checked={allSites}
                   onCheckedChange={(checked) =>

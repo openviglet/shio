@@ -1,5 +1,5 @@
 import { PageHero } from "@/components/page-hero"
-import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
+import { AdaptiveSectionCard, BentoActionsMenu } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { Webhook, Save, ArrowLeft, Copy, Check, Trash2, Info } from "lucide-react"
+import { Webhook, Save, Copy, Check, Trash2 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -22,6 +21,7 @@ import { useSites } from "@/hooks/use-catalogue"
 import { reportProblem } from "@/lib/problem"
 import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
+import { isDirty } from "@/lib/form-dirty"
 
 const service = new ShSiteWebhookService()
 
@@ -93,6 +93,8 @@ export default function SiteWebhookPage() {
       } else {
         await service.update(item)
         toast.success(t("siteWebhook.updated"))
+        // SH1196 — the saved row is the new baseline, so the save bar stops saying "unsaved".
+        await loaded.refetch()
       }
     } catch (error) {
       reportProblem(error, t("common.error"))
@@ -129,41 +131,32 @@ export default function SiteWebhookPage() {
 
   return (
     <>
+      {/*
+        SH1196 — one hero and the save-bar morph, which the contract asks for. A second bar under the
+        hero repeated the record's name, stayed on screen for good and held Delete beside Save.
+      */}
       <PageHero
-        title={t("siteWebhook.title")}
-        eyebrow={t("admin.title")}
+        title={isNew ? t("siteWebhook.newInstance") : item.name || t("siteWebhook.title")}
         subtitle={t("siteWebhook.description")}
         urlBase={ROUTES.ADMIN_WEBHOOKS}
         backLabel={t("siteWebhook.title")}
+        saveBadges={!isNew ? <Badge variant={item.enabled ? "default" : "secondary"}>{item.enabled ? t("common.enabled") : t("common.disabled")}</Badge> : undefined}
+        onCancel={() => navigate(ROUTES.ADMIN_WEBHOOKS)}
+        loading={saving}
+        dirty={isDirty(item, isNew ? undefined : loaded.data && { ...loaded.data, events: loaded.data.events ?? [] })}
+        titleMissing={!item.name.trim()}
+        actions={
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            <Save className="h-4 w-4 mr-1" />
+            {saving ? t("common.loading") : t("common.save")}
+          </Button>
+        }
+        trailing={isNew ? undefined : (
+          <BentoActionsMenu actions={[{ id: "webhook.delete", label: t("common.delete"), icon: Trash2,
+            tone: "destructive", onSelect: () => void handleDelete() }]} />
+        )}
       />
       <div>
-        {/* Sticky save bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" aria-label={t("common.back")} onClick={() => navigate(ROUTES.ADMIN_WEBHOOKS)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <span className="font-semibold">{isNew ? t("siteWebhook.newInstance") : item.name}</span>
-            {!isNew && (
-              <Badge variant={item.enabled ? "default" : "secondary"}>
-                {item.enabled ? t("common.enabled") : t("common.disabled")}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {!isNew && (
-              <Button variant="ghost" size="sm" className="text-destructive" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-1" />
-                {t("common.delete")}
-              </Button>
-            )}
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-1" />
-              {saving ? t("common.loading") : t("common.save")}
-            </Button>
-          </div>
-        </div>
-
         {/* General section */}
         <AdaptiveSectionCard className="mb-6">
           <AdaptiveSectionCard.StaticHeader
@@ -179,12 +172,9 @@ export default function SiteWebhookPage() {
                 placeholder={t("siteWebhook.namePlaceholder")} />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="space-y-0.5">
                 <Label htmlFor="url">{t("siteWebhook.url")}</Label>
-                <Tooltip>
-                  <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                  <TooltipContent>{t("siteWebhook.urlHint")}</TooltipContent>
-                </Tooltip>
+                <p className="text-xs text-muted-foreground">{t("siteWebhook.urlHint")}</p>
               </div>
               <Input id="url" value={item.url} className="font-mono text-sm"
                 onChange={(e) => setItem({ ...item, url: e.target.value })}
@@ -192,12 +182,9 @@ export default function SiteWebhookPage() {
             </div>
             {!isNew && (
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="space-y-0.5">
                   <Label htmlFor="enabled">{t("common.enabled")}</Label>
-                  <Tooltip>
-                    <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                    <TooltipContent>{t("siteWebhook.enabledHint")}</TooltipContent>
-                  </Tooltip>
+                  <p className="text-xs text-muted-foreground">{t("siteWebhook.enabledHint")}</p>
                 </div>
                 <Switch id="enabled" checked={item.enabled}
                   onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />
@@ -215,12 +202,9 @@ export default function SiteWebhookPage() {
           />
           <AdaptiveSectionCard.Content className="space-y-5">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="space-y-0.5">
                 <Label htmlFor="site">{t("siteWebhook.site")}</Label>
-                <Tooltip>
-                  <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                  <TooltipContent>{t("siteWebhook.siteHint")}</TooltipContent>
-                </Tooltip>
+                <p className="text-xs text-muted-foreground">{t("siteWebhook.siteHint")}</p>
               </div>
               <Select value={item.siteId && item.siteId.length > 0 ? item.siteId : ALL_SITES}
                 onValueChange={(value) => setItem({ ...item, siteId: value === ALL_SITES ? null : value })}>
@@ -238,12 +222,9 @@ export default function SiteWebhookPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="space-y-0.5">
                   <Label htmlFor="allEvents">{t("siteWebhook.allEvents")}</Label>
-                  <Tooltip>
-                    <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                    <TooltipContent>{t("siteWebhook.eventsHint")}</TooltipContent>
-                  </Tooltip>
+                  <p className="text-xs text-muted-foreground">{t("siteWebhook.eventsHint")}</p>
                 </div>
                 <Switch id="allEvents" checked={allEvents}
                   onCheckedChange={(checked) =>

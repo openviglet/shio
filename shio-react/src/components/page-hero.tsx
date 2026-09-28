@@ -27,6 +27,12 @@ interface PageHeroProps {
   trail?: readonly BentoTrailStep[]
   /** Actions, rendered as the hero's `trailing`. */
   actions?: React.ReactNode
+  /**
+   * SH1196 — a save-bar page's destructive or occasional verbs, usually a `BentoActionsMenu`. The
+   * contract keeps them in the hero's `trailing` only: inside the fade-out group they would vanish as
+   * the reader scrolls, and a dialog rendered in both copies of the morph opens twice.
+   */
+  trailing?: React.ReactNode
 
   /*
    * SH901 — the save bar, when the page has one. `BentoFormHero` renders the controls in the hero
@@ -61,6 +67,7 @@ export function PageHero({
   backLabel,
   trail,
   actions,
+  trailing,
   saveTitle,
   saveBadges,
   onCancel,
@@ -94,6 +101,7 @@ export function PageHero({
         saveDisabled={saveDisabled}
         stickyTitle={saveTitle ?? title}
         stickyBadges={saveBadges}
+        trailing={trailing}
       />
     )
   }

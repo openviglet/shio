@@ -1,5 +1,5 @@
 import { PageHero } from "@/components/page-hero"
-import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
+import { AdaptiveSectionCard, BentoActionsMenu } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,9 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { ArrowLeftRight, Save, ArrowLeft, Trash2, Info, Plus, X } from "lucide-react"
+import { ArrowLeftRight, Save, Trash2, Plus, X } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -19,6 +18,7 @@ import { ShExchangeProviderService } from "@/services/provider/exchange-provider
 import { reportProblem } from "@/lib/problem"
 import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
+import { isDirty } from "@/lib/form-dirty"
 import type {
   ShExchangeProviderInstance,
   ShExchangeProviderVendor,
@@ -123,6 +123,8 @@ export default function ExchangeProviderPage() {
       } else {
         await service.update(item)
         toast.success(t("exchangeProvider.updated"))
+        // SH1196 — the saved row is the new baseline, so the save bar stops saying "unsaved".
+        await loaded.refetch()
       }
     } catch (error) {
       reportProblem(error, t("common.error"))
@@ -148,37 +150,32 @@ export default function ExchangeProviderPage() {
 
   return (
     <>
+      {/*
+        SH1196 — one hero and the save-bar morph, which the contract asks for. A second bar under the
+        hero repeated the record's name, stayed on screen for good and held Delete beside Save.
+      */}
       <PageHero
-        title={t("exchangeProvider.title")}
-        eyebrow={t("admin.title")}
+        title={isNew ? t("exchangeProvider.newInstance") : item.name || t("exchangeProvider.title")}
         subtitle={t("exchangeProvider.description")}
         urlBase={ROUTES.ADMIN_EXCHANGE_PROVIDERS}
         backLabel={t("exchangeProvider.title")}
+        saveBadges={item.vendor?.name ? <Badge variant="outline" className="text-xs">{item.vendor.name}</Badge> : undefined}
+        onCancel={() => navigate(ROUTES.ADMIN_EXCHANGE_PROVIDERS)}
+        loading={saving}
+        dirty={isDirty(item, provider ? { ...provider, properties: provider.properties ?? {} } : blank && { ...blank, name: t("exchangeProvider.untitled"), properties: blank.properties ?? {} })}
+        titleMissing={!item.name.trim()}
+        actions={
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            <Save className="h-4 w-4 mr-1" />
+            {saving ? t("common.loading") : t("common.save")}
+          </Button>
+        }
+        trailing={isNew ? undefined : (
+          <BentoActionsMenu actions={[{ id: "exchangeProvider.delete", label: t("common.delete"), icon: Trash2,
+            tone: "destructive", onSelect: () => void handleDelete() }]} />
+        )}
       />
       <div>
-        {/* Sticky save bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" aria-label={t("common.back")} onClick={() => navigate(ROUTES.ADMIN_EXCHANGE_PROVIDERS)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <span className="font-semibold">{isNew ? t("exchangeProvider.newInstance") : item.name}</span>
-            {item.vendor?.name && <Badge variant="outline" className="text-xs">{item.vendor.name}</Badge>}
-          </div>
-          <div className="flex items-center gap-2">
-            {!isNew && (
-              <Button variant="ghost" size="sm" className="text-destructive" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-1" />
-                {t("common.delete")}
-              </Button>
-            )}
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-1" />
-              {saving ? t("common.loading") : t("common.save")}
-            </Button>
-          </div>
-        </div>
-
         {/* General section */}
         <AdaptiveSectionCard className="mb-6">
           <AdaptiveSectionCard.StaticHeader
@@ -220,12 +217,9 @@ export default function ExchangeProviderPage() {
               )}
             </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="space-y-0.5">
                 <Label htmlFor="enabled">{t("common.enabled")}</Label>
-                <Tooltip>
-                  <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                  <TooltipContent>{t("exchangeProvider.enabledHint")}</TooltipContent>
-                </Tooltip>
+                <p className="text-xs text-muted-foreground">{t("exchangeProvider.enabledHint")}</p>
               </div>
               <Switch id="enabled" checked={item.enabled}
                 onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />

@@ -11,7 +11,6 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1196** (deps: SH1192 ✅) **Settings forms are stacks of icon-headed cards with the save button in the hero; nothing says a field was changed** — A settings-row layout with one sticky save bar that names the unsaved change stops edits being lost and makes every form look alike. → §LV.33
 - 📋 **SH1197** (deps: SH1195 ✅) **Review queue rows all read "Nenhuma intenção declarada", each with its own filled Aprovar button** — A triage list that leads with the run id and change counts, and approves a selection in one action, is what makes reviewing 25 runs feasible. → §LV.34
 - 📋 **SH1200** (deps: SH1194 ✅) **A group's page is a hero over empty space: it shows neither members nor roles, only an orange Cancelar** — The reason to open a group is to see who is in it and what it may do; a page without that sends the curator elsewhere. → §LV.38
 - 📋 **SH1202** (deps: —) **Copy contradicts itself: Search promises published content but lists drafts; Activity rows are English in pt** — A curator trusts what a page says it shows; one wrong subtitle and a mixed language log both read as the product being unsure of itself. → §LV.37

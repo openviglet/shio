@@ -1,14 +1,13 @@
 import { PageHero } from "@/components/page-hero"
-import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
+import { AdaptiveSectionCard, BentoActionsMenu } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
-import { Building2, Save, ArrowLeft, Trash2, Info, Sparkles, Ban, CircleCheck } from "lucide-react"
+import { Building2, Save, Trash2, Sparkles, Ban, CircleCheck } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -19,6 +18,7 @@ import type { ShTenant } from "@/models/tenant/tenant.model"
 import { reportProblem } from "@/lib/problem"
 import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
+import { isDirty } from "@/lib/form-dirty"
 
 const service = new ShTenantService()
 
@@ -75,6 +75,8 @@ export default function TenantPage() {
       } else {
         await service.update(item)
         toast.success(t("tenantAdmin.updated"))
+        // SH1196 — the saved row is the new baseline, so the save bar stops saying "unsaved".
+        await loaded.refetch()
       }
     } catch (error) {
       reportProblem(error, t("common.error"))
@@ -120,51 +122,46 @@ export default function TenantPage() {
 
   return (
     <>
+      {/*
+        SH1196 — one hero and the save-bar morph, which the contract asks for. A second bar under the
+        hero repeated the tenant's name, stayed on screen for good and held Suspend and Delete beside
+        Save; both are occasional verbs, so both live in the hero's menu.
+      */}
       <PageHero
-        title={t("tenantAdmin.title")}
-        eyebrow={t("admin.title")}
+        title={isNew ? t("tenantAdmin.newInstance") : item.name || t("tenantAdmin.title")}
         subtitle={t("tenantAdmin.description")}
         urlBase={ROUTES.ADMIN_TENANTS}
         backLabel={t("tenantAdmin.title")}
-      />
-      <div>
-        {/* Sticky save bar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--vg-accent-surface)] rounded-lg px-4 py-3 mb-6 border">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" aria-label={t("common.back")} onClick={() => navigate(ROUTES.ADMIN_TENANTS)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <span className="font-semibold">{isNew ? t("tenantAdmin.newInstance") : item.name}</span>
-            {isDefault && (
-              <Badge variant="secondary" className="text-xs">{t("tenantAdmin.defaultBadge")}</Badge>
-            )}
+        saveBadges={
+          <>
+            {isDefault && <Badge variant="secondary" className="text-xs">{t("tenantAdmin.defaultBadge")}</Badge>}
             {!isNew && isSuspended && (
               <Badge variant="outline" className="text-xs border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400">
                 {t("tenantAdmin.statusSuspended")}
               </Badge>
             )}
-          </div>
-          <div className="flex items-center gap-2">
-            {!isNew && !isDefault && (
-              <Button variant="ghost" size="sm" onClick={handleToggleSuspend}>
-                {isSuspended
-                  ? <><CircleCheck className="h-4 w-4 mr-1" />{t("tenantAdmin.activate")}</>
-                  : <><Ban className="h-4 w-4 mr-1" />{t("tenantAdmin.suspend")}</>}
-              </Button>
-            )}
-            {!isNew && !isDefault && (
-              <Button variant="ghost" size="sm" className="text-destructive" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-1" />
-                {t("common.delete")}
-              </Button>
-            )}
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-1" />
-              {saving ? t("common.loading") : t("common.save")}
-            </Button>
-          </div>
-        </div>
-
+          </>
+        }
+        onCancel={() => navigate(ROUTES.ADMIN_TENANTS)}
+        loading={saving}
+        dirty={isDirty(item, isNew ? undefined : loaded.data)}
+        titleMissing={!item.name.trim()}
+        actions={
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            <Save className="h-4 w-4 mr-1" />
+            {saving ? t("common.loading") : t("common.save")}
+          </Button>
+        }
+        trailing={isNew || isDefault ? undefined : (
+          <BentoActionsMenu actions={[
+            isSuspended
+              ? { id: "tenant.activate", label: t("tenantAdmin.activate"), icon: CircleCheck, onSelect: () => void handleToggleSuspend() }
+              : { id: "tenant.suspend", label: t("tenantAdmin.suspend"), icon: Ban, onSelect: () => void handleToggleSuspend() },
+            { id: "tenant.delete", label: t("common.delete"), icon: Trash2, tone: "destructive", onSelect: () => void handleDelete() },
+          ]} />
+        )}
+      />
+      <div>
         <AdaptiveSectionCard className="mb-6">
           <AdaptiveSectionCard.StaticHeader
             icon={Building2}
@@ -173,12 +170,9 @@ export default function TenantPage() {
           />
           <AdaptiveSectionCard.Content className="space-y-4">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="space-y-0.5">
                 <Label htmlFor="name">{t("tenantAdmin.name")}</Label>
-                <Tooltip>
-                  <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                  <TooltipContent>{isDefault ? t("tenantAdmin.nameImmutable") : t("tenantAdmin.nameHint")}</TooltipContent>
-                </Tooltip>
+                <p className="text-xs text-muted-foreground">{isDefault ? t("tenantAdmin.nameImmutable") : t("tenantAdmin.nameHint")}</p>
               </div>
               <Input id="name" value={item.name} className="font-mono"
                 disabled={!isNew}
@@ -192,12 +186,9 @@ export default function TenantPage() {
             </div>
             {!isNew && !isDefault && (
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="space-y-0.5">
                   <Label htmlFor="plan">{t("tenantAdmin.plan")}</Label>
-                  <Tooltip>
-                    <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                    <TooltipContent>{t("tenantAdmin.planHint")}</TooltipContent>
-                  </Tooltip>
+                  <p className="text-xs text-muted-foreground">{t("tenantAdmin.planHint")}</p>
                 </div>
                 <Input id="plan" value={item.plan || ""} className="font-mono"
                   onChange={(e) => setItem({ ...item, plan: e.target.value })}
@@ -206,14 +197,9 @@ export default function TenantPage() {
             )}
             {!isNew && (
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="space-y-0.5">
                   <Label htmlFor="enabled">{t("common.enabled")}</Label>
-                  {isDefault && (
-                    <Tooltip>
-                      <TooltipTrigger aria-label={t("common.moreInfo")}><Info aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" /></TooltipTrigger>
-                      <TooltipContent>{t("tenantAdmin.defaultHint")}</TooltipContent>
-                    </Tooltip>
-                  )}
+                  {isDefault && <p className="text-xs text-muted-foreground">{t("tenantAdmin.defaultHint")}</p>}
                 </div>
                 <Switch id="enabled" checked={item.enabled} disabled={isDefault}
                   onCheckedChange={(checked) => setItem({ ...item, enabled: checked })} />

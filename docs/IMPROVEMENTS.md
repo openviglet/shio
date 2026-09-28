@@ -938,23 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.33 LV.33 Forms as setting rows, with one save bar (SH1196)
-
-Token, E-mail, Site, Post type and Auth provider editors are built as cards. Each
-section is a 24 px radius panel headed by a blue gradient chip, and the chip is the same
-key icon on all three sections of the token page. Toggles float at the far right of a
-full-width row, and their help text hides behind an info icon. Where the save button
-sits changes by page: in the hero (E-mail), in a second sticky bar under the hero that
-repeats the title (Token), or beside Cancelar (Site). No page shows whether anything was
-changed, so leaving it is silent. The concept (artboard 05) uses a 720 px column with
-plain section headings. Each setting is a row with the label and a visible one-line
-description on the left and the control on the right, and text fields stack label, input
-and help. A short in-page index sits beside the column, and the destructive action goes
-at the end of that index. A floating save bar appears only when the form is dirty and
-names what changed ("1 alteração não salva — Pode publicar"), with Descartar and Salvar.
-BentoSaveBar and BentoScrollSaveBar already exist in the design system; this task makes
-them the only save affordance on a form.
-
 ### LV.34 LV.34 The review queue as a triage list (SH1197)
 
 Every one of the 25 pending agent runs in the 2026-09-28 capture has the same bold
