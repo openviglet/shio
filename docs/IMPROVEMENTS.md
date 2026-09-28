@@ -938,22 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.34 LV.34 The review queue as a triage list (SH1197)
-
-Every one of the 25 pending agent runs in the 2026-09-28 capture has the same bold
-title, "Nenhuma intenção declarada — inicie a execução com --intent <frase>". The
-distinguishing data, the run id and what it changed, sits in a grey second line with a
-full UUID. The absence of an intent is shown as the most important thing about each row,
-and the instruction to use --intent is repeated 25 times. Each row also carries its own
-filled Aprovar and outlined Reverter, so the screen holds 25 primary buttons, and there
-is no way to approve several runs at once. The concept (artboard 06) leads each row with
-the short run id in mono. A missing intent becomes a muted italic "sem intenção
-declarada", and the --intent hint appears once under the list. The change summary is
-typed counts (+criadas, ~editadas, ↑publicadas, −excluídas) in consistent colours. Rows
-expand in place to list their changes with a Ver diff link. Tabs split Aguardando,
-Aprovadas and Revertidas, and checking rows raises a selection bar with a single Aprovar
-e publicar primary. The home page and the sidebar badge read the same pending count.
-
 ### LV.36 LV.36 A closed visual scale in the design system (SH1199)
 
 The Viglet design system and its bento layer are the right foundation: BentoDataTable,

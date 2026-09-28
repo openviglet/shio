@@ -69,7 +69,8 @@ test("SH1001: the page sends one call and re-reads the run", () => {
    * whole-run verbs — because a page that showed the old answer after an action is the one number a
    * curator learns to distrust (SH207).
    */
-  assert.equal((page.match(/await invalidate\(`summary:reviewRun\|\$\{session\}`\)/gu) ?? []).length, 2,
+  // SH1197 added the third: a decision over several ticked runs re-reads each of them.
+  assert.equal((page.match(/await invalidate\(`summary:reviewRun\|\$\{session\}`\)/gu) ?? []).length, 3,
     "SH207: a decision has to say the run it changed is stale, and both the triage and the whole-run "
       + "verbs take decisions")
   // SH968 removed the header count this used to refresh: the dock reports what a run did, so an

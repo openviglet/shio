@@ -4,6 +4,7 @@ import { PageHero } from "@/components/page-hero"
 import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ROUTES } from "@/app/routes.const"
 import { ReviewTriage } from "@/components/review-triage"
 import { ShReviewService } from "@/services/review/review.service"
@@ -35,7 +36,7 @@ const service = new ShReviewService()
  * over the sites it touched. Applied to the runs already read, as the trash's are: the queue is one
  * bounded read, and a run is not a post, so the post vocabulary's server filters do not reach it.
  */
-const REVIEW_LIST = { q: "", site: "" }
+const REVIEW_LIST = { q: "", site: "", show: "" }
 
 /** Same action colours the Activity page uses — one action, one colour, wherever it appears. */
 const ACTION_BADGE: Record<string, string> = {
@@ -68,7 +69,12 @@ export default function ReviewListPage() {
   const [open, setOpen] = useState<Record<string, true>>({})
   const [busy, setBusy] = useState<string | null>(null)
   const list = useListState(REVIEW_LIST)
-  const { q, site } = list.value
+  const { q, site, show } = list.value
+  /*
+   * SH1197 — which runs the curator has ticked, so one decision covers several. A ticked run the
+   * filter no longer lists is left out of the decision (see `ticked` below).
+   */
+  const [picked, setPicked] = useState<Record<string, true>>({})
 
   /*
    * SH1024 — the design system's bar, as on the browser, search and trash. Its value is the URL's
@@ -118,7 +124,17 @@ export default function ReviewListPage() {
   const facets = useMemo(() => withCounts(withSiteFacet([], runSites(sessions), t("content.filterSite")),
     { site: countLocally(sessions.filter((run) => matchesRun(run, q, "")), (run) => Object.keys(run.bySite ?? {})) }, barValue),
   [sessions, q, barValue, t])
-  const shown = useMemo(() => sessions.filter((run) => matchesRun(run, q, site)), [sessions, q, site])
+  // SH1197 — "Waiting" is the default view, because a resolved run is history, not work.
+  const shown = useMemo(() => sessions.filter((run) => matchesRun(run, q, site) && (show === "all" || run.pending > 0)),
+    [sessions, q, site, show])
+  const ticked = shown.filter((run) => run.session in picked).map((run) => run.session)
+  const waiting = sessions.filter((run) => run.pending > 0).length
+  const pick = (session: string, on: boolean) => setPicked((prev) => {
+    const next = { ...prev }
+    if (on) next[session] = true
+    else delete next[session]
+    return next
+  })
 
 
   /** SH1158 — opening a row no longer reads anything; the row it opens does that for itself. */
@@ -203,6 +219,27 @@ export default function ReviewListPage() {
     }
   }
 
+  /** SH1197 — one decision over the ticked runs, reported once rather than a toast per run. */
+  const actMany = async (sessionsToAct: string[], action: "approve" | "revert") => {
+    setBusy("*")
+    let changed = 0
+    try {
+      for (const session of sessionsToAct) {
+        const outcome = action === "approve" ? await service.approve(session) : await service.revert(session)
+        changed += outcome.changed
+        for (const skipped of outcome.skipped) toast.warning(`${skipped.postId}: ${skipped.reason}`)
+        await invalidate(`summary:reviewRun|${session}`)
+      }
+      toast.success(t(`review.${action}d`, { count: changed }))
+      setPicked({})
+      load()
+    } catch (error) {
+      reportProblem(error, t("common.error"))
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
     <>
       {/*
@@ -234,6 +271,29 @@ export default function ReviewListPage() {
           views={<SavedViews list="review" />}
           queryLabel={t("review.filterRuns")}
         />
+        {/* SH1197 — what is waiting first; everything the agent did is one step away. */}
+        <div role="tablist" aria-label={t("review.showLabel")} className="flex gap-1">
+          <Button role="tab" aria-selected={show === "all" ? "false" : "true"} size="sm" variant={show === "all" ? "ghost" : "secondary"}
+            onClick={() => list.patch({ show: "" })}>
+            {t("review.showWaiting", { count: waiting })}
+          </Button>
+          <Button role="tab" aria-selected={show === "all" ? "true" : "false"} size="sm" variant={show === "all" ? "secondary" : "ghost"}
+            onClick={() => list.patch({ show: "all" })}>
+            {t("review.showAll")}
+          </Button>
+        </div>
+        {ticked.length > 0 && (
+          <div className="flex items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-2 text-sm">
+            <span className="font-medium">{t("review.selectedRuns", { count: ticked.length })}</span>
+            <span className="flex-1" />
+            <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void actMany(ticked, "revert")}>
+              <Undo2 className="mr-1 h-3.5 w-3.5" /> {t("review.revert")}
+            </Button>
+            <Button size="sm" disabled={busy !== null} onClick={() => void actMany(ticked, "approve")}>
+              <Check className="mr-1 h-3.5 w-3.5" /> {t("review.approveSelected")}
+            </Button>
+          </div>
+        )}
         {/*
           Three facts, three screens (SH1158). A queue that could not be read is not an empty queue,
           and an empty queue is not a filter that matched nothing — the middle one used to speak for
@@ -259,6 +319,22 @@ export default function ReviewListPage() {
             title={t("review.blankTitle")}
             description={t("review.blankDescription")}
           />
+        ) : show !== "all" && waiting === 0 && !q && !site ? (
+          /*
+           * SH1197 — nothing waiting is its own fact, not a filter that matched nothing: every run the
+           * agent made has been decided. It says so and offers the history, one click away.
+           */
+          <EmptyState
+            icon={IconRobot}
+            tone="slate"
+            title={t("review.nothingWaitingTitle")}
+            description={t("review.nothingWaitingHint", { count: sessions.length })}
+            action={
+              <Button onClick={() => list.patch({ show: "all" })} size="sm" variant="outline">
+                {t("review.showAll")}
+              </Button>
+            }
+          />
         ) : shown.length === 0 ? (
           <EmptyState
             icon={IconRobot}
@@ -273,6 +349,11 @@ export default function ReviewListPage() {
                 return (
                   <div key={session.session}>
                     <div className="flex items-center gap-3 px-4 py-3">
+                      <Checkbox
+                        aria-label={t("review.selectRun", { run: session.agentName ?? session.session.slice(0, 8) })}
+                        checked={session.session in picked}
+                        onCheckedChange={(value: boolean | "indeterminate") => pick(session.session, value === true)}
+                      />
                       <button
                         type="button"
                         className="flex flex-1 items-center gap-3 text-left min-w-0"
@@ -288,8 +369,18 @@ export default function ReviewListPage() {
                             reviewer who knows what the run was for reads eleven changes as one
                             decision, and without it they read the diff to find out why.
                           */}
+                          {/*
+                            SH1197 — with no intent, the run's own short id leads and the missing
+                            sentence is a muted note. The bold instruction on every row made the
+                            absence the loudest thing on the page; it is said once, under the list.
+                          */}
                           <div className="font-medium truncate">
-                            {session.intent ?? t("review.noIntent")}
+                            {session.intent ?? (
+                              <>
+                                <code className="font-mono text-[0.95em]">{session.session.slice(0, 8)}</code>
+                                <span className="ml-2 font-normal italic text-muted-foreground">{t("review.noIntentShort")}</span>
+                              </>
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
                             {t("review.changesBy", {
@@ -310,7 +401,7 @@ export default function ReviewListPage() {
                             variant="outline"
                             className={`text-[10px] ${ACTION_BADGE[action] ?? ""}`}
                           >
-                            {action} {count}
+                            {t(`activity.action${action.charAt(0)}${action.slice(1).toLowerCase()}`, { defaultValue: action })} {count}
                           </Badge>
                         ))}
                         {/*
@@ -332,8 +423,10 @@ export default function ReviewListPage() {
                         )}
                       </div>
                       <div className="flex gap-2 shrink-0">
+                        {/* SH1197 — per row a secondary: the page's one primary is the selection bar's. */}
                         <Button
                           size="sm"
+                          variant="outline"
                           disabled={busy === session.session || session.pending === 0}
                           onClick={() => act(session.session, "approve")}
                         >
@@ -363,6 +456,9 @@ export default function ReviewListPage() {
                 )
               })}
           </Panel>
+        )}
+        {shown.some((run) => !run.intent) && (
+          <p className="px-1 text-xs text-muted-foreground">{t("review.intentHint")}</p>
         )}
       </div>
     </>

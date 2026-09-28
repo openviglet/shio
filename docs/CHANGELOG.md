@@ -1665,6 +1665,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1195** — No button fills itself outside --primary, site and trash verbs moved into their ⋯ menus, bulk verbs wait for a selection and a read-only type offers no save; primary fills went from five colours to four.
 - **SH1198** — The dock rests at the rail's foot through the shell's slot (VDS185), so covered-control routes fell from twenty to eight and none is the dock; a test keeps pages from mounting it themselves.
 - **SH1196** — The five infrastructure editors that hand-rolled a second sticky bar use the save-bar morph with Delete in the hero's menu, all six say when a field changed, and setting help is visible.
+- **SH1197** — The queue opens on waiting runs, names a run with no intent by its short id, keeps one primary that decides every ticked run, and says so when nothing is waiting.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

@@ -14,7 +14,6 @@
   "review.decided": "{{count}} change(s) decided",
   "review.appearanceSteady": "Compared {{checked}} page(s): none of them look different.",
   "review.appearanceMoved": "Of {{checked}} page(s) compared, these look different: {{pages}}",
-  "review.noIntent": "No intent declared — start the run with --intent \"<sentence>\"",
   "review.pending": "{{count}} to review",
   "review.pendingSessions": "{{count}} agent run(s) awaiting review",
   "review.approve": "Approve",
@@ -31,5 +30,15 @@
   "review.noMatchHint": "No agent run in the queue matches these filters. Remove a chip to see more.",
   "review.readFailedTitle": "The review queue could not be read",
   "review.readFailedHint": "Nothing is missing — the server did not answer. Try again; runs waiting for you are still waiting.",
-  "review.runReadFailed": "This run's changes could not be read"
+  "review.runReadFailed": "This run's changes could not be read",
+  "review.noIntentShort": "no intent declared",
+  "review.intentHint": "Start a run with --intent \"<sentence>\" and the sentence is shown here in place of its id.",
+  "review.showLabel": "Which runs",
+  "review.showWaiting": "Waiting ({{count}})",
+  "review.showAll": "All runs",
+  "review.selectedRuns": "{{count}} run(s) selected",
+  "review.approveSelected": "Approve and publish",
+  "review.selectRun": "Select run {{run}}",
+  "review.nothingWaitingTitle": "Nothing is waiting for review",
+  "review.nothingWaitingHint": "Every one of the {{count}} runs the agent made has been decided."
 }

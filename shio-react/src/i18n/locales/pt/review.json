@@ -4,7 +4,6 @@
   "review.blankTitle": "Nenhuma execução de agente ainda",
   "review.blankDescription": "Quando um agente escreve pelo MCP ou pela superfície de agente, cada execução aparece aqui com o que alterou.",
   "review.changesBy": "{{count}} alteração(ões) por {{actor}}",
-  "review.noIntent": "Nenhuma intenção declarada — inicie a execução com --intent \"<frase>\"",
   "review.appearanceSteady": "{{checked}} página(s) comparada(s): nenhuma mudou de aparência.",
   "review.appearanceMoved": "De {{checked}} página(s) comparada(s), estas mudaram de aparência: {{pages}}",
   "review.notePlaceholder": "Por quê — obrigatório para rejeitar",
@@ -31,5 +30,15 @@
   "review.noMatchHint": "Nenhuma execução de agente na fila corresponde a estes filtros. Remova um filtro para ver mais.",
   "review.readFailedTitle": "Não foi possível ler a fila de revisão",
   "review.readFailedHint": "Nada está faltando — o servidor não respondeu. Tente novamente; as execuções que aguardam você continuam aguardando.",
-  "review.runReadFailed": "Não foi possível ler as alterações desta execução"
+  "review.runReadFailed": "Não foi possível ler as alterações desta execução",
+  "review.noIntentShort": "sem intenção declarada",
+  "review.intentHint": "Inicie uma execução com --intent \"<frase>\" e a frase aparece aqui no lugar do identificador.",
+  "review.showLabel": "Quais execuções",
+  "review.showWaiting": "Aguardando ({{count}})",
+  "review.showAll": "Todas as execuções",
+  "review.selectedRuns": "{{count}} execução(ões) selecionada(s)",
+  "review.approveSelected": "Aprovar e publicar",
+  "review.selectRun": "Selecionar execução {{run}}",
+  "review.nothingWaitingTitle": "Nada aguardando revisão",
+  "review.nothingWaitingHint": "Todas as {{count}} execuções do agente já foram decididas."
 }

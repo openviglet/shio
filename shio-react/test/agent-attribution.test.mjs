@@ -64,16 +64,20 @@ test("SH999: both locales name the chip and the three filters", () => {
 test("SH1000: the review queue leads with the premise, and names the flag when there is none", () => {
   const page = read("src", "app", "admin", "review", "review.list.page.tsx")
 
-  assert.match(page, /\{session\.intent \?\? t\("review\.noIntent"\)\}/,
+  assert.match(page, /\{session\.intent \?\? \(/,
     "SH1000: the premise leads, because it is what decides whether the list underneath is the "
       + "right list — a reviewer without it reads the diff to find out why")
+  // SH1197 — with no premise, the run's short id leads and the absence is a muted note; the flag
+  // that would have supplied one is named once under the list rather than in bold on every row.
+  assert.match(page, /t\("review\.noIntentShort"\)/, "SH1197: a run with no intent says so on its row")
+  assert.match(page, /t\("review\.intentHint"\)/, "SH1197: the --intent instruction is no longer said at all")
   assert.match(page, /session\.agentName \?\? session\.session/,
     "SH1000: the name the run gave, falling back to the uuid this task exists to stop leading with")
 
   for (const locale of ["en", "pt"]) {
     const review = JSON.parse(read("src", "i18n", "locales", locale, "review.json"))
-    assert.ok(review["review.noIntent"], `SH1000: ${locale} is missing review.noIntent`)
-    assert.match(review["review.noIntent"], /--intent/,
+    assert.ok(review["review.intentHint"], `SH1000: ${locale} is missing review.intentHint`)
+    assert.match(review["review.intentHint"], /--intent/,
       `SH1000: ${locale} must name the argument that would have supplied one — an absent premise `
         + "is a fact about the run, and a blank line is not the same statement")
   }

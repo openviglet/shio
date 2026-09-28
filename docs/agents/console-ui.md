@@ -3916,3 +3916,14 @@ as a `BentoActionsMenu`, which is where the contract keeps them. Every infrastru
 re-reads the record after a save so the cue clears. A setting's help is a visible line under its
 label, not a tooltip behind an info icon. `form-save-bar.test.mjs` fails a hand-rolled sticky bar on
 any page, an editor with no dirty cue, a Delete drawn beside Save, and a hint behind an icon.
+
+## The review queue is a triage list (SH1197)
+
+The queue opens on what is **waiting** (`pending > 0`), with every run one click away, and says
+"nothing is waiting" when every run has been decided, which is a different fact from a filter that
+matched nothing. On 2026-09-28 all twenty-five listed runs were already decided, so the old default
+view showed twenty-five disabled Approve buttons that read as work. A run with no intent leads with
+its short id in mono and a muted "no intent declared"; the `--intent` instruction is said once,
+under the list. The typed change counts use Activity's action labels. A row's Approve is a
+secondary, and ticking rows raises a bar whose "Approve and publish" is the page's one primary,
+deciding every ticked run in one pass with one report. `review-queue.test.mjs` holds the shape.
