@@ -12,7 +12,7 @@
 ## Block AR — The curator's console, surface by surface (§LV)
 
 - 📋 **SH1200** (deps: SH1194 ✅) **A group's page is a hero over empty space: it shows neither members nor roles, only an orange Cancelar** — The reason to open a group is to see who is in it and what it may do; a page without that sends the curator elsewhere. → §LV.38
-- 📋 **SH1204** (deps: SH1195 ✅) **The post editor labels every field with widget-type pills (Title, Text, Ace Editor - HTML) and hides the post's state** — A curator edits content, not widgets: state and address belong in the header, and field chrome should be a label and a help line. → §LV.40
+- 📋 **SH1205** (deps: —) **The Sections field lists friendly URLs as chips (/sections/b59589bb5), so a curator cannot tell which section is which** — An ordered list that shows each section's title beside its address, reorderable in place, lets a page's structure be read without opening every section. → §LV.41
 
 ## Block AU — The design system's consumer contract, adopted and gated
 

@@ -78,5 +78,5 @@ test("SH1192: a folder's trail names its ancestors, and its title is the folder 
 
 test("SH1192: the folder browser and the post editor hand their hero a trail", () => {
   assert.match(read("app", "content", "object.children.page.tsx"), /<PageHero[\s\S]{0,400}\btrail=\{heroTrail\(/)
-  assert.match(read("app", "content", "post.edit.page.tsx"), /<PageHero[\s\S]{0,200}\btrail=\{trail\}/)
+  assert.match(read("app", "content", "post.edit.page.tsx"), /<PageHero[\s\S]{0,1200}\btrail=\{trail\}/)
 })

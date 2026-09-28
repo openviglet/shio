@@ -15,7 +15,8 @@ import { useInvalidate, useLocales, useSiteLocalePolicy } from "@/hooks/use-cata
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import { GradientButton, toast } from "@viglet/viglet-design-system"
+import { toast } from "@viglet/viglet-design-system"
+import { Button } from "@/components/ui/button"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { ShPostUnified } from "@/models/post-unified/post-unified"
 import { reportProblem } from "@/lib/problem"
@@ -95,7 +96,7 @@ export function PostTranslationsMenu({ postId, siteId, currentLocale }: {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <GradientButton type="button" size="sm" variant="outline" loading={busy}
+        <Button type="button" size="sm" variant="outline" disabled={busy}
           title={staleHere ? t("content.translationStaleHint") : undefined}>
           <Languages className="size-4" />
           {currentLocale ? currentLocale.toUpperCase() : t("content.translations")}
@@ -107,7 +108,7 @@ export function PostTranslationsMenu({ postId, siteId, currentLocale }: {
               <span className="text-xs">{t("content.translationStale")}</span>
             </span>
           )}
-        </GradientButton>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>{t("content.translations")}</DropdownMenuLabel>

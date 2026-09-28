@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge"
-import { BadgeColorful } from "@/components/badge-colorful"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { IconSparkles } from "@tabler/icons-react"
@@ -110,6 +109,7 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
           <Label
             id={ids.label}
             htmlFor={ids.control}
+            title={[field.widget, field.isTitle ? "title" : "", field.isSummary ? "summary" : ""].filter(Boolean).join(" · ")}
             className="text-sm font-semibold flex items-center gap-1.5"
           >
             {field.label || field.name}
@@ -133,9 +133,11 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
                 <IconSparkles className="mr-1 size-3.5" /> {t("content.askAgent")}
               </Button>
             )}
-            {field.isTitle && <BadgeColorful text="Title" className="text-[10px] px-1.5 py-0 h-5" />}
-            {field.isSummary && <BadgeColorful text="Summary" className="text-[10px] px-1.5 py-0 h-5" />}
-            <BadgeColorful text={field.widget} className="text-[10px] px-1.5 py-0 h-5 font-medium" />
+            {/*
+              SH1204 — the widget's name (and whether the field is the post's title or summary) is
+              for whoever builds the post type, so it is the label's hint rather than two or three
+              coloured pills on every field that took the curator's eye first.
+            */}
           </div>
         </div>
 

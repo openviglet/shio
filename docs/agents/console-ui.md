@@ -3953,3 +3953,14 @@ keeps only its controls. `BrowserTree` is the page's aside: the ancestors down t
 subfolders under it, drawn from the `/path` read and the listing's first page, so it makes no request
 of its own. It hides below `lg` with `max-lg:hidden`, because the design system's stylesheet ships a
 compiled `.hidden` that beats a consumer's `lg:block`. `browser-table-default.test.mjs` holds it.
+
+## The post editor's header is the post (SH1204)
+
+The hero's title is the post's own title, under the trail of the folders it sits in, with one line
+naming its type, its language and which row is being edited. Preview and the language menu are
+neutral outlined `Button`s: `GradientButton` paints orange even as `outline`, so the header showed
+three orange controls, and the Actions menu is the one primary. A field is a label, its control and
+its help line; the post type's widget name (and whether the field is the title or summary) is the
+label's `title` hint for whoever builds the post type, not two or three pills on every field.
+`post-editor-header.test.mjs` holds it. The Sections field still takes friendly URLs as chips and
+does not show each section's title; that is its own task (SH1205), because it changes the widget.

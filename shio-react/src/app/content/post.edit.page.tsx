@@ -1,4 +1,5 @@
 import { PageHero } from "@/components/page-hero"
+import { Button } from "@/components/ui/button"
 /*
  * SH892 — the form's section is `AdaptiveSectionCard`. The schema is built at runtime from the post
  * type and the fields are fifteen dynamic widgets rendered through a widget map, each reading a
@@ -504,7 +505,14 @@ export default function PostUnifiedEditPage() {
       */}
       <PageHero
         eyebrow={t("content.postLabel")}
-        title={t("content.editPost")}
+        /*
+         * SH1204 — the page is the post, so the title is its title, and the line under it says what
+         * the curator needs before editing: its type, its language and which row this is. "Editar
+         * Post" on every post said nothing a reader did not already know.
+         */
+        title={post.title || t("content.editPost")}
+        subtitle={[postTypeName, post.locale?.toUpperCase(),
+          state === "DRAFT" ? t("content.filterDraft") : t("content.filterPublished")].filter(Boolean).join(" · ")}
         trail={trail}
         urlBase={backUrl}
         saveTitle={post.title || t("content.editPost")}
@@ -560,17 +568,18 @@ export default function PostUnifiedEditPage() {
         actions={
             <>
               {hasSite && (
-                <GradientButton
+                // SH1204 — a neutral secondary: the Actions menu is the page's one primary.
+                <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  loading={isPreviewing}
+                  disabled={isPreviewing}
                   title={t("content.previewDraft")}
                   onClick={handlePreview}
                 >
                   <Eye className="size-4" />
                   {t("content.preview")}
-                </GradientButton>
+                </Button>
               )}
               <PostTranslationsMenu postId={postId} siteId={post.shSite?.id ?? post.shFolder?.shSite?.id}
                 currentLocale={post.locale} />

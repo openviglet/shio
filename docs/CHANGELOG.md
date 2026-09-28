@@ -1668,6 +1668,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1197** — The queue opens on waiting runs, names a run with no intent by its short id, keeps one primary that decides every ticked run, and says so when nothing is waiting.
 - **SH1202** — Audit rows are rebuilt in the console's language from their action, Search says it covers drafts and published posts, and the login page names Handlebars instead of Nashorn.
 - **SH1203** — A folder opens on its sortable table with localized states and dates, its path is said once in the trail, and a tree of the folders around it sits beside the listing.
+- **SH1204** — The editor's hero is the post's own title with its type, language and row, Actions is the one primary, and fields drop their widget pills; section titles are SH1205.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

@@ -973,23 +973,23 @@ membership data is reachable from the console services today is the first thing 
 establish; if it is not, the agent surface needs it too (P1), and the task grows a
 dependency rather than a console-only read.
 
-### LV.40 LV.40 An editor that shows the post, not the widgets (SH1204)
+### LV.41 LV.41 A page's sections by name, in order (SH1205)
 
-Editar Post for About — Viglet titles the page "Editar Post" rather than the post, and
-never says the post is a draft, what type it is, or its address. Each field sits in its
-own bordered card with a coloured left border and one or two pills naming the post-type
-attribute and its widget (Title + Text, Summary + Text Area, Multi Select, Ace Editor -
-HTML). That is information for whoever builds the post type, and it takes the curator's
-eye first. Sections are a free-text chip input of friendly URLs ("/sections/b59589bb5")
-with no preview of what each section is. The header's three actions (Visualizar, EN,
-Ações) are all orange. The concept (artboard 03) titles the page with the post's own
-title, followed by a state badge, then a meta line with type, language and the mono
-address. Tabs for Conteúdo, SEO, Configurações, Traduções and Histórico sit under the
-title, which fits the tabbed sections the editor gained in 80044a53f. Actions are ⋯,
-Salvar rascunho and one Publicar primary. Fields are a label, an input and a help line.
-Sections become an ordered list with drag handles that shows each section's title beside
-its address, and the live preview stays on the right. Widget names move to a tooltip for
-developers.
+A Page post's Sections field is a multi-select of section friendly URLs, rendered as
+removable chips above a free-text input ("Adicione um valor e pressione Enter"). On
+About — Viglet it shows one chip, /sections/b59589bb5, which names nothing a curator
+recognises: whether that is the hero, the FAQ or the pricing table is only learned by
+opening the section. The order of the chips is the render order, but chips wrap and do
+not read as a sequence, and reordering means removing and re-adding. SH1204 left this
+alone because the post editor's widgets are a separate contract (the fifteen widgets and
+WIDGET_MAP), and a change to how Multi Select renders must not ride along with a header
+change. The proposal is a presentation for this field on Page posts: an ordered list,
+each row showing the section post's title and type resolved from its address, with the
+address in mono beside it, a drag handle and a remove control, and an "add section"
+action that searches section posts by title rather than asking for a URL. The stored
+value stays the same list of friendly URLs, so the renderer and the agent surface see no
+change. Done when the About page's section reads by its title and the field's value is
+unchanged after a reorder.
 
 ## LVI What Turing's index never receives
 
