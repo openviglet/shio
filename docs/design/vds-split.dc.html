@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    /* Opened straight from the file tree, `x-dc` is an unknown element and so
+       lays out inline, and `helmet` would render its own contents as text. The
+       canvas runtime replaces both; these two rules only matter for the raw
+       open, which is how a reader in this repository will look at it. */
+    x-dc { display: block; }
+    helmet { display: none; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .glass { background: rgba(255,255,255,0.72); border: 1px solid rgba(229,229,229,0.7); backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); }
+    .chip { display: flex; align-items: center; justify-content: center; border-radius: 11px; background-image: linear-gradient(to bottom right, #155dfc, #4f39f6); color: #ffffff; flex: 0 0 auto; }
+    .field { height: 26px; border: 1px solid #e5e5e5; border-radius: 10px; background: #ffffff; }
+    .flabel { font-size: 10px; color: #737373; margin-bottom: 4px; }
+    .btn { display: inline-flex; align-items: center; height: 28px; padding: 0 11px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+    .line { height: 7px; border-radius: 999px; background: #ededed; }
+    .scroll { position: absolute; right: 3px; width: 4px; border-radius: 999px; background: #d4d4d4; }
+    .tag { position: absolute; background: #ffffff; padding: 0 5px; font-size: 9px; color: #1447e6; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1280px;height:760px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#1447e6">REFERENCE</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">A two-pane screen</div>
+      <div style="font-size:12.5px;color:#737373"><span class="mono" style="font-size:12px">BentoSplitPage</span> under the page's one hero, on a route that passes <span class="mono" style="font-size:12px">column="wide"</span>.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 250px 290px;gap:20px;padding:14px 24px 0">
+
+    <!-- desktop -->
+    <div style="display:flex;flex-direction:column;gap:9px;min-height:0">
+      <div class="eyebrow" style="color:#737373">DESKTOP</div>
+      <div style="position:relative;flex:1;min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;padding:16px;overflow:hidden;display:flex;flex-direction:column;gap:12px">
+
+        <div style="border:1px dashed rgba(20,71,230,0.4);border-radius:14px;padding:12px;position:relative">
+          <div class="tag mono" style="right:9px;top:-8px">the hero -- spans both panes</div>
+          <div style="display:flex;align-items:flex-start;gap:11px">
+            <div class="chip" style="width:38px;height:38px;border-radius:12px"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;color:#737373;letter-spacing:0.05em;font-weight:600">&larr; EYEBROW</div>
+              <div style="font-size:17px;font-weight:600;letter-spacing:-0.015em;margin-top:2px">Entity name</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px">
+              <div class="btn" style="border:1px solid #e5e5e5;color:#404040">Cancel</div>
+              <div class="btn" style="background:#171717;color:#fafafa">Save</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position:relative;flex:1;min-height:0;display:grid;grid-template-columns:1.1fr 14px 1fr;border:1px dashed rgba(20,71,230,0.4);border-radius:14px;padding:12px 10px">
+          <div class="tag mono" style="left:12px;top:-8px">BentoSplitPage -- height under the hero</div>
+
+          <!-- primary pane -->
+          <div style="position:relative;min-height:0;overflow:hidden;padding-right:12px">
+            <div class="mono" style="font-size:9px;color:#a1a1a1;margin-bottom:6px">section aria-label="Form"</div>
+            <div class="glass" style="border-radius:20px;padding:12px;margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <div class="chip" style="width:24px;height:24px;border-radius:8px"></div>
+                <div style="font-size:12.5px;font-weight:600">Field group</div>
+              </div>
+              <div><div class="flabel">Label</div><div class="field"></div></div>
+              <div style="margin-top:8px"><div class="flabel">Label</div><div class="field" style="height:64px"></div></div>
+            </div>
+            <div class="glass" style="border-radius:20px;padding:12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <div class="chip" style="width:24px;height:24px;border-radius:8px"></div>
+                <div style="font-size:12.5px;font-weight:600">Field group</div>
+              </div>
+              <div><div class="flabel">Label</div><div class="field"></div></div>
+            </div>
+            <div class="scroll" style="top:18px;height:90px"></div>
+          </div>
+
+          <!-- the handle -->
+          <div style="display:flex;justify-content:center;position:relative">
+            <div style="width:1px;background:#e5e5e5;height:100%"></div>
+            <div style="position:absolute;top:50%;margin-top:-8px;width:12px;height:16px;border:1px solid #e5e5e5;border-radius:3px;background:#ededed"></div>
+          </div>
+
+          <!-- secondary pane -->
+          <div style="position:relative;min-height:0;overflow:hidden;padding-left:12px">
+            <div class="mono" style="font-size:9px;color:#a1a1a1;margin-bottom:6px">section aria-label="Preview"</div>
+            <div style="font-size:16px;font-weight:600;letter-spacing:-0.01em;margin-bottom:8px">Entity name</div>
+            <div class="line" style="width:94%;margin-bottom:6px"></div>
+            <div class="line" style="width:88%;margin-bottom:6px"></div>
+            <div class="line" style="width:91%;margin-bottom:6px"></div>
+            <div class="line" style="width:62%;margin-bottom:14px"></div>
+            <div class="line" style="width:90%;margin-bottom:6px"></div>
+            <div class="line" style="width:84%;margin-bottom:6px"></div>
+            <div class="line" style="width:70%"></div>
+            <div class="scroll" style="top:60px;height:140px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- phone -->
+    <div style="display:flex;flex-direction:column;gap:9px;min-height:0">
+      <div class="eyebrow" style="color:#737373">PHONE WIDTH</div>
+      <div style="flex:1;min-height:0;border-radius:26px;background:#ffffff;border:1px solid #e5e5e5;padding:14px 12px;overflow:hidden;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="chip" style="width:28px;height:28px;border-radius:9px"></div>
+          <div style="font-size:14px;font-weight:600">Entity name</div>
+        </div>
+        <div style="position:relative;align-self:flex-start;display:flex;gap:2px;padding:3px;border-radius:10px;background:#f5f5f5">
+          <div style="padding:4px 10px;border-radius:7px;background:#ffffff;font-size:11.5px;font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,0.06)">Form</div>
+          <div style="padding:4px 10px;border-radius:7px;font-size:11.5px;color:#737373">Preview</div>
+        </div>
+        <div class="mono" style="font-size:9px;color:#1447e6">tablist aria-label="Show"</div>
+        <div class="glass" style="border-radius:18px;padding:11px">
+          <div><div class="flabel">Label</div><div class="field"></div></div>
+          <div style="margin-top:8px"><div class="flabel">Label</div><div class="field" style="height:56px"></div></div>
+          <div style="margin-top:8px"><div class="flabel">Label</div><div class="field"></div></div>
+        </div>
+        <div style="border:1px dashed #d4d4d4;border-radius:12px;padding:8px 10px;font-size:10.5px;color:#737373;line-height:1.45">Preview is hidden, not unmounted: switching back finds the fields as they were typed.</div>
+      </div>
+    </div>
+
+    <!-- the rules -->
+    <div style="display:flex;flex-direction:column;gap:11px;min-height:0">
+      <div class="eyebrow" style="color:#737373">WHAT THE SHAPE DECIDES</div>
+
+      <div style="border:1px solid #e5e5e5;background:#ffffff;border-radius:14px;padding:13px">
+        <div class="eyebrow" style="color:#737373;margin-bottom:6px">EACH PANE SCROLLS ON ITS OWN</div>
+        <div style="font-size:11.5px;color:#404040;line-height:1.5">The fields and what they change stay in view together. The hero and the save bar sit above both, so neither pane owns them.</div>
+      </div>
+
+      <div style="border:1px solid #e5e5e5;background:#ffffff;border-radius:14px;padding:13px">
+        <div class="eyebrow" style="color:#737373;margin-bottom:6px">THE READER OWNS THE RATIO</div>
+        <div style="font-size:11.5px;color:#404040;line-height:1.5">Dragged at the handle, and remembered per viewer under <span class="mono" style="font-size:11px">storageKey</span>. It is a convenience, so storage that is blocked only means it starts at the default.</div>
+      </div>
+
+      <div style="border:1px solid #e5e5e5;background:#ffffff;border-radius:14px;padding:13px">
+        <div class="eyebrow" style="color:#737373;margin-bottom:6px">THE SECOND PANE NEVER VANISHES</div>
+        <div style="font-size:11.5px;color:#404040;line-height:1.5">At phone width the two become one with a labelled switch. Nothing drops off the edge of a narrow screen unannounced.</div>
+      </div>
+
+      <div style="border:1px solid rgba(251,44,54,0.3);background:rgba(251,44,54,0.05);border-radius:14px;padding:13px">
+        <div class="eyebrow" style="color:#c10007;margin-bottom:5px">NOT A GRID OF YOUR OWN</div>
+        <div style="font-size:11.5px;color:#404040;line-height:1.5">Two columns in a page's own grid settle none of the three decisions above, and each page settles them differently.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:18px"></div>
+</div>
+</x-dc>
+</body>
+</html>

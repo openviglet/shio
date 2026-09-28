@@ -213,6 +213,40 @@ test("SH971: with saves muted, a save's toast no longer moves the mascot, but a 
   await act(() => new Promise((resolve) => setTimeout(resolve, 600)))
 })
 
+test("SH971: a curator's still mascot reaches the dock, which then shows its caption whole, untyped", async () => {
+  // The package marks a paused dock in no attribute; what a person sees change is the caption,
+  // which a paused dock sets at once instead of typing (VDS171). So the same sentence is read
+  // shortly after the toast, moving and still: typed, it is partial; still, it is all there.
+  const { setMascotStill } = await import("../src/lib/dock-reports.ts")
+  const sentence = "The schedule for the spring campaign landing page could not be saved because the date is in the past"
+  // A moving dock types one character per 14 ms, so this sentence takes about 1.4 s to type; at
+  // 100 ms it shows a few characters, and the toast has long since reached the dock.
+  const shortly = () => act(() => new Promise((resolve) => setTimeout(resolve, 100)))
+  // The visible caption is aria-hidden (the live region carries the sentence whole for a reader,
+  // moving or not), so that is the text read here.
+  const typedWhole = () => [...container.querySelectorAll('[aria-hidden="true"]')]
+    .some((node) => node.textContent === sentence)
+
+  await act(() => { toast.error(sentence) })
+  await shortly()
+  assert.ok(!typedWhole(),
+    "SH971: the control — a moving dock already shows the whole caption this soon, so the comparison"
+      + " below cannot tell a paused dock from a moving one")
+  await act(() => { toast.dismiss() })
+  await act(() => new Promise((resolve) => setTimeout(resolve, 600)))
+
+  await act(() => setMascotStill(true))
+  await act(() => { toast.error(sentence) })
+  await shortly()
+  assert.ok(typedWhole(),
+    "SH971: the curator froze the mascot and the dock still typed its caption, so `paused` never reached"
+      + " VigletAssistant. The caption must still arrive whole — only the motion stops.")
+  assert.ok(container.querySelector("[aria-live]"), "SH971: a still dock stopped announcing")
+
+  await act(() => { toast.dismiss(); setMascotStill(false) })
+  await act(() => new Promise((resolve) => setTimeout(resolve, 600)))
+})
+
 test("SH971: the shell loads the choice and offers it, and the kinds agree with the server's", () => {
   const shell = readFileSync(join(HERE, "..", "src", "app", "system", "bento.root.page.tsx"), "utf8")
   assert.match(shell, /useDockPreferencesLoad\(\)/, "SH971: the curator's choice is never read")

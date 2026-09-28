@@ -91,6 +91,11 @@
  * dark ground keeps orange-400 text, which measured 7.53:1 there. `accent-contrast.test.mjs` runs
  * the measurement on every `pnpm test`.
  *
+ * 2026.3.13 measures one more thing (VDS179): the accent label on the accent's own 10% and 20%
+ * tints, the chip and badge ground. Orange-700 text read 4.49:1 and 3.84:1 there on the light
+ * ground, so the text alone goes one step deeper, to orange-800; the fills keep orange-700, and
+ * the dark ground's pairs (7.05:1 and 6.44:1) did not move.
+ *
  * Primary was never claimed, so every surface the authoring contract says reads `--primary` — the
  * rail's you-are-here marker, the default button — rendered the preset's neutral. It is claimed
  * through the four base inputs, never by setting the compiled token: orange-700 with white on the
@@ -99,7 +104,7 @@
 :root {
   --vg-accent-from: oklch(55.3% 0.195 38.402); /* orange-700 */
   --vg-accent-to: oklch(55.5% 0.163 48.998); /* amber-700 */
-  --vg-accent-text: oklch(55.3% 0.195 38.402); /* orange-700 */
+  --vg-accent-text: oklch(47% 0.157 37.304); /* orange-800 */
   --vg-accent-text-dark: oklch(75% 0.183 55.934); /* orange-400 */
   --vg-primary-base: oklch(55.3% 0.195 38.402); /* orange-700 */
   --vg-primary-foreground-base: oklch(0.985 0 0);

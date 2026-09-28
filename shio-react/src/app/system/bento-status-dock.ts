@@ -8,7 +8,7 @@
  */
 import { createElement } from "react"
 import { VigletAssistant, useAssistantNotifications } from "@viglet/viglet-design-system"
-import { dismissReport, markReportRead, useDockAmbient, useDockReports, useMutedKinds } from "../../lib/dock-reports.ts"
+import { dismissReport, markReportRead, useDockAmbient, useDockReports, useMascotStill, useMutedKinds } from "../../lib/dock-reports.ts"
 import type { VigletAssistantMessage } from "@viglet/viglet-design-system"
 import { markRepliesSeen, transcript, unseenReplies, useDockChat, waiting } from "../../lib/dock-chat.ts"
 
@@ -44,6 +44,7 @@ export function BentoStatusDock({ inline = false, onSend }: { inline?: boolean; 
   const { working, bumps } = useDockAmbient()
   // SH971 — with saves muted, only a failing toast moves the mascot; the toast itself still shows.
   const muted = useMutedKinds()
+  const still = useMascotStill()
   const chat = useDockChat()
   const toasting = state !== "idle" && (state === "error" || !muted.has("saves"))
   // A toast is the freshest thing and wins; then an agent run that is writing (SH968); then the
@@ -62,6 +63,8 @@ export function BentoStatusDock({ inline = false, onSend }: { inline?: boolean; 
     onDismiss: dismissReport,
     // SH972 — in flow, for a surface that docks it somewhere of its own (the visual editor).
     inline,
+    // SH971 — a curator's still mascot (VDS171 forwards it to the avatar); the caption still reports.
+    paused: still,
   })
 }
 

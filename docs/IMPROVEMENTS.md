@@ -994,46 +994,6 @@ and may only shrink, then one root provider, then the branches, the era instrume
 names and the prose. The last task removes the provider itself, once the package drops
 the switch in VDS146.
 
-## LXIII The Viglet assistant: where the console reports, and how the curator reaches the agent (Block AX)
-
-The design system's Block E shipped three pieces for exactly this product. VigletAvatar
-is the Viglet mascot with five states: idle, working, success, error and attention.
-VigletAssistant is the dock it lives in: collapsed, a status light with a typed caption,
-and open, a transcript with a composer that exists only when the product supplies
-onSend. useAssistantNotifications reads the toasts already on screen and moves the
-mascot without wrapping toast. The reference design those were drawn from is a CMS
-screen with the avatar wired to publish, a validation failure and an arriving lead. No
-consumer has mounted them; SH940 made them installable here.
-
-In Shio the dock replaces notifications rather than decorating them. Outcomes, agent
-runs, review arrivals, failed schedules and form submissions all report through it, and
-the header's pending-review count moves into it.
-
-The chat half is constrained by a binding non-goal: Shio hosts no model. So the composer
-appears only when an external agent is connected, and a curator's message is relayed to
-that agent through MCP, with its answer arriving in the transcript. That relay needs the
-run and intent records Block BB builds and lands there. This block builds the status
-surface, ordered mount, instrument, channel, then each kind of report.
-
-### LXIII.8 What the dock reports, chosen per person (SH971)
-
-Once AX3 to AX7 land, every kind of event reaches one surface. That is the point, and it
-is also how a notification centre turns into something people learn to ignore. An author
-wants their own saves and failures; a reviewer wants agent runs and review arrivals; an
-operator wants schedule failures and form arrivals; a person presenting their screen
-wants the mascot still.
-
-A per-user preference, stored server-side so it follows the curator across devices,
-chooses which report kinds reach the dock and whether the mascot animates, keeping the
-caption and the aria-live announcement either way. Muting a kind never hides its record:
-the activity trail and the agent's change feed still carry it, and a muted failure still
-counts toward the unread badge unless explicitly excluded, since a failure is the report
-least safe to lose.
-
-This is a console preference with no agent equivalent, classified as such in the P1
-declaration rather than argued in prose. The assertions set a preference, drive each
-kind of event, and read which reports appear.
-
 ## LXIV What the conformance instruments cannot see (Block AY)
 
 This round adds console surfaces, write paths and agent affordances by the dozen, and
@@ -1250,6 +1210,30 @@ click.
 
 The assertion is the restored menu selecting every row in the table view, and the count
 in the confirm dialog equal to the ticked rows.
+
+### LXIX.14 The bulk plan marks its changes the way the diff does (SH1178)
+
+The content browser's bulk plan (`bulk-plan.dialog.tsx`) lists what a batch would do,
+one row per item. Each row carries `change.action` straight from the server in a grey
+`Badge`. So a Portuguese curator reads `delete` and `move` in English, and a deletion
+looks exactly like a no-op. That is the one place a curator confirms a batch before it
+runs, and the place where telling a removal from an edit matters most.
+
+Design system 2026.3.13 ships `BentoChangeMark` (VDS170) for exactly this: created,
+changed and deleted in the words and tints `BentoDiff` already uses, with a compact
+letter for a narrow row. The console's own copy of that job is the second copy the
+duplicate gate exists to prevent.
+
+The change set's action vocabulary (`ShAgentChangeSet.Change`) is wider than the mark's four
+states, so the mapping is decided here:
+- `create` is added and `delete` is removed.
+- `noop` is unchanged, which a plan reports rather than omits.
+- `update`, `move`, `publish` and `unpublish` are changed, with the translated action word beside
+  the mark, because "changed" alone would hide what a move or a publish does.
+
+A refused row keeps its destructive badge: a refusal is not a change. The assertion
+renders a plan holding one of each action and reads each row's state and its translated
+word.
 
 ## LXX Media: what the bytes mean (Block BE)
 

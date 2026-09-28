@@ -47,11 +47,17 @@ class ShDockPreferencesServiceTest {
 
     @BeforeAll
     void setup() {
-        username = "sh971-" + UUID.randomUUID().toString().substring(0, 8);
+        username = freshUser();
+    }
+
+    /** A user of its own, for a test that must not see what another test saved (PER_CLASS). */
+    private String freshUser() {
+        String name = "sh971-" + UUID.randomUUID().toString().substring(0, 8);
         ShUser user = new ShUser();
-        user.setUsername(username);
+        user.setUsername(name);
         user.setEnabled(1);
         userRepository.save(user);
+        return name;
     }
 
     @Test
@@ -69,6 +75,32 @@ class ShDockPreferencesServiceTest {
                 .as("SH971: the choice did not survive a round trip through ShUser.dockPreferences,"
                         + " or it is not sorted and deduplicated, so one choice has two spellings (P5)")
                 .containsExactly("arrivals", "schedules");
+    }
+
+    @Test
+    void sh971AStillMascotIsStoredBesideTheMutedKinds() {
+        String own = freshUser();
+        service.save(own, new ShDockPreferences(List.of("saves"), true));
+
+        ShDockPreferences read = service.of(own);
+        assertThat(read.still())
+                .as("SH971: the curator froze the mascot and the choice did not survive the round trip")
+                .isTrue();
+        assertThat(read.muted()).as("SH971: freezing the mascot must not touch the muted kinds").containsExactly("saves");
+    }
+
+    @Test
+    void sh971ADocumentWrittenBeforeStillExistedReadsAsAnimated() {
+        String own = freshUser();
+        ShUser user = userRepository.findByUsername(own);
+        user.setDockPreferences("{\"muted\":[\"arrivals\"]}");
+        userRepository.save(user);
+
+        ShDockPreferences read = service.of(own);
+        assertThat(read.still())
+                .as("SH971: a stored choice from before the field existed must read as the dock was then")
+                .isFalse();
+        assertThat(read.muted()).containsExactly("arrivals");
     }
 
     @Test

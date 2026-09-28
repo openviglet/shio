@@ -76,6 +76,7 @@
   "dock.trashed": "Movido para a lixeira",
   "dock.preferences": "O que o dock informa",
   "dock.preferencesHint": "Desligue o que você não precisa acompanhar. Falhas sempre chegam ao dock, e nada aqui esconde um registro: a trilha de atividade guarda todos os eventos.",
+  "dock.animateMascot": "Animar o mascote",
   "dock.preferencesSaved": "Preferências do dock salvas",
   "dock.kind.saves": "Seus próprios salvamentos",
   "dock.kind.agent-runs": "Execuções de agente",

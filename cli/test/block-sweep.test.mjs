@@ -89,6 +89,15 @@ const SWEEP = {
       + "mirror is regenerated. README and shio-site are NOT moved: neither describes the test "
       + "instruments, and no count or claim they state changed",
   },
+  AX: {
+    swept: true,
+    why: "the Viglet assistant: one dock where the console reports how things ended, agent runs "
+      + "and scheduled publishing in it, a conversation with the connected agent, the same dock in "
+      + "the Universal Editor, and SH971 closing it with a per-curator choice of what it reports and "
+      + "whether its mascot moves. docs-shio moved: content-console gained the mascot switch and "
+      + "COVERAGE's Block AX row names SH971 whole, with the mirror regenerated. README and shio-site "
+      + "are NOT moved: neither describes the console's dock",
+  },
   AU: {
     swept: true,
     why: "the design system's consumer contract, adopted and gated: the page reference vendored and "

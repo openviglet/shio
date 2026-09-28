@@ -60,6 +60,25 @@ export function useMutedKinds(): ReadonlySet<string> {
   return useSyncExternalStore(subscribe, currentMuted, currentMuted)
 }
 
+/**
+ * SH971 — whether this curator froze the mascot. Only the motion stops: the caption still types
+ * and the live region still announces, so nothing a report says is lost to a still dock.
+ */
+let still = false
+
+export function setMascotStill(next: boolean) {
+  still = next
+  for (const listener of listeners) listener()
+}
+
+function currentStill(): boolean {
+  return still
+}
+
+export function useMascotStill(): boolean {
+  return useSyncExternalStore(subscribe, currentStill, currentStill)
+}
+
 export function pushReport(report: Omit<DockReport, "id" | "role" | "at" | "read">, kind?: string): string | undefined {
   if (kind && muted.has(kind) && report.tone !== "error") return undefined
   next += 1

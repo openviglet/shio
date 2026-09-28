@@ -13,9 +13,9 @@ import { toast } from "@viglet/viglet-design-system"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { setMutedKinds, useMutedKinds } from "@/lib/dock-reports"
+import { setMascotStill, setMutedKinds, useMascotStill, useMutedKinds } from "@/lib/dock-reports"
 import { reportProblem } from "@/lib/problem"
-import { DOCK_KINDS, ShDockService, type DockKind } from "@/services/dock/dock.service"
+import { DOCK_KINDS, ShDockService, type DockKind, type ShDockPreferences } from "@/services/dock/dock.service"
 
 const dockService = new ShDockService()
 
@@ -25,19 +25,23 @@ const dockService = new ShDockService()
  * <p>One switch per kind, on meaning "report it". Failures are not a switch: a report in tone
  * error reaches the dock whatever is muted, and the dialog says so, because a curator who muted
  * schedules and then missed a failed launch would have been told nothing by a switch that lied.</p>
+ *
+ * <p>The last switch keeps the mascot moving. Off, it stands still, and only the motion stops: the
+ * caption and the announcement go on reporting, so a curator presenting their screen loses nothing.</p>
  */
 export function BentoDockPreferences() {
   const { t } = useTranslation()
   const muted = useMutedKinds()
+  const still = useMascotStill()
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const toggle = async (kind: DockKind, reported: boolean) => {
-    const next = DOCK_KINDS.filter((each) => (each === kind ? !reported : muted.has(each)))
+  const save = async (preferences: ShDockPreferences) => {
     setSaving(true)
     try {
-      const saved = await dockService.savePreferences({ muted: next })
+      const saved = await dockService.savePreferences(preferences)
       setMutedKinds(saved.muted)
+      setMascotStill(saved.still === true)
       toast.success(t("dock.preferencesSaved"))
     } catch (error) {
       reportProblem(error, t("common.error"))
@@ -45,6 +49,9 @@ export function BentoDockPreferences() {
       setSaving(false)
     }
   }
+
+  const toggle = (kind: DockKind, reported: boolean) =>
+    save({ muted: DOCK_KINDS.filter((each) => (each === kind ? !reported : muted.has(each))), still })
 
   return (
     <>
@@ -68,6 +75,16 @@ export function BentoDockPreferences() {
                 />
               </label>
             ))}
+            <label className="flex items-center justify-between gap-4 border-t pt-4">
+              <span className="text-sm">{t("dock.animateMascot")}</span>
+              <Switch
+                checked={!still}
+                disabled={saving}
+                onCheckedChange={(animates: boolean) => {
+                  void save({ muted: DOCK_KINDS.filter((each) => muted.has(each)), still: !animates })
+                }}
+              />
+            </label>
           </div>
         </DialogContent>
       </Dialog>

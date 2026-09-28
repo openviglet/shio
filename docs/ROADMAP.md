@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
-
-- 🛠 **SH971** (deps: SH968 ✅) **a curator cannot choose what the dock reports or quiet the mascot** — The kinds can be muted now, but quieting the mascot needs VigletAssistant to pass VigletAvatar's paused prop through. → §LXIII.8
-
 ## Block BA — Releases, scheduling and the publish gate
 
 - 📋 **SH1082** (deps: SH991 ✅, a calendar component in the viglet design system) **the Scheduled page is a list only, with no month or week calendar and no drag to reschedule** — The console has no calendar component, and one built inside Shio is a copy the duplicate gate refuses. → §LXVI.11
@@ -25,18 +21,13 @@
 ## Block BD — Finding, selecting and acting on content
 
 - 📋 **SH1148** (deps: design system: BentoDataTable gains a controlled selectedIds beside onSelectionChange) **the table view has no select-everything and no invert, because the table takes no selection in** — SH1142 removed the two rather than leave them inert; they return when the table can be told. → §LXIX.13
+- 📋 **SH1178** (deps: —) **the bulk plan labels each change with the server's raw English action word, and a delete looks like a no-op** — It is where a curator confirms a batch, and design system 2026.3.13 ships BentoChangeMark for exactly this list. → §LXIX.14
 
 ## Block BI — The areas this round did not reach
 
 - ⏳ **SH1102** (deps: roadkeep: code.renamed skips a vendored engine) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
 
 ## Priority
-
-## Done when — SH971
-
-- **A curator can freeze the dock's mascot from the preferences dialog** The design
-  system has to ship a paused prop on VigletAssistant first, and then the stored choice
-  needs a still flag beside muted.
 
 ## Done when — SH1091
 

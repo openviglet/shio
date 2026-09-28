@@ -76,6 +76,7 @@
   "dock.trashed": "Moved to trash",
   "dock.preferences": "What the dock reports",
   "dock.preferencesHint": "Switch off what you do not need to hear about. Failures always reach the dock, and nothing here hides a record: the activity trail keeps every event.",
+  "dock.animateMascot": "Animate the mascot",
   "dock.preferencesSaved": "Dock preferences saved",
   "dock.kind.saves": "Your own saves",
   "dock.kind.agent-runs": "Agent runs",

@@ -7,6 +7,8 @@ export type DockKind = (typeof DOCK_KINDS)[number]
 
 export interface ShDockPreferences {
   muted: DockKind[]
+  /** SH971 — the mascot stays still; the caption and the announcement report as before. */
+  still: boolean
 }
 
 /** SH971 — the signed-in curator's dock preferences, kept on their user record. */

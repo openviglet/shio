@@ -3315,7 +3315,7 @@ actions in `app/system/submission-actions.ts` call `ShAgentFeedService.locate` f
 (`GET /v2/agent/resolve`, classified in `ShConsoleReadAclLintTest`). It is named `locate` because
 the SH965 lint keys writes by method name, and `resolve` is a POST on the note service.
 
-## What the dock reports is the curator's choice (SH971, kinds half)
+## What the dock reports is the curator's choice (SH971)
 
 `ShUser.dockPreferences` (changeset `sh971-user-dock-preferences`, VARCHAR(1024), nullable) holds
 `{"muted": [...]}`. It sits on the user rather than per tenant, so the choice follows the curator
@@ -3333,9 +3333,17 @@ only a failing toast moves the mascot. With `agent-runs` muted, a run shows no w
 bumps. The header's `BentoDockPreferences` button opens one switch per kind, and the dialog says
 that failures always arrive.
 
-Quieting the mascot is the other half and waits on the design system. `VigletAvatar` has `paused`,
-but `VigletAssistant` does not pass it through, so Shio cannot freeze the dock's mascot without a
-package change.
+**The mascot can be kept still.** The same document carries `still` (the record's second
+component; a document stored before it existed reads as `false`, which is what the dock did then),
+and no changeset was needed because the column holds JSON. `setMascotStill` applies it, and
+`BentoStatusDock` passes it as `paused`, which `VigletAssistant` forwards to its avatar since design
+system 2026.3.13 (VDS171, filed from here). Only the motion stops. A paused dock sets its caption
+whole instead of typing it, and the live region announces exactly as before. That whole caption is
+also what `bento-status-dock.test.mjs` reads, because the package marks a paused dock in no
+attribute. The switch is the dialog's last row, **Animate the mascot**, on by default.
+
+The same release deepened the accent label to orange-800 (`src/index.css`): VDS179 measures it on
+the accent's own tints, where orange-700 read 4.49:1.
 
 ## The Universal Editor docks the assistant itself (SH972)
 

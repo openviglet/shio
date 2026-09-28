@@ -49,10 +49,19 @@ public class ShDockPreferencesService {
     public static final List<String> KINDS =
             List.of("saves", "agent-runs", "schedules", "arrivals");
 
-    /** What is stored and served: the kinds this person muted. Empty means "report everything". */
-    public record ShDockPreferences(List<String> muted) {
+    /**
+     * What is stored and served: the kinds this person muted, empty meaning "report everything",
+     * and whether the mascot stays still. {@code still} stops only the motion: the caption and the
+     * live-region announcement report exactly as before (SH971). A document written before the
+     * field existed has no {@code still} and reads as false, which is what the dock did then.
+     */
+    public record ShDockPreferences(List<String> muted, boolean still) {
         public ShDockPreferences {
             muted = muted == null ? List.of() : List.copyOf(muted);
+        }
+
+        public ShDockPreferences(List<String> muted) {
+            this(muted, false);
         }
     }
 
@@ -85,7 +94,8 @@ public class ShDockPreferencesService {
             }
         }
         // Sorted and deduplicated, so the same choice is always the same bytes (P5).
-        ShDockPreferences stored = new ShDockPreferences(new ArrayList<>(new TreeSet<>(preferences.muted())));
+        ShDockPreferences stored =
+                new ShDockPreferences(new ArrayList<>(new TreeSet<>(preferences.muted())), preferences.still());
         user.setDockPreferences(objectMapper.writeValueAsString(stored));
         userRepository.save(user);
         return stored;
