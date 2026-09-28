@@ -971,21 +971,6 @@ expand in place to list their changes with a Ver diff link. Tabs split Aguardand
 Aprovadas and Revertidas, and checking rows raises a selection bar with a single Aprovar
 e publicar primary. The home page and the sidebar badge read the same pending count.
 
-### LV.35 LV.35 A home for the mascot that covers nothing (SH1198)
-
-SH1182 made the dock mascot the console's single notice and hides toasts while it is
-mounted, which is the right call: one voice, not two. Where it sits is the problem. In
-every 1440x900 capture of 2026-09-28 it is a 72 px orb fixed at the bottom-right of the
-viewport, above page content. It covers the last Excluir permanentemente in Trash, the
-delete icon on the FAQ row in Post types, the Reverter button on a review row, a site
-tile's corner, and the preview frame's corner in the post editor. On a 390 px phone it
-sits over the Sections field. The top bar also still shows a bell, so there are two
-notice affordances. The concept puts the mascot in a reserved slot at the foot of the
-rail, above the account button: a 30 px orb with a count badge. It opens as a popover
-anchored to that slot, with its items and Marcar como lidos (artboard 01). On a phone
-the orb moves into the top bar where the bell was. The bell is removed, so the mascot
-stays the only notice, and no page content is ever under it.
-
 ### LV.36 LV.36 A closed visual scale in the design system (SH1199)
 
 The Viglet design system and its bento layer are the right foundation: BentoDataTable,

@@ -3892,3 +3892,14 @@ builds a URL on: `/file_source` (media bytes and thumbnails), `/preview`, `/site
 server with the SPA shell and a 200, so nothing fails loudly: the media library showed fifteen broken
 thumbnails and no request error. `dev-proxy.test.mjs` reads every URL the console source builds and
 fails on a backend prefix the proxy does not name.
+
+## The mascot rests where the shell reserves room for it (SH1198)
+
+The dock is handed to `BentoShell` as `dock`, and since 2026.3.15 (VDS185) the shell rests it at the
+foot of the rail and, on a phone, in the header, so it can no longer sit over a page's controls. The
+look census went from twenty routes with a covered control to eight, and none of the eight is the
+dock: they are the sticky header over content scrolled beneath it and the back-to-top control while
+hidden. The visual editor mounts it `inline` in its own layout; nothing else mounts it.
+`dock-slot.test.mjs` holds both. The bell-with-a-cog in the header is not a second notice: it is the
+dock's preferences (SH971), which sit in the header only because neither the assistant nor the user
+menu has a slot for them yet.
