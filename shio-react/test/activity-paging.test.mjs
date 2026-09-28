@@ -77,8 +77,8 @@ test("SH1005: the post editor answers 'who changed this' on the page it is about
   assert.match(editor, /<PostHistoryPanel objectId=\{postId\} onCompare=/,
     "SH1005: the question every CMS is asked, and this console could only answer it by leaving "
       + "the page and scanning an instance-wide log")
-  // SH902 — a section card with no header renders a console card in both eras.
-  assert.match(editor, /AdaptiveSectionCard\.StaticHeader icon=\{IconHistory\}/)
+  // It shares the review card with the notes and the analysis, one tab each.
+  assert.match(editor, /<TabsTrigger value="history"/)
 
   const panel = read("src", "components", "post-history.panel.tsx")
   // SH1116 added the third argument, the signal; the narrowing is the first two.

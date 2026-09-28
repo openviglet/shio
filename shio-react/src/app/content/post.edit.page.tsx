@@ -32,6 +32,7 @@ import { ShAclService } from "@/services/acl/acl.service"
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
 import { isRenderable } from "@/lib/layout-bindings"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NoteRail } from "@/components/note-rail"
 import { PostHistoryPanel } from "@/components/post-history.panel"
 import { PostInsightsPanel } from "@/components/post-insights.panel"
@@ -761,17 +762,6 @@ export default function PostUnifiedEditPage() {
             )}
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
-
-        {/*
-          SH1005 — "who changed this, and when" is the question every CMS is asked, and answering
-          it meant leaving the page and scanning an instance-wide log for your own post.
-        */}
-        <AdaptiveSectionCard>
-          <AdaptiveSectionCard.StaticHeader icon={IconHistory} title={t("activity.section")} />
-          <AdaptiveSectionCard.Content>
-            <PostHistoryPanel objectId={postId} onCompare={() => setVersionsOpen(true)} />
-          </AdaptiveSectionCard.Content>
-        </AdaptiveSectionCard>
           </div>}
           secondary={<div className="space-y-6">
         {/*
@@ -792,27 +782,47 @@ export default function PostUnifiedEditPage() {
           about. Addressed by `id:`, the escape hatch SH172 kept for a console that holds an id
           rather than a friendly URL.
         */}
-        <AdaptiveSectionCard>
-          <AdaptiveSectionCard.StaticHeader icon={IconSparkles} title={t("insights.section")} />
-          <AdaptiveSectionCard.Content>
-            <PostInsightsPanel
-              address={`id:${postId}`}
-              revision={insightsAt}
-              onGoToField={goToField}
-            />
-          </AdaptiveSectionCard.Content>
-        </AdaptiveSectionCard>
-
         {/*
           SH1003 — the corrections on this page, beside it rather than in a dialog: a note is
           written WHILE reading the page it is about, and a dialog would hide the thing being
           corrected behind the box for correcting it.
+          SH1005 — "who changed this, and when" is the question every CMS is asked, and answering
+          it meant leaving the page and scanning an instance-wide log for your own post.
+          The three share one card, one tab each, so the preview above them stays in view.
         */}
         <AdaptiveSectionCard>
           {/* SH902 — a section card with no header renders a console card in both eras. */}
-          <AdaptiveSectionCard.StaticHeader icon={IconMessage} title={t("note.section")} />
+          <AdaptiveSectionCard.StaticHeader icon={IconMessage} title={t("content.reviewSection")} />
           <AdaptiveSectionCard.Content>
-            <NoteRail objectId={postId} />
+            <Tabs defaultValue="notes">
+              <TabsList className="mb-4">
+                <TabsTrigger value="notes" className="gap-1.5">
+                  <IconMessage className="size-3.5" />
+                  {t("note.section")}
+                </TabsTrigger>
+                <TabsTrigger value="history" className="gap-1.5">
+                  <IconHistory className="size-3.5" />
+                  {t("activity.section")}
+                </TabsTrigger>
+                <TabsTrigger value="insights" className="gap-1.5">
+                  <IconSparkles className="size-3.5" />
+                  {t("insights.section")}
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="notes">
+                <NoteRail objectId={postId} />
+              </TabsContent>
+              <TabsContent value="history">
+                <PostHistoryPanel objectId={postId} onCompare={() => setVersionsOpen(true)} />
+              </TabsContent>
+              <TabsContent value="insights">
+                <PostInsightsPanel
+                  address={`id:${postId}`}
+                  revision={insightsAt}
+                  onGoToField={goToField}
+                />
+              </TabsContent>
+            </Tabs>
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
           </div>}
