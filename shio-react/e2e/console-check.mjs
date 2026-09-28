@@ -909,6 +909,60 @@ async function checkViewports(browser) {
   return probe
 }
 
+/**
+ * SH1094 — the two split pages show both panes where there is room, and a switch where there is not.
+ *
+ * The translation workspace hand-built this before, with `lg:` classes that never took effect in
+ * the console's column: at 1440px it showed one pane and its phone switch, and no check could say
+ * so, because both panes were in the DOM and axe had nothing to object to. So this reads what is
+ * *visible*: two labelled sections at desktop width, and at a phone's width one, with the tab list
+ * that reaches the other.
+ */
+async function checkSplitPages(browser, postId) {
+  const probe = { name: "split-pages", path: "/bento/content/post/{id}[/translate]", ok: true,
+    errors: [], warnings: [], failedRequests: [], seen: [] }
+  if (!postId) {
+    probe.skipped = "no post discovered to open"
+    return probe
+  }
+  for (const [width, wantPanes] of [[1440, 2], [390, 1]]) {
+    const context = await browser.newContext({
+      httpCredentials: { username: USER, password: PASS },
+      viewport: { width, height: 900 },
+      extraHTTPHeaders: { Authorization: AUTH },
+    })
+    const page = await context.newPage()
+    try {
+      for (const path of [`/bento/content/post/${postId}`, `/bento/content/post/${postId}/translate`]) {
+        await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" })
+        await page.waitForTimeout(800)
+        const seen = await page.evaluate(() => {
+          const split = document.querySelector("[data-slot=bento-split-page]")
+          const visible = (node) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden"
+          return {
+            split: Boolean(split),
+            panes: split ? [...split.querySelectorAll("section[aria-label], [role=tabpanel]")].filter(visible).length : 0,
+            tabs: split ? [...split.querySelectorAll("[role=tab]")].filter(visible).length : 0,
+          }
+        })
+        probe.seen.push(`${width}:${path.endsWith("/translate") ? "translate" : "editor"}=${seen.panes}/${seen.tabs}`)
+        const tabsWanted = wantPanes === 1 ? 2 : 0
+        if (!seen.split || seen.panes !== wantPanes || seen.tabs !== tabsWanted) {
+          probe.ok = false
+          probe.errors.push(`SH1094: ${path} at ${width}px shows ${seen.panes} pane(s) and ${seen.tabs} tab(s),`
+            + ` not ${wantPanes} and ${tabsWanted}${seen.split ? "" : " — it is not composed as BentoSplitPage"}`)
+        }
+      }
+    } catch (e) {
+      probe.ok = false
+      probe.errors.push(`could not open the split pages: ${String(e).split("\n")[0]}`)
+    } finally {
+      await context.close()
+    }
+  }
+  return probe
+}
+
 /** Count the widget cards a form rendered, without depending on any one widget's markup. */
 async function countFields(page) {
   return page.evaluate(() => {
@@ -1917,6 +1971,17 @@ async function main() {
   console.log(`${widthsProbe.ok ? "ok  " : "FAIL"} ${widthsProbe.name.padEnd(30)} `
     + `${widthsProbe.runs} axe run(s) at ${A11Y_VIEWPORTS.map((v) => v.width).join(" and ")}px`)
   for (const e of widthsProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
+
+  // SH1094 — both panes where there is room, one and a switch where there is not.
+  const splitProbe = await checkSplitPages(browser, anyPost?.path.split("/").pop())
+  if (STRICT && splitProbe.skipped) {
+    splitProbe.ok = false
+    splitProbe.errors.push(`--strict: the split pages must be opened, and it skipped — ${splitProbe.skipped}`)
+  }
+  report.probes.push(splitProbe)
+  console.log(`${splitProbe.ok ? "ok  " : "FAIL"} ${splitProbe.name.padEnd(30)} `
+    + (splitProbe.skipped ? `skipped: ${splitProbe.skipped}` : splitProbe.seen.join(" ")))
+  for (const e of splitProbe.errors) console.log(`       error: ${e.slice(0, 200)}`)
 
   // SH1082 — a calendar drop, read back through the agent's scheduled listing.
   const calendarProbe = await checkScheduleCalendarDrive(context, anyPost?.path.split("/").pop())

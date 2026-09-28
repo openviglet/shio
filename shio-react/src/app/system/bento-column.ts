@@ -39,7 +39,17 @@ const FULL: readonly RegExp[] = [
   /^\/bento\/graphql\/?$/,
 ]
 
+/**
+ * SH1094 — the two pages composed as `BentoSplitPage` (VDS173), which the package draws inside the
+ * shell's wide column: a post beside its preview, and a page beside its translation.
+ */
+const WIDE: readonly RegExp[] = [
+  /^\/bento\/content\/post\/[^/]+\/?$/,
+  /^\/bento\/content\/post\/[^/]+\/translate\/?$/,
+]
+
 export function columnFor(pathname: string): BentoShellColumn {
   if (FULL.some((pattern) => pattern.test(pathname))) return "full"
+  if (WIDE.some((pattern) => pattern.test(pathname))) return "wide"
   return NARROW.some((pattern) => pattern.test(pathname)) ? "narrow" : "default"
 }

@@ -1102,29 +1102,6 @@ small once that is settled; the working command, its help and its conformance sc
 were written and reverted in one commit, so the cost of having tried is recorded here
 rather than paid twice.
 
-### LXVIII.16 A split view is a layout, not a card (SH1094)
-
-SH1014 put the live preview in the editor and left it where every other panel is: a card
-in a vertical stack, under the fields it previews. So looking at the page means
-scrolling away from the form that changes it, which is most of what a split view is for.
-
-The design asked for two panes with a ratio the curator sets and the console remembers.
-That was not built because it is a change to the page's **shape** rather than an
-addition to it. The post editor is a stack of `AdaptiveSectionCard`s inside SH901's
-bento hero, SH907 puts it outside the shell, and the design system has rules about what
-a page may look like — so a two-pane layout is a question for `viglet-ds-pages` before
-it is a question about this editor.
-
-Three things it has to settle. **Which panes**: form and preview is the obvious pair,
-but the insights panel and the note rail are also read while typing, and a split serving
-one and not the others will be argued about again. **Where the ratio lives**: per
-curator, and `localStorage` is honest for a per-viewer convenience that is not content.
-**What happens at phone width**: a split view is not one, and the answer cannot be that
-the preview vanishes silently.
-
-A second page wants it: SH1061's translation workspace. The design system's three shapes
-have no two-pane one, so it is a package addition first.
-
 ## LXIX Finding, selecting and acting on content (Block BD)
 
 The content browser is where a curator spends the day, and it is the console's weakest

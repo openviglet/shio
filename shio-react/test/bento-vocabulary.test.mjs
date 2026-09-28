@@ -140,7 +140,7 @@ const DEFERRED = {
   // SH971 — 2026.3.13 answered four requests Shio filed (VDS171-VDS174) and VDS170; each whole
   // surface belongs to the line that adopts it.
   BentoCalendar: "SH1082 — rendered by scheduled.page.tsx as its calendar view; a harness has no schedule to draw.",
-  BentoSplitPage: "SH1094 — the post editor's form beside its live preview, and the translation workspace.",
+  BentoSplitPage: "SH1094 — rendered by post.edit.page.tsx and translate.page.tsx; a harness has no form to split.",
   BentoChangeMark: "SH1178 — the bulk plan's per-item mark, in place of the raw action word.",
 }
 

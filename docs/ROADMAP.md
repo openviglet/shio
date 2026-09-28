@@ -12,7 +12,6 @@
 ## Block BC — The authoring surface, field by field
 
 - ⏳ **SH1091** (deps: maintainer security call) **no stateless caller can change one field of a post without declaring the whole document** — Every route to a partial write crosses a boundary drawn on purpose, so which one is a maintainer's call. → §LXVIII.13
-- ⏳ **SH1094** (deps: a two-pane page shape in viglet-design-system) **the live preview is a card under the form, so reading it means scrolling away from the fields** — Two pages now want two panes (this and the translation workspace), and the design system has no such page shape. → §LXVIII.16
 
 ## Block BD — Finding, selecting and acting on content
 
@@ -31,13 +30,6 @@
   narrowed CSRF exemption on the console merge, or If-Match on a merge an AGENT token
   may call); shio post set then changes one field under a version and is refused when
   the post moved.
-
-## Done when — SH1094
-
-- **The editor and the workspace share a design-system split** Once the package ships a
-  two-pane page shape, the post editor shows form and preview side by side with a ratio
-  kept per curator, the translation workspace moves onto it, and a phone-width page
-  stacks with a toggle rather than dropping a pane.
 
 ## Done when — SH1102
 

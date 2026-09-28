@@ -5,7 +5,7 @@ import { PageHero } from "@/components/page-hero"
  * `widgetSettings` value the backend can return as the literal string "null"; the section only
  * frames them. Imported from the bento subpath, the only entry that exports it.
  */
-import { AdaptiveSectionCard } from "@viglet/viglet-design-system/bento"
+import { AdaptiveSectionCard, BentoSplitPage } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
 import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
@@ -669,6 +669,19 @@ export default function PostUnifiedEditPage() {
         )}
 
         {/*
+          SH1094 — the form and what it changes, side by side (VDS173). The left pane is what a
+          curator writes: who else is working, the fields, and the history of the post. The right
+          pane is what they read while writing: the page as it would look, its lint and digest,
+          and the notes, which are written while reading the page they are about. The ratio a
+          curator drags to is kept per viewer; at phone width the two become one with a switch,
+          and neither unmounts, so nothing typed is lost to looking at the preview.
+        */}
+        <BentoSplitPage
+          storageKey="shio.post-editor.split"
+          primaryLabel={t("content.fields")}
+          secondaryLabel={t("insights.previewSection")}
+          primary={<div className="space-y-6">
+        {/*
           SH1008 — above the fields, because the point of it is to be read BEFORE anyone types.
           It refuses nothing: the fields, Save and Publish behave exactly as they did, and a save
           that collides still meets SH985's guard.
@@ -730,19 +743,6 @@ export default function PostUnifiedEditPage() {
         </AdaptiveSectionCard>
 
         {/*
-          SH1003 — the corrections on this page, under the fields rather than in a dialog: a note is
-          written WHILE reading the page it is about, and a dialog would hide the thing being
-          corrected behind the box for correcting it.
-        */}
-        <AdaptiveSectionCard>
-          {/* SH902 — a section card with no header renders a console card in both eras. */}
-          <AdaptiveSectionCard.StaticHeader icon={IconMessage} title={t("note.section")} />
-          <AdaptiveSectionCard.Content>
-            <NoteRail objectId={postId} />
-          </AdaptiveSectionCard.Content>
-        </AdaptiveSectionCard>
-
-        {/*
           SH1005 — "who changed this, and when" is the question every CMS is asked, and answering
           it meant leaving the page and scanning an instance-wide log for your own post.
         */}
@@ -752,7 +752,8 @@ export default function PostUnifiedEditPage() {
             <PostHistoryPanel objectId={postId} onCompare={() => setVersionsOpen(true)} />
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
-
+          </div>}
+          secondary={<div className="space-y-6">
         {/*
           SH1014 — the page as it would look, from the values on screen. The preview token still
           mints a shareable URL; this answers the question that had no answer at all, which is what
@@ -781,6 +782,21 @@ export default function PostUnifiedEditPage() {
             />
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
+
+        {/*
+          SH1003 — the corrections on this page, beside it rather than in a dialog: a note is
+          written WHILE reading the page it is about, and a dialog would hide the thing being
+          corrected behind the box for correcting it.
+        */}
+        <AdaptiveSectionCard>
+          {/* SH902 — a section card with no header renders a console card in both eras. */}
+          <AdaptiveSectionCard.StaticHeader icon={IconMessage} title={t("note.section")} />
+          <AdaptiveSectionCard.Content>
+            <NoteRail objectId={postId} />
+          </AdaptiveSectionCard.Content>
+        </AdaptiveSectionCard>
+          </div>}
+        />
       </div>
 
       {asking && postId && (

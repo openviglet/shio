@@ -3732,3 +3732,20 @@ post for the 10th of next month at noon UTC, moves it one day with Space, the Ri
 Enter, and reads `/agent/find?scheduled=any` back. Noon keeps every runner's zone on the same day,
 and next month keeps today's date from making the move cross a month. On its first run the drive
 found SH1179: the endpoint had refused every console schedule.
+
+## The editor and the translation workspace are one split (SH1094)
+
+Both pages compose design system 2026.3.13's `BentoSplitPage` (VDS173, filed from here), and
+`bento-column.ts`'s `WIDE` table gives both routes the shell's wide column, which the shape is drawn
+in. In the editor, the left pane is what a curator writes: the working line, the fields and the
+history. The right pane is what they read while writing: the live preview, the insights, and the
+note rail, since a note is written while reading the page it is about. The workspace puts the
+source on the left and the translation on the right. The ratio is kept per viewer under
+`shio.post-editor.split` and `shio.translate.split`. At phone width the package draws one pane and a
+tab switch, and neither pane unmounts, so nothing typed is lost to looking at the other.
+
+The workspace used to hand-build this with a `pane` state and `lg:` classes, and at 1440px it
+showed one pane with the phone switch still visible. Both panes were in the DOM, so axe and every
+source test passed over it. `console-check.mjs`'s `split-pages` probe reads what is **visible**:
+two labelled sections at 1440px, and one plus two tabs at 390px, on both routes. Run against the
+old workspace, it fails.

@@ -35,10 +35,12 @@ async function columnFor() {
   }
   const narrow = table("NARROW")
   const full = table("FULL")
+  const wide = table("WIDE")
   assert.ok(narrow.length >= 3, "SH946: the narrow table was not read, so the rule below is vacuous")
   assert.ok(full.length >= 1, "SH1169: the full table was not read, so the rule below is vacuous")
   return (path) => {
     if (full.some((pattern) => pattern.test(path))) return "full"
+    if (wide.some((pattern) => pattern.test(path))) return "wide"
     return narrow.some((pattern) => pattern.test(path)) ? "narrow" : "default"
   }
 }
@@ -50,6 +52,20 @@ test("SH1169: the GraphQL explorer owns the viewport, and computes no height of 
   const page = stripComments(readFileSync(join(SRC, "app", "admin", "graphql", "graphql.page.tsx"), "utf8"))
   assert.doesNotMatch(page, /100vh|100dvh|h-screen/,
     "SH1169: the explorer sums the shell's chrome again; the full column already gives it the height")
+})
+
+test("SH1094: the two split pages read wide, and a post's other routes do not", async () => {
+  const column = await columnFor()
+  assert.equal(column("/bento/content/post/p-1"), "wide",
+    "SH1094: the editor is a BentoSplitPage, which the package draws in the wide column")
+  assert.equal(column("/bento/content/post/p-1/translate"), "wide",
+    "SH1094: the translation workspace is the second page composed as a split")
+  assert.equal(column("/bento/content/post/p-1/other"), "default")
+  for (const [page, file] of [["editor", "post.edit.page.tsx"], ["workspace", "translate.page.tsx"]]) {
+    const source = stripComments(readFileSync(join(SRC, "app", "content", file), "utf8"))
+    assert.match(source, /<BentoSplitPage\b/, `SH1094: the ${page} is not composed as the design system's split`)
+    assert.match(source, /storageKey=/, `SH1094: the ${page}'s split forgets the ratio a curator dragged to`)
+  }
 })
 
 test("SH946: the single-question forms read narrow, and everything else the default column", async () => {

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useParams } from "react-router-dom"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
+import { BentoSplitPage } from "@viglet/viglet-design-system/bento"
 import { PageHero } from "@/components/page-hero"
 import { Panel } from "@/components/panel"
 import { Badge } from "@/components/ui/badge"
@@ -46,14 +47,6 @@ export default function TranslatePage() {
   const [dirty, setDirty] = useState(false)
   /** SH1061 — the fields already checked against the source, as notes the agent sees too. */
   const [reviewed, setReviewed] = useState<Set<string>>(new Set())
-  /**
-   * Which pane the reader is on when the two are stacked (SH1061).
-   *
-   * Only at narrow widths: shrinking two panes onto a phone gives a translator two unreadable
-   * columns, so one is shown at a time and this is the switch. Wide enough, both are on screen and
-   * the toggle is not rendered at all.
-   */
-  const [pane, setPane] = useState<"source" | "target">("target")
   /** SH1062 — whether this translation carries an open request to the connected agent. */
   const [requested, setRequested] = useState(false)
   const agentAvailable = useAgentAvailable()
@@ -176,17 +169,6 @@ export default function TranslatePage() {
           <Badge variant="outline" className="font-mono text-xs uppercase">
             {target?.locale ?? "—"}
           </Badge>
-          {/* Stacked widths only: where both panes fit, there is nothing to switch between. */}
-          <div className="flex gap-1 lg:hidden">
-            <Button type="button" size="sm" variant={pane === "source" ? "secondary" : "ghost"}
-              className="h-7 px-2 text-xs" onClick={() => setPane("source")}>
-              {source?.locale ?? t("content.translateSource")}
-            </Button>
-            <Button type="button" size="sm" variant={pane === "target" ? "secondary" : "ghost"}
-              className="h-7 px-2 text-xs" onClick={() => setPane("target")}>
-              {target?.locale ?? t("content.translateTarget")}
-            </Button>
-          </div>
           <div className="ml-auto flex items-center gap-2">
             {requested ? (
               <Badge variant="outline" className="gap-1 text-xs" title={t("content.coverageRequestedHint")}>
@@ -206,10 +188,16 @@ export default function TranslatePage() {
           </div>
         </div>
 
-        {/* Two columns where there is room, stacked where there is not: shrinking two panes to
-            half a phone gives a translator two unreadable columns instead of one readable one. */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Panel className={pane === "source" ? "" : "hidden lg:block"}>
+        {/* SH1094 — the design system's split (VDS173), the same shape as the post editor's: the
+            source read on the left, the translation written on the right, the ratio kept per
+            viewer. At phone width it is one pane with a labelled switch, which is what this page
+            hand-built before (SH1061), and neither pane unmounts, so switching keeps what was typed. */}
+        <BentoSplitPage
+          storageKey="shio.translate.split"
+          primaryLabel={source?.locale ?? t("content.translateSource")}
+          secondaryLabel={target?.locale ?? t("content.translateTarget")}
+          primary={
+          <Panel contentClassName="p-6">
             <p className="mb-3 text-xs text-muted-foreground">
               {t("content.translateSourceHint", { locale: source?.locale ?? "" })}
             </p>
@@ -233,8 +221,9 @@ export default function TranslatePage() {
               ))}
             </div>
           </Panel>
-
-          <Panel className={pane === "target" ? "" : "hidden lg:block"}>
+          }
+          secondary={
+          <Panel contentClassName="p-6">
             <p className="mb-3 text-xs text-muted-foreground">
               {t("content.translateTargetHint", { locale: target?.locale ?? "" })}
             </p>
@@ -267,7 +256,8 @@ export default function TranslatePage() {
               />
             )}
           </Panel>
-        </div>
+          }
+        />
       </div>
     </>
   )
