@@ -238,6 +238,24 @@ test("SH1043: the ceilings have room under them", async (t) => {
   }
 });
 
+test("SH1180: index.es.js's ceiling names the split page's divider for as long as a page composes it", async () => {
+  // SH1094's BentoSplitPage put react-resizable-panels (about 35 KB raw) into the shared eager
+  // chunk, and it shipped unmeasured because every local run until SH1091 skipped a build from
+  // another tree. The raise is only honest while the cause is in the tree: when the last split page
+  // goes, the ceiling is 35 KB of room nobody is using, and this says so instead of leaving it.
+  const why = budget.chunks["index.es.js"].why;
+  const sources = await Promise.all(["post.edit.page.tsx", "translate.page.tsx"]
+    .map((file) => readFile(join(ROOT, "src", "app", "content", file), "utf8").catch(() => "")));
+  const composed = sources.some((source) => /<BentoSplitPage\b/u.test(source));
+  if (composed) {
+    assert.match(why, /react-resizable-panels/u,
+      "SH1180: a page composes BentoSplitPage and index.es.js's reason does not name the divider it costs");
+  } else {
+    assert.doesNotMatch(why, /react-resizable-panels/u,
+      "SH1180: no page composes BentoSplitPage any more; lower index.es.js's ceiling and drop the divider from its reason");
+  }
+});
+
 /*
  * SH1126 — the planted mismatch, which is this task's own assertion.
  *
