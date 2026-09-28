@@ -5,14 +5,13 @@ links that resolve nowhere. Errors exit 1; warnings are counted.
 
   --site <idOrName>    Scope to one site
   --checks <groups>    projection,replication,content,routes,page,a11y,diagnostics,
-                       delivery (default: all that can run). projection and replication
-                       read the file tree only; page and a11y render each published page
+                       delivery (default: all that can run)
   --delivery           Also fetch each published route from the site's own origin
   --strict             Fail on warnings too (off by default)
   --limit <n>          Findings to print (counts cover the whole run)
   --folder <address>   Scope to a folder subtree (folder:<site>/<chain>)
   --address <a,b>      Scope to named posts (post:<site>/<url>, comma-separated)
-  --since <cursor>     Scope to what changed after an SH88 cursor (shio changes --cursor)
+  --since <cursor>     Scope to what changed after a cursor (shio changes --cursor)
   --state <state>      published or draft: lint only those rows
   --baseline <file>    Accepted findings to subtract (default shio/verify-baseline.json)
   --accept             Write this run's findings into the baseline

@@ -9,18 +9,7 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block BC — The authoring surface, field by field
-
-- ⏳ **SH1091** (deps: maintainer security call) **no stateless caller can change one field of a post without declaring the whole document** — Every route to a partial write crosses a boundary drawn on purpose, so which one is a maintainer's call. → §LXVIII.13
-
 ## Priority
-
-## Done when — SH1091
-
-- **A chosen boundary, and shio post set over it** A maintainer picks the route (a
-  narrowed CSRF exemption on the console merge, or If-Match on a merge an AGENT token
-  may call); shio post set then changes one field under a version and is refused when
-  the post moved.
 
 ## Non-goals (do NOT add as tasks)
 

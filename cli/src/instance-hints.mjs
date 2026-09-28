@@ -48,7 +48,7 @@ export const DIAGNOSTICS_HINT = "the instance recorded this: GET /api/v2/agent/d
 export const NOTES_COMMANDS = new Set([
   "resolve", "impact", "apply", "publish", "import", "blueprints", "marketplace", "verify",
   "changes", "report", "digest", "preview", "share", "snapshot", "audit", "annotations", "judge", "site", "propose",
-  "convert", "diff", "pull", "push", "deploy", "surfaces", "versions", "rollback", "schedule",
+  "convert", "diff", "pull", "push", "deploy", "surfaces", "versions", "rollback", "schedule", "post",
   "gate",
   // SH1001 — it speaks the review surface with console credentials, which is the same instance and
   // the same working session the notes are about.

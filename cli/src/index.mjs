@@ -37,6 +37,8 @@ const BOOLEANS = [
   "content", "ours", "theirs", "force", "allow-partial", "show-remote", "cursor", "json",
   // SH967: `shio changes --follow` holds the stream open. SH989: `--fields` names what each write changed.
   "follow", "fields",
+  // SH1091: `shio post set … --publish` takes no value, or it would swallow the next field=value.
+  "publish",
   // Blueprints (Block J): `--files` asks for the carried front-end bodies, and the two
   // SH151/SH152 opt-ins let one command create the site and reconcile an existing model.
   "files", "create-site", "merge-post-types",
@@ -147,6 +149,8 @@ const COMMANDS = {
   diff: () => import("./commands/diff.mjs"),
   versions: () => import("./commands/versions.mjs"),
   schedule: () => import("./commands/schedule.mjs"),
+  // SH1091 — change some fields of one post, through the CDA's conditional merge.
+  post: () => import("./commands/post.mjs"),
   rollback: () => import("./commands/rollback.mjs"),
   pull: () => import("./commands/pull.mjs"),
   push: () => import("./commands/push.mjs"),

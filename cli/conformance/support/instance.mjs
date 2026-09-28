@@ -567,6 +567,31 @@ export class ConsoleSession {
     });
     return res.ok || res.status === 404;
   }
+
+  /**
+   * SH1091 — an API token of one scope, the way the console's Admin > API tokens makes one. The
+   * CDA's conditional merge takes a `WRITE` token, which no agent credential is, so a scenario that
+   * drives `shio post set` has to mint one and {@link deleteToken} it afterwards.
+   */
+  async createToken(title, scope) {
+    const { value, header } = await this.#csrf();
+    const res = await this.#fetch("/api/v2/api-token", {
+      method: "POST",
+      headers: { [header]: value, "Content-Type": "application/json" },
+      body: JSON.stringify({ title, scope, siteIds: [], env: "PROD", mayPublish: false }),
+    });
+    if (!res.ok) throw new ShioHttpError(res.status, "/api/v2/api-token", await res.text());
+    return res.json();
+  }
+
+  async deleteToken(id) {
+    const { value, header } = await this.#csrf();
+    const res = await this.#fetch(`/api/v2/api-token/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { [header]: value },
+    });
+    return res.ok || res.status === 404;
+  }
 }
 
 /**

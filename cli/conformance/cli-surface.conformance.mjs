@@ -221,6 +221,50 @@ describe("SH711: the CLI as a process, against a live instance", () => {
       + "laptop with nothing saying so.");
   });
 
+  /**
+   * SH1091 — one field changed, and a change raced by another refused, through the CDA's merge.
+   *
+   * <p>Read back from the instance, not from what the command said. The refusal is the half that
+   * matters: a partial write with no precondition is a lost update waiting for two people to edit
+   * one page, so the pinned write must exit non-zero AND leave the other write standing.</p>
+   */
+  test("shio post set: changes one field, and a set pinned to a tag the post moved past is refused", async () => {
+    const session = new ConsoleSession(conn);
+    const token = await session.createToken("sh1091-post-set", "WRITE");
+    const withToken = { env: { ...env, SHIO_WRITE_TOKEN: token.token } };
+    const address = `post:${site}/notes/one`;
+    const titleNow = async () => {
+      const read = await fetch(`${conn.baseUrl}/api/v2/agent/read?address=${encodeURIComponent(address)}`, {
+        headers: { Authorization: `Basic ${Buffer.from(`${conn.user}:${conn.password}`).toString("base64")}` },
+      });
+      return (await read.text()).match(/Set by SH1091 \w+/)?.[0] ?? null;
+    };
+    const tagOf = (output) => /etag=(\S+)/.exec(output)?.[1];
+    try {
+      const first = await shio(["post", "set", address, "title=Set by SH1091 first"], withToken);
+      assert.equal(first.code, 0, `SH1091: \`shio post set\` failed:\n${first.output.slice(0, 600)}`);
+      assert.equal(await titleNow(), "Set by SH1091 first",
+        "SH1091: post set exited 0 and the instance does not hold the new title");
+      const firstTag = tagOf(first.output);
+      assert.ok(firstTag && firstTag !== "-", `SH1091: no tag was printed to pin the next change: ${first.output}`);
+
+      const second = await shio(["post", "set", address, "title=Set by SH1091 second"], withToken);
+      assert.equal(second.code, 0, `SH1091: the second set failed:\n${second.output.slice(0, 600)}`);
+      assert.notEqual(tagOf(second.output), firstTag, "SH1091: a write answered the tag it was checked against");
+
+      const stale = await shio(["post", "set", address, "title=Set by SH1091 stale", "--if-match", firstTag],
+        withToken);
+      assert.notEqual(stale.code, 0,
+        `SH1091: a set pinned to a tag the post has moved past exited 0 — the lost update the precondition `
+        + `exists to refuse.\n${stale.output.slice(0, 600)}`);
+      assert.match(stale.output, /changed since/, "SH1091: the refusal does not say why nothing was written");
+      assert.equal(await titleNow(), "Set by SH1091 second",
+        "SH1091: the refused write changed the post anyway");
+    } finally {
+      await session.deleteToken(token.id).catch(() => {});
+    }
+  });
+
   test("SH711: dev, build and deploy are out of scope, and this says which", () => {
     // Named rather than forgotten, so the ledger cannot read them as an oversight.
     const outOfScope = ["dev", "build", "deploy"];

@@ -57,6 +57,23 @@ field. It read only millis until then, so every schedule saved from the console 
 generic toast, and nothing noticed because nothing else writes through it.
 `ShPostUnifiedAPITest.stage07db` posts the console's shape.
 
+**The CDA's merge is the one stateless partial write, and it is conditional (SH1091).** The
+three routes to changing one field of a post each hit a boundary drawn on purpose. The
+maintainer chose the CDA's `PATCH /api/v2/cda/post/{id}` over exempting the console's merge
+from CSRF, because it is the safer of the two. The console path keeps its boundary, and the
+capability is a `WRITE` token, which an AGENT token deliberately is not (it has no
+`ROLE_CDA_WRITE`). `ShCdaWriteAPI` borrows `ShConsolePostVersion`, so the two merges cannot
+disagree about what "moved" means:
+- `GET .../editable` answers the `ETag` of the row the merge reads: the draft, or the
+  published row that a post with no draft is seeded from.
+- A `PATCH` carrying it as `If-Match` is refused with 409 `stale-expectation` when that row
+  changed. That is the console's status for every refusal about state; it is not 412.
+- Every write answers the new tag.
+
+`shio post set <address> <field>=<value>…` drives it with `SHIO_WRITE_TOKEN`, sending the
+tag it read, or `--if-match` to pin an earlier one. `ShCdaWriteTest.sh1091*` holds the API
+half, and `cli-surface.conformance.mjs` refuses a pinned stale set against a live instance.
+
 **Every post-shaped response on this controller is a `ShConsolePost`, never the entity (SH176)**
 — reads *and* writes, owned by `ShConsolePostMapper` + `ShConsolePostReadService`. It carries
 `data` **parsed** (the column is a JSON string) and the post-type as its SH16 `ShPostTypeDef`,

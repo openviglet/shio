@@ -3,23 +3,18 @@ shio diff --site <name> - compare what a replica serves with what declared it
 Reads the served bytes with the capture's own scanner: counts, not pixels. Exits 1 when a
 page lost something; a fact the replica GAINED is never a failure.
 
---mode says what the counts are a claim about (default: the plan).
-
   --site <name>        The site the replica lives in (required)
   --against <what>     Which declaration to judge against (default: capture)
-                       capture  - the served page against what the source declared
-                       proposal - the content the instance holds against what the plan
-                                  said the conversion would make
-                       published - the draft against what is live: which fields would
-                                  change if you published now
-                       revision - the draft against a captured revision. Needs --address
-                                  and --from
+                       capture   - the served page against the source
+                       proposal  - the instance's content against the conversion plan
+                       published - the draft against what is live
+                       revision  - the draft against a revision (--address, --from)
   --from <n>           The revision (--against revision); `shio versions` lists them
   --address <address>  Narrow --against published to these posts (repeatable), or name the
                        post for --against revision; without it the answer is the site's
   --plan <file>        Read the accepted decisions from somewhere else (--against proposal)
   --proposal <file>    Read the candidates from somewhere else (--against proposal)
-  --mode <how>         auto (default), fidelity, mixed or authorable
+  --mode <how>         What the counts claim: auto (default), fidelity, mixed, authorable
   --inventory <file>   Read a capture from somewhere else
   --limit <n>          Pages to print
   --json               The comparison as JSON on stdout instead of the report
@@ -28,5 +23,4 @@ Examples:
   shio diff --site Acme
   shio diff --site Acme --against proposal
   shio diff --site Acme --mode fidelity
-  shio diff --site Acme --against published
   shio diff --site Acme --against published --address post:Acme/blog/hello-world

@@ -1816,6 +1816,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1094** — The post editor and the translation workspace share the design system's split: both panes side by side at a width the curator sets and the console keeps, one pane and a switch on a phone (design §LXVIII.16 recorded in `docs/agents/console-ui.md`).
   checked **The editor and the workspace share a design-system split** Once the package ships a two-pane page shape, the post editor shows form and preview side by side with a ratio kept per curator, the translation workspace moves onto it, and a phone-width page stacks with a toggle rather than dropping a pane.
 - **SH1180** — The console's load ceilings carry SH1094's measured cost, react-resizable-panels at 34855 bytes raw in the shared chunk, with room left for the next change (design §LXVIII.21 recorded in `shio-react/console-size-budget.json`).
+- **SH1091** — shio post set changes some fields of a post through the CDA's merge, which now answers an ETag and refuses a stale If-Match with 409, using a WRITE token as the maintainer chose (design §LXVIII.13 recorded in `docs/agents/content-api.md`).
 
 ## Block BD — Finding, selecting and acting on content
 

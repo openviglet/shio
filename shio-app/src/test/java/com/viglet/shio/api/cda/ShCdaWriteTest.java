@@ -62,6 +62,8 @@ class ShCdaWriteTest {
     @Autowired
     private ShCdaWriteService shCdaWriteService;
     @Autowired
+    private ShCdaWriteAPI shCdaWriteAPI;
+    @Autowired
     private com.viglet.shio.api.post.unified.ShPostDraftMergeService shPostDraftMergeService;
     @Autowired
     private ShPostUnifiedRepository shPostUnifiedRepository;
@@ -176,6 +178,56 @@ class ShCdaWriteTest {
 
     private Map<String, JsonNode> change(String prop, String value) {
         return Map.of(prop, objectMapper.valueToTree(value));
+    }
+
+    // -- SH1091: the CDA merge is conditional, so a stateless caller can change one field safely --
+
+    @Test
+    void sh1091TheEditableViewAnswersTheTagThePatchIsCheckedAgainst() {
+        useToken(ShApiTokenScope.WRITE, Set.of());
+
+        var read = shCdaWriteAPI.editable(draftPostId);
+        String etag = read.getHeaders().getETag();
+        assertThat(etag).as("SH1091: /editable answers no ETag, so a caller has nothing to send as If-Match")
+                .isNotBlank();
+
+        var written = shCdaWriteAPI.patch(draftPostId,
+                new com.viglet.shio.api.cda.dto.ShCdaPatch(change("title", "Conditional"), false), etag, null);
+        assertThat(written.getStatusCode().is2xxSuccessful()).as("SH1091: the current tag was refused").isTrue();
+        assertThat(written.getHeaders().getETag())
+                .as("SH1091: a write must answer its new tag, or a second change needs a second read")
+                .isNotBlank().isNotEqualTo(etag);
+    }
+
+    @Test
+    void sh1091APatchCarryingATagTheDraftHasMovedPastIsRefused() {
+        useToken(ShApiTokenScope.WRITE, Set.of());
+
+        String stale = shCdaWriteAPI.editable(draftPostId).getHeaders().getETag();
+        shCdaWriteAPI.patch(draftPostId,
+                new com.viglet.shio.api.cda.dto.ShCdaPatch(change("title", "Moved"), false), stale, null);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> shCdaWriteAPI.patch(draftPostId,
+                        new com.viglet.shio.api.cda.dto.ShCdaPatch(change("title", "Overwrite"), false), stale, null))
+                .as("SH1091: a write naming a draft that moved since was applied, which is the lost update "
+                        + "this precondition exists to refuse")
+                .isInstanceOf(com.viglet.shio.api.agent.ShStaleExpectationException.class);
+        assertThat(shPostUnifiedRepository.findByIdAndState(draftPostId, ShPostState.DRAFT))
+                .get().extracting(ShPostUnified::getData).asString().contains("Moved").doesNotContain("Overwrite");
+    }
+
+    @Test
+    void sh1091APostWithNoDraftYetIsCheckedAgainstItsPublishedRow() {
+        useToken(ShApiTokenScope.WRITE, Set.of());
+
+        String etag = shCdaWriteAPI.editable(publishedOnlyId).getHeaders().getETag();
+        assertThat(etag).as("SH1091: a published-only post has no tag, so its first change cannot be guarded")
+                .isNotBlank();
+        var written = shCdaWriteAPI.patch(publishedOnlyId,
+                new com.viglet.shio.api.cda.dto.ShCdaPatch(change("title", "Seeded"), false), etag, null);
+        assertThat(written.getStatusCode().is2xxSuccessful())
+                .as("SH1091: the published row's tag was refused for the merge that seeds the draft from it")
+                .isTrue();
     }
 
     @Test

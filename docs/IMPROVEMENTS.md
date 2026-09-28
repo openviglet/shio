@@ -1056,52 +1056,6 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
-## LXVIII The authoring surface, field by field (Block BC)
-
-Almost every piece of authoring intelligence a modern CMS needs already exists in Shio's
-backend and is unreachable from its editor. Verify computes required-field-empty,
-image-no-alt, link-broken and dozens more; render produces a structural digest of the
-page; a field-level merge verb exists and only the visual editor calls it. Meanwhile the
-editor lets a required field save empty on every surface, has no dirty state, no
-autosave and no unsaved-change guard, renders its only repeatable field read-only,
-cannot preview what has not been saved, and stores a page body as one opaque HTML string
-produced by document.execCommand.
-
-The block works field by field. Enforcement lands on the three writers before any
-console affordance, because a rule only the form knows is a rule an agent breaks. Then
-the editor stops losing work, shows the intelligence the server already computes,
-previews proposed values, and gains a structured body an agent can address paragraph by
-paragraph. A post-type change learns to reconcile the content it governs. And a field
-can ask the connected agent for a suggestion through the assistant, which is the moment
-the Viglet assistant's reference design was drawn around, answered by the agent rather
-than by a model Shio hosts.
-
-### LXVIII.13 A partial write no stateless caller can make (SH1091)
-
-SH1011's design asked the CLI for `shio post set`. It was built and then withdrawn,
-because all three routes to a partial write are blocked in a different place, and
-choosing between them is a security decision rather than an implementation one.
-
-`PATCH /api/v2/post-unified/{id}` is the merge the console uses and the only one
-carrying `If-Match`. It refuses a cookieless caller: the path is absent from the
-narrowed CSRF exemptions in `ShSecurityConfig`, and `ShStatelessReachabilityLintTest`
-records that as deliberate — *the merge exists for the editor's concurrency problem,
-several curators on one site, which an agent does not have*. A CLI invoked by a person
-against a live instance has exactly that problem, so the recorded reason is the thing to
-revisit, not to route around.
-
-`PATCH /api/v2/cda/post/{id}` merges, is stateless, and takes a `WRITE` token — but has
-no `If-Match` at all, so it cannot say *refuse this if the post moved under me*.
-`post.upsert` declares whole state by design (SH168), which is the failure this verb
-exists to avoid.
-
-An AGENT token lacks ROLE_CDA_WRITE too, so the deliverable is the decision: widen the
-exemption to the narrowed matcher every other stateless path already uses and update the
-lint's entry, or give the CDA's merge a precondition and spend a token. The verb is
-small once that is settled; the working command, its help and its conformance scenario
-were written and reverted in one commit, so the cost of having tried is recorded here
-rather than paid twice.
-
 ## LXX Media: what the bytes mean (Block BE)
 
 Shio is strong on the bytes of an asset: an on-the-fly image transform pipeline,

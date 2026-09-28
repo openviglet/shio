@@ -1,13 +1,10 @@
 shio snapshot <page> — a PNG for a human, and whether the page looks different
 
-Baselines live in shio/snapshots/; the displaced one is kept as <slug>.prev.png. A change
-exits 0, so the gate is opt-in. Needs playwright; pixelmatch + pngjs diff per pixel.
+Baselines live in shio/snapshots/ (the displaced one as <slug>.prev.png). Needs playwright.
 
   --page <page>        The page to photograph (or a bare positional, or --address)
-  --site <name>        Photograph every PUBLISHED page of a site instead, one baseline each.
-                       A page the browser could not open exits 1
-  --against <url>      Compare against the ORIGINAL at that URL, both captured in this run.
-                       A difference exits 1
+  --site <name>        Every PUBLISHED page of a site, one baseline each (unopenable exits 1)
+  --against <url>      Compare with the ORIGINAL at that URL (a difference exits 1)
   --accept             Replace the baseline without reporting a change
   --fail-on-change     Exit 1 when the page changed (a gate; off by default)
   --width <n[,n]>      Viewport width(s), default 1280. Several widths only with --against

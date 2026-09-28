@@ -89,6 +89,16 @@ const SWEEP = {
       + "mirror is regenerated. README and shio-site are NOT moved: neither describes the test "
       + "instruments, and no count or claim they state changed",
   },
+  BC: {
+    swept: true,
+    why: "the authoring surface, field by field: autosave and a recovery buffer, the live preview, "
+      + "the editor and the translation workspace side by side (SH1094, and SH1180 recording its "
+      + "measured cost), and SH1091 closing it with shio post set over the delivery API's now "
+      + "conditional merge, the boundary the maintainer chose. docs-shio moved: cli and "
+      + "universal-editor gained the command and the If-Match, and COVERAGE names every id, with "
+      + "the mirror regenerated. README moved its verb count to 48. shio-site is NOT moved: its CLI "
+      + "list is a curated sample, not an inventory",
+  },
   BI: {
     swept: true,
     why: "the areas the round did not reach, closing with SH1177 (peer ranges checked on every test "

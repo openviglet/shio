@@ -1,0 +1,13 @@
+shio post set <address> <field>=<value>... — change some fields of a post's draft
+
+Merges the named fields; refused, writing nothing, if the post changed since it was read.
+
+  field:=json          A JSON value (number, true, list, object)
+  --publish            Publish after the change
+  --if-match <tag>     Refuse unless the post is still at this tag
+  --token <token>      WRITE-scope API token (env SHIO_WRITE_TOKEN)
+
+Each write prints the new tag.
+
+Example:
+  shio post set post:Blog/hello title="Hello again" featured:=true

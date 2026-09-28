@@ -43,6 +43,7 @@ Commands:
   versions <addr> What this page has been: one line per captured revision
   rollback <addr> Put a revision back into the draft
   schedule       What goes live or comes down, in time order
+  post set       Change some fields of a post, refused if it moved
   pull           Pull post-types into ./shio/post-types/*.json (--content for pages)
   push           Apply local post-types back to Shio, or the content tree
   build          Compile local DSL/JSON post-types to canonical JSON
