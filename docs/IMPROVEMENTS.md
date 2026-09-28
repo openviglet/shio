@@ -1115,17 +1115,6 @@ translates, reached through the assistant, and every result lands as a reviewabl
 
 ## LXXV The areas this round did not reach
 
-### LXXV.1 Back from search returns to the folder (SH1188)
-
-The search page drew its PageHero back link with a fixed urlBase of /bento/content,
-which is the site list. A curator who opened "search in this folder" from a folder deep
-in a site lost their place on the way back. The browser toolbar now navigates with
-router state carrying its own pathname and query (searchBackState), and the search page
-reads that state once on mount (searchBackTo), because a filter change rewrites the URL
-and the router drops the state with it. Only an in-app path is accepted; anything else,
-or no state at all, falls back to the site list as before. Router state rather than a
-URL parameter keeps the search URL the shareable question SH1023 made it.
-
 ## XCI Finding, selecting and acting on content
 
 ## LXXVI Documentation the matrix still names
@@ -1145,6 +1134,10 @@ the ids in their cluster rows in vigletdocs/docs-shio/COVERAGE.md, and here run 
 run coverage:mirror`, together with whatever README or shio-site sentence the AX and BI
 surfaces now owe. If a surface owes no public sentence, the sweep claim is what changes,
 not a doc written to satisfy a check.
+
+Since filed, the debt grew by one block and two ids: Block BD finished at SH1189 and
+also claims a sweep with nothing moved, and SH1188 and SH1189 joined the COVERAGE queue.
+The same pass pays all three blocks.
 
 Until this lands, both assertions are declared in red-suites.json against this task, so
 work on the console can commit over them without the red going quiet.

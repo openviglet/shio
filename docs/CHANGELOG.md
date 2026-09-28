@@ -1840,6 +1840,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1186** — The note rail's Comment/Request pick is a segmented radio group with arrow-key switching, so the submit is the only filled button on the row (recorded in `docs/agents/console-ui.md`) (design §XCI.1 recorded in `docs/agents/console-ui.md`).
 - **SH1187** — "Search in this folder" opens /bento/content/search scoped to the folder: the route is a required argument and the browser passes ROUTES.SEARCH (design §LXXV.1 recorded in `docs/agents/console-ui.md`).
 - **SH1189** — Every hero back link now names its real parent: rail pages go home, editors go to their list, a folder to its parent listing, translation and languages to their post or site (design §LXXV.2 recorded in `shio-react/test/hero-back-links.test.mjs`).
+- **SH1188** — Back from a folder search returns to the folder that opened it: the toolbar passes its location as router state and the search page reads it once, falling back to the site list (design §LXXV.1 recorded in `docs/agents/console-ui.md`).
 
 ## Block BE — Media: what the bytes mean
 

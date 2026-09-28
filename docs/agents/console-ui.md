@@ -2274,6 +2274,13 @@ with a name of its own ("Home") stays as a step.
 required argument and the browser passes `ROUTES.SEARCH`. Its old default, a bare `/search`, is
 not a route the router declares, so the button opened a 404.
 
+**Back from a folder search returns to the folder (SH1188).** The toolbar navigates with
+`searchBackState(location)` as router state, and the search page reads it once on mount with
+`searchBackTo(location.state, ROUTES.HOME)`. Once, because a filter change rewrites the URL and the
+router drops the state with it. Only an in-app path (`/`, not `//`) is accepted; anything else falls
+back to the site list. Router state rather than a URL parameter keeps the search URL the shareable
+question SH1023 made it.
+
 Rows show their state, because a draft and what is live are now both in the answer, and the count
 line carries `withheld` when the reader's ACL removed anything — "and 6 you cannot open" rather
 than a shorter list with no explanation.
