@@ -3940,3 +3940,16 @@ The Activity page and the home page's recent activity both use it, and the subje
 localized too. The same task corrected two claims the pages made: Search covers drafts and published
 posts with a State filter (its subtitle said published only), and the login page's renderer is
 Handlebars.java, not Nashorn. `copy-matches-page.test.mjs` runs the captured sentences through it.
+
+## The content browser opens on its table, beside the folders around it (SH1203)
+
+A folder opens in the `spreadsheet` view (`BentoDataTable`, SH1148) unless the URL names another:
+`BROWSER_LIST.view` and `browserView`'s fallback both say so, and the list and grid views stay one
+click away. The table's state is a dot and a word in the console's language (`StateMark`), not the
+server's `DRAFT`, and every relative date in the console goes through `lib/relative-date.ts`, which
+passes date-fns the i18n language; the three calls that passed none printed "about 1 month ago" in a
+Portuguese console. The folder's path is said once, in the hero's trail (SH1192), so the sub-toolbar
+keeps only its controls. `BrowserTree` is the page's aside: the ancestors down to this folder and its
+subfolders under it, drawn from the `/path` read and the listing's first page, so it makes no request
+of its own. It hides below `lg` with `max-lg:hidden`, because the design system's stylesheet ships a
+compiled `.hidden` that beats a consumer's `lg:block`. `browser-table-default.test.mjs` holds it.

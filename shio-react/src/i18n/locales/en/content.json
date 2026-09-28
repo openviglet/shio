@@ -469,5 +469,6 @@
   "content.renameInbound_other": "{{count}} pages link to that address.",
   "content.renamed": "Renamed to {{url}}",
   "content.localeDefault": "default",
-  "content.localeChipDefault": "Written in {{locale}} — the site's default language, so this is the original"
+  "content.localeChipDefault": "Written in {{locale}} — the site's default language, so this is the original",
+  "content.folderTree": "Folders around this one"
 }

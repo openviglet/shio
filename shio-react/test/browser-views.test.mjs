@@ -30,10 +30,11 @@ const read = (...path) => readFileSync(join(SRC, ...path), "utf8")
 /** SH1145 — the browser is a directory; a scan whose subject is the browser reads all of it. */
 const browser = () => browserSource()
 
-test("SH1026: the URL's view word is read as a view, and an unknown one is the list", () => {
+test("SH1026: the URL's view word is read as a view, and an unknown one is the default", () => {
   for (const view of ["list", "grid", "spreadsheet"]) assert.equal(browserView(view), view)
-  assert.equal(browserView("kanban"), "list", "SH1026: an unknown view word drew nothing")
-  assert.equal(browserView(""), "list")
+  assert.equal(browserView("kanban"), "spreadsheet", "SH1026: an unknown view word drew nothing")
+  // SH1203 — the default is the table: the rows a curator compares by type, state and date.
+  assert.equal(browserView(""), "spreadsheet")
 })
 
 test("SH1184: a root folder named after its site is not drawn twice, and no root is in the address", () => {

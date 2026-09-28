@@ -1667,6 +1667,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1196** — The five infrastructure editors that hand-rolled a second sticky bar use the save-bar morph with Delete in the hero's menu, all six say when a field changed, and setting help is visible.
 - **SH1197** — The queue opens on waiting runs, names a run with no intent by its short id, keeps one primary that decides every ticked run, and says so when nothing is waiting.
 - **SH1202** — Audit rows are rebuilt in the console's language from their action, Search says it covers drafts and published posts, and the login page names Handlebars instead of Nashorn.
+- **SH1203** — A folder opens on its sortable table with localized states and dates, its path is said once in the trail, and a tree of the folders around it sits beside the listing.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

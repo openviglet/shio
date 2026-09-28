@@ -469,5 +469,6 @@
   "content.renameInbound_other": "{{count}} páginas apontam para esse endereço.",
   "content.renamed": "Renomeada para {{url}}",
   "content.localeDefault": "padrão",
-  "content.localeChipDefault": "Escrito em {{locale}} — o idioma padrão do site, então este é o original"
+  "content.localeChipDefault": "Escrito em {{locale}} — o idioma padrão do site, então este é o original",
+  "content.folderTree": "Pastas ao redor desta"
 }

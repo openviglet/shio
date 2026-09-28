@@ -37,13 +37,14 @@ import { deleteEach, refusalSummary, type DeleteTarget } from "@/lib/batch-delet
 // SH1022 — the content-query vocabulary, spelled here exactly as the server spells it.
 // SH1023 — the view lives in the URL, so the address a curator sends reproduces what they saw.
 import { useListState } from "@/hooks/use-list-state"
+import { BrowserTree } from "./content-browser/browser-tree"
 import { usePostTypes } from "@/hooks/use-catalogue"
 import { SavedViews } from "@/components/saved-views"
 
 
 export default function ObjectChildrenPage() {
   const { objectId } = useParams() as { objectId: string }
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   /**
    * SH703 — the selection, tagged with the folder it was made in.
@@ -310,7 +311,8 @@ export default function ObjectChildrenPage() {
           </>
         ) : undefined}
       />
-      <div className="space-y-4">
+      <div className="flex gap-6"><BrowserTree path={breadcrumbPath} folders={listData.folders} />
+      <div className="min-w-0 flex-1 space-y-4">
 
         {/* Stats bar */}
         <Panel contentClassName="flex items-center gap-8 py-3 px-6 text-sm text-muted-foreground">
@@ -333,7 +335,6 @@ export default function ObjectChildrenPage() {
           sortBy={sortBy}
           viewMode={viewMode}
           lastPostType={lastPostType}
-          breadcrumbPath={breadcrumbPath}
           searchHereHref={searchHereHref}
           selectedItems={selectedItems}
           onSelectAction={(action) => void handleSelectAction(action)}
@@ -442,7 +443,7 @@ export default function ObjectChildrenPage() {
                     item={item}
                     index={index}
                     selected={selectedItems.has(item.id)}
-                    when={relativeDate(item.date)}
+                    when={relativeDate(item.date, i18n.language)}
                     siteName={siteName ?? undefined}
                     actions={rowActions(item)}
                     onToggle={() => toggleSelect(item.id)}
@@ -498,7 +499,7 @@ export default function ObjectChildrenPage() {
             </Button>
           </div>
         )}
-      </div>
+      </div></div>
 
       {/*
         SH203 — where a copy or a move is going. Mounted only while it is open, so the walk starts

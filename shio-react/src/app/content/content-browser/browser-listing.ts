@@ -121,8 +121,9 @@ export type BulkOp = "PUBLISH" | "UNPUBLISH" | "DELETE"
 /** What the "more filters" badge does not count: the bar shows its own chips for these. */
 export const MORE_IGNORES = ["sort", "view", "q", "type", "state", "locale", "modifiedSince", "modifiedBefore"] as const
 
+// SH1203 — the table is the default view: a folder is records a curator scans by type, state and date.
 export const BROWSER_LIST = {
-  q: "", sort: "order", view: "list",
+  q: "", sort: "order", view: "spreadsheet",
   type: "", state: "", locale: "", missingLocale: "", modifiedSince: "", modifiedBefore: "",
   author: "", modifier: "", agent: "", subtree: "",
 }

@@ -38,7 +38,7 @@ import { ROUTES } from "@/app/routes.const"
 import type { ShPostType } from "@/models/post-type/post-type"
 import type { useListState } from "@/hooks/use-list-state"
 
-import { MORE_IGNORES, type BreadcrumbPathItem, type BROWSER_LIST } from "./browser-listing"
+import { MORE_IGNORES, type BROWSER_LIST } from "./browser-listing"
 import { searchBackState, type BrowserView } from "./browser-view"
 
 export interface BrowserToolbarProps {
@@ -49,7 +49,6 @@ export interface BrowserToolbarProps {
   viewMode: BrowserView
   /** The type a "New …" button offers, derived from the catalogue and the last one used. */
   lastPostType: ShPostType | null
-  breadcrumbPath: readonly BreadcrumbPathItem[]
   /** SH1027 — where "search this folder" goes, or null before the breadcrumb has landed. */
   searchHereHref: string | null
   selectedItems: Set<string>
@@ -63,7 +62,7 @@ export interface BrowserToolbarProps {
 }
 
 export function BrowserToolbar({
-  objectId, list, sortBy, viewMode, lastPostType, breadcrumbPath, searchHereHref,
+  objectId, list, sortBy, viewMode, lastPostType, searchHereHref,
   selectedItems, onSelectAction, onBatchAction, onPlanBulk, onPick, navigate, t,
 }: BrowserToolbarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -236,18 +235,10 @@ export function BrowserToolbar({
 
       </div>
 
-      {/* Sub-toolbar: breadcrumb path + search/view icons */}
+      {/* Sub-toolbar: search here and the three views */}
       <Panel contentClassName="flex items-center gap-2 py-2 px-4">
-          <div className="flex-1 flex items-center gap-1 text-sm text-muted-foreground overflow-hidden">
-            {breadcrumbPath.map((crumb, i) => (
-              <span key={crumb.id} className="flex items-center gap-1 shrink-0">
-                {i > 0 && <span>/</span>}
-                <button type="button" className="hover:text-foreground hover:underline transition-colors truncate" onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/object/${crumb.id}`)}>
-                  {crumb.name}
-                </button>
-              </span>
-            ))}
-          </div>
+          {/* SH1203 — the path is the hero's trail now (SH1192); saying it here too was a third place. */}
+          <div className="flex-1" />
           <div className="flex items-center gap-1 shrink-0">
             {searchHereHref && (
               <Tooltip>

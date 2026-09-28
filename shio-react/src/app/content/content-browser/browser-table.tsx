@@ -12,7 +12,7 @@ import {
   BentoDataTable, type BentoActionsMenuItem, type BentoDataTableAction, type BentoDataTableColumn,
   type BentoDataTableLayout,
 } from "@viglet/viglet-design-system/bento"
-import { formatDistanceToNow } from "date-fns"
+import { relativeDate } from "@/lib/relative-date"
 import { TitleCell } from "./title-cell"
 import { useCurrentUser } from "@/contexts/user.context"
 import { readTableLayout, rowLabel, tableLayoutKey, type BrowserRow } from "./browser-view"
@@ -49,14 +49,25 @@ export interface BrowserTableProps {
   onEdited: () => void
 }
 
-/** When a row changed, as the list says it ("3 days ago"). A module function, so the columns hold. */
-function when(row: BrowserRow): string {
-  if (!row.date) return ""
-  try {
-    return formatDistanceToNow(new Date(row.date), { addSuffix: true })
-  } catch {
-    return ""
-  }
+/** When a row changed, as the list says it ("há 3 dias"). A module function, so the columns hold. */
+function when(row: BrowserRow, language: string): string {
+  return relativeDate(row.date, language)
+}
+
+/**
+ * SH1203 — a row's state as a dot and a word in the console's language. It was the server's own
+ * `DRAFT`, upper-case English in a Portuguese table, beside a list view that said Rascunho.
+ */
+function StateMark({ status, t }: Readonly<{ status?: string; t: (key: string) => string }>) {
+  if (!status) return null
+  const published = status === "PUBLISHED"
+  const label = published ? t("content.filterPublished") : status === "DRAFT" ? t("content.filterDraft") : status.toLowerCase()
+  return (
+    <span className="inline-flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+      <span aria-hidden="true" className={`size-1.5 rounded-full ${published ? "bg-emerald-500" : "bg-amber-500"}`} />
+      {label}
+    </span>
+  )
 }
 
 /** The layout, per user, in this browser. Storage can be absent or refuse; the table still works. */
@@ -74,7 +85,7 @@ function useStoredLayout(key: string): [BentoDataTableLayout, (layout: BentoData
 export function BrowserTable({
   rows, scope, actionsFor, selectionActions, selectedIds, onSelectionChange, onOpen, onEdited,
 }: BrowserTableProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user } = useCurrentUser()
   const [layout, setLayout] = useStoredLayout(tableLayoutKey(user?.username))
   // The page's reload is a new function each render; the columns must not be, or the table would
@@ -102,7 +113,7 @@ export function BrowserTable({
     {
       id: "state", header: t("content.filterState"), width: "8rem",
       sortValue: (row) => row.publishStatus ?? "",
-      cell: (row) => <span className="truncate text-xs text-muted-foreground">{row.publishStatus}</span>,
+      cell: (row) => <StateMark status={row.publishStatus} t={t} />,
     },
     {
       id: "locale", header: t("content.filterLocale"), width: "6rem",
@@ -112,9 +123,9 @@ export function BrowserTable({
     {
       id: "modified", header: t("content.filterModified"), width: "minmax(8rem, 1.5fr)",
       sortValue: (row) => (row.date ? new Date(row.date) : null),
-      cell: (row) => <span className="truncate text-xs text-muted-foreground">{when(row)}</span>,
+      cell: (row) => <span className="truncate text-xs text-muted-foreground">{when(row, i18n.language)}</span>,
     },
-  ], [t, afterEdit])
+  ], [t, i18n.language, afterEdit])
 
   /** The page's actions, one entry per name, each resolved against the row it is chosen for. */
   const rowActions = useMemo<BentoDataTableAction<BrowserRow>[]>(() => {

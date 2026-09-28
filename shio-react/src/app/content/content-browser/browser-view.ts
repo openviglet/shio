@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 
-import { formatDistanceToNow } from "date-fns"
+import { relativeDate as relativeDateIn } from "../../../lib/relative-date.ts"
 
 /**
  * SH1026 — the content browser's three views, as data. Pure, so `browser-views.test.mjs` reads it
@@ -17,9 +17,12 @@ export type BrowserView = "list" | "grid" | "spreadsheet"
 
 const VIEWS: readonly BrowserView[] = ["list", "grid", "spreadsheet"]
 
-/** What the URL's `view` says, as a view. An unknown word is the default, not a blank page. */
+/**
+ * What the URL's `view` says, as a view. An unknown word is the default, not a blank page.
+ * SH1203 — the default is the table, which sorts and shows type, state, language and date as columns.
+ */
 export function browserView(word: string): BrowserView {
-  return (VIEWS as readonly string[]).includes(word) ? word as BrowserView : "list"
+  return (VIEWS as readonly string[]).includes(word) ? word as BrowserView : "spreadsheet"
 }
 
 /**
@@ -305,12 +308,10 @@ export function searchBackTo(state: unknown, fallback: string): string {
   return typeof from === "string" && from.startsWith("/") && !from.startsWith("//") ? from : fallback
 }
 
-/** SH1145 — "3 days ago", or nothing at all for a date the row does not carry or cannot parse. */
-export function relativeDate(dateStr: string | undefined): string {
-  if (!dateStr) return ""
-  try {
-    return formatDistanceToNow(new Date(dateStr), { addSuffix: true })
-  } catch {
-    return ""
-  }
+/**
+ * SH1145 — "3 days ago", or nothing at all for a date the row does not carry or cannot parse.
+ * SH1203 — in the console's language, which `lib/relative-date.ts` takes from the caller.
+ */
+export function relativeDate(dateStr: string | undefined, language?: string): string {
+  return relativeDateIn(dateStr, language)
 }

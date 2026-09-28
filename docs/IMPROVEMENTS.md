@@ -973,23 +973,6 @@ membership data is reachable from the console services today is the first thing 
 establish; if it is not, the agent surface needs it too (P1), and the task grows a
 dependency rather than a console-only read.
 
-### LV.39 LV.39 The content browser as tree plus table (SH1203)
-
-In VigR3 / Home each row is a 79 px bordered card. It holds an orange or blue numbered
-circle (1–20) with no meaning to a curator, a checkbox, an icon, a title in link blue, a
-relative date in English ("about 1 month ago"), and a strip of pills: Post, Page, EN,
-VigR3 and DRAFT, each in its own colour. The site name repeats on every row of a view
-already scoped to that site. The state is an uppercase English word beside the
-Portuguese Rascunho used elsewhere. Folders and posts share one list with no column to
-sort by, and the breadcrumb sits inside a toolbar panel below two rows of buttons. The
-concept (artboard 02) puts a site tree to the left of the listing, so the folder
-structure stays visible while browsing. The listing is a table with 40 px rows and
-columns for name, type, state (dot plus word), language (mono), changed (absolute date)
-and a row menu. Filters are chips above it, and a selection bar with Publicar, Mover,
-Copiar and Excluir appears only once rows are checked. The breadcrumb moves to the top
-bar. The grid view and the SH1026 row windowing stay; only the row anatomy and the page
-chrome change.
-
 ### LV.40 LV.40 An editor that shows the post, not the widgets (SH1204)
 
 Editar Post for About — Viglet titles the page "Editar Post" rather than the post, and

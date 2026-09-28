@@ -12,7 +12,7 @@ import type {
   ShReviewDecisionInput,
   ShReviewSession,
 } from "@/models/review/review.model"
-import { formatDistanceToNow } from "date-fns"
+import { relativeDate } from "@/lib/relative-date"
 import { Check, ChevronDown, ChevronRight, RefreshCw, Undo2 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
@@ -57,7 +57,7 @@ const ACTION_BADGE: Record<string, string> = {
  * diff would be a second thing to keep right.
  */
 export default function ReviewListPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   /*
    * SH1158 — which runs are expanded, and nothing else.
    *
@@ -390,7 +390,7 @@ export default function ReviewListPage() {
                             {` · `}
                             <code>{session.agentName ?? session.session}</code>
                             {session.lastSeen &&
-                              ` · ${formatDistanceToNow(new Date(session.lastSeen), { addSuffix: true })}`}
+                              ` · ${relativeDate(session.lastSeen, i18n.language)}`}
                           </div>
                         </div>
                       </button>
