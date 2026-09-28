@@ -141,7 +141,7 @@ const DEFERRED = {
   // surface belongs to the line that adopts it.
   BentoCalendar: "SH1082 — rendered by scheduled.page.tsx as its calendar view; a harness has no schedule to draw.",
   BentoSplitPage: "SH1094 — rendered by post.edit.page.tsx and translate.page.tsx; a harness has no form to split.",
-  BentoChangeMark: "SH1178 — the bulk plan's per-item mark, in place of the raw action word.",
+  BentoChangeMark: "SH1178 — rendered by bulk-plan.dialog.tsx per change; a harness has no plan to mark.",
 }
 
 test("SH887: the harness accounts for every runtime export the bento layer ships", () => {

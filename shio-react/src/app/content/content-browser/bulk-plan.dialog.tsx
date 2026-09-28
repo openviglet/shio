@@ -19,7 +19,9 @@
  * `plan` is non-null here rather than nullable: the caller mounts it when there is one, which
  * removes four `?.` and the reading of "changed: 0" as "nothing will change".</p>
  */
+import { BentoChangeMark } from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
+import { changeStateOf } from "@/lib/change-mark"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import type { ShBulkResult } from "@/services/post-unified/post-unified.service"
@@ -56,10 +58,22 @@ export function BulkPlanDialog({ plan, running, t, onCancel, onApply }: BulkPlan
           {plan.result.results.map((change) => (
             <div key={`${change.op}-${change.address ?? change.id}`}
               className="flex items-start gap-2">
-              <Badge variant={change.problem ? "destructive" : "secondary"}
-                className="text-[10px] shrink-0">
-                {change.problem ? t("content.bulkRefusedBadge") : change.action}
-              </Badge>
+              {/* SH1178 — a refusal is not a change, so it keeps its badge; a change is marked in the
+                  words and tints the diff uses (VDS170), and a "changed" row names what changed. */}
+              {change.problem ? (
+                <Badge variant="destructive" className="text-[10px] shrink-0">
+                  {t("content.bulkRefusedBadge")}
+                </Badge>
+              ) : (
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <BentoChangeMark state={changeStateOf(change.action)} />
+                  {changeStateOf(change.action) === "changed" && (
+                    <span className="text-xs text-muted-foreground">
+                      {t(`content.changeAction.${change.action}`, { defaultValue: change.action })}
+                    </span>
+                  )}
+                </span>
+              )}
               <div className="min-w-0">
                 <div className="truncate">{change.address ?? change.id}</div>
                 {change.problem && (

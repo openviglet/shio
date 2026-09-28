@@ -3763,3 +3763,16 @@ view only because the table draws a count and **Clear selection** of its own on 
 chooses "Everything" and then "Invert" in the table view and reads the table's own
 `aria-selected` rows and count: 7/7, then 0/7. With `selectedIds` removed it reads 0/7 and fails,
 which is SH1142's defect exactly.
+
+## The bulk plan marks its changes the way the diff does (SH1178)
+
+`bulk-plan.dialog.tsx` draws design system 2026.3.13's `BentoChangeMark` (VDS170) per planned item,
+in place of `change.action` printed raw in a grey badge. The raw word was English in a Portuguese
+console, and it made a deletion look exactly like a no-op. `changeStateOf` (`src/lib/change-mark.ts`)
+decides the mapping, because `ShAgentChangeSet.Change`'s vocabulary is wider than the mark's four
+states: `create` is added, `delete` is removed, `noop` is unchanged, and `update`, `move`,
+`publish` and `unpublish` are changed. A changed row also names its action
+(`content.changeAction.*`), since "changed" alone hides what a move does. A refused row keeps its
+destructive badge, because a refusal is not a change. `change-mark.test.mjs` holds the mapping for
+every action, renders the real mark for each state, and reads the dialog's wiring. The dialog is
+TSX, which Node's type stripping cannot import.

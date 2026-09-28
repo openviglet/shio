@@ -89,6 +89,16 @@ const SWEEP = {
       + "mirror is regenerated. README and shio-site are NOT moved: neither describes the test "
       + "instruments, and no count or claim they state changed",
   },
+  BD: {
+    swept: true,
+    why: "finding, selecting and acting on content: the filter bar over the query vocabulary, the "
+      + "browser's views and keyboard, bulk verbs through the writer an agent's batch uses, and the "
+      + "round closing with SH1148 (the table view controlled by the page's selection, so select-all "
+      + "and invert are back) and SH1178 (the bulk plan marked the way the diff marks a change). "
+      + "docs-shio moved: content-console gained both and COVERAGE's rows name them, with the mirror "
+      + "regenerated. README and shio-site are NOT moved: their batch claims are about the agent's "
+      + "planned batches, which this block did not change",
+  },
   BA: {
     swept: true,
     why: "releases, scheduling and the publish gate: one version grammar on every read, scheduled "

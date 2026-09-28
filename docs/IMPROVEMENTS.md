@@ -1102,49 +1102,6 @@ small once that is settled; the working command, its help and its conformance sc
 were written and reverted in one commit, so the cost of having tried is recorded here
 rather than paid twice.
 
-## LXIX Finding, selecting and acting on content (Block BD)
-
-The content browser is where a curator spends the day, and it is the console's weakest
-working surface. The server already pages, sorts, full-text searches and refuses an
-unknown sort with a teaching error; the browser reaches almost none of it. There is no
-filter by type, state, locale, date or author on any surface, including the agent's own
-find. Nothing is deep-linkable. Three view-mode buttons render the same list and nothing
-is virtualised. Every row action lives behind hover-only CSS with no keyboard path.
-Console search calls the published-only delivery API, so a reviewer cannot find the
-drafts an agent just wrote. And there is no bulk publish anywhere, while the MCP publish
-tool already takes many addresses atomically.
-
-The block builds one query vocabulary that the MCP tools, the CLI, REST and the console
-all speak, puts every list's state in its URL so a filtered view is a link an agent can
-hand a person, and makes the browser a keyboard-operable, virtualised table whose bulk
-verbs are the agent's verbs wearing a console shape. The command palette stops listing
-seventeen routes and starts finding content and running actions compiled from the same
-operation registry the agent reads.
-
-### LXIX.14 The bulk plan marks its changes the way the diff does (SH1178)
-
-The content browser's bulk plan (`bulk-plan.dialog.tsx`) lists what a batch would do,
-one row per item. Each row carries `change.action` straight from the server in a grey
-`Badge`. So a Portuguese curator reads `delete` and `move` in English, and a deletion
-looks exactly like a no-op. That is the one place a curator confirms a batch before it
-runs, and the place where telling a removal from an edit matters most.
-
-Design system 2026.3.13 ships `BentoChangeMark` (VDS170) for exactly this: created,
-changed and deleted in the words and tints `BentoDiff` already uses, with a compact
-letter for a narrow row. The console's own copy of that job is the second copy the
-duplicate gate exists to prevent.
-
-The change set's action vocabulary (`ShAgentChangeSet.Change`) is wider than the mark's four
-states, so the mapping is decided here:
-- `create` is added and `delete` is removed.
-- `noop` is unchanged, which a plan reports rather than omits.
-- `update`, `move`, `publish` and `unpublish` are changed, with the translated action word beside
-  the mark, because "changed" alone would hide what a move or a publish does.
-
-A refused row keeps its destructive badge: a refusal is not a change. The assertion
-renders a plan holding one of each action and reads each row's state and its translated
-word.
-
 ## LXX Media: what the bytes mean (Block BE)
 
 Shio is strong on the bytes of an asset: an on-the-fly image transform pipeline,
