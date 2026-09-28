@@ -149,7 +149,6 @@ export default function ExchangeProviderPage() {
   return (
     <>
       <PageHero
-        icon={ArrowLeftRight}
         title={t("exchangeProvider.title")}
         eyebrow={t("admin.title")}
         subtitle={t("exchangeProvider.description")}

@@ -121,7 +121,6 @@ export default function TenantPage() {
   return (
     <>
       <PageHero
-        icon={Building2}
         title={t("tenantAdmin.title")}
         eyebrow={t("admin.title")}
         subtitle={t("tenantAdmin.description")}

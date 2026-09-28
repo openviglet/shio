@@ -33,7 +33,6 @@ export default function EditorSitesPage() {
         *editor* it navigates to is the one this task is really about, and it is not here.
       */}
       <PageHero
-        icon={IconLayersIntersect}
         title={t("universalEditor.title")}
         eyebrow={t("sidebar.content")}
         subtitle={t("universalEditor.description")}

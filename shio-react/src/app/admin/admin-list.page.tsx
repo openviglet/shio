@@ -124,7 +124,6 @@ export function AdminListPage<T>({
       error={error ? headlineOf(problemOf(error), error.message) : null}
       tryAgainUrl={listRoute}
       eyebrow={eyebrow}
-      heroIcon={icon}
       title={title}
       subtitle={subtitle}
       tone={tone}

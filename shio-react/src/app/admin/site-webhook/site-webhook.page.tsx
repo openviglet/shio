@@ -130,7 +130,6 @@ export default function SiteWebhookPage() {
   return (
     <>
       <PageHero
-        icon={Webhook}
         title={t("siteWebhook.title")}
         eyebrow={t("admin.title")}
         subtitle={t("siteWebhook.description")}

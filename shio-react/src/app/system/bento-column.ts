@@ -18,16 +18,18 @@ import type { BentoShellColumn } from "@viglet/viglet-design-system/bento"
  * post-type picker used to set by hand).</p>
  *
  * <p>`narrow` (56rem) is for a single-question form, where a long line is harder to read: the
- * three create and import forms, which set `max-w-4xl` themselves before this, and (SH947) the
- * six infrastructure editors that set `max-w-2xl`, which the design system's page lint now
- * refuses on a page.</p>
+ * three create and import forms, which set `max-w-4xl` themselves before this.</p>
+ *
+ * <p>SH1192 — the six infrastructure editors (SH947) and the e-mail settings left it. They set
+ * `max-w-2xl` once, and SH947 kept that width by naming them here, but each is three or four form
+ * sections, not one question, and the contract reserves `narrow` for the latter. Kept narrow, their
+ * titles started at 380 px while every other editor's started at the default column's edge, which
+ * is one of the four title offsets the look census counted.</p>
  */
 const NARROW: readonly RegExp[] = [
   /^\/bento\/content\/site\/new\/?$/,
   /^\/bento\/content\/site\/import\/?$/,
   /^\/bento\/content\/folder\/[^/]+\/new-folder\/?$/,
-  /^\/bento\/admin\/(?:tokens|auth-providers|exchange-providers|webhooks|tenants)\/[^/]+\/?$/,
-  /^\/bento\/admin\/email-config\/?$/,
 ]
 
 /**

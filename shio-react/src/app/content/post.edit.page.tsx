@@ -50,6 +50,7 @@ import { PostTranslationsMenu } from "@/components/post-translations.menu"
 import type { ShPostUnified, ShPostState } from "@/models/post-unified/post-unified"
 import { postFormSchema } from "@/models/post-unified/post-unified"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
+import { breadcrumbFrom, heroTrail } from "@/app/content/content-browser/browser-view"
 import { fieldOf, headlineOf, problemOf, reportRefusal, type RefusalActions } from "@/lib/problem"
 import { LoadProvider } from "@viglet/viglet-design-system/router"
 import { changedAttrs, isDirty } from "@/lib/dirty"
@@ -311,6 +312,19 @@ export default function PostUnifiedEditPage() {
   // site list — the link used to be the bare content root, so Back skipped the site entirely.
   const backUrl = parentFolderId ? `${ROUTES.CONTENT_ROOT}/object/${parentFolderId}` : ROUTES.CONTENT_ROOT
 
+  // SH1192 — where the post lives, as the hero's trail: the site list, the site, each folder down
+  // to the one it sits in. The same `/path` read the folder browser draws its own trail from.
+  const folderPath = useQuery({
+    queryKey: addressKey(`summary:path|${parentFolderId ?? ""}`),
+    queryFn: ({ signal }) => axios.get(`/v2/object/${parentFolderId}/path`, { signal })
+      .then((res) => breadcrumbFrom(res.data)),
+    enabled: Boolean(parentFolderId),
+  })
+  const trail = folderPath.data
+    ? heroTrail(folderPath.data, { to: ROUTES.CONTENT_ROOT, label: t("content.sites") },
+      (id) => `${ROUTES.CONTENT_ROOT}/object/${id}`, { ownPath: false })
+    : undefined
+
   // SH1090 — no confirm of its own: useUnsavedGuard's router blocker asks for this exit as it
   // does for every other, so Cancel with unsaved work still says "discard" before it does.
   const navigateBack = () => navigate(backUrl)
@@ -459,7 +473,7 @@ export default function PostUnifiedEditPage() {
   if (!post) {
     return (
       <>
-        <PageHero icon={IconFileText} title={t("content.editPost")} urlBase={ROUTES.CONTENT_ROOT} />
+        <PageHero title={t("content.editPost")} urlBase={ROUTES.CONTENT_ROOT} />
         {/*
           SH1049 — three states, not two. `LoadProvider` shows the skeleton while
           `checkIsNotUndefined` is undefined and the blank slate with "try again" once `error` is
@@ -489,9 +503,9 @@ export default function PostUnifiedEditPage() {
         of the morph and the authoring contract forbids composing them by hand.
       */}
       <PageHero
-        icon={IconFileText}
         eyebrow={t("content.postLabel")}
         title={t("content.editPost")}
+        trail={trail}
         urlBase={backUrl}
         saveTitle={post.title || t("content.editPost")}
         onCancel={navigateBack}

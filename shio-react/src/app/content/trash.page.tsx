@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { Trash2, RotateCcw, X, Folder, FileText, Globe } from "lucide-react"
+import { RotateCcw, X, Folder, FileText, Globe } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { BentoFilterBar, type BentoFilterFacet, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { FACET_TYPE, countLocally, fromBarValue, matchesLocally, toBarValue, withCounts } from "@/lib/filter-bar"
@@ -183,7 +183,6 @@ export default function TrashPage() {
   return (
     <>
       <PageHero
-        icon={Trash2}
         title={t("content.trash")}
         subtitle={t("content.trashDescription")}
         urlBase={ROUTES.HOME}

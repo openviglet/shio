@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { Bot, ChevronLeft, ChevronRight, History, RefreshCw, X } from "lucide-react"
+import { Bot, ChevronLeft, ChevronRight, RefreshCw, X } from "lucide-react"
 import { Link, useSearchParams } from "react-router-dom"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -148,7 +148,6 @@ export default function ActivityListPage() {
         mosaic of tiles is the wrong instrument for "what changed, by whom, when".
       */}
       <PageHero
-        icon={History}
         title={t("activity.title")}
         eyebrow={t("admin.title")}
         subtitle={t("activity.description")}

@@ -12,7 +12,7 @@ import type {
   ShReviewSession,
 } from "@/models/review/review.model"
 import { formatDistanceToNow } from "date-fns"
-import { Bot, Check, ChevronDown, ChevronRight, RefreshCw, Undo2 } from "lucide-react"
+import { Check, ChevronDown, ChevronRight, RefreshCw, Undo2 } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { useInvalidate } from "@/hooks/use-catalogue"
@@ -214,7 +214,6 @@ export default function ReviewListPage() {
         console card in both eras (SH902).
       */}
       <PageHero
-        icon={Bot}
         title={t("review.title")}
         eyebrow={t("admin.title")}
         subtitle={t("review.description")}

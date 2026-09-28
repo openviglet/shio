@@ -1,5 +1,4 @@
 import { IconCalendarTime } from "@tabler/icons-react"
-import { CalendarClock } from "lucide-react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { addressKey } from "@/lib/query-keys"
@@ -97,7 +96,6 @@ export default function ScheduledPage() {
   return (
     <>
       <PageHero
-        icon={CalendarClock}
         title={t("content.scheduledTitle")}
         subtitle={t("content.scheduledDescription")}
         urlBase={ROUTES.HOME}

@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Bot, CheckCheck, Circle, Languages, Save } from "lucide-react"
+import { ArrowLeftRight, Bot, CheckCheck, Circle, Save } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useParams } from "react-router-dom"
@@ -155,7 +155,6 @@ export default function TranslatePage() {
   return (
     <>
       <PageHero
-        icon={Languages}
         title={t("content.translateTitle")}
         subtitle={t("content.translateDescription")}
         urlBase={`${ROUTES.CONTENT_ROOT}/post/${postId}`}

@@ -126,7 +126,6 @@ export default function ApiTokenPage() {
   return (
     <>
       <PageHero
-        icon={KeyRound}
         title={t("apiToken.title")}
         eyebrow={t("admin.title")}
         subtitle={t("apiToken.description")}

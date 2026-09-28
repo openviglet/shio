@@ -896,7 +896,6 @@ export default function PostTypeEditPage() {
         The API name therefore stays a read-only field with its Rename button, below.
       */}
       <PageHero
-        icon={IconFileText}
         eyebrow={t("content.postType")}
         title={t("content.editPostType")}
         urlBase={ROUTES.POST_TYPE_ROOT}

@@ -110,7 +110,6 @@ export default function GraphiQLPage() {
 
     const header = (
         <PageHero
-            icon={IconBrandGraphql}
             title={t("graphql.title")}
             eyebrow={t("admin.title")}
             subtitle={t("graphql.description")}

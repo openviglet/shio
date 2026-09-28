@@ -1,5 +1,5 @@
 import { IconLanguage } from "@tabler/icons-react"
-import { AlertTriangle, Bot, Check, Languages, Plus } from "lucide-react"
+import { AlertTriangle, Bot, Check, Plus } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
@@ -211,7 +211,6 @@ export default function LanguagesPage() {
   return (
     <>
       <PageHero
-        icon={Languages}
         title={t("content.coverageTitle")}
         subtitle={t("content.coverageDescription")}
         urlBase={`${ROUTES.CONTENT_ROOT}/site/${siteId}`}

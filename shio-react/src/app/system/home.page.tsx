@@ -15,7 +15,6 @@ import {
   IconFileText,
   IconForms,
   IconHistory,
-  IconHome,
   IconMessage,
   IconPencil,
   IconPlus,
@@ -220,7 +219,6 @@ export default function BentoHomePage() {
         eyebrow={t("sidebar.dashboard")}
         title={t("home.welcomeTitle")}
         subtitle={t("home.welcomeSubtitle")}
-        leading={<IconHome size={28} aria-hidden="true" />}
       />
 
       {siteCount !== null && postTypeCount !== null && (

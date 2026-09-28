@@ -240,6 +240,25 @@ export function breadcrumbFrom(data: {
 }
 
 /**
+ * SH1192 — a nested entity's location, as the hero's trail (VDS184): the site list first, then
+ * each ancestor the path names, the last being the entity's parent.
+ *
+ * <p>A folder's own path ends with the folder itself, which is the page's title rather than a step
+ * of the trail, so the folder browser passes `ownPath: true` and the last item is left out. A post
+ * passes its parent folder's path whole. One step, which is what a site's root listing has, renders
+ * as the arrow back link to the site list.</p>
+ */
+export function heroTrail(
+  path: readonly BreadcrumbPathItem[],
+  sites: { to: string; label: string },
+  objectRoute: (id: string) => string,
+  { ownPath }: { ownPath: boolean },
+): { to: string; label: string }[] {
+  const ancestors = ownPath ? path.slice(0, -1) : path
+  return [sites, ...ancestors.map((item) => ({ to: objectRoute(item.id), label: item.name }))]
+}
+
+/**
  * SH1027/SH1145 — "search this folder", as the search page's own address.
  *
  * <p>The browser's box and the console's search are different questions, and this is the wider one:

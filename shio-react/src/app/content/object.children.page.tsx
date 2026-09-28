@@ -3,7 +3,6 @@ import { Panel } from "@/components/panel"
 import { PageHero } from "@/components/page-hero"
 import { Separator } from "@/components/ui/separator"
 import { ROUTES } from "@/app/routes.const"
-import { IconFileText } from "@tabler/icons-react"
 import { DialogDelete } from "@/components/dialog.delete"
 import { PermissionsDialog } from "@/components/permissions.dialog"
 import { Folder, FileText, Download, Eye, Settings, Copy, Move, Trash2 } from "lucide-react"
@@ -12,7 +11,7 @@ import { Folder, FileText, Download, Eye, Settings, Copy, Move, Trash2 } from "l
 import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { contentFacets, fromBarValue, toBarValue, withCounts } from "@/lib/filter-bar"
 import {
-  browserView, listboxClass, optionClass, relativeDate, searchHereFor,
+  browserView, heroTrail, listboxClass, optionClass, relativeDate, searchHereFor,
 } from "./content-browser/browser-view"
 import { BrowserItem } from "./content-browser/browser-views"
 import { useBrowserKeyboard } from "./content-browser/use-browser-keyboard"
@@ -292,8 +291,9 @@ export default function ObjectChildrenPage() {
         the save-bar morph expects them.
       */}
       <PageHero
-        icon={IconFileText}
-        title={siteName || t("content.browsing")}
+        title={breadcrumbPath.at(-1)?.name || siteName || t("content.browsing")}
+        trail={heroTrail(breadcrumbPath, { to: ROUTES.CONTENT_ROOT, label: t("content.sites") },
+          (id) => `${ROUTES.CONTENT_ROOT}/object/${id}`, { ownPath: true })}
         urlBase={ROUTES.CONTENT_ROOT}
         backLabel={t("content.sites")}
         actions={siteId ? (

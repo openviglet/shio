@@ -74,7 +74,6 @@ export default function BentoSiteListPage() {
       tryAgainUrl={ROUTES.BENTO_CONTENT}
       listId="sites"
       eyebrow={t("sidebar.content")}
-      heroIcon={IconWorld}
       title={t("content.sites")}
       subtitle={t("content.selectYourSite")}
       tone="blue"

@@ -6,13 +6,11 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { BentoFormHero, BentoHero } from "@viglet/viglet-design-system/bento"
+import { BentoFormHero, BentoHero, type BentoTrailStep } from "@viglet/viglet-design-system/bento"
 import type React from "react"
 import { useTranslation } from "react-i18next"
 
 interface PageHeroProps {
-  /** Tabler icon component, rendered as the hero's `leading`. */
-  icon?: React.ElementType
   title: string
   /** The hero's eyebrow. */
   eyebrow?: string
@@ -22,6 +20,11 @@ interface PageHeroProps {
   urlBase?: string
   /** SH1054 — its words. Defaults to "Back": the package draws the link with this as its only text. */
   backLabel?: string
+  /**
+   * SH1192 — the entity's ancestors, root first and its parent last, for content that nests. Two or
+   * more render as linked steps where the back link sits (VDS184); one renders the arrow back link.
+   */
+  trail?: readonly BentoTrailStep[]
   /** Actions, rendered as the hero's `trailing`. */
   actions?: React.ReactNode
 
@@ -51,12 +54,12 @@ interface PageHeroProps {
  * morph themselves.
  */
 export function PageHero({
-  icon: Icon,
   title,
   eyebrow,
   subtitle,
   urlBase,
   backLabel,
+  trail,
   actions,
   saveTitle,
   saveBadges,
@@ -80,7 +83,7 @@ export function PageHero({
         eyebrow={eyebrow}
         backTo={urlBase}
         backLabel={back}
-        leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}
+        trail={trail}
         title={title}
         subtitle={subtitle}
         onCancel={onCancel ?? (() => undefined)}
@@ -106,9 +109,9 @@ export function PageHero({
       eyebrow={urlBase ? undefined : eyebrow}
       backTo={urlBase}
       backLabel={urlBase ? backLabel ?? eyebrow ?? back : undefined}
+      trail={trail}
       title={title}
       subtitle={subtitle}
-      leading={Icon ? <Icon size={28} aria-hidden="true" /> : undefined}
       trailing={actions}
     />
   )

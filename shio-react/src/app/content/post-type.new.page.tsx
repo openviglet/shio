@@ -42,7 +42,6 @@ export default function PostTypeNewPage() {
   return (
     <>
       <PageHero
-        icon={IconFileText}
         eyebrow={t("content.postType")}
         title={t("content.newPostType")}
         urlBase={ROUTES.POST_TYPE_ROOT}

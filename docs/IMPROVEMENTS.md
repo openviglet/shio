@@ -938,22 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.29 LV.29 One page anatomy for every route (SH1192)
-
-The 2026-09-28 audit found the same kind of page built four ways. Lists such as Sites,
-Users and Tenants use a hero with a 48 px gradient icon chip and a tone per area (blue,
-green, violet). Content pages such as Search, Trash and Post types use a bare outline
-icon. Forms such as Novo Site, E-mail and Tokens centre an 832 px column, so their title
-jumps to x=380. The post editor and GraphQL sit flush at x=140. The back link also
-changes meaning: Voltar, Início, Sites or Site, uppercase and letter-spaced, above the
-title. And the H1 is 36 px on a data console where 24 px leaves room for the work. The
-proposal, drawn in the Shio Console concept canvas (artboard 00, page anatomy), has one
-shell: a top bar with the breadcrumb trail, which replaces the uppercase back link, then
-a header with a 24 px H1, an optional status, a one-line description, and actions on the
-right. The body is one of three layouts: full-width list, 720 px form with a side index,
-or the editor split. The icon chip and the area tones leave the header entirely. Done
-when SH1191's census reports a single title offset per layout.
-
 ### LV.30 LV.30 The bento hubs, restored as the second level (SH1193)
 
 The bento navigation is rail, then hub, then item: `BentoNavSection.areaRoute` names the

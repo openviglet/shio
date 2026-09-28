@@ -109,7 +109,6 @@ export default function EmailConfigPage() {
         goes in `actions`, and there is exactly one of it.
       */}
       <PageHero
-        icon={Mail}
         title={t("emailConfig.title")}
         eyebrow={t("admin.title")}
         subtitle={t("emailConfig.description")}

@@ -64,7 +64,6 @@ export default function BentoFolderNewPage() {
           eyebrow={t("content.folder")}
           backTo={parent}
           backLabel={t("content.browsing")}
-          leading={<IconFolder size={28} aria-hidden="true" />}
           title={title || t("content.newFolder")}
           onCancel={() => navigate(parent)}
           loading={saving}

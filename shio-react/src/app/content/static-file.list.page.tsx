@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { ContentBrowserDialog, type ContentBrowserSelection } from "@/components/widgets/content-browser-dialog"
 import { ROUTES } from "@/app/routes.const"
-import { Image as ImageIcon, Download, Trash2, Upload, Search, LayoutGrid, List as ListIcon, X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText, History } from "lucide-react"
+import { Download, Trash2, Upload, Search, LayoutGrid, List as ListIcon, X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText, History } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 // SH1023 — the search, the category chip and the view mode live in the URL.
@@ -329,7 +329,6 @@ export default function StaticFileListPage() {
   return (
     <>
       <PageHero
-        icon={ImageIcon}
         title={t("staticFile.title")}
         subtitle={t("staticFile.description")}
         urlBase={ROUTES.HOME}

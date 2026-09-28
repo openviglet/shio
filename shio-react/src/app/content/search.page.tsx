@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { Search as SearchIcon } from "lucide-react"
 import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { contentFacets, countLocally, fromBarValue, toBarValue, withCounts, withSiteFacet } from "@/lib/filter-bar"
@@ -145,7 +144,6 @@ export default function SearchPage() {
   return (
     <>
       <PageHero
-        icon={SearchIcon}
         title={t("content.searchTitle")}
         subtitle={t("content.searchDescription")}
         urlBase={backTo}

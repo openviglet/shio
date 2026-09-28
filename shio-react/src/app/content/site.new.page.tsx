@@ -67,7 +67,6 @@ export default function BentoSiteNewPage() {
           eyebrow={t("content.siteLabel")}
           backTo={ROUTES.BENTO_CONTENT}
           backLabel={t("content.sites")}
-          leading={<IconWorld size={28} aria-hidden="true" />}
           title={title || t("content.newSite")}
           subtitle={t("content.createFirstSite")}
           onCancel={() => navigate(ROUTES.BENTO_CONTENT)}

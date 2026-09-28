@@ -68,7 +68,6 @@ export default function BentoSiteImportPage() {
         eyebrow={t("content.siteLabel")}
         backTo={ROUTES.BENTO_CONTENT}
         backLabel={t("content.sites")}
-        leading={<IconUpload size={28} aria-hidden="true" />}
         title={t("content.importSite")}
         subtitle={t("content.import")}
         onCancel={() => navigate(ROUTES.BENTO_CONTENT)}

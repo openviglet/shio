@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { ROUTES } from "@/app/routes.const"
-import { IconShieldCog } from "@tabler/icons-react"
 import { Save } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { isCancelled } from "@/lib/read-options"
@@ -81,7 +80,6 @@ export default function AdminUserPage() {
   return (
     <>
       <PageHero
-        icon={IconShieldCog}
         title={isNew ? t("admin.newUser") : t("admin.editUser")}
         eyebrow={t("admin.users")}
         subtitle={t("admin.usersSubtitle")}

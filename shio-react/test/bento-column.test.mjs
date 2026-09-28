@@ -78,12 +78,14 @@ test("SH946: the single-question forms read narrow, and everything else the defa
   assert.equal(column("/bento/content/folder/abc-123"), "default")
 })
 
-test("SH947: the infrastructure editors that set max-w-2xl read narrow, and their lists do not", async () => {
+test("SH1192: the infrastructure editors are multi-section forms and read the default column", async () => {
   const column = await columnFor()
   for (const editor of ["tokens/t-1", "auth-providers/new", "exchange-providers/x", "webhooks/w", "tenants/acme"]) {
-    assert.equal(column(`/bento/admin/${editor}`), "narrow", `SH947: /bento/admin/${editor}`)
+    assert.equal(column(`/bento/admin/${editor}`), "default",
+      `SH1192: /bento/admin/${editor} is several form sections; narrow is for one question, and it`
+        + " moved this editor's title to 380 px beside every other editor's")
   }
-  assert.equal(column("/bento/admin/email-config"), "narrow")
+  assert.equal(column("/bento/admin/email-config"), "default")
   assert.equal(column("/bento/admin/tokens"), "default",
     "SH947: the list is a mosaic and wants the default column; only its editor is a form")
   assert.equal(column("/bento/admin/users/u-1"), "default")

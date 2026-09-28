@@ -149,7 +149,6 @@ export default function AuthProviderPage() {
   return (
     <>
       <PageHero
-        icon={Fingerprint}
         title={t("authProvider.title")}
         eyebrow={t("admin.title")}
         subtitle={t("authProvider.description")}

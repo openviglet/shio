@@ -164,7 +164,6 @@ export default function MarketplaceListPage() {
         grid stays a grid. The refresh moves into the hero beside the filters it belongs with.
       */}
       <PageHero
-        icon={Package}
         title={t("marketplace.title")}
         eyebrow={t("admin.title")}
         subtitle={t("marketplace.description")}

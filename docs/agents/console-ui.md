@@ -3833,3 +3833,15 @@ second census would be a second allowance. `scripts/look-census.mjs` finds the d
 checkout on the same version line (or `VIGLET_DS_CHECKOUT`) and passes this console's URL and
 `SHIO_USER`/`SHIO_PASSWORD`. A console task in the look round proves itself by the figure it lowers,
 and `pnpm look -- --write` records the lower reading in the design system's checkout.
+
+## One page anatomy: a title offset per column, and a trail where content nests (SH1192)
+
+A page hero draws **no icon beside its title**. `PageHero` has no `icon` prop, no page passes
+`leading` to `BentoHero`, and `BentoListPage` gets no `heroIcon`: an icon there moves the title by
+its own width, which is how the console reached four title offsets inside one column. The gradient
+chip stays where the design system keeps it (VDS182), on an entity's identity hero. The title's
+offset is now the column's: `default` 152 px, `narrow` 344 px (single-question forms only, which is
+why the six multi-section infrastructure editors left it), `full` 112 px, and an entity shell's
+chip, measured at 1440 px. Content that nests takes the hero's `trail` (VDS184): the folder browser
+titles itself with the folder and names its ancestors, and the post editor names the folders it sits
+in, from `heroTrail` over the same `/path` read. `page-anatomy.test.mjs` holds all three.

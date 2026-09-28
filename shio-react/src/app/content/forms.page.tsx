@@ -1,5 +1,5 @@
 import { IconMail } from "@tabler/icons-react"
-import { Mail, Save, Trash2 } from "lucide-react"
+import { Save, Trash2 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -129,7 +129,6 @@ export default function FormsPage() {
   return (
     <>
       <PageHero
-        icon={Mail}
         title={t("content.formsTitle")}
         subtitle={t("content.formsDescription")}
         urlBase={ROUTES.HOME}

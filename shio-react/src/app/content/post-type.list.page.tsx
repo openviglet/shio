@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { IconFileText } from "@tabler/icons-react"
 import { Pencil, Plus, Trash2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -44,7 +43,6 @@ export default function PostTypeListPage() {
     <>
       {/* SH902 — header and panel through the adapters; the row list itself is untouched. */}
       <PageHero
-        icon={IconFileText}
         eyebrow={t("sidebar.content")}
         title={t("content.postTypes")}
         urlBase={ROUTES.HOME}

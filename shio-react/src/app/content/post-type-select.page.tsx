@@ -48,7 +48,6 @@ export default function BentoPostTypeSelectPage() {
         title={t("content.whatToPost")}
         backTo={`${ROUTES.BENTO_CONTENT}/object/${folderId}`}
         backLabel={t("content.browsing")}
-        leading={<IconFileText size={28} aria-hidden="true" />}
       />
 
       {!loading && customTypes.length > 0 && (

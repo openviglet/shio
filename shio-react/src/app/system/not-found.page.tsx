@@ -1,4 +1,3 @@
-import { IconError404 } from "@tabler/icons-react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 import { PageHero } from "@/components/page-hero"
@@ -34,7 +33,6 @@ export default function NotFoundPage() {
   return (
     <>
       <PageHero
-        icon={IconError404}
         eyebrow="404"
         title={t("common.notFoundTitle")}
         subtitle={t("common.notFoundDescription")}
