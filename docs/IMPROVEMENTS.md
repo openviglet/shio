@@ -954,24 +954,24 @@ right. The body is one of three layouts: full-width list, 720 px form with a sid
 or the editor split. The icon chip and the area tones leave the header entirely. Done
 when SH1191's census reports a single title offset per layout.
 
-### LV.30 LV.30 Six labelled areas, and each area's sections one level down (SH1193)
+### LV.30 LV.30 The bento hubs, restored as the second level (SH1193)
 
-The bento rail exists because the 1.0 console's sidebar listed everything at once, and a
-curator could not find an item in it. That constraint is kept: no level of the
-navigation offers more than six choices. The rail's problem is narrower. It shows three
-unlabelled icons (home, content, administration), and the forty or so routes behind the
-last two are reachable only by URL or through the six Quick Actions tiles on the home
-page. So Trash, Media, Tokens and GraphQL have no path a curator can see. The first
-concept drew a 232 px sidebar with nineteen items open at once, which is the 1.0 shape
-again, and it was withdrawn on 2026-09-28. The adopted shape (canvas artboard Shell) is
-an 88 px rail with six areas, each an icon above a short label: Painel, Revisão (with
-its pending count), Conteúdo, Modelo, Integração and Admin. The mascot and the account
-sit at its foot. Each area's sections appear as tabs in the top bar, never more than
-six: Conteúdo holds Sites, Busca, Mídia, Agendados, Formulários and Lixeira; Integração
-holds Tokens de API, Webhooks, GraphQL and Editor universal; Admin holds Usuários e
-acesso, Autenticação, Tenants, E-mail and Atividade. The breadcrumb moves above the H1,
-and its site segment doubles as the site switcher. BentoCommandPalette (Ctrl K) stays
-the shortcut to any route by name.
+The bento navigation is rail, then hub, then item: `BentoNavSection.areaRoute` names the
+section's hub, and the hub renders every visible item of the section as a mosaic. That
+keeps each level to a handful of choices, which is why the console left the 1.0 sidebar,
+and it keeps the header free of a second nav, as BENTO-AUTHORING.md requires. Shio
+declares both sections with an `areaRoute` that is not a hub. Content points at the
+Sites list, and Administration points at ADMIN_ROOT, which App.tsx redirects to Users.
+So the second level never renders. Trash, Media, Scheduled, Forms, Tokens, Webhooks,
+GraphQL, Tenants, E-mail and Activity are reachable only by URL, through the six Quick
+Actions tiles on the home page, or through the command palette if the reader already
+knows the name. The fix is in Shio and uses what the package has: each section's
+`areaRoute` renders the package's hub for that section, the Sites list becomes one tile
+among Content's items, and the Administration redirect is removed. Two earlier drafts of
+this section were withdrawn on 2026-09-28: a 232 px sidebar listing nineteen items at
+once, which is the 1.0 shape again, and section tabs in the top bar, which the contract
+forbids. The rail's labels and its count badge are the design system's change (VDS181),
+and Shio takes them by upgrading.
 
 ### LV.31 LV.31 Tables for records, tiles for a few visual things (SH1194)
 
