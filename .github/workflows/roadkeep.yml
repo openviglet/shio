@@ -2,14 +2,16 @@
 # publishes rather than a copied `run:` block. `roadkeep lint` exits 1 on a governed file
 # that drifted, and that exit code is the whole contract.
 #
-# `baseline: origin/main` is deliberate and not a permanent state. Nine sections still
-# exceed the 250-word budget and three findings are roadkeep's own open defects (RK121's
-# `SH96 (local half)` id shape, RK122's half-shipped SH238), so a bare run would be red for
-# standing debt and nobody would read it. With the baseline the job fails on what a branch
-# *adds*, which is the drift a gate exists to stop. Drop the line once `lint` is clean.
+# SH1102 — bare, and on every push. It ran by hand only, against `baseline: origin/main`,
+# because the lint was never clean: six `code.renamed` findings came from the rule resolving
+# Shio's prose against the vendored engine's own modules (RK1707), and one of them sat on an
+# entry no verb could correct (RK1708). Both are fixed in roadkeep 0.2.511, the lint exits 0
+# here with no baseline, and a gate that only runs when somebody remembers is how it drifted.
 name: roadkeep
 
-on: 
+on:
+  push:
+  pull_request:
   workflow_dispatch:
 jobs:
   lint:
@@ -20,5 +22,3 @@ jobs:
         with:
           fetch-depth: 0
       - uses: alegauss/roadkeep@main
-        with:
-          baseline: origin/main

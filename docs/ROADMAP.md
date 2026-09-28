@@ -13,10 +13,6 @@
 
 - ⏳ **SH1091** (deps: maintainer security call) **no stateless caller can change one field of a post without declaring the whole document** — Every route to a partial write crosses a boundary drawn on purpose, so which one is a maintainer's call. → §LXVIII.13
 
-## Block BI — The areas this round did not reach
-
-- ⏳ **SH1102** (deps: roadkeep RK1707, roadkeep RK1708) **roadkeep lint has six findings that were never drift, so the docs gate cannot come back clean** — The rule checks prose against roadkeep's own modules whenever the engine is inside the project, which a vendored copy is. → §LXXIV.8
-
 ## Priority
 
 ## Done when — SH1091
@@ -25,12 +21,6 @@
   narrowed CSRF exemption on the console merge, or If-Match on a merge an AGENT token
   may call); shio post set then changes one field under a version and is refused when
   the post moved.
-
-## Done when — SH1102
-
-- **roadkeep lint exits clean here with no baseline** After re-vendoring a roadkeep that
-  skips code.renamed for a vendored engine, `lint` with no --baseline reports no finding
-  in Shio's three docs.
 
 ## Non-goals (do NOT add as tasks)
 

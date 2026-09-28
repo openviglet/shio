@@ -99,6 +99,17 @@ test("SH241: all three gates agents.md names have a workflow that runs unasked",
   assert.match(on, /pull_request:/, "and on a pull request, which is where a reviewer looks");
 });
 
+test("SH1102: the docs gate runs on every push, bare, now that the lint is clean", () => {
+  // It ran only by hand, against a baseline, because six false `code.renamed` findings kept it red
+  // (roadkeep RK1707, RK1708). Both fixed, a baseline would only forgive what a branch adds, and a
+  // gate nobody triggers is how the docs drifted in the first place.
+  const on = triggers("roadkeep.yml");
+  assert.match(on, /push:/, "SH1102: roadkeep lint runs only when somebody asks for it");
+  assert.match(on, /pull_request:/, "SH1102: roadkeep lint does not run on a pull request");
+  assert.doesNotMatch(read("roadkeep.yml").replace(/^\s*#.*$/gm, ""), /^\s*baseline:/m,
+    "SH1102: the docs gate forgives standing findings again; fix them rather than baselining them");
+});
+
 /**
  * SH655 — a suite whose input is another repository needs that repository checked out.
  *
