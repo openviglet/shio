@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
 import { ShGroupService } from "@/services/auth/group.service"
 import { IdentityEntityPage } from "./identity-entity.page"
+import { GroupMembers } from "./group-members"
 
 const service = new ShGroupService()
 
@@ -29,6 +30,9 @@ export default function BentoGroupEditPage() {
       feature={t("admin.groups")}
       headlineFallback={t("admin.newGroup")}
       formId="group-edit"
+      detail={(group, save) => (
+        <GroupMembers members={group.shUsers ?? []} onChange={(shUsers) => save({ ...group, shUsers })} />
+      )}
     />
   )
 }

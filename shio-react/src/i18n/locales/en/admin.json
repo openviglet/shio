@@ -19,5 +19,14 @@
   "admin.firstName": "First Name",
   "admin.lastName": "Last Name",
   "admin.email": "Email",
-  "admin.listDetails": "Details"
+  "admin.listDetails": "Details",
+  "admin.groupMembers": "Members ({{count}})",
+  "admin.groupMemberPick": "Choose a user",
+  "admin.groupEveryoneIn": "Everyone is a member",
+  "admin.groupMemberAdd": "Add",
+  "admin.groupMemberRemove": "Remove",
+  "admin.groupMemberRemoveNamed": "Remove {{name}} from this group",
+  "admin.groupMemberAdded": "{{name}} added to the group",
+  "admin.groupMemberRemoved": "{{name}} removed from the group",
+  "admin.groupNoMembers": "No one is in this group yet."
 }

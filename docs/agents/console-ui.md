@@ -3964,3 +3964,13 @@ its help line; the post type's widget name (and whether the field is the title o
 label's `title` hint for whoever builds the post type, not two or three pills on every field.
 `post-editor-header.test.mjs` holds it. The Sections field still takes friendly URLs as chips and
 does not show each section's title; that is its own task (SH1205), because it changes the widget.
+
+## A group's page shows who is in it (SH1200)
+
+`IdentityEntityPage` takes an optional `detail(entity, save)`, rendered under the entity shell's hero
+for an existing record, and the group editor passes `GroupMembers`. The membership needs no new
+endpoint: `GET /v2/group/{id}` already answers with `shUsers`, and `PUT` replaces the membership with
+the list it is sent, so the panel reads the members off the loaded group and writes a change through
+the same update the hero's autosave uses. The picker offers only users who are not members, and each
+row links to the user. The roles a group grants are not on the page yet, because the group read does
+not fill `shRoles` (SH1206). `group-members.test.mjs` holds the wiring.

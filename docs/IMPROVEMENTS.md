@@ -957,22 +957,6 @@ login screen's navy ground joins the console's neutral one. The change is made i
 viglet-design-system, published, and adopted here, and SH1191's allowance tightens to
 match.
 
-### LV.38 LV.38 A group page that shows its members (SH1200)
-
-Opening Administrator from Grupos renders the entity shell's hero (back link, title, the
-description Administrator Group), then a Cancelar button and an overflow menu, and
-nothing below. That was confirmed on 2026-09-28 by reading the page's text after load:
-the body holds only those strings. SH904 gave groups and roles the shared entity shell
-because the record is id, name and description, which is true of the row but not of the
-job. A curator opens a group to answer who is in it and what it can do. The same holds
-for a role and its permissions. The concept folds Usuários, Grupos and Papéis into one
-Usuários e acesso area with tabs (artboard 04). A group page keeps its inline-editable
-title, then lists its members as a table with add and remove, and the roles it grants.
-Cancelar appears only once the title or description has been edited. Whether the
-membership data is reachable from the console services today is the first thing to
-establish; if it is not, the agent surface needs it too (P1), and the task grows a
-dependency rather than a console-only read.
-
 ### LV.41 LV.41 A page's sections by name, in order (SH1205)
 
 A Page post's Sections field is a multi-select of section friendly URLs, rendered as
@@ -990,6 +974,22 @@ action that searches section posts by title rather than asking for a URL. The st
 value stays the same list of friendly URLs, so the renderer and the agent surface see no
 change. Done when the About page's section reads by its title and the field's value is
 unchanged after a reorder.
+
+### LV.42 LV.42 The roles a group grants, beside its members (SH1206)
+
+SH1200 put a group's members on its page, read from the `shUsers` that `GET
+/v2/group/{id}` already answers with and written through the same `PUT`. The other half
+of the question is what those members may do, and it is not on the page. In the model a
+role holds its groups (`ShRole.shGroups`, with `ShGroup.shRoles` mapped by it), but the
+group read does not fill `shRoles`, and the group's `PUT` does not write it, so the
+console has no way to show or change a group's roles from the group. The only path is to
+open each role and look for the group there. The proposal is first to establish the
+read, either filling `shRoles` on the group read, as the member list is filled, or
+reading the roles that name the group, and then to render them under the members as a
+short list with each role's name linked to its page. Changing a group's roles from the
+group is a separate decision, because a role's permissions are the escalation boundary.
+If it is taken, it goes through the role's own update, so there is one writer of that
+relation. Done when the Administrator group's page names the roles it grants.
 
 ## LVI What Turing's index never receives
 

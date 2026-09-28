@@ -10,12 +10,13 @@ import type { Icon as TablerIcon } from "@tabler/icons-react"
 import { BentoEntityShell, type BentoTone } from "@viglet/viglet-design-system/bento"
 import { toast } from "@viglet/viglet-design-system"
 import { useQuery } from "@tanstack/react-query"
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
 import { reportProblem } from "@/lib/problem"
 import { addressKey, type ShScheme } from "@/lib/query-keys"
 import { isCancelled, type ShRead } from "@/lib/read-options"
+import type { ShUser } from "@/models/auth/user"
 
 /** The entity a create page starts from — module-level, so it is one stable object. */
 const BLANK: IdentityEntity = { id: "", name: "", description: "" }
@@ -25,6 +26,8 @@ export interface IdentityEntity {
   id: string
   name: string
   description: string
+  /** SH1200 — a group's members, which `GET /v2/group/{id}` carries and `PUT` replaces. */
+  shUsers?: ShUser[] | null
 }
 
 /** The four calls this page needs. Both `ShGroupService` and `ShRoleService` already have them. */
@@ -71,6 +74,11 @@ interface IdentityEntityPageProps {
   feature: string
   headlineFallback: string
   formId: string
+  /**
+   * SH1200 — what an existing entity shows under its hero, given a way to save a change to it. The
+   * shell's hero holds the identity; this is the rest of the job, such as a group's members.
+   */
+  detail?: (entity: IdentityEntity, save: (next: IdentityEntity) => Promise<void>) => ReactNode
 }
 
 /**
@@ -119,6 +127,7 @@ export function IdentityEntityPage({
   feature,
   headlineFallback,
   formId,
+  detail,
 }: Readonly<IdentityEntityPageProps>) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -219,7 +228,10 @@ export function IdentityEntityPage({
               }
             }}
           />
-        ) : null
+        ) : detail ? detail(entity, async (next) => {
+          await service.update(next)
+          setLoaded(next)
+        }) : null
       }
     </BentoEntityShell>
   )

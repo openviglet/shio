@@ -1669,6 +1669,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1202** — Audit rows are rebuilt in the console's language from their action, Search says it covers drafts and published posts, and the login page names Handlebars instead of Nashorn.
 - **SH1203** — A folder opens on its sortable table with localized states and dates, its path is said once in the trail, and a tree of the folders around it sits beside the listing.
 - **SH1204** — The editor's hero is the post's own title with its type, language and row, Actions is the one primary, and fields drop their widget pills; section titles are SH1205.
+- **SH1200** — A group's page lists its members under the hero and adds or removes one through the group's own update; the roles it grants are SH1206.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 
