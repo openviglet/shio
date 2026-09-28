@@ -11,7 +11,7 @@
 
 ## Block AX — The Viglet assistant: where the console reports, and how the curator reaches the agent
 
-- ⏳ **SH971** (deps: SH968 ✅, design system: VigletAssistant passes VigletAvatar's paused prop through) **a curator cannot choose what the dock reports or quiet the mascot** — The kinds can be muted now, but quieting the mascot needs VigletAssistant to pass VigletAvatar's paused prop through. → §LXIII.8
+- 🛠 **SH971** (deps: SH968 ✅) **a curator cannot choose what the dock reports or quiet the mascot** — The kinds can be muted now, but quieting the mascot needs VigletAssistant to pass VigletAvatar's paused prop through. → §LXIII.8
 
 ## Block BA — Releases, scheduling and the publish gate
 

@@ -1029,6 +1029,16 @@ downgrades it to the warning it replaces), and
 specifiers and resolves each one, so a tree that stops resolving is red without a build. Dependabot
 is capped at `0.52.x` for this dependency; lift it when GraphiQL moves.
 
+**Strict mode has a gap, and a third guard closes it (SH1177).** Because it fires only when pnpm
+resolves, a dependency *added* against an unchanged lockfile goes through unchecked. SH1054's
+`eslint-plugin-jsx-a11y` (peer `eslint` up to `^9`, on a tree running eslint 10) passed every gate
+and broke the next resolving install, a design-system bump. `pnpm peers check` answers the same
+question from the lockfile without resolving, so `shio-react/test/peer-ranges.test.mjs` runs it on
+every `pnpm test`. A range the tree knowingly exceeds is named under `peerDependencyRules` in
+`pnpm-workspace.yaml`, scoped to its dependent and with its reason. The one entry today is
+jsx-a11y's, whose rules run clean on eslint 10. The same test fails once that plugin's own range
+admits eslint 10, so the entry leaves when its reason does.
+
 ### Maven Integration
 `frontend-maven-plugin` (2.0.0) in `shio-app/pom.xml` runs, all from `../shio-react`:
 1. `install-node-and-pnpm` (Node `v26.3.1` + pnpm `11.8.0`)

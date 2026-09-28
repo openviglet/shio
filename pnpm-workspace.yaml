@@ -35,6 +35,17 @@ confirmModulesPurge: false
 # and in .npmrc it silently downgrades to the warning it is meant to replace.
 strictPeerDependencies: true
 
+# The one peer range this tree is allowed to exceed, named and scoped to its dependent.
+# eslint-plugin-jsx-a11y 6.10.2 (the latest; SH1054 added it) declares eslint up to ^9,
+# and the console lints on eslint 10. Its recommended rules run clean on 10 in
+# `pnpm --filter shio-react lint`, so the range is stale rather than the pairing broken.
+# Unnamed, strict mode refuses the next resolving install, a design-system bump included
+# (SH1177). Delete this entry when the plugin's own range admits eslint 10:
+# shio-react/test/peer-ranges.test.mjs fails on an exception nothing needs any more.
+peerDependencyRules:
+  allowedVersions:
+    'eslint-plugin-jsx-a11y>eslint': '10'
+
 # pnpm 11 refuses a dependency published more recently than `minimumReleaseAge` — a
 # supply-chain guard aimed at a compromised release being pulled in before anybody has
 # looked at it. It is on by default and it is worth keeping.
