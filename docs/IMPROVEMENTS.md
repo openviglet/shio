@@ -938,6 +938,210 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
+### LV.29 LV.29 One page anatomy for every route (SH1192)
+
+The 2026-09-28 audit found the same kind of page built four ways. Lists such as Sites,
+Users and Tenants use a hero with a 48 px gradient icon chip and a tone per area (blue,
+green, violet). Content pages such as Search, Trash and Post types use a bare outline
+icon. Forms such as Novo Site, E-mail and Tokens centre an 832 px column, so their title
+jumps to x=380. The post editor and GraphQL sit flush at x=140. The back link also
+changes meaning: Voltar, Início, Sites or Site, uppercase and letter-spaced, above the
+title. And the H1 is 36 px on a data console where 24 px leaves room for the work. The
+proposal, drawn in the Shio Console concept canvas (artboard 00, page anatomy), has one
+shell: a top bar with the breadcrumb trail, which replaces the uppercase back link, then
+a header with a 24 px H1, an optional status, a one-line description, and actions on the
+right. The body is one of three layouts: full-width list, 720 px form with a side index,
+or the editor split. The icon chip and the area tones leave the header entirely. Done
+when SH1191's census reports a single title offset per layout.
+
+### LV.30 LV.30 A navigation that names what is there (SH1193)
+
+The bento rail shows three icons: home, content and administration. Behind the last two
+sit about forty routes, and the only way to see them is to know the URL or to find a
+Quick Actions tile on the home page, which offers six of them. A curator's second
+question after "what needs me" is "where is X", and the rail cannot answer it without a
+click-and-guess. The concept (canvas artboard Sidebar) replaces it with a 232 px
+sidebar. At the top sit the product mark, the tenant and a site switcher, because nearly
+every content route is scoped to one site and today that scope is only in the URL. Below
+come labelled groups: Painel and Revisão (with the pending count), then Conteúdo (Sites,
+Busca, Mídia, Agendados, Formulários, Lixeira), Modelo (Tipos de post, Blueprints),
+Integração (Tokens de API, Webhooks, GraphQL, Editor universal) and Administração
+(Usuários e acesso, Autenticação, Tenants, E-mail, Atividade). The current item gets a
+neutral fill and an orange inset bar. The rail's collapsed form stays for narrow
+viewports, and on a phone the sidebar becomes a drawer behind a menu button.
+BentoNavRail already takes groups, so this is a presentation change in the design
+system, not a new routing model.
+
+### LV.31 LV.31 Tables for records, tiles for a few visual things (SH1194)
+
+Sites, Users, Groups, Roles, Tokens, Auth providers, Exchange providers, Webhooks and
+Tenants all render through the bento list page. It shows a dashed create tile first,
+then one entity tile per record, and the first record gets a double-size tile with a
+radial glow in the area's tone. With one user or one tenant that leaves a single glowing
+card and empty space. With fifteen sites it makes a mosaic where VigR3 is visually more
+important than Vitalis for no reason the data gives. None of these lists can be sorted,
+filtered by a column or acted on in bulk, and a tile shows two fields where a row shows
+five. Meanwhile Activity, Search, Trash and Post types already use tables, so the
+console answers "how do I see a list" two ways. The concept (artboard 04) puts every
+record list on BentoDataTable: a filter input and filter chips above; columns for name,
+identifier in mono, the one or two fields that differ per entity, status as a dot plus a
+word, and a row menu; the create action as the page's single primary button. Where a
+list has one or zero rows, an inline empty-state card says what to do next rather than
+showing a lone tile. Grid view stays available where the item is visual: media,
+blueprints, sites with a screenshot.
+
+### LV.32 LV.32 One primary action, and where the rest go (SH1195)
+
+In the 2026-09-28 captures the site browser header and toolbar hold Ver Site (filled
+green), Propriedades do Site, Novo Menu, a tile icon, Nova Pasta, Importar, Mais
+filtros, Ordem, Selecionar, a disabled Ação em Lote and Baixar Site (filled green
+again). That is two filled primaries, neither in the brand colour, and a disabled bulk
+menu shown before anything is selected. The post editor puts Visualizar, EN and Ações
+all in orange outline or fill. Post-type edit shows Gerenciado por código, Salvar,
+Salvar e Fechar and Cancelar, in three styles, on a type the banner below says is
+read-only. Site edit and Novo Site pair a dim filled Salvar Alterações with a bright
+orange-outlined Cancelar, so the escape hatch is louder than the goal. Trash repeats
+Excluir permanentemente in red on every row. The rule the concept applies (artboards 02,
+03 and 05) is that each screen has one filled orange primary (Novo, Publicar, Salvar),
+at most two outlined secondaries, and a ⋯ overflow for the rest. Destructive actions
+live in that menu or at the end of a form, and bulk actions appear in a selection bar
+only once a row is checked. A read-only screen shows no save buttons at all. SH1191's
+census counts filled primaries per route, so this lands as that number reaching one.
+
+### LV.33 LV.33 Forms as setting rows, with one save bar (SH1196)
+
+Token, E-mail, Site, Post type and Auth provider editors are built as cards. Each
+section is a 24 px radius panel headed by a blue gradient chip, and the chip is the same
+key icon on all three sections of the token page. Toggles float at the far right of a
+full-width row, and their help text hides behind an info icon. Where the save button
+sits changes by page: in the hero (E-mail), in a second sticky bar under the hero that
+repeats the title (Token), or beside Cancelar (Site). No page shows whether anything was
+changed, so leaving it is silent. The concept (artboard 05) uses a 720 px column with
+plain section headings. Each setting is a row with the label and a visible one-line
+description on the left and the control on the right, and text fields stack label, input
+and help. A short in-page index sits beside the column, and the destructive action goes
+at the end of that index. A floating save bar appears only when the form is dirty and
+names what changed ("1 alteração não salva — Pode publicar"), with Descartar and Salvar.
+BentoSaveBar and BentoScrollSaveBar already exist in the design system; this task makes
+them the only save affordance on a form.
+
+### LV.34 LV.34 The review queue as a triage list (SH1197)
+
+Every one of the 25 pending agent runs in the 2026-09-28 capture has the same bold
+title, "Nenhuma intenção declarada — inicie a execução com --intent <frase>". The
+distinguishing data, the run id and what it changed, sits in a grey second line with a
+full UUID. The absence of an intent is shown as the most important thing about each row,
+and the instruction to use --intent is repeated 25 times. Each row also carries its own
+filled Aprovar and outlined Reverter, so the screen holds 25 primary buttons, and there
+is no way to approve several runs at once. The concept (artboard 06) leads each row with
+the short run id in mono. A missing intent becomes a muted italic "sem intenção
+declarada", and the --intent hint appears once under the list. The change summary is
+typed counts (+criadas, ~editadas, ↑publicadas, −excluídas) in consistent colours. Rows
+expand in place to list their changes with a Ver diff link. Tabs split Aguardando,
+Aprovadas and Revertidas, and checking rows raises a selection bar with a single Aprovar
+e publicar primary. The home page and the sidebar badge read the same pending count.
+
+### LV.35 LV.35 A home for the mascot that covers nothing (SH1198)
+
+SH1182 made the dock mascot the console's single notice and hides toasts while it is
+mounted, which is the right call: one voice, not two. Where it sits is the problem. In
+every 1440x900 capture of 2026-09-28 it is a 72 px orb fixed at the bottom-right of the
+viewport, above page content. It covers the last Excluir permanentemente in Trash, the
+delete icon on the FAQ row in Post types, the Reverter button on a review row, a site
+tile's corner, and the preview frame's corner in the post editor. On a 390 px phone it
+sits over the Sections field. The top bar also still shows a bell, so there are two
+notice affordances. The concept puts the mascot in a reserved slot at the bottom of the
+sidebar, above the user row: a 26 px orb, a short "Shio tem 2 avisos" line and a count
+badge. It opens as a popover anchored to that slot, with its items and Marcar como lidos
+(artboard 01). On a phone the orb moves into the top bar where the bell was. The bell is
+removed, so the mascot stays the only notice, and no page content is ever under it.
+
+### LV.36 LV.36 A closed visual scale in the design system (SH1199)
+
+The Viglet design system and its bento layer are the right foundation: BentoDataTable,
+BentoFilterBar, BentoSaveBar, BentoStatusMarker, BentoCommandPalette and BentoSplitPage
+already exist, and most of the audit's findings come from the console composing them
+inconsistently rather than from a missing part. What the package does not do is close
+its scale. Radii derive from one --vg-radius with ±2 and ±4 px steps, plus the 16 and 24
+px bento surfaces. Tones (blue, indigo, violet, emerald, amber, rose, slate) are applied
+per area as decoration on icon chips, so colour carries no meaning. Buttons and inputs
+take any height a consumer passes. And three monospace stacks are in use. The concept's
+system board (artboard 00) proposes a closed set. Two control heights (32 dense, 36
+form) and 44 on touch. Three radii (6 control, 10 panel, full). A six-step type scale
+(28, 24, 16, 14, 13, 12 mono). One mono family. The five tones reassigned to state
+(published, draft, scheduled, changed, archived) and rendered through BentoStatusMarker
+as a dot and a word. Orange reserved for the primary action and the current item. The
+login screen's navy ground joins the console's neutral one. The change is made in
+viglet-design-system, published, and adopted here, and SH1191's allowance tightens to
+match.
+
+### LV.38 LV.38 A group page that shows its members (SH1200)
+
+Opening Administrator from Grupos renders the entity shell's hero (back link, title, the
+description Administrator Group), then a Cancelar button and an overflow menu, and
+nothing below. That was confirmed on 2026-09-28 by reading the page's text after load:
+the body holds only those strings. SH904 gave groups and roles the shared entity shell
+because the record is id, name and description, which is true of the row but not of the
+job. A curator opens a group to answer who is in it and what it can do. The same holds
+for a role and its permissions. The concept folds Usuários, Grupos and Papéis into one
+Usuários e acesso area with tabs (artboard 04). A group page keeps its inline-editable
+title, then lists its members as a table with add and remove, and the roles it grants.
+Cancelar appears only once the title or description has been edited. Whether the
+membership data is reachable from the console services today is the first thing to
+establish; if it is not, the agent surface needs it too (P1), and the task grows a
+dependency rather than a console-only read.
+
+### LV.37 LV.37 Page copy that matches what the page shows (SH1202)
+
+Three mismatches in the 2026-09-28 capture. First, Pesquisa's description says "Pesquisa
+de texto completo no conteúdo publicado", but all 27 results for "home" carry a Rascunho
+badge. Either the subtitle or the query scope is wrong, and the answer decides whether a
+curator can trust a search result to be live. Second, Atividade and the home page's
+Atividade Recente render each entry as an English sentence ("Updated \"Home\" (renamed
+from \"VigR3\")", "Published \"Acme&nbsp;\"") under Portuguese column headings and
+labels. The raw entity &nbsp; also shows in two titles. Block AH swept the console's own
+strings, but these are server-built summaries, so no i18n scan sees them. The concept
+(artboard 01) renders them from the event's fields as a localized verb plus the object
+("Renomeou a pasta VigR3 → Home"). Third, the login page is a different visual world, a
+navy ground with orange chemistry formulas and a claim about server-side rendering with
+Nashorn; SH1199 moves its ground onto the console's, and this task corrects its copy.
+The task also adds an assertion that an Activity row in pt contains no English verb.
+
+### LV.39 LV.39 The content browser as tree plus table (SH1203)
+
+In VigR3 / Home each row is a 79 px bordered card. It holds an orange or blue numbered
+circle (1–20) with no meaning to a curator, a checkbox, an icon, a title in link blue, a
+relative date in English ("about 1 month ago"), and a strip of pills: Post, Page, EN,
+VigR3 and DRAFT, each in its own colour. The site name repeats on every row of a view
+already scoped to that site. The state is an uppercase English word beside the
+Portuguese Rascunho used elsewhere. Folders and posts share one list with no column to
+sort by, and the breadcrumb sits inside a toolbar panel below two rows of buttons. The
+concept (artboard 02) puts a site tree to the left of the listing, so the folder
+structure stays visible while browsing. The listing is a table with 40 px rows and
+columns for name, type, state (dot plus word), language (mono), changed (absolute date)
+and a row menu. Filters are chips above it, and a selection bar with Publicar, Mover,
+Copiar and Excluir appears only once rows are checked. The breadcrumb moves to the top
+bar. The grid view and the SH1026 row windowing stay; only the row anatomy and the page
+chrome change.
+
+### LV.40 LV.40 An editor that shows the post, not the widgets (SH1204)
+
+Editar Post for About — Viglet titles the page "Editar Post" rather than the post, and
+never says the post is a draft, what type it is, or its address. Each field sits in its
+own bordered card with a coloured left border and one or two pills naming the post-type
+attribute and its widget (Title + Text, Summary + Text Area, Multi Select, Ace Editor -
+HTML). That is information for whoever builds the post type, and it takes the curator's
+eye first. Sections are a free-text chip input of friendly URLs ("/sections/b59589bb5")
+with no preview of what each section is. The header's three actions (Visualizar, EN,
+Ações) are all orange. The concept (artboard 03) titles the page with the post's own
+title, followed by a state badge, then a meta line with type, language and the mono
+address. Tabs for Conteúdo, SEO, Configurações, Traduções and Histórico sit under the
+title, which fits the tabbed sections the editor gained in 80044a53f. Actions are ⋯,
+Salvar rascunho and one Publicar primary. Fields are a label, an input and a help line.
+Sections become an ordered list with drag handles that shows each section's title beside
+its address, and the live preview stays on the right. Widget names move to a tooltip for
+developers.
+
 ## LVI What Turing's index never receives
 
 Shio publishes into Turing's index (SH84) and can rebuild it (SH413). What the index
@@ -973,6 +1177,19 @@ it unescaped.
 They come first because later blocks stand on them: the assistant reports outcomes these
 defects falsify, and releases schedule through the argument the MCP path drops. Each
 closes with an assertion carrying its id, at the boundary it crossed.
+
+### LXI.20 LXI.20 The dev server proxies only /api (SH1201)
+
+In the 2026-09-28 capture of Biblioteca de Mídia all 15 image thumbnails render as
+broken images showing their alt text. The page asks for
+/file_source/<id>/hero.png?w=300&h=300&crop=fill&format=webp. Through Vite on :5173 that
+URL answers 200 text/html, 11 547 bytes, which is the SPA fallback, while the backend on
+:2710 answers 200 image/webp for the same path. shio-react/vite.config.ts proxies "/api"
+to 2710 and nothing else, so any asset path the backend serves outside /api is swallowed
+by the dev server in the same way. No request fails, so no console error or
+failed-response listener sees it. The fix adds the backend's non-API delivery prefixes
+to the dev proxy, and the assertion that closes it loads the media page in an e2e check
+and fails when any img has naturalWidth 0.
 
 ## LXII One chrome: bento, and nothing left that names another (Block AW)
 
@@ -1013,6 +1230,23 @@ exist to ration.
 
 Its tasks are small, and together they turn a P1, P3, P7 or P9 argument written in a
 rationale paragraph into something a build can read.
+
+### LXIV.26 LXIV.26 A census of the console's visual vocabulary (SH1191)
+
+A Playwright walk of all 45 console routes (dark, light and a 390 px phone) on
+2026-09-28 measured what no suite asserts. The page title starts at four different x
+offsets (140, 188, 208 and 380 px) because four header anatomies coexist: hero with a
+gradient chip, hero with a bare icon, a centred 832 px form column, and a flush editor.
+Visible buttons come in fifteen heights between 16 and 44 px and ten border radii;
+inputs are 36, 42 or 44 px; three monospace faces render (ui-monospace, JetBrains Mono,
+Fira Code); and two colours act as primary, the brand orange and a green on Ver Site and
+Baixar Site. None of this fails a test, which is why it accumulated one reasonable page
+at a time. The deliverable is the instrument, not the fix: an e2e check that visits
+every route declared in App.tsx, records title offset, control heights, radii, font
+families and the count of filled primary buttons per screen, writes the inventory to a
+JSON file, and asserts it against a declared allowance. The first run lands with today's
+numbers as the allowance and a named list of offenders, so every later task in the
+console redesign lowers a number instead of claiming an improvement.
 
 ## LXV What the content said before (Block AZ)
 
