@@ -31,4 +31,10 @@ export class ShGroupService {
   async delete(id: string): Promise<void> {
     await axios.delete(`/v2/group/${id}`);
   }
+
+  /** SH1206 — the roles that name this group, by name: what its members may do. */
+  async roles(id: string, read: ShRead = {}): Promise<{ id: string; name: string; description: string | null }[]> {
+    const response = await axios.get(`/v2/group/${id}/roles`, { signal: read.signal });
+    return response.data;
+  }
 }

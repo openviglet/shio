@@ -33,3 +33,10 @@ test("SH1200: a membership change is written through the group's own update", ()
   assert.match(panel, /filter\(\(user\) => !inGroup\.has\(user\.username\)\)/,
     "SH1200: the picker offers users who are already members")
 })
+
+test("SH1206: a group's page lists the roles that name it, read from the group's roles endpoint", () => {
+  const page = read("app", "admin", "group.edit.page.tsx")
+  assert.match(page, /<GroupRoles groupId=\{group\.id\} \/>/, "SH1206: the group page does not show its roles")
+  const service = read("services", "auth", "group.service.ts")
+  assert.match(service, /`\/v2\/group\/\$\{id\}\/roles`/, "SH1206: the roles are not read from the group's endpoint")
+})

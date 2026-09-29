@@ -28,5 +28,7 @@
   "admin.groupMemberRemoveNamed": "Remove {{name}} from this group",
   "admin.groupMemberAdded": "{{name}} added to the group",
   "admin.groupMemberRemoved": "{{name}} removed from the group",
-  "admin.groupNoMembers": "No one is in this group yet."
+  "admin.groupNoMembers": "No one is in this group yet.",
+  "admin.groupRoles": "Roles ({{count}})",
+  "admin.groupNoRoles": "No role grants anything to this group yet."
 }

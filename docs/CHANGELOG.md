@@ -1671,6 +1671,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1204** — The editor's hero is the post's own title with its type, language and row, Actions is the one primary, and fields drop their widget pills; section titles are SH1205.
 - **SH1200** — A group's page lists its members under the hero and adds or removes one through the group's own update; the roles it grants are SH1206.
 - **SH1205** — A page's Sections field lists each section by title and type, in render order, reorderable and addable by title search, with the stored friendly URLs unchanged.
+- **SH1206** — A group's page lists the roles that name it, from GET /api/v2/group/{id}/roles, each linked to its role; an unknown group answers a teaching 404.
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

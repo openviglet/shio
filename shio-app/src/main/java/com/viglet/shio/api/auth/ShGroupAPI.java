@@ -18,6 +18,7 @@
 package com.viglet.shio.api.auth;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -32,6 +33,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import com.viglet.shio.api.ShJsonView;
@@ -39,6 +42,7 @@ import com.viglet.shio.persistence.dto.auth.ShGroupDTO;
 import com.viglet.shio.persistence.model.auth.ShGroup;
 import com.viglet.shio.persistence.model.auth.ShUser;
 import com.viglet.shio.persistence.repository.auth.ShGroupRepository;
+import com.viglet.shio.persistence.repository.auth.ShRoleRepository;
 import com.viglet.shio.persistence.repository.auth.ShUserRepository;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,10 +57,37 @@ public class ShGroupAPI {
 
 	private final ShGroupRepository shGroupRepository;
 	private final ShUserRepository shUserRepository;
+	private final ShRoleRepository shRoleRepository;
 
-	public ShGroupAPI(ShGroupRepository shGroupRepository, ShUserRepository shUserRepository) {
+	public ShGroupAPI(ShGroupRepository shGroupRepository, ShUserRepository shUserRepository,
+			ShRoleRepository shRoleRepository) {
 		this.shGroupRepository = shGroupRepository;
 		this.shUserRepository = shUserRepository;
+		this.shRoleRepository = shRoleRepository;
+	}
+
+	/** SH1206 &mdash; one role a group grants, as the console lists it: no back-reference to its groups. */
+	public record ShGroupRole(String id, String name, String description) {
+	}
+
+	/**
+	 * SH1206 &mdash; <b>what a group's members may do.</b>
+	 *
+	 * <p>The group read fills {@code shUsers} and not {@code shRoles}: the relation is owned by the
+	 * role ({@code ShRole.shGroups}) and the group has no getter for its side, so a group's page could
+	 * say who is in it and not what that grants. This reads the roles that name the group, sorted by
+	 * name, as a small record rather than the entity, so the answer carries no cycle back to the
+	 * groups and no lazy collection outside a transaction. It changes nothing a group read returns.</p>
+	 */
+	@GetMapping("/{id}/roles")
+	public List<ShGroupRole> shGroupRoles(@PathVariable String id) {
+		ShGroup shGroup = shGroupRepository.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+						"No group has id " + id + ". GET /api/v2/group lists the groups and their ids."));
+		return shRoleRepository.findByShGroupsIn(List.of(shGroup)).stream()
+				.sorted(Comparator.comparing(role -> role.getName() == null ? "" : role.getName()))
+				.map(role -> new ShGroupRole(role.getId(), role.getName(), role.getDescription()))
+				.toList();
 	}
 
 	@GetMapping

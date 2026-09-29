@@ -253,7 +253,11 @@ const SWEEP = {
       + "docs/agents/console-ui.md and shio-site does not describe the console at all, so neither "
       + "carries a sentence this block made untrue. The user-facing half — /console becoming "
       + "/bento, the command palette, the tenant switch and the pending-review count — was "
-      + "already carried by the administration guide as those tasks shipped",
+      + "already carried by the administration guide as those tasks shipped. Reopened for the look "
+      + "round, SH1192-SH1206: content-console and the administration guide were rewritten where the "
+      + "screens changed (the hubs, the trail, tables, the save bar, review triage, group members and "
+      + "roles, the Sections list) and COVERAGE's look-round row names every id, with the mirror "
+      + "regenerated. README and shio-site are still NOT moved: neither describes the console's screens",
   },
   AQ: {
     swept: false,

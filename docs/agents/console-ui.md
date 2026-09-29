@@ -3977,5 +3977,9 @@ for an existing record, and the group editor passes `GroupMembers`. The membersh
 endpoint: `GET /v2/group/{id}` already answers with `shUsers`, and `PUT` replaces the membership with
 the list it is sent, so the panel reads the members off the loaded group and writes a change through
 the same update the hero's autosave uses. The picker offers only users who are not members, and each
-row links to the user. The roles a group grants are not on the page yet, because the group read does
-not fill `shRoles` (SH1206). `group-members.test.mjs` holds the wiring.
+row links to the user. SH1206 lists the roles a group grants under its members, read from
+`GET /api/v2/group/{id}/roles`: the group read fills `shUsers` but not `shRoles`, because the role
+owns that relation and the group has no getter for its side, so the endpoint returns the roles that
+name the group as a small record, sorted by name, and a teaching 404 for an unknown group. The roles
+are linked, not edited here, because a role's permissions are the escalation boundary and stay on
+the role's page. `group-members.test.mjs` and `ShGroupRolesTest` hold it.

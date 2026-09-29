@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AR — The curator's console, surface by surface (§LV)
-
-- 📋 **SH1206** (deps: SH1200 ✅) **A group's page lists its members but not the roles it grants, so what a member may do is on another page** — Showing a group's roles beside its members answers who is in it and what they can do in one place, which is the whole question. → §LV.42
-
 ## Block AU — The design system's consumer contract, adopted and gated
 
 - 📋 **SH1199** (deps: VDS182 and VDS183 in the DS) **The design system allows any control height, radius and tone, so the console renders 15 heights, 10 radii and 3 monos** — A closed scale in the DS (two control heights, three radii, one mono, tones as state) makes consistency the default, not a review. → §LV.36

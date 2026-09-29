@@ -957,22 +957,6 @@ login screen's navy ground joins the console's neutral one. The change is made i
 viglet-design-system, published, and adopted here, and SH1191's allowance tightens to
 match.
 
-### LV.42 LV.42 The roles a group grants, beside its members (SH1206)
-
-SH1200 put a group's members on its page, read from the `shUsers` that `GET
-/v2/group/{id}` already answers with and written through the same `PUT`. The other half
-of the question is what those members may do, and it is not on the page. In the model a
-role holds its groups (`ShRole.shGroups`, with `ShGroup.shRoles` mapped by it), but the
-group read does not fill `shRoles`, and the group's `PUT` does not write it, so the
-console has no way to show or change a group's roles from the group. The only path is to
-open each role and look for the group there. The proposal is first to establish the
-read, either filling `shRoles` on the group read, as the member list is filled, or
-reading the roles that name the group, and then to render them under the members as a
-short list with each role's name linked to its page. Changing a group's roles from the
-group is a separate decision, because a role's permissions are the escalation boundary.
-If it is taken, it goes through the role's own update, so there is one writer of that
-relation. Done when the Administrator group's page names the roles it grants.
-
 ## LVI What Turing's index never receives
 
 Shio publishes into Turing's index (SH84) and can rebuild it (SH413). What the index

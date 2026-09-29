@@ -12,6 +12,7 @@ import { ROUTES } from "@/app/routes.const"
 import { ShGroupService } from "@/services/auth/group.service"
 import { IdentityEntityPage } from "./identity-entity.page"
 import { GroupMembers } from "./group-members"
+import { GroupRoles } from "./group-roles"
 
 const service = new ShGroupService()
 
@@ -31,7 +32,10 @@ export default function BentoGroupEditPage() {
       headlineFallback={t("admin.newGroup")}
       formId="group-edit"
       detail={(group, save) => (
-        <GroupMembers members={group.shUsers ?? []} onChange={(shUsers) => save({ ...group, shUsers })} />
+        <div className="space-y-8">
+          <GroupMembers members={group.shUsers ?? []} onChange={(shUsers) => save({ ...group, shUsers })} />
+          <GroupRoles groupId={group.id} />
+        </div>
       )}
     />
   )
