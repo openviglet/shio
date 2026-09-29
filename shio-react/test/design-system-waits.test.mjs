@@ -82,6 +82,11 @@ import { fileURLToPath } from "node:url"
  * rather than as `DS VDS<n>` waits, so the pin moved on its own. Their deps are dropped one by one
  * as each line ships against the release.
  *
+ * 2026.3.16 carried the round's findings (VDS189–VDS194): the census counts only what a reader
+ * sees, the assistant has a slot for its own settings, a short table is short, and the package's
+ * utilities no longer beat a consumer's. VDS182's component half is set aside in the design system,
+ * which is why SH1199 still waits.
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -108,7 +113,7 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.15"
+const PINNED = "2026.3.16"
 
 function manifest() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))
