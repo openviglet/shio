@@ -38,7 +38,12 @@ import { markRepliesSeen, transcript, unseenReplies, useDockChat, waiting } from
  * it only while an agent is around and a page is open (`use-dock-chat-relay.ts`); without it the
  * dock has no composer, which is what SH964 made it.
  */
-export function BentoStatusDock({ inline = false, onSend }: { inline?: boolean; onSend?: (text: string) => void } = {}) {
+export function BentoStatusDock({ inline = false, onSend, onOpenSettings }: {
+  inline?: boolean
+  onSend?: (text: string) => void
+  /** SH1207 — opens the dock's preferences from its own panel (VDS191) rather than the header. */
+  onOpenSettings?: () => void
+} = {}) {
   const { state, caption, activity } = useAssistantNotifications()
   const reports = useDockReports()
   const { working, bumps } = useDockAmbient()
@@ -64,6 +69,7 @@ export function BentoStatusDock({ inline = false, onSend }: { inline?: boolean; 
     onOpenChange: (open: boolean) => { if (open) markRepliesSeen() },
     onRead: markReportRead,
     onDismiss: dismissReport,
+    onOpenSettings,
     // SH972 — in flow, for a surface that docks it somewhere of its own (the visual editor).
     inline,
     // SH971 — a curator's still mascot (VDS171 forwards it to the avatar); the caption still reports.

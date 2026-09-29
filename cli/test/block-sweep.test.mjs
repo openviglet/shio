@@ -145,9 +145,10 @@ const SWEEP = {
     why: "the Viglet assistant: one dock where the console reports how things ended, agent runs "
       + "and scheduled publishing in it, a conversation with the connected agent, the same dock in "
       + "the Universal Editor, and SH971 closing it with a per-curator choice of what it reports and "
-      + "whether its mascot moves, reopened for SH1182 (toasts hidden while a dock is mounted). "
+      + "whether its mascot moves, reopened for SH1182 (toasts hidden while a dock is mounted) and "
+      + "for SH1207 (its preferences opened from the dock rather than a header bell). "
       + "docs-shio moved: content-console gained the mascot switch and COVERAGE's Block AX row names "
-      + "SH971 and SH1182, with the mirror regenerated (SH1190). README and shio-site "
+      + "SH971 and SH1182, and the look round's row names SH1207, with the mirror regenerated. README and shio-site "
       + "are NOT moved: neither describes the console's dock",
   },
   AU: {

@@ -3900,9 +3900,10 @@ foot of the rail and, on a phone, in the header, so it can no longer sit over a 
 look census went from twenty routes with a covered control to eight, and none of the eight is the
 dock: they are the sticky header over content scrolled beneath it and the back-to-top control while
 hidden. The visual editor mounts it `inline` in its own layout; nothing else mounts it.
-`dock-slot.test.mjs` holds both. The bell-with-a-cog in the header is not a second notice: it is the
-dock's preferences (SH971), which sit in the header only because neither the assistant nor the user
-menu has a slot for them yet.
+`dock-slot.test.mjs` holds both. SH1207 took the dock's preferences (SH971) out of the header: they
+open from the assistant's own settings control (`onOpenSettings`, VDS191) as a controlled dialog
+mounted beside the shell, so the header carries only the contract's set and no bell that reads as a
+second notice. `bento-status-dock.test.mjs` holds it.
 
 ## An editor's save bar is the morph, and it says when something changed (SH1196)
 

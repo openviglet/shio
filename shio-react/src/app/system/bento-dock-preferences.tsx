@@ -6,11 +6,9 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { IconBellCog } from "@tabler/icons-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
-import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { setMascotStill, setMutedKinds, useMascotStill, useMutedKinds } from "@/lib/dock-reports"
@@ -20,7 +18,9 @@ import { DOCK_KINDS, ShDockService, type DockKind, type ShDockPreferences } from
 const dockService = new ShDockService()
 
 /**
- * SH971 — the header control that opens the choice.
+ * SH971 — the choice of what the dock reports. SH1207 — opened from the dock's own panel (the
+ * assistant's `onOpenSettings`, VDS191), so it is a controlled dialog and draws no trigger: the
+ * bell-with-a-cog it used to put in the header read as a second notice beside the mascot.
  *
  * <p>One switch per kind, on meaning "report it". Failures are not a switch: a report in tone
  * error reaches the dock whatever is muted, and the dialog says so, because a curator who muted
@@ -29,11 +29,13 @@ const dockService = new ShDockService()
  * <p>The last switch keeps the mascot moving. Off, it stands still, and only the motion stops: the
  * caption and the announcement go on reporting, so a curator presenting their screen loses nothing.</p>
  */
-export function BentoDockPreferences() {
+export function BentoDockPreferences({ open, onOpenChange }: Readonly<{
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}>) {
   const { t } = useTranslation()
   const muted = useMutedKinds()
   const still = useMascotStill()
-  const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const save = async (preferences: ShDockPreferences) => {
@@ -55,10 +57,7 @@ export function BentoDockPreferences() {
 
   return (
     <>
-      <Button variant="ghost" size="icon" aria-label={t("dock.preferences")} onClick={() => setOpen(true)}>
-        <IconBellCog className="size-5" />
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("dock.preferences")}</DialogTitle>

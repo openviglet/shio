@@ -111,6 +111,8 @@ export default function BentoRootPage() {
   const items = useBentoNavItems()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  // SH971 — what the dock reports, chosen per person. SH1207 — opened from the dock's own panel.
+  const [dockPreferencesOpen, setDockPreferencesOpen] = useState(false)
 
   /*
    * SH1097 — the shell's keys are the package's one binding set (VDS149), bound by the hook that
@@ -243,8 +245,6 @@ export default function BentoRootPage() {
               SH934 — the tenant switch is an identity action, so it sits beside the identity
               menu, and renders nothing unless the reader belongs to more than one tenant.
             */}
-            {/* SH971 — what the dock reports, chosen per person. */}
-            <BentoDockPreferences />
             <BentoTenantSwitcher />
             <BentoUserMenu
               accountRoute={ROUTES.ADMIN_USERS}
@@ -254,7 +254,7 @@ export default function BentoRootPage() {
           </>
         }
         column={columnFor(location.pathname)}
-        dock={<BentoStatusDock onSend={onSend} />}
+        dock={<BentoStatusDock onSend={onSend} onOpenSettings={() => setDockPreferencesOpen(true)} />}
       >
         {/*
           SH931 — above the Outlet, so it sits over whatever page the link led to rather than
@@ -282,6 +282,7 @@ export default function BentoRootPage() {
         onQueryChange={onPaletteQuery}
       />
       <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <BentoDockPreferences open={dockPreferencesOpen} onOpenChange={setDockPreferencesOpen} />
     </UserProvider>
   )
 }

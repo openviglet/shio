@@ -1734,6 +1734,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1139** — all sixteen write sites the SH965 lint held are closed and its worklist is empty: the five editors that awaited a delete and navigated away now toast and catch, the nine creates and updates that toasted success report their failure through `reportProblem`, and the two static-file deletes stop swallowing — the bulk one goes through SH953's `deleteEach` so refusals are counted and named and only what went leaves the list, where one success toast used to speak for a selection in which nothing may have gone. `SH1139: every site the worklist held reports both outcomes, and still exists` names all sixteen so a regression says which screen and which outcome, and a `deleteEach` caller that ignores its refusals is still silent (design §LXIII.10 recorded in `docs/agents/console-ui.md`).
 - **SH1165** — Open-in-view now skips the change stream, so an open tab holds no connection: thirty streams on a pool of four leave reads at about 50 ms (design §LXIII.11 recorded in `docs/agents/agent-surface.md`).
 - **SH1182** — While a dock is mounted the console's toasts are hidden, not unmounted, so the mascot alone reports each outcome; login and setup, which have no dock, keep visible toasts (design §XC recorded in `docs/agents/console-ui.md`).
+- **SH1207** — The dock's preferences open from the assistant's own settings control (VDS191), and the header carries no dock control.
 
 ## Block AY — What the conformance instruments cannot see
 

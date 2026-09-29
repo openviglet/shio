@@ -82,7 +82,7 @@ test("SH964: an empty toast list returns the dock to idle", async () => {
 
 test("SH964: the shell hands the dock its corner", () => {
   const shell = readFileSync(join(HERE, "..", "src", "app", "system", "bento.root.page.tsx"), "utf8")
-  assert.match(shell, /dock=\{<BentoStatusDock onSend=\{onSend\} \/>\}/,
+  assert.match(shell, /dock=\{<BentoStatusDock onSend=\{onSend\} onOpenSettings=\{\(\) => setDockPreferencesOpen\(true\)\} \/>\}/,
     "SH964: the dock is not passed to BentoShell's dock slot. Mounted anywhere else it pins itself to"
       + " the viewport corner and covers back-to-top, which is what VDS133 moved into the shell.")
 })
@@ -250,7 +250,8 @@ test("SH971: a curator's still mascot reaches the dock, which then shows its cap
 test("SH971: the shell loads the choice and offers it, and the kinds agree with the server's", () => {
   const shell = readFileSync(join(HERE, "..", "src", "app", "system", "bento.root.page.tsx"), "utf8")
   assert.match(shell, /useDockPreferencesLoad\(\)/, "SH971: the curator's choice is never read")
-  assert.match(shell, /<BentoDockPreferences \/>/, "SH971: nothing lets a curator make the choice")
+  assert.match(shell, /<BentoDockPreferences open=\{dockPreferencesOpen\} onOpenChange=\{setDockPreferencesOpen\} \/>/,
+    "SH971: nothing lets a curator make the choice")
 
   const client = readFileSync(join(HERE, "..", "src", "services", "dock", "dock.service.ts"), "utf8")
   const server = readFileSync(join(HERE, "..", "..", "shio-app", "src", "main", "java", "com", "viglet",
@@ -433,4 +434,20 @@ test("SH1019: a field asks with its path, the answer offers to apply, and applyi
     "SH1019: the answer does not offer to apply its value to the field")
   const hook = read("app", "content", "use-applied-suggestions.ts")
   assert.doesNotMatch(hook, /service|axios/i, "SH1019: applying a suggestion writes to the server instead of the form")
+})
+
+/*
+ * SH1207 — the preferences opened from a bell-with-a-cog in the shell header, which the look review
+ * took for a second notification beside the mascot. The assistant has a slot for its own settings
+ * since 2026.3.16 (VDS191), so the dock passes `onOpenSettings` and the header carries no dock control.
+ */
+test("SH1207: the dock opens its own preferences, and the header carries no dock control", () => {
+  const shell = readFileSync(join(HERE, "..", "src", "app", "system", "bento.root.page.tsx"), "utf8")
+  const header = /headerEnd=\{([\s\S]*?)\n\s{8}\}/.exec(shell)?.[1] ?? ""
+  assert.ok(header.includes("BentoUserMenu"), "SH1207: the header slot was not read, so the check below is vacuous")
+  assert.doesNotMatch(header, /BentoDockPreferences/, "SH1207: the dock's preferences are back in the header")
+  const dock = readFileSync(join(HERE, "..", "src", "app", "system", "bento-status-dock.ts"), "utf8")
+  assert.match(dock, /\n\s+onOpenSettings,\n/, "SH1207: the dock does not hand the assistant its settings callback")
+  const prefs = readFileSync(join(HERE, "..", "src", "app", "system", "bento-dock-preferences.tsx"), "utf8")
+  assert.doesNotMatch(prefs, /IconBellCog/, "SH1207: the preferences draw their own header trigger again")
 })
