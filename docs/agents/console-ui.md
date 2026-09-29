@@ -3963,8 +3963,12 @@ neutral outlined `Button`s: `GradientButton` paints orange even as `outline`, so
 three orange controls, and the Actions menu is the one primary. A field is a label, its control and
 its help line; the post type's widget name (and whether the field is the title or summary) is the
 label's `title` hint for whoever builds the post type, not two or three pills on every field.
-`post-editor-header.test.mjs` holds it. The Sections field still takes friendly URLs as chips and
-does not show each section's title; that is its own task (SH1205), because it changes the widget.
+`post-editor-header.test.mjs` holds it. SH1205 draws a Page's Sections field (a multi-select named
+`sections`) as `SectionList`: an ordered list of each section's title and type, resolved through
+`/agent/resolve` from the page's own address and the stored friendly URL, with up, down and remove,
+and an add box that searches the page's site by title or takes a pasted URL. The stored value is the
+same list of friendly URLs, so the renderer and the agent see nothing new; the pure address
+arithmetic is `lib/section-urls.ts`, and `section-list.test.mjs` holds it.
 
 ## A group's page shows who is in it (SH1200)
 

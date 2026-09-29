@@ -957,24 +957,6 @@ login screen's navy ground joins the console's neutral one. The change is made i
 viglet-design-system, published, and adopted here, and SH1191's allowance tightens to
 match.
 
-### LV.41 LV.41 A page's sections by name, in order (SH1205)
-
-A Page post's Sections field is a multi-select of section friendly URLs, rendered as
-removable chips above a free-text input ("Adicione um valor e pressione Enter"). On
-About — Viglet it shows one chip, /sections/b59589bb5, which names nothing a curator
-recognises: whether that is the hero, the FAQ or the pricing table is only learned by
-opening the section. The order of the chips is the render order, but chips wrap and do
-not read as a sequence, and reordering means removing and re-adding. SH1204 left this
-alone because the post editor's widgets are a separate contract (the fifteen widgets and
-WIDGET_MAP), and a change to how Multi Select renders must not ride along with a header
-change. The proposal is a presentation for this field on Page posts: an ordered list,
-each row showing the section post's title and type resolved from its address, with the
-address in mono beside it, a drag handle and a remove control, and an "add section"
-action that searches section posts by title rather than asking for a URL. The stored
-value stays the same list of friendly URLs, so the renderer and the agent surface see no
-change. Done when the About page's section reads by its title and the field's value is
-unchanged after a reorder.
-
 ### LV.42 LV.42 The roles a group grants, beside its members (SH1206)
 
 SH1200 put a group's members on its page, read from the `shUsers` that `GET

@@ -11,7 +11,6 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1205** (deps: —) **The Sections field lists friendly URLs as chips (/sections/b59589bb5), so a curator cannot tell which section is which** — An ordered list that shows each section's title beside its address, reorderable in place, lets a page's structure be read without opening every section. → §LV.41
 - 📋 **SH1206** (deps: SH1200 ✅) **A group's page lists its members but not the roles it grants, so what a member may do is on another page** — Showing a group's roles beside its members answers who is in it and what they can do in one place, which is the whole question. → §LV.42
 
 ## Block AU — The design system's consumer contract, adopted and gated

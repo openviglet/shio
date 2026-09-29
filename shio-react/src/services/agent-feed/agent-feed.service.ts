@@ -7,6 +7,8 @@ export interface ShResolved {
   id: string
   address?: string
   title?: string
+  /** A post's type name, e.g. `SectionHero`, which SH1205 shows beside a section's title. */
+  type?: string
 }
 
 /**

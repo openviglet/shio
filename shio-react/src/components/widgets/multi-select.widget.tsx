@@ -4,11 +4,20 @@ import { X } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import type { WidgetProps } from "./index"
+import { SectionList } from "./section-list"
 
-export function MultiSelectWidget({ attr, onChange, fieldId, describedBy, required, invalid }: WidgetProps) {
+export function MultiSelectWidget({ attr, onChange, postId, fieldId, describedBy, required, invalid }: WidgetProps) {
   const { t } = useTranslation()
   const [inputValue, setInputValue] = useState("")
   const values = attr.arrayValue || []
+
+  // SH1205 — a page's Sections are friendly URLs in render order; drawn by name, in order.
+  if (attr.shPostTypeAttr?.name === "sections" && postId) {
+    return (
+      <SectionList postId={postId} values={values} fieldId={fieldId} describedBy={describedBy}
+        onChange={(next) => onChange({ ...attr, arrayValue: next })} />
+    )
+  }
 
   const addValue = () => {
     const trimmed = inputValue.trim()

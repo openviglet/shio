@@ -470,5 +470,9 @@
   "content.renamed": "Renamed to {{url}}",
   "content.localeDefault": "default",
   "content.localeChipDefault": "Written in {{locale}} — the site's default language, so this is the original",
-  "content.folderTree": "Folders around this one"
+  "content.folderTree": "Folders around this one",
+  "content.sectionMissing": "Section not found",
+  "content.sectionMoveUp": "Move {{name}} up",
+  "content.sectionMoveDown": "Move {{name}} down",
+  "content.sectionSearch": "Add a section: search by title, or paste its friendly URL"
 }

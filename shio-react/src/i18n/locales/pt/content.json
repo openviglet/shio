@@ -470,5 +470,9 @@
   "content.renamed": "Renomeada para {{url}}",
   "content.localeDefault": "padrão",
   "content.localeChipDefault": "Escrito em {{locale}} — o idioma padrão do site, então este é o original",
-  "content.folderTree": "Pastas ao redor desta"
+  "content.folderTree": "Pastas ao redor desta",
+  "content.sectionMissing": "Seção não encontrada",
+  "content.sectionMoveUp": "Mover {{name}} para cima",
+  "content.sectionMoveDown": "Mover {{name}} para baixo",
+  "content.sectionSearch": "Adicionar seção: busque pelo título ou cole a URL amigável"
 }
