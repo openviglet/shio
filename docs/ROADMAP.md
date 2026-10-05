@@ -11,7 +11,6 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1229** (deps: SH1224 ✅) **The scheduled list is a hand-drawn table** — The agenda's list view should share the package's table while its calendar view stays the package's calendar. → §LXXVII.13
 - 📋 **SH1230** (deps: SH1224 ✅) **The forms submissions list is a hand-drawn table** — Submissions grow without bound, and a hand-drawn table neither virtualizes nor selects. → §LXXVII.14
 - 📋 **SH1231** (deps: SH1224 ✅) **The languages coverage list is a hand-drawn table** — It should sort by coverage and reach the keyboard like the other lists. → §LXXVII.15
 - 📋 **SH1232** (deps: SH1224 ✅) **The open notes list is a hand-drawn table** — SH1214 drew it the way its neighbours were drawn, which is the way this round replaces. → §LXXVII.16

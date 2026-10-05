@@ -3,14 +3,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { addressKey } from "@/lib/query-keys"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate } from "react-router-dom"
-import { BentoCalendar, type BentoCalendarEntry } from "@viglet/viglet-design-system/bento"
+import { useNavigate } from "react-router-dom"
+import {
+  BentoCalendar, BentoDataTable, BentoIdentityCell, type BentoCalendarEntry,
+} from "@viglet/viglet-design-system/bento"
 import { toast } from "@viglet/viglet-design-system"
 import { EmptyState } from "@/components/empty-state"
 import { PageHero } from "@/components/page-hero"
 import { Panel } from "@/components/panel"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ROUTES } from "@/app/routes.const"
 import { entryKey, movedSchedule } from "@/lib/schedule-move"
@@ -128,41 +129,37 @@ export default function ScheduledPage() {
             description={t("content.scheduledEmptyDescription")}
           />
         ) : (
-          <Panel contentClassName="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-56">{t("content.scheduledWhen")}</TableHead>
-                  <TableHead className="w-36">{t("content.scheduledAction")}</TableHead>
-                  <TableHead>{t("content.scheduledPage")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.map((entry) => (
-                  <TableRow key={`${entry.at}|${entry.action}|${entry.address}`}>
-                    <TableCell>
-                      <time dateTime={entry.at}>{when(entry.at)}</time>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={ACTION_BADGE[entry.action]}>
-                        {actionLabel(entry)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {entry.postId ? (
-                        <Link className="font-medium hover:underline" to={`${ROUTES.CONSOLE}/content/post/${entry.postId}`}>
-                          {entry.title || entry.address}
-                        </Link>
-                      ) : (
-                        <span className="font-medium">{entry.title || entry.address}</span>
-                      )}
-                      <div className="text-xs text-muted-foreground">{entry.address}</div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Panel>
+          /*
+           * SH1229 — the list view on the design system's table, beside the package's calendar. The
+           * rows arrive in the order they will happen and the table keeps that order until a header
+           * is chosen, because time order is the point of the page; Enter opens the post.
+           */
+          <BentoDataTable
+            rows={entries}
+            getRowId={entryKey}
+            getRowLabel={(entry) => `${actionLabel(entry)}: ${entry.title || entry.address}`}
+            columns={[
+              {
+                id: "when", header: t("content.scheduledWhen"), width: "minmax(12rem, 1fr)", hideable: false,
+                sortValue: (entry) => new Date(entry.at),
+                cell: (entry) => <time dateTime={entry.at}>{when(entry.at)}</time>,
+              },
+              {
+                id: "action", header: t("content.scheduledAction"), width: "minmax(9rem, 0.8fr)",
+                sortValue: (entry) => entry.action,
+                cell: (entry) => (
+                  <Badge variant="outline" className={ACTION_BADGE[entry.action]}>{actionLabel(entry)}</Badge>
+                ),
+              },
+              {
+                id: "page", header: t("content.scheduledPage"), width: "minmax(16rem, 3fr)",
+                sortValue: (entry) => (entry.title || entry.address).toLowerCase(),
+                cell: (entry) => <BentoIdentityCell name={entry.title || entry.address} detail={entry.address} />,
+              },
+            ]}
+            label={t("content.scheduledTitle")}
+            onRowOpen={(entry) => open(entryKey(entry))}
+          />
         )}
       </div>
     </>

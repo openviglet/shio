@@ -35,7 +35,6 @@ const DEBT = {
   "app/content/forms.page.tsx": "SH1230",
   "app/content/languages.page.tsx": "SH1231",
   "app/content/notes.page.tsx": "SH1232",
-  "app/content/scheduled.page.tsx": "SH1229",
 }
 
 /** An import of the hand-drawn table primitive, by alias or by relative path. */
@@ -112,6 +111,15 @@ test("SH1228: search results sort and open from the keyboard on the package's ta
     "SH1228: a result no longer opens its post from the keyboard")
   assert.match(page, /<BentoIdentityCell name=\{row\.title \|\| "\(untitled\)"\} detail=\{row\.address\} \/>/,
     "SH1228: a result is named by its title, with the address under it")
+})
+
+test("SH1229: the scheduled list is the package's table beside its calendar, in time order", () => {
+  const page = readFileSync(join(SRC, "app", "content", "scheduled.page.tsx"), "utf8")
+  assert.match(page, /<BentoDataTable\b[\s\S]*rows=\{entries\}/,
+    "SH1229: the agenda's list view no longer renders the package's table")
+  assert.match(page, /<BentoCalendar\b/, "SH1229: the calendar view stays the package's calendar")
+  assert.match(page, /id: "when"[\s\S]*sortValue: \(entry\) => new Date\(entry\.at\)/,
+    "SH1229: the time column sorts by the instant, which is the page's order")
 })
 
 test("SH1224: the scan sees an alias import, a relative one, and nothing else", () => {

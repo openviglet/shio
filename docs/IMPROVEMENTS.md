@@ -1112,12 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.13 Scheduled on the design system's table (SH1229)
-
-scheduled.page.tsx draws its list view with shadcn Table beside BentoCalendar. Move the
-list view onto BentoDataTable, keeping time order as the default sort because the order
-is the point of the page. Done when the page leaves SH1224's debt list.
-
 ### LXXVII.14 Form submissions on the design system's table (SH1230)
 
 forms.page.tsx lists a site's form submissions with shadcn Table. Move them onto
