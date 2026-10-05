@@ -11,7 +11,10 @@ import './index.css';
 axios.defaults.baseURL = `${import.meta.env.VITE_API_URL}/api`;
 
 axios.interceptors.request.use(async (config) => {
-  if (!(config.data instanceof FormData)) {
+  // SH1237 — a Blob is bytes with a type of its own (the home picture is image/webp), so it keeps
+  // the Content-Type its caller set. Stamping JSON on it sent a picture the server rightly refused
+  // with 415, and only a run in a real browser showed it.
+  if (!(config.data instanceof FormData) && !(config.data instanceof Blob)) {
     config.headers['Content-Type'] = 'application/json';
   }
   config.headers['X-Requested-With'] = 'XMLHttpRequest';

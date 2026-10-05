@@ -25,6 +25,7 @@
     "console:provision": "node e2e/provision.mjs",
     "console:stream": "node e2e/change-stream.check.mjs",
     "console:check": "node e2e/console-check.mjs",
+    "console:thumbnail": "node e2e/site-thumbnail.check.mjs",
     "test": "node --import ../scripts/test-watchdog.mjs --test \"test/*.test.mjs\""
   },
   "dependencies": {

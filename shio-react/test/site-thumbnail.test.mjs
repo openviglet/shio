@@ -114,3 +114,13 @@ test("SH1218: the rasteriser is only ever loaded on demand, never by the eager b
   assert.deepEqual(statically.map((path) => relative(ROOT, path)), [],
     "SH1218: a static import puts the rasteriser in the eager load SH1043 measures")
 })
+
+test("SH1237: a Blob body keeps its own Content-Type through the console's axios interceptor", () => {
+  // The run in Chromium found it: main.tsx stamped application/json on every non-FormData body, so
+  // the captured picture went out as JSON and the server refused it with 415.
+  const main = readFileSync(join(ROOT, "src", "main.tsx"), "utf8")
+  assert.match(main, /!\(config\.data instanceof FormData\) && !\(config\.data instanceof Blob\)/,
+    "SH1237: the interceptor stamps JSON on a Blob again, and the home picture is refused as 415")
+  assert.match(readFileSync(join(ROOT, "e2e", "site-thumbnail.check.mjs"), "utf8"), /stored === true/,
+    "SH1237: the browser check that drives the capture end to end is gone")
+})

@@ -1112,27 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.20 The home capture, run in a browser (SH1237)
-
-SH1218 shipped the console's capture of a site's published home: an offscreen
-same-origin frame on `/sites/<furl>/`, rasterised with `html-to-image` and sent with the
-appearance digest. Its node tests cover the decisions (which sites to ask about, and
-that a second visit with nothing republished sends nothing), with the four effects
-faked. Nothing has run `captureHome` in a real browser. Whether `html-to-image` can read
-a frame's document from the parent window, whether the delivered page's fonts and images
-inline without tainting the canvas, and whether `toBlob` yields WebP in Chromium are
-each argued and not observed.
-
-`shio-react/e2e/console-check.mjs` already drives the console in Playwright's Chromium
-against a provisioned instance. Add a step to it: publish a home on the provisioned
-site, clear the browser's `shio.siteThumbnail.asked.*` keys, open the sites list, and
-wait for `PUT /api/v2/site/{id}/thumbnail` to answer `stored: true`. Then read `GET
-/api/v2/site/{id}/thumbnail` and assert an image of plausible size (over 1 KB and under
-the 512 KB ceiling). Open the list again and assert that no status or PUT request is
-sent. If the capture fails in Chromium, the step's output is the diagnosis, and the fix
-belongs in `site-thumbnail-capture.ts`. Done when the step passes in `pnpm --filter
-shio-react run console:check`.
-
 ### LXXVII.21 A user's last sign-in, recorded (SH1238)
 
 Found while redrawing the admin lists (SH1222). `ShUser.lastLogin` is a column in the

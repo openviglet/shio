@@ -3914,6 +3914,16 @@ dynamic import, so the rasteriser is a lazy chunk and not in the eager load SH10
 `site-thumbnail.test.mjs` holds that and the asking rules. The upload reports no toast, which
 `write-outcome.test.mjs` excepts with its reason: nobody asked for it.
 
+**Proved in Chromium (SH1237).** `pnpm --filter shio-react run console:thumbnail` runs
+`e2e/site-thumbnail.check.mjs` against a provisioned instance (the `e2e` setup:
+jar on :2710, Vite on :5173, `provision.mjs`): it publishes the fixture's home if needed, opens the
+sites list, waits for the `PUT` to store the picture, reads it back, and opens the list again
+expecting no status read and no `PUT`. Its first run found what the node tests could not:
+`main.tsx`'s axios interceptor stamped `Content-Type: application/json` on every non-`FormData`
+body, so the WebP went out as JSON and the server refused it with 415. A `Blob` now keeps the type
+its caller set. A first `PUT` answering 403 is the console's ordinary stale-CSRF retry, and the
+check waits for the answer after it.
+
 ## A list table is the package's, and the hand-drawn ones are a named debt (SH1224)
 
 A console list renders `BentoDataTable`, through `BentoListPage`'s `columns` or directly, never

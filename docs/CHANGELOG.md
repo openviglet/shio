@@ -1691,6 +1691,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1233** — The Activity trail is the package's table over the same keyset paging: when and by whom is the change cell with the run linked beside it, and the actor filter is the row's menu (design §LXXVII.17 recorded in `shio-react/src/app/admin/activity/activity.list.page.tsx`).
 - **SH1234** — A group's members are the package's table: each member an identity cell, and Remove takes one member or a selection out in a single membership write; Enter opens the user (design §LXXVII.18 recorded in `shio-react/src/app/admin/group-members.tsx`).
 - **SH1236** — ShObject's workflow-task collection is lazy: a folder's children cost 2 statements at 15 and 200 (was 17 and 202), the post-type catalogue 1 at any size, and a lint refuses a fetch-joined collection (design §LXXVII.19 recorded in `docs/agents/content-api.md`).
+- **SH1237** — The home capture ran in Chromium: an e2e check stores a real WebP of the published home and a revisit asks nothing, after fixing the axios interceptor that sent the picture as JSON (design §LXXVII.20 recorded in `docs/agents/console-ui.md`).
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

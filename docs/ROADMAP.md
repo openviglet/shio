@@ -11,7 +11,6 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1237** (deps: SH1218 ✅) **the console's capture of a site's home has never run in a real browser** — Its node tests fake the frame and the rasteriser, so a capture that fails in Chromium would leave every card on initials unnoticed. → §LXXVII.20
 - 📋 **SH1238** (deps: —) **a user's last sign-in is never recorded; lastLogin holds the seed date** — Only ShUserOnStartup writes it, so the users list cannot say who stopped using the instance. → §LXXVII.21
 - 📋 **SH1239** (deps: a sticky selection bar in the DS) **the content browser's bulk verbs scroll out of view down a long folder** — The package keeps the table's header row in view but not its selection bar, so rows ticked low in a folder leave Move and Delete off screen. → §LXXVII.22
 - 📋 **SH1240** (deps: —) **search's Published count leaves out drafts of live pages; it reads row.live, which the server never sends** — The server's field is published (SH545), so the console's live is always undefined. → §LXXVII.23
