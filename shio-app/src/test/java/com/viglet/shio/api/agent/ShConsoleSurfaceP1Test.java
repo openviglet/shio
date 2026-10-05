@@ -154,6 +154,11 @@ class ShConsoleSurfaceP1Test {
     void everySurfaceIsReachableOrClassified() {
         Set<String> tools = new TreeSet<>();
         mcpTools.forEach(tool -> tools.add(tool.name()));
+        // SH1215 — a resource is an agent equivalent too: it is how a read made once per session
+        // reaches an agent without a manifest row or a tools/list line, and every one carries the
+        // HTTP twin P1 asks for (SH346).
+        Set<String> resources = new TreeSet<>();
+        mcpResources.forEach(resource -> resources.add(resource.uri()));
         Set<String> endpoints = new TreeSet<>();
         for (ShAgentEndpoint endpoint : shAgentManifestService.manifest().endpoints()) {
             endpoints.add(endpoint.path());
@@ -181,6 +186,7 @@ class ShConsoleSurfaceP1Test {
                 boolean exists = switch (kind) {
                     case "tool" -> tools.contains(target);
                     case "op" -> ShAgentBatchService.OPS.contains(target);
+                    case "resource" -> resources.contains(target);
                     case "endpoint" -> endpoints.contains(target);
                     default -> false;
                 };
@@ -410,8 +416,8 @@ class ShConsoleSurfaceP1Test {
                         the gaps are the deliverable: each is a capability a curator has and the \
                         product's primary operator does not. Closing one is an edit to this file; \
                         gaining one must be a reviewable diff naming the task that closes it.""")
-                // SH1214 gained "notes": the console lists every open note from GET /note/open, which
-                // the manifest does not declare and has no room for. SH1215 closes it.
-                .containsExactly("notes", "activity");
+                // SH1214 gained "notes" and SH1215 closed it with shio://notes, whose twin is the
+                // GET /note/open the console's page reads.
+                .containsExactly("activity");
     }
 }

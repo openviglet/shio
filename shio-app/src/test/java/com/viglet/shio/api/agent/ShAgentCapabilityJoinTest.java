@@ -130,6 +130,8 @@ class ShAgentCapabilityJoinTest {
         byEntry.put("resource:shio://surfaces", MIRROR);
         // SH1006 — the read half of the notes channel, whose write, note.add, batchWrites claims.
         byEntry.put("resource:shio://requests", SAME_FLAG);
+        // SH1215 — every open note, the wider read the same channel's requests are one kind of.
+        byEntry.put("resource:shio://notes", SAME_FLAG);
 
 
         byEntry.put("prompt:new-site", PROMPT);

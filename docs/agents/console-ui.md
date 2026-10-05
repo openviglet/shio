@@ -1887,11 +1887,12 @@ tile counts every page. It used to link to the content browser, which lists no n
 `content/notes.page.tsx` (`ROUTES.NOTES`) reads `GET /v2/note/open`, the same endpoint `shio pull`
 reads, so the tile's count and the list cannot disagree. Each row names its page by address and
 links to the post whose rail holds the thread, and it offers Resolve, which also refreshes home's
-summary. In `console/surfaces.json` the surface is a `gap` closed by SH1215. Declaring `/note/open`
-in the manifest failed three tests at once: the 30-row cap, `response.manifest` at its ceiling, and
-the feature claim every route needs. An agent still reaches notes one page at a time
-(`include=notes`), one site at a time (`.notes.yaml`) or as a count on `/console/summary`.
-`notes-surface.test.mjs` holds the tile's link, the route and the endpoint.
+summary. Its agent equivalent in `console/surfaces.json` is the MCP resource `shio://notes`
+(SH1215), whose HTTP twin is this same endpoint. Declaring `/note/open` in the manifest instead
+failed three tests at once: the 30-row cap, `response.manifest` at its ceiling, and the feature
+claim every route needs. So surfaces may now name `kind: "resource"`, resolved against the
+registered resources. `notes-surface.test.mjs` holds the tile's link, the route, the endpoint and
+the agent equivalent.
 
 ## Unsaved work, and the guard this router cannot have (SH1011)
 

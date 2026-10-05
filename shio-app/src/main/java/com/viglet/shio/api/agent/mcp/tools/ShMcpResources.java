@@ -137,6 +137,24 @@ public class ShMcpResources {
     }
 
     /**
+     * Every open note across the sites this caller can read (SH1215).
+     *
+     * <p>The console's Open notes page, for an agent in one read. Before this an agent reached
+     * notes one page at a time ({@code include=notes}), one site at a time ({@code .notes.yaml}),
+     * or as a count on {@code /console/summary}. A resource and not a manifest endpoint: the
+     * manifest's endpoint index is held under its row count and token ceiling on purpose, and a
+     * read made once when a session starts is the case resources exist for (P3).</p>
+     */
+    @Bean
+    ShMcpResource shMcpNotesResource(ShNoteRelay relay) {
+        return resource("shio://notes", "Open notes",
+                "Every note still asking for something, across sites, newest first: its kind, its"
+                        + " page and what it says. Fix the page, then note.resolve the note.",
+                TEXT, "/api/v2/note/open",
+                uri -> relay.renderOpen());
+    }
+
+    /**
      * The op vocabulary (SH332).
      *
      * <p>Two of SH331's four wrong calls were an agent inferring a key name because nothing stated

@@ -541,3 +541,15 @@ into that page with `post.upsert` as a draft, one run whose `intent` names the r
 on the thread and `note.resolve` it. Do not publish: the curator approves from the dock (SH1007) or
 the review queue. The board shows the cell as *requested* while the note is open
 (`ShSiteCoverage.Cell.requested`), so a request left unresolved keeps saying nobody has answered.
+
+## `shio://notes` is every open note, across sites (SH1215)
+
+The console's Open notes page reads `GET /api/v2/note/open`; `shio://notes` (`ShNoteRelay.renderOpen`)
+is the same list for an agent, and that endpoint is its HTTP twin. One line per note, newest first,
+capped at 50: its kind, the note id, its page by address, the field when it has one, the author and
+the body, then how to close one (`note.resolve` with `data.note`). Requests are rows here too, so a
+session that reads this needs no second read of `shio://requests`, which stays the dock's narrower
+channel. A resource and not a manifest endpoint: the endpoint index is held under its row count and
+`response.manifest` ceiling on purpose, and a read made once per session is what resources are for.
+`console/surfaces.json` names it as the `notes` surface's agent equivalent with `kind: "resource"`,
+which `ShConsoleSurfaceP1Test` resolves against the registered resources.

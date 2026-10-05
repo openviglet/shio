@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block BB — The curator's return channel, and the conversation with the agent
-
-- 🛠 **SH1215** (deps: —) **an agent has no one declared read listing every open note across sites** — The console's Open notes page reads GET /note/open, which the manifest cannot hold at 30 rows and its token ceiling, so the surface is a gap. → §LXVII.14
-
 ## Block AR — The curator's console, surface by surface (§LV)
 
 - 📋 **SH1217** (deps: —) **The sites listing carries no page counts and no last change, so a row cannot say if a site is alive** — The redrawn list needs pages by state and the last change with its author, in the listing's one read and never per row. → §LXXVII.1

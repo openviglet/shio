@@ -30,6 +30,11 @@
     }, {
       "description" : "#string",
       "mimeType" : "text/plain",
+      "name" : "Open notes",
+      "uri" : "shio://notes"
+    }, {
+      "description" : "#string",
+      "mimeType" : "text/plain",
       "name" : "Shio write vocabulary",
       "uri" : "shio://ops"
     }, {

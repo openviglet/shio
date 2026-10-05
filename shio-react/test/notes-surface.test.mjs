@@ -38,10 +38,10 @@ test("SH1214: the Open notes page is declared, decorated and routed", () => {
     join(ROOT, "..", "shio-app", "src", "main", "resources", "console", "surfaces.json"), "utf8"))
   const declared = surfaces.surfaces.find((surface) => surface.id === "notes")
   assert.ok(declared, "SH1214: console/surfaces.json declares no `notes` surface")
-  // The P1 leg is owed, not absent: GET /note/open is undeclared in the manifest, so the surface
-  // is a gap that names the task closing it. When SH1215 ships this becomes an `agent` entry.
-  assert.ok(declared.agent || declared.exception?.closedBy === "SH1215",
-    "SH1214: the notes surface names neither an agent equivalent nor the task that owes one")
+  // SH1215 — the P1 leg is the shio://notes resource, whose HTTP twin is the GET /note/open this
+  // page reads. ShConsoleSurfaceP1Test resolves the target against the running server.
+  assert.deepEqual(declared.agent, { kind: "resource", target: "shio://notes" },
+    "SH1215: the notes surface no longer names shio://notes as its agent equivalent")
 
   assert.match(read("src", "app", "system", "bento-nav.ts"), /"notes":\s*\{[^}]*route:\s*ROUTES\.NOTES/)
   assert.match(read("src", "App.tsx"), /path="content\/notes"/)

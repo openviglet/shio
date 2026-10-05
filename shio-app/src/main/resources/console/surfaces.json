@@ -8,7 +8,7 @@
     "`shio://surfaces` and `shio surfaces` publish it. Icons, titles and i18n keys stay in",
     "bento-nav.ts, where they must live — this is the half a JVM has to be able to read.",
     "",
-    "A surface names an `agent` equivalent — a tool, an op or a declared endpoint, each resolved",
+    "A surface names an `agent` equivalent — a tool, an op, an MCP resource or a declared endpoint, each resolved",
     "against the running server — or an `exception` whose `reason` is one of the words in `reasons`",
     "below. `consoleOnly` is the same vocabulary applied to what is console-only by nature: a later",
     "task adds one classified entry there instead of arguing its P1 position in prose nothing reads.",
@@ -137,10 +137,9 @@
       "section": "content",
       "route": "/bento/content/notes",
       "capability": "see every note still asking for something, and resolve one",
-      "exception": {
-        "reason": "gap",
-        "why": "the page reads GET /note/open, which shio pull also reads but the manifest does not declare; an agent reaches notes one page at a time (include=notes), one site at a time (.notes.yaml), or as a count on /console/summary",
-        "closedBy": "SH1215"
+      "agent": {
+        "kind": "resource",
+        "target": "shio://notes"
       }
     },
     {

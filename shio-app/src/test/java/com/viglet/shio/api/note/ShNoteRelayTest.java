@@ -249,6 +249,34 @@ class ShNoteRelayTest {
                 .isPresent();
     }
 
+    /**
+     * SH1215 — the console's Open notes page lists every open note across sites, and until this an
+     * agent had no one read for the same list: it reached notes a page or a site at a time.
+     */
+    @Test
+    @DisplayName("SH1215: shio://notes lists every open note with its kind and page, twin of GET /note/open")
+    void everyOpenNoteIsOneRead() {
+        ShMcpResource notes = resources.stream().filter(each -> "shio://notes".equals(each.uri()))
+                .findFirst().orElseThrow(() -> new AssertionError(
+                        "SH1215: shio://notes is gone, so the Open notes surface has no agent equivalent"));
+        assertThat(notes.httpTwin())
+                .as("SH1215: the resource's twin is the read the console's Open notes page makes")
+                .isEqualTo("/api/v2/note/open");
+
+        ShNote comment = noteService.add(postId, null, null, null, "comment", "Hero image is blurry", "curator");
+        String listed = notes.read("shio://notes");
+        assertThat(listed.lines().filter(line -> line.contains("note=" + comment.getId())))
+                .as("SH1215: a comment is open work the console lists, and the agent cannot see it")
+                .singleElement().asString()
+                .startsWith("- comment ")
+                .contains("on post:" + SITE + "/")
+                .contains("Hero image is blurry");
+        assertThat(requests().read("shio://requests"))
+                .as("SH1215: shio://requests stays the dock's channel and does not widen to comments")
+                .doesNotContain("note=" + comment.getId());
+        assertThat(listed).contains("note.resolve");
+    }
+
     /** SH1019 — a request about a field says which, so the agent knows the reply is its value. */
     @Test
     @DisplayName("SH1019: a field request is listed with its field, and a plain one without")

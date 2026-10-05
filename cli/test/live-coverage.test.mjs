@@ -264,8 +264,10 @@ const UNEXERCISED = {
     // `shio://requests` arrives with SH1006, for the two-actor reason `review/mine` gives: a live
     // scenario needs a curator's request from the dock and an agent credential answering it.
     // `ShNoteRelayTest` drives that round trip through the batch shio_write runs.
+    // `shio://notes` arrives with SH1215 and joins on arrival: the conformance instance leaves no
+    // note open, so a live read would answer "open notes: 0". `ShNoteRelayTest` reads it with one.
     "shio://blueprint/", "shio://blueprints", "shio://context", "shio://diagnostics",
-    "shio://index", "shio://manifest", "shio://ops", "shio://requests", "shio://review/mine",
+    "shio://index", "shio://manifest", "shio://notes", "shio://ops", "shio://requests", "shio://review/mine",
     "shio://schema/", "shio://surfaces",
   ],
   verbs: [
