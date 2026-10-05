@@ -194,6 +194,47 @@
   height: var(--vg-control-dense);
   padding-block: 0;
 }
+/*
+ * SH1212 — the explorer's primary is the console's. GraphiQL fills its run button and colours its
+ * links, history edits and focus outlines from `--color-primary`, a pink of its own, so the explorer
+ * was the one route with a second filled primary beside `--primary` (SH1195). GraphiQL reads that
+ * variable as bare HSL components, `hsl(var(--color-primary))`, and the console's `--primary` is an
+ * OKLCH colour, so a var() cannot be passed through it. These are the thirteen rules that read it,
+ * pointed at the token instead; the alpha steps are `color-mix`, so a re-keyed accent reaches them.
+ */
+:root .graphiql-container button.graphiql-execute-button {
+  background-color: var(--primary);
+}
+:root .graphiql-container button.graphiql-execute-button:hover {
+  background-color: color-mix(in oklab, var(--primary) 90%, transparent);
+}
+:root .graphiql-container button.graphiql-execute-button:active {
+  background-color: color-mix(in oklab, var(--primary) 80%, transparent);
+}
+:root .graphiql-container button.graphiql-execute-button:focus {
+  outline-color: color-mix(in oklab, var(--primary) 80%, transparent);
+}
+:root .graphiql-container button.graphiql-execute-button > svg {
+  color: var(--primary-foreground);
+}
+:root :is(.graphiql-container, .graphiql-dialog) a,
+:root .graphiql-container .graphiql-markdown-description a,
+:root .graphiql-container .graphiql-history-item.editable > button,
+:root .graphiql-container .monaco-editor .highlight {
+  color: var(--primary) !important;
+}
+:root :is(.graphiql-container, .graphiql-dialog) a:focus,
+:root .graphiql-container .graphiql-history-item.editable > button:focus,
+:root .graphiql-container .monaco-editor input:focus-visible {
+  outline-color: var(--primary);
+}
+:root .graphiql-container .graphiql-history-item.editable {
+  background-color: color-mix(in oklab, var(--primary) 10%, transparent);
+}
+:root .graphiql-container .graphiql-history-item.editable > button:active {
+  background-color: color-mix(in oklab, var(--primary) 15%, transparent);
+}
+
 :root .graphiql-container button.graphiql-tab-add {
   box-sizing: border-box;
   height: var(--vg-control-dense);

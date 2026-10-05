@@ -922,40 +922,6 @@ argument every time: a count of what is still console chrome is what says how bi
 is, and a textual render proof is what says a migrated surface is right without asking
 somebody to look at it.
 
-## LV The curator's console, surface by surface (Block AR)
-
-Forty-three console pages, migrated behind the parallel route the previous block builds,
-in an order chosen by what each slice teaches the next. Home first, because it is cheap
-and it decides whether the redesign reads as real; then sites, which settle the list
-shape for the ten list screens after it; then the content browser, where a curator
-actually spends the day. Posts and post types come next and are the hard ones - the post
-editor carries fifteen dynamic widgets whose field logic must not be rewritten, which is
-what the chrome adapter is for. Admin follows in three slices sized by how alike their
-pages are. The Universal Editor is deliberately late: it is the one surface where
-swapping the shell can break behaviour rather than appearance, because its preview
-bridge reads the chrome around it. The block ends with the three tasks that make a
-migration finished rather than merely done - the cutover itself, the retirement of the
-console shell, and the published documentation, which after the cutover describes a
-product that no longer exists.
-
-### LV.47 LV.47 The explorer's primary is the console's (SH1212)
-
-The look census counts four primary fills in the console, and two of them, #ff5794 and
-#d60590, are the GraphQL explorer's: GraphiQL paints its run button, its focus rings and
-its active-tab accents from --color-primary, a pink it declares for light and dark.
-SH1195 gave the console one primary, --primary, which the default Button reads. The
-explorer is the one route where a second primary is still filled, beside the console's
-own. SH1199 and SH1209 already reach GraphiQL through the :root .graphiql-container
-block in index.css (fonts, radii, control heights), so the colour belongs in the same
-block. The catch is the format. GraphiQL reads --color-primary as bare HSL components,
-used as hsl(var(--color-primary)) and hsla(var(--color-primary), alpha), while the
-console's --primary is an OKLCH colour, so a var() cannot be passed through. Either
-declare the HSL components that match the console's primary, light and dark, with a
-comment naming the token they track and a test that converts the token and compares it,
-or override the handful of rules that fill with it (button.graphiql-execute-button
-first) to read var(--primary) directly. Measure with pnpm look before and after:
-primary-fill should drop from four to two, and record it with --write.
-
 ## LVI What Turing's index never receives
 
 Shio publishes into Turing's index (SH84) and can rebuild it (SH413). What the index

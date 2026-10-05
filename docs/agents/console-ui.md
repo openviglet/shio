@@ -4074,3 +4074,16 @@ is added, a delete is removed, any other action changes something that stays, an
 still names the verb. A pending run says so in words, in the foreground weight. `ignored-props.test.mjs`
 fails any `bentoChipClass` call outside the vocabulary harness, and `bento-home.test.mjs` holds the
 mark.
+
+## The explorer fills with the console's primary (SH1212)
+
+GraphiQL paints its run button, links, history edits and focus outlines from `--color-primary`, a
+pink of its own, so the explorer was the one route with a second filled primary beside `--primary`
+(SH1195). The variable is bare HSL components, read as `hsl(var(--color-primary))`, and the console's
+primary is an OKLCH colour, so `index.css` cannot re-point it. It overrides the thirteen rules that
+read it instead, to `var(--primary)` and `var(--primary-foreground)`, with the alpha steps as
+`color-mix` so a re-keyed accent reaches them. `visual-scale.test.mjs` counts the rules in the
+installed GraphiQL and fails when it is no longer thirteen, so a release that adds one names itself.
+The census read primary fills 4 to 2. Its mono figure went 1 to 2 in the same reading, and it is
+not a second face: home's compact change mark draws the token's stack, while Monaco appends its own
+fallbacks to the same family. That one is VDS203's, in the census.

@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block AU — The design system's consumer contract, adopted and gated
-
-- 📋 **SH1212** (deps: —) **The GraphQL explorer fills its run button with GraphiQL's own pink, a second primary beside the console's** — SH1195 gave the console one filled primary, and the explorer is the route where two still show. → §LV.47
-
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

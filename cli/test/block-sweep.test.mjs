@@ -158,7 +158,11 @@ const SWEEP = {
       + "viglet-ds plugin enabled, carrying the skill while only the artboards stay vendored) and SH948 "
       + "(copy-ds.cmd through the latest worktree junction). docs-shio moved: COVERAGE's Block AU and "
       + "instruments rows name both, with the mirror regenerated. README and shio-site are NOT moved: "
-      + "neither mentions the design system, its plugin or the local loop",
+      + "neither mentions the design system, its plugin or the local loop. Reopened for the design "
+      + "system's closed scale and re-closed with SH1212 (SH1199, SH1208-SH1212: 2026.3.17 adopted, "
+      + "ignored props gone, the GraphQL explorer and hand-drawn controls on the scale, home's rows "
+      + "marking changes): COVERAGE's Block AU row names all six, with the mirror regenerated. README "
+      + "and shio-site are still NOT moved: neither describes the console's look",
   },
   BG: {
     swept: true,

@@ -152,6 +152,21 @@ test("SH1209: GraphiQL's radii and controls read the console's scale", () => {
   }
 })
 
+test("SH1212: the explorer fills with the console's primary, and every rule that read GraphiQL's is covered", () => {
+  const css = stripComments(readFileSync(join(SRC, "index.css"), "utf8"))
+  assert.match(css, /button\.graphiql-execute-button\s*\{\s*background-color:\s*var\(--primary\)/,
+    "SH1212: GraphiQL's run button fills with its own pink again, a second primary beside the console's")
+  // GraphiQL reads --color-primary as bare HSL components, so the console cannot re-point the
+  // variable and overrides the rules instead. Thirteen did when SH1212 shipped; a GraphiQL release
+  // that adds one must fail here, or its pink comes back on whatever the new rule paints.
+  const require_ = createRequire(join(ROOT, "noop.js"))
+  const graphiql = readFileSync(join(dirname(require_.resolve("graphiql/package.json")), "dist", "style.css"), "utf8")
+  const uses = [...graphiql.matchAll(/hsla?\(var\(--color-primary\)/g)].length
+  assert.equal(uses, 13,
+    `SH1212: the installed GraphiQL reads --color-primary in ${uses} rules, and index.css overrides 13. `
+      + "Find the new or removed rule in graphiql/dist/style.css and match the overrides to it.")
+})
+
 test("SH1199: the console's theme maps every radius and mono key the way the installed preset does", () => {
   // The console compiles its own utilities, so without these keys `rounded-xl` is Tailwind's 12 px
   // and outranks the package's panel radius. The block is a copy of the preset's, and a copy is
