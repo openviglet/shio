@@ -107,9 +107,8 @@ export function BentoTenantLinkNotice() {
         )
         : null}
       <Button
-        size="icon"
+        size="icon-sm"
         variant="ghost"
-        className="h-7 w-7"
         aria-label={t("tenantLink.dismiss")}
         onClick={() => setDismissedFor(claimed)}
       >

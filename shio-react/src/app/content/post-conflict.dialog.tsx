@@ -110,7 +110,7 @@ function PostConflictBody({
                   type="button"
                   onClick={() => mineChosen && toggle(field.name)}
                   aria-pressed={mineChosen ? "false" : "true"}
-                  className={`rounded border p-2 text-left text-sm ${
+                  className={`rounded-sm border p-2 text-left text-sm ${
                     mineChosen ? "opacity-60" : "border-primary"
                   }`}
                 >
@@ -121,7 +121,7 @@ function PostConflictBody({
                   type="button"
                   onClick={() => !mineChosen && toggle(field.name)}
                   aria-pressed={mineChosen ? "true" : "false"}
-                  className={`rounded border p-2 text-left text-sm ${
+                  className={`rounded-sm border p-2 text-left text-sm ${
                     mineChosen ? "border-primary" : "opacity-60"
                   }`}
                 >

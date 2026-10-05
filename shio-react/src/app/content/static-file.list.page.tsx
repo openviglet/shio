@@ -380,11 +380,11 @@ export default function StaticFileListPage() {
                 placeholder={t("staticFile.searchPlaceholder")} className="pl-8" />
             </div>
             <div className="flex items-center rounded-md border p-0.5">
-              <Button variant={view === "grid" ? "secondary" : "ghost"} size="icon" className="h-7 w-7"
+              <Button variant={view === "grid" ? "secondary" : "ghost"} size="icon-sm"
                 aria-label={t("staticFile.viewGrid")} onClick={() => list.set("view", "grid")}>
                 <LayoutGrid className="h-4 w-4" />
               </Button>
-              <Button variant={view === "list" ? "secondary" : "ghost"} size="icon" className="h-7 w-7"
+              <Button variant={view === "list" ? "secondary" : "ghost"} size="icon-sm"
                 aria-label={t("staticFile.viewList")} onClick={() => list.set("view", "list")}>
                 <ListIcon className="h-4 w-4" />
               </Button>
@@ -437,7 +437,7 @@ export default function StaticFileListPage() {
           <Panel className="mb-4" contentClassName="p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{t("staticFile.uploadsTitle")}</span>
-              <Button variant="ghost" size="sm" className="h-6 text-xs"
+              <Button variant="ghost" size="sm" className="text-xs"
                 onClick={() => setUploads((prev) => prev.filter((u) => u.status === "uploading"))}>
                 {t("staticFile.clearDone")}
               </Button>
@@ -448,7 +448,7 @@ export default function StaticFileListPage() {
                 {u.status === "error" && <AlertCircle className="h-4 w-4 text-destructive shrink-0" />}
                 {u.status === "uploading" && <Spinner className="text-muted-foreground shrink-0" />}
                 <span className="truncate flex-1">{u.name}</span>
-                <div className="w-32 h-1.5 rounded bg-muted overflow-hidden">
+                <div className="w-32 h-1.5 rounded-full bg-muted overflow-hidden">
                   <div className={cn("h-full transition-all",
                     u.status === "error" ? "bg-destructive" : "bg-orange-500")}
                     style={{ width: `${u.percent}%` }} />
@@ -642,7 +642,7 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
             disabled={saving}
             aria-label={t("staticFile.altText")}
             placeholder={t("staticFile.altPlaceholder")}
-            className={cn("h-7 text-[11px]", needsAlt && "border-amber-400")}
+            className={cn("h-(--vg-control-dense) text-[11px]", needsAlt && "border-amber-400")}
             onChange={(event) => setAlt(event.target.value)}
             onBlur={saveAlt}
             onKeyDown={(event) => {
@@ -689,9 +689,9 @@ function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
                 <TableCell>
                   {isImageType(item.contentType) ? (
                     <img src={service.thumbUrl(item, 72)} alt={item.fileName ?? ""}
-                      className="h-9 w-9 rounded object-cover border" loading="lazy" />
+                      className="h-9 w-9 rounded-sm object-cover border" loading="lazy" />
                   ) : (
-                    <div className="h-9 w-9 rounded border flex items-center justify-center bg-muted">
+                    <div className="h-9 w-9 rounded-sm border flex items-center justify-center bg-muted">
                       {(() => {
                         const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
                         return <Icon className="h-4 w-4 text-muted-foreground" />
@@ -724,7 +724,7 @@ function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
                       className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:ring-1 focus-visible:outline-none">
                       <Download className="h-4 w-4" />
                     </a>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
+                    <Button variant="ghost" size="icon-sm" className="text-destructive"
                       onClick={() => onDelete(item)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>

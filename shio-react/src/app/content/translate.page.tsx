@@ -206,7 +206,7 @@ export default function TranslatePage() {
                 <div key={field.name} className="space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <Label className="text-xs">{field.label || field.name}</Label>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs"
+                    <Button type="button" variant="ghost" size="sm" className="px-2 text-xs"
                       disabled={!source}
                       onClick={() => copyField(field.name)}
                       title={t("content.translateCopyHint")}>
@@ -233,7 +233,7 @@ export default function TranslatePage() {
               <div className="mb-3 flex flex-wrap gap-1">
                 {schema.map((field) => (
                   <Button key={field.name} type="button" variant="ghost" size="sm"
-                    className={`h-6 gap-1 px-2 text-xs ${reviewed.has(field.name)
+                    className={`gap-1 px-2 text-xs ${reviewed.has(field.name)
                       ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}
                     onClick={() => toggleReviewed(field.name)}
                     title={t("content.translateReviewedHint")}>

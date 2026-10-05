@@ -73,7 +73,9 @@ function unnamedIconButtons() {
   for (const path of sources().sort()) {
     const source = readFileSync(path, "utf8")
     for (const element of findElements(source, "Button")) {
-      if (!/size="icon"/.test(element.attrs)) continue
+      // `icon-sm` and `icon-lg` too: SH1199 moved forty icon buttons onto the dense size, and a
+      // scan that matched only `icon` would have stopped seeing every one of them.
+      if (!/size="icon(?:-sm|-lg)?"/.test(element.attrs)) continue
       const named = /aria-label=/.test(element.attrs) || /\btitle=/.test(element.attrs)
       const srOnly = /sr-only/.test(element.body)
       const text = /\{t\(/.test(element.body)

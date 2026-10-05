@@ -45,7 +45,7 @@ export function FieldConstraints<T extends ShPostTypeField>({ field, onFieldChan
       <span className="text-xs text-muted-foreground">{label}</span>
       <Input
         type="number"
-        className="h-8"
+        className="h-(--vg-control-dense)"
         value={(declared[key] as number | undefined) ?? ""}
         onChange={(event) => put(key, event.target.value === ""
           ? undefined
@@ -72,7 +72,7 @@ export function FieldConstraints<T extends ShPostTypeField>({ field, onFieldChan
         <div className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground">{t("content.constraintPattern")}</span>
           <Input
-            className="h-8"
+            className="h-(--vg-control-dense)"
             value={declared.pattern ?? ""}
             onChange={(event) => put("pattern", event.target.value)}
           />
@@ -87,7 +87,7 @@ export function FieldConstraints<T extends ShPostTypeField>({ field, onFieldChan
             {t("content.constraintPatternMessage")}
           </span>
           <Input
-            className="h-8"
+            className="h-(--vg-control-dense)"
             value={declared.patternMessage ?? ""}
             onChange={(event) => put("patternMessage", event.target.value)}
           />
@@ -98,7 +98,7 @@ export function FieldConstraints<T extends ShPostTypeField>({ field, onFieldChan
         <div className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground">{t("content.constraintValues")}</span>
           <Input
-            className="h-8"
+            className="h-(--vg-control-dense)"
             value={(declared.values ?? []).join(", ")}
             onChange={(event) => put("values", event.target.value
               .split(",")
@@ -111,7 +111,7 @@ export function FieldConstraints<T extends ShPostTypeField>({ field, onFieldChan
             {t("content.constraintDefaultValue")}
           </span>
           <Input
-            className="h-8"
+            className="h-(--vg-control-dense)"
             value={declared.defaultValue ?? ""}
             onChange={(event) => put("defaultValue", event.target.value)}
           />

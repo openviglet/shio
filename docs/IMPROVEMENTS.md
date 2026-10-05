@@ -938,24 +938,56 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.36 LV.36 A closed visual scale in the design system (SH1199)
+### LV.43 LV.43 Tones the package no longer reads (SH1208)
 
-The Viglet design system and its bento layer are the right foundation: BentoDataTable,
-BentoFilterBar, BentoSaveBar, BentoStatusMarker, BentoCommandPalette and BentoSplitPage
-already exist, and most of the audit's findings come from the console composing them
-inconsistently rather than from a missing part. What the package does not do is close
-its scale. Radii derive from one --vg-radius with ±2 and ±4 px steps, plus the 16 and 24
-px bento surfaces. Tones (blue, indigo, violet, emerald, amber, rose, slate) are applied
-per area as decoration on icon chips, so colour carries no meaning. Buttons and inputs
-take any height a consumer passes. And three monospace stacks are in use. The concept's
-system board (artboard 00) proposes a closed set. Two control heights (32 dense, 36
-form) and 44 on touch. Three radii (6 control, 10 panel, full). A six-step type scale
-(28, 24, 16, 14, 13, 12 mono). One mono family. The five tones reassigned to state
-(published, draft, scheduled, changed, archived) and rendered through BentoStatusMarker
-as a dot and a word. Orange reserved for the primary action and the current item. The
-login screen's navy ground joins the console's neutral one. The change is made in
-viglet-design-system, published, and adopted here, and SH1191's allowance tightens to
-match.
+Design system 2026.3.17 (VDS182) made tone a no-op on BentoEmptyState, BentoEntityTile,
+BentoFormSection and BentoListPage: an area has no colour of its own, a list's one
+colour is a record's state through BentoStatusMarker, and the gradient chip stays only
+on an entity hero and a hub tile. The console still passes tone at about sixty call
+sites (folder, site and import form sections, the admin list pages through
+admin-list.page.tsx and identity-entity.page.tsx, the review, search, trash and
+scheduled empty states, the post-type picker). The props are marked deprecated and
+ignored, so nothing renders differently, but a reader of those pages is told the section
+is amber or the list is rose, and the next page copies the habit. Remove tone wherever
+the receiving component ignores it, keep it where the package still reads it (BentoHero
+on an entity shell, a hub tile in bento-area.page.tsx, BentoStatusMarker's state), and
+drop the tone fields from any page config that existed only to feed them. Add a check
+beside visual-scale.test.mjs that reads the installed package's declarations for props
+marked deprecated since VDS182 and fails when a console element passes one, so the next
+deprecation in the package surfaces here without anyone grepping for it.
+
+### LV.44 LV.44 The explorer's chrome on the scale (SH1209)
+
+After SH1199 the look census reads the GraphQL explorer as the one route still drawing
+radii off the closed scale: 4, 8, 12 and 20 px, plus the split corners of GraphiQL's tab
+strip, all attributed to product code because GraphiQL is the console's dependency and
+not the package's. Its buttons also measure 31, 39 and 40 px. SH1199 already points
+GraphiQL's two font variables at the console's families in index.css, with a :root
+prefix so they win over the explorer's later stylesheet. The same block can carry the
+radius variables GraphiQL reads, --border-radius-2, -4, -8 and -12: map the first three
+to --vg-radius-control and the 12 to --vg-radius-panel. The 20 px value and the button
+heights come from GraphiQL's own rules rather than variables, so check them in a browser
+on /bento/graphql and decide per element whether an override in index.css is small
+enough to keep, or whether the explorer is better exempted from the census with its
+reason stated. Extend visual-scale.test.mjs to assert the radius variables beside the
+font ones, and record the lower reading with pnpm look -- --write against the dev store.
+
+### LV.45 LV.45 Product buttons the source lint cannot see (SH1210)
+
+After SH1199 no Button, Input or SelectTrigger in the console sets its own height, yet
+the look census still attributes thirteen button heights to product code: 20 px on the
+activity log (150 elements), 26 px on the files page, 44 px in several places, 49, 68
+and 69 px in the Universal Editor, 182 px on the marketplace, and 221 and 343 px on the
+files grid. visual-scale.test.mjs cannot see them because they are native button
+elements, or components other than the six it scans, rather than the package's controls.
+Some are controls drawn by hand, such as row actions and toolbar toggles, and those
+should become a Button with a size or read h-(--vg-control-dense). Others are whole
+cards that happen to be buttons (a file thumbnail, a marketplace entry), which are not
+controls at all. For those, either make the card a link or a div with the button inside
+it, or ask the design system whether the census should count an element taller than the
+touch step as a control. Start by listing each value's elements from pnpm look --
+--json, fix the controls, decide the cards, extend visual-scale.test.mjs to native
+button elements with a fixed height, and record the lower reading.
 
 ## LVI What Turing's index never receives
 

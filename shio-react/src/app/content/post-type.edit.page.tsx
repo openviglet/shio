@@ -574,7 +574,7 @@ function SortableFieldRow({ field, index, widgets, postTypes, onFieldChange, onD
             open one: the header's click below stays as the pointer's shortcut to the same toggle. */}
         <button
           type="button"
-          className="text-muted-foreground rounded focus-visible:outline-2 focus-visible:outline-ring"
+          className="text-muted-foreground rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
           aria-expanded={isOpen ? "true" : "false"}
           aria-label={field.label || field.name || "Untitled"}
           onClick={(e) => {
@@ -616,10 +616,10 @@ function SortableFieldRow({ field, index, widgets, postTypes, onFieldChange, onD
             <Button
               type="button"
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               // SH1054 — named: the field row's delete was an icon and nothing else.
               aria-label={t("common.delete")}
-              className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
               onClick={(e) => {
                 e.stopPropagation()
                 onDelete()

@@ -23,7 +23,7 @@ export function DateWidget({ attr, onChange, fieldId, describedBy, required, inv
         className="w-auto"
       />
       {dateStr && (
-        <Button type="button" variant="ghost" size="icon" aria-label={t("common.clear")} className="h-8 w-8" onClick={() => onChange({ ...attr, dateValue: "" })}>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={t("common.clear")} onClick={() => onChange({ ...attr, dateValue: "" })}>
           <X className="h-4 w-4" />
         </Button>
       )}

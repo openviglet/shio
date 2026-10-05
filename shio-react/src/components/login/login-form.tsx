@@ -81,7 +81,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
                   <FormControl>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input {...field} placeholder={t("login.enterUsername")} className="pl-9 h-11" disabled={isLoading} />
+                      <Input {...field} placeholder={t("login.enterUsername")} className="pl-9" disabled={isLoading} />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -93,14 +93,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
                   <FormControl>
                     <div className="relative">
                       <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input {...field} placeholder={t("login.enterPassword")} type="password" className="pl-9 h-11" disabled={isLoading} />
+                      <Input {...field} placeholder={t("login.enterPassword")} type="password" className="pl-9" disabled={isLoading} />
                     </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
             </div>
-            <Button type="submit" className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold" loading={isLoading}>
+            <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold" loading={isLoading}>
               {!isLoading && <LogIn className="mr-2 h-4 w-4" />}
               {isLoading ? t("login.signingIn") : t("login.signIn")}
             </Button>

@@ -11,7 +11,9 @@
 
 ## Block AU — The design system's consumer contract, adopted and gated
 
-- 📋 **SH1199** (deps: VDS197-199 in DS 2026.3.17) **The design system allows any control height, radius and tone, so the console renders 15 heights, 10 radii and 3 monos** — A closed scale in the DS (two control heights, three radii, one mono, tones as state) makes consistency the default, not a review. → §LV.36
+- 📋 **SH1208** (deps: —) **The console still passes tone to four bento components that ignore it since VDS182** — A dead prop tells the next reader a section is amber or a list rose, and the next page copies a colour that no longer renders. → §LV.43
+- 📋 **SH1209** (deps: —) **The GraphQL explorer draws GraphiQL's own radii and button heights, off the console's closed scale** — It is the last route the census reads with radii outside control, panel and full. → §LV.44
+- 📋 **SH1210** (deps: —) **Hand-drawn buttons and button-shaped cards give the console thirteen product button heights** — The source lint reads only the package's controls, so a native button or a clickable card keeps any height it likes. → §LV.45
 
 ## Priority
 

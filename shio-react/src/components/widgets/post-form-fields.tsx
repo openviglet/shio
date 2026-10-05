@@ -128,7 +128,7 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
           </Label>
           <div className="flex items-center gap-1.5 ml-auto">
             {onAsk && ASKABLE.has(field.widget) && (
-              <Button type="button" size="sm" variant="ghost" className="h-6 px-2 text-xs"
+              <Button type="button" size="sm" variant="ghost" className="px-2 text-xs"
                 onClick={() => onAsk({ name: field.name, label: field.label || field.name })}>
                 <IconSparkles className="mr-1 size-3.5" /> {t("content.askAgent")}
               </Button>

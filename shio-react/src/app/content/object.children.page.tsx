@@ -494,7 +494,7 @@ export default function ObjectChildrenPage() {
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <span>{t("content.itemsSelected", { count: selectedItems.size })}</span>
             <Separator orientation="vertical" className="h-4" />
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSelectedItems(new Set())}>
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setSelectedItems(new Set())}>
               {t("content.clearSelection")}
             </Button>
           </div>

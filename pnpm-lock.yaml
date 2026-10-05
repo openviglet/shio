@@ -151,6 +151,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.3.0)
+      '@graphiql/react':
+        specifier: ^0.39.0
+        version: 0.39.0(@types/node@26.6.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(graphql@17.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
       '@graphiql/toolkit':
         specifier: ^0.12.1
         version: 0.12.1(@types/node@26.6.2)(graphql@17.0.2)
@@ -170,8 +173,8 @@ importers:
         specifier: ^4.25.11
         version: 4.25.11(@babel/runtime@7.29.7)(@codemirror/autocomplete@6.20.3)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.6)(@codemirror/search@6.7.0)(@codemirror/state@6.7.1)(@codemirror/theme-one-dark@6.1.3)(@codemirror/view@6.43.6)(codemirror@6.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@viglet/viglet-design-system':
-        specifier: ^2026.3.16
-        version: 2026.3.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next-browser-languagedetector@8.2.1)(i18next@26.4.2(typescript@5.8.3))(next-themes@0.4.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-hook-form@7.88.0(react@19.3.0))(react-i18next@17.0.15(i18next@26.4.2(typescript@5.8.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@5.8.3))(react-router-dom@7.18.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
+        specifier: ^2026.3.17
+        version: 2026.3.17(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next-browser-languagedetector@8.2.1)(i18next@26.4.2(typescript@5.8.3))(next-themes@0.4.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-hook-form@7.88.0(react@19.3.0))(react-i18next@17.0.15(i18next@26.4.2(typescript@5.8.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@5.8.3))(react-router-dom@7.18.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
       axios:
         specifier: ^1.20.0
         version: 1.20.0
@@ -1895,8 +1898,8 @@ packages:
       react: '>=17.0.0'
       react-dom: '>=17.0.0'
 
-  '@viglet/viglet-design-system@2026.3.16':
-    resolution: {integrity: sha512-l5xUg46xzvCzkmc8OynuV5LtJttbqSYPvhd4Y0onhT3HfvzN9DP9FWf1k2YWT/0VnFBu4tYWt+7LolIgL56m+A==}
+  '@viglet/viglet-design-system@2026.3.17':
+    resolution: {integrity: sha512-2s/jrsphlivDhFeVJm7dbmQTw8bLXTIDS4tb7AXpGG+LeB3d+snCDExFfnDfY0n7vXN2Eoi2Cf6CCJpHdygZ7Q==}
     engines: {node: '>=26', pnpm: '>=11'}
     hasBin: true
     peerDependencies:
@@ -5223,7 +5226,7 @@ snapshots:
       - '@codemirror/lint'
       - '@codemirror/search'
 
-  '@viglet/viglet-design-system@2026.3.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next-browser-languagedetector@8.2.1)(i18next@26.4.2(typescript@5.8.3))(next-themes@0.4.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-hook-form@7.88.0(react@19.3.0))(react-i18next@17.0.15(i18next@26.4.2(typescript@5.8.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@5.8.3))(react-router-dom@7.18.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))':
+  '@viglet/viglet-design-system@2026.3.17(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(i18next-browser-languagedetector@8.2.1)(i18next@26.4.2(typescript@5.8.3))(next-themes@0.4.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-hook-form@7.88.0(react@19.3.0))(react-i18next@17.0.15(i18next@26.4.2(typescript@5.8.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@5.8.3))(react-router-dom@7.18.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)

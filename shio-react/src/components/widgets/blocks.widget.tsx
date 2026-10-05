@@ -206,17 +206,17 @@ function BlockRow({ block, index, total, onChange, onRemove, onMove, onInsertAft
         <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{block.type}</Badge>
         <div className="ml-auto flex items-center gap-0.5">
           {/* A keyboard path for every mouse gesture: drag has these two as its equivalent. */}
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7"
+          <Button type="button" variant="ghost" size="icon-sm"
             disabled={index === 0}
             aria-label={t("blocks.moveUp")} onClick={() => onMove(-1)}>
             <ChevronUp className="h-3.5 w-3.5" />
           </Button>
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7"
+          <Button type="button" variant="ghost" size="icon-sm"
             disabled={index === total - 1}
             aria-label={t("blocks.moveDown")} onClick={() => onMove(1)}>
             <ChevronDown className="h-3.5 w-3.5" />
           </Button>
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7"
+          <Button type="button" variant="ghost" size="icon-sm"
             aria-label={t("blocks.remove")} onClick={onRemove}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -248,7 +248,7 @@ function BlockFields({ block, onChange, onSplit }: Readonly<{
         <>
           <div className="flex items-center gap-2">
             <Label className="text-xs">{t("blocks.level")}</Label>
-            <Input type="number" min={1} max={6} className="w-16 h-8"
+            <Input type="number" min={1} max={6} className="w-16 h-(--vg-control-dense)"
               value={block.level ?? 2}
               onChange={(event) => onChange({ ...block, level: Number(event.target.value) || 1 })} />
           </div>
@@ -261,7 +261,7 @@ function BlockFields({ block, onChange, onSplit }: Readonly<{
     case "code":
       return (
         <>
-          <Input className="h-8" placeholder={t("blocks.language")}
+          <Input className="h-(--vg-control-dense)" placeholder={t("blocks.language")}
             value={block.language ?? ""}
             onChange={(event) => onChange({ ...block, language: event.target.value })} />
           <Textarea rows={4} className="font-mono text-xs" value={block.text ?? ""}
@@ -273,21 +273,21 @@ function BlockFields({ block, onChange, onSplit }: Readonly<{
     case "image":
       return (
         <>
-          <Input className="h-8" placeholder={t("blocks.src")} value={block.src ?? ""}
+          <Input className="h-(--vg-control-dense)" placeholder={t("blocks.src")} value={block.src ?? ""}
             onChange={(event) => onChange({ ...block, src: event.target.value })} />
-          <Input className="h-8" placeholder={t("blocks.alt")} value={block.alt ?? ""}
+          <Input className="h-(--vg-control-dense)" placeholder={t("blocks.alt")} value={block.alt ?? ""}
             onChange={(event) => onChange({ ...block, alt: event.target.value })} />
           <p className="text-[10px] text-muted-foreground">{t("blocks.altHint")}</p>
         </>
       )
     case "embed":
       return (
-        <Input className="h-8" placeholder={t("blocks.url")} value={block.url ?? ""}
+        <Input className="h-(--vg-control-dense)" placeholder={t("blocks.url")} value={block.url ?? ""}
           onChange={(event) => onChange({ ...block, url: event.target.value })} />
       )
     case "reference":
       return (
-        <Input className="h-8" placeholder={t("blocks.address")} value={block.address ?? ""}
+        <Input className="h-(--vg-control-dense)" placeholder={t("blocks.address")} value={block.address ?? ""}
           onChange={(event) => onChange({ ...block, address: event.target.value })} />
       )
     default:
@@ -310,12 +310,12 @@ function ListFields({ block, onChange }: Readonly<{
       </label>
       {items.map((item, index) => (
         <div key={`${index}-${item}`} className="flex items-center gap-1">
-          <Input className="h-8" value={item}
+          <Input className="h-(--vg-control-dense)" value={item}
             onChange={(event) => onChange({
               ...block,
               items: items.map((current, i) => (i === index ? event.target.value : current)),
             })} />
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7"
+          <Button type="button" variant="ghost" size="icon-sm"
             aria-label={t("blocks.removeItem")}
             onClick={() => onChange({ ...block, items: items.filter((_, i) => i !== index) })}>
             <X className="h-3.5 w-3.5" />
@@ -376,7 +376,7 @@ function MarkableText({ block, onChange, onSplit, rows }: Readonly<{
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1">
         {MARK_TYPES.map((type) => (
-          <Button key={type} type="button" variant="outline" size="sm" className="h-7 px-2 text-xs"
+          <Button key={type} type="button" variant="outline" size="sm" className="px-2 text-xs"
             onClick={() => apply(type)}>
             {t(`blocks.mark.${type}`)}
           </Button>
@@ -390,7 +390,7 @@ function MarkableText({ block, onChange, onSplit, rows }: Readonly<{
       */}
       {linking && (
         <div className="flex items-center gap-1">
-          <Input className="h-8" placeholder={t("blocks.href")} value={href}
+          <Input className="h-(--vg-control-dense)" placeholder={t("blocks.href")} value={href}
             onChange={(event) => setHref(event.target.value)} />
           <Button type="button" size="sm" onClick={applyLink}>{t("blocks.linkApply")}</Button>
           <Button type="button" size="sm" variant="ghost"
@@ -446,7 +446,7 @@ function InsertMenu({ label, onPick, compact }: Readonly<{
 
   if (!open) {
     return (
-      <Button type="button" variant="outline" size="sm" className={compact ? "h-6 text-xs" : ""}
+      <Button type="button" variant="outline" size="sm" className={compact ? "text-xs" : ""}
         onClick={() => setOpen(true)}>
         <Plus className="h-3.5 w-3.5 mr-1" />{label}
       </Button>
@@ -455,7 +455,7 @@ function InsertMenu({ label, onPick, compact }: Readonly<{
   return (
     <div className="flex flex-wrap gap-1 rounded-md border p-1.5">
       {BLOCK_TYPES.map((type) => (
-        <Button key={type} type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs"
+        <Button key={type} type="button" variant="ghost" size="sm" className="px-2 text-xs"
           onClick={() => {
             onPick(type)
             setOpen(false)
@@ -463,7 +463,7 @@ function InsertMenu({ label, onPick, compact }: Readonly<{
           {t(`blocks.type.${type}`)}
         </Button>
       ))}
-      <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs"
+      <Button type="button" variant="ghost" size="sm" className="px-2 text-xs"
         onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
     </div>
   )

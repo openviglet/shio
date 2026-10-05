@@ -114,7 +114,7 @@ export function LoginSettingsButton({ settings, onUpdate }: LoginSettingsButtonP
                 key={lang.code}
                 type="button"
                 onClick={() => i18n.changeLanguage(lang.code)}
-                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                className={`px-2 py-0.5 rounded-sm text-xs font-medium transition-colors ${
                   i18n.language?.startsWith(lang.code)
                     ? "bg-orange-600 text-white"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"

@@ -312,9 +312,8 @@ export function FileWidget({ attr, onChange, labelledBy, describedBy }: WidgetPr
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
+                size="icon-sm"
                 aria-label={t("common.search")}
-                className="h-7 w-7"
                 onClick={() => openBrowserAt()}
               >
                 <Search className="h-3.5 w-3.5" />
@@ -322,9 +321,9 @@ export function FileWidget({ attr, onChange, labelledBy, describedBy }: WidgetPr
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
+                size="icon-sm"
                 aria-label={t("common.clear")}
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                className="text-muted-foreground hover:text-destructive"
                 onClick={handleClear}
               >
                 <X className="h-3.5 w-3.5" />

@@ -151,7 +151,7 @@ function PermissionsBody({
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="ghost" size="icon" aria-label={t("common.delete")} className="h-9 w-9 text-destructive" onClick={() => removeRow(i)}>
+                <Button variant="ghost" size="icon" aria-label={t("common.delete")} className="text-destructive" onClick={() => removeRow(i)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

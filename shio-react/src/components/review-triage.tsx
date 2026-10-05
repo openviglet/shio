@@ -136,7 +136,7 @@ export function ReviewTriage({
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder={t("review.notePlaceholder")}
-          className="h-8 max-w-xs"
+          className="h-(--vg-control-dense) max-w-xs"
         />
         <Button size="sm" loading={busy} onClick={() => void decide("APPROVE")}>
           {!busy && <Check className="mr-1 h-3.5 w-3.5" />}

@@ -166,7 +166,7 @@ export function NoteRail({ objectId, field }: { objectId: string; field?: string
                   ?.querySelector<HTMLButtonElement>(`[data-kind="${next}"]`)?.focus()
               }}
               className={cn(
-                "rounded px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "rounded-sm px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 kind === value
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",

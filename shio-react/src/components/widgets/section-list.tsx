@@ -79,17 +79,17 @@ export function SectionList({ postId, values, onChange, fieldId, describedBy }: 
                     {hit ? `${hit.type ?? ""} · ${value}` : value}
                   </span>
                 </span>
-                <Button type="button" size="icon" variant="ghost" className="size-8" disabled={index === 0}
+                <Button type="button" size="icon-sm" variant="ghost" disabled={index === 0}
                   aria-label={t("content.sectionMoveUp", { name: hit?.title ?? value })}
                   onClick={() => onChange(moved(values, index, -1))}>
                   <ArrowUp className="size-4" />
                 </Button>
-                <Button type="button" size="icon" variant="ghost" className="size-8" disabled={index === values.length - 1}
+                <Button type="button" size="icon-sm" variant="ghost" disabled={index === values.length - 1}
                   aria-label={t("content.sectionMoveDown", { name: hit?.title ?? value })}
                   onClick={() => onChange(moved(values, index, 1))}>
                   <ArrowDown className="size-4" />
                 </Button>
-                <Button type="button" size="icon" variant="ghost" className="size-8"
+                <Button type="button" size="icon-sm" variant="ghost"
                   aria-label={t("content.removeValue", { value: hit?.title ?? value })}
                   onClick={() => onChange(values.filter((each) => each !== value))}>
                   <X className="size-4" />

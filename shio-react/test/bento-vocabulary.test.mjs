@@ -80,6 +80,7 @@ const RENDERED = [
   "AdaptiveSectionCard",
   "BENTO_EMPHASIS_NEXT",
   "BENTO_EMPHASIS_SPAN",
+  "BENTO_RECORD_STATES",
   "BENTO_TONES",
   "BENTO_TONE_CLASS",
   "BentoActionsMenu",

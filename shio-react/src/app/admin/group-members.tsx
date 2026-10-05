@@ -72,7 +72,7 @@ export function GroupMembers({ members, onChange }: Readonly<{
         </h2>
         <div className="flex items-center gap-2">
           <Select value={adding} onValueChange={setAdding} disabled={busy || candidates.length === 0}>
-            <SelectTrigger className="h-9 w-56" aria-label={t("admin.groupMemberPick")}>
+            <SelectTrigger className="w-56" aria-label={t("admin.groupMemberPick")}>
               <SelectValue placeholder={candidates.length === 0 ? t("admin.groupEveryoneIn") : t("admin.groupMemberPick")} />
             </SelectTrigger>
             <SelectContent>

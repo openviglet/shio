@@ -247,7 +247,7 @@ export default function AuthProviderPage() {
                     <Input value={value}
                       onChange={(e) => setProperty(key, e.target.value)}
                       placeholder={t("authProvider.valuePlaceholder")} />
-                    <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0"
+                    <Button variant="ghost" size="icon" className="text-destructive shrink-0"
                       onClick={() => removeProperty(key)}>
                       <X className="h-4 w-4" />
                     </Button>

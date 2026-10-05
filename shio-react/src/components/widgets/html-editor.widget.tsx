@@ -31,27 +31,27 @@ export function HtmlEditorWidget({ attr, onChange, fieldId, labelledBy, describe
   return (
     <div className="border rounded-md overflow-hidden">
       <div className="flex items-center gap-0.5 p-1 border-b bg-muted/30 flex-wrap">
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => execCommand("bold")} title={t("content.editorBold")}>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={() => execCommand("bold")} title={t("content.editorBold")}>
           <Bold className="h-3.5 w-3.5" />
         </Button>
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => execCommand("italic")} title={t("content.editorItalic")}>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={() => execCommand("italic")} title={t("content.editorItalic")}>
           <Italic className="h-3.5 w-3.5" />
         </Button>
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => execCommand("underline")} title={t("content.editorUnderline")}>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={() => execCommand("underline")} title={t("content.editorUnderline")}>
           <Underline className="h-3.5 w-3.5" />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => execCommand("insertUnorderedList")} title={t("content.editorBulletList")}>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={() => execCommand("insertUnorderedList")} title={t("content.editorBulletList")}>
           <List className="h-3.5 w-3.5" />
         </Button>
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => execCommand("insertOrderedList")} title={t("content.editorNumberedList")}>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={() => execCommand("insertOrderedList")} title={t("content.editorNumberedList")}>
           <ListOrdered className="h-3.5 w-3.5" />
         </Button>
         <div className="w-px h-5 bg-border mx-1" />
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => { const url = prompt(t("content.editorLinkPrompt")); if (url) execCommand("createLink", url) }} title={t("content.editorLink")}>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={() => { const url = prompt(t("content.editorLinkPrompt")); if (url) execCommand("createLink", url) }} title={t("content.editorLink")}>
           <Link className="h-3.5 w-3.5" />
         </Button>
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => execCommand("formatBlock", "pre")} title={t("content.editorCodeBlock")}>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={() => execCommand("formatBlock", "pre")} title={t("content.editorCodeBlock")}>
           <Code className="h-3.5 w-3.5" />
         </Button>
       </div>

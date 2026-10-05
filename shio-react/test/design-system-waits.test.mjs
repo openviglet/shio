@@ -87,6 +87,10 @@ import { fileURLToPath } from "node:url"
  * utilities no longer beat a consumer's. VDS182's component half is set aside in the design system,
  * which is why SH1199 still waits.
  *
+ * 2026.3.17 ended that wait: VDS182's quieter surface, and the closed scale SH1199 asked for —
+ * two control heights and a touch step (VDS197, VDS200), three radii (VDS198), one mono (VDS199).
+ * SH1199 adopted it in the same commit that moved this pin.
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -113,7 +117,7 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.16"
+const PINNED = "2026.3.17"
 
 function manifest() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))

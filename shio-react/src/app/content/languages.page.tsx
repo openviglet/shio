@@ -128,7 +128,7 @@ export default function LanguagesPage() {
 
   /** The ask control, shown only while an agent is around to answer (SH1019's rule). */
   const askButton = (rowId: string, locale: string, existing?: string) => agentAvailable && (
-    <Button variant="ghost" size="icon" className="size-7 text-muted-foreground"
+    <Button variant="ghost" size="icon-sm" className="text-muted-foreground"
       disabled={busy !== null}
       onClick={() => ask([{ sourceId: rowId, locale, existing }], `${rowId}|${locale}`)}
       aria-label={t("content.coverageAsk", { locale })}
@@ -140,7 +140,7 @@ export default function LanguagesPage() {
   /** The same ask over many cells, offered only when there is something left to ask for. */
   const askManyButton = (targets: AskTarget[], key: string, label: string) =>
     agentAvailable && targets.length > 0 && (
-      <Button variant="ghost" size="icon" className="size-6 text-muted-foreground"
+      <Button variant="ghost" size="icon-sm" className="text-muted-foreground"
         disabled={busy !== null}
         onClick={() => ask(targets, key)}
         aria-label={label} title={label}>
@@ -166,7 +166,7 @@ export default function LanguagesPage() {
     if (!value || value.state === "missing") {
       return (
         <span className="inline-flex items-center gap-0.5">
-          <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+          <Button variant="ghost" size="sm" className="gap-1 px-2 text-xs text-muted-foreground"
             disabled={busy === `${rowId}|${locale}`}
             onClick={() => translate(rowId, locale)}
             title={t("content.coverageTranslate", { locale })}>

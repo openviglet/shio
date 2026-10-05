@@ -1698,6 +1698,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH947** — page-lint.test.mjs runs the design system's viglet-ds-page-lint over the console in pnpm test, with a planted-width case that must fail naming the file. Its first run found 29 page wrappers repeating the shell's gutter or width; 27 were cleaned, the six max-w-2xl editors moved to the narrow column, and two pages rendered outside the shell carry reasoned exemptions.
 - **SH944** — The viglet-ds plugin is enabled here and carries the page skill, hook and check; only the artboards stay vendored, and the MCP-at-root gap is filed upstream (design §LX.5 superseded: the split it left to decide had been made by the package (VDS135): with the plugin on, the bin removes the vendored skill itself) (design §LX.5 recorded in `docs/agents/console-ui.md`).
 - **SH948** — copy-ds.cmd resolves the design system through its latest worktree junction (or VIGLET_DS), and --list names Shio and exits zero again (design §LX.9 recorded in `copy-ds.cmd`).
+- **SH1199** — The console takes DS 2026.3.17: controls size by prop, radii and mono follow the preset's keys, GraphiQL uses the console fonts, and the census fell to 21 heights, 2 fonts and 12 radii (design §LV.36 recorded in `docs/agents/console-ui.md`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 

@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
+import { useConsoleMonoInGraphiQL } from "@/lib/graphiql-font"
 import { ShApiTokenService } from "@/services/token/api-token.service"
 import type { ShApiToken } from "@/models/token/api-token.model"
 
@@ -42,6 +43,7 @@ export default function GraphiQLPage() {
     const { t } = useTranslation()
     const { theme } = useTheme()
     const navigate = useNavigate()
+    useConsoleMonoInGraphiQL()
 
     // null = still loading; [] = loaded but none usable.
     const [selectedId, setSelectedId] = useState<string>("")

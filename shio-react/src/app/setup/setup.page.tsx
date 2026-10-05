@@ -138,7 +138,7 @@ export default function SetupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t("setup.enterPassword")}
-                  className="pl-9 h-11"
+                  className="pl-9"
                   // eslint-disable-next-line jsx-a11y/no-autofocus -- first-run setup is this one field (SH1054)
                   autoFocus
                 />
@@ -155,14 +155,14 @@ export default function SetupPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder={t("setup.confirmPasswordPlaceholder")}
-                  className="pl-9 h-11"
+                  className="pl-9"
                 />
               </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full h-11 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold"
+              className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold"
               loading={isLoading}
             >
               {!isLoading && <ShieldCheck className="mr-2 h-4 w-4" />}

@@ -256,11 +256,11 @@ function RelatorRow({
             : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
           <span className="truncate text-sm font-medium">{headline}</span>
         </button>
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7"
+        <Button type="button" variant="ghost" size="icon-sm"
           onClick={onDuplicate} aria-label={t("content.relatorDuplicate")}>
           <Copy className="h-3.5 w-3.5" />
         </Button>
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7"
+        <Button type="button" variant="ghost" size="icon-sm"
           onClick={onRemove} aria-label={t("content.relatorRemove")}>
           <Trash2 className="h-3.5 w-3.5" />
         </Button>

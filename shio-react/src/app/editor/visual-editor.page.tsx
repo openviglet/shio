@@ -148,12 +148,12 @@ function SectionInserter({ container, relative, busy, t, onInsert, thumbnail, dr
           {type.provisioned ? (
             <div className="flex gap-1 mt-2">
               {relative && (
-                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={busy}
+                <Button variant="outline" size="sm" className="text-xs" disabled={busy}
                   onClick={() => onInsert(type, false)}>
                   <Plus className="h-3 w-3 mr-1" />{t("universalEditor.insertAbove")}
                 </Button>
               )}
-              <Button variant="outline" size="sm" className="h-7 text-xs" disabled={busy}
+              <Button variant="outline" size="sm" className="text-xs" disabled={busy}
                 onClick={() => onInsert(type, true)}>
                 <Plus className="h-3 w-3 mr-1" />
                 {relative ? t("universalEditor.insertBelow") : t("universalEditor.insertAtEnd")}
@@ -201,7 +201,7 @@ function PatternRail({ patterns, busy, t, onInsert }: {
           <p className="text-xs text-muted-foreground">
             {t("universalEditor.patternPushed", { when: new Date(pattern.pushed).toLocaleString() })}
           </p>
-          <Button variant="outline" size="sm" className="h-7 text-xs mt-2" disabled={busy}
+          <Button variant="outline" size="sm" className="text-xs mt-2" disabled={busy}
             onClick={() => onInsert(pattern)}>
             <Plus className="h-3 w-3 mr-1" />{t("universalEditor.insertPattern")}
           </Button>
@@ -234,17 +234,17 @@ function SectionOverlay({ rect, label, position, index, of, writable, t, onOp }:
         data-testid="section-outline"
       />
       <div
-        className="absolute z-10 flex items-center gap-1 rounded bg-gray-900 text-gray-50 px-1.5 py-1 text-xs shadow"
+        className="absolute z-10 flex items-center gap-1 rounded-sm bg-gray-900 text-gray-50 px-1.5 py-1 text-xs shadow"
         style={{ top: barAbove ? rect.top - 30 : rect.top + 4, left: rect.left }}
       >
         <span className="px-1 font-medium">{label}</span>
         <span className="px-1 text-gray-400">{position}</span>
-        <button type="button" className="rounded px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
+        <button type="button" className="rounded-sm px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
           title={t("universalEditor.moveUp")} disabled={!writable || index === 0}
           onClick={() => onOp("move", index - 1)}>
           <ArrowUp className="h-3.5 w-3.5" />
         </button>
-        <button type="button" className="rounded px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
+        <button type="button" className="rounded-sm px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
           title={t("universalEditor.moveDown")} disabled={!writable || index >= of - 1}
           onClick={() => onOp("move", index + 1)}>
           <ArrowDown className="h-3.5 w-3.5" />
@@ -254,12 +254,12 @@ function SectionOverlay({ rect, label, position, index, of, writable, t, onOp }:
           a duplicated entry places the SAME section twice and editing either heading edits both.
           A curator who finds that out by editing one of them has been surprised (P7).
         */}
-        <button type="button" className="rounded px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
+        <button type="button" className="rounded-sm px-1.5 py-0.5 hover:bg-gray-700 disabled:opacity-40"
           title={t("universalEditor.duplicateHint")} disabled={!writable}
           onClick={() => onOp("duplicate")}>
           <Copy className="h-3.5 w-3.5" />
         </button>
-        <button type="button" className="rounded px-1.5 py-0.5 hover:bg-red-700 disabled:opacity-40"
+        <button type="button" className="rounded-sm px-1.5 py-0.5 hover:bg-red-700 disabled:opacity-40"
           title={t("universalEditor.removeSection")} disabled={!writable}
           onClick={() => onOp("remove")}>
           <Trash2 className="h-3.5 w-3.5" />
@@ -1255,15 +1255,15 @@ export default function VisualEditorPage() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8" title={t("universalEditor.desktop")}
+          <Button variant="ghost" size="icon-sm" title={t("universalEditor.desktop")}
             onClick={() => setMobile(false)}>
             <Monitor className={`h-4 w-4 ${!mobile ? "text-orange-600" : ""}`} />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" title={t("universalEditor.mobile")}
+          <Button variant="ghost" size="icon-sm" title={t("universalEditor.mobile")}
             onClick={() => setMobile(true)}>
             <Smartphone className={`h-4 w-4 ${mobile ? "text-orange-600" : ""}`} />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" title={t("universalEditor.refresh")} onClick={refresh}>
+          <Button variant="ghost" size="icon-sm" title={t("universalEditor.refresh")} onClick={refresh}>
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => persist(true)} disabled={saving}>
@@ -1454,7 +1454,7 @@ export default function VisualEditorPage() {
                           would do the wrong thing.
                         */}
                         {pendingFor(f.prop)?.was !== undefined && (
-                          <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs"
+                          <Button variant="ghost" size="sm" className="px-1.5 text-xs"
                             title={t("universalEditor.revertField")}
                             onClick={() => revert(pendingFor(f.prop)!)}>
                             <Undo2 className="h-3 w-3 mr-1" /> {t("universalEditor.revert")}
@@ -1472,7 +1472,7 @@ export default function VisualEditorPage() {
                           // re-rendering the panel from it would put the curator's cursor back to the
                           // start of the box on every keystroke.
                           defaultValue={f.value}
-                          className="mt-1 h-8 text-sm"
+                          className="mt-1 h-(--vg-control-dense) text-sm"
                           onChange={(event) => editAttrField(f, event.target.value)}
                         />
                       ) : declaredWidgetFor(f.prop) ? (

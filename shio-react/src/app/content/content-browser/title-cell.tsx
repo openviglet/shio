@@ -94,15 +94,15 @@ export function TitleCell({ row, onSaved }: { row: BrowserRow; onSaved: () => vo
       <span className="flex min-w-0 items-center gap-1" onClick={(event) => event.stopPropagation()}>
         {icon}
         {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the curator just asked to rename; focus belongs in the field (SH1054) */}
-        <Input autoFocus value={editing.value} disabled={busy} className="h-7"
+        <Input autoFocus value={editing.value} disabled={busy} className="h-(--vg-control-dense)"
           aria-label={t("content.titleEdit", { title: row.name })}
           onChange={(event) => setEditing({ ...editing, value: event.target.value })}
           onKeyDown={onKey} />
-        <Button variant="ghost" size="icon" className="size-7" disabled={busy}
+        <Button variant="ghost" size="icon-sm" disabled={busy}
           aria-label={t("common.save")} onClick={() => void commit()}>
           <Check className="size-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="size-7" disabled={busy}
+        <Button variant="ghost" size="icon-sm" disabled={busy}
           aria-label={t("common.cancel")} onClick={() => setEditing(null)}>
           <X className="size-3.5" />
         </Button>
@@ -114,7 +114,7 @@ export function TitleCell({ row, onSaved }: { row: BrowserRow; onSaved: () => vo
       {icon}
       <span className="truncate font-medium">{row.name}</span>
       {row.objectType === "POST" && (
-        <Button variant="ghost" size="icon" className="size-6 shrink-0 text-muted-foreground"
+        <Button variant="ghost" size="icon-sm" className="shrink-0 text-muted-foreground"
           disabled={busy} aria-label={t("content.titleEdit", { title: row.name })}
           onClick={(event) => { event.stopPropagation(); void start() }}>
           <Pencil className="size-3" />

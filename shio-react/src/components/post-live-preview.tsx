@@ -187,8 +187,7 @@ function WidthButton({ icon, value, current, onPick, label }: Readonly<{
     <Button
       type="button"
       variant={current === value ? "secondary" : "ghost"}
-      size="icon"
-      className="h-7 w-7"
+      size="icon-sm"
       aria-pressed={current === value ? "true" : "false"}
       aria-label={label}
       onClick={() => onPick(value)}

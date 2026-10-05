@@ -19,6 +19,7 @@ import {
   AdaptiveSectionCard,
   BENTO_EMPHASIS_NEXT,
   BENTO_EMPHASIS_SPAN,
+  BENTO_RECORD_STATES,
   BENTO_TONE_CLASS,
   BENTO_TONES,
   BentoActionsMenu,
@@ -136,6 +137,12 @@ export default function BentoVocabularyPage() {
               <span className={BENTO_TONE_CLASS[tone]} aria-hidden="true" />
               {tone}
             </li>
+          ))}
+        </ul>
+        {/* Since VDS182 a tone means a record's state, drawn as a dot and a word (SH1199). */}
+        <ul className="flex flex-wrap gap-3">
+          {BENTO_RECORD_STATES.map((state) => (
+            <li key={state}><BentoStatusMarker state={state} /></li>
           ))}
         </ul>
       </BentoFormSection>

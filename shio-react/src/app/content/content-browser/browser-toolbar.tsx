@@ -92,8 +92,8 @@ export function BrowserToolbar({
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
-                  size="icon"
-                  className="h-8 w-8 rounded-l-none border-l-0"
+                  size="icon-sm"
+                  className="rounded-l-none border-l-0"
                   // SH1145 — named, not declared. This icon carried a tooltip and no accessible
                   // name, which SH893 tolerated as a page's own debt; moving it into a shared
                   // component makes it every page's, and that rule says fix it rather than list it.
@@ -142,7 +142,7 @@ export function BrowserToolbar({
                 <Label className="text-xs" htmlFor="sh-filter-author">
                   {t("content.filterAuthor")}
                 </Label>
-                <Input id="sh-filter-author" className="h-8 text-xs"
+                <Input id="sh-filter-author" className="h-(--vg-control-dense) text-xs"
                   value={list.draft.author}
                   onChange={(event) => list.set("author", event.target.value)} />
               </div>
@@ -150,7 +150,7 @@ export function BrowserToolbar({
                 <Label className="text-xs" htmlFor="sh-filter-modifier">
                   {t("content.filterModifier")}
                 </Label>
-                <Input id="sh-filter-modifier" className="h-8 text-xs"
+                <Input id="sh-filter-modifier" className="h-(--vg-control-dense) text-xs"
                   value={list.draft.modifier}
                   onChange={(event) => list.set("modifier", event.target.value)} />
               </div>
@@ -183,7 +183,7 @@ export function BrowserToolbar({
 
         {/* Right: Sort + Select + Batch + Download */}
         <Select value={sortBy} onValueChange={(value) => list.set("sort", value)}>
-          <SelectTrigger className="w-28 h-8 text-xs" aria-label={t("content.sortBy")}><SelectValue /></SelectTrigger>
+          <SelectTrigger size="sm" className="w-28 text-xs" aria-label={t("content.sortBy")}><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="order">{t("content.order")}</SelectItem>
             <SelectItem value="name">{t("common.name")}</SelectItem>
@@ -243,7 +243,7 @@ export function BrowserToolbar({
             {searchHereHref && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7"
+                  <Button variant="ghost" size="icon-sm"
                     aria-label={t("content.searchHere")}
                     onClick={() => navigate(searchHereHref, { state: searchBackState(location) })}>
                     <SlidersHorizontal className="h-4 w-4 rotate-90" />
@@ -256,17 +256,17 @@ export function BrowserToolbar({
               SH1026 — the three views, named and pressed. They used to be three unnamed icons
               whose only effect was their own colour; now each draws the list its own way.
             */}
-            <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "list" ? "bg-muted" : ""}`}
+            <Button variant="ghost" size="icon-sm" className={viewMode === "list" ? "bg-muted" : ""}
               aria-label={t("content.viewAsList")} aria-pressed={viewMode === "list" ? "true" : "false"}
               onClick={() => list.set("view", "list")}>
               <List className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "grid" ? "bg-muted" : ""}`}
+            <Button variant="ghost" size="icon-sm" className={viewMode === "grid" ? "bg-muted" : ""}
               aria-label={t("content.viewAsGrid")} aria-pressed={viewMode === "grid" ? "true" : "false"}
               onClick={() => list.set("view", "grid")}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className={`h-7 w-7 ${viewMode === "spreadsheet" ? "bg-muted" : ""}`}
+            <Button variant="ghost" size="icon-sm" className={viewMode === "spreadsheet" ? "bg-muted" : ""}
               aria-label={t("content.viewAsTable")} aria-pressed={viewMode === "spreadsheet" ? "true" : "false"}
               onClick={() => list.set("view", "spreadsheet")}>
               <Sheet className="h-4 w-4" />

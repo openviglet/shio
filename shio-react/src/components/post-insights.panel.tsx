@@ -215,7 +215,7 @@ function FindingRow({ finding, onGoToField, t }: Readonly<{
         than offering one that lands somewhere arbitrary.
       */}
       {finding.field && (
-        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs"
+        <Button type="button" variant="ghost" size="sm" className="px-2 text-xs"
           onClick={() => onGoToField(finding.field as string)}>
           {t("insights.goToField", { field: finding.field })}
         </Button>
