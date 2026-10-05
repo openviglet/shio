@@ -22,8 +22,11 @@ test("SH1194: the shared admin list and the site list render a table, not a mosa
   for (const file of [["app", "admin", "admin-list.page.tsx"], ["app", "content", "site.list.page.tsx"]]) {
     const code = read(...file)
     assert.match(code, /<BentoListPage[\s\S]*\bcolumns=\{columns\}/, `SH1194: ${file.at(-1)} passes no columns`)
-    assert.doesNotMatch(code, /\brenderTile=/,
-      `SH1194: ${file.at(-1)} passes renderTile, which asks the package for the mosaic again`)
+    // SH1220 — the site list offers tiles beside its rows, and rows stay one switch away.
+    if (file.at(-1) !== "site.list.page.tsx") {
+      assert.doesNotMatch(code, /\brenderTile=/,
+        `SH1194: ${file.at(-1)} passes renderTile, which asks the package for the mosaic again`)
+    }
     assert.match(code, /\bonRowOpen=/, `SH1194: ${file.at(-1)}'s rows do not open their record from the keyboard`)
   }
 })
@@ -31,7 +34,12 @@ test("SH1194: the shared admin list and the site list render a table, not a mosa
 test("SH1194: no list page asks for tiles without saying why", () => {
   // The vocabulary harness renders the mosaic on purpose; a real list that wants tiles (media,
   // blueprints) names itself here with its reason, so the exception is a line and not a habit.
-  const VISUAL = new Map([["app/system/bento-vocabulary.page.tsx", "the harness proves the mosaic itself"]])
+  const VISUAL = new Map([
+    ["app/system/bento-vocabulary.page.tsx", "the harness proves the mosaic itself"],
+    // SH1220 — a site is recognised by its home page faster than by its name, so up to thirty of
+    // them open as cards; the rows are the other view, and the default past thirty.
+    ["app/content/site.list.page.tsx", "a site is picked by the picture of its home page"],
+  ])
   const offenders = []
   const walk = (dir) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {

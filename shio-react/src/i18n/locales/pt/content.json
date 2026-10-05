@@ -221,6 +221,7 @@
   "content.sitePagesHeader": "Páginas",
   "content.sitePages": "{{published}} publicadas · {{draft}} rascunhos",
   "content.noPagesYet": "Nenhuma página ainda",
+  "content.noHomePageYet": "Ainda sem página inicial",
   "content.lastChanged": "Última alteração",
   "content.siteLabel": "Site",
   "content.postLabel": "Post",

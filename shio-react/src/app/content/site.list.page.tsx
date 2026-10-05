@@ -11,11 +11,15 @@ import {
 } from "@tabler/icons-react"
 import { toast } from "@viglet/viglet-design-system"
 import {
-  BentoChangeCell, BentoIdentityCell, BentoListPage, type BentoDataTableAction,
-  type BentoDataTableColumn,
+  BentoActionsMenu, BentoChangeCell, BentoIdentityCell, BentoListPage, type BentoActionsMenuItem,
+  type BentoDataTableAction, type BentoDataTableColumn,
 } from "@viglet/viglet-design-system/bento"
 import { Search } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
+import { useCurrentUser } from "@/contexts/user.context"
+import {
+  defaultSitesView, initialsOf, readSitesView, sitesViewKey, type SitesView,
+} from "@/lib/site-list-view"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
@@ -101,10 +105,61 @@ function PagesBar({ published, draft }: Readonly<{ published: number; draft: num
   )
 }
 
+/**
+ * SH1220 — a site as a card: its published home's picture, then exactly the row's facts. A site
+ * with no stored picture shows its initials and says so, rather than a placeholder that reads as a
+ * page. The card is one link, so the focus ring is the card's; the menu is the row's.
+ */
+function SiteCard({ site, actions }: Readonly<{ site: ShSite; actions: BentoActionsMenuItem[] }>) {
+  const { t } = useTranslation()
+  return (
+    <div className="bg-card focus-within:ring-ring relative flex h-full flex-col overflow-hidden rounded-xl border focus-within:ring-2">
+      <Link to={browse(site)} aria-label={site.name} className="flex flex-1 flex-col outline-none">
+        <div className="bg-muted aspect-[16/10] w-full overflow-hidden">
+          {site.thumbnail ? (
+            <img
+              src={`${site.thumbnail.url}?v=${encodeURIComponent(site.thumbnail.digest)}`}
+              alt="" loading="lazy" className="size-full object-cover object-top"
+            />
+          ) : (
+            <div className="text-muted-foreground flex size-full flex-col items-center justify-center gap-1">
+              <span aria-hidden="true" className="text-2xl font-semibold">{initialsOf(site.name)}</span>
+              <span className="text-xs">{t("content.noHomePageYet")}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-2 p-3">
+          <BentoIdentityCell name={site.name} detail={site.description?.trim() || `site:${site.name}`} />
+          <PagesBar published={site.pages?.published ?? 0} draft={site.pages?.draft ?? 0} />
+          <LastChanged site={site} />
+        </div>
+      </Link>
+      <div className="absolute top-2 right-2">
+        <BentoActionsMenu actions={actions} />
+      </div>
+    </div>
+  )
+}
+
+/** SH1220 — the reader's own choice of view, per person, in this browser. Storage may refuse. */
+function useSitesView(username: string | undefined): [SitesView | undefined, (view: SitesView) => void] {
+  const key = sitesViewKey(username)
+  const [view, setView] = useState<SitesView | undefined>(() => {
+    try { return readSitesView(localStorage.getItem(key)) } catch { return undefined }
+  })
+  const store = useCallback((next: SitesView) => {
+    setView(next)
+    try { localStorage.setItem(key, next) } catch { /* private mode: this session only */ }
+  }, [key])
+  return [view, store]
+}
+
 export default function BentoSiteListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const invalidate = useInvalidate()
+  const { user } = useCurrentUser()
+  const [chosenView, chooseView] = useSitesView(user?.username)
   const [filter, setFilter] = useState("")
   // SH1046 — one cached read under `site:`, shared with the nine other screens that ask.
   const { data, error: failure } = useSites()
@@ -195,6 +250,15 @@ export default function BentoSiteListPage() {
     },
   ]
 
+  // SH1220 — the card's menu is the row's, one site at a time.
+  const cardActions = (site: ShSite): BentoActionsMenuItem[] => rowActions.map((action) => ({
+    id: action.id, label: action.label, icon: action.icon, tone: action.tone,
+    onSelect: () => action.onSelect([site]),
+  }))
+  // Controlled, so the default can follow the count once the read arrives: a grid up to thirty
+  // sites, rows past it, and whatever this reader last picked over either.
+  const view = chosenView ?? defaultSitesView(sites?.length ?? 0)
+
   return (
     <BentoListPage
       items={visible}
@@ -230,6 +294,9 @@ export default function BentoSiteListPage() {
       itemKey={(site: ShSite) => site.id}
       columns={columns}
       rowActions={rowActions}
+      renderTile={(site: ShSite) => <SiteCard site={site} actions={cardActions(site)} />}
+      view={view}
+      onViewChange={chooseView}
       getRowLabel={(site: ShSite) => site.name}
       onRowOpen={(site: ShSite) => navigate(browse(site))}
       emptyTitle={t("common.noResults")}

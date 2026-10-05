@@ -1112,17 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.4 The sites list as a grid (SH1220)
-
-Once the package offers the tiles-or-rows switch, site.list.page.tsx passes a renderTile
-beside its columns: a card with the stored home thumbnail, the identity line, the pages
-bar and the change line, exactly the row's facts. A site without a thumbnail shows its
-initials and No home page yet rather than a placeholder picture. The default is grid
-when the instance holds thirty sites or fewer and list above, and the reader's choice is
-remembered per person through the package's callback, never as shared state. The focused
-card carries the ring and the same row actions menu. Done when both views render from
-one data read, the default follows the count, and the choice survives a reload.
-
 ### LXXVII.5 Shio's lists use the one toolbar (SH1221)
 
 When the package's list toolbar ships, every BentoListPage in Shio moves what it passes
