@@ -134,6 +134,8 @@ const DEFERRED = {
   BentoTrail: "SH1192 — rendered by page-hero.tsx: the folder browser's and the post editor's trail, through both package heroes.",
   BentoShell: "SH946 — rendered by bento.root.page.tsx as the console's shell; a harness has no route tree to wrap.",
   BentoPaletteTrigger: "SH946 — the shell's palette control, mounted with the shell.",
+  BentoIdentityCell: "SH1219 — VDS207's first-column cell, adopted by the sites list redraw, then SH1222 and the SH1225–SH1234 moves.",
+  BentoChangeCell: "SH1219 — VDS207's changed-column cell, adopted with BentoIdentityCell by the same tasks.",
   BENTO_SHELL_SHORTCUTS: "SH946 — the shell's shortcut table, read by the shell it belongs to.",
   useBentoShellShortcuts: "SH946 — the shell's shortcut hook, exercised by the shell.",
   BentoDiff: "SH988 — the word-level diff the version dialog adopts over two revisions.",

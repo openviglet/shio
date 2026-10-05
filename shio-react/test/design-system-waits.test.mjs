@@ -91,6 +91,11 @@ import { fileURLToPath } from "node:url"
  * two control heights and a touch step (VDS197, VDS200), three radii (VDS198), one mono (VDS199).
  * SH1199 adopted it in the same commit that moved this pin.
  *
+ * 2026.3.18 carried VDS204–VDS207, filed for the lists redraw (SH1217–SH1234): a table that
+ * scrolls with its page, one toolbar per list, a tiles-or-rows switch, and the identity and change
+ * cells. Again no entry waited here — those lines name `VDS<n> in the DS` — so the pin moves on its
+ * own, and each line drops its dep as it ships against the release.
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -117,7 +122,7 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.17"
+const PINNED = "2026.3.18"
 
 function manifest() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))
