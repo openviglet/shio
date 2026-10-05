@@ -154,6 +154,10 @@ class ShConsoleReadAclLintTest {
                     + "in. It reports a page's title and address, which is what the folder listing "
                     + "beside it reports, and never a body; a reader who may not open a page still "
                     + "has to see that it is the one missing Portuguese"),
+            Map.entry("/api/v2/site/{id}/thumbnail/status", "SH1218 — whether a site's stored "
+                    + "home picture is current: two appearance digests and a boolean, never a page's "
+                    + "content, and the page they describe is the published home that /sites/<furl>/ "
+                    + "already serves to anybody"),
             Map.entry("/api/v2/site/{id}/export",
                     "an SH68 exchange package, guarded by the export role"),
             Map.entry("/api/v2/folder/trash", "the folder trash, which SH222 scopes by site"),
