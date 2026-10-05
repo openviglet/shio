@@ -50,3 +50,10 @@ test("SH1203: the path is said once, in the trail, and the folders around this o
   assert.match(page, /<BrowserTree path=\{breadcrumbPath\} folders=\{listData\.folders\} \/>/,
     "SH1203: the folder tree is not mounted beside the listing")
 })
+
+test("SH1223: the browser's table scrolls with the page, not inside a fixed box", () => {
+  const table = read("app", "content", "content-browser", "browser-table.tsx")
+  assert.match(table, /<BentoDataTable\b/)
+  assert.doesNotMatch(table, /\bheight=\{/,
+    "SH1223: a fixed height scrolls a long folder inside a box, with a second scrollbar in the busiest screen")
+})

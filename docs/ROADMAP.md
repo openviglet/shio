@@ -11,7 +11,6 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1223** (deps: —) **The content browser's table is capped at 560 px, so a folder scrolls inside the page** — browser-table.tsx passes height 560 on every viewport, which wastes a large screen and puts a second scrollbar in the busiest screen. → §LXXVII.7
 - 📋 **SH1226** (deps: SH1224 ✅) **The media library's rows view is a hand-drawn table** — The busiest list after the content browser sorts and selects its own way, with hover-only actions. → §LXXVII.10
 - 📋 **SH1227** (deps: SH1224 ✅) **The trash is a hand-drawn table** — Restoring and purging many items wants the package's selection and range keys, which a hand-drawn table lacks. → §LXXVII.11
 - 📋 **SH1228** (deps: SH1224 ✅) **Search results are a hand-drawn table** — A result list should sort and open from the keyboard like every other list. → §LXXVII.12
@@ -24,6 +23,7 @@
 - 📋 **SH1236** (deps: —) **every site, folder or post type a query loads costs one more select for its workflow tasks** — ShObject.shWorkflowTasks is @Fetch(JOIN), which makes it eager, so a listing of N objects runs N+1 statements. → §LXXVII.19
 - 📋 **SH1237** (deps: SH1218 ✅) **the console's capture of a site's home has never run in a real browser** — Its node tests fake the frame and the rasteriser, so a capture that fails in Chromium would leave every card on initials unnoticed. → §LXXVII.20
 - 📋 **SH1238** (deps: —) **a user's last sign-in is never recorded; lastLogin holds the seed date** — Only ShUserOnStartup writes it, so the users list cannot say who stopped using the instance. → §LXXVII.21
+- 📋 **SH1239** (deps: a sticky selection bar in the DS) **the content browser's bulk verbs scroll out of view down a long folder** — The package keeps the table's header row in view but not its selection bar, so rows ticked low in a folder leave Move and Delete off screen. → §LXXVII.22
 
 ## Priority
 
