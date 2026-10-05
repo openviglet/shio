@@ -1112,20 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.1 The sites listing says whether a site is alive (SH1217)
-
-The redraw in docs/design/shio-site-list.dc.html shows, per site, pages by state
-(published, drafts) and the last change with who made it and whether an agent did. GET
-/api/v2/site returns name, description and date only. Both facts exist: post states are
-on the unified post table, and the newest audit row per site carries the actor and the
-agent session. They must arrive in the one listing read, as a grouped count and one
-newest-row query over all sites, because a request per row is the cost SH1050 removed
-from home. Avoid navigating past .id of the site association in JPQL (the tenant_id
-trap) and resolve the site per row with ShFolderSite. Measure first: the listing's query
-count and time at 15 and 400 sites go in the commit. Done when the listing carries pages
-{published, draft} and lastChange {at, actor, agent} per site in a bounded number of
-statements, asserted by a test that counts them.
-
 ### LXXVII.2 A site's home page, kept as a picture (SH1218)
 
 docs/design/shio-site-grid.dc.html draws each site as its home page. That picture must
@@ -1265,3 +1251,25 @@ actor. Done when the page leaves SH1224's debt list.
 group-members.tsx lists a group's members with shadcn Table. Move it onto BentoDataTable
 with the identity cell for the user and Remove as a selection action. Done when the page
 leaves SH1224's debt list.
+
+### LXXVII.19 Workflow tasks loaded one select per object (SH1236)
+
+Found while measuring SH1217. `ShObject.shWorkflowTasks` is mapped `@OneToMany` with
+`@Fetch(FetchMode.JOIN)`. On a collection that fetch mode makes the association eager,
+and a JPQL query cannot join it implicitly, so Hibernate runs one extra select per
+loaded object to fill it. `ShSiteListingCostTest` measured `ShSiteRepository.findAll`
+plus that collection at 16 statements for 15 sites and 401 for 400. `GET /api/v2/site`
+paid that cost on every console visit before SH1217 replaced it with
+`findAllForListing`, which fetches the collection in the same statement.
+
+Every other query over an `ShObject` subclass pays the same per-row select: `ShSite`,
+`ShFolder` and `ShPostType`, with folder listings and the post-type catalogue the likely
+large ones. Nothing reads the collection on those paths. `ShSite` lists it in
+`@JsonIgnoreProperties`, and the workflow-task feature may have no live reader at all.
+
+Measure first: count statements for a folder listing and for the post-type catalogue at
+two sizes, the way `ShSiteListingCostTest` does. Then the likely fix is `FetchType.LAZY`
+with no `@Fetch`, after checking every reader of `getShWorkflowTasks()` for one that
+runs outside a transaction and would then throw `LazyInitializationException`. A lint
+that refuses `@Fetch(JOIN)` on a collection would stop the pattern coming back. Done
+when the measured reads cost the same at both sizes.

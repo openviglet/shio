@@ -236,7 +236,15 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
 - `DELETE /api/v2/folder/{id}` - Delete folder
 
 ### Sites
-- `GET /api/v2/site` - List all sites
+- `GET /api/v2/site` — every live site, each row the site's own fields plus **`pages`
+  `{published, draft}`** and **`lastChange` `{at, actor, agent}`** (SH1217, `ShSiteListingService`).
+  A page live with a pending draft counts under both states; `agent` is false for a console
+  session, which is the curator's (SH996); `lastChange` is absent when nothing was recorded
+  against the site. **Three statements at any number of sites**: `findAllForListing`, one grouped
+  count (`countDistinctBySiteIdPerState`) and one newest-row read (`findNewestPerSite`), all keyed on
+  the site's id. `findAllForListing` fetches `ShObject.shWorkflowTasks`, whose `@Fetch(JOIN)` makes
+  it eager, so plain `findAll` costs one more select per site. `ShSiteListingCostTest` counts the
+  statements at 15 and 400 sites.
 - `GET /api/v2/site/{id}` — one site **by id, furl or name** (SH181, in that order so the
   declared key wins a collision). The reads resolve any of the three; `PUT`, `DELETE` and
   `/{id}/export` stay strictly id-keyed — a read that resolved a near-miss shows the curator

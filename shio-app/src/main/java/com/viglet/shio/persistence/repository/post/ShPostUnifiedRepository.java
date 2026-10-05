@@ -1146,6 +1146,18 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
     List<Object[]> countDistinctBySiteIdAndState(@Param("state") ShPostState state);
 
     /**
+     * SH1217 — every site's pages by state, for the sites listing, in one statement.
+     *
+     * <p>A post with a pending draft has both rows, so it counts once under each state: the
+     * listing reads "published" as live and "draft" as waiting to be published.</p>
+     *
+     * @return rows of {@code [siteId (String), state (ShPostState), posts (Long)]}
+     */
+    @Query("select p.shSite.id, p.state, count(distinct p.id) from ShPostUnified p "
+            + "where p.shSite is not null group by p.shSite.id, p.state")
+    List<Object[]> countDistinctBySiteIdPerState();
+
+    /**
      * SH143 — the URL index a <em>scoped</em> verify run still needs whole.
      *
      * <p>Two lint rules are cross-cutting by nature: "is any other published post claiming

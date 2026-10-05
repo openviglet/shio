@@ -8,6 +8,13 @@ export type ShSite = {
   searchablePostTypes: string;
   owner: string;
   date: string;
+  /**
+   * SH1217 — present on rows of `GET /v2/site`, the listing, and absent on a single-site read. A
+   * page live with a pending draft counts under both.
+   */
+  pages?: { published: number; draft: number };
+  /** SH1217 — the site's newest change; absent when nothing was recorded against it. */
+  lastChange?: { at: string; actor: string; agent: boolean } | null;
 };
 
 /**

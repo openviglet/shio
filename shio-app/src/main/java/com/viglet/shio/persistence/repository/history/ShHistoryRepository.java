@@ -135,6 +135,18 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	boolean existsAgentWrite(String object);
 
 	/**
+	 * SH1217 — each site's newest change, for the sites listing, in one statement.
+	 *
+	 * <p>A correlated maximum rather than a read per site: a request per row is the cost SH1050
+	 * removed from home. Rows sharing a site's newest timestamp all come back, ordered so the caller
+	 * keeps the first per site and the choice is the same on every read (P5).</p>
+	 */
+	@Query("select h from ShHistory h where h.shSite is not null and h.date = "
+			+ "(select max(h2.date) from ShHistory h2 where h2.shSite = h.shSite) "
+			+ "order by h.shSite asc, h.id desc")
+	List<ShHistory> findNewestPerSite();
+
+	/**
 	 * Which of these objects a run has written to since {@code since} (SH1008).
 	 *
 	 * <p>Not the duplication SH1005 removed, and the difference is the question rather than the

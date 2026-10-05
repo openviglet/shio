@@ -49,6 +49,16 @@ public interface ShSiteRepository extends JpaRepository<ShSite, String> {
 	@Query("select s from ShSite s where s.deletedDate is null")
 	List<ShSite> findAll();
 
+	/**
+	 * SH1217 — {@link #findAll()} for the sites listing, in one statement.
+	 *
+	 * <p>{@code ShObject.shWorkflowTasks} is {@code @Fetch(JOIN)}, which makes it eager, and a
+	 * query cannot join it implicitly — so {@code findAll} pays one select per site for it, which
+	 * {@code ShSiteListingCostTest} measured at 403 statements for 400 sites. Fetched here instead.</p>
+	 */
+	@Query("select distinct s from ShSite s left join fetch s.shWorkflowTasks where s.deletedDate is null")
+	List<ShSite> findAllForListing();
+
 	@Query("select s from ShSite s where s.id = ?1 and s.deletedDate is null")
 	Optional<ShSite> findById(String id);
 

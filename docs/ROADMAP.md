@@ -11,9 +11,8 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1217** (deps: —) **The sites listing carries no page counts and no last change, so a row cannot say if a site is alive** — The redrawn list needs pages by state and the last change with its author, in the listing's one read and never per row. → §LXXVII.1
 - 📋 **SH1218** (deps: —) **A site has no stored picture of its home page, so a grid of sites can only show initials** — The grid view recognises a site by its home page, and rendering one per card on every visit would cost a server render per site. → §LXXVII.2
-- 📋 **SH1219** (deps: SH1217, VDS207 in the DS) **The sites list is a five-column table with an empty Description column and no sign of life** — Description holds half the width for one site in twenty-three, dates repeat without saying who, and no row says whether its site is used. → §LXXVII.3
+- 📋 **SH1219** (deps: SH1217 ✅, VDS207 in the DS) **The sites list is a five-column table with an empty Description column and no sign of life** — Description holds half the width for one site in twenty-three, dates repeat without saying who, and no row says whether its site is used. → §LXXVII.3
 - 📋 **SH1220** (deps: SH1218, SH1219, VDS206 in the DS) **The sites list has no grid view, so a site can only be found by reading its name** — At the counts most instances hold, a site's home page is recognised faster than its name, and the drawing makes grid the default below thirty. → §LXXVII.4
 - 📋 **SH1221** (deps: VDS205 in the DS) **Shio's lists keep their filter and import in the hero, apart from the rows they act on** — Once the package gives a list one toolbar, every Shio list that passes headerAction has to move its controls into it or keep the split. → §LXXVII.5
 - 📋 **SH1222** (deps: VDS207 in the DS) **The admin lists show a Description column most rows leave empty, and no date or actor** — AdminListPage serves every admin entity with the same four columns, so the sites list's proportion problem repeats on each of them. → §LXXVII.6
@@ -29,6 +28,7 @@
 - 📋 **SH1232** (deps: SH1224) **The open notes list is a hand-drawn table** — SH1214 drew it the way its neighbours were drawn, which is the way this round replaces. → §LXXVII.16
 - 📋 **SH1233** (deps: SH1224) **The activity list is a hand-drawn table** — The audit trail is long and filtered, which is the case the package's virtualized table exists for. → §LXXVII.17
 - 📋 **SH1234** (deps: SH1224) **A group's members list is a hand-drawn table** — Removing several members wants the package's selection, which a hand-drawn table lacks. → §LXXVII.18
+- 📋 **SH1236** (deps: —) **every site, folder or post type a query loads costs one more select for its workflow tasks** — ShObject.shWorkflowTasks is @Fetch(JOIN), which makes it eager, so a listing of N objects runs N+1 statements. → §LXXVII.19
 
 ## Priority
 

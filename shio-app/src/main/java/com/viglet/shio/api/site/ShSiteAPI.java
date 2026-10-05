@@ -57,12 +57,15 @@ public class ShSiteAPI {
     private final ShSiteLocaleService shSiteLocaleService;
     /** SH1060 — what it has in each of them, and what it has not. */
     private final ShSiteCoverageService shSiteCoverageService;
+    private final ShSiteListingService shSiteListingService;
 
     public ShSiteAPI(ShSiteRepository shSiteRepository, ShSiteWriteService shSiteWriteService,
                      ShSiteExportService shSiteExportService,
                      ShTenantQuotaService shTenantQuotaService,
                      ShSiteLocaleService shSiteLocaleService,
-                     ShSiteCoverageService shSiteCoverageService) {
+                     ShSiteCoverageService shSiteCoverageService,
+                     ShSiteListingService shSiteListingService) {
+        this.shSiteListingService = shSiteListingService;
         this.shSiteRepository = shSiteRepository;
         this.shSiteWriteService = shSiteWriteService;
         this.shSiteExportService = shSiteExportService;
@@ -71,9 +74,13 @@ public class ShSiteAPI {
         this.shSiteCoverageService = shSiteCoverageService;
     }
 
+    /**
+     * Every site, each with its pages by state and its last change (SH1217) — so a row of the
+     * console's list can say whether a site is alive without a read of its own.
+     */
     @GetMapping
-    public List<ShSite> list() {
-        return shSiteRepository.findAll();
+    public List<ShSiteListing> list() {
+        return shSiteListingService.list();
     }
 
     /**
