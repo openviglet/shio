@@ -1704,6 +1704,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1210** — Hand-drawn controls sit on the scale: the activity actor is a link Button, the file chips read the dense token, a lint covers native buttons, and the census fell to 16 heights (design §LV.45 recorded in `docs/agents/console-ui.md`).
 - **SH1211** — Home's activity rows draw BentoChangeMark through changeStateOf beside a neutral icon, agent runs lose their amber, and a check keeps the console from painting its own chips (design §LV.46 recorded in `docs/agents/console-ui.md`).
 - **SH1212** — The GraphQL explorer fills with the console's primary: GraphiQL's thirteen primary rules read var(--primary), a test counts them, and the census fell to two primary fills (design §LV.47 recorded in `docs/agents/console-ui.md`).
+- **SH1213** — The bento header names the product: headerStart carries the Shio mark and wordmark linked home, then the palette trigger, as the shell contract requires (design §LIV.18 recorded in `docs/agents/console-ui.md`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 

@@ -9,6 +9,7 @@
 import {
   BentoCommandPalette,
   BentoNavRail,
+  BentoPaletteTrigger,
   BentoShell,
   BentoShortcutsDialog,
   BentoUserMenu,
@@ -19,8 +20,9 @@ import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import type { ShConsoleSearchResult } from "@/services/search/search.service"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Outlet, useLocation, useNavigate } from "react-router-dom"
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { RouteBoundary } from "@/components/route-boundary"
+import { ShLogo } from "@/components/logo/sh-logo"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
 // SH1028 — the palette answers with content and verbs, not only with destinations.
@@ -239,6 +241,20 @@ export default function BentoRootPage() {
       */}
       <BentoShell
         rail={<BentoNavRail groups={groups} homeRoute={ROUTES.BENTO} />}
+        headerStart={
+          <>
+            {/*
+              The shell's contract puts the mark, the wordmark and the palette trigger here, and
+              marks the first and the last required. Left empty, the header carried no product
+              name at all — and below `md`, where the rail hides, no way to the palette but a key.
+            */}
+            <Link to={ROUTES.BENTO} className="flex items-center gap-2">
+              <ShLogo size={28} />
+              <span className="text-base font-semibold tracking-tight">Shio</span>
+            </Link>
+            <BentoPaletteTrigger onClick={() => setPaletteOpen(true)} />
+          </>
+        }
         headerEnd={
           <>
             {/*

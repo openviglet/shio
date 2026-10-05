@@ -3162,6 +3162,14 @@ inside the shell sets `mx-auto max-w-*` or its own padding, and home and the pos
 longer render a `main` of their own. The vocabulary harness is mounted outside the shell and keeps
 its layout.
 
+**The header's leading edge names the product (SH1213).** The shell contract (`vds-shell`) puts the
+mark and wordmark first in `headerStart`, then a back control where the route has a parent, then the
+palette trigger, and marks the first and last required. Shio passed only `headerEnd` (tenant
+switcher, account menu), so the header named no product. `headerStart` now holds `ShLogo` and the
+wordmark as one link to `ROUTES.BENTO`, then `BentoPaletteTrigger` opening the palette state the
+shortcut toggles. Below `md` the rail is hidden, so that trigger is the pointer's only way to a deep
+area. `bento-shell.test.mjs` reads all three out of the root's `headerStart`.
+
 **A tool that owns the viewport takes the `full` column (SH1169).** The GraphQL explorer sized itself
 as `100vh - 4rem`, SH908's premise about the chrome above it. The shell later put a 61px header and
 40px of `main` padding on each side, and the editor ran 21px past a 1000px window, with the document
