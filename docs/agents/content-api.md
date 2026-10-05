@@ -240,11 +240,15 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
   `{published, draft}`** and **`lastChange` `{at, actor, agent}`** (SH1217, `ShSiteListingService`).
   A page live with a pending draft counts under both states; `agent` is false for a console
   session, which is the curator's (SH996); `lastChange` is absent when nothing was recorded
-  against the site. **Three statements at any number of sites**: `findAllForListing`, one grouped
-  count (`countDistinctBySiteIdPerState`) and one newest-row read (`findNewestPerSite`), all keyed on
-  the site's id. `findAllForListing` fetches `ShObject.shWorkflowTasks`, whose `@Fetch(JOIN)` makes
-  it eager, so plain `findAll` costs one more select per site. `ShSiteListingCostTest` counts the
-  statements at 15 and 400 sites. Each row also carries **`thumbnail` `{url, digest, at}`** when a
+  against the site. **Three statements at any number of sites**: `findAll`, one grouped count
+  (`countDistinctBySiteIdPerState`) and one newest-row read (`findNewestPerSite`), all keyed on the
+  site's id. `ShSiteListingCostTest` counts the statements at 15 and 400 sites.
+
+  **No `@Fetch(JOIN)` on a collection (SH1236).** `ShObject.shWorkflowTasks` carried one, which makes
+  a collection eager, and a query cannot join it implicitly, so every query over a site, folder or
+  post type paid one more select per row: a folder's 200 children cost 202 statements, the post-type
+  catalogue one per type. It is lazy now (nothing reads it; the cascade still reaches it), and
+  `ShWorkflowTaskFetchCostTest` holds both reads flat across two sizes. Each row also carries **`thumbnail` `{url, digest, at}`** when a
   picture of the published home is stored (SH1218), read with one directory listing.
 - `GET /api/v2/site/{id}/thumbnail` · `GET …/thumbnail/status` · `PUT …/thumbnail?digest=` — the
   site's published home as a picture (SH1218, `ShSiteThumbnailService`). **The instance does not

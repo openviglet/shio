@@ -1690,6 +1690,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1232** — Open notes are the package's table: the page as identity cell, the note's kind and first line, when it was left and by whom, and Resolve for a row or a selection; Enter opens the page (design §LXXVII.16 recorded in `shio-react/src/app/content/notes.page.tsx`).
 - **SH1233** — The Activity trail is the package's table over the same keyset paging: when and by whom is the change cell with the run linked beside it, and the actor filter is the row's menu (design §LXXVII.17 recorded in `shio-react/src/app/admin/activity/activity.list.page.tsx`).
 - **SH1234** — A group's members are the package's table: each member an identity cell, and Remove takes one member or a selection out in a single membership write; Enter opens the user (design §LXXVII.18 recorded in `shio-react/src/app/admin/group-members.tsx`).
+- **SH1236** — ShObject's workflow-task collection is lazy: a folder's children cost 2 statements at 15 and 200 (was 17 and 202), the post-type catalogue 1 at any size, and a lint refuses a fetch-joined collection (design §LXXVII.19 recorded in `docs/agents/content-api.md`).
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

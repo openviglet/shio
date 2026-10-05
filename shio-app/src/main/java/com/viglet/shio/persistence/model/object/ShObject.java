@@ -30,7 +30,6 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
-import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.TenantId;
 import com.viglet.core.jpa.VigletAssignableUuidGenerator;
 
@@ -86,8 +85,14 @@ public class ShObject implements Serializable {
 	@ElementCollection
 	private Set<String> shUsers = new HashSet<>();
 
+	/**
+	 * Lazy, which a collection is by default. SH1236 — it was {@code @Fetch(JOIN)}, which makes a
+	 * collection eager, and a query cannot join it implicitly, so every query over a site, folder
+	 * or post type paid one more select per row to fill it: 202 statements for a folder's 200
+	 * children. No read path touches it and every serializer ignores it; the cascade still reaches
+	 * it when an object is removed. {@code ShWorkflowTaskFetchCostTest} holds the count flat.
+	 */
 	@OneToMany(mappedBy = "shObject", cascade = jakarta.persistence.CascadeType.ALL)
-	@Fetch(org.hibernate.annotations.FetchMode.JOIN)
 	private Set<ShWorkflowTask> shWorkflowTasks = new HashSet<>();
 
 	private String publishStatus;

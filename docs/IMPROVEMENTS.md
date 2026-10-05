@@ -1112,28 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.19 Workflow tasks loaded one select per object (SH1236)
-
-Found while measuring SH1217. `ShObject.shWorkflowTasks` is mapped `@OneToMany` with
-`@Fetch(FetchMode.JOIN)`. On a collection that fetch mode makes the association eager,
-and a JPQL query cannot join it implicitly, so Hibernate runs one extra select per
-loaded object to fill it. `ShSiteListingCostTest` measured `ShSiteRepository.findAll`
-plus that collection at 16 statements for 15 sites and 401 for 400. `GET /api/v2/site`
-paid that cost on every console visit before SH1217 replaced it with
-`findAllForListing`, which fetches the collection in the same statement.
-
-Every other query over an `ShObject` subclass pays the same per-row select: `ShSite`,
-`ShFolder` and `ShPostType`, with folder listings and the post-type catalogue the likely
-large ones. Nothing reads the collection on those paths. `ShSite` lists it in
-`@JsonIgnoreProperties`, and the workflow-task feature may have no live reader at all.
-
-Measure first: count statements for a folder listing and for the post-type catalogue at
-two sizes, the way `ShSiteListingCostTest` does. Then the likely fix is `FetchType.LAZY`
-with no `@Fetch`, after checking every reader of `getShWorkflowTasks()` for one that
-runs outside a transaction and would then throw `LazyInitializationException`. A lint
-that refuses `@Fetch(JOIN)` on a collection would stop the pattern coming back. Done
-when the measured reads cost the same at both sizes.
-
 ### LXXVII.20 The home capture, run in a browser (SH1237)
 
 SH1218 shipped the console's capture of a site's published home: an offscreen

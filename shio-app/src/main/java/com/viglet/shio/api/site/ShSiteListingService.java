@@ -62,7 +62,7 @@ public class ShSiteListingService {
         }
         // SH1218 — one directory listing, not a disk read per row.
         Map<String, ShSiteThumbnailStore.Stored> pictures = shSiteThumbnailStore.all();
-        return shSiteRepository.findAllForListing().stream().map(site -> {
+        return shSiteRepository.findAll().stream().map(site -> {
             long[] byState = counts.get(site.getId());
             ShSiteThumbnailStore.Stored picture = pictures.get(site.getId());
             return new ShSiteListing(site,
