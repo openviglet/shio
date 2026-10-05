@@ -11,7 +11,7 @@
 
 ## Block BB — The curator's return channel, and the conversation with the agent
 
-- 📋 **SH1215** (deps: —) **an agent has no one declared read listing every open note across sites** — The console's Open notes page reads GET /note/open, which the manifest cannot hold at 30 rows and its token ceiling, so the surface is a gap. → §LXVII.14
+- 🛠 **SH1215** (deps: —) **an agent has no one declared read listing every open note across sites** — The console's Open notes page reads GET /note/open, which the manifest cannot hold at 30 rows and its token ceiling, so the surface is a gap. → §LXVII.14
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
