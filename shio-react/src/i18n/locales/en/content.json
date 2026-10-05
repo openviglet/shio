@@ -216,6 +216,7 @@
   "content.selectYourSite": "Select your site",
   "content.findSite": "Find a site...",
   "content.createFirstSite": "Create your first site to get started",
+  "content.createFirstPostType": "Create a post type to say which fields your content carries",
   "content.siteLabel": "Site",
   "content.postLabel": "Post",
   "content.download": "Download",

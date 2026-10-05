@@ -60,11 +60,13 @@ const FETCHES = /\b\w*[Ss]ervice\.\w+\(|\baxios\.(?:get|post|put|delete|patch)\b
  * session's tenant and user to draw the rail and still models neither state for them, but it now
  * mounts `RouteBoundary` around the outlet, and a page that can catch a throw is past the absence
  * this check refuses.</p>
+ *
+ * <p>Three since SH1225: the post types list moved onto `BentoListPage`, whose gate draws the
+ * loading and the failed read.</p>
  */
 const NO_LOADING_STATE = new Set([
   "src/app/admin/identity-entity.page.tsx",
   "src/app/content/folder.edit.page.tsx",
-  "src/app/content/post-type.list.page.tsx",
   "src/app/content/site.edit.page.tsx",
 ]);
 

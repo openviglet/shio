@@ -27,7 +27,8 @@ const read = (path) => stripComments(readFileSync(join(SRC, path), "utf8"))
 /** Page → the back route its hero must carry. */
 const EXPECTED = {
   // Rail surfaces: back to home.
-  "content/post-type.list.page.tsx": "urlBase={ROUTES.HOME}",
+  // SH1225 — on BentoListPage, whose hero takes the back link as `backTo`.
+  "content/post-type.list.page.tsx": "backTo={ROUTES.HOME}",
   "content/static-file.list.page.tsx": "urlBase={ROUTES.HOME}",
   "content/trash.page.tsx": "urlBase={ROUTES.HOME}",
   "content/scheduled.page.tsx": "urlBase={ROUTES.HOME}",

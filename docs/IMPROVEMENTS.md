@@ -1164,13 +1164,6 @@ height here and let the page scroll. Check the selection bar and the bulk verbs 
 sit where the curator can reach them while scrolled. Done when browser-table passes no
 height and a long folder scrolls the page once.
 
-### LXXVII.9 Post types on the design system's table (SH1225)
-
-post-type.list.page.tsx renders Name, Title, System and an Actions column through shadcn
-Table. Move it onto BentoListPage with columns: the identity cell for the type, System
-as a badge, and the actions as rowActions rather than a column of buttons. Done when the
-page leaves SH1224's debt list.
-
 ### LXXVII.10 Media rows on the design system's table (SH1226)
 
 static-file.list.page.tsx draws its rows view with shadcn Table and actions behind

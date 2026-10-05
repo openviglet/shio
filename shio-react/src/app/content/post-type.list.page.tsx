@@ -1,24 +1,41 @@
-import { PageHero } from "@/components/page-hero"
-import { Panel } from "@/components/panel"
-import { Button } from "@/components/ui/button"
+import { IconPencil, IconTrash } from "@tabler/icons-react"
+import {
+  BentoIdentityCell, BentoListPage, type BentoDataTableAction, type BentoDataTableColumn,
+} from "@viglet/viglet-design-system/bento"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { Pencil, Plus, Trash2 } from "lucide-react"
+import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
+import type { ShPostType } from "@/models/post-type/post-type"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { toast } from "@viglet/viglet-design-system"
 import { usePostTypes, useInvalidate } from "@/hooks/use-catalogue"
-import { reportProblem } from "@/lib/problem"
+import { headlineOf, problemOf, reportProblem } from "@/lib/problem"
 
 const service = new ShPostTypeService()
 
+/** How a type is named to a reader: its title, or its name when it has none. */
+const labelOf = (type: ShPostType) => type.title || type.name
+
+/**
+ * SH1225 — the content model, on the design system's table.
+ *
+ * It was a shadcn `Table` with Name, Title, System and a column of two icon buttons per row, so it
+ * had no sortable header, no row keyboard model and no column menu, and every change to the
+ * package's table skipped it (SH1224's debt list). The type is now one identity cell (its title, its
+ * name under it), System is a badge, and Edit and Delete are the row's actions menu, which a
+ * keyboard reaches, rather than two buttons in a column.
+ */
 export default function PostTypeListPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   // SH1046 — the catalogue, cached under `postType:` and shared with every other screen.
-  const items = usePostTypes().data ?? []
+  const { data, error: failure } = usePostTypes()
+  // `undefined` is "still loading" to the package's gate, so a failure has to become an empty array
+  // and an error, or a failed load spins for ever.
+  const items = data ?? (failure ? [] : undefined)
+  const error = failure ? headlineOf(problemOf(failure), failure.message) : null
   const invalidate = useInvalidate()
 
   const handleDelete = async (name: string) => {
@@ -39,70 +56,50 @@ export default function PostTypeListPage() {
     }
   }
 
+  const open = (type: ShPostType) =>
+    navigate(`${ROUTES.POST_TYPE_ROOT}/${encodeURIComponent(type.name)}`)
+
+  const columns = useMemo<BentoDataTableColumn<ShPostType>[]>(() => [
+    {
+      id: "name", header: t("common.name"), width: "minmax(16rem, 3fr)", hideable: false,
+      sortValue: (type) => labelOf(type).toLowerCase(),
+      cell: (type) => <BentoIdentityCell name={labelOf(type)} detail={type.name} />,
+    },
+    {
+      id: "system", header: t("content.system"), width: "minmax(8rem, 1fr)",
+      sortValue: (type) => (type.system ? 1 : 0),
+      cell: (type) => (type.system ? <Badge variant="secondary">{t("content.system")}</Badge> : null),
+    },
+  ], [t])
+
+  // The package hands the one row, or every selected one; each is deleted with its own answer.
+  const rowActions: BentoDataTableAction<ShPostType>[] = [
+    { id: "edit", label: t("common.edit"), icon: IconPencil, onSelect: ([type]) => open(type) },
+    {
+      id: "delete", label: t("common.delete"), icon: IconTrash, tone: "destructive",
+      onSelect: (types) => { for (const type of types) void handleDelete(type.name) },
+    },
+  ]
+
   return (
-    <>
-      {/* SH902 — header and panel through the adapters; the row list itself is untouched. */}
-      <PageHero
-        eyebrow={t("sidebar.content")}
-        title={t("content.postTypes")}
-        urlBase={ROUTES.HOME}
-        backLabel={t("home.title")}
-      />
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">{t("content.postTypes")}</h2>
-          <Button onClick={() => navigate(`${ROUTES.POST_TYPE_ROOT}/new`)} size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            {t("common.create")}
-          </Button>
-        </div>
-        <Panel contentClassName="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("common.name")}</TableHead>
-                  <TableHead>{t("content.title")}</TableHead>
-                  <TableHead>{t("content.system")}</TableHead>
-                  <TableHead className="w-24">{t("common.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.name}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.title}</TableCell>
-                    <TableCell>
-                      {item.system ? (
-                        <Badge variant="secondary">{t("content.system")}</Badge>
-                      ) : null}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {/* SH1054 — named, and after the type: axe found 32 unnamed icon buttons here, a
-                            pair per row, each announced as "button" and nothing else. */}
-                        <Button variant="ghost" size="icon" aria-label={`${t("common.edit")} ${item.title || item.name}`}
-                          onClick={() => navigate(`${ROUTES.POST_TYPE_ROOT}/${encodeURIComponent(item.name)}`)}>
-                          <Pencil className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                        <Button variant="ghost" size="icon" aria-label={`${t("common.delete")} ${item.title || item.name}`}
-                          onClick={() => handleDelete(item.name)}>
-                          <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {items.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                      {t("common.noResults")}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-        </Panel>
-      </div>
-    </>
+    <BentoListPage
+      items={items}
+      error={error}
+      tryAgainUrl={ROUTES.POST_TYPE_ROOT}
+      listId="post-types"
+      backTo={ROUTES.HOME}
+      backLabel={t("home.title")}
+      title={t("content.postTypes")}
+      subtitle={t("nav.desc.postTypes")}
+      newRoute={`${ROUTES.POST_TYPE_ROOT}/new`}
+      newLabel={t("common.create")}
+      itemKey={(type: ShPostType) => type.name}
+      columns={columns}
+      rowActions={rowActions}
+      getRowLabel={labelOf}
+      onRowOpen={open}
+      emptyTitle={t("common.noResults")}
+      emptyDescription={t("content.createFirstPostType")}
+    />
   )
 }

@@ -35,7 +35,6 @@ const DEBT = {
   "app/content/forms.page.tsx": "SH1230",
   "app/content/languages.page.tsx": "SH1231",
   "app/content/notes.page.tsx": "SH1232",
-  "app/content/post-type.list.page.tsx": "SH1225",
   "app/content/scheduled.page.tsx": "SH1229",
   "app/content/search.page.tsx": "SH1228",
   "app/content/static-file.list.page.tsx": "SH1226",
@@ -79,6 +78,14 @@ test("SH1224: every hand-drawn list table is named, with the task that removes i
   assert.deepEqual(moved, [],
     "SH1224: a screen on the debt list no longer imports components/ui/table. Delete its entry in "
     + "the same commit, so the list only shrinks and a moved screen cannot rejoin it unnoticed.")
+})
+
+test("SH1225: the post types list is the package's table, with its verbs in the row menu", () => {
+  const page = readFileSync(join(SRC, "app", "content", "post-type.list.page.tsx"), "utf8")
+  assert.match(page, /<BentoListPage\b/, "SH1225: the post types list no longer renders BentoListPage")
+  assert.match(page, /rowActions=\{rowActions\}/,
+    "SH1225: Edit and Delete belong in the row's actions menu, which a keyboard reaches, not in a column of buttons")
+  assert.match(page, /<BentoIdentityCell\b/, "SH1225: the type is named by the package's identity cell")
 })
 
 test("SH1224: the scan sees an alias import, a relative one, and nothing else", () => {
