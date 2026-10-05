@@ -83,7 +83,7 @@ export default function BentoSiteImportPage() {
       />
 
       {/* Same rule as the other three: the hero says this, so the section does not. */}
-      <BentoFormSection icon={IconUpload} tone="violet" title={t("content.import")}>
+      <BentoFormSection icon={IconUpload} title={t("content.import")}>
         <div className="space-y-2">
           <Label htmlFor="import-file">{t("content.selectFile")}</Label>
           <Input

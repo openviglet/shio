@@ -237,7 +237,6 @@ export default function LanguagesPage() {
         {!loading && (!board || board.rows.length === 0) ? (
           <EmptyState
             icon={IconLanguage}
-            tone="blue"
             title={t("content.coverageEmptyTitle")}
             description={t("content.coverageEmptyDescription")}
           />

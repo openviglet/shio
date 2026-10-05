@@ -220,7 +220,6 @@ export default function ActivityListPage() {
         {items.length === 0 ? (
           <EmptyState
             icon={IconHistory}
-            tone="slate"
             title={t("activity.blankTitle")}
             description={t("activity.blankDescription")}
           />

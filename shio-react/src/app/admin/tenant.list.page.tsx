@@ -26,7 +26,6 @@ export default function BentoTenantListPage() {
       query={query}
       listRoute={ROUTES.BENTO_TENANTS}
       newRoute={`${ROUTES.BENTO_TENANTS}/new`}
-      tone="emerald"
       eyebrow={t("admin.title")}
       title={t("tenantAdmin.title")}
       subtitle={t("tenantAdmin.description")}

@@ -46,7 +46,6 @@ export default function EditorSitesPage() {
           {sites.length === 0 ? (
             <EmptyState
               icon={IconLayersIntersect}
-              tone="blue"
               title={t("universalEditor.noSites")}
               description={t("universalEditor.noSitesDescription")}
             />

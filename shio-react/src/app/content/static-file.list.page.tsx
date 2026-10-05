@@ -760,7 +760,6 @@ function FilesEmptyState({ items, query, category, t }: {
   return (
     <EmptyState
       icon={IconPhoto}
-      tone={filteredOut ? "slate" : "amber"}
       title={filteredOut ? t("staticFile.noMatches") : t("staticFile.blankTitle")}
       description={filteredOut ? t("staticFile.noMatchesHint") : t("staticFile.blankDescription")}
     />

@@ -26,7 +26,6 @@ export default function BentoAuthProviderListPage() {
       query={query}
       listRoute={ROUTES.BENTO_AUTH_PROVIDERS}
       newRoute={`${ROUTES.BENTO_AUTH_PROVIDERS}/new`}
-      tone="indigo"
       eyebrow={t("admin.title")}
       title={t("authProvider.title")}
       subtitle={t("authProvider.description")}

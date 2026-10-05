@@ -130,7 +130,7 @@ export default function BentoVocabularyPage() {
       />
 
       {/* Every tone the preset defines, so a re-keyed palette is one screenshot away from proof. */}
-      <BentoFormSection icon={IconWand} tone="violet" title={COPY.tonesTitle} description={COPY.tonesDescription}>
+      <BentoFormSection icon={IconWand} title={COPY.tonesTitle} description={COPY.tonesDescription}>
         <ul className="flex flex-wrap gap-2">
           {BENTO_TONES.map((tone) => (
             <li key={tone} className={bentoChipClass(tone)}>
@@ -185,7 +185,6 @@ export default function BentoVocabularyPage() {
       {/* The form vocabulary: a section, an inline edit and the identity glyph that never becomes a field. */}
       <BentoFormSection
         icon={IconSettings}
-        tone="emerald"
         title={COPY.formTitle}
         description={COPY.formDescription}
         trailing={<BentoStatusMarker dirty />}
@@ -228,7 +227,6 @@ export default function BentoVocabularyPage() {
           <BentoTileGrid
             items={SPECIMENS}
             tryAgainUrl={ROUTES.HOME}
-            tone="indigo"
             hideNew
             itemKey={(item) => item.id}
             renderTile={(item) => (
@@ -236,7 +234,6 @@ export default function BentoVocabularyPage() {
                 to={ROUTES.HOME}
                 defaultIcon={item.icon}
                 icon={item.id === "site" ? icon : null}
-                tone="blue"
                 title={item.title}
                 description={item.description}
                 meta={item.meta}
@@ -263,7 +260,6 @@ export default function BentoVocabularyPage() {
 
       <BentoEmptyState
         icon={IconStack2}
-        tone="slate"
         title={COPY.emptyTitle}
         description={COPY.emptyDescription}
         align="center"
@@ -273,7 +269,7 @@ export default function BentoVocabularyPage() {
        * The resolved layout, printed. A span that stops being a multiple of two, or an emphasis
        * cycle that stops cycling, is visible here as text before it is visible as a broken grid.
        */}
-      <BentoFormSection icon={IconStack2} tone="slate" title={COPY.layoutTitle} description={COPY.layoutDescription}>
+      <BentoFormSection icon={IconStack2} title={COPY.layoutTitle} description={COPY.layoutDescription}>
         <ul className="text-muted-foreground space-y-1 font-mono text-xs">
           {resolved.map((row) => (
             <li key={row.key}>

@@ -239,7 +239,7 @@ export default function BentoSiteEditPage() {
          * search settings, so it is called that.
          */
         <form id="site-edit" onSubmit={onSubmit}>
-        <BentoFormSection icon={IconWorld} tone="blue" title={t("content.siteSettings")}>
+        <BentoFormSection icon={IconWorld} title={t("content.siteSettings")}>
           <div className="space-y-2">
             <Label htmlFor="site-url">{t("content.url")}</Label>
             <Input

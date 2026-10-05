@@ -337,7 +337,6 @@ export default function BentoHomePage() {
         {activity.length === 0 ? (
           <BentoEmptyState
             icon={IconHistory}
-            tone="slate"
             title={t("home.noActivity")}
             action={<Link to={ROUTES.ADMIN_ACTIVITY}>{t("home.viewAll")}</Link>}
           />

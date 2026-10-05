@@ -26,7 +26,6 @@ export default function BentoSiteWebhookListPage() {
       query={query}
       listRoute={ROUTES.BENTO_WEBHOOKS}
       newRoute={`${ROUTES.BENTO_WEBHOOKS}/new`}
-      tone="violet"
       eyebrow={t("admin.title")}
       title={t("siteWebhook.title")}
       subtitle={t("siteWebhook.description")}

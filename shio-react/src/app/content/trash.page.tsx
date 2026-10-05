@@ -201,14 +201,12 @@ export default function TrashPage() {
         {!loading && items.length === 0 ? (
           <EmptyState
             icon={IconTrash}
-            tone="slate"
             title={t("content.trashEmpty")}
             description={t("content.trashEmptyHint")}
           />
         ) : !loading && shown.length === 0 ? (
           <EmptyState
             icon={IconTrash}
-            tone="slate"
             title={t("common.noResults")}
             description={t("content.trashNoMatchHint")}
           />

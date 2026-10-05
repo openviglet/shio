@@ -38,7 +38,6 @@ export default function BentoUserListPage() {
       query={query}
       listRoute={ROUTES.BENTO_USERS}
       newRoute={ROUTES.BENTO_USER_NEW}
-      tone="emerald"
       eyebrow={t("admin.title")}
       title={t("admin.users")}
       subtitle={t("admin.usersSubtitle")}

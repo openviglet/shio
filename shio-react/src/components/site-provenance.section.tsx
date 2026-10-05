@@ -42,7 +42,7 @@ export function SiteProvenanceSection({ siteName }: { siteName?: string }) {
   if (!note) return null
 
   return (
-    <BentoFormSection icon={IconHistory} tone="blue" title={t("content.siteProvenance")}>
+    <BentoFormSection icon={IconHistory} title={t("content.siteProvenance")}>
       <p className="text-sm">{note.note}</p>
       {(note.author || note.updated) && (
         <p className="text-xs text-muted-foreground">

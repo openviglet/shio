@@ -302,7 +302,6 @@ export default function ReviewListPage() {
         {queueFailure ? (
           <EmptyState
             icon={IconRobot}
-            tone="rose"
             title={t("review.readFailedTitle")}
             description={headlineOf(problemOf(queueFailure), t("review.readFailedHint"))}
             action={
@@ -315,7 +314,6 @@ export default function ReviewListPage() {
         ) : sessions.length === 0 ? (
           <EmptyState
             icon={IconRobot}
-            tone="violet"
             title={t("review.blankTitle")}
             description={t("review.blankDescription")}
           />
@@ -326,7 +324,6 @@ export default function ReviewListPage() {
            */
           <EmptyState
             icon={IconRobot}
-            tone="slate"
             title={t("review.nothingWaitingTitle")}
             description={t("review.nothingWaitingHint", { count: sessions.length })}
             action={
@@ -338,7 +335,6 @@ export default function ReviewListPage() {
         ) : shown.length === 0 ? (
           <EmptyState
             icon={IconRobot}
-            tone="slate"
             title={t("review.noMatchTitle")}
             description={t("review.noMatchHint")}
           />

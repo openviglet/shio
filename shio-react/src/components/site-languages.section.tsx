@@ -48,7 +48,7 @@ export function SiteLanguagesSection({ catalogue, policy, draft, onChange, siteI
   }
 
   return (
-    <BentoFormSection icon={IconLanguage} tone="violet" title={t("content.siteLanguages")}>
+    <BentoFormSection icon={IconLanguage} title={t("content.siteLanguages")}>
       {/* SH1060 — which languages the site offers is decided here; what it HAS in them is a
           read, and the board is where that read is shown. */}
       {siteId && (

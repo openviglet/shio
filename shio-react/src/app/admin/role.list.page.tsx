@@ -26,7 +26,6 @@ export default function BentoRoleListPage() {
       newRoute={ROUTES.BENTO_ROLE_NEW}
       itemKey={(role) => role.id}
       tileOf={(role) => ({ to: `${ROUTES.BENTO_ROLES}/${role.id}`, title: role.name, description: role.description })}
-      tone="rose"
       eyebrow={t("admin.title")}
       title={t("admin.roles")}
       subtitle={t("admin.rolesSubtitle")}

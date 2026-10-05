@@ -48,7 +48,7 @@ export function SiteIndexSection({ siteName }: { siteName?: string }) {
   const unroutable = !route?.searchSite && (route?.published ?? 0) > 0
 
   return (
-    <BentoFormSection icon={IconSearch} tone="blue" title={t("content.siteIndex")}>
+    <BentoFormSection icon={IconSearch} title={t("content.siteIndex")}>
       <p className="text-xs text-muted-foreground">
         {t("content.siteIndexTarget", { target: status.target ?? "—" })}
       </p>

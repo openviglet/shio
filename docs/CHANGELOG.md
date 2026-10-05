@@ -1699,6 +1699,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH944** — The viglet-ds plugin is enabled here and carries the page skill, hook and check; only the artboards stay vendored, and the MCP-at-root gap is filed upstream (design §LX.5 superseded: the split it left to decide had been made by the package (VDS135): with the plugin on, the bin removes the vendored skill itself) (design §LX.5 recorded in `docs/agents/console-ui.md`).
 - **SH948** — copy-ds.cmd resolves the design system through its latest worktree junction (or VIGLET_DS), and --list names Shio and exits zero again (design §LX.9 recorded in `copy-ds.cmd`).
 - **SH1199** — The console takes DS 2026.3.17: controls size by prop, radii and mono follow the preset's keys, GraphiQL uses the console fonts, and the census fell to 21 heights, 2 fonts and 12 radii (design §LV.36 recorded in `docs/agents/console-ui.md`).
+- **SH1208** — No console element passes a prop the package ignores: tone left five bento components and the two seams that forwarded it, and a check reads the package's own deprecations (design §LV.43 recorded in `docs/agents/console-ui.md`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 

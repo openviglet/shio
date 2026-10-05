@@ -26,7 +26,6 @@ export default function BentoApiTokenListPage() {
       query={query}
       listRoute={ROUTES.BENTO_TOKENS}
       newRoute={`${ROUTES.BENTO_TOKENS}/new`}
-      tone="amber"
       eyebrow={t("admin.title")}
       title={t("apiToken.title")}
       subtitle={t("apiToken.description")}

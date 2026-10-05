@@ -105,7 +105,6 @@ export default function BentoSiteListPage() {
       eyebrow={t("sidebar.content")}
       title={t("content.sites")}
       subtitle={t("content.selectYourSite")}
-      tone="blue"
       headerAction={
         <div className="flex items-center gap-2">
           <div className="relative">

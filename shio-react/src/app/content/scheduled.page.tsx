@@ -124,7 +124,6 @@ export default function ScheduledPage() {
         ) : !loading && entries.length === 0 ? (
           <EmptyState
             icon={IconCalendarTime}
-            tone="blue"
             title={t("content.scheduledEmptyTitle")}
             description={t("content.scheduledEmptyDescription")}
           />

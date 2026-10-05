@@ -209,7 +209,6 @@ export default function MarketplaceListPage() {
       {items.length === 0 && !loading ? (
         <EmptyState
           icon={IconPackage}
-          tone="blue"
           title={t("marketplace.empty")}
           description={t("marketplace.emptyHint")}
         />

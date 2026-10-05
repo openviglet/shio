@@ -215,14 +215,12 @@ export default function SearchPage() {
         {!searched ? (
           <EmptyState
             icon={IconSearch}
-            tone="slate"
             title={t("content.searchPromptTitle")}
             description={t("content.searchPromptHint")}
           />
         ) : results.length === 0 ? (
           <EmptyState
             icon={IconSearch}
-            tone="slate"
             title={t("content.searchNoResults")}
             description={t("content.searchNoResultsHint")}
           />

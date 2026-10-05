@@ -11,9 +11,9 @@
 
 ## Block AU — The design system's consumer contract, adopted and gated
 
-- 📋 **SH1208** (deps: —) **The console still passes tone to four bento components that ignore it since VDS182** — A dead prop tells the next reader a section is amber or a list rose, and the next page copies a colour that no longer renders. → §LV.43
 - 📋 **SH1209** (deps: —) **The GraphQL explorer draws GraphiQL's own radii and button heights, off the console's closed scale** — It is the last route the census reads with radii outside control, panel and full. → §LV.44
 - 📋 **SH1210** (deps: —) **Hand-drawn buttons and button-shaped cards give the console thirteen product button heights** — The source lint reads only the package's controls, so a native button or a clickable card keeps any height it likes. → §LV.45
+- 📋 **SH1211** (deps: —) **Home's activity list paints each row's icon chip a colour per action, a tone per area on a list** — VDS182 gives a list one colour, a record's state, and the package already draws a change as a mark and a word. → §LV.46
 
 ## Priority
 

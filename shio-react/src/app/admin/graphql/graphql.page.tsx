@@ -125,7 +125,6 @@ export default function GraphiQLPage() {
                 <div>
                     <EmptyState
                         icon={IconKey}
-                        tone="violet"
                         title={t("graphql.noTokensTitle")}
                         description={t("graphql.noTokensDescription")}
                         action={

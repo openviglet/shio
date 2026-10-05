@@ -26,7 +26,6 @@ export default function BentoGroupListPage() {
       newRoute={ROUTES.BENTO_GROUP_NEW}
       itemKey={(group) => group.id}
       tileOf={(group) => ({ to: `${ROUTES.BENTO_GROUPS}/${group.id}`, title: group.name, description: group.description })}
-      tone="violet"
       eyebrow={t("admin.title")}
       title={t("admin.groups")}
       subtitle={t("admin.groupsSubtitle")}

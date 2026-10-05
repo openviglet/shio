@@ -84,7 +84,7 @@ export default function BentoSiteNewPage() {
           the two lines above it is two lines of noise — SH898 made the same mistake on the home
           page and it is the easiest one to make, because both props want a string.
         */}
-        <BentoFormSection icon={IconWorld} tone="blue" title={t("content.siteLabel")}>
+        <BentoFormSection icon={IconWorld} title={t("content.siteLabel")}>
           <FormField
             control={form.control}
             name="name"

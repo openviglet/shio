@@ -938,24 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.43 LV.43 Tones the package no longer reads (SH1208)
-
-Design system 2026.3.17 (VDS182) made tone a no-op on BentoEmptyState, BentoEntityTile,
-BentoFormSection and BentoListPage: an area has no colour of its own, a list's one
-colour is a record's state through BentoStatusMarker, and the gradient chip stays only
-on an entity hero and a hub tile. The console still passes tone at about sixty call
-sites (folder, site and import form sections, the admin list pages through
-admin-list.page.tsx and identity-entity.page.tsx, the review, search, trash and
-scheduled empty states, the post-type picker). The props are marked deprecated and
-ignored, so nothing renders differently, but a reader of those pages is told the section
-is amber or the list is rose, and the next page copies the habit. Remove tone wherever
-the receiving component ignores it, keep it where the package still reads it (BentoHero
-on an entity shell, a hub tile in bento-area.page.tsx, BentoStatusMarker's state), and
-drop the tone fields from any page config that existed only to feed them. Add a check
-beside visual-scale.test.mjs that reads the installed package's declarations for props
-marked deprecated since VDS182 and fails when a console element passes one, so the next
-deprecation in the package surfaces here without anyone grepping for it.
-
 ### LV.44 LV.44 The explorer's chrome on the scale (SH1209)
 
 After SH1199 the look census reads the GraphQL explorer as the one route still drawing
@@ -988,6 +970,26 @@ it, or ask the design system whether the census should count an element taller t
 touch step as a control. Start by listing each value's elements from pnpm look --
 --json, fix the controls, decide the cards, extend visual-scale.test.mjs to native
 button elements with a fixed height, and record the lower reading.
+
+### LV.46 LV.46 Home's activity rows as changes, not colours (SH1211)
+
+The home page's activity list draws each row behind a gradient icon chip, coloured by
+ACTION_TONE in home.page.tsx (create blue, update indigo, publish emerald, unpublish
+amber, delete rose, restore violet), and its agent rows take amber while pending and
+slate after. RowIcon builds the chip itself from bentoChipClass, so
+ignored-props.test.mjs (SH1208) cannot see it: the colour is not a prop the package
+ignores but one the console paints. It is the habit VDS182 retired, though. A list names
+many things, so its colour is a record's state and nothing else, and the gradient chip
+belongs to an entity hero or a hub tile. The package already has the vocabulary for both
+of these lists. BentoChangeMark (VDS170) draws added, changed, removed and unchanged as
+a mark and a word, and bulk-plan.dialog.tsx maps the agent change-set actions onto it
+through changeStateOf in src/lib/change-mark.ts (SH1178). BentoStatusMarker draws a
+record's state as a dot and a word. Map the activity actions through the same
+change-state function, render the mark beside a neutral icon, give a pending run a state
+rather than an amber chip, and delete ACTION_TONE and RowIcon's tone. Then extend
+visual-scale.test.mjs, or a check beside it, so that bentoChipClass is called only from
+the places the package still keeps a chip: home's tiles and count tiles, an entity hero,
+a hub tile.
 
 ## LVI What Turing's index never receives
 

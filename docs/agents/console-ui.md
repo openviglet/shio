@@ -4021,3 +4021,18 @@ SH1054's, and `visual-scale.test.mjs` fails on any key that differs from the ins
 against the dev store, the census then read button heights 22 to 21, fonts 3 to 2 and radii 13 to
 12, recorded with `pnpm look -- --write`. What remains is GraphiQL's own radii, button heights the
 package draws off its control list, and product buttons that are cards rather than controls.
+
+## No element passes a prop the package ignores (SH1208)
+
+VDS182 made `tone` a no-op on `BentoEmptyState`, `BentoEntityTile`, `BentoFormSection`,
+`BentoListPage` and `BentoTileGrid`: an area has no colour of its own, and a list's one colour is a
+record's state. The package keeps the prop, marked `@deprecated Ignored since VDS182`, so nothing
+broke on the release, and the console kept passing it at thirty-odd sites, telling a reader that a
+section is amber when nothing renders amber. Those are gone, and so is the `tone` prop of the two
+seams that only forwarded it, `EmptyState` and `AdminListPage`. `tone` stays where the package still
+reads it: home's tiles and count tiles, an entity shell's hero, a hub tile.
+
+`ignored-props.test.mjs` does not list the five components. It reads the installed package's
+declarations for every prop whose comment says `@deprecated Ignored since`, on the component whose
+props interface carries it, and fails when a console element passes one. The next release that
+retires a prop that way fails here by name.

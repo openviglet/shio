@@ -73,7 +73,7 @@ export default function BentoFolderNewPage() {
           stickyTitle={title || t("content.newFolder")}
         />
 
-        <BentoFormSection icon={IconFolder} tone="amber" title={t("content.folder")}>
+        <BentoFormSection icon={IconFolder} title={t("content.folder")}>
           <FormField
             control={form.control}
             name="name"

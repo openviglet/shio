@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 import { useQuery } from "@tanstack/react-query"
-import { BentoListPage, type BentoDataTableColumn, type BentoTone } from "@viglet/viglet-design-system/bento"
+import { BentoListPage, type BentoDataTableColumn } from "@viglet/viglet-design-system/bento"
 import { useMemo, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate } from "react-router-dom"
@@ -40,7 +40,6 @@ export interface AdminListPageProps<T> {
   query: () => Promise<T[]>
   listRoute: string
   newRoute: string
-  tone: BentoTone
   eyebrow: string
   title: string
   subtitle: string
@@ -88,7 +87,6 @@ export function AdminListPage<T>({
   query,
   listRoute,
   newRoute,
-  tone,
   eyebrow,
   title,
   subtitle,
@@ -176,7 +174,6 @@ export function AdminListPage<T>({
       eyebrow={eyebrow}
       title={title}
       subtitle={subtitle}
-      tone={tone}
       headerAction={headerAction}
       newRoute={newRoute}
       newLabel={newLabel}

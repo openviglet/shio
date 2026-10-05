@@ -26,7 +26,6 @@ export default function BentoExchangeProviderListPage() {
       query={query}
       listRoute={ROUTES.BENTO_EXCHANGE_PROVIDERS}
       newRoute={`${ROUTES.BENTO_EXCHANGE_PROVIDERS}/new`}
-      tone="blue"
       eyebrow={t("admin.title")}
       title={t("exchangeProvider.title")}
       subtitle={t("exchangeProvider.description")}

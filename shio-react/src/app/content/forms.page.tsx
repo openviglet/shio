@@ -169,7 +169,6 @@ export default function FormsPage() {
         {!loading && rows.length === 0 ? (
           <EmptyState
             icon={IconMail}
-            tone="slate"
             title={t("content.formsEmptyTitle")}
             description={t("content.formsEmptyHint")}
           />

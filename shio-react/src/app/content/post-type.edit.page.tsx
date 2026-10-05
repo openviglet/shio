@@ -728,7 +728,6 @@ function FieldList({ fields, widgets, postTypes, onChange }: {
     return (
       <EmptyState
         icon={IconStack2}
-        tone="amber"
         title={t("content.noFields")}
         description={t("content.noFieldsDescription")}
         action={

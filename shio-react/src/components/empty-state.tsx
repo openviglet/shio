@@ -7,14 +7,12 @@
  * (at your option) any later version.
  */
 import type { Icon as TablerIcon } from "@tabler/icons-react"
-import { BentoEmptyState, type BentoTone } from "@viglet/viglet-design-system/bento"
+import { BentoEmptyState } from "@viglet/viglet-design-system/bento"
 import type React from "react"
 
 interface EmptyStateProps {
   /** Tabler icon, as `BentoEmptyState` takes it. */
   icon: TablerIcon
-  /** The tone driving the icon chip's gradient. */
-  tone?: BentoTone
   /** What is missing, in plain language. */
   title: string
   /** One line on how to fill it. */
@@ -62,7 +60,6 @@ interface EmptyStateProps {
  */
 export function EmptyState({
   icon,
-  tone,
   title,
   description,
   action,
@@ -71,7 +68,6 @@ export function EmptyState({
   return (
     <BentoEmptyState
       icon={icon}
-      tone={tone}
       title={title}
       description={description}
       action={action}
