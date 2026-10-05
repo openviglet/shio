@@ -1685,6 +1685,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1227** — The trash is the package's table: Restore and Purge act on one row or a selection held within its filter, purging many asks once, and each row shows when it went in (design §LXXVII.11 recorded in `shio-react/src/app/content/trash.page.tsx`).
 - **SH1228** — Search results are the package's table: title with its address in the identity cell, type and state columns, sortable headers, and Enter opening the post (design §LXXVII.12 superseded: its date column: search rows are the agent's find rows unchanged (SH1027) and carry no date, which would cost tokens on every agent find) (design §LXXVII.12 recorded in `shio-react/src/app/content/search.page.tsx`).
 - **SH1229** — The scheduled list view is the package's table beside its calendar: rows keep the order they will happen in until a header is chosen, the page is an identity cell, and Enter opens the post (design §LXXVII.13 recorded in `shio-react/src/app/content/scheduled.page.tsx`).
+- **SH1230** — Form submissions are the package's table, which virtualizes a growing inbox, and Trash acts on one submission or a selection; Enter opens the post (design §LXXVII.14 superseded: its arrival-time column: submissions are the agent's find rows unchanged (SH1027) and carry no date) (design §LXXVII.14 recorded in `shio-react/src/app/content/forms.page.tsx`).
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

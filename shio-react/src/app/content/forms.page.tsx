@@ -1,5 +1,8 @@
-import { IconMail } from "@tabler/icons-react"
-import { Save, Trash2 } from "lucide-react"
+import { IconMail, IconTrash } from "@tabler/icons-react"
+import { Save } from "lucide-react"
+import {
+  BentoDataTable, BentoIdentityCell, type BentoDataTableAction,
+} from "@viglet/viglet-design-system/bento"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -8,12 +11,10 @@ import { EmptyState } from "@/components/empty-state"
 import { PageHero } from "@/components/page-hero"
 import { Panel } from "@/components/panel"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
 import { useSites } from "@/hooks/use-catalogue"
 import { useListState } from "@/hooks/use-list-state"
@@ -116,6 +117,11 @@ export default function FormsPage() {
     }
   }
 
+  const trashAction: BentoDataTableAction<ShConsoleSearchRow> = {
+    id: "trash", label: t("content.trash"), icon: IconTrash, tone: "destructive",
+    onSelect: (chosen) => { for (const row of chosen) void trashRow(row) },
+  }
+
   /** One setting, spelled as the server stores it: a path, or a comma-separated list. */
   const field = (key: "folderUrl" | "allowedTypes" | "allowedOrigins", label: string, hint: string) => (
     <div className="space-y-1">
@@ -173,39 +179,33 @@ export default function FormsPage() {
             description={t("content.formsEmptyHint")}
           />
         ) : (
-          <Panel contentClassName="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("common.title")}</TableHead>
-                  <TableHead className="w-40">{t("content.postType")}</TableHead>
-                  <TableHead>{t("content.url")}</TableHead>
-                  <TableHead className="w-24">{t("common.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.address}>
-                    <TableCell className="font-medium">
-                      <button type="button" className="text-left hover:underline"
-                        onClick={() => row.id && navigate(`${ROUTES.CONTENT_ROOT}/post/${row.id}`)}>
-                        {row.title || t("content.formsUntitled")}
-                      </button>
-                    </TableCell>
-                    <TableCell><Badge variant="outline">{row.type}</Badge></TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{row.address}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="text-destructive"
-                        aria-label={t("content.formsTrash", { title: row.title || row.address })}
-                        onClick={() => trashRow(row)}>
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Panel>
+          /*
+           * SH1230 — submissions on the design system's table: they grow without bound, and the
+           * package's table virtualizes and selects where the hand-drawn one did neither. Trash is
+           * still the one verb, on a row or on a selection. No arrival column: the rows are the
+           * agent's own find rows (SH1027), which carry no date, for SH1228's token reason.
+           */
+          <BentoDataTable
+            rows={rows}
+            getRowId={(row) => row.address}
+            getRowLabel={(row) => row.title || row.address}
+            columns={[
+              {
+                id: "title", header: t("common.title"), width: "minmax(18rem, 3fr)", hideable: false,
+                sortValue: (row) => (row.title || row.address).toLowerCase(),
+                cell: (row) => <BentoIdentityCell name={row.title || t("content.formsUntitled")} detail={row.address} />,
+              },
+              {
+                id: "type", header: t("content.postType"), width: "minmax(9rem, 1fr)",
+                sortValue: (row) => (row.type ?? "").toLowerCase(),
+                cell: (row) => <Badge variant="outline">{row.type}</Badge>,
+              },
+            ]}
+            label={t("content.formsTitle")}
+            rowActions={[trashAction]}
+            selectionActions={[trashAction]}
+            onRowOpen={(row) => { if (row.id) navigate(`${ROUTES.CONTENT_ROOT}/post/${row.id}`) }}
+          />
         )}
       </div>
     </>

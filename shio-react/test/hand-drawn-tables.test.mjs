@@ -32,7 +32,6 @@ const SRC = join(ROOT, "src")
 const DEBT = {
   "app/admin/activity/activity.list.page.tsx": "SH1233",
   "app/admin/group-members.tsx": "SH1234",
-  "app/content/forms.page.tsx": "SH1230",
   "app/content/languages.page.tsx": "SH1231",
   "app/content/notes.page.tsx": "SH1232",
 }
@@ -120,6 +119,13 @@ test("SH1229: the scheduled list is the package's table beside its calendar, in 
   assert.match(page, /<BentoCalendar\b/, "SH1229: the calendar view stays the package's calendar")
   assert.match(page, /id: "when"[\s\S]*sortValue: \(entry\) => new Date\(entry\.at\)/,
     "SH1229: the time column sorts by the instant, which is the page's order")
+})
+
+test("SH1230: form submissions virtualize and trash a selection on the package's table", () => {
+  const page = readFileSync(join(SRC, "app", "content", "forms.page.tsx"), "utf8")
+  assert.match(page, /<BentoDataTable\b[\s\S]*selectionActions=\{\[trashAction\]\}/,
+    "SH1230: submissions grow without bound and need the table's selection to be cleared in bulk")
+  assert.match(page, /id: "trash"[^}]*tone: "destructive"/, "SH1230: Trash stays the one, destructive, verb")
 })
 
 test("SH1224: the scan sees an alias import, a relative one, and nothing else", () => {

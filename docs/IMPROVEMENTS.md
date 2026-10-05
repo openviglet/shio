@@ -1112,12 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.14 Form submissions on the design system's table (SH1230)
-
-forms.page.tsx lists a site's form submissions with shadcn Table. Move them onto
-BentoDataTable with the change cell for the arrival time. Done when the page leaves
-SH1224's debt list.
-
 ### LXXVII.15 Languages on the design system's table (SH1231)
 
 languages.page.tsx renders a site's translation coverage with shadcn Table. Move it onto
