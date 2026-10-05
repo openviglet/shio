@@ -4,9 +4,10 @@ import { PageHero } from "@/components/page-hero"
 import { Panel } from "@/components/panel"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
+import {
+  BentoDataTable, BentoFilterBar, BentoIdentityCell, type BentoDataTableColumn, type BentoFilterValue,
+} from "@viglet/viglet-design-system/bento"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { contentFacets, countLocally, fromBarValue, toBarValue, withCounts, withSiteFacet } from "@/lib/filter-bar"
 // SH1023 — the search term and the site live in the URL, so a search can be sent to somebody.
@@ -105,6 +106,38 @@ export default function SearchPage() {
       state: countLocally(results, (row) => [row.state?.toLowerCase(), row.live ? "published" : null]),
       locale: countLocally(results, (row) => [row.locale]),
     } : undefined, barValue), [postTypes, results, sites, searched, barValue, t])
+
+  /*
+   * SH1228 — results on the design system's table, so they sort from their headers and Enter opens
+   * the post, like every other list. The page is the identity cell: its title, and under it the
+   * address the agent would write to. The state is its own column because a draft and what is live
+   * are both in here. No date column: these rows are the agent's own find rows, unchanged (SH1027),
+   * and a date on each would be a token cost on every agent search for a console column.
+   */
+  const columns = useMemo<BentoDataTableColumn<ShConsoleSearchRow>[]>(() => [
+    {
+      id: "title", header: t("common.title"), width: "minmax(18rem, 3fr)", hideable: false,
+      sortValue: (row) => (row.title || row.address).toLowerCase(),
+      cell: (row) => <BentoIdentityCell name={row.title || "(untitled)"} detail={row.address} />,
+    },
+    {
+      id: "type", header: t("content.postType"), width: "minmax(9rem, 1fr)",
+      sortValue: (row) => (row.type ?? "").toLowerCase(),
+      cell: (row) => <Badge variant="outline">{row.type}</Badge>,
+    },
+    {
+      id: "state", header: t("content.filterState"), width: "minmax(8rem, 0.8fr)",
+      sortValue: (row) => row.state ?? "",
+      cell: (row) => (
+        <Badge variant={row.state === "DRAFT" ? "secondary" : "outline"}>
+          {row.state === "DRAFT" ? t("content.filterDraft") : t("content.filterPublished")}
+        </Badge>
+      ),
+    },
+  ], [t])
+  const openRow = (row: ShConsoleSearchRow) => {
+    if (row.id) navigate(`${ROUTES.CONSOLE}/content/post/${row.id}`)
+  }
 
   /**
    * The search runs from the URL, not from the button.
@@ -238,37 +271,14 @@ export default function SearchPage() {
                 <span className="ml-2">{t("content.searchWithheld", { count: withheld })}</span>
               )}
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("common.title")}</TableHead>
-                  <TableHead className="w-40">{t("content.postType")}</TableHead>
-                  <TableHead>{t("content.url")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.map((row) => (
-                  <TableRow key={row.address} className="cursor-pointer"
-                    onClick={() => row.id && navigate(`${ROUTES.CONSOLE}/content/post/${row.id}`)}>
-                    <TableCell className="font-medium">
-                      {row.title || "(untitled)"}
-                      {/* The state, because a draft and what is live are now both in here. */}
-                      {row.state === "DRAFT" && (
-                        <Badge variant="secondary" className="ml-2 text-[10px]">
-                          {t("content.filterDraft")}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{row.type}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-xs">
-                      {row.address}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <BentoDataTable
+              rows={results}
+              getRowId={(row) => row.address}
+              getRowLabel={(row) => row.title || row.address}
+              columns={columns}
+              label={t("content.searchTitle")}
+              onRowOpen={openRow}
+            />
           </Panel>
         )}
       </div>

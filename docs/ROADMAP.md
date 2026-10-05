@@ -11,7 +11,6 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1228** (deps: SH1224 ✅) **Search results are a hand-drawn table** — A result list should sort and open from the keyboard like every other list. → §LXXVII.12
 - 📋 **SH1229** (deps: SH1224 ✅) **The scheduled list is a hand-drawn table** — The agenda's list view should share the package's table while its calendar view stays the package's calendar. → §LXXVII.13
 - 📋 **SH1230** (deps: SH1224 ✅) **The forms submissions list is a hand-drawn table** — Submissions grow without bound, and a hand-drawn table neither virtualizes nor selects. → §LXXVII.14
 - 📋 **SH1231** (deps: SH1224 ✅) **The languages coverage list is a hand-drawn table** — It should sort by coverage and reach the keyboard like the other lists. → §LXXVII.15
@@ -22,6 +21,7 @@
 - 📋 **SH1237** (deps: SH1218 ✅) **the console's capture of a site's home has never run in a real browser** — Its node tests fake the frame and the rasteriser, so a capture that fails in Chromium would leave every card on initials unnoticed. → §LXXVII.20
 - 📋 **SH1238** (deps: —) **a user's last sign-in is never recorded; lastLogin holds the seed date** — Only ShUserOnStartup writes it, so the users list cannot say who stopped using the instance. → §LXXVII.21
 - 📋 **SH1239** (deps: a sticky selection bar in the DS) **the content browser's bulk verbs scroll out of view down a long folder** — The package keeps the table's header row in view but not its selection bar, so rows ticked low in a folder leave Move and Delete off screen. → §LXXVII.22
+- 📋 **SH1240** (deps: —) **search's Published count leaves out drafts of live pages; it reads row.live, which the server never sends** — The server's field is published (SH545), so the console's live is always undefined. → §LXXVII.23
 
 ## Priority
 
