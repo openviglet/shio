@@ -48,8 +48,11 @@ export interface AdminListPageProps<T> {
   emptyDescription: string
   itemKey: (item: T) => string
   tileOf: (item: T) => AdminTile
-  /** Rendered in the row beside "Customize" — a filter, a secondary action. */
-  headerAction?: ReactNode
+  /**
+   * The list's own controls, a filter or a secondary action, in the package's one bar between the
+   * hero and the rows (SH1221); New stays the hero's primary.
+   */
+  toolbar?: ReactNode
 }
 
 /**
@@ -95,7 +98,7 @@ export function AdminListPage<T>({
   emptyDescription,
   itemKey,
   tileOf,
-  headerAction,
+  toolbar,
 }: Readonly<AdminListPageProps<T>>) {
   /*
    * SH1046 — one read per address, shared by every screen that asks for it.
@@ -174,7 +177,7 @@ export function AdminListPage<T>({
       eyebrow={eyebrow}
       title={title}
       subtitle={subtitle}
-      headerAction={headerAction}
+      toolbar={toolbar}
       newRoute={newRoute}
       newLabel={newLabel}
       itemKey={itemKey}

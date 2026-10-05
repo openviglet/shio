@@ -54,9 +54,10 @@ import { ShSiteService } from "@/services/site/site.service"
  * ## The filter is the product's, in the slot the package left
  *
  * `BentoListPage` has no search, deliberately — a list of four does not want one and a list of
- * four hundred wants something cleverer. `headerAction` is the seam, so the input lives there and
- * the page filters before handing the array over. Dropping the filter would have been a
- * regression on the one console list most likely to grow.
+ * four hundred wants something cleverer. `toolbar` is the seam (SH1221 moved it there from the
+ * deprecated `headerAction`, so the filter sits in the bar over the rows it narrows), and the page
+ * filters before handing the array over. Dropping the filter would have been a regression on the
+ * one console list most likely to grow.
  *
  * ## What is deliberately gone
  *
@@ -268,7 +269,7 @@ export default function BentoSiteListPage() {
       eyebrow={t("sidebar.content")}
       title={t("content.sites")}
       subtitle={t("content.selectYourSite")}
-      headerAction={
+      toolbar={
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search aria-hidden="true" className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />

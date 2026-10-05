@@ -31,6 +31,24 @@ test("SH1194: the shared admin list and the site list render a table, not a mosa
   }
 })
 
+test("SH1221: no list passes the deprecated headerAction; a list's controls are in its one toolbar", () => {
+  const left = []
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name)
+      if (entry.isDirectory()) walk(path)
+      else if (/\.tsx?$/.test(entry.name)
+        && /\bheaderAction\b/.test(stripComments(readFileSync(path, "utf8")))) {
+        left.push(relative(SRC, path).replace(/\\/g, "/"))
+      }
+    }
+  }
+  walk(SRC)
+  assert.deepEqual(left, [],
+    "SH1221: headerAction draws a list's controls in the hero, apart from the rows they act on. "
+    + "Pass them as `toolbar`, which the package draws in the bar over the table; New stays the hero's primary.")
+})
+
 test("SH1194: no list page asks for tiles without saying why", () => {
   // The vocabulary harness renders the mosaic on purpose; a real list that wants tiles (media,
   // blueprints) names itself here with its reason, so the exception is a line and not a habit.

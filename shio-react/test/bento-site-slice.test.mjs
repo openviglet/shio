@@ -108,9 +108,9 @@ test("SH899: the list uses the package's list page, and keeps the filter the con
   assert.match(LIST, /BentoListPage/,
     "SH899: the site list hand-rolls its grid again. §LV.2 asked for the package's list page"
       + " precisely because this is the shape ten more list screens will copy.")
-  assert.match(LIST, /headerAction=/,
+  assert.match(LIST, /toolbar=/,
     "SH899: the filter is gone. BentoListPage has no search of its own, so dropping it here is a"
-      + " regression on the console list most likely to grow — `headerAction` is the seam.")
+      + " regression on the console list most likely to grow — `toolbar` is the seam (SH1221).")
 
   // A failed load must not read as an empty list. `undefined` means "loading" to the package's
   // gate, so a rejected query has to become an empty array AND an error, or the page spins.

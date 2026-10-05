@@ -11,7 +11,6 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1221** (deps: —) **Shio's lists keep their filter and import in the hero, apart from the rows they act on** — Once the package gives a list one toolbar, every Shio list that passes headerAction has to move its controls into it or keep the split. → §LXXVII.5
 - 📋 **SH1222** (deps: —) **The admin lists show a Description column most rows leave empty, and no date or actor** — AdminListPage serves every admin entity with the same four columns, so the sites list's proportion problem repeats on each of them. → §LXXVII.6
 - 📋 **SH1223** (deps: —) **The content browser's table is capped at 560 px, so a folder scrolls inside the page** — browser-table.tsx passes height 560 on every viewport, which wastes a large screen and puts a second scrollbar in the busiest screen. → §LXXVII.7
 - 📋 **SH1226** (deps: SH1224 ✅) **The media library's rows view is a hand-drawn table** — The busiest list after the content browser sorts and selects its own way, with hover-only actions. → §LXXVII.10

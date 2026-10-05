@@ -1112,15 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.5 Shio's lists use the one toolbar (SH1221)
-
-When the package's list toolbar ships, every BentoListPage in Shio moves what it passes
-as headerAction into the toolbar slot: the sites list's filter and Import, and
-AdminListPage's controls for the admin entities. New stays the hero's one filled
-primary. A source test lists every headerAction left, so the move is a list that shrinks
-rather than a sweep somebody remembers. Done when no BentoListPage in shio-react passes
-headerAction and each list renders one bar between its hero and its header row.
-
 ### LXXVII.6 The admin lists, on the same cells (SH1222)
 
 AdminListPage renders users, groups, roles, tokens, webhooks and the providers with
