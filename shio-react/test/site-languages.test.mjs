@@ -129,7 +129,10 @@ test("SH1062: the board asks the connected agent through a request on the draft 
   assert.match(BOARD, /if \(value\?\.requested\) return \[\]/u,
     "SH1062: a row or column ask re-asks cells already waiting on the agent, doubling its work")
   assert.match(BOARD, /askManyButton\(columnTargets\(locale\)/u, "SH1062: a locale column cannot be asked for")
-  assert.match(BOARD, /askManyButton\(rowTargets\(row\)/u, "SH1062: a row cannot be asked for")
+  // SH1231 — the row ask is the table's row menu and selection bar now, over one row or many.
+  assert.match(BOARD, /rows\.flatMap\(rowTargets\)/u, "SH1062: a row cannot be asked for")
+  assert.match(BOARD, /rowActions=\{agentAvailable \? \[openPage, askRows\] : \[openPage\]\}/u,
+    "SH1062: the row ask is offered with nobody around to answer it")
   const WORKSPACE = read("src", "app", "content", "translate.page.tsx")
   assert.match(WORKSPACE, /sendRequest\(postId, t\("content\.coverageAskWrite"/u,
     "SH1062: the translation workspace cannot ask the agent, so a translator has to go back to the board")

@@ -1112,12 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.15 Languages on the design system's table (SH1231)
-
-languages.page.tsx renders a site's translation coverage with shadcn Table. Move it onto
-BentoDataTable with coverage as a sortable column. Done when the page leaves SH1224's
-debt list.
-
 ### LXXVII.16 Open notes on the design system's table (SH1232)
 
 notes.page.tsx, new in SH1214, uses shadcn Table and a Resolve button per row. Move it

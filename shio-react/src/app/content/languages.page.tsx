@@ -1,4 +1,7 @@
-import { IconLanguage } from "@tabler/icons-react"
+import { IconExternalLink, IconLanguage, IconRobot } from "@tabler/icons-react"
+import {
+  BentoDataTable, BentoIdentityCell, type BentoDataTableAction, type BentoDataTableColumn,
+} from "@viglet/viglet-design-system/bento"
 import { AlertTriangle, Bot, Check, Plus } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -6,10 +9,8 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { GradientButton, toast } from "@viglet/viglet-design-system"
 import { EmptyState } from "@/components/empty-state"
 import { PageHero } from "@/components/page-hero"
-import { Panel } from "@/components/panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
 import { isCancelled } from "@/lib/read-options"
 import { reportProblem } from "@/lib/problem"
@@ -208,6 +209,46 @@ export default function LanguagesPage() {
   const locales = board?.locales ?? []
   const pages = board ? Math.ceil(board.total / Math.max(board.size, 1)) : 0
 
+  /*
+   * SH1231 — the board on the design system's table, so it sorts and reaches the keyboard like the
+   * other lists. Coverage is its own sortable column, the share of languages a page is current in,
+   * and each language column sorts missing first. The package's headers are words, so the asks that
+   * sat in them moved: a column's ask is on that language's tally above the table, and a row's is
+   * the row's menu and the selection bar, which can now ask for many pages at once.
+   */
+  type Row = ShSiteCoverage["rows"][number]
+  const RANK: Record<string, number> = { missing: 0, stale: 1, current: 2 }
+  const rank = (value: ShCoverageCell | undefined) =>
+    !value ? 0 : value.requested ? 0.5 : RANK[value.state] ?? 0
+  const current = (row: Row) => locales.filter((locale) => row.cells[locale]?.state === "current").length
+  const columns: BentoDataTableColumn<Row>[] = [
+    {
+      id: "page", header: t("content.coveragePage"), width: "minmax(16rem, 3fr)", hideable: false,
+      sortValue: (row) => (row.title || row.address).toLowerCase(),
+      cell: (row) => <BentoIdentityCell name={row.title || row.address} detail={row.address} />,
+    },
+    {
+      id: "coverage", header: t("content.coverageColumn"), width: "minmax(7rem, 0.7fr)",
+      sortValue: (row) => (locales.length ? current(row) / locales.length : 0),
+      cell: (row) => (
+        <span className="text-muted-foreground text-xs tabular-nums">{current(row)}/{locales.length}</span>
+      ),
+    },
+    ...locales.map<BentoDataTableColumn<Row>>((locale) => ({
+      id: `locale:${locale}`, header: locale.toUpperCase(), width: "minmax(8rem, 1fr)",
+      sortValue: (row) => rank(row.cells[locale]),
+      cell: (row) => cell(row.id, locale, row.cells[locale]),
+    })),
+  ]
+  const openPage: BentoDataTableAction<Row> = {
+    id: "open", label: t("content.coverageOpenPage"), icon: IconExternalLink,
+    onSelect: ([row]) => navigate(`${ROUTES.CONSOLE}/content/post/${row.id}`),
+  }
+  const askRows: BentoDataTableAction<Row> = {
+    id: "ask", label: t("content.coverageAskSelected"), icon: IconRobot,
+    onSelect: (rows) => { void ask(rows.flatMap(rowTargets), `rows|${rows.map((row) => row.id).join(",")}`) },
+  }
+
   return (
     <>
       <PageHero
@@ -230,6 +271,9 @@ export default function LanguagesPage() {
                     missing: board.totals[locale]?.missing ?? 0,
                   })}
                 </span>
+                {/* SH1062 — this language's column: every page on screen missing or behind in it. */}
+                {askManyButton(columnTargets(locale), `column|${locale}`,
+                  t("content.coverageAskColumn", { locale }))}
               </Badge>
             ))}
           </div>
@@ -241,46 +285,18 @@ export default function LanguagesPage() {
             description={t("content.coverageEmptyDescription")}
           />
         ) : (
-          <Panel contentClassName="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("content.coveragePage")}</TableHead>
-                  {locales.map((locale) => (
-                    <TableHead key={locale} className="w-32 font-mono text-xs uppercase">
-                      <span className="inline-flex items-center gap-1">
-                        {locale}
-                        {/* SH1062 — this page's column: every page on screen missing or behind in it. */}
-                        {askManyButton(columnTargets(locale), `column|${locale}`,
-                          t("content.coverageAskColumn", { locale }))}
-                      </span>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {board?.rows.map((row) => (
-                  <TableRow key={row.address}>
-                    <TableCell>
-                      <span className="inline-flex items-center gap-1">
-                        <Link className="font-medium hover:underline"
-                          to={`${ROUTES.CONSOLE}/content/post/${row.id}`}>
-                          {row.title || row.address}
-                        </Link>
-                        {/* SH1062 — this page in every language it is missing or behind in. */}
-                        {askManyButton(rowTargets(row), `row|${row.id}`,
-                          t("content.coverageAskRow", { title: row.title || row.address }))}
-                      </span>
-                      <div className="text-xs text-muted-foreground">{row.address}</div>
-                    </TableCell>
-                    {locales.map((locale) => (
-                      <TableCell key={locale}>{cell(row.id, locale, row.cells[locale])}</TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Panel>
+          <BentoDataTable
+            rows={board?.rows ?? []}
+            getRowId={(row) => row.address}
+            getRowLabel={(row) => row.title || row.address}
+            columns={columns}
+            label={t("content.coverageTitle")}
+            // SH1062 — a page in every language it is missing or behind in, offered only while an
+            // agent is around to answer (SH1019's rule), now for one row or a selection.
+            rowActions={agentAvailable ? [openPage, askRows] : [openPage]}
+            selectionActions={agentAvailable ? [askRows] : undefined}
+            onRowOpen={(row) => navigate(`${ROUTES.CONSOLE}/content/post/${row.id}`)}
+          />
         )}
         {pages > 1 && (
           <div className="flex items-center justify-end gap-2 text-xs">

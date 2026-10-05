@@ -32,7 +32,6 @@ const SRC = join(ROOT, "src")
 const DEBT = {
   "app/admin/activity/activity.list.page.tsx": "SH1233",
   "app/admin/group-members.tsx": "SH1234",
-  "app/content/languages.page.tsx": "SH1231",
   "app/content/notes.page.tsx": "SH1232",
 }
 
@@ -126,6 +125,15 @@ test("SH1230: form submissions virtualize and trash a selection on the package's
   assert.match(page, /<BentoDataTable\b[\s\S]*selectionActions=\{\[trashAction\]\}/,
     "SH1230: submissions grow without bound and need the table's selection to be cleared in bulk")
   assert.match(page, /id: "trash"[^}]*tone: "destructive"/, "SH1230: Trash stays the one, destructive, verb")
+})
+
+test("SH1231: the languages board sorts by coverage on the package's table", () => {
+  const page = readFileSync(join(SRC, "app", "content", "languages.page.tsx"), "utf8")
+  assert.match(page, /<BentoDataTable\b/, "SH1231: the languages board no longer renders the package's table")
+  assert.match(page, /id: "coverage"[\s\S]*sortValue: \(row\) => \(locales\.length \? current\(row\) \/ locales\.length : 0\)/,
+    "SH1231: coverage is a sortable column, the share of languages a page is current in")
+  assert.match(page, /sortValue: \(row\) => rank\(row\.cells\[locale\]\)/,
+    "SH1231: each language column sorts missing first")
 })
 
 test("SH1224: the scan sees an alias import, a relative one, and nothing else", () => {
