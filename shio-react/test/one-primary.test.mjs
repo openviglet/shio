@@ -54,10 +54,14 @@ test("SH1195: a read-only post type offers no save", () => {
   assert.match(page, /actions=\{managed \? undefined :/, "SH1195: a managed type still shows save buttons")
 })
 
-test("SH1195: the trash keeps Restore in the row and permanent delete in its menu", () => {
+test("SH1195: the trash keeps permanent delete in the row's menu, never a visible button", () => {
   const page = read("app", "content", "trash.page.tsx")
-  assert.match(page, /<BentoActionsMenu[\s\S]{0,300}tone: "destructive"[\s\S]{0,40}purge\(row\)/,
-    "SH1195: permanent delete is not in the row's menu")
-  assert.doesNotMatch(page, /<Button[^>]*text-destructive[\s\S]{0,120}purge\(row\)/,
+  // SH1227 moved both verbs into the package table's row menu and selection bar; Purge is the
+  // menu's destructive item, and nothing on the page draws it as a button.
+  assert.match(page, /id: "purge"[^}]*tone: "destructive"/,
+    "SH1195: permanent delete is not the menu's destructive item")
+  assert.match(page, /rowActions=\{\[restoreAction, purgeAction\]\}/,
+    "SH1195: Restore and permanent delete are not the row's menu")
+  assert.doesNotMatch(page, /<Button[^>]*text-destructive[\s\S]{0,120}purge\(/,
     "SH1195: permanent delete is a visible button on every row again")
 })

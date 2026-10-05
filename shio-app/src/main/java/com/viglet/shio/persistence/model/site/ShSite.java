@@ -177,6 +177,15 @@ public class ShSite extends ShObject {
 	@Column(name = "deleted_date")
 	private java.time.Instant deletedDate;
 
+	/**
+	 * SH1227 — when it went into the trash, which the trash lists. Left out of every payload of a
+	 * live site rather than sent as null, so the sites listing does not grow.
+	 */
+	@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+	public java.time.Instant getDeletedDate() {
+		return deletedDate;
+	}
+
 	public void setDeletedDate(java.time.Instant deletedDate) {
 		this.deletedDate = deletedDate;
 	}

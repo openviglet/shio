@@ -82,6 +82,13 @@ public class ShFolder extends ShObject {
 
 	public void setDeletedDate(java.time.Instant deletedDate) { this.deletedDate = deletedDate; }
 
+	/**
+	 * SH1227 — when it went into the trash, which the trash lists. Left out of every payload of a
+	 * live folder rather than sent as null, so no other read grows.
+	 */
+	@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+	public java.time.Instant getDeletedDate() { return deletedDate; }
+
 	/** Whether this folder is in the trash (SH200) — the readable form of a null check. */
 	public boolean isTrashed() { return deletedDate != null; }
 

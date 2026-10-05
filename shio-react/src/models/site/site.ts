@@ -8,6 +8,8 @@ export type ShSite = {
   searchablePostTypes: string;
   owner: string;
   date: string;
+  /** SH1227 — present only on a site in the trash: when it went in. */
+  deletedDate?: string;
   /**
    * SH1217 — present on rows of `GET /v2/site`, the listing, and absent on a single-site read. A
    * page live with a pending draft counts under both.

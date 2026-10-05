@@ -211,6 +211,8 @@
   "content.trashMoreActions": "Mais ações para {{name}}",
   "content.trashPurgeConfirm": "Excluir permanentemente \"{{name}}\"? Esta ação não pode ser desfeita.",
   "content.trashPurgeSectionConfirm": "Excluir permanentemente \"{{name}}\" e todo o seu conteúdo? Esta ação não pode ser desfeita.",
+  "content.trashPurgeManyConfirm": "Excluir permanentemente {{count}} itens e todo o seu conteúdo? Esta ação não pode ser desfeita.",
+  "content.trashDeleted": "Excluído",
   "content.trashPurged": "Excluído permanentemente",
   "content.tasks": "Tarefas",
   "content.selectYourSite": "Selecione seu site",

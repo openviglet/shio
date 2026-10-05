@@ -1,14 +1,14 @@
-import { IconTrash } from "@tabler/icons-react"
+import { IconRestore, IconTrash, IconTrashX } from "@tabler/icons-react"
 import { EmptyState } from "@/components/empty-state"
 import { PageHero } from "@/components/page-hero"
-import { Panel } from "@/components/panel"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
-import { RotateCcw, Trash2, Folder, FileText, Globe } from "lucide-react"
+import { Folder, FileText, Globe } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { BentoActionsMenu, BentoFilterBar, type BentoFilterFacet, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
+import {
+  BentoChangeCell, BentoDataTable, BentoFilterBar, type BentoDataTableAction,
+  type BentoDataTableColumn, type BentoFilterFacet, type BentoFilterValue,
+} from "@viglet/viglet-design-system/bento"
 import { FACET_TYPE, countLocally, fromBarValue, matchesLocally, toBarValue, withCounts } from "@/lib/filter-bar"
 // SH1024 — the trash's filters live in its URL, like every other list's (SH1023).
 import { useListState } from "@/hooks/use-list-state"
@@ -51,7 +51,12 @@ type TrashRow = {
   label?: string
   /** A post's type name, the word `type` filters by; a folder or a site has none. */
   type?: string
+  /** SH1227 — when it went into the trash, where the server says. */
+  deleted?: string
 }
+
+/** The row's key: an id is unique within its kind, and three kinds share the list. */
+const rowKey = (row: TrashRow) => `${row.kind}:${row.id}`
 
 /**
  * SH1024 — the trash's filters, in its URL, in the vocabulary's own words (`q`, `type`).
@@ -114,12 +119,14 @@ export default function TrashPage() {
             id: s.id,
             title: s.name || "(untitled)",
             label: t("content.siteLabel"),
+            deleted: s.deletedDate,
           })),
           ...folders.map<TrashRow>((f) => ({
             kind: "folder",
             id: f.id,
             title: f.name || "(untitled)",
             label: t("content.trashSection"),
+            deleted: f.deletedDate,
           })),
           ...posts.map<TrashRow>((p) => ({
             kind: "post",
@@ -127,6 +134,7 @@ export default function TrashPage() {
             title: p.title || "(untitled)",
             label: p.shPostType?.title || p.shPostType?.name,
             type: p.shPostType?.name,
+            deleted: p.deletedDate,
           })),
         ]),
       )
@@ -167,17 +175,61 @@ export default function TrashPage() {
     drop(row)
   }
 
-  const purge = async (row: TrashRow) => {
+  /** @param asked whether the curator already confirmed, as a selection's one question does */
+  const purge = async (row: TrashRow, asked = false) => {
     const message =
       row.kind === "post"
         ? t("content.trashPurgeConfirm", { name: row.title })
         : t("content.trashPurgeSectionConfirm", { name: row.title })
-    if (!confirm(message)) return
+    if (!asked && !confirm(message)) return
     await serviceFor(row.kind)
       .purge(row.id)
       .then(() => toast.success(t("content.trashPurged")))
       .catch((error) => toast.error(problemOf(error, t("common.error"))))
     drop(row)
+  }
+
+  /*
+   * SH1227 — the trash on the design system's table. Restoring and purging many items wants the
+   * package's selection and its range keys, which the hand-drawn table had none of; the selection
+   * holds within one filter (`selectionScope`), so a verb never lands on rows a filter has hidden.
+   * Purge stays out of sight as the menu's destructive item, which is SH1195's rule: on the page
+   * whose point is getting things back, the loudest thing must not be the way to lose them.
+   */
+  const columns = useMemo<BentoDataTableColumn<TrashRow>[]>(() => [
+    {
+      id: "title", header: t("common.title"), width: "minmax(16rem, 3fr)", hideable: false,
+      sortValue: (row) => row.title.toLowerCase(),
+      cell: (row) => (
+        <span className="flex min-w-0 items-center gap-2 font-medium">
+          <RowIcon kind={row.kind} />
+          <span className="truncate">{row.title}</span>
+        </span>
+      ),
+    },
+    {
+      id: "kind", header: t("content.postType"), width: "minmax(9rem, 1fr)",
+      sortValue: (row) => (row.label ?? "").toLowerCase(),
+      cell: (row) => <Badge variant="outline">{row.label}</Badge>,
+    },
+    {
+      id: "deleted", header: t("content.trashDeleted"), width: "minmax(9rem, 1fr)",
+      sortValue: (row) => (row.deleted ? new Date(row.deleted) : null),
+      cell: (row) => (row.deleted ? <BentoChangeCell at={row.deleted} /> : null),
+    },
+  ], [t])
+
+  const restoreAction: BentoDataTableAction<TrashRow> = {
+    id: "restore", label: t("content.trashRestore"), icon: IconRestore,
+    onSelect: (rows) => { for (const row of rows) void restore(row) },
+  }
+  const purgeAction: BentoDataTableAction<TrashRow> = {
+    id: "purge", label: t("content.trashPurge"), icon: IconTrashX, tone: "destructive",
+    onSelect: (rows) => {
+      if (rows.length === 1) { void purge(rows[0]); return }
+      if (!confirm(t("content.trashPurgeManyConfirm", { count: rows.length }))) return
+      for (const row of rows) void purge(row, true)
+    },
   }
 
   return (
@@ -211,49 +263,16 @@ export default function TrashPage() {
             description={t("content.trashNoMatchHint")}
           />
         ) : (
-          <Panel contentClassName="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("common.title")}</TableHead>
-                  <TableHead className="w-40">{t("content.postType")}</TableHead>
-                  <TableHead className="w-48">{t("common.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {shown.map((row) => (
-                  <TableRow key={`${row.kind}-${row.id}`}>
-                    <TableCell className="font-medium">
-                      <span className="flex items-center gap-2">
-                        <RowIcon kind={row.kind} />
-                        {row.title}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{row.label}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {/*
-                        SH1195 — the destructive verb lives in the row's menu, not beside Restore:
-                        "Excluir permanentemente" in red on every row was the loudest thing on the
-                        page, on the page whose point is getting things back.
-                      */}
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => restore(row)}>
-                          <RotateCcw className="mr-2 h-4 w-4" /> {t("content.trashRestore")}
-                        </Button>
-                        <BentoActionsMenu
-                          triggerLabel={t("content.trashMoreActions", { name: row.title })}
-                          actions={[{ id: `${row.kind}.purge`, label: t("content.trashPurge"), icon: Trash2,
-                            tone: "destructive", onSelect: () => void purge(row) }]}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Panel>
+          <BentoDataTable
+            rows={shown}
+            getRowId={rowKey}
+            getRowLabel={(row) => row.title}
+            columns={columns}
+            label={t("content.trash")}
+            rowActions={[restoreAction, purgeAction]}
+            selectionActions={[restoreAction, purgeAction]}
+            selectionScope={`${q}|${type}`}
+          />
         )}
       </div>
     </>

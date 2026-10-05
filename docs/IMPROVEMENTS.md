@@ -1112,12 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.11 The trash on the design system's table (SH1227)
-
-trash.page.tsx lists deleted items with shadcn Table. Move it onto BentoDataTable with
-selection, Restore and Purge as selection actions, and the deletion time as the change
-cell. Done when the page leaves SH1224's debt list.
-
 ### LXXVII.12 Search results on the design system's table (SH1228)
 
 search.page.tsx renders results with shadcn Table. Move them onto BentoDataTable: the

@@ -37,7 +37,6 @@ const DEBT = {
   "app/content/notes.page.tsx": "SH1232",
   "app/content/scheduled.page.tsx": "SH1229",
   "app/content/search.page.tsx": "SH1228",
-  "app/content/trash.page.tsx": "SH1227",
 }
 
 /** An import of the hand-drawn table primitive, by alias or by relative path. */
@@ -96,6 +95,16 @@ test("SH1226: the media rows are the package's table, and no media action is hov
     assert.match(hidden[1], /group-focus-within:opacity-100/,
       "SH1226: a control shown only on hover is one a keyboard user tabs onto and cannot see")
   }
+})
+
+test("SH1227: the trash restores and purges a selection, and says when each item went in", () => {
+  const page = readFileSync(join(SRC, "app", "content", "trash.page.tsx"), "utf8")
+  assert.match(page, /selectionActions=\{\[restoreAction, purgeAction\]\}/,
+    "SH1227: restoring or purging many items needs the table's selection")
+  assert.match(page, /selectionScope=\{`\$\{q\}\|\$\{type\}`\}/,
+    "SH1227: a selection must not outlive the filter it was made under")
+  assert.match(page, /t\("content\.trashPurgeManyConfirm"/, "SH1227: purging many asks once, naming how many")
+  assert.match(page, /<BentoChangeCell at=\{row\.deleted\} \/>/, "SH1227: the deletion time is the change cell")
 })
 
 test("SH1224: the scan sees an alias import, a relative one, and nothing else", () => {

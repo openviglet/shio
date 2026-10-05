@@ -211,6 +211,8 @@
   "content.trashMoreActions": "More actions for {{name}}",
   "content.trashPurgeConfirm": "Permanently delete \"{{name}}\"? This cannot be undone.",
   "content.trashPurgeSectionConfirm": "Permanently delete \"{{name}}\" and everything inside it? This cannot be undone.",
+  "content.trashPurgeManyConfirm": "Permanently delete {{count}} items, and everything inside them? This cannot be undone.",
+  "content.trashDeleted": "Deleted",
   "content.trashPurged": "Permanently deleted",
   "content.tasks": "Tasks",
   "content.selectYourSite": "Select your site",
