@@ -1112,13 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.16 Open notes on the design system's table (SH1232)
-
-notes.page.tsx, new in SH1214, uses shadcn Table and a Resolve button per row. Move it
-onto BentoDataTable with the identity cell for the page, the change cell for when the
-note was left and by whom, and Resolve as a row action and a selection action. Done when
-the page leaves SH1224's debt list.
-
 ### LXXVII.17 Activity on the design system's table (SH1233)
 
 activity.list.page.tsx renders the audit rows with shadcn Table under its filters. Move

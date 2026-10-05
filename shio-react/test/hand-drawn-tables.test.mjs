@@ -32,7 +32,6 @@ const SRC = join(ROOT, "src")
 const DEBT = {
   "app/admin/activity/activity.list.page.tsx": "SH1233",
   "app/admin/group-members.tsx": "SH1234",
-  "app/content/notes.page.tsx": "SH1232",
 }
 
 /** An import of the hand-drawn table primitive, by alias or by relative path. */
@@ -134,6 +133,14 @@ test("SH1231: the languages board sorts by coverage on the package's table", () 
     "SH1231: coverage is a sortable column, the share of languages a page is current in")
   assert.match(page, /sortValue: \(row\) => rank\(row\.cells\[locale\]\)/,
     "SH1231: each language column sorts missing first")
+})
+
+test("SH1232: open notes resolve one at a time or as a selection, and name who left them", () => {
+  const page = readFileSync(join(SRC, "app", "content", "notes.page.tsx"), "utf8")
+  assert.match(page, /selectionActions=\{\[resolveAction\]\}/,
+    "SH1232: several dealt-with notes should close in one gesture")
+  assert.match(page, /<BentoChangeCell at=\{note\.createdAt\} actor=\{note\.author \?\? undefined\} \/>/,
+    "SH1232: when a note was left is the change cell, naming who left it")
 })
 
 test("SH1224: the scan sees an alias import, a relative one, and nothing else", () => {

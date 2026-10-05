@@ -18,6 +18,7 @@
   "note.openPage": "Page",
   "note.openNote": "Note",
   "note.openWhen": "Left",
+  "note.openOpenPage": "Open the page",
   "note.openGone": "A page that no longer exists",
   "note.openResolved": "Note on {{page}} resolved"
 }
