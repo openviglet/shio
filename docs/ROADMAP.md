@@ -11,7 +11,7 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1239** (deps: a sticky selection bar in the DS) **the content browser's bulk verbs scroll out of view down a long folder** — The package keeps the table's header row in view but not its selection bar, so rows ticked low in a folder leave Move and Delete off screen. → §LXXVII.22
+- 📋 **SH1239** (deps: VDS209 in the DS) **the content browser's bulk verbs scroll out of view down a long folder** — The package keeps the table's header row in view but not its selection bar, so rows ticked low in a folder leave Move and Delete off screen. → §LXXVII.22
 
 ## Priority
 
