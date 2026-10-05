@@ -11,9 +11,8 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- ⏳ **SH1218** (deps: —) **A site has no stored picture of its home page, so a grid of sites can only show initials** — The console must capture the published home in a frame, lazy-loading its rasteriser, and PUT it with the digest status gives. → §LXXVII.2
 - 📋 **SH1219** (deps: SH1217 ✅, VDS207 in the DS) **The sites list is a five-column table with an empty Description column and no sign of life** — Description holds half the width for one site in twenty-three, dates repeat without saying who, and no row says whether its site is used. → §LXXVII.3
-- 📋 **SH1220** (deps: SH1218 ⏳, SH1219, VDS206 in the DS) **The sites list has no grid view, so a site can only be found by reading its name** — At the counts most instances hold, a site's home page is recognised faster than its name, and the drawing makes grid the default below thirty. → §LXXVII.4
+- 📋 **SH1220** (deps: SH1218 ✅, SH1219, VDS206 in the DS) **The sites list has no grid view, so a site can only be found by reading its name** — At the counts most instances hold, a site's home page is recognised faster than its name, and the drawing makes grid the default below thirty. → §LXXVII.4
 - 📋 **SH1221** (deps: VDS205 in the DS) **Shio's lists keep their filter and import in the hero, apart from the rows they act on** — Once the package gives a list one toolbar, every Shio list that passes headerAction has to move its controls into it or keep the split. → §LXXVII.5
 - 📋 **SH1222** (deps: VDS207 in the DS) **The admin lists show a Description column most rows leave empty, and no date or actor** — AdminListPage serves every admin entity with the same four columns, so the sites list's proportion problem repeats on each of them. → §LXXVII.6
 - 📋 **SH1223** (deps: VDS204 in the DS) **The content browser's table is capped at 560 px, so a folder scrolls inside the page** — browser-table.tsx passes height 560 on every viewport, which wastes a large screen and puts a second scrollbar in the busiest screen. → §LXXVII.7
@@ -29,15 +28,9 @@
 - 📋 **SH1233** (deps: SH1224) **The activity list is a hand-drawn table** — The audit trail is long and filtered, which is the case the package's virtualized table exists for. → §LXXVII.17
 - 📋 **SH1234** (deps: SH1224) **A group's members list is a hand-drawn table** — Removing several members wants the package's selection, which a hand-drawn table lacks. → §LXXVII.18
 - 📋 **SH1236** (deps: —) **every site, folder or post type a query loads costs one more select for its workflow tasks** — ShObject.shWorkflowTasks is @Fetch(JOIN), which makes it eager, so a listing of N objects runs N+1 statements. → §LXXVII.19
+- 📋 **SH1237** (deps: SH1218 ✅) **the console's capture of a site's home has never run in a real browser** — Its node tests fake the frame and the rasteriser, so a capture that fails in Chromium would leave every card on initials unnoticed. → §LXXVII.20
 
 ## Priority
-
-## Done when — SH1218
-
-- **The console stores a picture of a published home it shows** Opening the sites list
-  with a stale or missing picture leads the console to read status, capture the home and
-  PUT it; a second visit with nothing republished sends nothing, asserted by a console
-  test.
 
 ## Non-goals (do NOT add as tasks)
 

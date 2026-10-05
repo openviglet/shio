@@ -47,6 +47,11 @@ const EXCEPTIONS = {
     "SH1132's dry run: the plan renders in the dialog — live or not, the address vacated, the "
     + "inbound count — and is the step that makes a rename two steps. False if it stops rendering "
     + "the plan, or if `dryRun: true` ever leaves this call.",
+  "hooks/use-site-thumbnails.ts#put.putThumbnail":
+    "SH1218's background refresh of a site's home picture: nobody asked for it, so a toast would "
+    + "report a write the curator never made, on every visit with a stale home. The outcome is the "
+    + "card's picture appearing; a failure leaves the initials. False if a curator gesture ever "
+    + "calls this, which would make it a write they are owed an answer for.",
   "app/content/content-browser/use-browser-open.ts#handleViewPage.mint":
     "mints a preview token and opens the page: the new tab is the outcome.",
   "app/content/post.edit.page.tsx#handlePreview.mint":

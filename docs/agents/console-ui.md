@@ -3898,6 +3898,22 @@ few, such as media, blueprints and a hub; a list page that asks for them is name
 `record-lists.test.mjs` with its reason. The look census counted nine tiled lists before and none
 after.
 
+## The sites list keeps each home's picture current (SH1218)
+
+The instance does not run a browser, so the console takes each site's home picture and the server
+decides whether one is needed (`docs/agents/content-api.md`). `useSiteThumbnails`, called by
+`site.list.page.tsx`, runs once per listing read in the background. `lib/site-thumbnail.ts` asks as
+little as it can, because every status read is a server render. A site with no published page is
+skipped, a picture newer than `lastChange.at` is current, and a change this browser already asked
+about (remembered in `localStorage` per site) is not asked about again. So opening the list twice
+with nothing republished sends nothing. A stale home is loaded from `/sites/<furl>/`, the published
+route, in an offscreen same-origin frame at 1280×800, drawn to 640×400 with `html-to-image`, and sent
+as WebP with the digest `status` gave. At most three pictures are taken per visit. Leaving the list
+aborts what is in flight. `site-thumbnail-capture.ts` and `html-to-image` are reached only by
+dynamic import, so the rasteriser is a lazy chunk and not in the eager load SH1043 measures;
+`site-thumbnail.test.mjs` holds that and the asking rules. The upload reports no toast, which
+`write-outcome.test.mjs` excepts with its reason: nobody asked for it.
+
 ## One filled primary per screen (SH1195)
 
 The primary is `--primary`, which the default `Button` variant already reads, so no button in the

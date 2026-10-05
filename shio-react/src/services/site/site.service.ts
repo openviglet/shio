@@ -4,6 +4,7 @@ import type {
 } from "@/models/site/site";
 import axios from "axios";
 import type { ShRead } from "@/lib/read-options"
+import type { ThumbnailStatus } from "@/lib/site-thumbnail"
 
 export class ShSiteService {
   async query(read: ShRead = {}): Promise<ShSite[]> {
@@ -117,6 +118,27 @@ export class ShSiteService {
     const disposition = String(response.headers?.["content-disposition"] ?? "");
     const named = /filename="?([^";]+)"?/.exec(disposition);
     return { blob: response.data, fileName: named?.[1] ?? null };
+  }
+
+  /** SH1218 — whether the stored home picture shows the home as published now. */
+  async thumbnailStatus(id: string, read: ShRead = {}): Promise<ThumbnailStatus> {
+    const response = await axios.get<ThumbnailStatus>(`/v2/site/${id}/thumbnail/status`,
+      { signal: read.signal });
+    return response.data;
+  }
+
+  /**
+   * SH1218 — sends a picture of the published home, taken at appearance `digest`. A home
+   * published again since is refused, and a picture already at that digest stores nothing.
+   */
+  async putThumbnail(id: string, digest: string, picture: Blob,
+                     read: ShRead = {}): Promise<{ stored: boolean }> {
+    const response = await axios.put<{ stored: boolean }>(`/v2/site/${id}/thumbnail`, picture, {
+      params: { digest },
+      headers: { "Content-Type": picture.type || "image/png" },
+      signal: read.signal,
+    });
+    return response.data;
   }
 
   /** SH1079 — the site, what arrived in it, and what the import could not do. */

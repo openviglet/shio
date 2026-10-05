@@ -16,6 +16,7 @@ import { ROUTES } from "@/app/routes.const"
 import { Input } from "@/components/ui/input"
 import type { ShSite } from "@/models/site/site"
 import { useSites } from "@/hooks/use-catalogue"
+import { useSiteThumbnails } from "@/hooks/use-site-thumbnails"
 import { headlineOf, problemOf } from "@/lib/problem"
 
 
@@ -64,6 +65,8 @@ export default function BentoSiteListPage() {
   // array *and* an error — otherwise a failed load spins for ever.
   const sites = data ?? (failure ? [] : undefined)
   const error = failure ? headlineOf(problemOf(failure), failure.message) : null
+  // SH1218 — keeps each site's home picture current, in the background, for the grid (SH1220).
+  useSiteThumbnails(data)
 
   const visible = useMemo(
     () => sites?.filter((s) => s.name.toLowerCase().includes(filter.toLowerCase().trim())),

@@ -1112,29 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.2 A site's home page, kept as a picture (SH1218)
-
-docs/design/shio-site-grid.dc.html draws each site as its home page. The server half
-landed: ShSiteThumbnailService keys a stored picture on the published home's appearance
-digest, the hash review compares, computed by one server render and no browser. GET
-/api/v2/site/{id}/thumbnail/status answers {home, stored, fresh}; PUT
-/api/v2/site/{id}/thumbnail ?digest= stores WebP, PNG or JPEG up to 512 KB, refuses a
-picture of a home that has changed since (409 site-thumbnail-stale), and writes nothing
-when the stored picture already has that digest. The listing carries thumbnail {url,
-digest, at}, and a site purge or tenant teardown removes the bytes.
-docs/agents/content-api.md has the contract.
-
-What is left is the capture, and it is the console's, because the instance does not run
-a browser (a standing non-goal). When the sites list shows a site whose picture is
-missing, or whose lastChange is newer than thumbnail.at, read status. If it is not
-fresh, render the published home in an offscreen same-origin frame at card width,
-rasterise it, and PUT it with status's digest. Load the rasteriser with a dynamic import
-so it is not in the eager bundle that SH1043 measures, and price the dependency before
-choosing it (html-to-image and modern-screenshot are candidates). A refused stale
-picture means another publish landed: read status again rather than retrying the same
-bytes. Live iframes per card were rejected in the drawing. Done when the criterion
-holds.
-
 ### LXXVII.3 The sites list, redrawn as rows (SH1219)
 
 site.list.page.tsx becomes the list in docs/design/shio-site-list.dc.html. The first
@@ -1283,3 +1260,24 @@ with no `@Fetch`, after checking every reader of `getShWorkflowTasks()` for one 
 runs outside a transaction and would then throw `LazyInitializationException`. A lint
 that refuses `@Fetch(JOIN)` on a collection would stop the pattern coming back. Done
 when the measured reads cost the same at both sizes.
+
+### LXXVII.20 The home capture, run in a browser (SH1237)
+
+SH1218 shipped the console's capture of a site's published home: an offscreen
+same-origin frame on `/sites/<furl>/`, rasterised with `html-to-image` and sent with the
+appearance digest. Its node tests cover the decisions (which sites to ask about, and
+that a second visit with nothing republished sends nothing), with the four effects
+faked. Nothing has run `captureHome` in a real browser. Whether `html-to-image` can read
+a frame's document from the parent window, whether the delivered page's fonts and images
+inline without tainting the canvas, and whether `toBlob` yields WebP in Chromium are
+each argued and not observed.
+
+`shio-react/e2e/console-check.mjs` already drives the console in Playwright's Chromium
+against a provisioned instance. Add a step to it: publish a home on the provisioned
+site, clear the browser's `shio.siteThumbnail.asked.*` keys, open the sites list, and
+wait for `PUT /api/v2/site/{id}/thumbnail` to answer `stored: true`. Then read `GET
+/api/v2/site/{id}/thumbnail` and assert an image of plausible size (over 1 KB and under
+the 512 KB ceiling). Open the list again and assert that no status or PUT request is
+sent. If the capture fails in Chromium, the step's output is the diagnosis, and the fix
+belongs in `site-thumbnail-capture.ts`. Done when the step passes in `pnpm --filter
+shio-react run console:check`.
