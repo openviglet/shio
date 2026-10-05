@@ -154,4 +154,48 @@
 :root [data-radix-popper-content-wrapper] {
   --font-family: var(--font-sans);
   --font-family-mono: var(--font-mono);
+  /*
+   * SH1209 — and its radii on the closed scale. GraphiQL's chrome reads four radius variables;
+   * the three small ones are controls (tabs, buttons, inputs) and the 12 px one is a panel.
+   * Monaco's own widgets use literal radii, but those are hover and suggestion popups the explorer
+   * draws for a moment, not its chrome.
+   */
+  --border-radius-2: var(--vg-radius-control);
+  --border-radius-4: var(--vg-radius-control);
+  --border-radius-8: var(--vg-radius-control);
+  --border-radius-12: var(--vg-radius-panel);
+}
+
+/*
+ * SH1209 — GraphiQL draws its outer panel at `--border-radius-12 + 8px`, which on the scale would be
+ * 18 px. The panel radius is the panel radius.
+ */
+:root .graphiql-container .graphiql-sessions {
+  border-radius: var(--vg-radius-panel);
+}
+
+/*
+ * SH1209 — GraphiQL's controls on the control-height scale, so a coarse pointer raises them with the
+ * rest of the console. The run, copy, merge and prettify buttons are sized by `--toolbar-width`
+ * (40 px), the sidebar's by `--sidebar-width` less its padding (44 px): both are form controls. The
+ * operation tabs, the new-tab button and the variables/headers switches size from their padding
+ * (24 to 39 px), and they are dense, the way a tab strip is everywhere else in the console.
+ */
+:root .graphiql-container {
+  --toolbar-width: var(--vg-control-form);
+}
+:root .graphiql-container .graphiql-sidebar > button {
+  height: var(--vg-control-form);
+  width: var(--vg-control-form);
+}
+:root .graphiql-container .graphiql-tab .graphiql-tab-button,
+:root .graphiql-container .graphiql-editor-tools > button {
+  box-sizing: border-box;
+  height: var(--vg-control-dense);
+  padding-block: 0;
+}
+:root .graphiql-container button.graphiql-tab-add {
+  box-sizing: border-box;
+  height: var(--vg-control-dense);
+  width: var(--vg-control-dense);
 }

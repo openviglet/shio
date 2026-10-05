@@ -938,22 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.44 LV.44 The explorer's chrome on the scale (SH1209)
-
-After SH1199 the look census reads the GraphQL explorer as the one route still drawing
-radii off the closed scale: 4, 8, 12 and 20 px, plus the split corners of GraphiQL's tab
-strip, all attributed to product code because GraphiQL is the console's dependency and
-not the package's. Its buttons also measure 31, 39 and 40 px. SH1199 already points
-GraphiQL's two font variables at the console's families in index.css, with a :root
-prefix so they win over the explorer's later stylesheet. The same block can carry the
-radius variables GraphiQL reads, --border-radius-2, -4, -8 and -12: map the first three
-to --vg-radius-control and the 12 to --vg-radius-panel. The 20 px value and the button
-heights come from GraphiQL's own rules rather than variables, so check them in a browser
-on /bento/graphql and decide per element whether an override in index.css is small
-enough to keep, or whether the explorer is better exempted from the census with its
-reason stated. Extend visual-scale.test.mjs to assert the radius variables beside the
-font ones, and record the lower reading with pnpm look -- --write against the dev store.
-
 ### LV.45 LV.45 Product buttons the source lint cannot see (SH1210)
 
 After SH1199 no Button, Input or SelectTrigger in the console sets its own height, yet
@@ -990,6 +974,24 @@ rather than an amber chip, and delete ACTION_TONE and RowIcon's tone. Then exten
 visual-scale.test.mjs, or a check beside it, so that bentoChipClass is called only from
 the places the package still keeps a chip: home's tiles and count tiles, an entity hero,
 a hub tile.
+
+### LV.47 LV.47 The explorer's primary is the console's (SH1212)
+
+The look census counts four primary fills in the console, and two of them, #ff5794 and
+#d60590, are the GraphQL explorer's: GraphiQL paints its run button, its focus rings and
+its active-tab accents from --color-primary, a pink it declares for light and dark.
+SH1195 gave the console one primary, --primary, which the default Button reads. The
+explorer is the one route where a second primary is still filled, beside the console's
+own. SH1199 and SH1209 already reach GraphiQL through the :root .graphiql-container
+block in index.css (fonts, radii, control heights), so the colour belongs in the same
+block. The catch is the format. GraphiQL reads --color-primary as bare HSL components,
+used as hsl(var(--color-primary)) and hsla(var(--color-primary), alpha), while the
+console's --primary is an OKLCH colour, so a var() cannot be passed through. Either
+declare the HSL components that match the console's primary, light and dark, with a
+comment naming the token they track and a test that converts the token and compares it,
+or override the handful of rules that fill with it (button.graphiql-execute-button
+first) to read var(--primary) directly. Measure with pnpm look before and after:
+primary-fill should drop from four to two, and record it with --write.
 
 ## LVI What Turing's index never receives
 

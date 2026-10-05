@@ -113,6 +113,26 @@ test("SH1199: GraphiQL's chrome and editors draw the console's families", () => 
   assert.match(font, /onDidCreateEditor/, "SH1199: graphiql-font misses the editors GraphiQL creates after it loads")
 })
 
+test("SH1209: GraphiQL's radii and controls read the console's scale", () => {
+  // GraphiQL ships its own radius variables and sizes its controls from two width variables and
+  // from padding; the census read the explorer as the one route with radii and heights of its own.
+  const css = stripComments(readFileSync(join(SRC, "index.css"), "utf8"))
+  for (const [variable, token] of [["--border-radius-2", "control"], ["--border-radius-4", "control"],
+    ["--border-radius-8", "control"], ["--border-radius-12", "panel"]]) {
+    assert.match(css, new RegExp(`${variable}:\\s*var\\(--vg-radius-${token}\\)`),
+      `SH1209: GraphiQL's ${variable} is its own pixel value again, not the ${token} radius`)
+  }
+  assert.match(css, /\.graphiql-sessions\s*\{\s*border-radius:\s*var\(--vg-radius-panel\)/,
+    "SH1209: GraphiQL's outer panel is back to its 12 + 8 px radius")
+  assert.match(css, /--toolbar-width:\s*var\(--vg-control-form\)/,
+    "SH1209: GraphiQL's run, copy, merge and prettify buttons are back to 40 px")
+  for (const selector of [".graphiql-sidebar > button", ".graphiql-tab-button", ".graphiql-editor-tools > button", "button.graphiql-tab-add"]) {
+    const at = css.indexOf(selector)
+    assert.ok(at >= 0 && /height:\s*var\(--vg-control-(?:dense|form)\)/.test(css.slice(at, css.indexOf("}", at))),
+      `SH1209: ${selector} in the explorer no longer takes a control height`)
+  }
+})
+
 test("SH1199: the console's theme maps every radius and mono key the way the installed preset does", () => {
   // The console compiles its own utilities, so without these keys `rounded-xl` is Tailwind's 12 px
   // and outranks the package's panel radius. The block is a copy of the preset's, and a copy is

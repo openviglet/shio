@@ -4036,3 +4036,17 @@ reads it: home's tiles and count tiles, an entity shell's hero, a hub tile.
 declarations for every prop whose comment says `@deprecated Ignored since`, on the component whose
 props interface carries it, and fails when a console element passes one. The next release that
 retires a prop that way fails here by name.
+
+## The GraphQL explorer on the scale too (SH1209)
+
+GraphiQL is the console's dependency, not the package's, so the census attributes its chrome to
+product code, and it was the last route drawing radii and control heights of its own. Its chrome
+reads four radius variables, so `index.css` maps `--border-radius-2`, `-4` and `-8` to the control
+radius and `-12` to the panel radius, and sets the outer `.graphiql-sessions` panel, which GraphiQL
+draws at `-12` plus 8 px, to the panel radius. Its run, copy, merge and prettify buttons are sized by
+`--toolbar-width` and its sidebar buttons by `--sidebar-width`, both now the form height; the
+operation tabs, the new-tab button and the variables/headers switches are dense. GraphiQL sizes those
+with `content-box`, so the overrides set `border-box` or the padding lands on top of the height.
+Monaco's own hover and suggestion widgets keep their literal radii: they are popups, not chrome.
+The census read button heights 21 to 18 and radii 12 to 9. `visual-scale.test.mjs` holds the
+variables and the selectors.

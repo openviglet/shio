@@ -1700,6 +1700,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH948** — copy-ds.cmd resolves the design system through its latest worktree junction (or VIGLET_DS), and --list names Shio and exits zero again (design §LX.9 recorded in `copy-ds.cmd`).
 - **SH1199** — The console takes DS 2026.3.17: controls size by prop, radii and mono follow the preset's keys, GraphiQL uses the console fonts, and the census fell to 21 heights, 2 fonts and 12 radii (design §LV.36 recorded in `docs/agents/console-ui.md`).
 - **SH1208** — No console element passes a prop the package ignores: tone left five bento components and the two seams that forwarded it, and a check reads the package's own deprecations (design §LV.43 recorded in `docs/agents/console-ui.md`).
+- **SH1209** — The GraphQL explorer's radii and controls read the console's scale: GraphiQL's radius and width variables map to the tokens, and the census fell to 18 button heights and 9 radii (design §LV.44 recorded in `docs/agents/console-ui.md`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 
