@@ -16,17 +16,16 @@
 - 📋 **SH1221** (deps: VDS205 in the DS) **Shio's lists keep their filter and import in the hero, apart from the rows they act on** — Once the package gives a list one toolbar, every Shio list that passes headerAction has to move its controls into it or keep the split. → §LXXVII.5
 - 📋 **SH1222** (deps: VDS207 in the DS) **The admin lists show a Description column most rows leave empty, and no date or actor** — AdminListPage serves every admin entity with the same four columns, so the sites list's proportion problem repeats on each of them. → §LXXVII.6
 - 📋 **SH1223** (deps: VDS204 in the DS) **The content browser's table is capped at 560 px, so a folder scrolls inside the page** — browser-table.tsx passes height 560 on every viewport, which wastes a large screen and puts a second scrollbar in the busiest screen. → §LXXVII.7
-- 📋 **SH1224** (deps: —) **Ten console lists are hand-drawn tables, outside the design system's one table** — Each sorts, selects and reaches the keyboard its own way, so the redraw would have to be repeated by hand ten times; the grep lands first. → §LXXVII.8
-- 📋 **SH1225** (deps: SH1224) **The post types list is a hand-drawn table** — It should sort, reach the keyboard and pick columns the way every other list does. → §LXXVII.9
-- 📋 **SH1226** (deps: SH1224) **The media library's rows view is a hand-drawn table** — The busiest list after the content browser sorts and selects its own way, with hover-only actions. → §LXXVII.10
-- 📋 **SH1227** (deps: SH1224) **The trash is a hand-drawn table** — Restoring and purging many items wants the package's selection and range keys, which a hand-drawn table lacks. → §LXXVII.11
-- 📋 **SH1228** (deps: SH1224) **Search results are a hand-drawn table** — A result list should sort and open from the keyboard like every other list. → §LXXVII.12
-- 📋 **SH1229** (deps: SH1224) **The scheduled list is a hand-drawn table** — The agenda's list view should share the package's table while its calendar view stays the package's calendar. → §LXXVII.13
-- 📋 **SH1230** (deps: SH1224) **The forms submissions list is a hand-drawn table** — Submissions grow without bound, and a hand-drawn table neither virtualizes nor selects. → §LXXVII.14
-- 📋 **SH1231** (deps: SH1224) **The languages coverage list is a hand-drawn table** — It should sort by coverage and reach the keyboard like the other lists. → §LXXVII.15
-- 📋 **SH1232** (deps: SH1224) **The open notes list is a hand-drawn table** — SH1214 drew it the way its neighbours were drawn, which is the way this round replaces. → §LXXVII.16
-- 📋 **SH1233** (deps: SH1224) **The activity list is a hand-drawn table** — The audit trail is long and filtered, which is the case the package's virtualized table exists for. → §LXXVII.17
-- 📋 **SH1234** (deps: SH1224) **A group's members list is a hand-drawn table** — Removing several members wants the package's selection, which a hand-drawn table lacks. → §LXXVII.18
+- 📋 **SH1225** (deps: SH1224 ✅) **The post types list is a hand-drawn table** — It should sort, reach the keyboard and pick columns the way every other list does. → §LXXVII.9
+- 📋 **SH1226** (deps: SH1224 ✅) **The media library's rows view is a hand-drawn table** — The busiest list after the content browser sorts and selects its own way, with hover-only actions. → §LXXVII.10
+- 📋 **SH1227** (deps: SH1224 ✅) **The trash is a hand-drawn table** — Restoring and purging many items wants the package's selection and range keys, which a hand-drawn table lacks. → §LXXVII.11
+- 📋 **SH1228** (deps: SH1224 ✅) **Search results are a hand-drawn table** — A result list should sort and open from the keyboard like every other list. → §LXXVII.12
+- 📋 **SH1229** (deps: SH1224 ✅) **The scheduled list is a hand-drawn table** — The agenda's list view should share the package's table while its calendar view stays the package's calendar. → §LXXVII.13
+- 📋 **SH1230** (deps: SH1224 ✅) **The forms submissions list is a hand-drawn table** — Submissions grow without bound, and a hand-drawn table neither virtualizes nor selects. → §LXXVII.14
+- 📋 **SH1231** (deps: SH1224 ✅) **The languages coverage list is a hand-drawn table** — It should sort by coverage and reach the keyboard like the other lists. → §LXXVII.15
+- 📋 **SH1232** (deps: SH1224 ✅) **The open notes list is a hand-drawn table** — SH1214 drew it the way its neighbours were drawn, which is the way this round replaces. → §LXXVII.16
+- 📋 **SH1233** (deps: SH1224 ✅) **The activity list is a hand-drawn table** — The audit trail is long and filtered, which is the case the package's virtualized table exists for. → §LXXVII.17
+- 📋 **SH1234** (deps: SH1224 ✅) **A group's members list is a hand-drawn table** — Removing several members wants the package's selection, which a hand-drawn table lacks. → §LXXVII.18
 - 📋 **SH1236** (deps: —) **every site, folder or post type a query loads costs one more select for its workflow tasks** — ShObject.shWorkflowTasks is @Fetch(JOIN), which makes it eager, so a listing of N objects runs N+1 statements. → §LXXVII.19
 - 📋 **SH1237** (deps: SH1218 ✅) **the console's capture of a site's home has never run in a real browser** — Its node tests fake the frame and the rasteriser, so a capture that fails in Chromium would leave every card on initials unnoticed. → §LXXVII.20
 

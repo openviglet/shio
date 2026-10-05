@@ -1674,6 +1674,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1206** — A group's page lists the roles that name it, from GET /api/v2/group/{id}/roles, each linked to its role; an unknown group answers a teaching 404.
 - **SH1217** — GET /api/v2/site gives each site its pages {published, draft} and lastChange {at, actor, agent} in 3 statements at 15 and 400 sites, down from 1+N for the bare listing (design §LXXVII.1 recorded in `docs/agents/content-api.md`).
 - **SH1218** — A site's published home is kept as a picture: the server keys it on the appearance digest, and the sites list captures a stale home in the background and sends it, asking nothing on an unchanged revisit (design §LXXVII.2 recorded in `docs/agents/console-ui.md`).
+- **SH1224** — pnpm test names the ten console screens that draw their own table, each with the task that moves it, and fails on a new one or on an entry that has moved (design §LXXVII.8 recorded in `docs/agents/console-ui.md`).
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

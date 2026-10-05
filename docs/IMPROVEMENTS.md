@@ -1164,18 +1164,6 @@ height here and let the page scroll. Check the selection bar and the bulk verbs 
 sit where the curator can reach them while scrolled. Done when browser-table passes no
 height and a long folder scrolls the page once.
 
-### LXXVII.8 The hand-drawn list tables, named (SH1224)
-
-Post types, the media library, trash, search, scheduled, forms, languages, open notes,
-activity and a group's members render shadcn Table directly, while sites, the admin
-lists and the content browser use BentoDataTable. A hand-drawn table has no sortable
-headers, no row keyboard model, no column menu and no virtualization, and every change
-to the package's table skips it. Before any screen moves, land the lint: a source test
-that finds every page rendering Table from components/ui/table and holds the current set
-as a named debt list, failing on a new one and on an entry that has moved. Each screen
-then moves in its own task, and the list shrinks. Done when the test runs in pnpm test,
-prints the count, and names the ten.
-
 ### LXXVII.9 Post types on the design system's table (SH1225)
 
 post-type.list.page.tsx renders Name, Title, System and an Actions column through shadcn

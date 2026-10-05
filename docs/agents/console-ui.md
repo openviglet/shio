@@ -3914,6 +3914,16 @@ dynamic import, so the rasteriser is a lazy chunk and not in the eager load SH10
 `site-thumbnail.test.mjs` holds that and the asking rules. The upload reports no toast, which
 `write-outcome.test.mjs` excepts with its reason: nobody asked for it.
 
+## A list table is the package's, and the hand-drawn ones are a named debt (SH1224)
+
+A console list renders `BentoDataTable`, through `BentoListPage`'s `columns` or directly, never
+shadcn's `Table` from `components/ui/table`. The package's table sorts from its headers, has a row
+keyboard model and a column menu, and virtualizes, and a hand-drawn one has none of that.
+`hand-drawn-tables.test.mjs` finds every source file that imports the primitive and holds today's
+ten as `DEBT`, each with the task that moves it (SH1225 to SH1234). It fails on a new one, and on an
+entry that no longer imports the primitive, so whoever moves a screen deletes its entry in the same
+commit.
+
 ## One filled primary per screen (SH1195)
 
 The primary is `--primary`, which the default `Button` variant already reads, so no button in the
