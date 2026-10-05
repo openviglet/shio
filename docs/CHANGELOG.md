@@ -1693,6 +1693,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1236** — ShObject's workflow-task collection is lazy: a folder's children cost 2 statements at 15 and 200 (was 17 and 202), the post-type catalogue 1 at any size, and a lint refuses a fetch-joined collection (design §LXXVII.19 recorded in `docs/agents/content-api.md`).
 - **SH1237** — The home capture ran in Chromium: an e2e check stores a real WebP of the published home and a revisit asks nothing, after fixing the axios interceptor that sent the picture as JSON (design §LXXVII.20 recorded in `docs/agents/console-ui.md`).
 - **SH1238** — A console or OAuth2 sign-in now records the user's lastLogin, throttled to once an hour, while Basic and token calls do not, and the users list shows it as Last sign-in (design §LXXVII.21 recorded in `shio-app/src/main/java/com/viglet/shio/api/auth/ShSignInRecorder.java`).
+- **SH1240** — Search's Published count reads the server's own published field, so a draft of a live page counts under both Draft and Published, and the row model declares no field the server never sends (design §LXXVII.23 recorded in `shio-react/src/lib/filter-bar.ts`).
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

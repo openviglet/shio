@@ -9,7 +9,9 @@ import {
   BentoDataTable, BentoFilterBar, BentoIdentityCell, type BentoDataTableColumn, type BentoFilterValue,
 } from "@viglet/viglet-design-system/bento"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { contentFacets, countLocally, fromBarValue, toBarValue, withCounts, withSiteFacet } from "@/lib/filter-bar"
+import {
+  contentFacets, countLocally, fromBarValue, searchStateKeys, toBarValue, withCounts, withSiteFacet,
+} from "@/lib/filter-bar"
 // SH1023 — the search term and the site live in the URL, so a search can be sent to somebody.
 import { useListState } from "@/hooks/use-list-state"
 import { useTranslation } from "react-i18next"
@@ -103,7 +105,7 @@ export default function SearchPage() {
     }), sites, t("content.filterSite")), searched ? {
       site: countLocally(results, (row) => [row.address.replace(/^post:/, "").split("/")[0]]),
       type: countLocally(results, (row) => [row.type]),
-      state: countLocally(results, (row) => [row.state?.toLowerCase(), row.live ? "published" : null]),
+      state: countLocally(results, searchStateKeys),
       locale: countLocally(results, (row) => [row.locale]),
     } : undefined, barValue), [postTypes, results, sites, searched, barValue, t])
 

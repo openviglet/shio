@@ -1128,21 +1128,3 @@ part is then nothing but taking the release that carries it.
 
 Done when, in the content browser with a long folder, the selection bar stays in view
 while the page scrolls with rows selected, and leaves when the selection is cleared.
-
-### LXXVII.23 Search counts live pages by the server's own field (SH1240)
-
-Found while moving search onto the package's table (SH1228). The console's
-`ShConsoleSearchRow` declares `live?: boolean`, and `search.page.tsx` counts the state
-facet with `row.live ? "published" : null`. The server sends that fact as `published`:
-the rows are `ShAgentFound.Row` unchanged (SH1027), whose field is `Boolean published`
-(SH545). Nothing maps one name to the other, so `row.live` is always undefined. The
-Published chip's count therefore leaves out every page that has a draft and is also
-live, which is the common case on an edited site: the walk is draft-preferred, so such a
-row reads `state: DRAFT`, and `published` was the field meant to count it.
-
-Rename the model's field to `published`, matching the wire and the agent surface, and
-read it in the facet count. No server change. Assert it with a row shaped as the server
-sends it: a `state: "DRAFT", published: true` row counts under both Draft and Published.
-
-Done when the search page's Published count includes drafts of live pages, and the model
-has no field the server never sends.

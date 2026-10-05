@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
-import { contentFacets, countLocally, fromBarValue, matchesLocally, matchesRun, runSites, toBarValue, withCounts, withSiteFacet } from "../src/lib/filter-bar.ts"
+import { contentFacets, countLocally, fromBarValue, matchesLocally, matchesRun, runSites, searchStateKeys, toBarValue, withCounts, withSiteFacet } from "../src/lib/filter-bar.ts"
 import { viewHref } from "../src/lib/saved-view.ts"
 import { browserSource } from "./support/browser-source.mjs"
 
@@ -186,4 +186,19 @@ test("SH1024: the content browser draws the bar over its URL, and / still reache
   assert.match(page, /const onBarChange = useCallback\(/, "SH1024: the bar's handler is rebuilt every render")
   assert.match(page, /searchRef\.current\?\.querySelector\("input"\)\?\.focus\(\)/,
     "SH1020: `/` no longer focuses the list's search")
+})
+
+test("SH1240: search counts a draft of a live page under Draft and Published, by the server's own field", () => {
+  // Shaped as ShAgentFound.Row sends it (SH545): draft-preferred, with `published` when it is live.
+  const rows = [
+    { address: "post:Blog/a", state: "DRAFT", published: true },
+    { address: "post:Blog/b", state: "DRAFT" },
+    { address: "post:Blog/c", state: "PUBLISHED", published: true },
+  ]
+  assert.deepEqual(countLocally(rows, searchStateKeys), { draft: 2, published: 2 },
+    "SH1240: the Published chip left out a live page with a pending draft, reading a field the server never sends")
+  const search = readFileSync(join(SRC, "app", "content", "search.page.tsx"), "utf8")
+  assert.match(search, /state: countLocally\(results, searchStateKeys\)/)
+  assert.doesNotMatch(readFileSync(join(SRC, "services", "search", "search.service.ts"), "utf8"), /\blive\?:/,
+    "SH1240: the search row declares `live`, which the server does not send")
 })

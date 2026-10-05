@@ -148,6 +148,15 @@ export function countLocally<T>(rows: readonly T[], valuesOf: (row: T) => readon
 }
 
 /**
+ * SH1240 — the state values a search row counts under. A row is DRAFT-preferred (the walk reads the
+ * draft of a post that has one), so a live page with a pending draft arrives as `state: DRAFT` with
+ * `published: true`, and it counts under both: it is waiting to be published, and it is live.
+ */
+export function searchStateKeys(row: { state?: string; published?: boolean }): (string | null | undefined)[] {
+  return [row.state?.toLowerCase(), row.published ? "published" : null]
+}
+
+/**
  * A row against `q` and `type`, for a list that filters what it already holds (the trash, SH1024):
  * `q` as a case-insensitive substring of the title, `type` as the exact post-type name.
  */

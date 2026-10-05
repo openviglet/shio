@@ -15,7 +15,11 @@ export interface ShConsoleSearchRow {
   title?: string
   id?: string
   locale?: string
-  live?: boolean
+  /**
+   * SH1240 — whether the post has a live version, as the server names it (`ShAgentFound.Row`,
+   * SH545). The model called it `live`, a field the server never sent.
+   */
+  published?: boolean
 }
 
 export interface ShConsoleSearchResult {
