@@ -1112,12 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.17 Activity on the design system's table (SH1233)
-
-activity.list.page.tsx renders the audit rows with shadcn Table under its filters. Move
-it onto BentoDataTable, keeping the cursor paging, with the change cell for time and
-actor. Done when the page leaves SH1224's debt list.
-
 ### LXXVII.18 Group members on the design system's table (SH1234)
 
 group-members.tsx lists a group's members with shadcn Table. Move it onto BentoDataTable

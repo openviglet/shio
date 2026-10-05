@@ -1,12 +1,11 @@
 import { activitySentence } from "@/lib/activity-text"
-import { IconHistory } from "@tabler/icons-react"
+import { IconHistory, IconUserSearch } from "@tabler/icons-react"
+import { BentoChangeCell, BentoDataTable } from "@viglet/viglet-design-system/bento"
 import { EmptyState } from "@/components/empty-state"
 import { PageHero } from "@/components/page-hero"
-import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ROUTES } from "@/app/routes.const"
 import { Bot, ChevronLeft, ChevronRight, RefreshCw, X } from "lucide-react"
 import { Link, useSearchParams } from "react-router-dom"
@@ -135,6 +134,12 @@ export default function ActivityListPage() {
     pageAt(previous ?? "")
   }
 
+  /** SH989 — the fields a write changed, by name; nothing when the row recorded none. */
+  const fieldsLine = (changed: string[] | null | undefined) => {
+    if (!changed) return ""
+    return changed.length === 0 ? t("activity.noFieldsChanged") : t("activity.fields", { fields: changed.join(", ") })
+  }
+
   const actionLabel = (value: string) => {
     const key = `activity.action${value.charAt(0)}${value.slice(1).toLowerCase()}`
     const label = t(key)
@@ -224,95 +229,96 @@ export default function ActivityListPage() {
             description={t("activity.blankDescription")}
           />
         ) : (
-          <Panel contentClassName="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32">{t("activity.action")}</TableHead>
-                    <TableHead>{t("activity.what")}</TableHead>
-                    <TableHead className="w-32">{t("activity.site")}</TableHead>
-                    <TableHead className="w-40">{t("activity.who")}</TableHead>
-                    <TableHead className="w-52">{t("activity.when")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Badge variant="outline" className={ACTION_BADGE[item.action] ?? ""}>
-                          {actionLabel(item.action)}
+          /*
+           * SH1233 — the audit rows on the design system's table: the trail is long and filtered,
+           * which is the case its virtualized body exists for. The keyset paging below is untouched;
+           * the table draws one page of it. When and by whom is the change cell, marked when an
+           * agent did it, with the run beside it linked to the queue (SH999); the name-as-filter
+           * moved to the row's menu, since a row is one fixed height and holds one control per idea.
+           */
+          <BentoDataTable
+            rows={items}
+            getRowId={(item) => item.id}
+            getRowLabel={(item) => activitySentence(item.description, item.action, t)}
+            columns={[
+              {
+                id: "action", header: t("activity.action"), width: "minmax(9rem, 0.8fr)",
+                sortValue: (item) => item.action,
+                cell: (item) => (
+                  <span className="flex items-center gap-1">
+                    <Badge variant="outline" className={ACTION_BADGE[item.action] ?? ""}>
+                      {actionLabel(item.action)}
+                    </Badge>
+                    {/*
+                      SH196 recorded the subject on every row and no reader carried it, so a folder
+                      rename read as a post's. Said only when it is not a post, because a badge on
+                      every row is a column that says nothing.
+                    */}
+                    {item.subjectKind && item.subjectKind !== "POST" && (
+                      <Badge variant="outline" className="text-[10px]">
+                        {t(`activity.subject.${item.subjectKind}`, { defaultValue: item.subjectKind.toLowerCase() })}
+                      </Badge>
+                    )}
+                  </span>
+                ),
+              },
+              {
+                id: "what", header: t("activity.what"), width: "minmax(18rem, 3fr)", hideable: false,
+                cell: (item) => {
+                  const sentence = activitySentence(item.description, item.action, t)
+                  // SH989 — what the write changed, by name. After an approve the draft and the
+                  // live row are one document, so this is what still describes it.
+                  const fields = fieldsLine(item.changedFields)
+                  return (
+                    <span className="flex min-w-0 items-baseline gap-2" title={[sentence, fields].filter(Boolean).join("\n")}>
+                      <span className="truncate font-medium">{sentence}</span>
+                      {fields && <span className="text-muted-foreground truncate text-xs">{fields}</span>}
+                    </span>
+                  )
+                },
+              },
+              {
+                id: "site", header: t("activity.site"), width: "minmax(8rem, 0.8fr)",
+                sortValue: (item) => (item.siteName ?? "").toLowerCase(),
+                cell: (item) => <span className="text-muted-foreground text-sm">{item.siteName ?? ""}</span>,
+              },
+              {
+                id: "when", header: t("activity.when"), width: "minmax(12rem, 1.2fr)",
+                sortValue: (item) => (item.date ? new Date(item.date) : null),
+                cell: (item) => (
+                  <span className="flex min-w-0 items-center gap-2">
+                    {item.date
+                      ? <BentoChangeCell at={item.date} actor={item.owner} agent={Boolean(item.agent)} />
+                      : <span className="text-muted-foreground">{item.owner}</span>}
+                    {/*
+                      SH999 — the run beside the person, because both are true: an agent acts as
+                      somebody's credential. It links to the queue where that run can be read and
+                      undone, which is the next thing a curator who noticed this wants.
+                    */}
+                    {item.agent && (
+                      <Link
+                        to={`${ROUTES.ADMIN_REVIEW}?session=${encodeURIComponent(item.agent)}`}
+                        title={t("activity.byAgent")}
+                        className="inline-flex shrink-0 items-center gap-1"
+                      >
+                        <Badge variant="outline" className="vg-accent-text gap-1">
+                          <Bot className="h-3 w-3" />
+                          {item.agentName ?? item.agent.slice(0, 8)}
                         </Badge>
-                        {/*
-                          SH196 recorded the subject on every row and no reader carried it, so a
-                          folder rename read as a post's. Said only when it is not a post, because
-                          a badge on every row is a column that says nothing.
-                        */}
-                        {item.subjectKind && item.subjectKind !== "POST" && (
-                          <Badge variant="outline" className="ml-1 text-[10px]">
-                            {t(`activity.subject.${item.subjectKind}`, { defaultValue: item.subjectKind.toLowerCase() })}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{activitySentence(item.description, item.action, t)}</div>
-                        {/*
-                          SH989 — what the write changed, by name. After an approve the draft and
-                          the live row are one document, so this line is what still describes it.
-                        */}
-                        {item.changedFields && (
-                          <div className="text-xs text-muted-foreground">
-                            {item.changedFields.length === 0
-                              ? t("activity.noFieldsChanged")
-                              : t("activity.fields", { fields: item.changedFields.join(", ") })}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {item.siteName ?? ""}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {/*
-                          SH1005 — the name is the filter: "everything this person did" was a
-                          question the server could answer and the page had no way to ask.
-                        */}
-                        <Button
-                          type="button"
-                          variant="link"
-                          size="sm"
-                          className="px-0 text-muted-foreground"
-                          title={t("activity.byActor")}
-                          onClick={() => narrow("actor", item.owner)}
-                        >
-                          {item.owner}
-                        </Button>
-                        {/*
-                          SH999 — the run beside the person, because both are true: an agent acts as
-                          somebody's credential, so a column showing only the name said the same
-                          thing about a machine's write and a person's. It links to the queue where
-                          that run can be read and undone, which is the next thing a curator who
-                          noticed this wants.
-                        */}
-                        {item.agent && (
-                          <Link
-                            to={`${ROUTES.ADMIN_REVIEW}?session=${encodeURIComponent(item.agent)}`}
-                            title={t("activity.byAgent")}
-                            className="ml-2 inline-flex items-center gap-1 align-middle"
-                          >
-                            <Badge variant="outline" className="vg-accent-text gap-1">
-                              <Bot className="h-3 w-3" />
-                              {item.agentName ?? item.agent.slice(0, 8)}
-                            </Badge>
-                          </Link>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {item.date ? new Date(item.date).toLocaleString() : ""}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-          </Panel>
+                      </Link>
+                    )}
+                  </span>
+                ),
+              },
+            ]}
+            label={t("activity.title")}
+            // SH1005 — the name is the filter: "everything this person did" was a question the server
+            // could answer and the page had no way to ask.
+            rowActions={[{
+              id: "byActor", label: t("activity.byActor"), icon: IconUserSearch,
+              onSelect: ([item]) => narrow("actor", item.owner),
+            }]}
+          />
         )}
         {/*
           SH1005 — the trail did not end at row five hundred; that was where the reader stopped.

@@ -30,7 +30,6 @@ const SRC = join(ROOT, "src")
 
 /** Each hand-drawn table, and the open task that moves it onto `BentoDataTable`. */
 const DEBT = {
-  "app/admin/activity/activity.list.page.tsx": "SH1233",
   "app/admin/group-members.tsx": "SH1234",
 }
 
@@ -141,6 +140,15 @@ test("SH1232: open notes resolve one at a time or as a selection, and name who l
     "SH1232: several dealt-with notes should close in one gesture")
   assert.match(page, /<BentoChangeCell at=\{note\.createdAt\} actor=\{note\.author \?\? undefined\} \/>/,
     "SH1232: when a note was left is the change cell, naming who left it")
+})
+
+test("SH1233: the activity trail is the package's table, paged by the same cursor", () => {
+  const page = readFileSync(join(SRC, "app", "admin", "activity", "activity.list.page.tsx"), "utf8")
+  assert.match(page, /<BentoDataTable\b[\s\S]*rows=\{items\}/, "SH1233: the audit rows are not the package's table")
+  assert.match(page, /<BentoChangeCell at=\{item\.date\} actor=\{item\.owner\} agent=\{Boolean\(item\.agent\)\} \/>/,
+    "SH1233: when and by whom is the change cell, marked when an agent did it")
+  assert.match(page, /onSelect: \(\[item\]\) => narrow\("actor", item\.owner\)/,
+    "SH1233: the name-as-filter is still one gesture away, in the row's menu")
 })
 
 test("SH1224: the scan sees an alias import, a relative one, and nothing else", () => {

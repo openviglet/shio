@@ -1688,6 +1688,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1230** — Form submissions are the package's table, which virtualizes a growing inbox, and Trash acts on one submission or a selection; Enter opens the post (design §LXXVII.14 superseded: its arrival-time column: submissions are the agent's find rows unchanged (SH1027) and carry no date) (design §LXXVII.14 recorded in `shio-react/src/app/content/forms.page.tsx`).
 - **SH1231** — The languages board is the package's table: a sortable Coverage column and language columns that sort missing first, with the agent asks on each language's tally, the row menu and a selection (design §LXXVII.15 recorded in `shio-react/src/app/content/languages.page.tsx`).
 - **SH1232** — Open notes are the package's table: the page as identity cell, the note's kind and first line, when it was left and by whom, and Resolve for a row or a selection; Enter opens the page (design §LXXVII.16 recorded in `shio-react/src/app/content/notes.page.tsx`).
+- **SH1233** — The Activity trail is the package's table over the same keyset paging: when and by whom is the change cell with the run linked beside it, and the actor filter is the row's menu (design §LXXVII.17 recorded in `shio-react/src/app/admin/activity/activity.list.page.tsx`).
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 
