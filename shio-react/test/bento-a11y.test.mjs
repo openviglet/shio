@@ -106,9 +106,8 @@ function unnamedIconButtons() {
 const UNNAMED_DEBT = {
   "app/admin/auth-provider/auth-provider.page.tsx": ["X"],
   "app/admin/exchange-provider/exchange-provider.page.tsx": ["X"],
-  // SH922 removed the Download entry: that button lived inside the anchor that already
-  // named it, and the fix was to delete the button rather than to label it.
-  "app/content/static-file.list.page.tsx": ["Trash2"],
+  // SH922 removed the media list's Download entry, and SH1226 its Trash2: both row actions are now
+  // the table's named menu items rather than icon buttons in a column.
 }
 
 /**

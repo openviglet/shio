@@ -1112,13 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.10 Media rows on the design system's table (SH1226)
-
-static-file.list.page.tsx draws its rows view with shadcn Table and actions behind
-group-hover. Move the rows view onto BentoDataTable with selection and rowActions,
-keeping the tile view as the grid. Done when the page leaves SH1224's debt list and no
-action in it is hover-only.
-
 ### LXXVII.11 The trash on the design system's table (SH1227)
 
 trash.page.tsx lists deleted items with shadcn Table. Move it onto BentoDataTable with

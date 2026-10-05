@@ -1,5 +1,9 @@
-import { IconPhoto } from "@tabler/icons-react"
+import { IconCopy, IconDownload, IconFolderShare, IconPhoto, IconTrash } from "@tabler/icons-react"
+import {
+  BentoDataTable, type BentoDataTableAction, type BentoDataTableColumn,
+} from "@viglet/viglet-design-system/bento"
 import { EmptyState } from "@/components/empty-state"
+import { MediaCategoryIcon } from "@/components/media-category-icon"
 import { PageHero } from "@/components/page-hero"
 import { Panel } from "@/components/panel"
 import { Button } from "@/components/ui/button"
@@ -8,7 +12,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -16,7 +19,7 @@ import {
 import { ContentBrowserDialog, type ContentBrowserSelection } from "@/components/widgets/content-browser-dialog"
 import { ROUTES } from "@/app/routes.const"
 import { Download, Trash2, Upload, Search, LayoutGrid, List as ListIcon, X, Link as LinkIcon, CheckCircle2, AlertCircle, FolderInput, Copy, FileText, History } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 // SH1023 — the search, the category chip and the view mode live in the URL.
 import { useListState } from "@/hooks/use-list-state"
@@ -34,7 +37,7 @@ import { reportProblem } from "@/lib/problem"
 import { deleteEach, refusalSummary } from "@/lib/batch-delete"
 import { Spinner } from "@/components/spinner"
 import {
-  mediaCategory, mediaCategoryIcon, isImageType, formatBytes,
+  isImageType, formatBytes,
   SH_MEDIA_CATEGORIES, type ShMediaCategory,
 } from "@/lib/media-type"
 
@@ -411,8 +414,9 @@ export default function StaticFileListPage() {
           </div>
         </div>
 
-        {/* Bulk-selection toolbar */}
-        {selected.size > 0 && (
+        {/* Bulk-selection toolbar, for the grid. SH1226 — the rows view uses the table's own bar,
+            which carries the same three verbs and whose header checkbox selects every row. */}
+        {selected.size > 0 && view === "grid" && (
           <div className="flex items-center gap-2 flex-wrap mb-4 rounded-lg border bg-orange-50 dark:bg-orange-950/30 px-3 py-2">
             <span className="text-sm font-medium">{t("staticFile.selectedCount", { count: selected.size })}</span>
             <div className="flex-1" />
@@ -473,7 +477,15 @@ export default function StaticFileListPage() {
           </div>
         ) : (
           <FileTable items={filtered} onOpen={setDetail} onDelete={handleDelete} t={t}
-            selected={selected} onToggleSelect={toggleSelect} />
+            selected={selected} onSelectionChange={(ids) => setSelected(new Set(ids))}
+            selectionActions={[
+              { id: "move", label: t("staticFile.move"), icon: IconFolderShare,
+                onSelect: () => setFolderDialog("move") },
+              { id: "copy", label: t("staticFile.copy"), icon: IconCopy,
+                onSelect: () => setFolderDialog("copy") },
+              { id: "delete", label: t("common.delete"), icon: IconTrash, tone: "destructive",
+                onSelect: () => { void bulkDelete() } },
+            ]} />
         )}
 
         {/*
@@ -554,7 +566,6 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
   t: (key: string, opts?: Record<string, unknown>) => string
 }) {
   const image = isImageType(item.contentType)
-  const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
   /**
    * SH1031 — alt text, in place.
    *
@@ -588,10 +599,11 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
         "bento-tile bento-glass rounded-2xl",
         selected ? "border-orange-400 ring-2 ring-orange-300" : "hover:border-orange-300",
       )}>
-      {/* Selection checkbox (always visible when selected, on hover otherwise) */}
+      {/* Selection checkbox: visible when selected, and on hover or keyboard focus otherwise. SH1226 —
+          it was hover-only, so a keyboard user tabbed onto a control nobody could see. */}
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- only stops the tile's click; the checkbox inside is the control (SH1054) */}
       <div className={cn("absolute left-2 top-2 z-10 transition-opacity",
-        selected ? "opacity-100" : "opacity-0 group-hover:opacity-100")}
+        selected ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100")}
         onClick={(e) => e.stopPropagation()}>
         <Checkbox checked={selected} onCheckedChange={onToggleSelect}
           className="bg-background/90 border-muted-foreground" />
@@ -602,7 +614,7 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
             <img src={service.thumbUrl(item)} alt={item.fileName ?? ""} loading="lazy"
               className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
           ) : (
-            <Icon className="h-10 w-10 text-muted-foreground" />
+            <MediaCategoryIcon contentType={item.contentType} className="h-10 w-10 text-muted-foreground" />
           )}
         </div>
         <div className="p-2">
@@ -656,86 +668,102 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
   )
 }
 
-function FileTable({ items, onOpen, onDelete, t, selected, onToggleSelect }: {
+/** A file's thumbnail, or its kind's icon where it is not an image. */
+function FileThumb({ item }: Readonly<{ item: ShStaticFileItem }>) {
+  if (isImageType(item.contentType)) {
+    return (
+      <img src={service.thumbUrl(item, 72)} alt="" loading="lazy"
+        className="h-8 w-8 shrink-0 rounded-sm border object-cover" />
+    )
+  }
+  return (
+    <div className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border">
+      <MediaCategoryIcon contentType={item.contentType} className="text-muted-foreground h-4 w-4" />
+    </div>
+  )
+}
+
+/** The file's bytes, saved under its own name. A link clicked rather than drawn (SH922's rule). */
+function download(item: ShStaticFileItem) {
+  const a = document.createElement("a")
+  a.href = service.fileUrl(item)
+  if (item.fileName) a.download = item.fileName
+  a.rel = "noopener noreferrer"
+  a.click()
+}
+
+/**
+ * SH1226 — the rows view on the design system's table.
+ *
+ * It was shadcn's `Table` with a checkbox column and two icon buttons per row, so it had no sortable
+ * header, no row keyboard model and no column menu, and every change to the package's table skipped
+ * it (SH1224's debt list). Rows now sort from their headers, Enter opens the detail dialog, Download
+ * and Delete are the row's menu, and the selection is the table's own, with the bulk verbs in its
+ * bar. The selection stays the page's state, so switching to the grid keeps what was ticked.
+ */
+function FileTable({ items, onOpen, onDelete, t, selected, onSelectionChange, selectionActions }: {
   items: ShStaticFileItem[]
   onOpen: (item: ShStaticFileItem) => void
   onDelete: (item: ShStaticFileItem) => void
   t: (key: string) => string
   selected: Set<string>
-  onToggleSelect: (id: string) => void
+  onSelectionChange: (ids: string[]) => void
+  selectionActions: BentoDataTableAction<ShStaticFileItem>[]
 }) {
+  const columns = useMemo<BentoDataTableColumn<ShStaticFileItem>[]>(() => [
+    {
+      id: "file", header: t("staticFile.fileName"), width: "minmax(16rem, 3fr)", hideable: false,
+      sortValue: (item) => (item.fileName ?? item.id).toLowerCase(),
+      cell: (item) => (
+        <span className="flex min-w-0 items-center gap-3">
+          <FileThumb item={item} />
+          <span className="truncate font-medium">{item.fileName ?? item.id}</span>
+        </span>
+      ),
+    },
+    {
+      id: "type", header: t("staticFile.type"), width: "minmax(9rem, 1fr)",
+      sortValue: (item) => item.contentType ?? "",
+      cell: (item) => <Badge variant="outline" className="font-mono text-xs">{item.contentType ?? "—"}</Badge>,
+    },
+    {
+      id: "size", header: t("staticFile.size"), width: "minmax(6rem, 0.6fr)",
+      sortValue: (item) => item.size ?? 0,
+      cell: (item) => <span className="text-muted-foreground">{formatBytes(item.size)}</span>,
+    },
+    {
+      id: "site", header: t("content.siteLabel"),
+      sortValue: (item) => (item.siteName ?? "").toLowerCase(),
+      cell: (item) => <span className="text-muted-foreground">{item.siteName ?? "—"}</span>,
+    },
+    {
+      id: "owner", header: t("common.owner"),
+      sortValue: (item) => (item.owner ?? "").toLowerCase(),
+      cell: (item) => <span className="text-muted-foreground">{item.owner ?? "—"}</span>,
+    },
+  ], [t])
+
+  const rowActions: BentoDataTableAction<ShStaticFileItem>[] = [
+    { id: "download", label: t("staticFile.download"), icon: IconDownload, onSelect: ([item]) => download(item) },
+    {
+      id: "delete", label: t("common.delete"), icon: IconTrash, tone: "destructive",
+      onSelect: (rows) => { for (const item of rows) onDelete(item) },
+    },
+  ]
+
   return (
-    <Panel contentClassName="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10"></TableHead>
-              <TableHead className="w-14"></TableHead>
-              <TableHead>{t("staticFile.fileName")}</TableHead>
-              <TableHead>{t("staticFile.type")}</TableHead>
-              <TableHead>{t("staticFile.size")}</TableHead>
-              <TableHead>{t("content.siteLabel")}</TableHead>
-              <TableHead>{t("common.owner")}</TableHead>
-              <TableHead className="w-24">{t("common.actions")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id} className={cn("cursor-pointer", selected.has(item.id) && "bg-orange-50 dark:bg-orange-950/20")}
-                onClick={() => onOpen(item)}>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Checkbox checked={selected.has(item.id)} onCheckedChange={() => onToggleSelect(item.id)}
-                    aria-label={item.fileName ?? item.id} />
-                </TableCell>
-                <TableCell>
-                  {isImageType(item.contentType) ? (
-                    <img src={service.thumbUrl(item, 72)} alt={item.fileName ?? ""}
-                      className="h-9 w-9 rounded-sm object-cover border" loading="lazy" />
-                  ) : (
-                    <div className="h-9 w-9 rounded-sm border flex items-center justify-center bg-muted">
-                      {(() => {
-                        const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
-                        return <Icon className="h-4 w-4 text-muted-foreground" />
-                      })()}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell className="font-medium">
-                  <span className="truncate max-w-xs block">{item.fileName ?? item.id}</span>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="font-mono text-xs">{item.contentType ?? "—"}</Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{formatBytes(item.size)}</TableCell>
-                <TableCell className="text-muted-foreground">{item.siteName ?? "—"}</TableCell>
-                <TableCell className="text-muted-foreground">{item.owner ?? "—"}</TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <div className="flex gap-1">
-                    {/*
-                      SH922 — the anchor IS the control, so it carries the styling and there is
-                      no button inside it. A `<button>` nested in an `<a>` is interactive content
-                      inside interactive content: invalid markup, and on a rendered instance it
-                      was two tab stops on every one of 169 rows, the second announcing nothing
-                      because only the anchor was named. The classes below are what `Button`
-                      variant="ghost" size="icon" was drawing.
-                    */}
-                    <a href={service.fileUrl(item)} download={item.fileName ?? undefined}
-                      target="_blank" rel="noopener noreferrer"
-                      aria-label={t("staticFile.download")} title={t("staticFile.download")}
-                      className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:ring-1 focus-visible:outline-none">
-                      <Download className="h-4 w-4" />
-                    </a>
-                    <Button variant="ghost" size="icon-sm" className="text-destructive"
-                      onClick={() => onDelete(item)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-    </Panel>
+    <BentoDataTable
+      rows={items}
+      getRowId={(item) => item.id}
+      getRowLabel={(item) => item.fileName ?? item.id}
+      columns={columns}
+      label={t("staticFile.title")}
+      rowActions={rowActions}
+      selectionActions={selectionActions}
+      selectedIds={[...selected]}
+      onSelectionChange={onSelectionChange}
+      onRowOpen={onOpen}
+    />
   )
 }
 
@@ -776,7 +804,6 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
   t: (key: string, opts?: Record<string, unknown>) => string
 }) {
   const image = isImageType(item.contentType)
-  const Icon = mediaCategoryIcon(mediaCategory(item.contentType))
   const [alt, setAlt] = useState(item.alt ?? "")
   const [caption, setCaption] = useState(item.caption ?? "")
   const [tags, setTags] = useState<string[]>(item.tags ?? [])
@@ -867,7 +894,7 @@ function DetailDialog({ item, onClose, onDelete, onCopyUrl, onSaved, t }: {
               alt={item.alt ?? item.fileName ?? ""} className="max-h-80 w-auto object-contain" />
           ) : (
             <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
-              <Icon className="h-12 w-12" />
+              <MediaCategoryIcon contentType={item.contentType} className="h-12 w-12" />
               <span className="text-xs">{item.contentType ?? t("staticFile.unknownType")}</span>
             </div>
           )}

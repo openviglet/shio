@@ -4,11 +4,6 @@
       "count": 1
     }
   },
-  "src/app/content/static-file.list.page.tsx": {
-    "react-hooks/static-components": {
-      "count": 2
-    }
-  },
   "src/app/login/login-settings.tsx": {
     "react-refresh/only-export-components": {
       "count": 1

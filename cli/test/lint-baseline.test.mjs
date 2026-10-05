@@ -114,9 +114,9 @@ const DECLARED = {
   "no-useless-assignment": {
     "src/app/content/post-type.edit.page.tsx": 1,
   },
-  "react-hooks/static-components": {
-    "src/app/content/static-file.list.page.tsx": 2,
-  },
+  // Empty since SH1226: the media library chose its icon per file during render in three places,
+  // and one `MediaCategoryIcon` component replaced them. Left declared like the groups above.
+  "react-hooks/static-components": {},
   "react-refresh/only-export-components": {
     // SH1075 added the conflict dialog's two and field-constraints' one; SH1136 moved those helpers
     // to `lib/post-conflict.ts` and `lib/constraint-hint.ts`, which read better as modules of pure

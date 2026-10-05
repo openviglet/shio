@@ -11,7 +11,6 @@
 
 ## Block AR — The curator's console, surface by surface (§LV)
 
-- 📋 **SH1226** (deps: SH1224 ✅) **The media library's rows view is a hand-drawn table** — The busiest list after the content browser sorts and selects its own way, with hover-only actions. → §LXXVII.10
 - 📋 **SH1227** (deps: SH1224 ✅) **The trash is a hand-drawn table** — Restoring and purging many items wants the package's selection and range keys, which a hand-drawn table lacks. → §LXXVII.11
 - 📋 **SH1228** (deps: SH1224 ✅) **Search results are a hand-drawn table** — A result list should sort and open from the keyboard like every other list. → §LXXVII.12
 - 📋 **SH1229** (deps: SH1224 ✅) **The scheduled list is a hand-drawn table** — The agenda's list view should share the package's table while its calendar view stays the package's calendar. → §LXXVII.13

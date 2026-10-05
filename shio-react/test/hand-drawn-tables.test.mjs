@@ -37,7 +37,6 @@ const DEBT = {
   "app/content/notes.page.tsx": "SH1232",
   "app/content/scheduled.page.tsx": "SH1229",
   "app/content/search.page.tsx": "SH1228",
-  "app/content/static-file.list.page.tsx": "SH1226",
   "app/content/trash.page.tsx": "SH1227",
 }
 
@@ -86,6 +85,17 @@ test("SH1225: the post types list is the package's table, with its verbs in the 
   assert.match(page, /rowActions=\{rowActions\}/,
     "SH1225: Edit and Delete belong in the row's actions menu, which a keyboard reaches, not in a column of buttons")
   assert.match(page, /<BentoIdentityCell\b/, "SH1225: the type is named by the package's identity cell")
+})
+
+test("SH1226: the media rows are the package's table, and no media action is hover-only", () => {
+  const page = readFileSync(join(SRC, "app", "content", "static-file.list.page.tsx"), "utf8")
+  assert.match(page, /<BentoDataTable\b[\s\S]*selectionActions=\{selectionActions\}/,
+    "SH1226: the media rows view no longer renders the package's table with its selection bar")
+  assert.match(page, /id: "download"[\s\S]*id: "delete"/, "SH1226: Download and Delete are the row's menu")
+  for (const hidden of page.matchAll(/opacity-0 group-hover:opacity-100([^"]*)"/g)) {
+    assert.match(hidden[1], /group-focus-within:opacity-100/,
+      "SH1226: a control shown only on hover is one a keyboard user tabs onto and cannot see")
+  }
 })
 
 test("SH1224: the scan sees an alias import, a relative one, and nothing else", () => {
