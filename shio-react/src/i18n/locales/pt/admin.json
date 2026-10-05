@@ -29,6 +29,7 @@
   "admin.groupMemberRemoveNamed": "Remover {{name}} deste grupo",
   "admin.groupMemberAdded": "{{name}} adicionado ao grupo",
   "admin.groupMemberRemoved": "{{name}} removido do grupo",
+  "admin.groupMembersRemoved": "{{count}} membros removidos do grupo",
   "admin.groupNoMembers": "Ninguém faz parte deste grupo ainda.",
   "admin.groupRoles": "Papéis ({{count}})",
   "admin.groupNoRoles": "Nenhum papel concede nada a este grupo ainda."

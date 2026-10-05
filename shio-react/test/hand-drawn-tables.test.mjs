@@ -30,7 +30,6 @@ const SRC = join(ROOT, "src")
 
 /** Each hand-drawn table, and the open task that moves it onto `BentoDataTable`. */
 const DEBT = {
-  "app/admin/group-members.tsx": "SH1234",
 }
 
 /** An import of the hand-drawn table primitive, by alias or by relative path. */
@@ -149,6 +148,14 @@ test("SH1233: the activity trail is the package's table, paged by the same curso
     "SH1233: when and by whom is the change cell, marked when an agent did it")
   assert.match(page, /onSelect: \(\[item\]\) => narrow\("actor", item\.owner\)/,
     "SH1233: the name-as-filter is still one gesture away, in the row's menu")
+})
+
+test("SH1234: a group's members leave as a selection in one write", () => {
+  const panel = readFileSync(join(SRC, "app", "admin", "group-members.tsx"), "utf8")
+  assert.match(panel, /selectionActions=\{\[removeAction\]\}/,
+    "SH1234: removing several members needs the table's selection")
+  assert.match(panel, /return save\(members\.filter\(\(member\) => !leaving\.has\(member\.username\)\), message\)/,
+    "SH1234: a selection is one membership write, not a save per person")
 })
 
 test("SH1224: the scan sees an alias import, a relative one, and nothing else", () => {
