@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #0a0a0a; }
+    x-dc { display: block; }
+    helmet { display: none; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .note { font-size: 11px; color: #d4d4d4; line-height: 1.5; }
+    .pin { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 999px; background: #fb923c; color: #171717; font-size: 9.5px; font-weight: 700; flex: 0 0 auto; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 9px; border: 1px solid #2e2e2e; background: #171717; font-size: 11.5px; font-weight: 500; color: #e5e5e5; }
+    .btn-primary { border-color: #fb923c; background: #fb923c; color: #171717; }
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9px; border: 1px solid #2e2e2e; background: #171717; color: #a3a3a3; }
+    .seg { display: inline-flex; border: 1px solid #2e2e2e; border-radius: 9px; overflow: hidden; background: #171717; }
+    .seg > div { padding: 0 10px; height: 26px; display: flex; align-items: center; gap: 5px; font-size: 11px; color: #a3a3a3; }
+    .seg > div.on { background: #262626; color: #fafafa; font-weight: 600; }
+    .card { border-radius: 16px; border: 1px solid #262626; background: #141414; overflow: hidden; display: flex; flex-direction: column; }
+    .thumb { height: 96px; position: relative; overflow: hidden; border-bottom: 1px solid #222222; }
+    .thumb .nav { position: absolute; left: 10px; right: 10px; top: 9px; height: 5px; border-radius: 999px; background: rgba(255,255,255,0.22); }
+    .thumb .hero { position: absolute; left: 10px; right: 46%; top: 24px; height: 9px; border-radius: 4px; background: rgba(255,255,255,0.55); }
+    .thumb .line { position: absolute; left: 10px; right: 58%; top: 38px; height: 5px; border-radius: 999px; background: rgba(255,255,255,0.28); }
+    .thumb .img { position: absolute; right: 10px; top: 22px; width: 38%; height: 42px; border-radius: 6px; background: rgba(255,255,255,0.18); }
+    .thumb .cols { position: absolute; left: 10px; right: 10px; bottom: 9px; height: 16px; display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+    .thumb .cols > div { border-radius: 4px; background: rgba(255,255,255,0.14); }
+    .body { padding: 10px 12px 11px; display: flex; flex-direction: column; gap: 6px; }
+    .av { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 7px; font-size: 9.5px; font-weight: 700; flex: 0 0 auto; }
+    .nm { font-size: 12.5px; font-weight: 600; color: #fafafa; }
+    .addr { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; color: #737373; }
+    .bar { display: flex; height: 4px; border-radius: 999px; background: #262626; overflow: hidden; }
+    .bar > span { display: block; height: 100%; }
+    .meta { font-size: 10.5px; color: #a3a3a3; }
+    .agent { display: inline-flex; align-items: center; height: 15px; padding: 0 6px; border-radius: 999px; background: rgba(167,139,250,0.16); color: #c4b5fd; font-size: 9px; font-weight: 600; margin-left: 4px; }
+    .legend { display: flex; gap: 8px; align-items: flex-start; font-size: 11px; color: #d4d4d4; line-height: 1.45; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1360px;height:780px;background:#0a0a0a;color:#fafafa;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#fb923c">SHIO &middot; CONTENT &middot; THE SITES LIST, REDRAWN &middot; DARK GROUND</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">The same list, as the sites look</div>
+      <div style="font-size:12.5px;color:#a3a3a3">The grid view: a site is recognised by its home page before its name is read. Same facts as the list row, nothing added.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;padding:14px 24px 0;display:grid;grid-template-columns:1fr 276px;gap:20px">
+
+    <div style="min-height:0;border-radius:14px;background:#0f0f0f;border:1px solid #262626;overflow:hidden;display:grid;grid-template-columns:56px 1fr;grid-template-rows:44px 1fr">
+
+      <div style="grid-row:1 / span 2;border-right:1px solid #1f1f1f;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:58px">
+        <div style="width:30px;height:30px;border-radius:9px;border:1px solid #262626"></div>
+        <div style="width:30px;height:30px;border-radius:9px;background:rgba(251,146,60,0.14);border:1px solid rgba(251,146,60,0.4)"></div>
+        <div style="width:30px;height:30px;border-radius:9px;border:1px solid #262626"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid #1f1f1f">
+        <div style="width:22px;height:22px;border-radius:6px;background:#f05a3c;color:#fff4e6;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center">Sh</div>
+        <div style="font-size:13px;font-weight:600">Shio</div>
+        <div style="display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border:1px solid #2e2e2e;border-radius:8px;font-size:11px;color:#a3a3a3;min-width:150px">Search<span class="mono" style="margin-left:auto;font-size:9.5px;border:1px solid #2e2e2e;border-radius:4px;padding:0 4px">Ctrl K</span></div>
+        <div style="flex:1"></div>
+        <div class="icon-btn" style="width:26px;height:26px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg></div>
+        <div style="width:26px;height:26px;border-radius:999px;background:#262626;border:1px solid #333333;font-size:9.5px;display:flex;align-items:center;justify-content:center;color:#d4d4d4">SA</div>
+      </div>
+
+      <div style="min-height:0;overflow:hidden;padding:18px 26px 0;position:relative">
+
+        <div style="display:flex;align-items:flex-end;gap:12px">
+          <div style="flex:1">
+            <div class="eyebrow" style="color:#a3a3a3">CONTENT</div>
+            <div style="font-size:24px;font-weight:600;letter-spacing:-0.02em;margin-top:2px">Sites</div>
+            <div style="font-size:12px;color:#a3a3a3;margin-top:3px">23 sites &middot; 4 changed this week &middot; 2 by an agent</div>
+          </div>
+          <div class="btn btn-primary" style="height:32px;padding:0 13px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M12 5v14"></path></svg>New site
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-top:16px;position:relative">
+          <div style="display:flex;align-items:center;gap:7px;height:30px;width:260px;padding:0 10px;border:1px solid #2e2e2e;border-radius:9px;font-size:11.5px;color:#737373">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.4-4.4"></path></svg>Filter sites
+          </div>
+          <div class="btn" style="height:30px">Import</div>
+          <div style="flex:1"></div>
+          <div style="font-size:11px;color:#a3a3a3">Sort</div>
+          <div class="btn" style="height:30px">Last changed <span style="color:#737373">&#9662;</span></div>
+          <div class="seg" style="position:relative">
+            <span class="pin" style="position:absolute;left:-22px;top:5px">1</span>
+            <div class="on">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>Grid
+            </div>
+            <div>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>List
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+
+          <!-- 2: the home page, rendered once at publish and kept -->
+          <div class="card" style="position:relative">
+            <span class="pin" style="position:absolute;left:8px;top:8px;z-index:2">2</span>
+            <div class="thumb" style="background:linear-gradient(135deg,#7c2d12,#c2410c)"><div class="nav"></div><div class="hero"></div><div class="line"></div><div class="img"></div><div class="cols"><div></div><div></div><div></div></div></div>
+            <div class="body">
+              <div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:rgba(251,146,60,0.18);color:#fdba74">V3</div><div style="min-width:0"><div class="nm">VigR3</div><div class="addr">site:VigR3</div></div></div>
+              <div style="position:relative">
+                <span class="pin" style="position:absolute;right:0;top:-24px">4</span>
+                <div class="bar"><span style="width:84%;background:#22c55e"></span><span style="width:6%;background:#f59e0b"></span></div>
+              </div>
+              <div class="meta">42 published &middot; 3 drafts</div>
+              <div class="meta">2 days ago &middot; claude<span class="agent">agent</span></div>
+            </div>
+          </div>
+
+          <!-- 5: focus and hover show the same verbs the list row does -->
+          <div class="card" style="position:relative;border-color:#fb923c;box-shadow:0 0 0 3px rgba(251,146,60,0.18)">
+            <span class="pin" style="position:absolute;left:8px;top:8px;z-index:2">5</span>
+            <div class="thumb" style="background:linear-gradient(135deg,#0c4a6e,#0369a1)"><div class="nav"></div><div class="hero"></div><div class="line"></div><div class="img"></div><div class="cols"><div></div><div></div><div></div></div>
+              <div style="position:absolute;right:8px;top:8px;display:flex;gap:5px">
+                <div class="btn" style="height:24px;padding:0 8px;font-size:10.5px;background:rgba(23,23,23,0.9)">Preview</div>
+                <div class="icon-btn" style="width:24px;height:24px;background:rgba(23,23,23,0.9);font-size:12px">&middot;&middot;&middot;</div>
+              </div>
+            </div>
+            <div class="body">
+              <div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:rgba(56,189,248,0.16);color:#7dd3fc">V4</div><div style="min-width:0"><div class="nm">VigR4</div><div class="addr">site:VigR4</div></div></div>
+              <div class="bar"><span style="width:62%;background:#22c55e"></span></div>
+              <div class="meta">18 published</div>
+              <div class="meta">5 days ago &middot; A. Oliveira</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="thumb" style="background:linear-gradient(135deg,#365314,#4d7c0f)"><div class="nav"></div><div class="hero"></div><div class="line"></div><div class="img"></div><div class="cols"><div></div><div></div><div></div></div></div>
+            <div class="body">
+              <div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:rgba(163,230,53,0.14);color:#bef264">VF</div><div style="min-width:0"><div class="nm">VigFid</div><div class="addr">site:VigFid</div></div></div>
+              <div class="bar"><span style="width:92%;background:#22c55e"></span></div>
+              <div class="meta">131 published</div>
+              <div class="meta">3 weeks ago &middot; claude<span class="agent">agent</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="thumb" style="background:linear-gradient(135deg,#581c87,#7e22ce)"><div class="nav"></div><div class="hero"></div><div class="line"></div><div class="img"></div><div class="cols"><div></div><div></div><div></div></div></div>
+            <div class="body">
+              <div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:rgba(192,132,252,0.16);color:#d8b4fe">VA</div><div style="min-width:0"><div class="nm">VigAnn</div><div class="addr">site:VigAnn</div></div></div>
+              <div class="bar"><span style="width:30%;background:#22c55e"></span><span style="width:40%;background:#f59e0b"></span></div>
+              <div class="meta">9 published &middot; 12 drafts</div>
+              <div class="meta">Aug 20 &middot; A. Oliveira</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="thumb" style="background:linear-gradient(135deg,#831843,#be185d)"><div class="nav"></div><div class="hero"></div><div class="line"></div><div class="img"></div><div class="cols"><div></div><div></div><div></div></div></div>
+            <div class="body">
+              <div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:rgba(244,114,182,0.16);color:#f9a8d4">Vi</div><div style="min-width:0"><div class="nm">Vitalis</div><div class="addr">site:Vitalis</div></div></div>
+              <div class="bar"><span style="width:55%;background:#22c55e"></span></div>
+              <div class="meta">24 published</div>
+              <div class="meta">Aug 20 &middot; ops-bot<span class="agent">agent</span></div>
+            </div>
+          </div>
+
+          <!-- 3: no home page, no invented picture -->
+          <div class="card" style="position:relative">
+            <span class="pin" style="position:absolute;left:8px;top:8px;z-index:2">3</span>
+            <div class="thumb" style="background:#171717;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
+              <div style="font-size:22px;font-weight:700;color:#404040;letter-spacing:-0.02em">an</div>
+              <div style="font-size:10.5px;color:#737373">No home page yet</div>
+            </div>
+            <div class="body">
+              <div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:#262626;color:#a3a3a3">an</div><div style="min-width:0"><div class="nm">ann81813</div><div class="addr">site:ann81813</div></div></div>
+              <div class="bar"></div>
+              <div class="meta" style="color:#737373">No pages yet</div>
+              <div class="meta">Aug 20 &middot; A. Oliveira</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="thumb" style="background:linear-gradient(135deg,#134e4a,#0f766e)"><div class="nav"></div><div class="hero"></div><div class="line"></div><div class="img"></div><div class="cols"><div></div><div></div><div></div></div></div>
+            <div class="body">
+              <div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:rgba(45,212,191,0.14);color:#5eead4">V5</div><div style="min-width:0"><div class="nm">VigR5</div><div class="addr">site:VigR5</div></div></div>
+              <div class="bar"><span style="width:48%;background:#22c55e"></span></div>
+              <div class="meta">16 published</div>
+              <div class="meta">Aug 19 &middot; claude<span class="agent">agent</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="thumb" style="background:linear-gradient(135deg,#713f12,#a16207)"><div class="nav"></div><div class="hero"></div><div class="line"></div><div class="img"></div><div class="cols"><div></div><div></div><div></div></div></div>
+            <div class="body">
+              <div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:rgba(250,204,21,0.14);color:#fde047">V6</div><div style="min-width:0"><div class="nm">VigR6</div><div class="addr">site:VigR6</div></div></div>
+              <div class="bar"><span style="width:40%;background:#22c55e"></span></div>
+              <div class="meta">14 published</div>
+              <div class="meta">Aug 19 &middot; claude<span class="agent">agent</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position:absolute;left:0;right:0;bottom:0;height:52px;background:linear-gradient(to bottom, rgba(15,15,15,0), #0f0f0f)"></div>
+      </div>
+    </div>
+
+    <div style="min-height:0;display:flex;flex-direction:column;gap:9px;padding-top:2px">
+      <div class="eyebrow" style="color:#a3a3a3">WHAT CHANGED, BY PIN</div>
+      <div class="legend"><span class="pin">1</span><div><strong>Grid or list, remembered per person.</strong> Grid is the default up to about thirty sites, where a picture beats a name; past that, list. The choice is a per-viewer preference, not shared state.</div></div>
+      <div class="legend"><span class="pin">2</span><div><strong>The thumbnail is the home page.</strong> Rendered by the preview renderer when the home is published, and stored. Opening the list renders nothing.</div></div>
+      <div class="legend"><span class="pin">3</span><div><strong>No home, no fake picture.</strong> A site without a home page shows its initials and says so, the same honesty as &ldquo;No pages yet&rdquo;.</div></div>
+      <div class="legend"><span class="pin">4</span><div><strong>The list row&rsquo;s facts, no more.</strong> Address, pages by state, last change and who made it. Switching view never changes what is known.</div></div>
+      <div class="legend"><span class="pin">5</span><div><strong>Focus is visible on both grounds.</strong> The focused card carries the ring and the same verbs as a hovered row: Preview, then &middot;&middot;&middot;.</div></div>
+      <div style="margin-top:4px;border-top:1px solid #262626;padding-top:9px;font-size:10.5px;color:#a3a3a3;line-height:1.45">On this ground the primary is orange-400 with dark text, as <span class="mono">--vg-primary-base-dark</span> already sets. The state colours are lifted one step so they keep contrast on <span class="mono">#141414</span>.</div>
+    </div>
+  </div>
+
+  <div style="margin:12px 24px 16px;border:1px solid #262626;background:#141414;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#a3a3a3;margin-bottom:4px">WHAT THIS DECIDES</div>
+      <div class="note">A thumbnail is <strong>an artefact of publishing, not of viewing</strong>: one render of the home when it is published, kept beside the render digest, and served as an image. Drawn here as a card per site, it commits the backend to producing and storing that image; without it the grid falls back to the initials tile for every site, and the list is the better view.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#262626"></div>
+    <div style="width:420px">
+      <div class="eyebrow" style="color:#fdba74;margin-bottom:4px">NOT CHOSEN &mdash; A LIVE PREVIEW IN EACH CARD</div>
+      <div class="note">Twenty-three iframes, each a full server render with its scripts, on every visit to the list. Slow, unreadable to a screen reader, and showing drafts as if they were the site. A stored image says the same thing for the cost of one request.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

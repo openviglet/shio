@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; background: #ffffff; }
+    x-dc { display: block; }
+    helmet { display: none; }
+    .vg { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; }
+    .note { font-size: 11px; color: #404040; line-height: 1.5; }
+    .pin { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 999px; background: #c2410c; color: #ffffff; font-size: 9.5px; font-weight: 700; flex: 0 0 auto; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 9px; border: 1px solid #e5e5e5; background: #ffffff; font-size: 11.5px; font-weight: 500; color: #262626; }
+    .btn-primary { border-color: #c2410c; background: #c2410c; color: #ffffff; }
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9px; border: 1px solid #e5e5e5; background: #ffffff; color: #525252; }
+    .seg { display: inline-flex; border: 1px solid #e5e5e5; border-radius: 9px; overflow: hidden; background: #ffffff; }
+    .seg > div { padding: 0 10px; height: 26px; display: flex; align-items: center; gap: 5px; font-size: 11px; color: #737373; }
+    .seg > div.on { background: #f5f5f5; color: #171717; font-weight: 600; }
+    .av { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px; font-size: 11px; font-weight: 700; flex: 0 0 auto; }
+    .trow { display: grid; grid-template-columns: minmax(0,1fr) 200px 180px 132px; gap: 14px; align-items: center; padding: 0 16px; height: 54px; border-bottom: 1px solid #f2f2f2; }
+    .nm { font-size: 13px; font-weight: 600; color: #0a0a0a; }
+    .sub { font-size: 11px; color: #737373; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .addr { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; color: #a3a3a3; }
+    .bar { display: flex; height: 5px; border-radius: 999px; background: #f0f0f0; overflow: hidden; width: 120px; }
+    .bar > span { display: block; height: 100%; }
+    .meta { font-size: 11px; color: #737373; margin-top: 4px; }
+    .when { font-size: 12px; color: #262626; }
+    .agent { display: inline-flex; align-items: center; height: 16px; padding: 0 6px; border-radius: 999px; background: rgba(124,58,237,0.1); color: #6d28d9; font-size: 9.5px; font-weight: 600; margin-left: 4px; }
+    .legend { display: flex; gap: 8px; align-items: flex-start; font-size: 11px; color: #404040; line-height: 1.45; }
+  </style>
+</helmet>
+
+<div class="vg" style="position:relative;width:1360px;height:780px;background:#fafafa;color:#0a0a0a;overflow:hidden;display:flex;flex-direction:column">
+
+  <div style="padding:16px 24px 0">
+    <div class="eyebrow" style="color:#c2410c">SHIO &middot; CONTENT &middot; THE SITES LIST, REDRAWN &middot; LIGHT GROUND</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px">
+      <div style="font-size:21px;font-weight:600;letter-spacing:-0.015em">A site is a project, not a record</div>
+      <div style="font-size:12.5px;color:#737373">The list view: one toolbar, one row that says who the site is and whether it is alive, and the page doing the scrolling.</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;padding:14px 24px 0;display:grid;grid-template-columns:1fr 276px;gap:20px">
+
+    <!-- the console, drawn at reduced scale: rail, header, reading column -->
+    <div style="min-height:0;border-radius:14px;background:#ffffff;border:1px solid #e5e5e5;overflow:hidden;display:grid;grid-template-columns:56px 1fr;grid-template-rows:44px 1fr">
+
+      <div style="grid-row:1 / span 2;border-right:1px solid #f0f0f0;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:58px">
+        <div style="width:30px;height:30px;border-radius:9px;border:1px solid #f0f0f0"></div>
+        <div style="width:30px;height:30px;border-radius:9px;background:rgba(194,65,12,0.1);border:1px solid rgba(194,65,12,0.35)"></div>
+        <div style="width:30px;height:30px;border-radius:9px;border:1px solid #f0f0f0"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid #f0f0f0">
+        <div style="width:22px;height:22px;border-radius:6px;background:#f05a3c;color:#fff4e6;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center">Sh</div>
+        <div style="font-size:13px;font-weight:600">Shio</div>
+        <div style="display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border:1px solid #e5e5e5;border-radius:8px;font-size:11px;color:#737373;min-width:150px">Search<span class="mono" style="margin-left:auto;font-size:9.5px;border:1px solid #e5e5e5;border-radius:4px;padding:0 4px">Ctrl K</span></div>
+        <div style="flex:1"></div>
+        <div class="icon-btn" style="width:26px;height:26px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2"></path></svg></div>
+        <div style="width:26px;height:26px;border-radius:999px;background:#f5f5f5;border:1px solid #e5e5e5;font-size:9.5px;display:flex;align-items:center;justify-content:center;color:#525252">SA</div>
+      </div>
+
+      <div style="min-height:0;overflow:hidden;padding:18px 26px 0;position:relative">
+
+        <!-- hero: the count belongs to the title, and the one filled button -->
+        <div style="display:flex;align-items:flex-end;gap:12px">
+          <div style="flex:1">
+            <div class="eyebrow" style="color:#737373">CONTENT</div>
+            <div style="font-size:24px;font-weight:600;letter-spacing:-0.02em;margin-top:2px">Sites</div>
+            <div style="font-size:12px;color:#737373;margin-top:3px">23 sites &middot; 4 changed this week &middot; 2 by an agent</div>
+          </div>
+          <div class="btn btn-primary" style="height:32px;padding:0 13px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M12 5v14"></path></svg>New site
+          </div>
+        </div>
+
+        <!-- 1: one toolbar, glued to the list it controls -->
+        <div style="display:flex;align-items:center;gap:8px;margin-top:16px;position:relative">
+          <span class="pin" style="position:absolute;left:-22px;top:6px">1</span>
+          <div style="display:flex;align-items:center;gap:7px;height:30px;width:260px;padding:0 10px;border:1px solid #e5e5e5;border-radius:9px;font-size:11.5px;color:#a3a3a3">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a3a3a3" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.4-4.4"></path></svg>Filter sites
+          </div>
+          <div class="btn" style="height:30px">Import</div>
+          <div style="flex:1"></div>
+          <div style="font-size:11px;color:#737373">Sort</div>
+          <div class="btn" style="height:30px">Last changed <span style="color:#a3a3a3">&#9662;</span></div>
+          <div class="seg">
+            <div>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>Grid
+            </div>
+            <div class="on">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>List
+            </div>
+          </div>
+          <div class="icon-btn" title="Columns" style="height:30px;width:30px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v16"></path></svg></div>
+        </div>
+
+        <!-- the table: no frame of its own height; the page scrolls, the header sticks -->
+        <div style="margin-top:12px;border:1px solid #ededed;border-radius:14px">
+
+          <div class="trow" style="height:34px;border-radius:13px 13px 0 0;background:rgba(250,250,250,0.92);font-size:10px;font-weight:600;letter-spacing:0.06em;color:#737373;border-bottom:1px solid #ececec;box-shadow:0 6px 10px -10px rgba(0,0,0,0.25);position:relative">
+            <span class="pin" style="position:absolute;left:-22px;top:9px">7</span>
+            <div>SITE</div><div>PAGES</div><div style="color:#171717">LAST CHANGED &#8595;</div><div></div>
+          </div>
+
+          <!-- 2 + 3: identity, and the description as a second line -->
+          <div class="trow" style="position:relative">
+            <span class="pin" style="position:absolute;left:-22px;top:19px">2</span>
+            <div style="display:flex;align-items:center;gap:11px;min-width:0">
+              <div class="av" style="background:#fff1e6;color:#c2410c">V3</div>
+              <div style="min-width:0"><div class="nm">VigR3</div><div class="sub">teste 123 &middot; <span class="addr">site:VigR3</span></div></div>
+            </div>
+            <div style="position:relative">
+              <span class="pin" style="position:absolute;left:-24px;top:2px">4</span>
+              <div class="bar"><span style="width:84%;background:#16a34a"></span><span style="width:6%;background:#f59e0b"></span></div>
+              <div class="meta">42 published &middot; 3 drafts</div>
+            </div>
+            <div style="position:relative">
+              <span class="pin" style="position:absolute;left:-24px;top:2px">5</span>
+              <div class="when">2 days ago</div>
+              <div class="meta">claude<span class="agent">agent</span></div>
+            </div>
+            <div style="color:#d4d4d4;text-align:right;font-size:16px;letter-spacing:1px">&middot;&middot;&middot;</div>
+          </div>
+
+          <!-- 6: the hovered row offers its verbs; the others keep a quiet overflow -->
+          <div class="trow" style="background:#fafafa;position:relative">
+            <span class="pin" style="position:absolute;left:-22px;top:19px">6</span>
+            <div style="display:flex;align-items:center;gap:11px;min-width:0">
+              <div class="av" style="background:#e0f2fe;color:#0369a1">V4</div>
+              <div style="min-width:0"><div class="nm">VigR4</div><div class="sub"><span class="addr">site:VigR4</span></div></div>
+            </div>
+            <div><div class="bar"><span style="width:62%;background:#16a34a"></span></div><div class="meta">18 published</div></div>
+            <div><div class="when">5 days ago</div><div class="meta">A. Oliveira</div></div>
+            <div style="display:flex;gap:5px;justify-content:flex-end">
+              <div class="btn" style="height:26px;padding:0 8px;font-size:11px">Preview</div>
+              <div class="icon-btn" style="width:26px;height:26px;font-size:13px">&middot;&middot;&middot;</div>
+            </div>
+          </div>
+
+          <div class="trow" style="position:relative">
+            <span class="pin" style="position:absolute;left:-22px;top:19px">3</span>
+            <div style="display:flex;align-items:center;gap:11px;min-width:0">
+              <div class="av" style="background:#ecfccb;color:#4d7c0f">VF</div>
+              <div style="min-width:0"><div class="nm">VigFid</div><div class="sub">Fidelity replica of the corporate site &middot; <span class="addr">site:VigFid</span></div></div>
+            </div>
+            <div><div class="bar"><span style="width:92%;background:#16a34a"></span></div><div class="meta">131 published</div></div>
+            <div><div class="when">3 weeks ago</div><div class="meta">claude<span class="agent">agent</span></div></div>
+            <div style="color:#d4d4d4;text-align:right;font-size:16px;letter-spacing:1px">&middot;&middot;&middot;</div>
+          </div>
+
+          <div class="trow">
+            <div style="display:flex;align-items:center;gap:11px;min-width:0">
+              <div class="av" style="background:#f3e8ff;color:#7e22ce">VA</div>
+              <div style="min-width:0"><div class="nm">VigAnn</div><div class="sub"><span class="addr">site:VigAnn</span></div></div>
+            </div>
+            <div><div class="bar"><span style="width:30%;background:#16a34a"></span><span style="width:40%;background:#f59e0b"></span></div><div class="meta">9 published &middot; 12 drafts</div></div>
+            <div><div class="when">Aug 20</div><div class="meta">A. Oliveira</div></div>
+            <div style="color:#d4d4d4;text-align:right;font-size:16px;letter-spacing:1px">&middot;&middot;&middot;</div>
+          </div>
+
+          <div class="trow">
+            <div style="display:flex;align-items:center;gap:11px;min-width:0">
+              <div class="av" style="background:#fce7f3;color:#be185d">Vi</div>
+              <div style="min-width:0"><div class="nm">Vitalis</div><div class="sub"><span class="addr">site:Vitalis</span></div></div>
+            </div>
+            <div><div class="bar"><span style="width:55%;background:#16a34a"></span></div><div class="meta">24 published</div></div>
+            <div><div class="when">Aug 20</div><div class="meta">ops-bot<span class="agent">agent</span></div></div>
+            <div style="color:#d4d4d4;text-align:right;font-size:16px;letter-spacing:1px">&middot;&middot;&middot;</div>
+          </div>
+
+          <!-- an empty site says so, instead of looking like every other row -->
+          <div class="trow" style="border-bottom:none;border-radius:0 0 13px 13px">
+            <div style="display:flex;align-items:center;gap:11px;min-width:0">
+              <div class="av" style="background:#f5f5f5;color:#737373">an</div>
+              <div style="min-width:0"><div class="nm">ann81813</div><div class="sub"><span class="addr">site:ann81813</span></div></div>
+            </div>
+            <div><div class="bar"></div><div class="meta" style="color:#a3a3a3">No pages yet</div></div>
+            <div><div class="when">Aug 20</div><div class="meta">A. Oliveira</div></div>
+            <div style="color:#d4d4d4;text-align:right;font-size:16px;letter-spacing:1px">&middot;&middot;&middot;</div>
+          </div>
+        </div>
+
+        <div style="position:absolute;left:0;right:0;bottom:0;height:46px;background:linear-gradient(to bottom, rgba(255,255,255,0), #ffffff)"></div>
+      </div>
+    </div>
+
+    <!-- the legend -->
+    <div style="min-height:0;display:flex;flex-direction:column;gap:9px;padding-top:2px">
+      <div class="eyebrow" style="color:#737373">WHAT CHANGED, BY PIN</div>
+      <div class="legend"><span class="pin">1</span><div><strong>One toolbar, on the list.</strong> Filter, import, sort, view and columns sit together. The empty band that held only &ldquo;Columns&rdquo; is gone.</div></div>
+      <div class="legend"><span class="pin">2</span><div><strong>Identity before text.</strong> Initials in a hue derived from the name, so a site is recognised before it is read. The address is the one an agent writes.</div></div>
+      <div class="legend"><span class="pin">3</span><div><strong>Description is a second line, not a column.</strong> One site in 23 has one; it held half the width.</div></div>
+      <div class="legend"><span class="pin">4</span><div><strong>Pages by state.</strong> The number that says whether a site is alive. An empty site says &ldquo;No pages yet&rdquo;.</div></div>
+      <div class="legend"><span class="pin">5</span><div><strong>Last change, relative and attributed.</strong> &ldquo;2 days ago &middot; claude <em>agent</em>&rdquo;; the absolute date is the tooltip. Sorted by this, newest first.</div></div>
+      <div class="legend"><span class="pin">6</span><div><strong>Verbs on hover and focus.</strong> Preview, then &middot;&middot;&middot; for Open, Export and Delete. The row itself opens the site.</div></div>
+      <div class="legend"><span class="pin">7</span><div><strong>The page scrolls, the header sticks.</strong> No fixed-height table with its own scrollbar inside a scrolling page.</div></div>
+    </div>
+  </div>
+
+  <div style="margin:12px 24px 16px;border:1px solid #e5e5e5;background:#ffffff;border-radius:12px;padding:11px 14px;display:flex;gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="eyebrow" style="color:#737373;margin-bottom:4px">WHAT THIS DECIDES</div>
+      <div class="note">Two of the four columns are not in the sites listing today: <strong>pages by state</strong> and <strong>the last change with its author</strong>. Both have to arrive in the listing&rsquo;s one read &mdash; a grouped count and the newest audit row per site &mdash; never as a request per row. That is the line between a console change and a backend one. Pins 1 and 7 are the design system&rsquo;s list page, so they change Turing too.</div>
+    </div>
+    <div style="width:1px;align-self:stretch;background:#ededed"></div>
+    <div style="width:420px">
+      <div class="eyebrow" style="color:#973c00;margin-bottom:4px">NOT CHOSEN &mdash; THE SAME FIVE COLUMNS, DENSER</div>
+      <div class="note">Shrinking padding and font keeps every column and fixes &ldquo;tight&rdquo; by making it tighter. The defect was proportion: a mostly empty Description column holding half the width, and a date stranded a screen away from its name.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

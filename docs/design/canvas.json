@@ -9,6 +9,10 @@
       "name": "Directions not taken"
     },
     {
+      "id": "shio-site-list",
+      "name": "The sites list, redrawn"
+    },
+    {
       "id": "vds-shell",
       "name": "The shell"
     },
@@ -71,6 +75,24 @@
       "h": 720,
       "title": "A release as a tray (not chosen)",
       "page": "shio-not-chosen"
+    },
+    {
+      "file": "shio-site-list.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 780,
+      "title": "A site is a project, not a record",
+      "page": "shio-site-list"
+    },
+    {
+      "file": "shio-site-grid.dc.html",
+      "x": 1480,
+      "y": 0,
+      "w": 1360,
+      "h": 780,
+      "title": "The same list, as the sites look",
+      "page": "shio-site-list"
     },
     {
       "file": "vds-page-anatomy.dc.html",
@@ -179,6 +201,14 @@
       "y": -210,
       "w": 760,
       "text": "A rejected direction is kept drawn, not deleted, so the next reader does not re-propose it and the argument against it survives with it.\nThe release tray is the one that needed drawing rather than a sentence: it reads perfectly well, and everything wrong with it is invisible on the screen itself."
+    },
+    {
+      "id": "shio-why-site-list",
+      "page": "shio-site-list",
+      "x": 0,
+      "y": -210,
+      "w": 760,
+      "text": "A proposal, not a decision: the sites list read as dated, cramped and out of proportion, and these two drawings say why and what would replace it.\nThe list view on the light ground, the grid on the dark one, so both views and both grounds are seen once. Each pin is a change and the legend beside it says what it fixes.\nTwo columns are not in the sites listing today (pages by state, last change and its author), and the grid needs a stored thumbnail per site. Those are the backend half, and the reason to settle the drawing before any of it is built."
     },
     {
       "id": "vds-why-shell",

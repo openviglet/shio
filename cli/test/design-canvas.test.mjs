@@ -58,6 +58,8 @@ const SURFACES = {
   "shio-release-bundle.dc.html": "a release as an addressable entity (Block BA)",
   "shio-agent-inbox.dc.html": "the agent-supervision inbox, grouped by run (Block BB)",
   "shio-asset-browser.dc.html": "the asset browser and where-used (Block BE)",
+  "shio-site-list.dc.html": "the sites list redrawn as a list, on the light ground (a proposal)",
+  "shio-site-grid.dc.html": "the sites list redrawn as a grid, on the dark ground (a proposal)",
 };
 
 /** A direction that was drawn and rejected. Kept, so the argument against it survives with it. */
