@@ -238,6 +238,19 @@ test("SH1043: the ceilings have room under them", async (t) => {
   }
 });
 
+test("SH1235: the eager ceilings keep 4% of room over the last measured totals, with no build", () => {
+  // The headroom check above only runs on a build of this tree, so a ceiling lowered back under the
+  // last measurement would pass every run that has none. SH1235 measured 1905.0 KB raw / 521.0 KB
+  // gzip after SH1214, SH1216 and design system 2026.3.18 had used the room up.
+  for (const [name, ceiling, measured] of [
+    ["raw", budget.eager.raw, 1905.0 * 1024], ["gzip", budget.eager.gzip, 521.0 * 1024],
+  ]) {
+    assert.ok(ceiling - measured >= Math.round(ceiling * 0.04),
+      `SH1235: the eager ${name} ceiling ${kb(ceiling)} leaves under 4% over the ${kb(measured)} last `
+      + "measured; the console has not shrunk since, so this ceiling refuses the next change");
+  }
+});
+
 test("SH1180: index.es.js's ceiling names the split page's divider for as long as a page composes it", async () => {
   // SH1094's BentoSplitPage put react-resizable-panels (about 35 KB raw) into the shared eager
   // chunk, and it shipped unmeasured because every local run until SH1091 skipped a build from
