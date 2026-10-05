@@ -11,6 +11,7 @@ package com.viglet.shio.tenant;
 import org.springframework.stereotype.Component;
 
 import com.viglet.core.tenancy.VigletTenantPurger;
+import com.viglet.shio.api.site.ShSiteThumbnailStore;
 import com.viglet.shio.api.staticfile.ShFileStorageService;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformCache;
 
@@ -37,11 +38,14 @@ public class ShVigletTenantPurger implements VigletTenantPurger {
 
     private final ShFileStorageService shFileStorageService;
     private final ShImageTransformCache shImageTransformCache;
+    private final ShSiteThumbnailStore shSiteThumbnailStore;
 
     public ShVigletTenantPurger(ShFileStorageService shFileStorageService,
-            ShImageTransformCache shImageTransformCache) {
+            ShImageTransformCache shImageTransformCache,
+            ShSiteThumbnailStore shSiteThumbnailStore) {
         this.shFileStorageService = shFileStorageService;
         this.shImageTransformCache = shImageTransformCache;
+        this.shSiteThumbnailStore = shSiteThumbnailStore;
     }
 
     @Override
@@ -58,6 +62,12 @@ public class ShVigletTenantPurger implements VigletTenantPurger {
             shImageTransformCache.purgeTenant(tenantId);
         } catch (RuntimeException e) {
             log.warn("[TenantTeardown] image-cache purge failed for '{}': {}", tenantId, e.getMessage());
+        }
+        try {
+            // SH1218 — run inside the tenant's context, so the store resolves this tenant's root.
+            shSiteThumbnailStore.purgeTenant();
+        } catch (RuntimeException e) {
+            log.warn("[TenantTeardown] site-picture purge failed for '{}': {}", tenantId, e.getMessage());
         }
     }
 }

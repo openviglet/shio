@@ -113,6 +113,13 @@ class ShAgentP9ConformanceTest {
                 no("ShSiteAPI.java", "digest", THE_ROW_IS_THE_ANSWER),
                 no("ShSiteAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
                 no("ShSiteAPI.java", "routes", NO_ROUTE_MOVED)));
+        // SH1218 — a site's home picture. Its answer names the appearance digest the picture is
+        // stored at, which is the comparison the console makes before it captures another one.
+        byPath.put("/api/v2/site/{id}/thumbnail", new Proof(
+                no("ShSiteThumbnailAPI.java", "ChangeSet", ONE_OBJECT_NO_SET),
+                yes("ShSiteThumbnailService.java", "digest"),
+                no("ShSiteThumbnailAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
+                no("ShSiteThumbnailAPI.java", "routes", NO_ROUTE_MOVED)));
         byPath.put("/api/v2/object", new Proof(
                 no("ShObjectAPI.java", "ChangeSet",
                         "copy and move answer with the objects they touched, which is the list — "

@@ -39,14 +39,29 @@ public final class ShSiteListing {
     public record LastChange(Instant at, String actor, boolean agent) {
     }
 
+    /**
+     * SH1218 — the stored picture of the site's published home.
+     *
+     * @param digest the home's appearance digest the picture was taken at
+     */
+    public record Thumbnail(String url, String digest, Instant at) {
+    }
+
     private final ShSite site;
     private final Pages pages;
     private final LastChange lastChange;
+    private final Thumbnail thumbnail;
 
-    public ShSiteListing(ShSite site, Pages pages, LastChange lastChange) {
+    public ShSiteListing(ShSite site, Pages pages, LastChange lastChange, Thumbnail thumbnail) {
         this.site = site;
         this.pages = pages;
         this.lastChange = lastChange;
+        this.thumbnail = thumbnail;
+    }
+
+    /** {@code null} until a picture of the published home is stored; the grid shows initials. */
+    public Thumbnail getThumbnail() {
+        return thumbnail;
     }
 
     @JsonUnwrapped

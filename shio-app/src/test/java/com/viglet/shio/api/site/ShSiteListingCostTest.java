@@ -81,6 +81,8 @@ class ShSiteListingCostTest {
     private EntityManagerFactory entityManagerFactory;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private ShSiteThumbnailStore thumbnails;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -126,6 +128,7 @@ class ShSiteListingCostTest {
             postType = type.getId();
             emptySite = site("sh1217-empty-" + UUID.randomUUID()).getId();
         });
+        thumbnails.write(liveSite, "a:sh1218", "image/webp", new byte[] { 1, 2, 3 });
         sites = 2;
     }
 
@@ -141,6 +144,7 @@ class ShSiteListingCostTest {
 
     @AfterAll
     void tearDown() {
+        thumbnails.forget(liveSite);
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             entityManager.createQuery("delete from ShHistory h where h.shSite in :ids")
                     .setParameter("ids", made).executeUpdate();
@@ -224,7 +228,15 @@ class ShSiteListingCostTest {
                 .as("SH1217: the newest change was an agent run's, and the row has to say so")
                 .isTrue();
 
+        assertThat(live.path("thumbnail").path("url").asString())
+                .as("SH1218: a stored home picture is named in the listing's one read")
+                .isEqualTo("/api/v2/site/" + liveSite + "/thumbnail");
+        assertThat(live.path("thumbnail").path("digest").asString()).isEqualTo("a:sh1218");
+
         JsonNode empty = row(listing, emptySite);
+        assertThat(empty.path("thumbnail").isMissingNode() || empty.path("thumbnail").isNull())
+                .as("SH1218: no picture is absent, which the grid shows as initials")
+                .isTrue();
         assertThat(empty.path("pages").path("published").asLong()).isZero();
         assertThat(empty.path("pages").path("draft").asLong()).isZero();
         assertThat(empty.path("lastChange").isMissingNode() || empty.path("lastChange").isNull())

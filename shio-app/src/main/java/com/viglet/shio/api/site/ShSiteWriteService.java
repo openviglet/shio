@@ -52,13 +52,17 @@ public class ShSiteWriteService {
     private final ShContentAuditService shContentAuditService;
     /** SH744 — the one writer of a site's address, shared with the exchange import. */
     private final ShSiteFurlNaming shSiteFurlNaming;
+    /** SH1218 — a purged site's home picture goes with it. */
+    private final ShSiteThumbnailStore shSiteThumbnailStore;
 
     public ShSiteWriteService(ShSiteRepository shSiteRepository, ShFolderRepository shFolderRepository,
                               ShBootstrapSiteProvider bootstrapSiteProvider,
                               ObjectMapper objectMapper,
                               ShFolderWriteService shFolderWriteService,
                               ShContentAuditService shContentAuditService,
-                              ShSiteFurlNaming shSiteFurlNaming) {
+                              ShSiteFurlNaming shSiteFurlNaming,
+                              ShSiteThumbnailStore shSiteThumbnailStore) {
+        this.shSiteThumbnailStore = shSiteThumbnailStore;
         this.shSiteRepository = shSiteRepository;
         this.shFolderRepository = shFolderRepository;
         this.bootstrapSiteProvider = bootstrapSiteProvider;
@@ -673,6 +677,8 @@ public class ShSiteWriteService {
             // the SH109 queue offers to revert had better be one that can be.
             shContentAuditService.record(ShContentAction.PURGE, ShContentSubject.SITE, id, id,
                     name, actor, "the site and everything in it, permanently");
+            // SH1218 — the picture of its home is part of "everything in it".
+            shSiteThumbnailStore.forget(id);
             return true;
         }).orElse(false);
     }

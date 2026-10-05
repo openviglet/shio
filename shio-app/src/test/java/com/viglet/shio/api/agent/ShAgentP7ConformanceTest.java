@@ -213,6 +213,14 @@ class ShAgentP7ConformanceTest {
                 no("ShSavedViewAPI.java", "shContentAuditService", NOT_CONTENT),
                 no("ShSavedViewAPI.java", "findAgentEntries", NOT_CONTENT)));
 
+        // SH1218 — a picture of a site's published home, refused unless it was taken of the home
+        // as it is published now. It changes no content and no visitor sees it.
+        byPath.put("/api/v2/site/{id}/thumbnail", new Guards(
+                no("ShSiteThumbnailAPI.java", "dryRun", PLAN_IS_THE_CALL),
+                no("ShSiteThumbnailAPI.java", "confirm", NOT_DESTRUCTIVE),
+                no("ShSiteThumbnailAPI.java", "shContentAuditService", NOT_CONTENT),
+                no("ShSiteThumbnailAPI.java", "findAgentEntries", NOT_CONTENT)));
+
         // The rest: surfaces that write something other than content.
         byPath.put("/api/v2/cda", new Guards(
                 no("ShCdaAPI.java", "dryRun", PLAN_IS_THE_CALL),

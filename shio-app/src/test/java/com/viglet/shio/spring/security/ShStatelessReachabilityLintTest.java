@@ -181,6 +181,10 @@ class ShStatelessReachabilityLintTest {
         byPath.put("/api/v2/user/current/views", new Requirement(Reason.CONSOLE_ADMIN,
                 "SH1024 — a person's own names for filtered lists; an agent states its query every"
                 + " time, and surfaces.json classifies it as a console-only preference"));
+        byPath.put("/api/v2/site/{id}/thumbnail", new Requirement(Reason.CONSOLE_ADMIN,
+                "SH1218 — a picture of a site's published home for the console's grid, captured by"
+                + " the browser that renders it; the instance runs none, an agent changes the home"
+                + " itself and the console re-captures what it published"));
         byPath.put("/api/v2/provider/auth", new Requirement(Reason.CONSOLE_ADMIN,
                 "authentication providers — an operator decision about how humans log in"));
         byPath.put("/api/v2/provider/exchange", new Requirement(Reason.CONSOLE_ADMIN,

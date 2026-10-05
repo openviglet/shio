@@ -1114,16 +1114,26 @@ package half is VDS204 to VDS207 in the design system's own backlog.
 
 ### LXXVII.2 A site's home page, kept as a picture (SH1218)
 
-docs/design/shio-site-grid.dc.html draws each site as its home page. That picture must
-be an artefact of publishing, not of viewing: when a site's home is published, render it
-once through the preview renderer, rasterise it to a small image, and store it beside
-the render digest so an unchanged home is not re-rendered. The listing then carries a
-thumbnail URL, absent when the site has no home or nothing was ever published, which the
-grid shows as initials and No home page yet. The rasteriser is the open question: a
-headless browser on the server is a heavy dependency, so weigh it against rendering on
-the client at publish time and uploading the result. Live iframes per card were rejected
-in the drawing. Done when publishing a home stores one image, re-publishing an unchanged
-home stores none, and the listing returns its URL.
+docs/design/shio-site-grid.dc.html draws each site as its home page. The server half
+landed: ShSiteThumbnailService keys a stored picture on the published home's appearance
+digest, the hash review compares, computed by one server render and no browser. GET
+/api/v2/site/{id}/thumbnail/status answers {home, stored, fresh}; PUT
+/api/v2/site/{id}/thumbnail ?digest= stores WebP, PNG or JPEG up to 512 KB, refuses a
+picture of a home that has changed since (409 site-thumbnail-stale), and writes nothing
+when the stored picture already has that digest. The listing carries thumbnail {url,
+digest, at}, and a site purge or tenant teardown removes the bytes.
+docs/agents/content-api.md has the contract.
+
+What is left is the capture, and it is the console's, because the instance does not run
+a browser (a standing non-goal). When the sites list shows a site whose picture is
+missing, or whose lastChange is newer than thumbnail.at, read status. If it is not
+fresh, render the published home in an offscreen same-origin frame at card width,
+rasterise it, and PUT it with status's digest. Load the rasteriser with a dynamic import
+so it is not in the eager bundle that SH1043 measures, and price the dependency before
+choosing it (html-to-image and modern-screenshot are candidates). A refused stale
+picture means another publish landed: read status again rather than retrying the same
+bytes. Live iframes per card were rejected in the drawing. Done when the criterion
+holds.
 
 ### LXXVII.3 The sites list, redrawn as rows (SH1219)
 

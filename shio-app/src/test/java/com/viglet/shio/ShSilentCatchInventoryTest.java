@@ -230,7 +230,13 @@ class ShSilentCatchInventoryTest {
             // SH1112 — 83: ShConsoleCost answers a console it could not read as `unavailable` with the
             // reason, in the manifest section the caller asked for. Reported to the one reader who
             // asked, like 82's skipped row, and a build that cannot be read is not an incident.
-            Map.entry("api", 83),
+            // SH1218 — 87: four catches around a site's home picture, all one judgement: the picture
+            // is a convenience a grid card shows, and every failure has a visible fallback that is
+            // already the answer. A meta file that will not read, a tenant directory that will not
+            // list, or a delete that cannot finish leaves the card on the site's initials, which is
+            // what "no picture" looks like; the last two log at WARN with the SH1218 tag. A home that
+            // will not render is answered as "no published home" in `status`, the field a caller reads.
+            Map.entry("api", 87),
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.
@@ -252,7 +258,9 @@ class ShSilentCatchInventoryTest {
             // debugging a meter that reads low will already be looking; `persist` deliberately does
             // not, because losing the insert race is the normal path on more than one node and a
             // line per concurrent flush would be noise about a mechanism working.
-            Map.entry("tenant", 9),
+            // SH1218 — 10: the teardown's site-picture purge is caught like the two byte purges beside
+            // it, for their reason: removing a few leftover images must not abort deleting the tenant.
+            Map.entry("tenant", 10),
             // 4 since SH217, and the two are different judgements filed under one number.
             //
             // The first is a catch that DOES record — the registry refuses one local package and

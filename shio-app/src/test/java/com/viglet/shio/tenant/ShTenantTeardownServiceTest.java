@@ -59,6 +59,8 @@ class ShTenantTeardownServiceTest {
     private ShFileStorageService shFileStorageService;
     @Mock
     private ShImageTransformCache shImageTransformCache;
+    @Mock
+    private com.viglet.shio.api.site.ShSiteThumbnailStore shSiteThumbnailStore;
 
     @BeforeEach
     void authenticateAsAdmin() {
@@ -77,7 +79,8 @@ class ShTenantTeardownServiceTest {
         VigletTenantContext context = new VigletTenantContext(true, ShTenant.DEFAULT_TENANT_NAME);
         ShPlatformAdminService platformAdmin = new ShPlatformAdminService(context);
         ShVigletTenantStore store = new ShVigletTenantStore(shTenantRepository, shTenantMembershipRepository);
-        ShVigletTenantPurger purger = new ShVigletTenantPurger(shFileStorageService, shImageTransformCache);
+        ShVigletTenantPurger purger = new ShVigletTenantPurger(shFileStorageService, shImageTransformCache,
+                shSiteThumbnailStore);
         VigletTenantTeardownService delegate =
                 new VigletTenantTeardownService(platformAdmin, context, store, purger);
         return new ShTenantTeardownService(delegate, shTenantRepository);
@@ -104,6 +107,7 @@ class ShTenantTeardownServiceTest {
         assertThat(report.catalogRemoved()).isTrue();
         verify(shFileStorageService).deleteTenant("acme");
         verify(shImageTransformCache).purgeTenant("acme");
+        verify(shSiteThumbnailStore).purgeTenant();
         verify(shTenantRepository).delete(acme);
     }
 

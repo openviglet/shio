@@ -15,6 +15,11 @@ export type ShSite = {
   pages?: { published: number; draft: number };
   /** SH1217 — the site's newest change; absent when nothing was recorded against it. */
   lastChange?: { at: string; actor: string; agent: boolean } | null;
+  /**
+   * SH1218 — the stored picture of the published home, taken at appearance `digest`; absent until
+   * one is stored, which the grid shows as the site's initials.
+   */
+  thumbnail?: { url: string; digest: string; at: string } | null;
 };
 
 /**

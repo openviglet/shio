@@ -244,7 +244,19 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
   count (`countDistinctBySiteIdPerState`) and one newest-row read (`findNewestPerSite`), all keyed on
   the site's id. `findAllForListing` fetches `ShObject.shWorkflowTasks`, whose `@Fetch(JOIN)` makes
   it eager, so plain `findAll` costs one more select per site. `ShSiteListingCostTest` counts the
-  statements at 15 and 400 sites.
+  statements at 15 and 400 sites. Each row also carries **`thumbnail` `{url, digest, at}`** when a
+  picture of the published home is stored (SH1218), read with one directory listing.
+- `GET /api/v2/site/{id}/thumbnail` · `GET …/thumbnail/status` · `PUT …/thumbnail?digest=` — the
+  site's published home as a picture (SH1218, `ShSiteThumbnailService`). **The instance does not
+  take it** (no browser, a standing non-goal): the console captures the home and sends the bytes.
+  The instance decides whether one is needed, from the published home's **appearance digest**
+  (`post:<site>/`, `state=published`), the hash review compares. `status` answers
+  `{home, stored, fresh}`. A `PUT` must carry the digest `status` gave. A home that changed since
+  is refused 409 `site-thumbnail-stale`, naming the digest now. A picture already at that digest
+  answers `stored: false` and writes nothing, so re-publishing an unchanged home stores none.
+  WebP, PNG or JPEG up to `shio.site-thumbnails.max-bytes` (512 KB). Bytes live under
+  `shio.site-thumbnails.path`, beside `file_source` and outside its public resource handler.
+  A site purge and a tenant teardown remove them.
 - `GET /api/v2/site/{id}` — one site **by id, furl or name** (SH181, in that order so the
   declared key wins a collision). The reads resolve any of the three; `PUT`, `DELETE` and
   `/{id}/export` stay strictly id-keyed — a read that resolved a near-miss shows the curator
