@@ -1118,3 +1118,166 @@ translates, reached through the assistant, and every result lands as a reviewabl
 ## XCI Finding, selecting and acting on content
 
 ## LXXVI Documentation the matrix still names
+
+## LXXVII The console's lists, redrawn (Block AR)
+
+The sites list read as dated, cramped and out of proportion, and the drawings in
+docs/design/shio-site-list.dc.html and shio-site-grid.dc.html say why and what replaces
+it. The sections below are the Shio half: the backend facts a row needs, the sites list
+and its grid, the admin lists and the content browser on the same cells, and the ten
+hand-drawn tables moved onto the design system's one table, after a lint names them. The
+package half is VDS204 to VDS207 in the design system's own backlog.
+
+### LXXVII.1 The sites listing says whether a site is alive (SH1217)
+
+The redraw in docs/design/shio-site-list.dc.html shows, per site, pages by state
+(published, drafts) and the last change with who made it and whether an agent did. GET
+/api/v2/site returns name, description and date only. Both facts exist: post states are
+on the unified post table, and the newest audit row per site carries the actor and the
+agent session. They must arrive in the one listing read, as a grouped count and one
+newest-row query over all sites, because a request per row is the cost SH1050 removed
+from home. Avoid navigating past .id of the site association in JPQL (the tenant_id
+trap) and resolve the site per row with ShFolderSite. Measure first: the listing's query
+count and time at 15 and 400 sites go in the commit. Done when the listing carries pages
+{published, draft} and lastChange {at, actor, agent} per site in a bounded number of
+statements, asserted by a test that counts them.
+
+### LXXVII.2 A site's home page, kept as a picture (SH1218)
+
+docs/design/shio-site-grid.dc.html draws each site as its home page. That picture must
+be an artefact of publishing, not of viewing: when a site's home is published, render it
+once through the preview renderer, rasterise it to a small image, and store it beside
+the render digest so an unchanged home is not re-rendered. The listing then carries a
+thumbnail URL, absent when the site has no home or nothing was ever published, which the
+grid shows as initials and No home page yet. The rasteriser is the open question: a
+headless browser on the server is a heavy dependency, so weigh it against rendering on
+the client at publish time and uploading the result. Live iframes per card were rejected
+in the drawing. Done when publishing a home stores one image, re-publishing an unchanged
+home stores none, and the listing returns its URL.
+
+### LXXVII.3 The sites list, redrawn as rows (SH1219)
+
+site.list.page.tsx becomes the list in docs/design/shio-site-list.dc.html. The first
+column is the package's identity cell: initials in a hue from the name, the name, and a
+second line carrying the description where there is one and the site: address. The
+Description column goes. Pages shows the published and draft counts as a bar with its
+numbers, and No pages yet when empty. Last changed is the package's change cell,
+relative with the absolute date as tooltip and the actor, marked when an agent. The
+default sort is last changed, newest first. Row verbs go through BentoDataTable
+rowActions, a focusable menu, never hover-only buttons, which keeps SH899's rule while
+giving Preview, Open, Export and Delete back to the row. Done when the page renders
+those three columns and the menu, and a test reads the columns out of the page.
+
+### LXXVII.4 The sites list as a grid (SH1220)
+
+Once the package offers the tiles-or-rows switch, site.list.page.tsx passes a renderTile
+beside its columns: a card with the stored home thumbnail, the identity line, the pages
+bar and the change line, exactly the row's facts. A site without a thumbnail shows its
+initials and No home page yet rather than a placeholder picture. The default is grid
+when the instance holds thirty sites or fewer and list above, and the reader's choice is
+remembered per person through the package's callback, never as shared state. The focused
+card carries the ring and the same row actions menu. Done when both views render from
+one data read, the default follows the count, and the choice survives a reload.
+
+### LXXVII.5 Shio's lists use the one toolbar (SH1221)
+
+When the package's list toolbar ships, every BentoListPage in Shio moves what it passes
+as headerAction into the toolbar slot: the sites list's filter and Import, and
+AdminListPage's controls for the admin entities. New stays the hero's one filled
+primary. A source test lists every headerAction left, so the move is a list that shrinks
+rather than a sweep somebody remembers. Done when no BentoListPage in shio-react passes
+headerAction and each list renders one bar between its hero and its header row.
+
+### LXXVII.6 The admin lists, on the same cells (SH1222)
+
+AdminListPage renders users, groups, roles, tokens, webhooks and the providers with
+Name, Description, Details and Status. Description is empty for most rows and takes the
+width the useful columns need. Apply the sites list's rule: the identity cell carries
+the name with the description as its second line, Details and Status keep their columns,
+and a Last changed column uses the change cell where the entity has a date. Which
+entities carry a date is to be read from their models, not assumed. Done when
+AdminListPage has no Description column and the entity-specific columns are unchanged.
+
+### LXXVII.7 The content browser scrolls with its page (SH1223)
+
+browser-table.tsx passes height={560} to BentoDataTable, the cap that makes a folder of
+four thousand posts scroll inside a box on a screen with room for twice as many rows.
+When the package's table can scroll with the page and keep its header sticky, drop the
+height here and let the page scroll. Check the selection bar and the bulk verbs still
+sit where the curator can reach them while scrolled. Done when browser-table passes no
+height and a long folder scrolls the page once.
+
+### LXXVII.8 The hand-drawn list tables, named (SH1224)
+
+Post types, the media library, trash, search, scheduled, forms, languages, open notes,
+activity and a group's members render shadcn Table directly, while sites, the admin
+lists and the content browser use BentoDataTable. A hand-drawn table has no sortable
+headers, no row keyboard model, no column menu and no virtualization, and every change
+to the package's table skips it. Before any screen moves, land the lint: a source test
+that finds every page rendering Table from components/ui/table and holds the current set
+as a named debt list, failing on a new one and on an entry that has moved. Each screen
+then moves in its own task, and the list shrinks. Done when the test runs in pnpm test,
+prints the count, and names the ten.
+
+### LXXVII.9 Post types on the design system's table (SH1225)
+
+post-type.list.page.tsx renders Name, Title, System and an Actions column through shadcn
+Table. Move it onto BentoListPage with columns: the identity cell for the type, System
+as a badge, and the actions as rowActions rather than a column of buttons. Done when the
+page leaves SH1224's debt list.
+
+### LXXVII.10 Media rows on the design system's table (SH1226)
+
+static-file.list.page.tsx draws its rows view with shadcn Table and actions behind
+group-hover. Move the rows view onto BentoDataTable with selection and rowActions,
+keeping the tile view as the grid. Done when the page leaves SH1224's debt list and no
+action in it is hover-only.
+
+### LXXVII.11 The trash on the design system's table (SH1227)
+
+trash.page.tsx lists deleted items with shadcn Table. Move it onto BentoDataTable with
+selection, Restore and Purge as selection actions, and the deletion time as the change
+cell. Done when the page leaves SH1224's debt list.
+
+### LXXVII.12 Search results on the design system's table (SH1228)
+
+search.page.tsx renders results with shadcn Table. Move them onto BentoDataTable: the
+identity cell for title and address, state as a badge, the change cell for the date, and
+Enter opening the post. Done when the page leaves SH1224's debt list.
+
+### LXXVII.13 Scheduled on the design system's table (SH1229)
+
+scheduled.page.tsx draws its list view with shadcn Table beside BentoCalendar. Move the
+list view onto BentoDataTable, keeping time order as the default sort because the order
+is the point of the page. Done when the page leaves SH1224's debt list.
+
+### LXXVII.14 Form submissions on the design system's table (SH1230)
+
+forms.page.tsx lists a site's form submissions with shadcn Table. Move them onto
+BentoDataTable with the change cell for the arrival time. Done when the page leaves
+SH1224's debt list.
+
+### LXXVII.15 Languages on the design system's table (SH1231)
+
+languages.page.tsx renders a site's translation coverage with shadcn Table. Move it onto
+BentoDataTable with coverage as a sortable column. Done when the page leaves SH1224's
+debt list.
+
+### LXXVII.16 Open notes on the design system's table (SH1232)
+
+notes.page.tsx, new in SH1214, uses shadcn Table and a Resolve button per row. Move it
+onto BentoDataTable with the identity cell for the page, the change cell for when the
+note was left and by whom, and Resolve as a row action and a selection action. Done when
+the page leaves SH1224's debt list.
+
+### LXXVII.17 Activity on the design system's table (SH1233)
+
+activity.list.page.tsx renders the audit rows with shadcn Table under its filters. Move
+it onto BentoDataTable, keeping the cursor paging, with the change cell for time and
+actor. Done when the page leaves SH1224's debt list.
+
+### LXXVII.18 Group members on the design system's table (SH1234)
+
+group-members.tsx lists a group's members with shadcn Table. Move it onto BentoDataTable
+with the identity cell for the user and Remove as a selection action. Done when the page
+leaves SH1224's debt list.
