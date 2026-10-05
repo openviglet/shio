@@ -87,11 +87,14 @@ test("SH898: the counts wait rather than answering zero", () => {
       + " login for as long as the request takes.")
 })
 
-test("SH898: the activity badges take a tone, not a hardcoded hue", () => {
-  assert.match(homeSource, /bentoChipClass/,
-    "SH898: the activity badges no longer use bentoChipClass. The console page spelled six colour"
-      + " strings out — `border-blue-300 text-blue-600 dark:…` and five more — and a tone is what"
-      + " lets SH890's re-key reach them.")
+test("SH898: the activity rows mark a change, not a hardcoded hue", () => {
+  // SH898 moved six hardcoded badge hues onto a tone per action; SH1211 moved that tone onto
+  // BentoChangeMark, because since VDS182 a list's colour is a state or a change, not an area.
+  assert.match(homeSource, /<BentoChangeMark state=\{changeStateOf\(/,
+    "SH1211: the activity rows no longer draw BentoChangeMark through changeStateOf, the mapping the"
+      + " bulk plan uses, so the two lists of changes can disagree about what a change looks like")
+  assert.doesNotMatch(homeSource, /\bACTION_TONE\b/,
+    "SH1211: a colour per activity action is back on the bento home")
   assert.doesNotMatch(homeSource, /border-(blue|indigo|green|amber|red|teal)-\d/,
     "SH898: a hardcoded badge hue is back on the bento home")
 })

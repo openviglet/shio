@@ -87,3 +87,19 @@ test("SH1208: no console element passes a prop the design system ignores", () =>
     "SH1208: these pass a prop the installed design system declares as ignored, so the page says "
       + "something that does not render. Delete the prop, and any field that existed only to feed it.")
 })
+
+test("SH1211: the console paints no gradient chip of its own", () => {
+  // A chip painted with bentoChipClass is a colour the console chooses, which no prop check can see:
+  // home's activity rows were coloured per action that way. Since VDS182 the chip belongs to an
+  // entity hero and a hub tile, which the package draws itself, so a call here is a list or a card
+  // inventing an area colour. The vocabulary harness is the one caller, because it proves the tones.
+  const ALLOWED = new Map([["app/system/bento-vocabulary.page.tsx", "the harness shows every tone the preset defines"]])
+  const callers = []
+  for (const path of files(SRC, ".tsx")) {
+    const name = relative(SRC, path).replace(/\\/g, "/")
+    if (/\bbentoChipClass\(/.test(stripComments(readFileSync(path, "utf8"), name)) && !ALLOWED.has(name)) callers.push(name)
+  }
+  assert.deepEqual(callers, [],
+    "SH1211: these paint a gradient chip in the console's own markup. A list's colour is a record's "
+      + "state (BentoStatusMarker) or a change (BentoChangeMark); the chip is the package's, on a hero or a hub tile.")
+})

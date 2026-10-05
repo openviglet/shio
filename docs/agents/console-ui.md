@@ -4062,3 +4062,15 @@ the Universal Editor's site rows. Their content decides their height, so they se
 the census should count something taller than the touch step as a control is VDS202's question in
 the design system. `visual-scale.test.mjs` now also fails a native `<button>` with a fixed height,
 and asserts it read at least twenty of them. The census read 18 button heights down to 16.
+
+## Home's activity rows mark a change, not a colour (SH1211)
+
+The home page's activity list used to sit each row behind a gradient chip coloured per action (create
+blue, delete rose, and so on), and its agent runs took amber while pending. That colour was painted
+with `bentoChipClass` in the console's own markup, so no prop check could see it, and it was the
+tone-per-area habit VDS182 retired. A row's icon now sits in a neutral well, and the activity row
+draws `BentoChangeMark` (compact) through `changeStateOf`, the mapping the bulk plan uses: a create
+is added, a delete is removed, any other action changes something that stays, and the second line
+still names the verb. A pending run says so in words, in the foreground weight. `ignored-props.test.mjs`
+fails any `bentoChipClass` call outside the vocabulary harness, and `bento-home.test.mjs` holds the
+mark.

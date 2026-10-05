@@ -938,26 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.46 LV.46 Home's activity rows as changes, not colours (SH1211)
-
-The home page's activity list draws each row behind a gradient icon chip, coloured by
-ACTION_TONE in home.page.tsx (create blue, update indigo, publish emerald, unpublish
-amber, delete rose, restore violet), and its agent rows take amber while pending and
-slate after. RowIcon builds the chip itself from bentoChipClass, so
-ignored-props.test.mjs (SH1208) cannot see it: the colour is not a prop the package
-ignores but one the console paints. It is the habit VDS182 retired, though. A list names
-many things, so its colour is a record's state and nothing else, and the gradient chip
-belongs to an entity hero or a hub tile. The package already has the vocabulary for both
-of these lists. BentoChangeMark (VDS170) draws added, changed, removed and unchanged as
-a mark and a word, and bulk-plan.dialog.tsx maps the agent change-set actions onto it
-through changeStateOf in src/lib/change-mark.ts (SH1178). BentoStatusMarker draws a
-record's state as a dot and a word. Map the activity actions through the same
-change-state function, render the mark beside a neutral icon, give a pending run a state
-rather than an amber chip, and delete ACTION_TONE and RowIcon's tone. Then extend
-visual-scale.test.mjs, or a check beside it, so that bentoChipClass is called only from
-the places the package still keeps a chip: home's tiles and count tiles, an entity hero,
-a hub tile.
-
 ### LV.47 LV.47 The explorer's primary is the console's (SH1212)
 
 The look census counts four primary fills in the console, and two of them, #ff5794 and

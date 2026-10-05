@@ -28,12 +28,12 @@ import {
   type Icon as TablerIcon,
 } from "@tabler/icons-react"
 import {
+  BentoChangeMark,
   BentoCountTile,
   BentoEmptyState,
   BentoHero,
   BentoSection,
   BentoTile,
-  bentoChipClass,
   type BentoTone,
 } from "@viglet/viglet-design-system/bento"
 import { useMemo } from "react"
@@ -43,6 +43,7 @@ import { ROUTES } from "@/app/routes.const"
 import type { ShHistory } from "@/models/history/history.model"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
+import { changeStateOf } from "@/lib/change-mark"
 import { ShConsoleSummaryService, type ShRun } from "@/services/console/summary.service"
 
 
@@ -60,12 +61,13 @@ import { ShConsoleSummaryService, type ShRun } from "@/services/console/summary.
  * A `BentoHero`, `BentoCountTile` for the two counts, `BentoTile` for the six quick actions, and
  * `BentoEmptyState` for an activity list with nothing in it.
  *
- * ## The action badges lost their hardcoded hues
+ * ## A row's action is a change, not a colour (SH1211)
  *
- * The console page spelled six of them out — `border-blue-300 text-blue-600 dark:border-blue-700
- * dark:text-blue-400` and five more like it. `bentoChipClass` takes a tone and the preset defines
- * the pair, so re-keying the palette reaches these too. `teal` has no tone, so `RESTORE` reads
- * violet; that is the one visible difference from the console page and it is a deliberate one.
+ * The activity rows used to sit behind a gradient chip coloured per action, a tone per verb on a
+ * list. Since VDS182 a list has one colour, a record's state, so the action's icon sits in a
+ * neutral well and the change is `BentoChangeMark`, through the same `changeStateOf` the bulk plan
+ * uses: a create is added, a delete is removed, every other action changes something that stays,
+ * and the row's second line still names the verb.
  *
  * ## Why the counts wait rather than showing zero
  *
@@ -80,16 +82,6 @@ const summaryService = new ShConsoleSummaryService()
 const EMPTY_ACTIVITY: ShHistory[] = []
 const EMPTY_RUNS: ShRun[] = []
 
-/** Tone per activity action. Replaces six hardcoded colour-class strings on the console page. */
-const ACTION_TONE: Record<string, BentoTone> = {
-  CREATE: "blue",
-  UPDATE: "indigo",
-  PUBLISH: "emerald",
-  UNPUBLISH: "amber",
-  DELETE: "rose",
-  RESTORE: "violet",
-}
-
 const ACTION_ICON: Record<string, TablerIcon> = {
   CREATE: IconPlus,
   UPDATE: IconPencil,
@@ -100,16 +92,15 @@ const ACTION_ICON: Record<string, TablerIcon> = {
 }
 
 /*
- * `bentoChipClass` is the tile's gradient *icon* chip, not a text badge: wrapped around a label it
- * painted a gradient block with dark text on top. The lists carry the tone on a small icon chip and
- * keep the words in plain type, the way the tiles above them do.
+ * A list row's icon names the kind of thing, in a neutral well: the gradient chip belongs to the
+ * tiles above (VDS182), and a row's colour, where it has one, is its state.
  */
 const LIST_CLASS = "bg-card divide-border/60 divide-y overflow-hidden rounded-xl border"
 const ROW_CLASS = "hover:bg-muted/40 flex items-center gap-3 px-4 py-3 transition-colors"
 
-function RowIcon({ icon: Icon, tone }: Readonly<{ icon: TablerIcon; tone: BentoTone }>) {
+function RowIcon({ icon: Icon }: Readonly<{ icon: TablerIcon }>) {
   return (
-    <span className={`${bentoChipClass(tone)} grid size-8 shrink-0 place-items-center rounded-lg text-white`}>
+    <span className="bg-muted text-muted-foreground grid size-8 shrink-0 place-items-center rounded-lg">
       <Icon size={16} aria-hidden="true" />
     </span>
   )
@@ -304,7 +295,7 @@ export default function BentoHomePage() {
               return (
                 <li key={run.session}>
                   <Link to={ROUTES.ADMIN_REVIEW} className={ROW_CLASS}>
-                    <RowIcon icon={IconRobot} tone={pending ? "amber" : "slate"} />
+                    <RowIcon icon={IconRobot} />
                     <span className="min-w-0 flex-1">
                       {/* The intent, or the agent's name, or the session — in that order, because
                           the first is what a person can act on and the last is what is always
@@ -344,11 +335,12 @@ export default function BentoHomePage() {
           <ul className={LIST_CLASS}>
             {activity.map((item) => (
               <li key={item.id} className={ROW_CLASS}>
-                <RowIcon icon={ACTION_ICON[item.action] ?? IconHistory} tone={ACTION_TONE[item.action] ?? "slate"} />
+                <RowIcon icon={ACTION_ICON[item.action] ?? IconHistory} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{activitySentence(item.description, item.action, t)}</span>
                   <span className="text-muted-foreground block text-xs">{actionLabel(item.action)}</span>
                 </span>
+                <BentoChangeMark state={changeStateOf(item.action.toLowerCase())} compact />
                 {item.date && (
                   <time
                     dateTime={item.date}
