@@ -21,6 +21,7 @@
   "admin.email": "Email",
   "admin.listDetails": "Details",
   "admin.listCreated": "Created",
+  "admin.listLastSignIn": "Last sign-in",
   "admin.groupMembers": "Members ({{count}})",
   "admin.groupMemberPick": "Choose a user",
   "admin.groupEveryoneIn": "Everyone is a member",

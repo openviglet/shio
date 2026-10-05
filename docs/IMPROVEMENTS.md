@@ -1112,26 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.21 A user's last sign-in, recorded (SH1238)
-
-Found while redrawing the admin lists (SH1222). `ShUser.lastLogin` is a column in the
-baseline schema and serializes with every user, and the only code that writes it is
-`ShUserOnStartup`, once, when the admin user is seeded. A sign-in through the form
-login, OAuth2 or an API token never touches it. So the users list cannot say who has
-stopped using the instance, and SH1222 left the column out rather than show the seed
-date for everybody.
-
-Record it where a session is established: a Spring Security `AuthenticationSuccessEvent`
-listener that sets `lastLogin` on the matching `ShUser`, for interactive sign-ins only.
-A token-authenticated agent request is a call, not a sign-in, and writing a row per
-request would put a database write on the hot path an agent drives. Throttle it to one
-write per user per hour, so a burst of re-authentications does not become a burst of
-updates. Then give AdminListPage a Last sign-in column for users through the same
-`created`-style field, labelled as what it is.
-
-Done when signing in through the console moves the user's `lastLogin`, an API-token call
-does not, and the users list shows it.
-
 ### LXXVII.22 The selection bar, in view while the page scrolls (SH1239)
 
 SH1223 removed the content browser's fixed 560 px table height, so a long folder scrolls

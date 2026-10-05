@@ -39,14 +39,19 @@ test("SH1222: the admin lists carry the description under the name, and a date w
     "SH1222: the record is named by the package's identity cell, its description the second line")
   assert.match(code, /id: "details"/, "SH1222: Details keeps its column")
   assert.match(code, /id: "status"/, "SH1222: Status keeps its column")
-  assert.match(code, /id: "created"[\s\S]*<BentoChangeCell at=\{created\} \/>/)
+  assert.match(code, /id: "dated"[\s\S]*<BentoChangeCell at=\{at\} \/>/)
   for (const page of ["api-token.list.page.tsx", "site-webhook.list.page.tsx", "tenant.list.page.tsx"]) {
-    assert.match(read("app", "admin", page), /created: item\.createdDate/,
+    assert.match(read("app", "admin", page), /dated: item\.createdDate/,
       `SH1222: ${page}'s model has a creation date and the list does not show it`)
   }
-  assert.doesNotMatch(read("app", "admin", "user.list.page.tsx"), /\bcreated:|lastLogin/,
-    "SH1222: a user's lastLogin is written only when the admin is seeded, so a column on it would "
-    + "show one date for everybody")
+})
+
+test("SH1238: the users list shows the last sign-in, labelled as what it is", () => {
+  // SH1222 left it out because only the startup seed wrote lastLogin; SH1238 records each sign-in.
+  const users = read("app", "admin", "user.list.page.tsx")
+  assert.match(users, /dated: user\.lastLogin/, "SH1238: the users list does not show when anyone signed in")
+  assert.match(users, /dateHeader=\{t\("admin\.listLastSignIn"\)\}/,
+    "SH1238: a sign-in date under a Created header would say the account is newer than it is")
 })
 
 test("SH1221: no list passes the deprecated headerAction; a list's controls are in its one toolbar", () => {

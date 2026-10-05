@@ -28,11 +28,11 @@ export interface AdminTile {
   enabled?: number
   hasStatus?: boolean
   /**
-   * SH1222 — when the record was made, for the entities whose model has a date (tokens, webhooks,
-   * tenants). Read from the model rather than assumed: a user carries `lastLogin`, but nothing
-   * writes it on sign-in, so a column built on it would show the seed date for everybody.
+   * SH1222 — the one date a record of this kind has, for the entities whose model carries one:
+   * when a token, webhook or tenant was made, and since SH1238 when a user last signed in. Which
+   * date it is, the list says through `dateHeader`.
    */
-  created?: string | null
+  dated?: string | null
 }
 
 export interface AdminListPageProps<T> {
@@ -61,6 +61,8 @@ export interface AdminListPageProps<T> {
    * hero and the rows (SH1221); New stays the hero's primary.
    */
   toolbar?: ReactNode
+  /** What the tiles' `dated` is, as its column header. Defaults to Created. */
+  dateHeader?: string
 }
 
 /**
@@ -107,6 +109,7 @@ export function AdminListPage<T>({
   itemKey,
   tileOf,
   toolbar,
+  dateHeader,
 }: Readonly<AdminListPageProps<T>>) {
   /*
    * SH1046 — one read per address, shared by every screen that asks for it.
@@ -141,7 +144,7 @@ export function AdminListPage<T>({
    */
   const columns = useMemo<BentoDataTableColumn<T>[]>(() => {
     const status = items?.some((item) => tileOf(item).hasStatus) ?? false
-    const dated = items?.some((item) => tileOf(item).created) ?? false
+    const dated = items?.some((item) => tileOf(item).dated) ?? false
     return [
       {
         id: "name",
@@ -164,16 +167,16 @@ export function AdminListPage<T>({
         cell: (item) => <span className="text-muted-foreground">{tileOf(item).meta}</span>,
       },
       ...(dated ? [{
-        id: "created",
-        header: t("admin.listCreated"),
+        id: "dated",
+        header: dateHeader ?? t("admin.listCreated"),
         width: "minmax(9rem, 1fr)",
         sortValue: (item: T) => {
-          const created = tileOf(item).created
-          return created ? new Date(created) : null
+          const at = tileOf(item).dated
+          return at ? new Date(at) : null
         },
         cell: (item: T) => {
-          const created = tileOf(item).created
-          return created ? <BentoChangeCell at={created} /> : null
+          const at = tileOf(item).dated
+          return at ? <BentoChangeCell at={at} /> : null
         },
       }] : []),
       ...(status ? [{
@@ -192,7 +195,7 @@ export function AdminListPage<T>({
         },
       }] : []),
     ]
-  }, [items, t, tileOf])
+  }, [items, t, tileOf, dateHeader])
 
   return (
     <BentoListPage

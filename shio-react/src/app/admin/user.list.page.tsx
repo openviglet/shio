@@ -50,7 +50,10 @@ export default function BentoUserListPage() {
         title: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username,
         description: user.email,
         meta: user.username,
+        // SH1238 — recorded on each console or OAuth2 sign-in, so the list can say who stopped coming.
+        dated: user.lastLogin,
       })}
+      dateHeader={t("admin.listLastSignIn")}
     />
   )
 }

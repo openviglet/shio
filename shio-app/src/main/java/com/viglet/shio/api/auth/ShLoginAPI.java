@@ -45,12 +45,15 @@ public class ShLoginAPI {
     private final ShUserRepository shUserRepository;
     private final ShGroupRepository shGroupRepository;
     private final ShRoleRepository shRoleRepository;
+    private final ShSignInRecorder shSignInRecorder;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     public ShLoginAPI(AuthenticationManager authenticationManager,
             ShUserRepository shUserRepository,
             ShGroupRepository shGroupRepository,
-            ShRoleRepository shRoleRepository) {
+            ShRoleRepository shRoleRepository,
+            ShSignInRecorder shSignInRecorder) {
+        this.shSignInRecorder = shSignInRecorder;
         this.authenticationManager = authenticationManager;
         this.shUserRepository = shUserRepository;
         this.shGroupRepository = shGroupRepository;
@@ -74,6 +77,9 @@ public class ShLoginAPI {
         HttpSession session = httpRequest.getSession(true);
         session.setAttribute("SPRING_SECURITY_CONTEXT", context);
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
+
+        // SH1238 — the console's sign-in, which is what the users list's Last sign-in reports.
+        shSignInRecorder.record(request.username(), java.time.Instant.now());
 
         ShUser shUser = shUserRepository.findByUsername(request.username());
         boolean isAdmin = false;
