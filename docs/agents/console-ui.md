@@ -4050,3 +4050,15 @@ with `content-box`, so the overrides set `border-box` or the padding lands on to
 Monaco's own hover and suggestion widgets keep their literal radii: they are popups, not chrome.
 The census read button heights 21 to 18 and radii 12 to 9. `visual-scale.test.mjs` holds the
 variables and the selectors.
+
+## Hand-drawn controls on the scale; cards left to their content (SH1210)
+
+The look census counts every `button` and `[role=button]`, so after SH1199 the product's remaining
+button heights were native buttons the source lint never read. Two were controls drawn by hand: the
+activity log's actor name, a 20 px inline text button, is now a `Button` with `variant="link"` and
+`size="sm"`, and the files page's category chips read `h-(--vg-control-dense)` and say `aria-pressed`,
+since they toggle. The rest are cards that happen to be buttons: file tiles, marketplace entries,
+the Universal Editor's site rows. Their content decides their height, so they set none, and whether
+the census should count something taller than the touch step as a control is VDS202's question in
+the design system. `visual-scale.test.mjs` now also fails a native `<button>` with a fixed height,
+and asserts it read at least twenty of them. The census read 18 button heights down to 16.

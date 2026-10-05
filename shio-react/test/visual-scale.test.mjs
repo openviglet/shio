@@ -64,6 +64,25 @@ test("SH1199: no control in the console sets its own height", () => {
       + "dense one takes `h-(--vg-control-dense)`.")
 })
 
+test("SH1210: no native button in the console sets a fixed height either", () => {
+  // The census counts every `button`, and a hand-drawn one escaped the check above because it is
+  // not one of the package's controls. A control drawn by hand reads a control token; a card that
+  // happens to be a button sets no height at all, so its content decides it.
+  const offenders = []
+  let scanned = 0
+  for (const file of TSX) {
+    for (const element of findElements(file.code, "button")) {
+      scanned++
+      const fixed = (element.attrs.match(FIXED_HEIGHT) ?? []).filter((cls) => !cls.includes("[&"))
+      if (fixed.length) offenders.push(`${file.name} <button> ${fixed.join(" ")}`)
+    }
+  }
+  assert.ok(scanned >= 20, `SH1210: read only ${scanned} native button(s), so a clean result proves nothing`)
+  assert.deepEqual(offenders, [],
+    "SH1210: a native button with a fixed height, off the control scale. Use a Button with a size, "
+      + "or `h-(--vg-control-dense)` / `h-(--vg-control-form)` on a control drawn by hand.")
+})
+
 test("SH1199: every radius in the console is one the scale names", () => {
   // Bare `rounded` is a fixed 4 px the theme never sees, and an arbitrary `rounded-[…]` is a radius
   // the scale does not hold (VDS198). The named keys all land on control, panel or full.

@@ -938,23 +938,6 @@ migration finished rather than merely done - the cutover itself, the retirement 
 console shell, and the published documentation, which after the cutover describes a
 product that no longer exists.
 
-### LV.45 LV.45 Product buttons the source lint cannot see (SH1210)
-
-After SH1199 no Button, Input or SelectTrigger in the console sets its own height, yet
-the look census still attributes thirteen button heights to product code: 20 px on the
-activity log (150 elements), 26 px on the files page, 44 px in several places, 49, 68
-and 69 px in the Universal Editor, 182 px on the marketplace, and 221 and 343 px on the
-files grid. visual-scale.test.mjs cannot see them because they are native button
-elements, or components other than the six it scans, rather than the package's controls.
-Some are controls drawn by hand, such as row actions and toolbar toggles, and those
-should become a Button with a size or read h-(--vg-control-dense). Others are whole
-cards that happen to be buttons (a file thumbnail, a marketplace entry), which are not
-controls at all. For those, either make the card a link or a div with the button inside
-it, or ask the design system whether the census should count an element taller than the
-touch step as a control. Start by listing each value's elements from pnpm look --
---json, fix the controls, decide the cards, extend visual-scale.test.mjs to native
-button elements with a fixed height, and record the lower reading.
-
 ### LV.46 LV.46 Home's activity rows as changes, not colours (SH1211)
 
 The home page's activity list draws each row behind a gradient icon chip, coloured by

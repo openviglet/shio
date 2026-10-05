@@ -522,9 +522,10 @@ function CategoryChip({ active, label, count, onClick }: {
   active: boolean; label: string; count: number; onClick: () => void
 }) {
   return (
-    <button type="button" onClick={onClick}
+    <button type="button" onClick={onClick} aria-pressed={active ? "true" : "false"}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+        // SH1210 — a dense control, so it reads the scale's height and rises with a coarse pointer.
+        "inline-flex h-(--vg-control-dense) items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
         active
           ? "border-orange-400 bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300"
           : "border-border text-muted-foreground hover:bg-muted",

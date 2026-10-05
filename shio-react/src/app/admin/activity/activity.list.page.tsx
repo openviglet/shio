@@ -275,14 +275,16 @@ export default function ActivityListPage() {
                           SH1005 — the name is the filter: "everything this person did" was a
                           question the server could answer and the page had no way to ask.
                         */}
-                        <button
+                        <Button
                           type="button"
-                          className="hover:underline"
+                          variant="link"
+                          size="sm"
+                          className="px-0 text-muted-foreground"
                           title={t("activity.byActor")}
                           onClick={() => narrow("actor", item.owner)}
                         >
                           {item.owner}
-                        </button>
+                        </Button>
                         {/*
                           SH999 — the run beside the person, because both are true: an agent acts as
                           somebody's credential, so a column showing only the name said the same

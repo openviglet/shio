@@ -1701,6 +1701,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1199** — The console takes DS 2026.3.17: controls size by prop, radii and mono follow the preset's keys, GraphiQL uses the console fonts, and the census fell to 21 heights, 2 fonts and 12 radii (design §LV.36 recorded in `docs/agents/console-ui.md`).
 - **SH1208** — No console element passes a prop the package ignores: tone left five bento components and the two seams that forwarded it, and a check reads the package's own deprecations (design §LV.43 recorded in `docs/agents/console-ui.md`).
 - **SH1209** — The GraphQL explorer's radii and controls read the console's scale: GraphiQL's radius and width variables map to the tokens, and the census fell to 18 button heights and 9 radii (design §LV.44 recorded in `docs/agents/console-ui.md`).
+- **SH1210** — Hand-drawn controls sit on the scale: the activity actor is a link Button, the file chips read the dense token, a lint covers native buttons, and the census fell to 16 heights (design §LV.45 recorded in `docs/agents/console-ui.md`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 
