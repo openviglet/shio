@@ -31,6 +31,24 @@ test("SH1194: the shared admin list and the site list render a table, not a mosa
   }
 })
 
+test("SH1222: the admin lists carry the description under the name, and a date where the model has one", () => {
+  const code = read("app", "admin", "admin-list.page.tsx")
+  assert.doesNotMatch(code, /\bid: "description"/,
+    "SH1222: a Description column is back, at the width the useful columns need, empty for most rows")
+  assert.match(code, /<BentoIdentityCell name=\{tile\.title\} detail=/,
+    "SH1222: the record is named by the package's identity cell, its description the second line")
+  assert.match(code, /id: "details"/, "SH1222: Details keeps its column")
+  assert.match(code, /id: "status"/, "SH1222: Status keeps its column")
+  assert.match(code, /id: "created"[\s\S]*<BentoChangeCell at=\{created\} \/>/)
+  for (const page of ["api-token.list.page.tsx", "site-webhook.list.page.tsx", "tenant.list.page.tsx"]) {
+    assert.match(read("app", "admin", page), /created: item\.createdDate/,
+      `SH1222: ${page}'s model has a creation date and the list does not show it`)
+  }
+  assert.doesNotMatch(read("app", "admin", "user.list.page.tsx"), /\bcreated:|lastLogin/,
+    "SH1222: a user's lastLogin is written only when the admin is seeded, so a column on it would "
+    + "show one date for everybody")
+})
+
 test("SH1221: no list passes the deprecated headerAction; a list's controls are in its one toolbar", () => {
   const left = []
   const walk = (dir) => {

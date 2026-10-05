@@ -7,7 +7,9 @@
  * (at your option) any later version.
  */
 import { useQuery } from "@tanstack/react-query"
-import { BentoListPage, type BentoDataTableColumn } from "@viglet/viglet-design-system/bento"
+import {
+  BentoChangeCell, BentoIdentityCell, BentoListPage, type BentoDataTableColumn,
+} from "@viglet/viglet-design-system/bento"
 import { useMemo, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate } from "react-router-dom"
@@ -25,6 +27,12 @@ export interface AdminTile {
   /** `0`/`1`, because the package's pill is numeric and every one of these models is boolean. */
   enabled?: number
   hasStatus?: boolean
+  /**
+   * SH1222 — when the record was made, for the entities whose model has a date (tokens, webhooks,
+   * tenants). Read from the model rather than assumed: a user carries `lastLogin`, but nothing
+   * writes it on sign-in, so a column built on it would show the seed date for everybody.
+   */
+  created?: string | null
 }
 
 export interface AdminListPageProps<T> {
@@ -126,31 +134,48 @@ export function AdminListPage<T>({
    * could not sort, filter by a column or show more than two fields. The columns are the tile's own
    * fields, so no list lost anything it showed; the name links to the record, and Enter opens it.
    */
+  /*
+   * SH1222 — the sites list's rule (SH1219): the description was a column most rows left empty, at
+   * the width the useful columns needed, so it is the identity cell's second line now. Details and
+   * Status keep their columns, and Created appears where the entity has a date.
+   */
   const columns = useMemo<BentoDataTableColumn<T>[]>(() => {
     const status = items?.some((item) => tileOf(item).hasStatus) ?? false
+    const dated = items?.some((item) => tileOf(item).created) ?? false
     return [
       {
         id: "name",
         header: t("common.name"),
-        width: "minmax(14rem, 2fr)",
+        width: "minmax(16rem, 3fr)",
         hideable: false,
         sortValue: (item) => tileOf(item).title.toLowerCase(),
         cell: (item) => {
           const tile = tileOf(item)
-          return <Link to={tile.to} className="font-medium hover:underline">{tile.title}</Link>
+          return (
+            <Link to={tile.to} className="block min-w-0 hover:underline">
+              <BentoIdentityCell name={tile.title} detail={tile.description?.trim() || undefined} />
+            </Link>
+          )
         },
-      },
-      {
-        id: "description",
-        header: t("common.description"),
-        width: "minmax(14rem, 3fr)",
-        cell: (item) => <span className="text-muted-foreground">{tileOf(item).description ?? ""}</span>,
       },
       {
         id: "details",
         header: t("admin.listDetails"),
         cell: (item) => <span className="text-muted-foreground">{tileOf(item).meta}</span>,
       },
+      ...(dated ? [{
+        id: "created",
+        header: t("admin.listCreated"),
+        width: "minmax(9rem, 1fr)",
+        sortValue: (item: T) => {
+          const created = tileOf(item).created
+          return created ? new Date(created) : null
+        },
+        cell: (item: T) => {
+          const created = tileOf(item).created
+          return created ? <BentoChangeCell at={created} /> : null
+        },
+      }] : []),
       ...(status ? [{
         id: "status",
         header: t("common.status"),

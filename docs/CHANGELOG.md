@@ -1679,6 +1679,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1219** — The sites list is three columns, identity with description or address, a pages bar with its counts, and who changed it last marked when an agent, newest first, with Preview, Open, Export and Delete in a row menu (design §LXXVII.3 recorded in `shio-react/src/app/content/site.list.page.tsx`).
 - **SH1220** — The sites list opens as cards of each site's home picture up to thirty sites and as rows past it, from one read, and a curator's own choice of view survives a reload (design §LXXVII.4 recorded in `shio-react/src/lib/site-list-view.ts`).
 - **SH1221** — The sites list and AdminListPage pass their filter and secondary actions as the package's toolbar, drawn in the bar over the rows, and a test refuses any headerAction left (design §LXXVII.5 recorded in `shio-react/test/record-lists.test.mjs`).
+- **SH1222** — The admin lists name each record with the identity cell, its description as the second line, keep Details and Status, and show Created for tokens, webhooks and tenants (design §LXXVII.6 recorded in `shio-react/src/app/admin/admin-list.page.tsx`).
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

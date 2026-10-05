@@ -45,6 +45,7 @@ export default function BentoSiteWebhookListPage() {
         // string each list translated for itself.
         enabled: item.enabled ? 1 : 0,
         hasStatus: true,
+        created: item.createdDate,
       })}
     />
   )

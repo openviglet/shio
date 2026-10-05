@@ -42,6 +42,7 @@ export default function BentoApiTokenListPage() {
         // SH904's pages the status pill is real here and driven by the column rather than by a
         // string each list translated for itself.
         enabled: item.enabled ? 1 : 0,
+        created: item.createdDate,
         hasStatus: true,
       })}
     />
