@@ -11,7 +11,7 @@
 
 ## Block AU — The design system's consumer contract, adopted and gated
 
-- 📋 **SH1199** (deps: VDS182 and VDS183 in the DS) **The design system allows any control height, radius and tone, so the console renders 15 heights, 10 radii and 3 monos** — A closed scale in the DS (two control heights, three radii, one mono, tones as state) makes consistency the default, not a review. → §LV.36
+- 📋 **SH1199** (deps: VDS197-199 in DS 2026.3.17) **The design system allows any control height, radius and tone, so the console renders 15 heights, 10 radii and 3 monos** — A closed scale in the DS (two control heights, three radii, one mono, tones as state) makes consistency the default, not a review. → §LV.36
 
 ## Priority
 
