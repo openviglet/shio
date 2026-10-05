@@ -3181,6 +3181,13 @@ wordmark as one link to `ROUTES.BENTO`, then `BentoPaletteTrigger` opening the p
 shortcut toggles. Below `md` the rail is hidden, so that trigger is the pointer's only way to a deep
 area. `bento-shell.test.mjs` reads all three out of the root's `headerStart`.
 
+**The trailing edge carries the ground (SH1216).** The contract orders the trailing edge as locale
+(where a second ships), ground, then user menu, and marks the ground required. The shell had none,
+so light, dark and system could be chosen on login and setup only. `headerEnd` now renders the
+package's `ModeToggle` between the tenant switcher and `BentoUserMenu`. It sets App's
+`ThemeProvider`, so the choice and its storage key are the ones login already uses.
+`bento-shell.test.mjs` holds the order.
+
 **A tool that owns the viewport takes the `full` column (SH1169).** The GraphQL explorer sized itself
 as `100vh - 4rem`, SH908's premise about the chrome above it. The shell later put a 61px header and
 40px of `main` padding on each side, and the editor ran 21px past a 1000px window, with the document

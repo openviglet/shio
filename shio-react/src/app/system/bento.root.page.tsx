@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { RouteBoundary } from "@/components/route-boundary"
 import { ShLogo } from "@/components/logo/sh-logo"
+import { ModeToggle } from "@/components/mode-toggle"
 import { useTranslation } from "react-i18next"
 import { ROUTES } from "@/app/routes.const"
 // SH1028 — the palette answers with content and verbs, not only with destinations.
@@ -262,6 +263,12 @@ export default function BentoRootPage() {
               menu, and renders nothing unless the reader belongs to more than one tenant.
             */}
             <BentoTenantSwitcher />
+            {/*
+              SH1216 — the ground: light, dark or the system's. The shell contract marks it
+              required on the trailing edge, before the user menu; the ThemeProvider it sets is
+              App's, so the choice holds across the console, login and setup alike.
+            */}
+            <ModeToggle />
             <BentoUserMenu
               accountRoute={ROUTES.ADMIN_USERS}
               logoutUrl={ROUTES.LOGOUT}

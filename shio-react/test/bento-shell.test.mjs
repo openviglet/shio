@@ -111,6 +111,15 @@ test("SH1213: the header's leading edge carries the mark, the wordmark and the p
       + " only way to a deep area")
 })
 
+test("SH1216: the header's trailing edge carries the ground control, before the user menu", () => {
+  // vds-shell marks the ground (light, dark, system) required on the trailing edge. The console
+  // shell had none, so the theme could be chosen on the login page and nowhere after it.
+  const end = /headerEnd=\{([\s\S]*?)\n\s{8}\}\n/.exec(shellSource)
+  assert.ok(end, "SH1216: BentoShell is handed no headerEnd")
+  assert.match(end[1], /<ModeToggle\s*\/>[\s\S]*<BentoUserMenu\b/,
+    "SH1216: the header has no theme control, or it sits after the user menu the contract puts last")
+})
+
 test("SH888: no sidebar provider anywhere under the bento tree", () => {
   assert.doesNotMatch(shellSource, /SidebarProvider|SidebarInset|SidebarTrigger/,
     "SH888: the bento shell reaches for sidebar chrome. The package ships no provider for it on"
