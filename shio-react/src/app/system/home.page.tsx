@@ -169,7 +169,8 @@ export default function BentoHomePage() {
       label: t("home.attentionNotes"),
       value: attention.openNotes,
       icon: IconMessage,
-      url: `${ROUTES.CONSOLE}/content`,
+      // SH1214 — the list it counts, not the content browser, which shows no notes.
+      url: ROUTES.NOTES,
       tone: "rose" as BentoTone,
     },
     {

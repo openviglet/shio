@@ -1,5 +1,5 @@
 import axios from "@/lib/axios"
-import type { ShNote, ShNoteInput } from "@/models/note/note.model"
+import type { ShNote, ShNoteInput, ShOpenNote } from "@/models/note/note.model"
 import type { ShRead } from "@/lib/read-options"
 
 /**
@@ -12,6 +12,15 @@ export class ShNoteService {
   /** One object's thread, oldest first. */
   async of(objectId: string, read: ShRead = {}): Promise<ShNote[]> {
     const response = await axios.get<ShNote[]>("/v2/note", { params: { object: objectId }, signal: read.signal })
+    return response.data
+  }
+
+  /**
+   * SH1214 — every note still open, newest first: the list an agent reads from the same endpoint
+   * (`GET /note/open`), and the one home's Open notes tile counts.
+   */
+  async open(read: ShRead = {}): Promise<ShOpenNote[]> {
+    const response = await axios.get<ShOpenNote[]>("/v2/note/open", { signal: read.signal })
     return response.data
   }
 

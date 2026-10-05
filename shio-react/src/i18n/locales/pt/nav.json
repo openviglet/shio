@@ -18,6 +18,7 @@
   "nav.desc.trash": "Conteúdo excluído, ainda restaurável.",
   "nav.desc.forms": "O que chegou pelo formulário de um site.",
   "nav.desc.scheduled": "O que entra ou sai do ar, e quando.",
+  "nav.desc.notes": "Notas que ainda pedem algo, e a página de cada uma.",
   "nav.desc.universalEditor": "Edite uma página na própria página, onde o leitor a vê.",
   "nav.desc.admin": "Usuários, grupos e os papéis que decidem quem pode o quê.",
   "nav.desc.apiTokens": "Credenciais de longa duração para agentes e integrações.",

@@ -1882,6 +1882,17 @@ submit they read as three actions, and the picked kind looked like the one that 
 submit is the only filled button on the row. There is no shared toggle-group in `components/ui`, so
 the control lives in the rail until a second choice-of-few needs it.
 
+**Every open note, across pages (SH1214).** The rail answers for one page, and home's Open notes
+tile counts every page. It used to link to the content browser, which lists no notes.
+`content/notes.page.tsx` (`ROUTES.NOTES`) reads `GET /v2/note/open`, the same endpoint `shio pull`
+reads, so the tile's count and the list cannot disagree. Each row names its page by address and
+links to the post whose rail holds the thread, and it offers Resolve, which also refreshes home's
+summary. In `console/surfaces.json` the surface is a `gap` closed by SH1215. Declaring `/note/open`
+in the manifest failed three tests at once: the 30-row cap, `response.manifest` at its ceiling, and
+the feature claim every route needs. An agent still reaches notes one page at a time
+(`include=notes`), one site at a time (`.notes.yaml`) or as a count on `/console/summary`.
+`notes-surface.test.mjs` holds the tile's link, the route and the endpoint.
+
 ## Unsaved work, and the guard this router cannot have (SH1011)
 
 The post editor held its data in `useState` and never compared it with the post it loaded, so

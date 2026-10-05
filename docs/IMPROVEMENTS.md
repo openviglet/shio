@@ -1040,6 +1040,22 @@ actions attached.
 The agent still never approves its own work; the review decision stays off its
 namespace.
 
+### LXVII.14 Every open note, for an agent in one read (SH1215)
+
+SH1214 gave the console an Open notes page reading GET /api/v2/note/open, and
+console/surfaces.json had to name its agent equivalent. That endpoint is real, and shio
+pull already reads it to write .notes.yaml per site, but the manifest does not declare
+it, and declaring it failed three tests at once: the endpoint count is held under 31 on
+purpose, response.manifest sat at 2843 of a 2920 ceiling with no room under it, and a
+declared route must be claimed by a features flag. An agent today reaches notes per page
+with include=notes on a read, per site through the files projection, and as a count on
+GET /console/summary, while shio://requests lists only requests. The surface is
+therefore classified as a gap closed by this task. Options to weigh when it is picked:
+widen shio://requests into an open-notes resource, which costs nothing per turn under
+P3; add notes rows to the context pack's attention section; or prune a superseded
+manifest row to make room. Done when the surface names an agent equivalent that
+ShConsoleSurfaceP1Test resolves.
+
 ## LXX Media: what the bytes mean (Block BE)
 
 Shio is strong on the bytes of an asset: an on-the-fly image transform pipeline,

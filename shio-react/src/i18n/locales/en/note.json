@@ -10,5 +10,14 @@
   "note.kindComment": "Comment",
   "note.kindRequest": "Request",
   "note.placeholder": "What should change on this page?",
-  "note.placeholderField": "What should change about {{field}}?"
+  "note.placeholderField": "What should change about {{field}}?",
+  "note.openTitle": "Open notes",
+  "note.openDescription": "Every note still asking for something, newest first.",
+  "note.openEmptyTitle": "No open notes",
+  "note.openEmptyDescription": "Notes left on a page or a field show here until someone resolves them.",
+  "note.openPage": "Page",
+  "note.openNote": "Note",
+  "note.openWhen": "Left",
+  "note.openGone": "A page that no longer exists",
+  "note.openResolved": "Note on {{page}} resolved"
 }

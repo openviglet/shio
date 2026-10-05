@@ -45,6 +45,7 @@ import TrashPage from "./app/content/trash.page"
 import FormsPage from "./app/content/forms.page"
 import LanguagesPage from "./app/content/languages.page"
 import ScheduledPage from "./app/content/scheduled.page"
+import NotesPage from "./app/content/notes.page"
 import TranslatePage from "./app/content/translate.page"
 import NotFoundPage from "./app/system/not-found.page"
 import BentoAreaPage from "./app/system/bento-area.page"
@@ -187,6 +188,11 @@ const router = createBrowserRouter(createRoutesFromElements(
                 <Route
                   path="content/scheduled"
                   element={<ScheduledPage />}
+                />
+                {/* SH1214 — the open notes home's tile counts. */}
+                <Route
+                  path="content/notes"
+                  element={<NotesPage />}
                 />
                 {/* SH1066 — the inbox for what a site's form wrote, and the form's settings. */}
                 <Route

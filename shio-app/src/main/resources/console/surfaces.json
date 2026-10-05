@@ -133,6 +133,17 @@
       }
     },
     {
+      "id": "notes",
+      "section": "content",
+      "route": "/bento/content/notes",
+      "capability": "see every note still asking for something, and resolve one",
+      "exception": {
+        "reason": "gap",
+        "why": "the page reads GET /note/open, which shio pull also reads but the manifest does not declare; an agent reaches notes one page at a time (include=notes), one site at a time (.notes.yaml), or as a count on /console/summary",
+        "closedBy": "SH1215"
+      }
+    },
+    {
       "id": "universal-editor",
       "section": "content",
       "route": "/bento/universal-editor",

@@ -9,6 +9,10 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block BB — The curator's return channel, and the conversation with the agent
+
+- 📋 **SH1215** (deps: —) **an agent has no one declared read listing every open note across sites** — The console's Open notes page reads GET /note/open, which the manifest cannot hold at 30 rows and its token ceiling, so the surface is a gap. → §LXVII.14
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)

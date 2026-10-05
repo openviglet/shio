@@ -410,6 +410,8 @@ class ShConsoleSurfaceP1Test {
                         the gaps are the deliverable: each is a capability a curator has and the \
                         product's primary operator does not. Closing one is an edit to this file; \
                         gaining one must be a reviewable diff naming the task that closes it.""")
-                .containsExactly("activity");
+                // SH1214 gained "notes": the console lists every open note from GET /note/open, which
+                // the manifest does not declare and has no room for. SH1215 closes it.
+                .containsExactly("notes", "activity");
     }
 }

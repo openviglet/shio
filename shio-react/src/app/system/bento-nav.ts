@@ -17,6 +17,7 @@ import {
   IconKey,
   IconLayersIntersect,
   IconMail,
+  IconMessage,
   IconPackages,
   IconPhoto,
   IconRobot,
@@ -143,6 +144,7 @@ const DECORATION: Record<string, Omit<ShioNavItem, "id" | "section" | "bentoRout
   "trash": { titleKey: "content.trash", descriptionKey: "nav.desc.trash", icon: IconTrash, tone: "slate", route: ROUTES.TRASH },
   "forms": { titleKey: "content.formsTitle", descriptionKey: "nav.desc.forms", icon: IconMail, tone: "blue", route: ROUTES.FORMS },
   "scheduled": { titleKey: "content.scheduledTitle", descriptionKey: "nav.desc.scheduled", icon: IconCalendarTime, tone: "blue", route: ROUTES.SCHEDULED },
+  "notes": { titleKey: "note.openTitle", descriptionKey: "nav.desc.notes", icon: IconMessage, tone: "rose", route: ROUTES.NOTES },
   "universal-editor": { titleKey: "sidebar.universalEditor", descriptionKey: "nav.desc.universalEditor", icon: IconLayersIntersect, tone: "violet", route: ROUTES.UNIVERSAL_EDITOR },
   "admin": { titleKey: "admin.title", descriptionKey: "nav.desc.section.administration", icon: IconShieldCog, tone: "amber", route: ROUTES.ADMIN_ROOT },
   "users": { titleKey: "admin.users", descriptionKey: "nav.desc.admin", icon: IconUsers, tone: "amber", route: ROUTES.BENTO_USERS },
@@ -238,7 +240,7 @@ export function useMultiTenant(): boolean {
 export const HUB_GROUPS: Record<string, readonly { labelKey: string; ids: readonly string[] }[]> = {
   content: [
     { labelKey: "nav.hub.content.library", ids: ["sites", "search", "files", "trash"] },
-    { labelKey: "nav.hub.content.publishing", ids: ["scheduled", "forms", "universal-editor"] },
+    { labelKey: "nav.hub.content.publishing", ids: ["scheduled", "notes", "forms", "universal-editor"] },
     { labelKey: "nav.hub.content.model", ids: ["post-types"] },
   ],
   administration: [

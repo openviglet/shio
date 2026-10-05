@@ -82,6 +82,8 @@ export const ROUTES = {
   FORMS: `${CONSOLE_BASE}/content/forms`,
   /** SH991 — what goes live or comes down, in the order it will happen. */
   SCHEDULED: `${CONSOLE_BASE}/content/scheduled`,
+  /** SH1214 — every note still asking for something, newest first: home's Open notes tile. */
+  NOTES: `${CONSOLE_BASE}/content/notes`,
   FILES: `${CONSOLE_BASE}/content/files`,
   ADMIN_ROOT: `${CONSOLE_BASE}/admin`,
   ADMIN_USERS: `${CONSOLE_BASE}/admin/users`,

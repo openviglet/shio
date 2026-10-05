@@ -10,5 +10,14 @@
   "note.kindComment": "Comentário",
   "note.kindRequest": "Pedido",
   "note.placeholder": "O que deveria mudar nesta página?",
-  "note.placeholderField": "O que deveria mudar em {{field}}?"
+  "note.placeholderField": "O que deveria mudar em {{field}}?",
+  "note.openTitle": "Notas abertas",
+  "note.openDescription": "Toda nota que ainda pede algo, das mais recentes para as mais antigas.",
+  "note.openEmptyTitle": "Nenhuma nota aberta",
+  "note.openEmptyDescription": "Notas deixadas numa página ou num campo aparecem aqui até alguém resolvê-las.",
+  "note.openPage": "Página",
+  "note.openNote": "Nota",
+  "note.openWhen": "Deixada em",
+  "note.openGone": "Uma página que não existe mais",
+  "note.openResolved": "Nota em {{page}} resolvida"
 }

@@ -26,6 +26,23 @@ export interface ShNote {
   createdAt?: string | null
 }
 
+/**
+ * SH1214 — one row of the open-notes work list. Mirrors `ShNoteService.OpenNote`: the page is named
+ * by address, and `address` is null when the page is gone.
+ */
+export interface ShOpenNote {
+  id: string
+  objectId: string
+  address?: string | null
+  site?: string | null
+  field?: string | null
+  revision?: number | null
+  kind: string
+  body: string
+  author?: string | null
+  createdAt?: string | null
+}
+
 /** What the console sends to leave one. */
 export interface ShNoteInput {
   objectId: string

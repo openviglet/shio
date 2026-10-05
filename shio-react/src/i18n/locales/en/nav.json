@@ -18,6 +18,7 @@
   "nav.desc.trash": "Deleted content, still restorable.",
   "nav.desc.forms": "What arrived through a site's form.",
   "nav.desc.scheduled": "What goes live or comes down, and when.",
+  "nav.desc.notes": "Notes still asking for something, and the page each is on.",
   "nav.desc.universalEditor": "Edit a page on the page itself, where a reader sees it.",
   "nav.desc.admin": "Users, groups and the roles that decide who may do what.",
   "nav.desc.apiTokens": "Long-lived credentials for agents and integrations.",
