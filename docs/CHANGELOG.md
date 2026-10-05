@@ -1676,6 +1676,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1218** — A site's published home is kept as a picture: the server keys it on the appearance digest, and the sites list captures a stale home in the background and sends it, asking nothing on an unchanged revisit (design §LXXVII.2 recorded in `docs/agents/console-ui.md`).
 - **SH1224** — pnpm test names the ten console screens that draw their own table, each with the task that moves it, and fails on a new one or on an entry that has moved (design §LXXVII.8 recorded in `docs/agents/console-ui.md`).
 - **SH1225** — The post types list is a BentoListPage table: the type is an identity cell, System a badge, Edit and Delete a keyboard-reachable row menu, and it left SH1224's debt list (design §LXXVII.9 recorded in `shio-react/src/app/content/post-type.list.page.tsx`).
+- **SH1219** — The sites list is three columns, identity with description or address, a pages bar with its counts, and who changed it last marked when an agent, newest first, with Preview, Open, Export and Delete in a row menu (design §LXXVII.3 recorded in `shio-react/src/app/content/site.list.page.tsx`).
 
 ## Block AS — What Turing's index never receives (typed fields, a retry, a binary's text)
 

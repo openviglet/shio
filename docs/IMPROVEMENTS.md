@@ -1112,19 +1112,6 @@ and its grid, the admin lists and the content browser on the same cells, and the
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
 
-### LXXVII.3 The sites list, redrawn as rows (SH1219)
-
-site.list.page.tsx becomes the list in docs/design/shio-site-list.dc.html. The first
-column is the package's identity cell: initials in a hue from the name, the name, and a
-second line carrying the description where there is one and the site: address. The
-Description column goes. Pages shows the published and draft counts as a bar with its
-numbers, and No pages yet when empty. Last changed is the package's change cell,
-relative with the absolute date as tooltip and the actor, marked when an agent. The
-default sort is last changed, newest first. Row verbs go through BentoDataTable
-rowActions, a focusable menu, never hover-only buttons, which keeps SH899's rule while
-giving Preview, Open, Export and Delete back to the row. Done when the page renders
-those three columns and the menu, and a test reads the columns out of the page.
-
 ### LXXVII.4 The sites list as a grid (SH1220)
 
 Once the package offers the tiles-or-rows switch, site.list.page.tsx passes a renderTile
