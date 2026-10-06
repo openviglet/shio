@@ -57,3 +57,15 @@ test("SH1223: the browser's table scrolls with the page, not inside a fixed box"
   assert.doesNotMatch(table, /\bheight=\{/,
     "SH1223: a fixed height scrolls a long folder inside a box, with a second scrollbar in the busiest screen")
 })
+
+test("SH1239: nothing around the browser's table is a scroll container, so its bar and header can stick", () => {
+  // `overflow-hidden` on the panel made it the sticky elements' scroll container, one that never
+  // scrolls: the package's classes were in place and the bulk verbs still left the screen. Found by
+  // e2e/selection-bar.check.mjs, which measures it on a live page.
+  const page = read("app", "content", "object.children.page.tsx")
+  // The panel that opens nearest above the table, not the first on the page (the stats strip).
+  const panel = [...page.slice(0, page.indexOf("<BrowserTable")).matchAll(/<Panel\b[^>]*>/g)].at(-1)?.[0]
+  assert.ok(panel, "SH1239: the content browser no longer wraps its table in a Panel; re-point this read")
+  assert.doesNotMatch(panel, /\boverflow-(hidden|auto|scroll)\b/,
+    "SH1239: the panel around the table clips by scrolling, which unsticks the selection bar and the header row")
+})

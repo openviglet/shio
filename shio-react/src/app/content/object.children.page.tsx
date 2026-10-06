@@ -361,8 +361,13 @@ export default function ObjectChildrenPage() {
           />
         </div>
 
-        {/* Content list */}
-        <Panel className="overflow-hidden" contentClassName="p-0">
+        {/*
+          Content list. SH1239 — `overflow-clip`, not `overflow-hidden`: both clip the rounded
+          corners, but `hidden` makes the panel the table's scroll container, and a panel that never
+          scrolls holds nothing sticky. The table's header row and its selection bar scrolled away
+          down a long folder with their `sticky` classes in place.
+        */}
+        <Panel className="overflow-clip" contentClassName="p-0">
             {loading && (
               <div className="px-4 py-12 text-center text-sm text-muted-foreground">{t("common.loading")}</div>
             )}

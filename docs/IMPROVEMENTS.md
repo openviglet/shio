@@ -1111,20 +1111,3 @@ it. The sections below are the Shio half: the backend facts a row needs, the sit
 and its grid, the admin lists and the content browser on the same cells, and the ten
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
-
-### LXXVII.22 The selection bar, in view while the page scrolls (SH1239)
-
-SH1223 removed the content browser's fixed 560 px table height, so a long folder scrolls
-the page once rather than inside a box. The package's `BentoDataTable` holds its header
-row under the shell's header while the page scrolls, but its selection bar is not
-sticky: in `@viglet/viglet-design-system` 2026.3.18 only the `rowgroup` carries `sticky
-top-(--bento-shell-header,0px)`. So a curator who ticks rows near the bottom of a long
-folder has to scroll back to the top to reach Move, Publish or Delete.
-
-The fix belongs in the design system, not here. The selection bar should stick under the
-shell's header while rows are selected, stacked above the sticky header row, in the same
-way the header is held. File it there and add its VDS id to this line's deps. Shio's
-part is then nothing but taking the release that carries it.
-
-Done when, in the content browser with a long folder, the selection bar stays in view
-while the page scrolls with rows selected, and leaves when the selection is cleared.

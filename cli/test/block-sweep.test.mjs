@@ -261,7 +261,10 @@ const SWEEP = {
       + "round, SH1192-SH1206: content-console and the administration guide were rewritten where the "
       + "screens changed (the hubs, the trail, tables, the save bar, review triage, group members and "
       + "roles, the Sections list) and COVERAGE's look-round row names every id, with the mirror "
-      + "regenerated. README and shio-site are still NOT moved: neither describes the console's screens",
+      + "regenerated. README and shio-site are still NOT moved: neither describes the console's screens. "
+      + "Reopened again for the lists redraw and its follow-ups, SH1215-SH1240, closed by SH1239: "
+      + "COVERAGE's look-round row names every one of those ids, with the mirror regenerated, and "
+      + "README and shio-site are unchanged for the same reason",
   },
   AQ: {
     swept: false,

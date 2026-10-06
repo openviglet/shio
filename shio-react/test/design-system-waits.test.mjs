@@ -96,6 +96,11 @@ import { fileURLToPath } from "node:url"
  * cells. Again no entry waited here — those lines name `VDS<n> in the DS` — so the pin moves on its
  * own, and each line drops its dep as it ships against the release.
  *
+ * 2026.3.19 carried VDS209: a paged table's selection bar sticks under the shell while rows are
+ * selected, with the header row stacked below it. SH1239 adopted it in the same commit that moved
+ * this pin, and it took a Shio change as well: the panel around the browser's table was
+ * `overflow-hidden`, which unsticks anything inside it.
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -122,7 +127,7 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.18"
+const PINNED = "2026.3.19"
 
 function manifest() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))
