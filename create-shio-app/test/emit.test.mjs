@@ -100,7 +100,8 @@ test("every generated package is byte-identical to its composed tree", async () 
     for (const [source, text] of expectedSources(files)) {
       const onDisk = await readFile(join(dir, source), "utf8").catch(() => null);
       assert.notEqual(onDisk, null, `${pkg.name}/${source} is missing — run emit`);
-      assert.equal(onDisk, text, `${pkg.name}/${source} has drifted — run emit`);
+      // SH1246: a template edit without the emit left `docs` saying "Shio CMS" after the rename.
+      assert.equal(onDisk, text, `${pkg.name}/${source} has drifted from the template (SH1246) — run emit`);
     }
     const manifest = JSON.parse(await readFile(join(dir, "blueprint.json"), "utf8"));
     assert.deepEqual(
