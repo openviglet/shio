@@ -983,23 +983,6 @@ Proposed text, which the owner sets by hand because the org is his:
 It is done when `gh repo view` shows the descriptor and the homepage. This is the Shio
 part of W38 in the viglet.org roadmap: one descriptor, repeated everywhere.
 
-### LVIII.3 The niche Shio owns: a CMS an agent drives (SH1242)
-
-In "headless CMS", Shio competes with Strapi, Sanity and Contentful, which have years of
-links and content. A CMS built for a coding agent to drive is the niche where Shio has
-almost no rival, and Google already shows it there. In the window 20/07 to 17/10/2026,
-`/features/agent-gateway/` averaged position 9.9 with no work done for it.
-
-The two pages that carry the niche are `/claude-code/` ("Drive Shio from Claude Code:
-the plugin, the MCP bridge") and `/features/agent-gateway/`. Their title, description
-and h1 should use the words someone types: "CMS for Claude Code", "MCP CMS",
-"agent-ready CMS". The page text must stay a claim about a real surface, and no number
-gets typed.
-
-These pages are also the link targets from the Claude Code tools family (SH1245).
-Measure: impressions and position of the two pages in Search Console, month by month,
-against 17/10/2026.
-
 ### LVIII.4 One consent rule for the four sites (SH1243)
 
 `shio-site/index.html` loads gtag (`G-SMSL7R3897`) on every page with no consent step.

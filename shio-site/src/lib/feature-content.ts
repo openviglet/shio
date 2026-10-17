@@ -39,10 +39,10 @@ export interface FeatureDetail {
 
 const AGENT_GATEWAY: FeatureDetail = {
   slug: "agent-gateway",
-  metaTitle: "The agent gateway: manifest, context pack, batch | Viglet Shio",
+  metaTitle: "Agent gateway of an agent-ready CMS: manifest, context pack | Viglet Shio",
   metaDescription:
-    "The namespace shaped for a coding agent rather than a browser: a manifest that reports unshipped capabilities as false and says where a capability lives when it lives elsewhere, a context pack that replaces the discovery session, a write vocabulary you can read before writing, and 4xx bodies that carry the fix.",
-  eyebrow: "The agent gateway",
+    "The namespace behind the MCP server of an agent-ready CMS, shaped for a coding agent such as Claude Code rather than a browser: a manifest that reports unshipped capabilities as false and says where a capability lives when it lives elsewhere, a context pack that replaces the discovery session, a write vocabulary you can read before writing, and 4xx bodies that carry the fix.",
+  eyebrow: "The agent gateway of an agent-ready CMS",
   title: "A namespace shaped for a caller that",
   titleAccent: "cannot click anything",
   lead: "Everything here is a shape over the delivery API and the console services, never a parallel semantic. What makes it a gateway rather than a second API is that it answers the questions a browser never has to ask: what can you do, what is here, and what did I just get wrong.",

@@ -33,9 +33,9 @@ export const routes: PrerenderRoute[] = [
   },
   {
     path: "/claude-code",
-    title: "Drive Shio from Claude Code: the plugin, the MCP bridge | Viglet Shio",
+    title: "A CMS for Claude Code: the plugin and the MCP server | Viglet Shio",
     description:
-      "Hand a Viglet Shio instance to Claude Code in one command: the plugin (MCP server, skills, slash commands, AGENTS.md fragment) or a bare stdio bridge, the three calls a session opens with, and the AGENT token scope, which writes on the agent surface only and is deliberately not a superset of a write key.",
+      "An agent-ready CMS that Claude Code or any MCP client drives. Hand a Viglet Shio instance to Claude Code in one command: the plugin (MCP server, skills, slash commands, AGENTS.md fragment) or a bare stdio bridge, the three calls a session opens with, and the AGENT token scope, which writes on the agent surface only and is deliberately not a superset of a write key.",
   },
   {
     path: "/compare",

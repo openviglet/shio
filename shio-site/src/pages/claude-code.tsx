@@ -32,10 +32,10 @@ export function ClaudeCodePage() {
       <SiteNav />
       <main className="flex-1">
         <PageHero
-          eyebrow="First five minutes"
+          eyebrow="A CMS for Claude Code"
           title={
             <>
-              Hand the CMS to Claude Code in{" "}
+              An MCP CMS you hand to Claude Code in{" "}
               <span className="text-gradient">one command</span>
             </>
           }

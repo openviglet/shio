@@ -12,7 +12,6 @@
 ## Block S — The public site (shio.viglet.org)
 
 - ⏳ **SH1241** (deps: owner sets repo metadata) **The GitHub repos describe the 2018 Shio: AngularJS, Nashorn, viglet.org/shio; shio-ce shows only its own name** — GitHub search and AI assistants read the repo page first, so it should carry the agent-ready descriptor. → §LVIII.1
-- 🛠 **SH1242** (deps: —) **Searches for a CMS that Claude Code or an MCP client can drive do not surface Shio** — In headless CMS Shio competes with Strapi, Sanity and Contentful, while in agent-driven CMS it has almost no rival and agent-gateway already ranks 9.9 unaided. → §LVIII.3
 - 📋 **SH1243** (deps: the owner's decision in viglet.org W42) **shio.viglet.org loads Google Analytics without asking consent, unlike www.viglet.org** — The owner's measurement decision for viglet.org (W42 there, DOC6, T1097) has to hold here too, or four sites measure under three rules. → §LVIII.4
 - 📋 **SH1244** (deps: —) **The home ranks 4.8 in Google with no clicks, and its title names no category a stranger would recognise** — A searcher who has never heard of Shio decides from the title, so it has to say what Shio is and what sets it apart. → §LVIII.5
 

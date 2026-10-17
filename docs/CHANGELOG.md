@@ -1435,6 +1435,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH930** — Reading the sixteen split them: six are sample content that becomes a page the user publishes and were rewritten, ten are field help a curator reads in the console and stay with the 38 of the same kind in its own bundles — the rule follows the prose to its reader rather than to a module, and a lint holds the content tree so a seventh cannot arrive (design §LVIII.2 recorded in `docs/agents/blueprints.md`).
 - **SH1246** — The docs blueprint is re-emitted from the renamed template and says Viglet Shio, so the emit test and pnpm test are green again; the drift assertion names SH1246.
 - **SH1247** — The six vendored docs/design pages are restored from viglet-design-system 2026.3.19, so the SH942 drift check is green; its assertion names SH1247.
+- **SH1242** — /claude-code and /features/agent-gateway now say CMS for Claude Code, MCP CMS and agent-ready CMS in title, description and h1, each a claim about the plugin, MCP server or /agent namespace.
 
 ## Block T — End-user documentation, round two (the curator's half)
 
