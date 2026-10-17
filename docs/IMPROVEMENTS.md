@@ -214,6 +214,33 @@ that shipping the two halves exposed, and the whole marketplace — catalogue, i
 published seed, CLI, MCP tool and console — are all there, and SH682 closed the block by
 giving the two writes the role the blueprint reload already had.
 
+### XI.28 Shio in the Claude Code directories (SH1245)
+
+The plugin exists (`claude-plugin/`, installable with `claude plugin marketplace add
+openviglet/shio`). So does the bare MCP bridge (`npx -y @viglet/shio mcp`). Nothing
+outside this repo points at either.
+
+This quarter, the owner's visibility plan reaches Claude Code users through claude-tray.
+It already has:
+
+- the awesome-claude-code submission drafted (VS6 in the visibility repo);
+- a "More tools by alegauss" section in seven READMEs (VS9).
+
+Shio is the one Viglet product built for that audience, so it is the cheap link from
+that launch.
+
+The directories, each a separate entry:
+
+- the official MCP Registry, a `server.json` for `@viglet/shio`;
+- the Claude Code plugin and MCP lists the visibility repo already tracks for claude-tray;
+- the "More tools" section, with a line for Shio.
+
+Claude drafts each entry with the facts checked against the plugin and the npm package.
+The owner submits each one under his account. It is done when each entry is live, with
+its link recorded in the visibility repo's `actions.json`.
+
+Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
@@ -934,6 +961,81 @@ than as an error anybody sees.
 ## LVII What the Turing round left in the build and in a guard
 
 ## LVIII The public site (shio.viglet.org)
+
+### LVIII.1 The GitHub front door (SH1241)
+
+Measured on 17/10/2026 with `gh repo view`:
+
+- **openviglet/shio** (the public repo): the description is ":sparkles: :dna: Shio CMS - Model Content, Use GraphQL and Create Site using Javascript with Native Cache and Search.", the homepage is `https://viglet.org/shio`, and the topics still include `angularjs`, `nashorn` and `wcm`, which the product left behind. It has 1 star.
+- **openviglet/shio-ce**: the description is "Shio CMS Community Edition", the homepage is `http://viglet.org/shio`, there are no topics and no stars. The Shio card on the docs.viglet.org home links here.
+
+The repo page is the first thing GitHub search, npm's repository link and AI assistants
+read. It should repeat the descriptor that the console, README, site and docs have used
+since 17/10/2026.
+
+Proposed text, which the owner sets by hand because the org is his:
+
+- description: "Viglet Shio: the open-source, agent-ready CMS. Run it from the console or from Claude Code over MCP; it renders pages or delivers them over REST and GraphQL."
+- homepage: `https://shio.viglet.org`
+- topics: `cms`, `agent-ready-cms`, `headless-cms`, `mcp`, `mcp-server`, `claude-code`, `ai-agents`, `graphql`, `spring-boot`, `java`, `typescript`. Drop `angularjs`, `nashorn` and `wcm`.
+- shio-ce: archive it with a pointer to openviglet/shio, or give it the same description. The docs card (`src/pages/index.tsx` in vigletdocs) then points at openviglet/shio.
+
+It is done when `gh repo view` shows the descriptor and the homepage. This is the Shio
+part of W38 in the viglet.org roadmap: one descriptor, repeated everywhere.
+
+### LVIII.3 The niche Shio owns: a CMS an agent drives (SH1242)
+
+In "headless CMS", Shio competes with Strapi, Sanity and Contentful, which have years of
+links and content. A CMS built for a coding agent to drive is the niche where Shio has
+almost no rival, and Google already shows it there. In the window 20/07 to 17/10/2026,
+`/features/agent-gateway/` averaged position 9.9 with no work done for it.
+
+The two pages that carry the niche are `/claude-code/` ("Drive Shio from Claude Code:
+the plugin, the MCP bridge") and `/features/agent-gateway/`. Their title, description
+and h1 should use the words someone types: "CMS for Claude Code", "MCP CMS",
+"agent-ready CMS". The page text must stay a claim about a real surface, and no number
+gets typed.
+
+These pages are also the link targets from the Claude Code tools family (SH1245).
+Measure: impressions and position of the two pages in Search Console, month by month,
+against 17/10/2026.
+
+### LVIII.4 One consent rule for the four sites (SH1243)
+
+`shio-site/index.html` loads gtag (`G-SMSL7R3897`) on every page with no consent step.
+Since 19/07/2026, www.viglet.org fires GA only after consent. docs.viglet.org (DOC6) and
+turing.viglet.org (T1097) wait on the same choice. The owner picks one rule for all four
+sites (W42 in the viglet.org roadmap):
+
+- **Search Console only**: Search Console already measures search, and GA leaves the pages.
+- **GA consent mode**: cookieless pings until the visitor accepts.
+
+LGPD fit is the owner's call. Once he decides, the implementation copies viglet.org's.
+The line stays set aside until that decision exists.
+
+### LVIII.5 A home title that names the category (SH1244)
+
+Search Console, 20/07 to 17/10/2026: shio.viglet.org had 199 impressions and 0 clicks.
+The home had 166 of those impressions at an average position of 4.8. A first-page result
+with no clicks means the title and the snippet are losing the decision.
+
+The title, "Viglet Shio: a complete CMS your agent can drive too" (in
+`shio-site/index.html` and the `/` route of `src/entry-server.tsx`), does not say what
+kind of CMS Shio is to someone who has never heard of it. The proposal: "Viglet Shio:
+the open-source, agent-ready CMS". The description should then say the four ways in: the
+console, a coding agent over MCP, files, and the delivery API.
+
+Since 17/10/2026, the console, the README and the docs all say "Agent-ready CMS". Two
+places on the site still use the old word:
+
+- the hero pill row ("Open source · Self-hosted · Headless · MCP-native", in `hero.tsx`);
+- `public/og.svg`, the share image.
+
+Both should say "Agent-ready". Headless stays where the text means delivery over the
+API.
+
+Measure: clicks and CTR for the home in Search Console, month by month, against 0 clicks
+out of 166 impressions.
 
 ## LIX What the Turing round left in the build and in a guard
 

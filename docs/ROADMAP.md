@@ -9,6 +9,17 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
+## Block S — The public site (shio.viglet.org)
+
+- 📋 **SH1241** (deps: —) **The GitHub repos describe the 2018 Shio: AngularJS, Nashorn, viglet.org/shio; shio-ce shows only its own name** — The repo page is what GitHub search and AI assistants read first, so it should carry the agent-ready descriptor the site and docs use. → §LVIII.1
+- 📋 **SH1242** (deps: —) **Searches for a CMS that Claude Code or an MCP client can drive do not surface Shio** — In headless CMS Shio competes with Strapi, Sanity and Contentful, while in agent-driven CMS it has almost no rival and agent-gateway already ranks 9.9 unaided. → §LVIII.3
+- 📋 **SH1243** (deps: the owner's decision in viglet.org W42) **shio.viglet.org loads Google Analytics without asking consent, unlike www.viglet.org** — The owner's measurement decision for viglet.org (W42 there, DOC6, T1097) has to hold here too, or four sites measure under three rules. → §LVIII.4
+- 📋 **SH1244** (deps: —) **The home ranks 4.8 in Google with no clicks, and its title names no category a stranger would recognise** — A searcher who has never heard of Shio decides from the title, so it has to say what Shio is and what sets it apart. → §LVIII.5
+
+## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
+
+- 📋 **SH1245** (deps: —) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Claude Code users are the audience the owner reaches this quarter through claude-tray, and Shio is the one Viglet product built for them. → §XI.28
+
 ## Priority
 
 ## Non-goals (do NOT add as tasks)
