@@ -211,6 +211,29 @@ test("SH1244: the home's title names the category, in both places it is written"
     "SH1244: and so does the share image");
 });
 
+test("SH1243: Google Analytics loads only after consent, as on www.viglet.org", () => {
+  // The template is what every prerendered page starts from, so a loader in its head runs
+  // before anybody is asked.
+  assert.doesNotMatch(read("../index.html"), /googletagmanager|gtag\(/,
+    "SH1243: index.html loads no analytics; analytics.ts injects gtag after a granted choice");
+
+  const analytics = read("../src/lib/analytics.ts");
+  const loader = analytics.slice(analytics.indexOf("export function loadAnalytics"));
+  assert.match(loader, /googletagmanager\.com\/gtag\/js/, "SH1243: the one loader is loadAnalytics");
+  assert.match(analytics, /if \(consent === "granted"\) loadAnalytics\(\)/,
+    "SH1243: a choice loads GA only when it is granted");
+  assert.match(analytics, /if \(getConsent\(\) === "granted"\) loadAnalytics\(\)/,
+    "SH1243: and on a later visit only a stored grant loads it");
+  assert.doesNotMatch(analytics, /gtag\("consent"/,
+    "SH1243: no consent-mode pings: a visitor who declines stays uncounted (W42)");
+
+  const banner = read("../src/components/consent-banner.tsx");
+  assert.match(banner, /choose\("denied"\)/, "SH1243: the banner offers Decline as well as Accept");
+  assert.match(read("../src/App.tsx"), /<ConsentBanner \/>/, "SH1243: and every page mounts it");
+  assert.match(read("../src/components/sections/site-footer.tsx"), /reopenConsent/,
+    "SH1243: the footer can reopen it to change the choice");
+});
+
 test("SH537: every prerendered route also gets its Markdown twin", () => {
   // SH537's actual claim, which the route test above does not make: each route emits `<path>.md`
   // beside its HTML, so a reader (or an agent) can fetch the page as text. Asserted on the

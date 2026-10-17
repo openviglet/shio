@@ -1,5 +1,6 @@
 import { Container, Logo } from "@/components/brand";
 import { LINKS } from "@/lib/site-content";
+import { reopenConsent } from "@/lib/analytics";
 
 const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] = [
   {
@@ -93,6 +94,9 @@ export function SiteFooter() {
             <a href="/llms.txt" className="font-mono hover:text-[#f6ece8]">
               llms.txt
             </a>
+            <button type="button" onClick={reopenConsent} className="hover:text-[#f6ece8]">
+              Cookie settings
+            </button>
           </span>
         </div>
       </Container>

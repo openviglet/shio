@@ -9,10 +9,6 @@
 > the next task, `list`/`stats` count, `deps` resolves a blocker, `gaps` says what happened to
 > an id that is in neither file. Blocks with no line left are finished — see the ledger.
 
-## Block S — The public site (shio.viglet.org)
-
-- 📋 **SH1243** (deps: the owner's decision in viglet.org W42) **shio.viglet.org loads Google Analytics without asking consent, unlike www.viglet.org** — The owner's measurement decision for viglet.org (W42 there, DOC6, T1097) has to hold here too, or four sites measure under three rules. → §LVIII.4
-
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The owner publishes server.json with mcp-publisher, submits the Claude Code lists and the More tools line, and records each link in actions.json. → §XI.28

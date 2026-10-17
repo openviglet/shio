@@ -962,19 +962,6 @@ than as an error anybody sees.
 
 ## LVIII The public site (shio.viglet.org)
 
-### LVIII.4 One consent rule for the four sites (SH1243)
-
-`shio-site/index.html` loads gtag (`G-SMSL7R3897`) on every page with no consent step.
-Since 19/07/2026, www.viglet.org fires GA only after consent. docs.viglet.org (DOC6) and
-turing.viglet.org (T1097) wait on the same choice. The owner picks one rule for all four
-sites (W42 in the viglet.org roadmap):
-
-- **Search Console only**: Search Console already measures search, and GA leaves the pages.
-- **GA consent mode**: cookieless pings until the visitor accepts.
-
-LGPD fit is the owner's call. Once he decides, the implementation copies viglet.org's.
-The line stays set aside until that decision exists.
-
 ## LIX What the Turing round left in the build and in a guard
 
 ## LXI The live defects, fixed before anything is built on them (Block AV)

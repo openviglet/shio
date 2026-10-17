@@ -301,9 +301,9 @@ const SWEEP = {
   },
   S: {
     swept: true,
-    why: "SH930 closed it a third time and the sweep is the decision it recorded: the coverage matrix "
-      + "and shio-site's own backlog now say how far the em-dash rule reaches — sample content a "
-      + "blueprint publishes, not the field help a curator reads",
+    why: "the visibility round, closed by SH1243: shio-site/src itself is the sweep, since every id "
+      + "in it changed the site (the home and niche titles, the consent banner) or GitHub's repo page, "
+      + "which no matrix describes. Earlier closure: SH930, on how far the em-dash rule reaches",
   },
   Q: {
     swept: true,

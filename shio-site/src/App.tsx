@@ -7,6 +7,7 @@ import { ReplicatePage } from "@/pages/replicate";
 import { CuratorPage } from "@/pages/curator";
 import { FeaturePage } from "@/pages/feature-page";
 import { FEATURE_DETAILS, FEATURE_SLUGS } from "@/lib/feature-content";
+import { ConsentBanner } from "@/components/consent-banner";
 
 /**
  * Routing is one table the prerender and the client both read: no react-router
@@ -78,5 +79,10 @@ export default function App({ path = "/" }: Readonly<{ path?: string }>) {
   }, []);
 
   const Page = matchRoute(path) ?? LandingPage;
-  return <Page />;
+  return (
+    <>
+      <Page />
+      <ConsentBanner />
+    </>
+  );
 }
