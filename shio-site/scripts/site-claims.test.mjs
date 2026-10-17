@@ -193,6 +193,24 @@ test("SH1242: the two niche pages say the words a searcher types, in the title",
     "SH1242: and its description names the MCP server it sits behind");
 });
 
+test("SH1244: the home's title names the category, in both places it is written", () => {
+  // The home ranked on the first page with no clicks: a searcher who has never heard of Shio
+  // decides from the title, and "a complete CMS your agent can drive too" named no category.
+  const title = "Viglet Shio: the open-source, agent-ready CMS";
+  const home = ENTRY_SERVER.slice(ENTRY_SERVER.indexOf('path: "/"'));
+  assert.ok(home.includes(`title: "${title}"`), "SH1244: the / route's title names the category");
+  const template = read("../index.html");
+  assert.ok(template.includes(`<title>${title}</title>`), "SH1244: and so does the Vite template");
+  assert.ok(template.includes(`og:title" content="${title}"`), "SH1244: and its og:title");
+
+  // The pill row and the share image said "headless", the word for delivery, where the site
+  // means agent-ready.
+  assert.match(read("../src/components/sections/hero.tsx"), /Agent-ready &middot;/,
+    "SH1244: the hero's pill row says Agent-ready");
+  assert.match(read("../public/og.svg"), /agent-ready &#183;/,
+    "SH1244: and so does the share image");
+});
+
 test("SH537: every prerendered route also gets its Markdown twin", () => {
   // SH537's actual claim, which the route test above does not make: each route emits `<path>.md`
   // beside its HTML, so a reader (or an agent) can fetch the page as text. Asserted on the

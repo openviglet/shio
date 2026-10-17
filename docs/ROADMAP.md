@@ -13,7 +13,6 @@
 
 - ⏳ **SH1241** (deps: owner sets repo metadata) **The GitHub repos describe the 2018 Shio: AngularJS, Nashorn, viglet.org/shio; shio-ce shows only its own name** — GitHub search and AI assistants read the repo page first, so it should carry the agent-ready descriptor. → §LVIII.1
 - 📋 **SH1243** (deps: the owner's decision in viglet.org W42) **shio.viglet.org loads Google Analytics without asking consent, unlike www.viglet.org** — The owner's measurement decision for viglet.org (W42 there, DOC6, T1097) has to hold here too, or four sites measure under three rules. → §LVIII.4
-- 📋 **SH1244** (deps: —) **The home ranks 4.8 in Google with no clicks, and its title names no category a stranger would recognise** — A searcher who has never heard of Shio decides from the title, so it has to say what Shio is and what sets it apart. → §LVIII.5
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 

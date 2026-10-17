@@ -21,7 +21,7 @@ export function Hero() {
         <div className="min-w-0">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-xs font-semibold text-[#d3bcb3]">
             <span className="size-1.5 rounded-full bg-[#7dd3a0] shadow-[0_0_8px] shadow-[#7dd3a0]" />
-            Open source &middot; Self-hosted &middot; Headless &middot; MCP-native
+            Open source &middot; Self-hosted &middot; Agent-ready &middot; MCP-native
           </span>
 
           <h1 className="text-4xl font-extrabold leading-[1.06] tracking-tight sm:text-5xl lg:text-[3.4rem]">

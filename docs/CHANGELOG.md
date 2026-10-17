@@ -1436,6 +1436,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1246** — The docs blueprint is re-emitted from the renamed template and says Viglet Shio, so the emit test and pnpm test are green again; the drift assertion names SH1246.
 - **SH1247** — The six vendored docs/design pages are restored from viglet-design-system 2026.3.19, so the SH942 drift check is green; its assertion names SH1247.
 - **SH1242** — /claude-code and /features/agent-gateway now say CMS for Claude Code, MCP CMS and agent-ready CMS in title, description and h1, each a claim about the plugin, MCP server or /agent namespace.
+- **SH1244** — The home's title is now "Viglet Shio: the open-source, agent-ready CMS" in the route table and the Vite template, and the hero pill row and share image say agent-ready instead of headless.
 
 ## Block T — End-user documentation, round two (the curator's half)
 

@@ -21,7 +21,7 @@ export interface PrerenderRoute {
 export const routes: PrerenderRoute[] = [
   {
     path: "/",
-    title: "Viglet Shio: a complete CMS your agent can drive too",
+    title: "Viglet Shio: the open-source, agent-ready CMS",
     description:
       "An open-source, self-hosted, agent-ready CMS with four ways in: a full React console needing no agent at all, an MCP and CLI surface for coding agents, content projected to files for a repository workflow, and REST plus GraphQL delivery with TypeScript SDKs. Same content, same drafts, same publish button.",
   },

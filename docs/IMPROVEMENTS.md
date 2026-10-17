@@ -996,30 +996,6 @@ sites (W42 in the viglet.org roadmap):
 LGPD fit is the owner's call. Once he decides, the implementation copies viglet.org's.
 The line stays set aside until that decision exists.
 
-### LVIII.5 A home title that names the category (SH1244)
-
-Search Console, 20/07 to 17/10/2026: shio.viglet.org had 199 impressions and 0 clicks.
-The home had 166 of those impressions at an average position of 4.8. A first-page result
-with no clicks means the title and the snippet are losing the decision.
-
-The title, "Viglet Shio: a complete CMS your agent can drive too" (in
-`shio-site/index.html` and the `/` route of `src/entry-server.tsx`), does not say what
-kind of CMS Shio is to someone who has never heard of it. The proposal: "Viglet Shio:
-the open-source, agent-ready CMS". The description should then say the four ways in: the
-console, a coding agent over MCP, files, and the delivery API.
-
-Since 17/10/2026, the console, the README and the docs all say "Agent-ready CMS". Two
-places on the site still use the old word:
-
-- the hero pill row ("Open source · Self-hosted · Headless · MCP-native", in `hero.tsx`);
-- `public/og.svg`, the share image.
-
-Both should say "Agent-ready". Headless stays where the text means delivery over the
-API.
-
-Measure: clicks and CTR for the home in Search Console, month by month, against 0 clicks
-out of 166 impressions.
-
 ## LIX What the Turing round left in the build and in a guard
 
 ## LXI The live defects, fixed before anything is built on them (Block AV)
