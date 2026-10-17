@@ -187,7 +187,7 @@ export function CuratorPage() {
 
           <Container>
             <div className="mx-auto mb-12 max-w-2xl text-center">
-              <span className="inline-block bg-gradient-to-r from-[#ff8a6b] to-[#f5c46b] bg-clip-text font-mono text-xs font-bold tracking-[0.12em] text-transparent uppercase">
+              <span className="inline-block bg-gradient-to-r from-[#c4b5fd] to-[#f5c46b] bg-clip-text font-mono text-xs font-bold tracking-[0.12em] text-transparent uppercase">
                 The six gates
               </span>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">

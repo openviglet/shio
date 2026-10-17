@@ -186,12 +186,12 @@ export function ClaudeCodePage() {
             </ol>
 
             <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
-              <LawChip id="P2" /> The same three are also MCP tools:{" "}
-              <span className="font-mono text-foreground">shio_context</span>,{" "}
-              <span className="font-mono text-foreground">shio_write</span>. And
-              resources a client can read directly:{" "}
-              <span className="font-mono text-foreground">shio://manifest</span>,{" "}
-              <span className="font-mono text-foreground">shio://context</span>,{" "}
+              <LawChip id="P2" /> Over MCP, the second and third calls are tools,{" "}
+              <span className="font-mono text-foreground">shio_context</span> and{" "}
+              <span className="font-mono text-foreground">shio_write</span>, and the
+              first is a resource a client reads directly,{" "}
+              <span className="font-mono text-foreground">shio://manifest</span>, beside{" "}
+              <span className="font-mono text-foreground">shio://context</span> and{" "}
               <span className="font-mono text-foreground">shio://ops</span>.
             </p>
           </Container>

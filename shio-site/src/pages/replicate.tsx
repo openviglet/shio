@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  * SH535: the one capability a visitor can test against a URL they already own.
  *
  * The page is ordered by the pipeline, but its centre is the section in the
- * middle: the two modes. Everything before it is machinery and everything after
+ * middle: the three modes. Everything before it is machinery and everything after
  * it is proof, and the decision a reviewer actually makes (their look, or a
  * site somebody can maintain) is the thing worth arriving at.
  */
@@ -93,7 +93,7 @@ export function ReplicatePage() {
           </Container>
         </section>
 
-        {/* ── The two modes ───────────────────────────────────────────── */}
+        {/* ── The three modes ─────────────────────────────────────────── */}
         <section
           id="modes"
           className="relative isolate overflow-hidden bg-[#150e0c] py-20 text-[#f6ece8]"
@@ -103,7 +103,7 @@ export function ReplicatePage() {
 
           <Container>
             <div className="mx-auto mb-12 max-w-2xl text-center">
-              <span className="inline-block bg-gradient-to-r from-[#ff8a6b] to-[#f5c46b] bg-clip-text font-mono text-xs font-bold tracking-[0.12em] text-transparent uppercase">
+              <span className="inline-block bg-gradient-to-r from-[#c4b5fd] to-[#f5c46b] bg-clip-text font-mono text-xs font-bold tracking-[0.12em] text-transparent uppercase">
                 The decision
               </span>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
@@ -111,13 +111,15 @@ export function ReplicatePage() {
                 <span className="text-gradient">a site somebody can maintain</span>
               </h2>
               <p className="mt-3 text-base leading-relaxed text-[#c9b6ae] sm:text-lg">
-                Every captured block has two possible futures, and the proposal
-                asks you which one per block rather than deciding for you. This is
-                the choice the whole pipeline exists to put in front of a reviewer.
+                Every captured block has three possible futures: keep its look,
+                keep its look with editable fields, or rebuild it as content in the
+                site&apos;s own theme. The proposal asks you which one per block rather
+                than deciding for you. This is the choice the whole pipeline exists to
+                put in front of a reviewer.
               </p>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-3">
               {MODES.map((m) => (
                 <div
                   key={m.name}
@@ -162,7 +164,7 @@ export function ReplicatePage() {
 
             <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-white/10 bg-white/[0.03] p-5">
               <h3 className="text-sm font-bold">
-                Why there are two, and not one mode that does both
+                Why the look and the model are separate choices
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-[#a89189]">
                 Because the one that tried was measured. An authorable replica of a real
@@ -175,7 +177,9 @@ export function ReplicatePage() {
                 have, so it buys typography and no layout. Translating them into a stable
                 contract would mean a design system per replicated site. So
                 the <em>promise</em> changed instead of the implementation being patched:
-                two good answers rather than one mode half-doing both.
+                keep the source&apos;s look or rebuild it as content, rather than one mode
+                half-doing both. Annotated fidelity sits on the first side: it adds
+                editable fields to the kept markup and does not try to rebuild it.
               </p>
             </div>
           </Container>
