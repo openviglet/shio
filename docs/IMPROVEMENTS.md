@@ -962,27 +962,6 @@ than as an error anybody sees.
 
 ## LVIII The public site (shio.viglet.org)
 
-### LVIII.1 The GitHub front door (SH1241)
-
-Measured on 17/10/2026 with `gh repo view`:
-
-- **openviglet/shio** (the public repo): the description is ":sparkles: :dna: Shio CMS - Model Content, Use GraphQL and Create Site using Javascript with Native Cache and Search.", the homepage is `https://viglet.org/shio`, and the topics still include `angularjs`, `nashorn` and `wcm`, which the product left behind. It has 1 star.
-- **openviglet/shio-ce**: the description is "Shio CMS Community Edition", the homepage is `http://viglet.org/shio`, there are no topics and no stars. The Shio card on the docs.viglet.org home links here.
-
-The repo page is the first thing GitHub search, npm's repository link and AI assistants
-read. It should repeat the descriptor that the console, README, site and docs have used
-since 17/10/2026.
-
-Proposed text, which the owner sets by hand because the org is his:
-
-- description: "Viglet Shio: the open-source, agent-ready CMS. Run it from the console or from Claude Code over MCP; it renders pages or delivers them over REST and GraphQL."
-- homepage: `https://shio.viglet.org`
-- topics: `cms`, `agent-ready-cms`, `headless-cms`, `mcp`, `mcp-server`, `claude-code`, `ai-agents`, `graphql`, `spring-boot`, `java`, `typescript`. Drop `angularjs`, `nashorn` and `wcm`.
-- shio-ce: archive it with a pointer to openviglet/shio, or give it the same description. The docs card (`src/pages/index.tsx` in vigletdocs) then points at openviglet/shio.
-
-It is done when `gh repo view` shows the descriptor and the homepage. This is the Shio
-part of W38 in the viglet.org roadmap: one descriptor, repeated everywhere.
-
 ### LVIII.4 One consent rule for the four sites (SH1243)
 
 `shio-site/index.html` loads gtag (`G-SMSL7R3897`) on every page with no consent step.

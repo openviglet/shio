@@ -1438,6 +1438,8 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1247** — The six vendored docs/design pages are restored from viglet-design-system 2026.3.19, so the SH942 drift check is green; its assertion names SH1247.
 - **SH1242** — /claude-code and /features/agent-gateway now say CMS for Claude Code, MCP CMS and agent-ready CMS in title, description and h1, each a claim about the plugin, MCP server or /agent namespace.
 - **SH1244** — The home's title is now "Viglet Shio: the open-source, agent-ready CMS" in the route table and the Vite template, and the hero pill row and share image say agent-ready instead of headless.
+- **SH1241** — gh repo view shows openviglet/shio and shio-ce with the agent-ready descriptor, homepage https://shio.viglet.org, and mcp, mcp-server, claude-code and ai-agents topics in place of wcm.
+  checked **gh repo view shows the agent-ready descriptor and shio.viglet.org** `gh repo view openviglet/shio` prints the descriptor from LVIII.1 as description, https://shio.viglet.org as homepage, and no angularjs/nashorn/wcm topics; shio-ce is archived or carries the same text.
 
 ## Block T — End-user documentation, round two (the curator's half)
 

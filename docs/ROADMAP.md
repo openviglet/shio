@@ -11,7 +11,6 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- ⏳ **SH1241** (deps: owner sets repo metadata) **The GitHub repos describe the 2018 Shio: AngularJS, Nashorn, viglet.org/shio; shio-ce shows only its own name** — GitHub search and AI assistants read the repo page first, so it should carry the agent-ready descriptor. → §LVIII.1
 - 📋 **SH1243** (deps: the owner's decision in viglet.org W42) **shio.viglet.org loads Google Analytics without asking consent, unlike www.viglet.org** — The owner's measurement decision for viglet.org (W42 there, DOC6, T1097) has to hold here too, or four sites measure under three rules. → §LVIII.4
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
@@ -19,13 +18,6 @@
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The owner publishes server.json with mcp-publisher, submits the Claude Code lists and the More tools line, and records each link in actions.json. → §XI.28
 
 ## Priority
-
-## Done when — SH1241
-
-- **gh repo view shows the agent-ready descriptor and shio.viglet.org** `gh repo view
-  openviglet/shio` prints the descriptor from LVIII.1 as description,
-  https://shio.viglet.org as homepage, and no angularjs/nashorn/wcm topics; shio-ce is
-  archived or carries the same text.
 
 ## Done when — SH1245
 
