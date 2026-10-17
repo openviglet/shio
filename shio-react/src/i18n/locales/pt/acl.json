@@ -5,7 +5,7 @@
   "acl.principalType": "Quem",
   "acl.description": "Controle quem pode ler, escrever e publicar este conteúdo.",
   "acl.descriptionFor": "Controle quem pode ler, escrever e publicar \"{{name}}\".",
-  "acl.openHint": "Sem restrições — qualquer pessoa autenticada pode acessar. Adicione uma concessão para restringir.",
+  "acl.openHint": "Sem restrições: qualquer pessoa autenticada pode acessar. Adicione uma concessão para restringir.",
   "acl.addGrant": "Adicionar concessão",
   "acl.saved": "Permissões salvas",
   "acl.principalNamePlaceholder": "usuário / grupo / nome do papel",

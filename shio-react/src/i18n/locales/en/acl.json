@@ -5,7 +5,7 @@
   "acl.principalType": "Who",
   "acl.description": "Control who can read, write and publish this content.",
   "acl.descriptionFor": "Control who can read, write and publish \"{{name}}\".",
-  "acl.openHint": "No restrictions — anyone signed in can access this. Add a grant to restrict it.",
+  "acl.openHint": "No restrictions: anyone signed in can access this. Add a grant to restrict it.",
   "acl.addGrant": "Add grant",
   "acl.saved": "Permissions saved",
   "acl.principalNamePlaceholder": "username / group / role name",

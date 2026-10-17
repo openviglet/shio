@@ -78,7 +78,7 @@ public final class ShAgentIntents {
                     "before deriving a convention, check this instance already worked it out",
                     "GET /api/v2/agent/context?format=terse"),
             new Intent("reuse-a-blueprint",
-                    "building a section — check something already applies it",
+                    "building a section: check something already applies it",
                     "GET /api/v2/agent/blueprints?format=terse"),
             new Intent("write-without-ids",
                     "creating or changing content without holding a UUID",

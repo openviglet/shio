@@ -2033,7 +2033,7 @@ test("SH831: the theme the replica renders with is painted in the source's own c
     ["shio-color.ink-muted", "shio-color.line", "shio-color.surface", "shio-color.surface-sunk", "shio-text.base",
       "shio-text.family"]);
   const report = describeConversion(conversion);
-  assert.match(report, /--shio-color-accent #ff6600 — color\.accent-1 \(accent#1\)/,
+  assert.match(report, /--shio-color-accent #ff6600 from color\.accent-1 \(accent#1\)/,
     "said out loud, and traceable: the reader can check the value against the token it came from");
   assert.match(report, /--shio-color-line [^\n]*the source states no border#1/,
     "and so is the default that stood, because a reader cannot tell a colour that was matched from "
@@ -3033,9 +3033,9 @@ test("SH849: a run prints the palette it computed, and the markup runs it wrote"
 
   assert.match(ctx.stdout.text, /palette: \d+ of \d+ token\(s\) from the captured stylesheet/,
     "the count, which is the line a curator reads about appearance");
-  assert.match(ctx.stdout.text, /--shio-color-ink #10243a — ink \(text#1\)/,
+  assert.match(ctx.stdout.text, /--shio-color-ink #10243a from ink \(text#1\)/,
     "and it is traceable: the value, and the token of the source's own that it came from");
-  assert.match(ctx.stdout.text, /--shio-color-accent #0b7285 — brand \(accent#1\)/);
+  assert.match(ctx.stdout.text, /--shio-color-accent #0b7285 from brand \(accent#1\)/);
   assert.match(ctx.stdout.text, /--shio-color-line [^\n]*the source states no border#1/,
     "including the slots that kept a default, since a reader cannot tell a colour that was matched "
       + "from one that was never looked for unless the run says which (P9)");

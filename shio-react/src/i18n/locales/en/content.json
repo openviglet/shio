@@ -126,7 +126,7 @@
   "content.publishedBy": "Published by {{name}}",
   "content.noChangesSincePublish": "No changes since last publish",
   "content.changesSincePublish": "{{count}} field(s) changed since last publish",
-  "content.notYetPublished": "Not yet published — nothing to compare",
+  "content.notYetPublished": "Not yet published, so there is nothing to compare",
   "content.noPublishedToCompare": "No published version to compare",
   "content.field": "Field",
   "content.onlyChanges": "Only changes",

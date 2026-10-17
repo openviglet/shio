@@ -2158,7 +2158,7 @@ export function describeConversion({ document, sections, markup = [], pages = []
   // the property the task is about: one stylesheet reaches the page, and this is the one.
   const theme = document.posts.find((post) => post.type === "PageLayout")?.data?.THEME;
   if (theme) {
-    lines.push(`  presented by ${theme} — the one stylesheet the layout names`);
+    lines.push(`  presented by ${theme}, the one stylesheet the layout names`);
   }
   // SH831 — the palette said out loud, both halves. `propose` already reported that the extracted
   // tokens "change nothing on their own"; they change something now, and the reader has to be able to
@@ -2188,18 +2188,18 @@ export function describeConversion({ document, sections, markup = [], pages = []
       // was the whole claim, so a run reporting `color.emerald.500 (accent#1)` on a site whose every
       // button is orange gave a reader nothing to disagree with. The other eight slots carry no such
       // clause: their rank *is* the evidence (P3).
-      lines.push(`    --${row.name.replace(".", "-")} ${preview(row.value)} — ${row.from} `
-        + `(${row.role})${row.elected ? ` — elected by ${row.elected}` : ""}`);
+      lines.push(`    --${row.name.replace(".", "-")} ${preview(row.value)} from ${row.from} `
+        + `(${row.role})${row.elected ? `, elected by ${row.elected}` : ""}`);
     }
     for (const row of rejected) {
       lines.push(
-        `    --${row.name.replace(".", "-")} ${preview(row.value)} — REFUSED: ${row.detail}. `
+        `    --${row.name.replace(".", "-")} ${preview(row.value)} REFUSED: ${row.detail}. `
           + "This theme's default stands; fix it in the source, or edit the Theme post's TOKENS",
       );
     }
     for (const row of palette.unmapped) {
       lines.push(
-        `    --${row.name.replace(".", "-")} ${preview(row.value)} — the source states no `
+        `    --${row.name.replace(".", "-")} ${preview(row.value)}: the source states no `
           + `${row.role}, so this theme's default stands. Edit the Theme post's TOKENS to set it`,
       );
     }
