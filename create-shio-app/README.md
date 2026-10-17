@@ -5,7 +5,7 @@
 [![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
 
 Scaffold a **Next.js (App Router)** site wired to the Content Delivery API of
-**[Viglet Shio](https://shio.viglet.org/)**, the open source **headless CMS built
+**[Viglet Shio](https://shio.viglet.org/)**, the open source, **agent-ready CMS
 for coding agents**.
 
 The flagship "JS dev, zero Java" starter — a JavaScript/TypeScript developer

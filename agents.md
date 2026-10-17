@@ -2,7 +2,8 @@
 
 ## Product orientation: read this before writing code
 
-**Shio is a CMS whose primary operator is a coding agent.** The agent builds and
+**Shio is an agent-ready CMS: every capability is built for a coding agent first,
+and a person can still do all of it from the console.** The agent builds and
 maintains the site (MCP tools + content as files + blueprints); the **curator
 approves**: corrects and tweaks (React console, Universal Editor, preview
 links); the **CDA delivers** (REST/GraphQL + the TS SDKs). Every design decision is

@@ -164,7 +164,7 @@ export function CuratorPage() {
                   </div>
                   <div className="rounded-lg border border-dashed border-border p-3">
                     <p className="text-sm text-muted-foreground">
-                      An open-source headless CMS with four ways in: the console, an
+                      An open-source, agent-ready CMS with four ways in: the console, an
                       agent, files in a repository, and the delivery API.
                     </p>
                   </div>

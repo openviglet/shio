@@ -171,7 +171,7 @@ export default function SetupPage() {
           </form>
         </StartupFirst.Card>
 
-        <StartupFirst.Footer>Viglet Shio · Headless CMS</StartupFirst.Footer>
+        <StartupFirst.Footer>Viglet Shio · Agent-ready CMS</StartupFirst.Footer>
       </StartupFirst.Content>
     </StartupFirst>
   )

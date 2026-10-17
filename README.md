@@ -1,4 +1,4 @@
-# Viglet Shio: the open source headless CMS built for coding agents
+# Viglet Shio: the open source, agent-ready CMS
 
 [![Website](https://img.shields.io/badge/Website-shio.viglet.org-0ea5e9?style=for-the-badge&logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
 [![Docs](https://img.shields.io/badge/Docs-docs.viglet.org%2Fshio-6366f1?style=for-the-badge&logo=readthedocs&logoColor=white)](https://docs.viglet.org/shio/)
@@ -7,9 +7,9 @@
 [![Last commit](https://img.shields.io/github/last-commit/openviglet/shio.svg?style=for-the-badge&logo=github)](https://github.com/openviglet/shio/commits)
 [![Code quality](https://img.shields.io/badge/Sonar-Code%20Quality-brightgreen?style=for-the-badge&logo=SonarCloud)](https://sonarcloud.io/project/overview?id=viglet_shio)
 
-**Viglet Shio** is an **open source headless CMS** (content management system)
-whose **primary operator is a coding agent**. An AI coding agent such as
-[Claude Code](https://claude.com/claude-code) builds and maintains the site
+**Viglet Shio** is an **open source, agent-ready CMS** (content management system).
+A person can run all of it from the console, or hand it to an AI coding agent such as
+[Claude Code](https://claude.com/claude-code), which builds and maintains the site
 through **MCP tools, content as files and blueprints**; the **curator approves** in
 a React console with a Universal Editor and preview links; and a **Content
 Delivery API** (REST + GraphQL, with TypeScript SDKs) delivers the content to
@@ -48,7 +48,7 @@ Shio (pronounced [strong /ʃiː/ · weak /ʃɪ/ o]).
 
 ## What is Shio?
 
-Shio is a **Java + Spring Boot headless CMS** with a **React** administration
+Shio is a **Java + Spring Boot CMS** with a **React** administration
 console and a **TypeScript** delivery layer. It models content the way a CMS
 always has (sites, folders, posts, post-types, widgets) and then exposes every
 one of those capabilities on a surface an agent can actually drive:
@@ -62,7 +62,7 @@ one of those capabilities on a surface an agent can actually drive:
 | **Content Delivery API** (`/api/v2/cda/**`) | Stable REST + GraphQL reads, token-scoped, with zero-dependency TypeScript SDKs, plus two narrow writes: the Universal Editor's save-back, and form submissions landing as drafts |
 | **React console** | The curator's half: content browser, 15 form widgets, Universal Editor, review queue, preview links |
 
-Keywords, so you can find this again: *headless CMS, agent-native CMS, AI CMS,
+Keywords, so you can find this again: *agent-ready CMS, headless CMS, agent-native CMS, AI CMS,
 MCP server, Model Context Protocol, Claude Code, content management system, Java
 CMS, Spring Boot CMS, Next.js CMS, React CMS, GraphQL CMS, content as code,
 GitOps CMS, open source CMS, self-hosted CMS.*

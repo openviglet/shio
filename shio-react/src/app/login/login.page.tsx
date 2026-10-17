@@ -50,7 +50,7 @@ const LoginPage = () => {
           <LoginForm />
         </Login.Card>
 
-        <Login.Footer>Viglet Shio · Headless CMS</Login.Footer>
+        <Login.Footer>Viglet Shio · Agent-ready CMS</Login.Footer>
       </Login.Content>
     </Login>
   )

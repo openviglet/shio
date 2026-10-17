@@ -49,7 +49,7 @@ export function SiteFooter() {
           <div>
             <Logo className="text-[#f6ece8]" />
             <p className="mt-3 max-w-xs text-sm leading-relaxed">
-              An open-source headless CMS with four ways in: a full console, a
+              An open-source, agent-ready CMS with four ways in: a full console, a
               coding agent, files in your repository, and the delivery API. Same
               content, same drafts, same publish button.
             </p>

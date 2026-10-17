@@ -108,7 +108,7 @@ export default defineConfig({
     shioBuildInfo(),
     vigletBootLoader({
       title: "Viglet Shio",
-      subtitle: "Headless CMS",
+      subtitle: "Agent-ready CMS",
       color: "#7C3AED",
       colorDark: "#6D28D9",
       prefix: "shio",

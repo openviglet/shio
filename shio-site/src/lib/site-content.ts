@@ -208,7 +208,7 @@ export const TRANSCRIPT: TranscriptStep[] = [
         " status: DRAFT",
         " ---",
         "+",
-        "+An open-source headless CMS with four ways in.",
+        "+An open-source, agent-ready CMS with four ways in.",
       ],
     },
   },
@@ -639,7 +639,7 @@ status: DRAFT
 folder: folder:acme/
 ---
 
-An open-source headless CMS with four ways in: the console,
+An open-source, agent-ready CMS with four ways in: the console,
 an agent, files in a repository, and the delivery API.`;
 
 /* ── P6: an error that is an instruction ─────────────────────────────────── */

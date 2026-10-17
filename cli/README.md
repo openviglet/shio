@@ -5,7 +5,7 @@
 [![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
 
 The command-line interface for **[Viglet Shio](https://shio.viglet.org/)**, the
-open source **headless CMS built for coding agents**. It is three things at once:
+open source, **agent-ready CMS**. It is three things at once:
 
 - the **"JS dev, zero Java" workflow** — scaffold a site, generate types, manage
   your content model as code;

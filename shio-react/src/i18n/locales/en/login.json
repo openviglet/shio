@@ -10,7 +10,7 @@
   "login.invalidCredentials": "Invalid username or password",
   "login.loginFailed": "Login failed",
   "login.emptyFields": "Please fill in all fields",
-  "login.heroTagline": "Headless CMS for modern applications",
+  "login.heroTagline": "The agent-ready CMS",
   "login.featureCms": "Content Management System",
   "login.featureApi": "REST API for any frontend",
   "login.featureTemplates": "Server-side rendering with Handlebars templates",

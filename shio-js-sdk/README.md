@@ -5,7 +5,7 @@
 [![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
 
 The **Universal Editor bridge** for **[Viglet Shio](https://shio.viglet.org/)**,
-the open source **headless CMS built for coding agents**. Drop it into *any*
+the open source, **agent-ready CMS**. Drop it into *any*
 front end — Next.js, Astro, Nuxt, Remix, plain HTML — and the page becomes
 **inline-editable** inside the Shio console, across origins.
 

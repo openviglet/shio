@@ -1,6 +1,6 @@
 # Viglet Shio
 
-> An open-source, self-hosted headless CMS with four ways in, over one content engine:
+> An open-source, self-hosted, agent-ready CMS with four ways in, over one content engine:
 > a full React console that needs no agent at all (sites, content types, media,
 > publishing, users); an MCP + CLI surface built for coding agents; the content
 > projected to files for a repository workflow; and REST/GraphQL delivery with
@@ -114,7 +114,7 @@ A feature that breaks one is wrong even if it was requested.
 
 - P1 Agent-first design order: every capability lands MCP → files/CLI → REST → console.
   It orders how a capability ships, never who may operate the CMS: the console is a full
-  CMS on its own, and an instance with no agent token issued is an ordinary headless CMS.
+  CMS on its own, and an instance with no agent token issued is an ordinary CMS.
 - P2 One call replaces a session: discovery is a product feature, not a docs problem.
 - P3 Tokens are a measured budget: a token regression fails the build.
 - P4 Files beat APIs for authoring: Edit, Write and Grep are the cheapest tools.

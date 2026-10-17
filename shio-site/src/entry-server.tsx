@@ -23,7 +23,7 @@ export const routes: PrerenderRoute[] = [
     path: "/",
     title: "Viglet Shio: a complete CMS your agent can drive too",
     description:
-      "An open-source, self-hosted headless CMS with four ways in: a full React console needing no agent at all, an MCP and CLI surface for coding agents, content projected to files for a repository workflow, and REST plus GraphQL delivery with TypeScript SDKs. Same content, same drafts, same publish button.",
+      "An open-source, self-hosted, agent-ready CMS with four ways in: a full React console needing no agent at all, an MCP and CLI surface for coding agents, content projected to files for a repository workflow, and REST plus GraphQL delivery with TypeScript SDKs. Same content, same drafts, same publish button.",
   },
   {
     path: "/console",
@@ -41,7 +41,7 @@ export const routes: PrerenderRoute[] = [
     path: "/compare",
     title: "Shio vs Contentful, Sanity, Strapi and WordPress | Viglet Shio",
     description:
-      "Viglet Shio against other headless CMSs on the axis where they differ: agent-operability. Eighteen checkable questions grouped by the design law each comes from, plus what Contentful, Sanity, Strapi and WordPress do better and when to pick them instead.",
+      "Viglet Shio against Contentful, Sanity, Strapi and WordPress on the axis where they differ: agent-operability. Eighteen checkable questions grouped by the design law each comes from, plus what Contentful, Sanity, Strapi and WordPress do better and when to pick them instead.",
   },
   {
     path: "/replicate",

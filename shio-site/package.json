@@ -3,7 +3,7 @@
   "private": true,
   "version": "2026.3.2",
   "type": "module",
-  "description": "Public site of Viglet Shio (shio.viglet.org), the open-source headless CMS with four ways in: console, coding agent, files and delivery API.",
+  "description": "Public site of Viglet Shio (shio.viglet.org), the open-source, agent-ready CMS with four ways in: console, coding agent, files and delivery API.",
   "homepage": "https://shio.viglet.org/",
   "repository": {
     "type": "git",

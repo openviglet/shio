@@ -122,7 +122,7 @@ folder: folder:acme/
 bodyField: content
 ---
 
-An open-source headless CMS with four ways in.`,
+An open-source, agent-ready CMS with four ways in.`,
       },
       law: "P4",
     },

@@ -5,7 +5,7 @@
 [![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
 
 Typed **TypeScript DSL** for the content model of
-**[Viglet Shio](https://shio.viglet.org/)**, the open source **headless CMS built
+**[Viglet Shio](https://shio.viglet.org/)**, the open source, **agent-ready CMS
 for coding agents** (SH62). Author your post-types **as code** — `postType()`,
 `text()`, `comboBox()`, `relator()`, … — and compile to the canonical Shio
 post-type JSON that the [`shio` CLI](https://www.npmjs.com/package/@viglet/shio)

@@ -5,7 +5,7 @@
 [![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
 
 The **page-section vocabulary** for **[Viglet Shio](https://shio.viglet.org/)**,
-the open source **headless CMS built for coding agents**: composable section
+the open source, **agent-ready CMS**: composable section
 post-types authored with [`@viglet/shio-model`](https://www.npmjs.com/package/@viglet/shio-model),
 plus the matching **React** components.
 

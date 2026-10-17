@@ -237,7 +237,7 @@ export function ComparePage() {
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 If nobody on the project is going to drive it with an agent, most of what
                 this page argues is worth nothing to you: you are buying a
-                self-hosted headless CMS with a smaller ecosystem than the four above and
+                self-hosted CMS with a smaller ecosystem than the four above and
                 a JVM to run. The protocol is the product. Judge it on whether that is the
                 thing you need.
               </p>

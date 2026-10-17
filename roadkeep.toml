@@ -390,7 +390,7 @@ symptom = false
 
 [project]
 name = "Viglet Shio"
-description = "The open source headless CMS built for coding agents."
+description = "The open source, agent-ready CMS."
 icon = "📰"
 
 [install]

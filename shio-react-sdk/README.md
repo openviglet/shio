@@ -5,7 +5,7 @@
 [![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
 
 The **React SDK** for **[Viglet Shio](https://shio.viglet.org/)**, the open
-source **headless CMS built for coding agents**. Hooks and render components for
+source, **agent-ready CMS**. Hooks and render components for
 consuming Shio content through the **Content Delivery API (CDA)**, built on
 [`@viglet/shio-client`](https://www.npmjs.com/package/@viglet/shio-client).
 
