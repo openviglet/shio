@@ -9,14 +9,14 @@ import { FeaturePage } from "@/pages/feature-page";
 import { FEATURE_DETAILS, FEATURE_SLUGS } from "@/lib/feature-content";
 
 /**
- * Routing is one table the prerender and the client both read — no react-router
+ * Routing is one table the prerender and the client both read: no react-router
  * and no SSG framework, so the bleeding-edge Vite this workspace tracks has
  * nothing framework-shaped to break. Navigation is plain `<a href>` full loads,
  * because every route is prerendered to its own static HTML anyway.
  *
  * A route's path is declared once, here, and `entry-server.tsx` attaches the
  * title and description to the same string. Adding a page is a row plus an
- * entry in that table — and `scripts/prerender.mjs` writes the file.
+ * entry in that table, and `scripts/prerender.mjs` writes the file.
  */
 export const ROUTES: Record<string, () => React.JSX.Element> = {
   "/": LandingPage,
@@ -25,7 +25,7 @@ export const ROUTES: Record<string, () => React.JSX.Element> = {
   "/compare": ComparePage,
   "/replicate": ReplicatePage,
   "/curator": CuratorPage,
-  // One depth page per pillar, from one record each — so a new pillar is an
+  // One depth page per pillar, from one record each, so a new pillar is an
   // entry in feature-content.ts and a row in entry-server.tsx, and the build
   // refuses if you write only one of the two.
   ...Object.fromEntries(
@@ -51,7 +51,7 @@ export function matchRoute(path: string): (() => React.JSX.Element) | null {
 
 export default function App({ path = "/" }: Readonly<{ path?: string }>) {
   // A cross-page link to a home anchor ("/#files") full-loads "/" and then
-  // relies on the browser's native hash scroll — but the target section mounts
+  // relies on the browser's native hash scroll, but the target section mounts
   // AFTER React does (and does not exist at all before hydration in dev), so the
   // native jump finds nothing and stays at the top. Re-run the scroll once the
   // element is present, plus on hashchange for same-page anchor clicks.

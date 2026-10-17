@@ -7,7 +7,7 @@
     },
     "java.debug.settings.onBuildFailureProceed": true,
     // Identify this worktree in the window title / taskbar
-    "window.title": "Shio CMS ${separator} ${dirty}${activeEditorShort} ${separator} ${appName}",
+    "window.title": "Viglet Shio ${separator} ${dirty}${activeEditorShort} ${separator} ${appName}",
 
     // Tomato status bar so this worktree is easy to spot
     "workbench.colorCustomizations": {

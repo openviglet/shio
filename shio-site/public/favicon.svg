@@ -1,12 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- The Viglet "Sh" product mark: tomato square, navajowhite rule and letters. -->
-  <rect x="2" y="2" width="60" height="60" rx="8" fill="#FF6347" stroke="#FFDEAD" stroke-width="3" />
-  <text
-    x="8"
-    y="48"
-    font-family="'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif"
-    font-size="30"
-    font-weight="900"
-    fill="#FFDEAD"
-  >Sh</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Viglet Shio"><polygon points="256.0,40.0 456.9,156.0 324.3,232.6 256.0,193.1 187.7,232.6 55.1,156.0" fill="#B497F9" stroke="#B497F9" stroke-width="1" stroke-linejoin="round"/><polygon points="55.1,388.0 256.0,504.0 256.0,369.2 187.7,232.6 55.1,156.0" fill="#7C3AED" stroke="#7C3AED" stroke-width="1" stroke-linejoin="round"/><polygon points="456.9,388.0 256.0,504.0 256.0,369.2 324.3,232.6 456.9,156.0" fill="#5B21B6" stroke="#5B21B6" stroke-width="1" stroke-linejoin="round"/><polygon points="256.0,193.1 187.7,232.6 256.0,369.2" fill="#7e50d1" stroke="#7e50d1" stroke-width="1" stroke-linejoin="round"/><polygon points="256.0,193.1 187.7,232.6 256.0,369.2" fill="#000" stroke="#000" stroke-width="1" stroke-linejoin="round" fill-opacity="0.10" stroke-opacity="0"/><polygon points="256.0,193.1 324.3,232.6 256.0,369.2" fill="#925ff2" stroke="#925ff2" stroke-width="1" stroke-linejoin="round"/><polygon points="256.0,193.1 324.3,232.6 256.0,369.2" fill="#000" stroke="#000" stroke-width="1" stroke-linejoin="round" fill-opacity="0.10" stroke-opacity="0"/></svg>

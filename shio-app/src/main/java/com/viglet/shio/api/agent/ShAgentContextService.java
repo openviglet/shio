@@ -162,7 +162,7 @@ public class ShAgentContextService {
         Map<String, Long> postsByType = counts(shPostUnifiedRepository.countDistinctByPostTypeId());
 
         ShAgentContext.Instance instance = sections.contains(ShAgentContextSection.INSTANCE)
-                ? new ShAgentContext.Instance("Viglet Shio CMS", version(),
+                ? new ShAgentContext.Instance("Viglet Shio", version(),
                         ShPostUnifiedWriteService.DEFAULT_LOCALE)
                 : null;
         List<ShAgentContext.Site> siteRows = sections.contains(ShAgentContextSection.SITES)

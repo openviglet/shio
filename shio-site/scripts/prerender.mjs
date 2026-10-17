@@ -7,7 +7,7 @@
 // For each route we render the app to an HTML string, patch the per-page <head>
 // (title / description / canonical / og), inject the markup into #root, and
 // write a static index.html. The client then hydrates it. No react-router and no
-// SSG framework — robust against the bleeding-edge Vite this workspace tracks.
+// SSG framework, so the bleeding-edge Vite this workspace tracks has nothing framework-shaped to break.
 //
 // Every patch is `replaceOrThrow`: a template that drifts fails the build rather
 // than shipping a page with somebody else's <title>. This is the gate SH538
@@ -105,12 +105,12 @@ function buildHtml(route) {
 }
 
 /**
- * SH537 — the Markdown twin, at `<path>.md`.
+ * SH537: the Markdown twin, at `<path>.md`.
  *
  * A Claude Code-first product that answers an agent only in hydrated markup is
  * failing its own argument in the first thing anybody reads. The twin is not a
- * second copy of the page: it is the same render, converted — see markdown.mjs
- * for why that direction and not the other.
+ * second copy of the page: it is the same render, converted (see markdown.mjs
+ * for why that direction and not the other).
  */
 function markdownPathFor(route) {
   return route.path === "/"
@@ -158,7 +158,7 @@ for (const route of routes) {
 }
 
 /**
- * The site's own manifest, in the shape `/api/v2/agent/manifest` uses — because
+ * The site's own manifest, in the shape `/api/v2/agent/manifest` uses, because
  * the discovery pattern the product teaches should be the one the site is
  * discovered by. `builtAt` is here for the reason SH460 put it on the product's
  * manifest: a client that cannot date what answered it cannot tell a current
@@ -188,12 +188,12 @@ const htmlBytes = index.reduce((n, r) => n + r.bytes.html, 0);
 const mdBytes = index.reduce((n, r) => n + r.bytes.markdown, 0);
 
 /**
- * SH925 — the size pair in `llms.txt` is patched here rather than typed there.
+ * SH925: the size pair in `llms.txt` is patched here rather than typed there.
  *
  * It was typed in two places and the two had already disagreed (78/592 in
  * `llms.txt`, 78/593 in the README) while the build was producing a third pair.
  * The site's own rule is that a measured number is generated, and this is the
- * one measurement that only exists after every route has been written — so it
+ * one measurement that only exists after every route has been written, so it
  * is patched into the copy in `dist/` on the way out, with the same
  * `replaceOrThrow` discipline as the `<head>`: a sentence that drifts fails the
  * build instead of publishing a stale figure.

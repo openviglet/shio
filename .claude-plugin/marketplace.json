@@ -12,7 +12,7 @@
     {
       "name": "shio",
       "source": "./claude-plugin",
-      "description": "Drive a Shio CMS instance from Claude Code: the MCP server, the content-model and verification workflows, and the blueprint catalogue. An agent session starts knowing Shio instead of discovering it."
+      "description": "Drive a Viglet Shio instance from Claude Code: the MCP server, the content-model and verification workflows, and the blueprint catalogue. An agent session starts knowing Shio instead of discovering it."
     }
   ]
 }

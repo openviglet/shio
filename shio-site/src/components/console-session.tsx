@@ -8,8 +8,8 @@ const LAST = CONSOLE_SESSION.length - 1;
 /**
  * The same page the agent transcript builds, built by a person in the console.
  *
- * It is deliberately the *same shape* as `AgentTranscript` — six steps, an
- * artefact under each, one panel — because the claim the pair makes is that the
+ * It is deliberately the *same shape* as `AgentTranscript` (six steps, an
+ * artefact under each, one panel) because the claim the pair makes is that the
  * two paths end at the same draft. Two panels drawn in different visual
  * languages would have made that an assertion; drawn in one, it is visible.
  *
@@ -21,7 +21,7 @@ const LAST = CONSOLE_SESSION.length - 1;
  *    animating something that does not animate.
  * 2. **Browser chrome, not a terminal.** The window is the console, so the bar
  *    carries a path rather than an MCP session name.
- * 3. **Every step is in the DOM at all times**, dimmed rather than unmounted —
+ * 3. **Every step is in the DOM at all times**, dimmed rather than unmounted:
  *    the same constraint the agent panel is built under, for the same three
  *    reasons: screen readers, the prerendered HTML, and the Markdown twin.
  */
@@ -36,7 +36,7 @@ export function ConsoleSession({ className }: { className?: string }) {
 
   /**
    * Keep the selected step inside the list, and nowhere else. `scrollIntoView`
-   * would scroll every scrollable ancestor including the document — the scroll
+   * would scroll every scrollable ancestor including the document: the scroll
    * trap SH566 found in the agent panel. `Element.scrollBy` cannot.
    */
   useEffect(() => {
@@ -70,7 +70,7 @@ export function ConsoleSession({ className }: { className?: string }) {
       {/* Browser chrome */}
       <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-4 py-2.5">
         <span className="flex gap-1.5" aria-hidden>
-          <span className="size-2.5 rounded-full bg-[#ff6347]/70" />
+          <span className="size-2.5 rounded-full bg-[#7c3aed]/70" />
           <span className="size-2.5 rounded-full bg-[#f5c46b]/70" />
           <span className="size-2.5 rounded-full bg-[#7dd3a0]/70" />
         </span>
@@ -102,7 +102,7 @@ export function ConsoleSession({ className }: { className?: string }) {
              * The click target sits beside the text rather than wrapping it:
              * `markdown.mjs` drops a `<button>` whole, children included, so
              * wrapping the lines would delete the whole session from every `.md`
-             * twin. `z-10` keeps the dimmed items clickable — an opacity below 1
+             * twin. `z-10` keeps the dimmed items clickable: an opacity below 1
              * makes a stacking context, and without it a step is clickable only
              * once it is already selected.
              */}
@@ -126,7 +126,7 @@ export function ConsoleSession({ className }: { className?: string }) {
               </p>
               <p className="mt-1 flex gap-2">
                 <span className="shrink-0 select-none text-[#7dd3a0]">&#9679;</span>
-                <span className="min-w-0 break-words text-[#ffb08a]">{s.screen}</span>
+                <span className="min-w-0 break-words text-[#ddd6fe]">{s.screen}</span>
               </p>
               <p className="mt-0.5 flex gap-2 pl-[1.1rem] text-[#8d7b74]">
                 <CornerDownRight className="mt-0.5 size-3 shrink-0" aria-hidden />

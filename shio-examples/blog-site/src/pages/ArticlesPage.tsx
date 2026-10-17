@@ -31,7 +31,7 @@ export function ArticlesPage() {
       ))}
       {articles.length === 0 && (
         <div className="loading" style={{ gridColumn: "1 / -1" }}>
-          No articles found. Import content into Shio CMS first.
+          No articles found. Import content into Viglet Shio first.
         </div>
       )}
     </div>

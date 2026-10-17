@@ -16,7 +16,7 @@
  */
 
 /**
- * Core Viglet Shio CMS classes.
+ * Core Viglet Shio classes.
  *
  * @see com.viglet.shio.Shio
  */

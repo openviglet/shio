@@ -1,6 +1,6 @@
-# Shio CMS Examples
+# Viglet Shio Examples
 
-Example sites demonstrating Shio CMS features, including the Universal Editor.
+Example sites demonstrating Viglet Shio features, including the Universal Editor.
 
 ## Examples
 
@@ -16,7 +16,7 @@ Demonstrates visual editing of blog/article content.
 
 **Post Types:** Article
 
-## How to Import into Shio CMS
+## How to Import into Viglet Shio
 
 Each example contains an `export.json` file in the Shio Exchange format:
 
@@ -25,7 +25,7 @@ Each example contains an `export.json` file in the Shio Exchange format:
    cd corporate-site && zip corporate-site.zip export.json && cd ..
    cd blog-site && zip blog-site.zip export.json && cd ..
    ```
-2. In Shio CMS, navigate to **Content > Import Site**
+2. In Viglet Shio, navigate to **Content > Import Site**
 3. Upload the ZIP file
 4. The site, folders, posts, and post types will be created
 

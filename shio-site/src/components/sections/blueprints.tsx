@@ -23,7 +23,7 @@ export function Blueprints() {
                 {String(i + 1).padStart(2, "0")}
               </span>
               <h3 className="mt-1 font-bold">{s.title}</h3>
-              <pre className="mt-3 overflow-x-auto rounded-lg bg-[#17100e] px-3 py-2.5 font-mono text-[0.72rem] leading-relaxed text-[#ffb08a]">
+              <pre className="mt-3 overflow-x-auto rounded-lg bg-[#17100e] px-3 py-2.5 font-mono text-[0.72rem] leading-relaxed text-[#ddd6fe]">
                 <code>{s.code}</code>
               </pre>
               <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">{s.gloss}</p>

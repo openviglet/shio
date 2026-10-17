@@ -37,7 +37,7 @@ export function Replicate() {
                 </span>
                 <h3 className="font-bold">{s.step}</h3>
               </div>
-              <pre className="mt-4 overflow-x-auto rounded-lg bg-[#17100e] px-3 py-2.5 font-mono text-[0.72rem] leading-relaxed text-[#ffb08a]">
+              <pre className="mt-4 overflow-x-auto rounded-lg bg-[#17100e] px-3 py-2.5 font-mono text-[0.72rem] leading-relaxed text-[#ddd6fe]">
                 <code>{s.code}</code>
               </pre>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{s.gloss}</p>

@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <linearGradient id="headline" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#ffb59a" />
-      <stop offset="45%" stop-color="#ff7a5c" />
-      <stop offset="100%" stop-color="#ffcf8f" />
+      <stop offset="0%" stop-color="#ddd6fe" />
+      <stop offset="45%" stop-color="#a78bfa" />
+      <stop offset="100%" stop-color="#f0abfc" />
     </linearGradient>
     <radialGradient id="orb" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ff6347" stop-opacity="0.55" />
-      <stop offset="100%" stop-color="#ff6347" stop-opacity="0" />
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0" />
     </radialGradient>
     <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
       <path d="M44 0H0V44" fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="1" />
@@ -19,12 +19,8 @@
   <circle cx="150" cy="90" r="320" fill="url(#orb)" />
   <circle cx="1080" cy="560" r="260" fill="url(#orb)" />
 
-  <!-- The Sh mark -->
-  <g transform="translate(80, 80)">
-    <rect x="0" y="0" width="88" height="88" rx="11" fill="#FF6347" stroke="#FFDEAD" stroke-width="4" />
-    <text x="70" y="26" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="12" font-weight="300" fill="#FFDEAD" fill-opacity="0.85" text-anchor="end" letter-spacing="1.2">CMS</text>
-    <text x="14" y="72" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="41" font-weight="900" fill="#FFDEAD">Sh</text>
-  </g>
+  <!-- The Shio cube mark -->
+  <svg x="72" y="72" width="104" height="104" viewBox="0 0 512 512"><polygon points="256.0,40.0 456.9,156.0 324.3,232.6 256.0,193.1 187.7,232.6 55.1,156.0" fill="#B497F9" stroke="#B497F9" stroke-width="1" stroke-linejoin="round"/><polygon points="55.1,388.0 256.0,504.0 256.0,369.2 187.7,232.6 55.1,156.0" fill="#7C3AED" stroke="#7C3AED" stroke-width="1" stroke-linejoin="round"/><polygon points="456.9,388.0 256.0,504.0 256.0,369.2 324.3,232.6 456.9,156.0" fill="#5B21B6" stroke="#5B21B6" stroke-width="1" stroke-linejoin="round"/><polygon points="256.0,193.1 187.7,232.6 256.0,369.2" fill="#7e50d1" stroke="#7e50d1" stroke-width="1" stroke-linejoin="round"/><polygon points="256.0,193.1 187.7,232.6 256.0,369.2" fill="#000" stroke="#000" stroke-width="1" stroke-linejoin="round" fill-opacity="0.10" stroke-opacity="0"/><polygon points="256.0,193.1 324.3,232.6 256.0,369.2" fill="#925ff2" stroke="#925ff2" stroke-width="1" stroke-linejoin="round"/><polygon points="256.0,193.1 324.3,232.6 256.0,369.2" fill="#000" stroke="#000" stroke-width="1" stroke-linejoin="round" fill-opacity="0.10" stroke-opacity="0"/><g transform="matrix(0.8660 .5 0 1 55.1 156.0)"><path d="M54.983999999999995 200.912Q46.864 200.912 39.73 197.954Q32.596 194.996 27.433999999999997 189.544Q22.271999999999995 184.092 19.719999999999995 176.668L34.452 170.056Q37.699999999999996 177.132 43.44199999999999 181.192Q49.184 185.252 56.144 185.252Q59.856 185.252 62.524 184.092Q65.19200000000001 182.93200000000002 66.7 180.90200000000002Q68.208 178.872 68.208 176.08800000000002Q68.208 173.072 66.352 170.926Q64.496 168.78 60.552 167.50400000000002L43.616 161.936Q33.292 158.572 28.072 152.366Q22.851999999999997 146.16000000000003 22.851999999999997 137.46Q22.851999999999997 129.804 26.621999999999996 124.004Q30.391999999999996 118.20400000000001 37.178 114.95600000000002Q43.964 111.70800000000001 52.78 111.70800000000001Q60.552 111.70800000000001 67.164 114.376Q73.776 117.04400000000001 78.59 121.91600000000001Q83.404 126.78800000000001 85.84 133.632L71.22399999999999 140.244Q68.788 134.212 63.916 130.79Q59.044 127.36800000000001 52.78 127.36800000000001Q49.184 127.36800000000001 46.4 128.528Q43.616 129.688 42.108 131.834Q40.599999999999994 133.98000000000002 40.599999999999994 136.764Q40.599999999999994 139.78 42.571999999999996 142.042Q44.544 144.304 48.488 145.58L65.076 150.916Q75.51599999999999 154.28 80.678 160.312Q85.84 166.344 85.84 175.044Q85.84 182.584 81.896 188.442Q77.952 194.3 71.05 197.606Q64.148 200.912 54.983999999999995 200.912ZM97.324 199.52V111.70800000000001H114.724V148.71200000000002L112.636 145.928Q114.84 140.244 119.77000000000001 137.518Q124.7 134.792 131.312 134.792Q138.50400000000002 134.792 143.89800000000002 137.808Q149.292 140.824 152.308 146.21800000000002Q155.324 151.61200000000002 155.324 158.804V199.52H137.924V162.51600000000002Q137.924 158.804 136.474 156.13600000000002Q135.024 153.46800000000002 132.414 151.96Q129.804 150.452 126.32400000000001 150.452Q122.96000000000001 150.452 120.292 151.96Q117.624 153.46800000000002 116.174 156.13600000000002Q114.724 158.804 114.724 162.51600000000002V199.52Z" fill="#FFDEAD"/></g></svg>
   <text x="192" y="140" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="30" font-weight="800" fill="#f6ece8">Viglet Shio</text>
 
   <!-- Headline. It said "The CMS whose operator is Claude Code / Your agent builds

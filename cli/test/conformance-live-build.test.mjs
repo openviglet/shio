@@ -57,7 +57,7 @@ describe("SH460: the conformance harness refuses an instance older than the code
 
   test("a build newer than HEAD is simply reachable, as before", async () => {
     manifest = {
-      product: "Viglet Shio CMS",
+      product: "Viglet Shio",
       version: "dev",
       commit: "deadbee",
       builtAt: new Date(Date.now() + 60_000).toISOString(),
@@ -70,7 +70,7 @@ describe("SH460: the conformance harness refuses an instance older than the code
   });
 
   test("a build older than HEAD fails the run, naming both sides and the fix", async () => {
-    manifest = { product: "Viglet Shio CMS", version: "dev", commit: "0ldbu1d", builtAt: "2001-01-01T00:00:00Z" };
+    manifest = { product: "Viglet Shio", version: "dev", commit: "0ldbu1d", builtAt: "2001-01-01T00:00:00Z" };
 
     await assert.rejects(() => requireInstance(env()), (error) => {
       assert.match(error.message, /older than the code under test/);
@@ -83,13 +83,13 @@ describe("SH460: the conformance harness refuses an instance older than the code
   });
 
   test("an instance with no build identity is stale by definition — the field ships with this gate", async () => {
-    manifest = { product: "Viglet Shio CMS", version: "dev" };
+    manifest = { product: "Viglet Shio", version: "dev" };
 
     await assert.rejects(() => requireInstance(env()), /reports no build identity at all/);
   });
 
   test("SHIO_CONFORMANCE_ALLOW_STALE=1 is the escape hatch for an instance you did not build", async () => {
-    manifest = { product: "Viglet Shio CMS", version: "dev", builtAt: "2001-01-01T00:00:00Z" };
+    manifest = { product: "Viglet Shio", version: "dev", builtAt: "2001-01-01T00:00:00Z" };
 
     const conn = await requireInstance(env({ SHIO_CONFORMANCE_ALLOW_STALE: "1" }));
 
@@ -107,7 +107,7 @@ describe("SH460: the conformance harness refuses an instance older than the code
   test("an instance built from HEAD a second before the commit is not stale on a clean tree", async () => {
     const head = await liveHead();
     manifest = {
-      product: "Viglet Shio CMS",
+      product: "Viglet Shio",
       version: "dev",
       commit: head.sha.slice(0, 7),
       builtAt: new Date(head.at - 1000).toISOString(),

@@ -18,10 +18,10 @@ import {
  * misread.
  *
  * Everything else here argues about protocol quality, which is what makes the
- * product unusual. This page answers a much earlier question — "is this even a
- * CMS I could hand to my team?" — and it answers it by walking the console
+ * product unusual. This page answers a much earlier question ("is this even a
+ * CMS I could hand to my team?"), and it answers it by walking the console
  * directory: every capability listed is a screen in `shio-react/src/app/`, and
- * the four that genuinely are not get a section of their own rather than a
+ * the four that are not get a section of their own rather than a
  * silence. A page that only claimed the good half would be the same mistake in
  * the opposite direction.
  */
@@ -31,7 +31,7 @@ export function ConsolePage() {
       <SiteNav />
       <main className="flex-1">
         <PageHero
-          eyebrow="Shio without an agent"
+          eyebrow="Viglet Shio without an agent"
           title={
             <>
               It is a CMS first.{" "}
@@ -87,8 +87,7 @@ export function ConsolePage() {
               Note where the draft appears. A person's write lands in{" "}
               <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">DRAFT</code>{" "}
               exactly as an agent's does, and publishing is a separate, deliberate act
-              in both cases. The safety on this product is not a leash for the agent.
-              It is how the content lifecycle works.
+              in both cases.
             </p>
           </Container>
         </section>
@@ -127,15 +126,14 @@ export function ConsolePage() {
         <section id="not-here" className="py-20">
           <Container className="max-w-3xl">
             <div className="mb-10 text-center">
-              <Eyebrow>The honest half</Eyebrow>
+              <Eyebrow>The limits</Eyebrow>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                Four things that genuinely live{" "}
+                Four things that live only{" "}
                 <span className="text-primary">on the command line</span>
               </h2>
               <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
                 Each one needs a shell or a browser the instance deliberately does not
-                run. None of them is required to operate the CMS, and naming them is
-                what makes the list above worth reading.
+                run. None of them is required to operate the CMS.
               </p>
             </div>
 
@@ -176,7 +174,7 @@ export function ConsolePage() {
           className="relative isolate overflow-hidden bg-[#150e0c] py-20 text-[#f6ece8]"
         >
           <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-          <div className="animate-orb-b pointer-events-none absolute -bottom-40 left-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#ff6347,transparent_70%)] opacity-25 blur-[80px]" />
+          <div className="animate-orb-b pointer-events-none absolute -bottom-40 left-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-25 blur-[80px]" />
 
           <Container>
             <div className="mx-auto mb-12 max-w-2xl text-center">

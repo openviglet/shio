@@ -1,6 +1,6 @@
 /*!
  * @viglet/shio-editor-cors v2026.2.0
- * Shio CMS Universal Editor Bridge
+ * Viglet Shio Universal Editor Bridge
  *
  * Include this script in any page to enable Shio Universal Editor support.
  * Requires: <meta name="urn:shio:system:connection" content="shio:http://your-shio-server">

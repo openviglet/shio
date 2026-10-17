@@ -2,17 +2,17 @@ import BUDGETS from "./token-budgets.generated.json";
 
 /*
  * ─────────────────────────────────────────────────────────────────────────────
- * SH925 — a token figure in the copy is read from here, never typed into a
+ * SH925: a token figure in the copy is read from here, never typed into a
  * sentence.
  *
  * SH533 built the generator for the four bars on the landing chart and stopped
- * there, so the two figures that live inside prose — the manifest check on
- * /claude-code and the pair in the agent-gateway code sample — stayed literals.
+ * there, so the two figures that live inside prose (the manifest check on
+ * /claude-code and the pair in the agent-gateway code sample) stayed literals.
  * Both had drifted by the time anyone looked: 298 and 2343 were measured at
  * SH174, and the ceilings the build now enforces are 390 and 2820. A number in
  * a sentence is true the day it is typed and wrong in silence afterwards.
  *
- * These are ceilings — what the build refuses to exceed — so the copy says "at
+ * These are ceilings (what the build refuses to exceed), so the copy says "at
  * most". A measurement would be the more flattering number and the one nothing
  * can check.
  * ─────────────────────────────────────────────────────────────────────────────

@@ -26,7 +26,7 @@ const TABS: { id: Tab; label: string; icon: typeof Bot; caption: string }[] = [
  *
  * The page used to lead with the agent session alone. That is the most
  * interesting thing about the product and it was also, read cold, a claim that
- * the CMS cannot be used without one — which is false, and which turned away
+ * the CMS cannot be used without one, which is false, and which turned away
  * exactly the reader who would otherwise have installed it. So the two sessions
  * sit under one switch, the console is the default, and the two panels are drawn
  * in the same language so the reader can see they arrive at the same page.
@@ -39,7 +39,7 @@ const TABS: { id: Tab; label: string; icon: typeof Bot; caption: string }[] = [
  *
  * What that costs, stated because it is not obvious: `markdown.mjs` drops a
  * `hidden` element, so the route's `.md` twin carries the **console** session
- * and not the agent one. That is the right trade rather than a regression — the
+ * and not the agent one. That is the right trade rather than a regression: the
  * twin is what an agent reads, and an agent does not need a scripted demo of
  * itself, while the substance of the agent path is in the sections below, all of
  * which the twin carries in full. Swapping the default would only move the hole.
@@ -65,7 +65,7 @@ export function HeroSessions() {
             className={cn(
               "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-colors sm:text-sm",
               tab === t.id
-                ? "bg-[#ff6347]/15 text-[#ffb08a] shadow-sm"
+                ? "bg-[#7c3aed]/15 text-[#ddd6fe] shadow-sm"
                 : "text-[#a89189] hover:bg-white/5 hover:text-[#f6ece8]"
             )}
           >

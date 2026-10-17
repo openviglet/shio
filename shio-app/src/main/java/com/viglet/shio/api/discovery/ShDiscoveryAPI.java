@@ -23,7 +23,7 @@ public class ShDiscoveryAPI {
 
     @GetMapping
     public ShAPIBean info() {
-        shAPIBean.setProduct("Viglet Shio CMS");
+        shAPIBean.setProduct("Viglet Shio");
         shAPIBean.setKeycloak(shAppProperties.isKeycloak());
         shAPIBean.setMultiTenant(shAppProperties.isMultiTenant());
         return shAPIBean;

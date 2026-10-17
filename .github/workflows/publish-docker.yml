@@ -1,4 +1,4 @@
-# Builds the Viglet Shio CMS Docker image from the root Dockerfile and pushes
+# Builds the Viglet Shio Docker image from the root Dockerfile and pushes
 # it to the GitHub Container Registry (ghcr.io). The Dockerfile is multi-stage
 # and self-contained (it clones + builds the source itself), so this workflow
 # only needs Docker Buildx — no JDK/Maven setup. For more information see:

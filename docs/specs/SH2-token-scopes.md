@@ -1,9 +1,9 @@
-# SH2 — API-token scopes + per-site keys — implementable spec
+# SH2: API-token scopes + per-site keys, implementable spec
 
 > Roadmap: [ROADMAP.md](../ROADMAP.md) Block A · Design: [IMPROVEMENTS.md](../IMPROVEMENTS.md) §I.2
 > Status: 📋 designed · deps: SH1 (shipped)
 
-## 1. Context — what already exists (do not rebuild)
+## 1. Context: what already exists (do not rebuild)
 
 - **Token auth is shipped (SH1).** [ShApiTokenFilter](../../shio-app/src/main/java/com/viglet/shio/spring/security/auth/ShApiTokenFilter.java) reads a `Key` header, looks up [ShApiToken](../../shio-app/src/main/java/com/viglet/shio/persistence/model/token/ShApiToken.java), **rejects any non-GET** with 403, and grants `ROLE_CDA` + `ROLE_USER` for *every* path the request happens to hit.
 - **The CDA read surface is shipped (SH1).** [ShCdaService](../../shio-app/src/main/java/com/viglet/shio/api/cda/ShCdaService.java) pins every read to `PUBLISHED`. SH1 §6 already committed to the forward shape: *"`siteId` is a first-class query param ... SH2 per-site key scoping filters at the service boundary without URL changes."*
@@ -41,7 +41,7 @@ private ShApiTokenScope scope = ShApiTokenScope.READ;
 @Column(name = "site_id")
 private Set<String> siteIds = new HashSet<>();
 ```
-`EAGER` because the filter reads `siteIds` outside any open session. `ddl-auto=update` creates the `scope` column and `api_token_site` table automatically — no migration. Existing rows get `scope = NULL`; the filter/service treat `null` scope as `READ` and `null/empty siteIds` as unrestricted, so pre-SH2 tokens keep working unchanged.
+`EAGER` because the filter reads `siteIds` outside any open session. `ddl-auto=update` creates the `scope` column and `api_token_site` table automatically, no migration. Existing rows get `scope = NULL`; the filter/service treat `null` scope as `READ` and `null/empty siteIds` as unrestricted, so pre-SH2 tokens keep working unchanged.
 
 ## 4. Security context carrier
 
@@ -79,7 +79,7 @@ Add `private boolean siteAllowed(String siteId)` = `ShApiTokenContext.current().
 | `getPostByUrl(siteId,url)` | `siteAllowed(siteId)` else `Optional.empty()` |
 | `query(...)` | resolve effective site (folder's or `siteId`); disallowed → empty listing |
 
-Disallowed always collapses to the existing `404`/empty path — a per-site key cannot tell "wrong site" from "missing", which is the correct public behaviour.
+Disallowed always collapses to the existing `404`/empty path, a per-site key cannot tell "wrong site" from "missing", which is the correct public behaviour.
 
 ## 7. CRUD + UI
 
@@ -90,7 +90,7 @@ Disallowed always collapses to the existing `404`/empty path — a per-site key 
 
 1. A `READ` token with `siteIds = {A}` gets `200` for site `A` reads and `404` for any site-`B` read (`getSite`, `getPost`, `by-url`, `query`, `list`, `path`).
 2. The same token's `listSites()` returns only `A`.
-3. A token with empty `siteIds` reads every site (unrestricted) — SH1 behaviour preserved.
+3. A token with empty `siteIds` reads every site (unrestricted), SH1 behaviour preserved.
 4. A `READ`/`PREVIEW` token doing a non-GET to `/cda/**` → `403`; a `WRITE` token is not method-gated.
 5. A `Key` header on a non-`/cda` path does **not** authenticate the request (→ `401`/`403`, never `200`).
 6. A `PREVIEW` token carries `ROLE_CDA_PREVIEW`; a `WRITE` token carries `ROLE_CDA_WRITE`.
@@ -98,8 +98,8 @@ Disallowed always collapses to the existing `404`/empty path — a per-site key 
 
 ## 9. Tests
 
-- `ShApiTokenScopeTest` — filter-level: confinement (crit 5), method gate per scope (crit 4), authorities per scope (crit 6).
-- Extend `ShCdaAPITest` (or `ShCdaScopeTest`) — seed two sites; assert per-site allow-list (crit 1–3) by setting a `ShApiTokenContext` in the `SecurityContextHolder` around the service/MockMvc call.
+- `ShApiTokenScopeTest`: filter-level: confinement (crit 5), method gate per scope (crit 4), authorities per scope (crit 6).
+- Extend `ShCdaAPITest` (or `ShCdaScopeTest`), seed two sites; assert per-site allow-list (crit 1–3) by setting a `ShApiTokenContext` in the `SecurityContextHolder` around the service/MockMvc call.
 
 ## 10. Estimate
 

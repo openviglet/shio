@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 // Lightweight, dependency-free, SSR-safe syntax highlight. A deterministic
 // string → token mapping, so the prerendered markup and the client hydration
-// match exactly (no shiki / react-syntax-highlighter — this site stays
+// match exactly (no shiki / react-syntax-highlighter; this site stays
 // dependency-light on purpose). It covers the few languages used in the
 // snippets here: bash, json, yaml, tsx, and front-mattered Markdown.
 //
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 // `#` covers bash and YAML.
 //
 // Two bounds on the string class, both from real output on this site. A single
-// quote is only an opening quote when it does NOT follow a word character —
+// quote is only an opening quote when it does NOT follow a word character;
 // otherwise the apostrophe in "the source's appearance" opens a string that
 // runs to the next apostrophe several lines down, and a paragraph of prose in a
 // terminal snippet renders as one green literal. And neither quote may span a
@@ -22,11 +22,11 @@ const SYNTAX_RE =
 
 // index 0..3 mirrors the regex capture groups: comment, string, keyword, number.
 const TOKEN_CLASS = [
-  // A comment is dim by convention, but not below ~5:1 on #17100e — half the
+  // A comment is dim by convention, but not below ~5:1 on #17100e: half the
   // snippets on this page put the explanation *in* the comment.
   "text-[#a89189] italic",
   "text-[#7dd3a0]",
-  "text-[#ffb08a]",
+  "text-[#ddd6fe]",
   "text-[#f5c46b]",
 ];
 
@@ -76,7 +76,7 @@ export function CodeBlock({
       {caption && (
         <figcaption className="flex items-center gap-2 border-b border-white/10 px-4 py-2 font-mono text-xs font-semibold text-[#b39c94]">
           <span className="flex gap-1.5" aria-hidden>
-            <span className="size-2 rounded-full bg-[#ff6347]/70" />
+            <span className="size-2 rounded-full bg-[#7c3aed]/70" />
             <span className="size-2 rounded-full bg-[#f5c46b]/70" />
             <span className="size-2 rounded-full bg-[#7dd3a0]/70" />
           </span>

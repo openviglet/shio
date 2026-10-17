@@ -10,7 +10,7 @@
     </parent>
     <artifactId>shio-app</artifactId>
     <version>${revision}</version>
-    <name>Shio CMS Application</name>
+    <name>Viglet Shio Application</name>
     <url>https://github.com/openshio/shio</url>
     <packaging>jar</packaging>
     <properties>

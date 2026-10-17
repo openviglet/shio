@@ -6,8 +6,8 @@ import { Container, Eyebrow } from "@/components/brand";
  *
  * It exists so a sub-page is recognisably the same site without repeating the
  * landing hero's weight: same surface, same grid, one orb instead of two, and
- * no room for a demo. `children` is for the one artefact the page leads with —
- * a command to copy, a pair of buttons — and most pages pass nothing.
+ * no room for a demo. `children` is for the one artefact the page leads with
+ * (a command to copy, a pair of buttons), and most pages pass nothing.
  */
 export function PageHero({
   eyebrow,
@@ -26,7 +26,7 @@ export function PageHero({
       className="relative isolate overflow-hidden bg-[#150e0c] py-16 text-[#f6ece8] sm:py-20"
     >
       <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-      <div className="animate-orb-a pointer-events-none absolute -top-40 left-1/3 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#ff6347,transparent_70%)] opacity-40 blur-[70px]" />
+      <div className="animate-orb-a pointer-events-none absolute -top-40 left-1/3 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-40 blur-[70px]" />
 
       <Container className="max-w-3xl">
         <Eyebrow>{eyebrow}</Eyebrow>

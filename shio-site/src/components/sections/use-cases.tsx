@@ -10,7 +10,7 @@ const PATH_LABEL: Record<string, string> = Object.fromEntries(
  *
  * The tags are read out of `PATHS` rather than written again here, so a path
  * that is renamed cannot leave a scenario labelled with a name that no longer
- * exists — the same rule the rest of this site's copy is held to, applied to the
+ * exists. It is the same rule the rest of this site's copy is held to, applied to the
  * one place where two lists could silently disagree.
  */
 export function UseCases() {

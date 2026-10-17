@@ -32,7 +32,7 @@ eleven routes that is 80 KB of Markdown against 597 KB of HTML.
   Sanity, Strapi and WordPress, plus where each of them wins
 - [/replicate](https://shio.viglet.org/replicate/): capture an existing site with shio clone,
   the fidelity-versus-authorable decision, and the bounds the crawl keeps
-- [/curator](https://shio.viglet.org/curator/): the curator's half - the review queue, preview
+- [/curator](https://shio.viglet.org/curator/): the curator's half: the review queue, preview
   links, inline editing, and the six gates that stop an agent write
 - [/features/agent-gateway](https://shio.viglet.org/features/agent-gateway/): the manifest,
   the context pack, planned batches and teaching errors
@@ -132,4 +132,4 @@ A feature that breaks one is wrong even if it was requested.
 - The design laws: https://github.com/openviglet/shio/blob/HEAD/agents.md
 - The concept spec: https://github.com/openviglet/shio/blob/HEAD/docs/specs/SH74-agent-native-cms.md
 - Roadmap: https://github.com/openviglet/shio/blob/HEAD/docs/ROADMAP.md
-- Sibling product, enterprise search: https://turing.viglet.org
+- Viglet Turing, the sibling enterprise search product: https://turing.viglet.org

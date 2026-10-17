@@ -1,6 +1,6 @@
 {
   "login.welcomeBack": "Bem-vindo de volta",
-  "login.signInDescription": "Entre na sua conta do Shio CMS",
+  "login.signInDescription": "Entre na sua conta do Viglet Shio",
   "login.username": "Usuário",
   "login.password": "Senha",
   "login.enterUsername": "Digite seu usuário",
@@ -18,7 +18,7 @@
   "login.settingsExplosion": "Explosão",
   "login.settingsTokens": "Formulas",
   "login.settingsLanguage": "Idioma",
-  "setup.title": "Bem-vindo ao Shio CMS",
+  "setup.title": "Bem-vindo ao Viglet Shio",
   "setup.description": "Configure a senha do administrador para começar.",
   "setup.hint": "Configuração inicial",
   "setup.hintDescription": "Crie uma senha segura para a conta admin. Você pode alterá-la depois nas configurações.",

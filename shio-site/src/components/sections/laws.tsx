@@ -21,9 +21,9 @@ export function Laws() {
             <span className="text-gradient">wrong even if requested</span>.
           </h2>
           <p className="mt-3 text-base leading-relaxed text-[#c9b6ae] sm:text-lg">
-            They are not marketing copy. They are checked into the repository as the
-            rule every contributor and every agent works under, and each one below
-            has a section on this page that shows it rather than claims it.
+            They are checked into the repository as the rule every contributor and
+            every agent works under, and each one below has a section on this page
+            that shows it at work.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-[#a89189]">
             They govern how the product is <em>built</em>: what a feature must
@@ -40,16 +40,16 @@ export function Laws() {
               <li key={law.id}>
                 <Wrapper
                   {...(law.anchor ? { href: law.anchor } : {})}
-                  className="group flex h-full gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-[#ff6347]/40 hover:bg-white/[0.06]"
+                  className="group flex h-full gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-[#7c3aed]/40 hover:bg-white/[0.06]"
                 >
-                  <span className="mt-0.5 shrink-0 self-start rounded-lg border border-[#ff6347]/35 bg-[#ff6347]/12 px-2 py-1 font-mono text-sm font-black text-[#ff9478]">
+                  <span className="mt-0.5 shrink-0 self-start rounded-lg border border-[#7c3aed]/35 bg-[#7c3aed]/12 px-2 py-1 font-mono text-sm font-black text-[#c4b5fd]">
                     {law.id}
                   </span>
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5 font-bold">
                       {law.title}
                       {law.anchor && (
-                        <ArrowUpRight className="size-3.5 shrink-0 text-[#8d7b74] transition-colors group-hover:text-[#ff9478]" />
+                        <ArrowUpRight className="size-3.5 shrink-0 text-[#8d7b74] transition-colors group-hover:text-[#c4b5fd]" />
                       )}
                     </span>
                     <span className="mt-1 block text-sm leading-relaxed text-[#a89189]">

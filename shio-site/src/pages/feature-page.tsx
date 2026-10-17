@@ -10,7 +10,7 @@ import { LINKS } from "@/lib/site-content";
 import type { FeatureDetail } from "@/lib/feature-content";
 
 /**
- * SH539 — one component, one record per pillar, one prerendered route each.
+ * SH539: one component, one record per pillar, one prerendered route each.
  *
  * The blocks alternate their code sample left and right rather than stacking in
  * one column: these pages are read top to bottom by somebody deciding, and a

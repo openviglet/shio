@@ -4,7 +4,7 @@
  *
  * Licensed under the Apache License, Version 2.0.
  *
- * shio — the Shio CMS command-line interface (SH16). The "JS dev, zero Java"
+ * shio — the Viglet Shio command-line interface (SH16). The "JS dev, zero Java"
  * workflow: scaffold a site, generate types, and manage the content model as
  * code (post-types pull/push).
  *

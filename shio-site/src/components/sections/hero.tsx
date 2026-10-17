@@ -14,7 +14,7 @@ export function Hero() {
   return (
     <section id="top" className="relative isolate overflow-hidden bg-[#150e0c] text-[#f6ece8]">
       <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-      <div className="animate-orb-a pointer-events-none absolute -top-44 -left-20 -z-10 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,#ff6347,transparent_70%)] opacity-45 blur-[70px]" />
+      <div className="animate-orb-a pointer-events-none absolute -top-44 -left-20 -z-10 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-45 blur-[70px]" />
       <div className="animate-orb-b pointer-events-none absolute -top-28 -right-24 -z-10 h-[460px] w-[460px] rounded-full bg-[radial-gradient(circle,#f59e0b,transparent_70%)] opacity-35 blur-[70px]" />
 
       <Container className="grid grid-cols-1 items-center gap-12 py-20 lg:grid-cols-[1.02fr_0.98fr] lg:py-28">
@@ -36,7 +36,7 @@ export function Hero() {
             drafts, previews and publish button behind every one of them.
           </p>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#a89189]">
-            The agent path is what makes Shio unusual, not what makes it usable. Never
+            The agent path is what makes Viglet Shio unusual, not what makes it usable. Never
             attach one and nothing is withheld: it is an ordinary headless CMS, and it
             hosts no model, no prompts and no provider keys.
           </p>

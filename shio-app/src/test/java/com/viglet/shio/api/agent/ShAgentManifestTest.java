@@ -41,7 +41,7 @@ class ShAgentManifestTest {
     void manifestIdentifiesTheInstanceAndTheProtocol() {
         ShAgentManifest manifest = shAgentManifestService.manifest();
 
-        assertThat(manifest.product()).isEqualTo("Viglet Shio CMS");
+        assertThat(manifest.product()).isEqualTo("Viglet Shio");
         assertThat(manifest.version()).isNotBlank();
         assertThat(manifest.protocol()).isEqualTo(ShAgentManifestService.PROTOCOL);
         assertThat(manifest.apiBase()).isEqualTo("/api/v2");

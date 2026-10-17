@@ -17,12 +17,12 @@ import {
 } from "@/lib/site-content";
 
 /**
- * SH532 — the product's first five minutes, which until now lived only in a
+ * SH532: the product's first five minutes, which until now lived only in a
  * repository file nobody browsing a site will open.
  *
  * The order is the order it happens in: install, what that bought you, the
  * three calls a session actually opens with, the credential it runs on, the
- * rules that are expensive to learn by making the mistake — and last the two
+ * rules that are expensive to learn by making the mistake, and last the two
  * boundaries, because "what is Shio NOT going to do" is the question a reader
  * of an agent-native CMS is holding the whole way down.
  */
@@ -41,10 +41,10 @@ export function ClaudeCodePage() {
           }
           lead={
             <>
-              Shio is built to be operated by a coding agent, so the distance between
-              running an instance and having the agent do something is the number
-              that matters. It is one install and three calls, and the first
-              call is the instance telling the agent what it can do.
+              Viglet Shio builds every capability for the agent surface first, so
+              getting from a running instance to an agent doing work is one install
+              and three calls, and the first call is the instance telling the agent
+              what it can do.
             </>
           }
         >
@@ -104,7 +104,7 @@ export function ClaudeCodePage() {
                 </h3>
                 <CodeBlock caption="any MCP client" code={BRIDGE_INSTALL} />
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  Same server, no marketplace. You get the eleven tools and six
+                  Same server, no marketplace. You get the twelve tools and six
                   resources and none of the skills or commands, which is the
                   right trade if you are wiring Shio into something that is not
                   Claude Code.
@@ -120,7 +120,7 @@ export function ClaudeCodePage() {
             <SectionHeader
               eyebrow="Step two"
               title="A session that starts already knowing Shio"
-              description="Instead of spending its first ten calls discovering the instance. The skills load when the work calls for them rather than on every turn: a schema you pay for each turn is a schema you pay for whether you use it or not."
+              description="The skills load when the work calls for them rather than on every turn: a schema you pay for each turn is a schema you pay for whether you use it or not."
             />
 
             <div className="grid gap-5 md:grid-cols-3 [&>*]:min-w-0">
@@ -173,7 +173,7 @@ export function ClaudeCodePage() {
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-muted-foreground">{c.step}</p>
-                    <pre className="mt-2 overflow-x-auto rounded-lg bg-[#17100e] px-3 py-2.5 font-mono text-[0.75rem] leading-relaxed text-[#ffb08a]">
+                    <pre className="mt-2 overflow-x-auto rounded-lg bg-[#17100e] px-3 py-2.5 font-mono text-[0.75rem] leading-relaxed text-[#ddd6fe]">
                       <code>{c.call}</code>
                     </pre>
                     <p className="mt-3 text-sm leading-relaxed">{c.gets}</p>

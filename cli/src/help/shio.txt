@@ -1,4 +1,4 @@
-shio — the Shio CMS CLI
+shio — the Viglet Shio CLI
 
 Usage:
   shio <command> [options]

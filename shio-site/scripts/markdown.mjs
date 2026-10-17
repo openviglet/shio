@@ -1,9 +1,9 @@
-// SH537 — the Markdown twin of a prerendered page.
+// SH537: the Markdown twin of a prerendered page.
 //
 // ## Why this converts HTML rather than rendering from the content data
 //
-// The copy lives in `src/lib/*-content.ts` as data, but the *composition* — which
-// sections, in what order, under what heading — lives in the JSX. Generating
+// The copy lives in `src/lib/*-content.ts` as data, but the *composition* (which
+// sections, in what order, under what heading) lives in the JSX. Generating
 // Markdown from the data alone would mean re-declaring that composition here,
 // which is a second hand-maintained copy of the page, and the divergence always
 // lands in the version nobody reads. So the source stays singular and only the
@@ -42,7 +42,7 @@ const BLOCK = new Set([
 
 const ENTITIES = {
   amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", apos: "'", nbsp: " ",
-  mdash: "—", ndash: "–", rsquo: "’", lsquo: "‘",
+  mdash: "\u2014", ndash: "–", rsquo: "’", lsquo: "‘",
   ldquo: "“", rdquo: "”", hellip: "…", middot: "·",
   rarr: "→", times: "×", copy: "©",
 };
@@ -64,7 +64,7 @@ export function decodeEntities(text) {
  * A scanner rather than a general parser, and the same rule the CLI's tag reader
  * is written under: one linear pass, quote-aware inside a tag, no repeated group
  * that could backtrack. The input is this site's own SSR output, so the strictness
- * it can assume is real — but an unbalanced close tag still unwinds to the nearest
+ * it can assume is real, but an unbalanced close tag still unwinds to the nearest
  * matching open instead of throwing.
  */
 export function parseHtml(html) {
@@ -300,7 +300,7 @@ function writeBlocks(node, out, depth) {
 
 const isBlock = (n) => n.tag !== undefined && (BLOCK.has(n.tag) || DROP.has(n.tag));
 
-/** Text with no entity-decoding surprises and no inline markers — for `<pre>`. */
+/** Text with no entity-decoding surprises and no inline markers, for `<pre>`. */
 function rawText(node) {
   if (node.text !== undefined) return node.text;
   if (skipped(node)) return "";
@@ -312,8 +312,8 @@ function rawText(node) {
  *
  * A code block on this site comes in two markups. `CodeBlock` puts one string
  * with real newlines inside `<code>`, and concatenating its children is right.
- * The session panels instead emit one `<span class="block">` per line — because
- * each line is coloured independently — and those spans carry no newline at
+ * The session panels instead emit one `<span class="block">` per line (because
+ * each line is coloured independently), and those spans carry no newline at
  * all: concatenating them ran a six-line file tree into one unreadable line in
  * the Markdown twin, which is the failure this whole converter exists to avoid.
  *
@@ -342,7 +342,7 @@ function preText(node) {
  * Render one page's `<main>` to Markdown.
  *
  * `title` and `description` come from the prerender's route table, so the twin
- * carries the same metadata the HTML `<head>` does — an agent that fetches only
+ * carries the same metadata the HTML `<head>` does: an agent that fetches only
  * this file still learns what the page is.
  */
 export function pageToMarkdown(html, { title, description, canonical }) {
@@ -350,7 +350,7 @@ export function pageToMarkdown(html, { title, description, canonical }) {
   const out = [];
   if (main) writeBlocks(main, out, 0);
 
-  // Blocks are separated by a blank line, except within a list or a table —
+  // Blocks are separated by a blank line, except within a list or a table,
   // where a blank line between the rows breaks them into separate lists and
   // stops the table being a table at all.
   const tight = (line) => /^\s*- /.test(line) || line.startsWith("| ");

@@ -118,7 +118,7 @@ public class ShAgentManifestService {
 
     public ShAgentManifest manifest() {
         return new ShAgentManifest(
-                "Viglet Shio CMS",
+                "Viglet Shio",
                 version(),
                 PROTOCOL,
                 API_BASE,

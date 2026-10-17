@@ -60,10 +60,10 @@ const {
 /** The boot loader's own script, from the plugin, configured exactly as vite.config.ts does. */
 async function bootScript() {
   const plugin = vigletBootLoader({
-    title: "Viglet Shio CMS",
-    subtitle: "Content Management System",
-    color: "#FF6347",
-    colorDark: "#e0341b",
+    title: "Viglet Shio",
+    subtitle: "Headless CMS",
+    color: "#7C3AED",
+    colorDark: "#6D28D9",
     prefix: "shio",
     storageKey: STORAGE_KEY,
     testFlag: "__SHIO_LOADING_TEST__",

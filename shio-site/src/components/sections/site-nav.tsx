@@ -12,7 +12,7 @@ import { Container, Logo } from "@/components/brand";
 import { LINKS } from "@/lib/site-content";
 import { cn } from "@/lib/utils";
 
-// Hrefs are root-anchored ("/#…") so they keep working from any future page —
+// Hrefs are root-anchored ("/#…") so they keep working from any future page:
 // the browser navigates home and scrolls to the section.
 const NAV_LINKS = [{ label: "Docs", href: LINKS.docs }];
 
@@ -20,7 +20,7 @@ const NAV_LINKS = [{ label: "Docs", href: LINKS.docs }];
  * The groups are the four ways in, plus the pages that are about the product
  * rather than about a path. They used to be "for the agent" and "for the
  * curator", which sorted two thirds of the site under a role most visitors do
- * not have yet — and put the console, the thing a first-time reader is looking
+ * not have yet, and put the console, the thing a first-time reader is looking
  * for, in the same drawer as a page about what stops an agent write.
  */
 const NAV_GROUPS = [

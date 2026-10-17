@@ -1,6 +1,6 @@
 /*
  * ─────────────────────────────────────────────────────────────────────────────
- * SH539 — the depth page behind each pillar on the landing page.
+ * SH539: the depth page behind each pillar on the landing page.
  *
  * What these are for is the *mechanism*, at the level a reader deciding needs
  * it and no deeper: the actual call, the actual file on disk, the actual error
@@ -9,7 +9,7 @@
  * wrong link to hand a reader who has not chosen the product yet.
  *
  * One record drives one prerendered route each, so adding a pillar is an entry
- * here plus a row in `entry-server.tsx` — and `routesAreDeclared()` fails the
+ * here plus a row in `entry-server.tsx`, and `routesAreDeclared()` fails the
  * build if you write only one of them.
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -48,8 +48,8 @@ const AGENT_GATEWAY: FeatureDetail = {
   lead: "Everything here is a shape over the delivery API and the console services, never a parallel semantic. What makes it a gateway rather than a second API is that it answers the questions a browser never has to ask: what can you do, what is here, and what did I just get wrong.",
   blocks: [
     {
-      title: "The manifest answers first, and answers honestly",
-      body: "A capability that has not shipped is reported false rather than omitted, because an absent flag sends a caller probing, which is the exact cost the manifest exists to remove. And where a capability genuinely lives somewhere else, an elsewhere map names the command instead: reporting false for a screenshot reads as not possible, when the truth is possible, from the CLI.",
+      title: "The manifest answers first, including about what has not shipped",
+      body: "A capability that has not shipped is reported false rather than omitted, because an absent flag sends a caller probing, which is the exact cost the manifest exists to remove. And where a capability lives somewhere else, an elsewhere map names the command instead: reporting false for a screenshot reads as not possible, when the truth is possible, from the CLI.",
       code: {
         caption: "the cheapest read on the surface",
         text: `GET /api/v2/agent/manifest?include=features,limits
@@ -199,7 +199,7 @@ const RENDERING: FeatureDetail = {
   eyebrow: "Rendering and themes",
   title: "A site can exist before",
   titleAccent: "a front end does",
-  lead: "The built-in renderer is not a competitor to your Next.js app: it is what makes a draft previewable, an agent's work checkable and a replica servable on the day it is captured. A page resolves through a layout and its regions to sections from a vocabulary the agent, the console and the front end all share.",
+  lead: "The built-in renderer is what makes a draft previewable, an agent's work checkable and a replica servable on the day it is captured, whether or not a Next.js app of your own sits in front. A page resolves through a layout and its regions to sections from a vocabulary the agent, the console and the front end all share.",
   blocks: [
     {
       title: "One vocabulary, three consumers",
@@ -228,7 +228,7 @@ const RENDERING: FeatureDetail = {
     },
     {
       title: "A capture reads tokens too, and says which ones are real",
-      body: "Replication runs the argument backwards: a source's stylesheet contains its palette, its type scale and its spacing rhythm, so a conversion that concatenates the file into CSS throws all of it away and the replica looks right but cannot be changed. Eight groups are read (colour, font family, font size, font weight, spacing, radius, border width and shadow), and the report distinguishes two kinds honestly. A declared custom property is the strong case: the source's own CSS already says var(), so changing the token changes the replica. A recurring literal is weaker: writing #0b5 twenty-three times is the accent colour, and naming it is how a curator learns the palette exists, but nothing references the name until somebody rewires the CSS.",
+      body: "Replication runs the argument backwards: a source's stylesheet contains its palette, its type scale and its spacing rhythm, so a conversion that concatenates the file into CSS throws all of it away and the replica looks right but cannot be changed. Eight groups are read (colour, font family, font size, font weight, spacing, radius, border width and shadow), and the report tells two kinds apart. A declared custom property is the strong case: the source's own CSS already says var(), so changing the token changes the replica. A recurring literal is weaker: writing #0b5 twenty-three times is the accent colour, and naming it is how a curator learns the palette exists, but nothing references the name until somebody rewires the CSS.",
       law: "P9",
     },
     {

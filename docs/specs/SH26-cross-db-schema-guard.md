@@ -1,8 +1,8 @@
-# SH26 — Cross-DB schema-drift guard — implementable spec
+# SH26: Cross-DB schema-drift guard, implementable spec
 
-> Roadmap: [ROADMAP.md](../ROADMAP.md) Block C · Status: ✅ shipped · deps: —
+> Roadmap: [ROADMAP.md](../ROADMAP.md) Block C · Status: ✅ shipped · deps:,
 
-## 1. Context — what already existed (do not rebuild)
+## 1. Context: what already existed (do not rebuild)
 
 - The schema is **Liquibase-managed** (`ddl-auto=none`): a generated baseline
   (`db/changelog/v2026.2_baseline.yaml`) + incremental files wired through
@@ -12,7 +12,7 @@
 - Both the MariaDB and PostgreSQL JDBC drivers ship in `shio-app/pom.xml`.
 
 **The gap SH26 closes:** the lint is only a *textual* guard. The changelogs were
-**never actually applied** on MariaDB / PostgreSQL — dev and the whole test suite
+**never actually applied** on MariaDB / PostgreSQL, dev and the whole test suite
 run on H2 only (tests even skip Liquibase, building the schema from entity
 metadata via `create-drop`). Two real, latent drift problems were hiding behind
 that gap, plus a silent backfill bug.
@@ -28,7 +28,7 @@ that gap, plus a silent backfill bug.
 - The `ShTenantBackfillRunner.TENANT_TABLES` fix.
 
 **Out of scope**
-- A schema redesign (no rename to snake_case, no entity `@Table` churn) — the
+- A schema redesign (no rename to snake_case, no entity `@Table` churn), the
   existing PascalCase names are preserved on every engine via quoting.
 - Backward compatibility with already-deployed databases (not required).
 
@@ -37,7 +37,7 @@ that gap, plus a silent backfill bug.
 ### 3.1 Inline `ENUM(...)` is not PostgreSQL-portable
 The generated baseline emitted `state ENUM('DRAFT','PUBLISHED')` on
 `sh_post_unified`. H2/MySQL/MariaDB accept inline enum types; **PostgreSQL
-rejects them** (`type "enum" does not exist` — PG enums need `CREATE TYPE`). The
+rejects them** (`type "enum" does not exist`, PG enums need `CREATE TYPE`). The
 entity maps the column `@Enumerated(STRING) @Column(length = 16)`, so the
 DB-agnostic equivalent is `VARCHAR(16)` (reads back identically everywhere).
 - Baseline changeset `…-39`: `ENUM('DRAFT','PUBLISHED')` → `VARCHAR(16)`, with
@@ -46,10 +46,10 @@ DB-agnostic equivalent is `VARCHAR(16)` (reads back identically everywhere).
 - `ShLiquibaseChangelogAgnosticTest`: `ENUM(` added to the forbidden tokens so it
   can't be reintroduced. `agents.md` updated (ENUM is **no longer** "allowed").
 
-### 3.2 Identifier casing — Hibernate-quoted vs Liquibase-unquoted
+### 3.2 Identifier casing: Hibernate-quoted vs Liquibase-unquoted
 Shio's tables are **PascalCase** entity names with no `@Table` (`ShPostType`,
 `ShObject`, …) and Hibernate runs with `globally_quoted_identifiers=true`, so it
-references them **quoted** (`"ShPostType"`, `"TENANT_ID"`, `"DTYPE"` — case
+references them **quoted** (`"ShPostType"`, `"TENANT_ID"`, `"DTYPE"`, case
 preserved). Liquibase created them **unquoted**, which **PostgreSQL folds to
 lower-case** (`shposttype`) → Hibernate's `"ShPostType"` never matches → context
 fails to boot. (H2 with `CASE_INSENSITIVE_IDENTIFIERS=true` and MariaDB with
@@ -57,11 +57,11 @@ case-insensitive columns + case-preserving table names both tolerated it, which
 is why the bug stayed hidden.)
 
 **Fix:** each changelog file declares `objectQuotingStrategy: QUOTE_ALL_OBJECTS`,
-so Liquibase preserves the exact case on every engine — matching Hibernate's
+so Liquibase preserves the exact case on every engine, matching Hibernate's
 quoted references. It is set at the **changelog level** (a `databaseChangeLog`
 list entry, not a `changeSet` attribute) so it doesn't alter any changeset's
 checksum, and is repeated in every file because it does **not** propagate through
-`include`. Turning `globally_quoted_identifiers` *off* is **not** the fix — it
+`include`. Turning `globally_quoted_identifiers` *off* is **not** the fix, it
 re-activates the camelCase→snake_case physical naming strategy (`sh_post_type`),
 which the PascalCase baseline doesn't match.
 
@@ -100,7 +100,7 @@ runs the H2 IT. Run via `mvn verify` (maven-failsafe-plugin, `*IT.java`).
 - **Tests:** `tenant/ShH2SchemaIT.java`, `tenant/ShMariaDbSchemaIT.java`,
   `tenant/ShPostgresSchemaIT.java`, `db/ShLiquibaseChangelogAgnosticTest.java`
   (forbid `ENUM(`).
-- **Build:** `shio-app/pom.xml` — Testcontainers `testcontainers` /
+- **Build:** `shio-app/pom.xml`, Testcontainers `testcontainers` /
   `testcontainers-junit-jupiter` / `testcontainers-mariadb` /
   `testcontainers-postgresql` (test scope; versions from the Spring Boot BOM).
 - **Docs:** `agents.md` (ENUM forbidden + cross-DB IT section).

@@ -1,12 +1,12 @@
 // @scans prose reason: it reads the generated catalogue and the package descriptions it
 // publishes, both as text (SH740).
 //
-// SH676 — the published catalogue is generated, installable, and the same bytes every build.
+// SH676: the published catalogue is generated, installable, and the same bytes every build.
 //
 // ## The one assertion that needed something other than this file
 //
 // A zip writer verified by a reader in the same commit proves the two agree, and nothing else.
-// The archives here exist to be opened by `ShMarketplaceInstaller` — Java's `ZipInputStream` — so
+// The archives here exist to be opened by `ShMarketplaceInstaller` (Java's `ZipInputStream`), so
 // the check that matters is whether an implementation this repository did not write can read them.
 // Python's `zipfile` is that implementation, it is on every machine this project builds on
 // (roadkeep runs on it, CI is ubuntu-latest), and `testzip()` verifies every entry's CRC rather
@@ -37,7 +37,7 @@ function python() {
   }
   assert.fail(
     "SH676: no python with `zipfile` on PATH. This is the only check that reads these archives "
-      + "with an implementation this repository did not write, so it fails rather than skips — "
+      + "with an implementation this repository did not write, so it fails rather than skips: "
       + "the archives exist to be opened by Java's ZipInputStream, and a writer verified only by "
       + "its own reader proves the two agree and nothing more.",
   );
@@ -76,7 +76,7 @@ test("SH676: no entry collides with a package the instance already has", () => {
 test("SH676: the manifest inside the zip names the package as the catalogue does", () => {
   // ShMarketplaceInstaller refuses a package whose manifest.name disagrees with the catalogue id
   // (SH675). Republishing under a prefix therefore has to rewrite the manifest, and forgetting to
-  // would make every published package refuse to install — with a correct error, which is worse,
+  // would make every published package refuse to install, with a correct error, which is worse,
   // because it would read as the installer being broken.
   const runner = python();
   const { items } = build();
@@ -110,17 +110,17 @@ print(len(z.namelist()))
 test("SH676: the same packages produce the same bytes (P5)", () => {
   // The archives are built by the Pages workflow rather than committed, so this is not about diff
   // noise: it is that a package downloaded from shio.viglet.org should be reproducible from the
-  // commit it was built at. Rebuild the tree, get the same bytes — and a mismatch then means
+  // commit it was built at. Rebuild the tree, get the same bytes, and a mismatch then means
   // something other than the packages changed.
   const first = build({ write: false }).digests;
   const second = build({ write: false }).digests;
 
   assert.deepEqual([...second.entries()].sort(), [...first.entries()].sort(),
     "SH676: two builds of the same input disagreed, so something in the archive is not derived "
-      + "from the packages — a timestamp, an ordering, or a path separator");
+      + "from the packages: a timestamp, an ordering, or a path separator");
 });
 
-test("SH676: the writer is not vacuous — a changed byte changes the archive", () => {
+test("SH676: the writer is not vacuous: a changed byte changes the archive", () => {
   const one = zip([{ name: "a.txt", body: "hello" }]);
   const two = zip([{ name: "a.txt", body: "hellO" }]);
   const same = zip([{ name: "a.txt", body: "hello" }]);
@@ -128,7 +128,7 @@ test("SH676: the writer is not vacuous — a changed byte changes the archive", 
   assert.notDeepEqual(one, two, "a different body must produce a different archive");
   assert.deepEqual(one, same, "the same body must produce the same archive");
   assert.equal(one.readUInt32LE(0), 0x04034b50, "the local file header signature");
-  assert.equal(one.readUInt16LE(8), 0, "method 0 — stored, which is what makes this simple");
+  assert.equal(one.readUInt16LE(8), 0, "method 0: stored, which is what makes this simple");
 });
 
 test("SH676: the README is derived from the manifest, not written twice", () => {

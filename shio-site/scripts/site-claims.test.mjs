@@ -1,8 +1,8 @@
 // The site's own claims, asserted beside the scripts that own them (SH567).
 //
 // SH527's reader holds a named DEBT list, and its `shio-site/` group was the cheapest left with the
-// least defensible absence. The note names exactly what is assertable — "the prerender, the token
-// budgets and the copy, each assertable beside the script that owns it" — and this is that, for the
+// least defensible absence. The note names exactly what is assertable ("the prerender, the token
+// budgets and the copy, each assertable beside the script that owns it"), and this is that, for the
 // three of the ten whose failure is genuinely invisible:
 //
 //   SH533  the four token figures are GENERATED, never typed
@@ -11,11 +11,11 @@
 //
 // Second by return-risk in SH527's own ranking, and the reason is worth restating: a marketing
 // claim that has gone false is invisible until somebody reads the page against the product. That is
-// the failure the site's own rule — every claim is about a real surface — exists to prevent, and it
+// the failure the site's own rule (every claim is about a real surface) exists to prevent, and it
 // is the one rule a marketing site cannot self-check.
 //
 // The ids above are named because each is ASSERTED below. The debt reader treats an id appearing in
-// a suite as paid, so naming one this file does not cover is a false payment — which has now
+// a suite as paid, so naming one this file does not cover is a false payment, which has now
 // happened twice, once here and once in a backend test whose assertion message mentioned a task it
 // did not assert. Neither id is repeated in this comment, for that exact reason.
 //
@@ -51,7 +51,7 @@ test("SH533: the token figures are read from the properties file, never typed in
     "and it is written to a generated file the site imports, so nothing is transcribed by hand",
   );
 
-  // A missing key is a build failure rather than a missing bar — asserted because the alternative
+  // A missing key is a build failure rather than a missing bar, asserted because the alternative
   // failure mode is a chart that silently drops one, which reads as a chart.
   assert.match(TOKEN_BUDGETS, /no key '\$\{?key\}?'|no key '/, "a renamed key fails the build");
 });
@@ -74,12 +74,12 @@ test("SH533: the copy re-exports the generated figures rather than restating the
 
 test("SH532: every route is declared in both places, because the build enforces it", () => {
   // `routesAreDeclared()` throws at import
-  // time when `ROUTES` in App.tsx and the `routes` table in entry-server.tsx disagree — in either
+  // time when `ROUTES` in App.tsx and the `routes` table in entry-server.tsx disagree, in either
   // direction, which is what stops a page existing with no title or a title with no page.
   assert.match(ENTRY_SERVER, /routesAreDeclared/, "the guard exists");
   assert.match(APP, /ROUTES/, "and App.tsx is the other half of the pair it compares");
 
-  // The table is an array of `{ path, title, description }`, not a keyed object — the first
+  // The table is an array of `{ path, title, description }`, not a keyed object; the first
   // version of this read it as keys, found none, and would have passed vacuously the moment the
   // count assertion below was relaxed.
   const declared = [...ENTRY_SERVER.matchAll(/path:\s*"(\/[a-z0-9/-]*)"/g)].map(([, path]) => path);
@@ -90,7 +90,7 @@ test("SH532: every route is declared in both places, because the build enforces 
   for (const path of declared) {
     assert.ok(
       APP.includes(`"${path}"`),
-      `${path} is prerendered and is not in ROUTES — the two lists are one list, and a route in `
+      `${path} is prerendered and is not in ROUTES: the two lists are one list, and a route in `
         + "only one of them is a page nobody can reach or a title nobody sees",
     );
   }
@@ -100,7 +100,7 @@ test("SH532: every route is declared in both places, because the build enforces 
  * The positioning claim, which is the one this site got wrong for longer than any
  * factual one and could not see: every sentence on the page was true of the agent
  * path, and the composition of them said the product cannot be used without an
- * agent. Nothing here can check tone — but it can check that the structures the
+ * agent. Nothing here can check tone, but it can check that the structures the
  * correction rests on are still present, which is the difference between a fix and
  * a fix that survives the next edit.
  */
@@ -115,7 +115,7 @@ test("the four ways in are declared, and the console is the first of them", () =
   assert.deepEqual(
     ids,
     ["console", "agent", "files", "api"],
-    "four doors onto one content engine, console first — the ordering is the argument, "
+    "four doors onto one content engine, console first: the ordering is the argument, "
       + "because a reader decides whether the product is for them in the first screenful",
   );
 
@@ -133,7 +133,7 @@ test("a use case that involves no agent at all is always on the page", () => {
   assert.ok(tagged.length >= 4, `the page shows several deployment shapes; found ${tagged.length}`);
   assert.ok(
     tagged.some((paths) => !paths.includes("agent")),
-    "at least one scenario has to be the team that never attaches an agent — it is the case "
+    "at least one scenario has to be the team that never attaches an agent: it is the case "
       + "the old page argued its own reader out of, and the reason this file exists",
   );
 
@@ -175,7 +175,7 @@ test("the console page names what the console cannot do", () => {
 
 test("SH537: every prerendered route also gets its Markdown twin", () => {
   // SH537's actual claim, which the route test above does not make: each route emits `<path>.md`
-  // beside its HTML, so a reader — or an agent — can fetch the page as text. Asserted on the
+  // beside its HTML, so a reader (or an agent) can fetch the page as text. Asserted on the
   // prerender because that is where the pair is written; a test that only counted routes would
   // have passed while the twins stopped being produced.
   const prerender = read("./prerender.mjs");

@@ -13,7 +13,7 @@ export interface PrerenderRoute {
 /**
  * Every route the build prerenders to its own static HTML file.
  *
- * The paths must be the keys of `ROUTES` in App.tsx — `routesAreDeclared` below
+ * The paths must be the keys of `ROUTES` in App.tsx; `routesAreDeclared` below
  * asserts it at prerender time, because the failure it prevents is silent: a
  * route in this table with no page renders the landing page under another
  * title, and a page missing from it never gets a file at all.
@@ -29,19 +29,19 @@ export const routes: PrerenderRoute[] = [
     path: "/console",
     title: "Shio without an agent: the CMS in the browser | Viglet Shio",
     description:
-      "The traditional path, in full: create a site, build the content model with fifteen field widgets, write pages in a form, upload media, preview and edit on the rendered page, publish or schedule, and manage users, roles and tokens. All in the console. Plus the four things that genuinely live on the command line, and what changes if you attach an agent later.",
+      "The traditional path, in full: create a site, build the content model with fifteen field widgets, write pages in a form, upload media, preview and edit on the rendered page, publish or schedule, and manage users, roles and tokens. All in the console. Plus the four things that live only on the command line, and what changes if you attach an agent later.",
   },
   {
     path: "/claude-code",
     title: "Drive Shio from Claude Code: the plugin, the MCP bridge | Viglet Shio",
     description:
-      "Hand a Shio CMS instance to Claude Code in one command: the plugin (MCP server, skills, slash commands, AGENTS.md fragment) or a bare stdio bridge, the three calls a session opens with, and the AGENT token scope, which writes on the agent surface only and is deliberately not a superset of a write key.",
+      "Hand a Viglet Shio instance to Claude Code in one command: the plugin (MCP server, skills, slash commands, AGENTS.md fragment) or a bare stdio bridge, the three calls a session opens with, and the AGENT token scope, which writes on the agent surface only and is deliberately not a superset of a write key.",
   },
   {
     path: "/compare",
     title: "Shio vs Contentful, Sanity, Strapi and WordPress | Viglet Shio",
     description:
-      "An honest comparison on the axis where headless CMSs actually differ: agent-operability. Eighteen checkable questions grouped by the design law each comes from, plus what Contentful, Sanity, Strapi and WordPress are genuinely better at and when to pick them instead.",
+      "Viglet Shio against other headless CMSs on the axis where they differ: agent-operability. Eighteen checkable questions grouped by the design law each comes from, plus what Contentful, Sanity, Strapi and WordPress do better and when to pick them instead.",
   },
   {
     path: "/replicate",
@@ -53,7 +53,7 @@ export const routes: PrerenderRoute[] = [
     path: "/curator",
     title: "The curator’s half: what stops the agent | Viglet Shio",
     description:
-      "An agent wrote nine pages last night and nobody has seen them yet. The curator half of Shio: the review queue an agent token cannot reach, expiring preview links, inline editing on the rendered page, draft-published diff and restore, reversible deletes, and the six gates that are on by default rather than configurable.",
+      "An agent wrote nine pages last night and nobody has seen them yet. The curator half of Viglet Shio: the review queue an agent token cannot reach, expiring preview links, inline editing on the rendered page, draft-published diff and restore, reversible deletes, and the six gates that are on by default rather than configurable.",
   },
   // The depth pages carry their own metadata, so the record is the single
   // source for the route, the title and the description alike.

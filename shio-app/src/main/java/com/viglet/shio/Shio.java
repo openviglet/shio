@@ -30,7 +30,7 @@ import tools.jackson.databind.JacksonModule;
 import tools.jackson.datatype.hibernate7.Hibernate7Module;
 
 /**
- * Class that can be used to bootstrap and launch a Shio CMS from a Java
+ * Class that can be used to bootstrap and launch a Viglet Shio from a Java
  * main method.
  *
  * @author Alexandre Oliveira

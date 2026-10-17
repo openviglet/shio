@@ -9,7 +9,7 @@
 ripgrep calls a file **binary** when it holds a NUL byte, and then reports that the file matched
 without printing a line. `git grep` and GitHub's code search agree. Measured here: a `Grep` for
 `accentFor` in `cli/src/theme.mjs` answered `binary file matches (found "\0" byte around offset
-49715)` and nothing else, on a 2,000-line JavaScript module — so the cheapest tool P4 names was
+49715)` and nothing else, on a 2,000-line JavaScript module, so the cheapest tool P4 names was
 silent on two of the largest files in the CLI, and an agent cannot grep for an absence.
 
 The cause is an idiom this project uses on purpose and keeps: a composite key joined on a byte that
@@ -17,7 +17,7 @@ cannot occur in the data, so two different pairs can never collide into one (P5)
 writing the byte **raw** rather than as an escape, which is byte-identical at runtime. Six files did;
 SH804 had allow-listed them, having weighed whether the byte was deliberate and not what a raw one
 costs. `control-characters.test.mjs` refuses a raw NUL everywhere now, and a second test asserts the
-property itself — no file the walk reads is binary to a grep.
+property itself, no file the walk reads is binary to a grep.
 
 **The escape differs by language, and that is not a style choice.** Java resolves `\uXXXX` in the
 *lexer*, before tokenizing, so the unicode escape in Java source puts a real NUL in the token stream
@@ -50,7 +50,7 @@ git rm --cached -r . && git reset --hard
 
 That took 308 down to 11, and every one of the 11 is correct: eight `.cmd`/`.bat` pinned on purpose,
 and three `.png` where a `0D 0A` byte pair is a coincidence. Both gates were re-run afterwards, since
-297 files' bytes changed — Java 1927/0, `pnpm test` green — and the same one-character edit then
+297 files' bytes changed (Java 1927/0, `pnpm test` green) and the same one-character edit then
 reported `2 +-`.
 
 ### Optimistic Locking on Startup
@@ -81,7 +81,7 @@ After installing/removing packages (`pnpm add`/`pnpm remove`), clear Vite cache:
 ### Full-text search returns nothing (SH131)
 
 `ShPostUnifiedRepository.FULLTEXT_PREDICATE` needs a pre-lowercased, `%`-wrapped term.
-Call the `search*` **default** methods, which normalize for you — the raw `@Query`
+Call the `search*` **default** methods, which normalize for you, the raw `@Query`
 methods are suffixed `…Like` and take the pattern. Normalizing again before calling a
 `search*` method searches for `%%term%%`, which matches nothing and looks like an empty
 index rather than a bug.
@@ -90,12 +90,12 @@ index rather than a bug.
 `tsc -b` with strict mode flags unused imports as errors (TS6133). When refactoring (e.g., replacing `Checkbox` with `Switch`), always remove unused imports.
 
 ### `Column "..._.TENANT_ID" not found` (or any column) at startup
-Schema drift. The schema is Liquibase-managed (`ddl-auto=none`) — a column referenced by an entity does not exist because no changeset created it. Fix by adding a Liquibase changeset (see **Database Schema** above), not by flipping `ddl-auto` back to `update`. Also confirm the datasource URL still has `DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true` — dropping those reintroduces quoted-vs-unquoted casing mismatches that surface as "column not found".
+Schema drift. The schema is Liquibase-managed (`ddl-auto=none`) (a column referenced by an entity does not exist because no changeset created it. Fix by adding a Liquibase changeset (see **Database Schema** above), not by flipping `ddl-auto` back to `update`. Also confirm the datasource URL still has `DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true`) dropping those reintroduces quoted-vs-unquoted casing mismatches that surface as "column not found".
 
 ### A post or address comes back with no site (SH128 invariant)
 
 **Only a site's root folder carries `shSite`.** `ShFolderWriteService` nulls it on every
-child, so reading `folder.getShSite()` on anything nested silently yields `null` — a
+child, so reading `folder.getShSite()` on anything nested silently yields `null`, a
 site-less post, an address of `folder:null/...`, or a CDA allow-list check that denies
 everything (`allowsSite(null)` is `false` under a token allow-list). Always resolve with
 `ShFolderSite.of(folder)` / `.idOf(folder)`, which walks to the root:
@@ -116,7 +116,7 @@ on or directly above the line.
 **Never navigate past the `id` of an association whose target is an `ShObject`
 subclass** (`ShSite`, `ShFolder`, `ShPostType`). `@TenantId` lives on the JOINED
 `ShObject` **root**, so an implicit association join makes Hibernate emit the tenant
-predicate against the *subclass* table's alias — which has no `tenant_id` column —
+predicate against the *subclass* table's alias, which has no `tenant_id` column,
 and the query dies at prepare time. Cheap and reliable rule:
 
 ```java
@@ -127,8 +127,8 @@ and the query dies at prepare time. Cheap and reliable rule:
 ```
 
 Resolve `id → name` in the service from the entity list you already loaded. The
-id-only form is also faster (no join). This is invisible until runtime — the
-mapping is valid JPQL — so it is a code-review item, not a compile error. Found
+id-only form is also faster (no join). This is invisible until runtime, the
+mapping is valid JPQL, so it is a code-review item, not a compile error. Found
 while building the SH77 context pack; see `ShPostUnifiedRepository`'s note.
 
 
@@ -136,34 +136,34 @@ while building the SH77 context pack; see `ShPostUnifiedRepository`'s note.
 
 **A mutating test must *force* its precondition, never assume the `@BeforeAll` one.**
 `Lifecycle.PER_CLASS` shares one fixture across a class, so a test that writes leaves
-state the next test reads — and the failure is not a red build, it is an assertion
+state the next test reads, and the failure is not a red build, it is an assertion
 that quietly stops asserting anything.
 
 It has happened three times, each found by accident:
 
-- **SH239** — a benchmark pair wrote into the folder another pair measured, so one
+- **SH239**: a benchmark pair wrote into the folder another pair measured, so one
   ratio read 26.2× or 11.8× depending on order.
-- **SH272** — a test asserting "this instance has no templates" was really asserting
+- **SH272**: a test asserting "this instance has no templates" was really asserting
   what ran first.
-- **SH289** — an additive-only assertion survived a mutation that made the code
+- **SH289**: an additive-only assertion survived a mutation that made the code
   overwrite *everything*, because a sibling had already repaired the fixture. It was
   caught only because the fix was verified by mutation rather than by a green run.
 
 The rule in practice is `ShRenderModelReconcileTest.oldRegionWithNoTitleField()`: it
 **re-creates the broken state at the top of every test that needs it** rather than
 building it once. An early version returned when the type already existed, and the
-additive-only test then ran against an already-repaired type — where `reconcile` finds
+additive-only test then ran against an already-repaired type, where `reconcile` finds
 nothing to add and writes nothing, so the assertion passed whatever the code did.
 
 **Two instruments were weighed and rejected, and the reasons are the point.**
 `@TestMethodOrder(Random)` turns a silent order dependence into a *flake*, and SH250's
 rule is that a flake is worse than a break. A lint flagging any `PER_CLASS` class whose
-tests write through a shared service would flag most of the suite — the write is normal,
+tests write through a shared service would flag most of the suite, the write is normal,
 the *vacuous assertion* is the defect, and no scan can tell them apart. Both cost more
 than the defect. What is cheap is the habit, which is why it is written here.
 
 Related and already enforced: `ShBenchmarkIsolationLintTest` covers the other half of
-this hazard — a class reading the whole **instance** from a shared database (SH315,
+this hazard, a class reading the whole **instance** from a shared database (SH315,
 widened by SH318). This entry is about one class sharing its fixture with itself.
 
 ## An I/O failure that would not say why (SH756)
@@ -178,18 +178,18 @@ InstallFailedException: …\shio-marketplace-1005…\shio-blueprint-newsroom
 
 **A `FileSystemException`'s message IS its two paths**, with `": " + reason` appended only when the
 platform supplied one. So a message showing paths alone is a message whose reason was **null**, and
-at that point the exception's *class* is the last remaining fact — `FileAlreadyExistsException` and
+at that point the exception's *class* is the last remaining fact, `FileAlreadyExistsException` and
 `AtomicMoveNotSupportedException` print identically through `getMessage()` and are different
 diagnoses. The class was the thing being discarded.
 
 **Use `ShIoFailure.describe(e)`, never `e.getMessage()`, when an `IOException` becomes a message
 somebody reads.** It names the class first, then the platform's reason where there is one, then the
-paths — the first two decide and the third is only *where*. `ShIoCauseLintTest` holds every
+paths, the first two decide and the third is only *where*. `ShIoCauseLintTest` holds every
 `catch (IOException …)` block in the tree to it, with a declared-exemption map for a site that
 means something else.
 
 **The lint found more than the grep did, and then found something about itself.** The hand search
-turned up eight sites in three files; the lint turned up two more nobody had looked at — the image
+turned up eight sites in three files; the lint turned up two more nobody had looked at, the image
 transform pipeline, whose message goes into the agent's own diagnostics window, and the marketplace
 catalogue. Its first draft matched the whole file instead of the catch block and reported nine
 findings of which six were false, all from one file where `catch (IOException e)` and
@@ -198,7 +198,7 @@ looseness was acceptable. It was not: a lint wrong two thirds of the time is one
 and a relaxed lint is off. It brace-matches the block now.
 
 **What this does not do is explain the flake**, and that is deliberate. One sighting with no reason
-string is not enough to choose a fix from — an indexer holding the freshly unpacked tree, a
+string is not enough to choose a fix from, an indexer holding the freshly unpacked tree, a
 destination left behind by an earlier run (24 stale `junit-*` directories were in `%TEMP%` when it
 fired), or `ATOMIC_MOVE` unsupported across those two directories are all still open. The next
 sighting will name its own class, which is what makes it decidable instead of a guess.
@@ -210,25 +210,25 @@ twice, on the argument that a window already elapsed by the second call proves t
 sleep. The intent was right and the mechanism was not.
 
 `spend` keeps the window while `resetsAt.isAfter(now)`. The first call sets `resetsAt = now + 1ns`.
-If the second call's `Instant.now()` returns the **same** instant — which it does whenever the
-clock's granularity is coarser than the gap, and on Windows it is by orders of magnitude — the
+If the second call's `Instant.now()` returns the **same** instant, which it does whenever the
+clock's granularity is coarser than the gap, and on Windows it is by orders of magnitude, the
 window is kept and the second spend is refused. Green on runs where a tick landed between two
 adjacent reads; red on 2026-08-14 after many green runs on the same tree.
 
 **A window closing is a fact about time, so the test moves time.** `ShAgentSessionBudget` takes a
-`Clock` — the same shape `ShTenantApiCallMeter` uses, a public constructor for Spring and a
-package-private one for a test — and `theWindowReopens` advances an hour instead of hoping the
+`Clock`: the same shape `ShTenantApiCallMeter` uses, a public constructor for Spring and a
+package-private one for a test, and `theWindowReopens` advances an hour instead of hoping the
 machine was slow enough to notice a nanosecond. It also asserts the refusal **before** advancing:
 without that, the test would pass against a guard that never charged anything, which is how a
 reopening test most easily goes vacuous.
 
 **Nudging the duration would have been worse than leaving it.** A longer window makes the failure
-rarer without making it impossible, which turns a diagnosable flake into an undiagnosable one —
+rarer without making it impossible, which turns a diagnosable flake into an undiagnosable one,
 SH250's rule is that a flake is worse than a break.
 
 **No lint, and the survey is the reason.** SH338 says the instrument that finds every *other* break
 lands before the fixes, so the tree was searched for the same smell: a sub-millisecond `Duration`
-standing in for elapsed time. The population was **one** — this test. An instrument over a
+standing in for elapsed time. The population was **one**, this test. An instrument over a
 population that is about to be zero, keyed on a guess at how somebody might write the mistake next
 time, is speculation with a build cost; the survey is recorded here instead, which is what makes it
 checkable if the answer ever changes.

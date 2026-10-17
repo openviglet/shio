@@ -1,6 +1,6 @@
 {
   "login.welcomeBack": "Welcome back",
-  "login.signInDescription": "Sign in to your Shio CMS account",
+  "login.signInDescription": "Sign in to your Viglet Shio account",
   "login.username": "Username",
   "login.password": "Password",
   "login.enterUsername": "Enter your username",
@@ -18,7 +18,7 @@
   "login.settingsExplosion": "Explosion",
   "login.settingsTokens": "Formulas",
   "login.settingsLanguage": "Language",
-  "setup.title": "Welcome to Shio CMS",
+  "setup.title": "Welcome to Viglet Shio",
   "setup.description": "Set up the administrator password to get started.",
   "setup.hint": "First-time setup",
   "setup.hintDescription": "Create a secure password for the admin account. You can change it later in the admin settings.",

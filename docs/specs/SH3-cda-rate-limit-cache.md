@@ -1,13 +1,13 @@
-# SH3 — CDA rate limiting + caching headers — implementable spec
+# SH3: CDA rate limiting + caching headers, implementable spec
 
 > Roadmap: [ROADMAP.md](../ROADMAP.md) Block A · Design: [IMPROVEMENTS.md](../IMPROVEMENTS.md) §I.3
 > Status: 📋 designed · deps: SH1 (shipped)
 
-## 1. Context — what already exists (do not rebuild)
+## 1. Context: what already exists (do not rebuild)
 
 - **The CDA read surface is shipped (SH1).** [ShCdaAPI](../../shio-app/src/main/java/com/viglet/shio/api/cda/ShCdaAPI.java) returns frozen, deterministic DTO records. SH1 §6 committed to this on purpose: *"DTOs must be deterministic and side-effect free → SH3 can wrap responses in `ETag` = hash(body) trivially."*
-- **Token auth + scopes are shipped (SH1/SH2).** [ShApiTokenFilter](../../shio-app/src/main/java/com/viglet/shio/spring/security/auth/ShApiTokenFilter.java) authenticates a `Key`, is confined to `/api/v2/cda/**`, and already identifies the token (`ShApiToken.id`) — the natural key for a per-token limiter.
-- **Security disables the global cache-control header.** `ShSecurityConfig` calls `cacheControl().disable()`, so Spring Security does **not** stamp `no-store` on responses — our CDA `Cache-Control` survives.
+- **Token auth + scopes are shipped (SH1/SH2).** [ShApiTokenFilter](../../shio-app/src/main/java/com/viglet/shio/spring/security/auth/ShApiTokenFilter.java) authenticates a `Key`, is confined to `/api/v2/cda/**`, and already identifies the token (`ShApiToken.id`), the natural key for a per-token limiter.
+- **Security disables the global cache-control header.** `ShSecurityConfig` calls `cacheControl().disable()`, so Spring Security does **not** stamp `no-store` on responses, our CDA `Cache-Control` survives.
 - **Compression is on** (`server.compression.enabled=true`). Tomcat compresses at the connector, *after* the servlet filter chain, so a body-hash `ETag` computed in a filter is consistent across requests.
 
 **What SH3 adds:** `Cache-Control` + `ETag` (with `If-None-Match` → `304`) on every CDA read so a CDN/browser absorbs repeat traffic, and an in-memory per-token token-bucket limiter that returns `429` + `Retry-After` when a key exceeds its budget. Together these make a public delivery key safe on the open internet.
@@ -22,10 +22,10 @@
 
 **Out of scope (deferred / noted)**
 - Distributed (multi-node) buckets. The limiter is **per-instance** (in-memory). Documented caveat; a Hazelcast-backed bucket (Hazelcast is already a dependency) is a later hardening, not SH3.
-- `Last-Modified` (the design says `ETag`/`Last-Modified` — `ETag` fully covers conditional GET for the deterministic DTOs; per-resource `Last-Modified` would need a modified-date lookup per endpoint and adds no CDN value over the body `ETag`).
+- `Last-Modified` (the design says `ETag`/`Last-Modified`, `ETag` fully covers conditional GET for the deterministic DTOs; per-resource `Last-Modified` would need a modified-date lookup per endpoint and adds no CDN value over the body `ETag`).
 - Auth/scope changes (SH2 owns those).
 
-## 3. Configuration — `ShCdaProperties` (`shio.cda.*`)
+## 3. Configuration: `ShCdaProperties` (`shio.cda.*`)
 
 `@ConfigurationProperties("shio.cda")`, mirroring [ShAppProperties](../../shio-app/src/main/java/com/viglet/shio/property/ShAppProperties.java):
 
@@ -39,7 +39,7 @@
 
 Defaults = 120 req burst, refilling 120/min ≈ 2 req/s sustained per token.
 
-## 4. Rate limiter — `ShCdaRateLimiter`
+## 4. Rate limiter: `ShCdaRateLimiter`
 
 In-memory, lock-per-bucket token bucket. `ConcurrentHashMap<String, Bucket>` keyed by token id. Lazy refill from a monotonic clock (`System.nanoTime`, injectable as a `LongSupplier` for tests).
 
@@ -51,7 +51,7 @@ Decision tryConsume(String key, long nowNanos);    // package-visible: determini
 - `capacity <= 0` or `enabled == false` → always `allowed` (limiter off).
 - Deny → `retryAfterSeconds` = `ceil((1 - tokens) / refillPerSecond)`, floored at 1.
 
-## 5. Enforcement — `ShApiTokenFilter`
+## 5. Enforcement: `ShApiTokenFilter`
 
 After the token is validated + enabled + method-gated (SH2), and **before** granting authority:
 ```java
@@ -67,12 +67,12 @@ if (!d.allowed()) {
 ```
 Keyed by token id so two clients sharing a key share a budget; an unauthenticated/invalid key never reaches the limiter (it's already rejected).
 
-## 6. Caching — `ShCdaCacheConfig`
+## 6. Caching: `ShCdaCacheConfig`
 
 A `@Configuration` registering two **servlet** filters scoped to `/api/v2/cda/*` (prefix mapping covers nested paths):
 
-1. **`ShallowEtagHeaderFilter`** (Spring built-in) — buffers the CDA response, sets a content-hash `ETag`, and returns `304 Not Modified` on a matching `If-None-Match`. Registered outer (lower order) so it wraps the controller body.
-2. **`ShCdaCacheControlFilter`** (`OncePerRequestFilter`) — sets `Cache-Control: public, max-age=N` (or `no-cache` when `max-age=0`) on CDA responses before the body is written, so the header is present even on a `304`.
+1. **`ShallowEtagHeaderFilter`** (Spring built-in): buffers the CDA response, sets a content-hash `ETag`, and returns `304 Not Modified` on a matching `If-None-Match`. Registered outer (lower order) so it wraps the controller body.
+2. **`ShCdaCacheControlFilter`** (`OncePerRequestFilter`): sets `Cache-Control: public, max-age=N` (or `no-cache` when `max-age=0`) on CDA responses before the body is written, so the header is present even on a `304`.
 
 Both run *inside* the Spring Security chain (security order `-100` < these), so auth + rate-limit decide first; only a `200` body gets an ETag.
 

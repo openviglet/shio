@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { ROLES } from "@/lib/site-content";
 
 /**
- * Three seats — and the sentence under the cards is the part that matters, not
+ * Three seats. The sentence under the cards is the part that matters, not
  * the cards. The earlier version of this section read "the agent builds, the
  * curator approves", which describes one arrangement as though it were the only
  * one and quietly demotes the person to a reviewer. A person can hold every

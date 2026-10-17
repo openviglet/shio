@@ -13,7 +13,7 @@ export function CallToAction() {
       <Container>
         <div className="relative isolate overflow-hidden rounded-3xl border border-white/10 bg-[#150e0c] px-6 py-16 text-center text-white">
           <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-          <div className="animate-orb-a pointer-events-none absolute -top-24 left-1/2 -z-10 h-80 w-80 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,#ff6347,transparent_70%)] opacity-45 blur-[70px]" />
+          <div className="animate-orb-a pointer-events-none absolute -top-24 left-1/2 -z-10 h-80 w-80 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-45 blur-[70px]" />
 
           <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
             Run the CMS. Attach the agent whenever you feel like it.

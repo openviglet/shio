@@ -21,18 +21,18 @@ import { CallToAction } from "@/components/sections/cta";
 import { SiteFooter } from "@/components/sections/site-footer";
 
 /**
- * The landing page — the marketing front door.
+ * The landing page: the marketing front door.
  *
  * The section order is an argument, not a feature list, and the argument was
  * wrong in its first two screenfuls. It opened on an agent session and led with
- * "your agent builds the site, you approve it" — true of one way to use the
+ * "your agent builds the site, you approve it", true of one way to use the
  * product, and read by everybody else as *you cannot use this by hand*. Nothing
  * about the product said that; the page did. A visitor who wants an ordinary
  * CMS was being turned away by the headline of a CMS that would have suited
  * them.
  *
- * So the hook is now two sessions under one switch — the same page built by a
- * person and by an agent — and the section immediately below it is the four
+ * So the hook is now two sessions under one switch (the same page built by a
+ * person and by an agent), and the section immediately below it is the four
  * ways in, followed by six deployments of which only three involve an agent.
  * The depth sections that follow are unchanged and still ordered by law,
  * because once a reader knows which door is theirs, the argument about protocol

@@ -1,4 +1,4 @@
-// SH676 — the published catalogue, generated from the packages the build already carries.
+// SH676: the published catalogue, generated from the packages the build already carries.
 //
 // ## What this writes
 //
@@ -14,7 +14,7 @@
 //
 // They are published as **`shio-blueprint-<name>`**, the prefix SH643 reserved, and that is not
 // cosmetic. `ShMarketplaceCatalog` drops a remote entry whose id collides with a package the
-// instance already has — a name means one thing or the catalogue is lying — and the six ARE built
+// instance already has (a name means one thing or the catalogue is lying), and the six ARE built
 // into every instance. Published under their own names they would be discarded everywhere, which
 // is a catalogue that proves the format and disproves the install path. Under the prefix they are
 // genuinely installable, which is what the task is for.
@@ -50,7 +50,7 @@ const OUT = resolve(process.cwd(), "public", "marketplace");
  * The host `ShMarketplaceProperties.DEFAULT_URL` points at.
  *
  * Overridable because a catalogue is only useful where it is actually served: a staging deploy on
- * another host, and — the case this was first needed for — serving the generated tree on loopback
+ * another host, and (the case this was first needed for) serving the generated tree on loopback
  * to prove a real instance can install from it. An entry's `downloadUrl` is absolute, so without
  * this the published catalogue can only ever be exercised in production.
  */
@@ -65,7 +65,7 @@ const AUTHOR = "Viglet";
 /** The bucket they are listed under. */
 const CATEGORY = "first-party";
 
-/** Every file in a directory, relative and slash-separated, sorted — so the zip is stable. */
+/** Every file in a directory, relative and slash-separated, sorted, so the zip is stable. */
 function walk(root, base = root) {
   const out = [];
   for (const name of readdirSync(base).sort()) {

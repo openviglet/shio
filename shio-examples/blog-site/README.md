@@ -1,22 +1,22 @@
 # Blog Site Example
 
-A modern blog example for Shio CMS demonstrating the Universal Editor capabilities.
+A modern blog example for Viglet Shio demonstrating the Universal Editor capabilities.
 
 ## Structure
 
-- `export.json` - Shio Exchange format file for importing into Shio CMS
+- `export.json` - Shio Exchange format file for importing into Viglet Shio
 - `index.html` - Blog listing page with `data-sh-*` instrumentation
 - `post.html` - Single post page with editable content
 
 ## How to Import
 
 1. Create a ZIP file containing `export.json`
-2. In Shio CMS, go to **Content > Import Site**
+2. In Viglet Shio, go to **Content > Import Site**
 3. Upload the ZIP file
 
 ## How to Use with Universal Editor
 
-1. Import the site into Shio CMS
+1. Import the site into Viglet Shio
 2. Navigate to **Universal Editor** in the sidebar
 3. Select the "Tech Blog" site
 4. Switch to **Edit Mode** and click on any highlighted element

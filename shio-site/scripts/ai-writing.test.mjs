@@ -1,9 +1,9 @@
-// @scans prose reason: the copy is the subject — it reads each source whole, comments included,
+// @scans prose reason: the copy is the subject; it reads each source whole, comments included,
 // because a literal-extractor is a heuristic that can be wrong in the direction of passing (SH740).
 //
-// SH925 — the AI-writing pass, as a lint over the site's own prose.
+// SH925: the AI-writing pass, as a lint over the site's own prose.
 //
-// The site has one editing rule — every claim is about a real surface — and until this file
+// The site has one editing rule (every claim is about a real surface), and until this file
 // nothing read the copy at all. Two different things go wrong in prose, and only one of them
 // is greppable:
 //
@@ -14,7 +14,7 @@
 //     is make sure the cheap half never has to be remembered.
 //
 //   * **Counts.** A number typed into a sentence is true the day it is typed and wrong in
-//     silence afterwards — invisible to a reader, to `tsc` and to every other suite. Five were
+//     silence afterwards, invisible to a reader, to `tsc` and to every other suite. Five were
 //     wrong when this file was written: the matrix said seventeen questions and had eighteen
 //     rows, the projection page said ten keys and the CLI carries eleven, the manifest figures
 //     were a measurement from three tasks before the ceiling moved, `llms.txt` renamed a design
@@ -22,8 +22,8 @@
 //     build. Each rule below reads the claim back against the surface it is about.
 //
 //   * **The em dash.** SH929, and the one rule here that is a house-style decision rather than a
-//     defect: this site does not use the mark at all. SH925 wrote the opposite into this file —
-//     "em dashes are house style and a lint against them would rewrite the voice" — and that was
+//     defect: this site does not use the mark at all. SH925 wrote the opposite into this file
+//     ("em dashes are house style and a lint against them would rewrite the voice"), and that was
 //     the wrong call. It is the loudest tell in machine-written English, and a page whose whole
 //     argument is that an agent built the site cannot afford to read as though one wrote the copy.
 //     262 of them were in the published prose when the rule landed.
@@ -49,7 +49,7 @@ const repo = join(root, "..");
 
 const read = (path) => readFileSync(join(root, path), "utf-8");
 
-/** Every file that carries prose a reader will see. Comments included — see below. */
+/** Every file that carries prose a reader will see. Comments included; see below. */
 function proseFiles() {
   const walk = (dir) =>
     readdirSync(join(root, dir), { withFileTypes: true }).flatMap((e) =>
@@ -66,7 +66,7 @@ function proseFiles() {
     // marketing vocabulary reports "robust against a bleeding-edge Vite" as puffery.
     text: SCRIPTS.includes(path) ? code(read(path)) : read(path),
     // What the em-dash rule reads. A flat file is prose end to end; a module is prose only
-    // where it is not a comment, plus every code sample it carries — see `emitted`.
+    // where it is not a comment, plus every code sample it carries (see `emitted`).
     published: /\.(txt|svg|html)$/.test(path) ? read(path) : emitted(read(path)),
   }));
 }
@@ -102,7 +102,7 @@ function emitted(body) {
  *
  * <p><b>`public/marketplace/**` is deliberately outside all of this.</b> It is generated from
  * `shio-app/src/main/resources/blueprints/**` and republishes those bytes rather than restating
- * them, which is the whole design of that channel — so the copy is not this page's to rewrite.</p>
+ * them, which is the whole design of that channel, so the copy is not this page's to rewrite.</p>
  *
  * <p><b>SH930 decided how far the em-dash rule reaches, and the answer split the sixteen.</b> Six
  * were sample content, which becomes a page the user publishes: those are prose handed to a reader
@@ -136,12 +136,12 @@ const ARTEFACTS = [
   [/\b(As an AI language model|up to my last knowledge update)\b/i, "refusal boilerplate"],
   [/\b(I hope this helps|Let me know if|Here'?s a draft|Would you like me to)\b/i, "chat framing"],
   [/\[(Your Name|INSERT_[A-Z_]+|PASTE_[A-Z_]+)\]/, "an unfilled placeholder"],
-  [/\p{Extended_Pictographic}/u, "an emoji — the copy's own marks are box-drawing, never these"],
+  [/\p{Extended_Pictographic}/u, "an emoji: the copy's own marks are box-drawing, never these"],
 ];
 
 /**
  * Section B, reduced to what a grep may decide alone: the phrases that are a tell on their own
- * rather than by density. The judgement calls — the rule of three, negative parallelism — are
+ * rather than by density. The judgement calls (the rule of three, negative parallelism) are
  * deliberately absent, because a lint that fires on good writing gets switched off.
  *
  * The em dash was in that sentence until SH929 and is now its own rule below, which is a
@@ -178,7 +178,7 @@ test("SH925: no copy-paste artefact reaches the published copy", () => {
         hit,
         null,
         `${path} carries ${what}: ${JSON.stringify(hit?.[0])}. Section A of the AI-writing `
-          + "checklist — delete it, and if it stood in for a citation, say what is missing.",
+          + "checklist: delete it, and if it stood in for a citation, say what is missing.",
       );
     }
   }
@@ -202,7 +202,7 @@ test("SH925: the copy is free of the phrases that are a tell on their own", () =
 });
 
 /**
- * SH929 — the em dash, in both spellings a page can carry.
+ * SH929: the em dash, in both spellings a page can carry.
  *
  * No en dash on the list, and that is a measurement rather than an oversight: there were none in
  * the copy, so the rule is one character in four spellings instead of a judgement about numeric
@@ -228,13 +228,13 @@ test("SH929: the published copy carries no em dash", () => {
     "SH929: this site does not use the em dash. It is the loudest tell in machine-written "
       + "English, and the page argues that an agent built the site.\n\nThe replacement is not a "
       + "comma. The mark is standing in for a parenthesis, a colon, a semicolon or a full stop, "
-      + "and it hides which — so read the sentence, write what it was asking for, and cut the "
+      + "and it hides which, so read the sentence, write what it was asking for, and cut the "
       + `aside where it was carrying nothing.\n\n${found.length} occurrence(s):\n${found.join("\n")}`,
   );
 });
 
 /**
- * SH930 — the rule follows the prose to its reader, and stops where the product begins.
+ * SH930: the rule follows the prose to its reader, and stops where the product begins.
  *
  * <p>`public/marketplace/**` republishes `shio-app/src/main/resources/blueprints/**` byte for byte,
  * so the em dashes the catalogue serves are not the site's to rewrite. SH930 was filed to decide
@@ -242,11 +242,11 @@ test("SH929: the published copy carries no em dash", () => {
  * writes, or the site alone. Reading the sixteen split them, and the split is the decision.</p>
  *
  * <ul>
- *   <li><b>Sample content</b> — `content/*.json` — becomes a page the user publishes. "Replace it
- *       — or delete it — once you have something to say" is prose Shio hands a reader on somebody
+ *   <li><b>Sample content</b> (`content/*.json`) becomes a page the user publishes. "Replace it,
+ *       or delete it, once you have something to say" (set with em dashes at the time) is prose Shio hands a reader on somebody
  *       else's marketing site, which is exactly what the rule is about. Six of them; all rewritten,
  *       and this test is what keeps a seventh from arriving with the next blueprint.</li>
- *   <li><b>Field help and blueprint summaries</b> — `post-types/*.json`, `blueprint.json` — are
+ *   <li><b>Field help and blueprint summaries</b> (`post-types/*.json`, `blueprint.json`) are
  *       product chrome a curator reads inside the console. Ten of them, and they stay. The console's
  *       own bundles carry <b>38</b> more of the same kind: rewriting ten while the curator meets
  *       thirty-eight on the surrounding screen makes the product less consistent, not more, and the
@@ -292,7 +292,7 @@ test("SH930: sample content a blueprint publishes carries no em dash", () => {
     "SH930: a blueprint's sample content carries an em dash. This is not console text: it becomes "
       + "a published page on the site of whoever applied the blueprint, so it is prose Shio hands "
       + "a reader.\n\nField help and blueprint summaries are deliberately NOT covered by this rule "
-      + "— see the note above, and the 38 of the same kind in the console's own bundles.\n\n"
+      + "(see the note above, and the 38 of the same kind in the console's own bundles).\n\n"
       + `${found.length} occurrence(s):\n${found.join("\n")}`);
 });
 
@@ -311,7 +311,7 @@ const NUMBER_WORDS = [
 const spell = (n) => NUMBER_WORDS[n] ?? String(n);
 
 test("SH925: the matrix's question count is the number of rows in it", () => {
-  // Two places spell it — the page heading and the route's meta description — and neither is
+  // Two places spell it (the page heading and the route's meta description), and neither is
   // near the table. It said seventeen for as long as the matrix had eighteen rows.
   const groups = SITE_CONTENT.slice(
     SITE_CONTENT.indexOf("export const COMPARE_GROUPS"),
@@ -339,7 +339,7 @@ test("SH925: the matrix's question count is the number of rows in it", () => {
 
 test("SH925: the projection page's key count is the CLI's projected key set", () => {
   // `content-projection-coverage.test.mjs` holds the list the projection actually carries, and
-  // fails the CLI's own suite when it changes — so the count is knowable here without guessing.
+  // fails the CLI's own suite when it changes, so the count is knowable here without guessing.
   const coverage = readFileSync(
     join(repo, "cli", "test", "content-projection-coverage.test.mjs"),
     "utf-8",
@@ -402,7 +402,7 @@ test("SH925: llms.txt states the ten design laws by the names the site gives the
 
 test("SH925: the Markdown size pair is measured by the prerender, not typed", () => {
   // It was typed in llms.txt and again in the README, the two already disagreed, and both
-  // disagreed with what the build was producing. The prerender is the only place that knows —
+  // disagreed with what the build was producing. The prerender is the only place that knows:
   // the figure exists only after every route has been written.
   const prerender = read("scripts/prerender.mjs");
   assert.ok(

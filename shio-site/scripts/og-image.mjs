@@ -5,7 +5,7 @@
 //
 // Defensive by design: if the optional `@resvg/resvg-js` dependency is not
 // installed (a bare local build, or a platform it has no prebuilt binary for),
-// we warn and skip WITHOUT failing the build — Vite still copies the SVG into
+// we warn and skip WITHOUT failing the build; Vite still copies the SVG into
 // dist/ as a fallback. CI installs the dep, so the deployed site gets the PNG.
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -15,7 +15,7 @@ const svgPath = resolve(process.cwd(), "public", "og.svg");
 const outPath = resolve(process.cwd(), "dist", "og.png");
 
 if (!existsSync(svgPath)) {
-  console.warn(`og-image: ${svgPath} not found — skipping.`);
+  console.warn(`og-image: ${svgPath} not found; skipping.`);
   process.exit(0);
 }
 
@@ -24,7 +24,7 @@ try {
   ({ Resvg } = await import("@resvg/resvg-js"));
 } catch {
   console.warn(
-    "og-image: @resvg/resvg-js not installed — skipping PNG rasterization " +
+    "og-image: @resvg/resvg-js not installed; skipping PNG rasterization " +
       "(dist/og.svg still ships as a fallback)."
   );
   process.exit(0);

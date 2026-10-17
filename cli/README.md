@@ -1,4 +1,4 @@
-# @viglet/shio — the Shio CMS CLI
+# @viglet/shio — the Viglet Shio CLI
 
 [![npm](https://img.shields.io/npm/v/@viglet/shio?logo=npm)](https://www.npmjs.com/package/@viglet/shio)
 [![License](https://img.shields.io/npm/l/@viglet/shio)](https://github.com/openviglet/shio/blob/HEAD/LICENSE)

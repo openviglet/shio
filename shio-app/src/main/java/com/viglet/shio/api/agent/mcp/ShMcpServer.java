@@ -199,7 +199,7 @@ public class ShMcpServer {
         capabilities.putObject("prompts").put("listChanged", false);
         ObjectNode info = result.putObject("serverInfo");
         info.put("name", "shio");
-        info.put("title", "Viglet Shio CMS");
+        info.put("title", "Viglet Shio");
         info.put("version", version());
         // The one call that replaces a session, said where a client will actually show
         // it. `instructions` is the only free-text field the protocol gives the server,

@@ -1,7 +1,7 @@
 # Next.js rendering modes against the Shio CDA (SH9)
 
-> How to render a Shio-backed Next.js site in each mode — SSG, ISR, SSR draft
-> preview — and how to wire publish events to **on-demand revalidation** so a
+> How to render a Shio-backed Next.js site in each mode (SSG, ISR, SSR draft
+> preview) and how to wire publish events to **on-demand revalidation** so a
 > statically-generated site reflects edits within seconds.
 >
 > Everything here is shipped in the [`create-shio-app`](../../create-shio-app)
@@ -13,7 +13,7 @@ The whole chain is JavaScript/TypeScript: the page code talks to the
 
 ---
 
-## 1. SSG — static at build time
+## 1. SSG: static at build time
 
 Pre-render known friendly URLs at `next build` with `generateStaticParams`:
 
@@ -30,7 +30,7 @@ export async function generateStaticParams() {
 Fastest response, fully cacheable on a CDN. Best for content that changes rarely
 and whose URL set is known at build time.
 
-## 2. ISR — incremental static regeneration
+## 2. ISR: incremental static regeneration
 
 Add a revalidation window. Pages render on-demand on first hit, then serve from
 cache and re-generate at most once per window:
@@ -42,7 +42,7 @@ export const revalidate = 60; // seconds
 ISR is the sane default: static speed with a bounded staleness. The trade-off is
 latency-to-freshness equal to the window. To remove that trade-off, add §3.
 
-## 3. On-demand revalidation — instant updates
+## 3. On-demand revalidation: instant updates
 
 Drive freshness from Shio's publish pipeline instead of a timer. The Next.js app
 exposes a signed webhook receiver; Shio calls it on publish/unpublish/delete; the
@@ -77,7 +77,7 @@ The publish pipeline (**SH12**, outbound webhooks) MUST POST this shape so any
 | `event` | `"publish" \| "unpublish" \| "delete"` | the transition |
 | `siteId` | string | the post's site |
 | `postId` | string | the post's id |
-| `url` | string | the post's friendly URL, leading slash (e.g. `/blog/hello`) — preferred; drives `revalidatePath` |
+| `url` | string | the post's friendly URL, leading slash (e.g. `/blog/hello`), preferred; drives `revalidatePath` |
 | `tags` | string[] | optional cache tags to invalidate |
 | `occurredAt` | string | optional ISO timestamp |
 

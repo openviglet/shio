@@ -99,7 +99,7 @@ export default function SetupPage() {
           <ShLogo size={52} />
         </StartupFirst.Logo>
 
-        <StartupFirst.Title>Viglet Shio CMS</StartupFirst.Title>
+        <StartupFirst.Title>Viglet Shio</StartupFirst.Title>
         <StartupFirst.Description>{t("setup.description")}</StartupFirst.Description>
 
         <div className="flex flex-wrap justify-center gap-2 mb-5">
@@ -171,7 +171,7 @@ export default function SetupPage() {
           </form>
         </StartupFirst.Card>
 
-        <StartupFirst.Footer>Viglet Shio CMS &mdash; Content Management System</StartupFirst.Footer>
+        <StartupFirst.Footer>Viglet Shio · Headless CMS</StartupFirst.Footer>
       </StartupFirst.Content>
     </StartupFirst>
   )

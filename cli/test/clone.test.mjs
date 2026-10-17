@@ -121,7 +121,7 @@ const BRANDED_NAV = `<!doctype html>
 <html><head><title>Products</title></head><body>
 <nav>
   <a href="/dumont"><div class="tile" aria-label="Du"><span><span>D</span><span>u</span></span></div>Dumont DEP</a>
-  <a href="/shio"><div class="tile" aria-label="Sh"><span><span>S</span><span>h</span></span></div>Shio CMS</a>
+  <a href="/shio"><div class="tile" aria-label="Sh"><span><span>S</span><span>h</span></span></div>Viglet Shio</a>
   <a href="/turing"><div class="tile"><span><span>T</span><span>u</span></span></div>Turing ES</a>
   <a href="/oss"><em>Open</em>Source</a>
   <a href="/plain">  Plain  label  </a>
@@ -250,7 +250,7 @@ test("SH477: a mark whose aria-label repeats its own text is not part of the lin
     "`Du` is drawn, not written — the tile says so with an aria-label equal to its own text — and "
       + "`DEP`, which is the same shape and is content, is untouched in the same string",
   );
-  assert.equal(labels.get("/shio"), "Shio CMS");
+  assert.equal(labels.get("/shio"), "Viglet Shio");
   assert.equal(branded.selfLabelled, 2, "and the page counts what it dropped, which is the measurement");
 });
 

@@ -25,7 +25,7 @@ const ENTRY = fileURLToPath(new URL("../src/index.mjs", import.meta.url));
 test("the CLI parses and prints help", async () => {
   const { stdout } = await run(process.execPath, [ENTRY, "--help"]);
 
-  assert.match(stdout, /^shio — the Shio CMS CLI/);
+  assert.match(stdout, /^shio — the Viglet Shio CLI/);
 });
 
 test("every registered command is documented in help", async () => {

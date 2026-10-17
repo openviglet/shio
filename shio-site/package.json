@@ -3,7 +3,7 @@
   "private": true,
   "version": "2026.3.2",
   "type": "module",
-  "description": "Viglet Shio — public site (shio.viglet.org). The CMS whose primary operator is a coding agent.",
+  "description": "Public site of Viglet Shio (shio.viglet.org), the open-source headless CMS with four ways in: console, coding agent, files and delivery API.",
   "homepage": "https://shio.viglet.org/",
   "repository": {
     "type": "git",

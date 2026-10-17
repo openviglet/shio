@@ -14,7 +14,7 @@ GET /api/v2/agent/context?include=all,manifest,ops
 # Or, from a client that only speaks MCP:
 shio://context`;
 
-/** The widest bar sets the scale — a chart nobody can misread as a percentage. */
+/** The widest bar sets the scale, so it is a chart nobody can misread as a percentage. */
 const MAX = Math.max(...TOKEN_BUDGETS.ceilings.map((c) => c.tokens));
 
 export function OneCall() {
@@ -126,7 +126,7 @@ export function OneCall() {
                     aria-label={`${c.label}: a ceiling of ${c.tokens} tokens`}
                   >
                     <div
-                      className={cn("h-full rounded-full bg-gradient-to-r from-[#d94328] to-[#f59e0b]")}
+                      className={cn("h-full rounded-full bg-gradient-to-r from-[#5b21b6] to-[#f59e0b]")}
                       style={{ width: `${Math.max(2, (c.tokens / MAX) * 100)}%` }}
                     />
                   </div>

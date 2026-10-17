@@ -1,0 +1,12 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t">
+  <title id="t">Viglet</title>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="60%">
+      <stop offset="0" stop-color="#FF6A1A"/>
+      <stop offset="1" stop-color="#F0381C"/>
+    </radialGradient>
+  </defs>
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+  <polyline points="136,160 256,400 376,160" fill="none" stroke="#FFDEAD" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="136,160 256,400 376,160" fill="none" stroke="#111111" stroke-width="60" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

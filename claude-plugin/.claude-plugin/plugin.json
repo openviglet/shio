@@ -1,7 +1,7 @@
 {
   "name": "shio",
   "version": "2026.3.1",
-  "description": "Drive a Shio CMS instance from Claude Code: the MCP server wired up, the workflows for building a site, changing the content model and verifying the result, and the blueprint catalogue that makes a whole section one call.",
+  "description": "Drive a Viglet Shio instance from Claude Code: the MCP server wired up, the workflows for building a site, changing the content model and verifying the result, and the blueprint catalogue that makes a whole section one call.",
   "author": {
     "name": "Viglet Team",
     "url": "https://github.com/openviglet"

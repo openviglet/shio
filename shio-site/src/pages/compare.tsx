@@ -53,14 +53,14 @@ function Cell({ value, strong }: { value: string; strong?: boolean }) {
 }
 
 /**
- * SH534 — "agent-native" is a category claim, and a category claim with nothing
+ * SH534: "agent-native" is a category claim, and a category claim with nothing
  * to falsify it is marketing.
  *
  * Two halves, and the second is what makes the first readable. The matrix is
  * grouped by law rather than by feature area, so a reader can see that the
  * column of ticks is not a feature list but one design position applied ten
- * times. Then every rival gets a paragraph saying what it is genuinely better
- * at and when to pick it instead — a table where one column wins every row is a
+ * times. Then every rival gets a paragraph saying what it does better and
+ * when to pick it instead, because a table where one column wins every row is a
  * table nobody believes.
  */
 export function ComparePage() {
@@ -78,8 +78,8 @@ export function ComparePage() {
           }
           lead={
             <>
-              Comparing content types and delivery APIs produces a tie, because
-              everyone has those. The axis where the products actually differ is
+              Compared on content types and delivery APIs, Viglet Shio and its
+              alternatives tie, because everyone has those. The axis where they differ is
               agent-operability, and every row below is a question with an
               answer you can test rather than a feature you can be told about.
             </>
@@ -187,7 +187,7 @@ export function ComparePage() {
                 not whether some path to it exists. An export command is not a file
                 projection with a three-way merge, and an MCP server in front of an API
                 designed for a browser is not a protocol designed for an agent. Where the
-                honest answer is "you can build it", the cell says so.
+                answer is "you can build it", the cell says so.
               </p>
               <p className="mt-3">
                 This reflects 2026.3, so verify against current vendor documentation
@@ -204,14 +204,14 @@ export function ComparePage() {
         <section id="wins" className="border-y border-border bg-muted/40 py-20">
           <Container>
             <SectionHeader
-              eyebrow="The honest half"
+              eyebrow="Where they win"
               title={
                 <>
                   Four products Shio{" "}
                   <span className="text-primary">does not beat</span>
                 </>
               }
-              description="A table where one column wins every row is a table nobody believes. Here is what each alternative is genuinely better at, and the case where picking it over Shio is the right call."
+              description="A table where one column wins every row is a table nobody believes. Here is what each alternative does better, and the case where picking it over Shio is the right call."
             />
 
             <div className="grid gap-5 sm:grid-cols-2">
@@ -250,7 +250,7 @@ export function ComparePage() {
           <Container className="max-w-3xl">
             <SectionHeader
               eyebrow="Objections"
-              title="The five questions this page usually gets"
+              title="Six objections, answered"
             />
             <dl className="space-y-6">
               {OBJECTIONS.map((o) => (

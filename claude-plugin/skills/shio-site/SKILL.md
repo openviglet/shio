@@ -1,6 +1,6 @@
 ---
 name: shio-site
-description: Build or change pages in a Shio CMS site — create sections, write content, publish. Use when the user asks to add, edit, restructure or publish pages, or to build a site (blog, docs, marketing site, landing page, product catalogue) in Shio. Also use before writing content by hand, to check whether a blueprint already covers it.
+description: Build or change pages in a Viglet Shio site — create sections, write content, publish. Use when the user asks to add, edit, restructure or publish pages, or to build a site (blog, docs, marketing site, landing page, product catalogue) in Shio. Also use before writing content by hand, to check whether a blueprint already covers it.
 ---
 
 # Building and changing a Shio site

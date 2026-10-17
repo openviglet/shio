@@ -130,7 +130,7 @@
 * E-Commerce: Payment Types and Settings
 * Viglet Turing Integration: Indexing Posts in Semantic Navigation
 * InContext Editing using Float Menu to Regions
-* Site Form: Create Forms into Site and save as Posts into Shio CMS
+* Site Form: Create Forms into Site and save as Posts into Shio
 * Combo Box Field Type
 * Hidden Field Type
 * Form Configuration Field Type

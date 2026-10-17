@@ -18,7 +18,7 @@
     "actionPostTypes": "Tipos de Post",
     "actionWebhooks": "Webhooks",
     "actionActivity": "Atividade",
-    "version": "Viglet Shio CMS · versão {{version}}"
+    "version": "Viglet Shio · versão {{version}}"
   },
   "home.attention": "Esperando por você",
   "home.attentionDesc": "O que precisa de uma pessoa, não o que existe.",

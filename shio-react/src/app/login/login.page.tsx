@@ -31,7 +31,7 @@ const LoginPage = () => {
           <ShLogo size={52} />
         </Login.Logo>
 
-        <Login.Title>Viglet Shio CMS</Login.Title>
+        <Login.Title>Viglet Shio</Login.Title>
         <Login.Tagline>{t("login.heroTagline")}</Login.Tagline>
 
         <Login.Features>
@@ -50,7 +50,7 @@ const LoginPage = () => {
           <LoginForm />
         </Login.Card>
 
-        <Login.Footer>Viglet Shio CMS &mdash; Content Management System</Login.Footer>
+        <Login.Footer>Viglet Shio · Headless CMS</Login.Footer>
       </Login.Content>
     </Login>
   )

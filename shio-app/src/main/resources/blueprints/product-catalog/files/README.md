@@ -1,6 +1,6 @@
 # {{projectName}}
 
-A [Next.js](https://nextjs.org) (App Router) site powered by **Shio CMS** via the
+A [Next.js](https://nextjs.org) (App Router) site powered by **Viglet Shio** via the
 Content Delivery API — headless, TypeScript-first, **zero Java**.
 
 ## Getting started
@@ -105,5 +105,5 @@ by hand.
 
 ## Learn more
 
-- [Shio CMS](https://github.com/openviglet/shio)
+- [Viglet Shio](https://github.com/openviglet/shio)
 - [Next.js Docs](https://nextjs.org/docs)

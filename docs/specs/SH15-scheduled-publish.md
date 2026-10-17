@@ -1,15 +1,15 @@
-# SH15 — Scheduled publish/unpublish — implementable spec
+# SH15: Scheduled publish/unpublish, implementable spec
 
 > Roadmap: [ROADMAP.md](../ROADMAP.md) Block C · Design: [IMPROVEMENTS.md](../IMPROVEMENTS.md) §III.4
 > Status: 📋 designed · deps: SH12 (shipped)
 
-## 1. Context — what already exists (do not rebuild)
+## 1. Context: what already exists (do not rebuild)
 
 - **The unified write path is the single transition chokepoint.**
   [ShPostUnifiedWriteService](../../shio-app/src/main/java/com/viglet/shio/migration/unified/ShPostUnifiedWriteService.java)
   already owns `publish` / `unpublish`, and both already emit the SH12 lifecycle
   event (`ShPostLifecycleEvent`) **after commit**. SH15 schedules these existing
-  transitions — it does **not** re-implement publish/unpublish or re-emit
+  transitions, it does **not** re-implement publish/unpublish or re-emit
   webhooks. Firing a scheduled publish reuses `publish(...)`, so the SH12
   dispatcher signs and POSTs exactly as it would for a manual publish.
 - **The model is two-row-per-state.** A logical post holds at most a `DRAFT`
@@ -21,7 +21,7 @@
   `@Scheduled`, or `TaskScheduler` in the codebase. SH13 deferred its expired-token
   purge to "SH15's scheduler". SH15 introduces the single `@EnableScheduling`
   switch + one sweep.
-- **Per-feature config follows `ShWebhookProperties` / `ShCdaProperties`** —
+- **Per-feature config follows `ShWebhookProperties` / `ShCdaProperties`**,
   `@ConfigurationProperties` bean, defaults shown commented in
   `application.properties`.
 
@@ -36,7 +36,7 @@ and clears the fired field. Plus a console **Schedule** dialog on the post edito
 - Two `Date` columns on `ShPostUnified`: `publishScheduledDate`,
   `unpublishScheduledDate` (Liquibase `addColumn TIMESTAMP`, MARK_RAN guarded).
 - `ShPostUnifiedWriteService`:
-  - `schedule(postId, publishAt, unpublishAt, modifier)` — set/clear both fields
+  - `schedule(postId, publishAt, unpublishAt, modifier)`: set/clear both fields
     on the `DRAFT` row (created from `PUBLISHED` if absent, mirroring
     `restoreDraftFromPublished`). Returns the updated draft.
   - read finders + `publishScheduled(id)` / `unpublishScheduled(id)` that clear the
@@ -54,11 +54,11 @@ and clears the fired field. Plus a console **Schedule** dialog on the post edito
 **Out of scope (deferred)**
 - A general cron/job framework or per-post recurring schedules. One fixed-delay
   sweep, two one-shot timestamps.
-- Timezone pickers / per-site business calendars — timestamps are absolute
+- Timezone pickers / per-site business calendars, timestamps are absolute
   instants; the UI uses the browser's local time for entry only.
 - A schedule queue/audit UI or "scheduled" content listing. The editor dialog and
   the post's two timestamps are the surface.
-- The SH13 expired-preview-token purge — SH15 only ships the `@EnableScheduling`
+- The SH13 expired-preview-token purge, SH15 only ships the `@EnableScheduling`
   switch it can later hang off; the purge itself stays opportunistic.
 
 ## 3. Data model
@@ -72,10 +72,10 @@ private Date unpublishScheduledDate;   // when set: unpublish the post at/after 
 ```
 
 `Date` (not `Instant`) for symmetry with the existing `modifiedDate` /
-`publicationDate` columns. Liquibase type `TIMESTAMP` (DB-agnostic — the
+`publicationDate` columns. Liquibase type `TIMESTAMP` (DB-agnostic, the
 `ShLiquibaseChangelogAgnosticTest` forbids `TIMESTAMP WITH TIME ZONE`).
 
-## 4. Backend — schedule + sweep
+## 4. Backend: schedule + sweep
 
 `ShPostUnifiedWriteService`:
 
@@ -174,7 +174,7 @@ public record SchedulePayload(Date publishAt, Date unpublishAt) {}
 Both fields are optional/nullable; sending `null` for one clears it. Falls under
 the existing `anyRequest authenticated` rule (console-only).
 
-## 7. Frontend — schedule dialog
+## 7. Frontend: schedule dialog
 
 `ShPostUnified` gains `publishScheduledDate?` / `unpublishScheduledDate?`.
 
@@ -213,7 +213,7 @@ in-memory post so the badges reflect the new schedule.
    the past on a draft → the next sweep publishes the post (a `PUBLISHED` row
    appears, `published=true`) and the draft's `publishScheduledDate` is cleared.
 2. A scheduled publish fires exactly one SH12 `PUBLISH` webhook to each matching
-   subscription — identical to a manual publish.
+   subscription, identical to a manual publish.
 3. `unpublishAt` in the past on a published post → the next sweep removes the
    `PUBLISHED` row and fires the SH12 `UNPUBLISH` webhook; `unpublishScheduledDate`
    is cleared.

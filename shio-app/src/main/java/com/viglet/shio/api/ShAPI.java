@@ -42,7 +42,7 @@ public class ShAPI {
 	@GetMapping
 	public ShAPIBean shApiInfo() {
 
-		shAPIBean.setProduct("Viglet Shio CMS");
+		shAPIBean.setProduct("Viglet Shio");
 
 		return shAPIBean;
 	}

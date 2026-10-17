@@ -3,7 +3,7 @@ import { Container, SectionHeader } from "@/components/brand";
 import { PATHS } from "@/lib/site-content";
 
 /**
- * The four doors, directly under the hero — the section the rest of the page is
+ * The four doors, directly under the hero: the section the rest of the page is
  * now read through.
  *
  * It sits above the roles, the laws and every depth section on purpose. A

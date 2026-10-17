@@ -10,12 +10,12 @@ import { CLONE_BOUNDS, MIXED_PAGE, MODES, PHASES, PROPOSE_OUTPUT } from "@/lib/s
 import { cn } from "@/lib/utils";
 
 /**
- * SH535 — the one capability a visitor can test against a URL they already own.
+ * SH535: the one capability a visitor can test against a URL they already own.
  *
  * The page is ordered by the pipeline, but its centre is the section in the
  * middle: the two modes. Everything before it is machinery and everything after
- * it is proof, and the decision a reviewer actually makes — their look, or a
- * site somebody can maintain — is the thing worth arriving at.
+ * it is proof, and the decision a reviewer actually makes (their look, or a
+ * site somebody can maintain) is the thing worth arriving at.
  */
 export function ReplicatePage() {
   return (
@@ -32,17 +32,17 @@ export function ReplicatePage() {
           }
           lead={
             <>
-              Four verbs turn a site that exists into one a curator can edit. Not a
-              mirror and not a screenshot, but a content model derived from the
-              pages themselves, with a review step you cannot skip and arithmetic at
-              the end that says whether anything was lost.
+              Five commands turn a site that exists into one a curator can edit in
+              Viglet Shio. What comes out is a content model derived from the pages
+              themselves, with a review step you cannot skip and arithmetic at the
+              end that says whether anything was lost.
             </>
           }
         >
           <div className="flex flex-wrap gap-3">
             <Button asChild size="lg">
               <a href="#pipeline">
-                The four verbs <ArrowRight className="size-4" />
+                The five commands <ArrowRight className="size-4" />
               </a>
             </Button>
             <Button
@@ -79,7 +79,7 @@ export function ReplicatePage() {
                     </span>
                     <h3 className="text-lg font-bold">{p.title}</h3>
                   </div>
-                  <pre className="mt-4 overflow-x-auto rounded-lg bg-[#17100e] px-4 py-3 font-mono text-[0.78rem] leading-relaxed text-[#ffb08a]">
+                  <pre className="mt-4 overflow-x-auto rounded-lg bg-[#17100e] px-4 py-3 font-mono text-[0.78rem] leading-relaxed text-[#ddd6fe]">
                     <code>$ {p.command}</code>
                   </pre>
                   <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{p.what}</p>
@@ -99,7 +99,7 @@ export function ReplicatePage() {
           className="relative isolate overflow-hidden bg-[#150e0c] py-20 text-[#f6ece8]"
         >
           <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-          <div className="animate-orb-b pointer-events-none absolute -bottom-40 right-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#ff6347,transparent_70%)] opacity-25 blur-[80px]" />
+          <div className="animate-orb-b pointer-events-none absolute -bottom-40 right-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-25 blur-[80px]" />
 
           <Container>
             <div className="mx-auto mb-12 max-w-2xl text-center">
@@ -111,7 +111,7 @@ export function ReplicatePage() {
                 <span className="text-gradient">a site somebody can maintain</span>
               </h2>
               <p className="mt-3 text-base leading-relaxed text-[#c9b6ae] sm:text-lg">
-                Every captured block has exactly two honest futures, and the proposal
+                Every captured block has two possible futures, and the proposal
                 asks you which one per block rather than deciding for you. This is
                 the choice the whole pipeline exists to put in front of a reviewer.
               </p>
@@ -124,7 +124,7 @@ export function ReplicatePage() {
                   className={cn(
                     "rounded-2xl border p-6",
                     m.accent === "authorable"
-                      ? "border-[#ff6347]/40 bg-[#ff6347]/[0.07]"
+                      ? "border-[#7c3aed]/40 bg-[#7c3aed]/[0.07]"
                       : "border-white/12 bg-white/[0.03]"
                   )}
                 >
@@ -132,18 +132,18 @@ export function ReplicatePage() {
                     <Layers
                       className={cn(
                         "size-4",
-                        m.accent === "authorable" ? "text-[#ff9478]" : "text-[#a89189]"
+                        m.accent === "authorable" ? "text-[#c4b5fd]" : "text-[#a89189]"
                       )}
                     />
                     {m.name}
                   </h3>
                   <dl className="mt-4 space-y-3 text-sm leading-relaxed">
                     <div>
-                      <dt className="font-mono text-xs font-bold text-[#ff9478]">keeps</dt>
+                      <dt className="font-mono text-xs font-bold text-[#c4b5fd]">keeps</dt>
                       <dd className="mt-0.5 text-[#c9b6ae]">{m.keeps}</dd>
                     </div>
                     <div>
-                      <dt className="font-mono text-xs font-bold text-[#ff9478]">offers</dt>
+                      <dt className="font-mono text-xs font-bold text-[#c4b5fd]">offers</dt>
                       <dd className="mt-0.5 text-[#c9b6ae]">{m.offers}</dd>
                     </div>
                   </dl>
@@ -155,7 +155,7 @@ export function ReplicatePage() {
               ))}
             </div>
 
-            <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-[#ff6347]/25 bg-[#ff6347]/[0.05] p-5">
+            <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-[#7c3aed]/25 bg-[#7c3aed]/[0.05] p-5">
               <h3 className="text-sm font-bold">{MIXED_PAGE.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-[#c9b6ae]">{MIXED_PAGE.body}</p>
             </div>
@@ -173,7 +173,7 @@ export function ReplicatePage() {
                 classes through recovers about seven of the twenty-two that style a single
                 heading; the rest sit on wrapper elements a generated layout does not
                 have, so it buys typography and no layout. Translating them into a stable
-                contract is not a repair, it is a design system per replicated site. So
+                contract would mean a design system per replicated site. So
                 the <em>promise</em> changed instead of the implementation being patched:
                 two good answers rather than one mode half-doing both.
               </p>
@@ -218,7 +218,7 @@ export function ReplicatePage() {
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                     <span className="font-mono text-foreground">discards:</span> is what
-                    the section genuinely cannot hold: an{" "}
+                    the section cannot hold: an{" "}
                     <span className="font-mono">&lt;iframe&gt;</span>, an{" "}
                     <span className="font-mono">onclick</span>, an id an anchor targets.
                     That is damage, and a reviewer should weigh it.{" "}
@@ -238,8 +238,8 @@ export function ReplicatePage() {
                     spacing rhythm, so a conversion that only appends the file throws all
                     of it away, and the replica then looks right and cannot be
                     changed. Eight groups are lifted into the theme's design tokens, and
-                    the report is honest about which ones are real: a declared custom
-                    property is genuinely editable, while a literal repeated twenty-three
+                    the report says which ones are real: a declared custom
+                    property is editable, while a literal repeated twenty-three
                     times is the palette by observation and changes nothing until somebody
                     rewires the CSS.{" "}
                     <a

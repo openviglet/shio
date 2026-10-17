@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export const metadata = {
   title: "Shio site",
-  description: "Powered by Shio CMS — headless, JavaScript-first.",
+  description: "Powered by Viglet Shio — headless, JavaScript-first.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

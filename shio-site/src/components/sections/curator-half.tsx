@@ -4,8 +4,8 @@ import { Container, Eyebrow, LawChip } from "@/components/brand";
 import { GUARDRAILS } from "@/lib/site-content";
 
 /**
- * The objection every reader arrives with is not "can the agent do it" — it is
- * "what stops it". Answering with the word governance is worth nothing, so this
+ * The objection every reader arrives with is "what stops it", not "can the
+ * agent do it". Answering with the word governance is worth nothing, so this
  * section is six mechanisms and no adjectives. SH536 gives the curator's half a
  * page of its own.
  */
@@ -16,7 +16,7 @@ export function CuratorHalf() {
       className="relative isolate overflow-hidden bg-[#150e0c] py-20 text-[#f6ece8]"
     >
       <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-      <div className="animate-orb-b pointer-events-none absolute -bottom-40 left-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#ff6347,transparent_70%)] opacity-25 blur-[80px]" />
+      <div className="animate-orb-b pointer-events-none absolute -bottom-40 left-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-25 blur-[80px]" />
 
       <Container>
         <div className="mx-auto mb-12 max-w-2xl text-center">
@@ -36,9 +36,9 @@ export function CuratorHalf() {
           {GUARDRAILS.map((g) => (
             <div
               key={g.title}
-              className="rounded-xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-[#ff6347]/35"
+              className="rounded-xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-[#7c3aed]/35"
             >
-              <div className="flex size-10 items-center justify-center rounded-lg bg-[#ff6347]/12 text-[#ff9478]">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-[#7c3aed]/12 text-[#c4b5fd]">
                 <g.icon className="size-5" />
               </div>
               <h3 className="mt-4 font-bold">{g.title}</h3>

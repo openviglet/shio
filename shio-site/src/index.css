@@ -31,15 +31,15 @@
 }
 
 /*
- * Shio brand: tomato (#FF6347 — the Viglet product colour the `Sh` mark already
- * carries) on a WARM neutral, against Turing's royal blue on cold navy. The two
- * sites are siblings on purpose: same type pair, same section grammar, opposite
- * temperature.
+ * Shio brand: violet (#7C3AED, the colour of the Shio cube mark since October
+ * 2026; it was tomato before) on a WARM neutral, against Turing's royal blue on
+ * cold navy. The two sites are siblings on purpose: same type pair, same section
+ * grammar, opposite temperature.
  *
- * The light-mode primary is deliberately darker than #FF6347 itself: tomato
- * under white text is ~2.9:1, which fails AA on every filled button. The brand
- * tomato appears at full strength on dark surfaces, where it is the text colour
- * rather than the background.
+ * The light-mode primary is a shade darker than #7C3AED (violet-700) so filled
+ * buttons keep a comfortable AA contrast under white text. On dark surfaces the
+ * brand shows as the lighter violets (#C4B5FD, #DDD6FE), where it is the text
+ * colour rather than the background.
  */
 :root {
   --radius: 0.75rem;
@@ -49,18 +49,18 @@
   --card-foreground: oklch(0.17 0.015 40);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.17 0.015 40);
-  --primary: oklch(0.56 0.19 31);
+  --primary: oklch(0.49 0.24 293);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.97 0.008 55);
   --secondary-foreground: oklch(0.26 0.03 35);
   --muted: oklch(0.97 0.008 55);
   --muted-foreground: oklch(0.52 0.02 40);
-  --accent: oklch(0.96 0.02 45);
-  --accent-foreground: oklch(0.32 0.07 33);
+  --accent: oklch(0.96 0.02 293);
+  --accent-foreground: oklch(0.32 0.1 293);
   --destructive: oklch(0.58 0.24 27);
   --border: oklch(0.92 0.01 50);
   --input: oklch(0.92 0.01 50);
-  --ring: oklch(0.62 0.17 32);
+  --ring: oklch(0.6 0.2 293);
 }
 
 .dark {
@@ -70,18 +70,18 @@
   --card-foreground: oklch(0.96 0.005 60);
   --popover: oklch(0.19 0.015 38);
   --popover-foreground: oklch(0.96 0.005 60);
-  --primary: oklch(0.72 0.17 34);
+  --primary: oklch(0.72 0.16 293);
   --primary-foreground: oklch(0.16 0.02 35);
   --secondary: oklch(0.24 0.015 38);
   --secondary-foreground: oklch(0.96 0.005 60);
   --muted: oklch(0.24 0.015 38);
   --muted-foreground: oklch(0.7 0.015 45);
-  --accent: oklch(0.28 0.04 35);
+  --accent: oklch(0.28 0.05 293);
   --accent-foreground: oklch(0.96 0.005 60);
   --destructive: oklch(0.7 0.19 22);
   --border: oklch(0.29 0.018 38);
   --input: oklch(0.29 0.018 38);
-  --ring: oklch(0.65 0.15 33);
+  --ring: oklch(0.65 0.17 293);
 }
 
 @layer base {
@@ -104,7 +104,7 @@
   /*
    * JetBrains Mono ligates `--` into a single long dash. Everywhere else that
    * is a nicety; here almost every monospaced string is a command somebody is
-   * about to copy, and `--site` rendering as `—site` is a flag that does not
+   * about to copy, and `--site` rendering as an em dash plus `site` is a flag that does not
    * exist. Off for all monospaced text on the site.
    */
   code,
@@ -132,14 +132,14 @@
   }
 
   .text-gradient {
-    background: linear-gradient(110deg, #ffb59a, #ff7a5c 45%, #ffcf8f);
+    background: linear-gradient(110deg, #ddd6fe, #a78bfa 45%, #f0abfc);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
 
-  /* The scanline sheen on a terminal panel — one pixel row every three. */
+  /* The scanline sheen on a terminal panel: one pixel row every three. */
   .scanlines::after {
     content: "";
     position: absolute;

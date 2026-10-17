@@ -1,4 +1,4 @@
-// SH566 — who is allowed to move the window.
+// SH566: who is allowed to move the window.
 //
 // The hero player kept the lit step in view with `scrollIntoView`, which reads
 // as a container-local call and is not one: it scrolls **every** scrollable
@@ -10,7 +10,7 @@
 // The assertion is therefore about reach, not about that component: only an
 // explicit, reader-initiated navigation may move the window, and on this site
 // that is the hash routing in `App.tsx`. Anything that keeps its own content in
-// view scrolls its own element — `Element.scrollBy` / `scrollTo` stop there.
+// view scrolls its own element: `Element.scrollBy` / `scrollTo` stop there.
 //
 // A source lint rather than a DOM test because the defect is invisible in
 // jsdom, which has no layout and so never scrolls anything.

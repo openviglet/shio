@@ -2,7 +2,7 @@
   "name": "@viglet/shio-js",
   "private": true,
   "version": "2026.3.2",
-  "description": "Shio CMS JavaScript workspace \u2014 console (shio-react), CDA client, React SDK, the page-section vocabulary, Universal Editor bridge, the Next.js starter generator and the example sites.",
+  "description": "Viglet Shio JavaScript workspace \u2014 console (shio-react), CDA client, React SDK, the page-section vocabulary, Universal Editor bridge, the Next.js starter generator and the example sites.",
   "homepage": "https://shio.viglet.org/",
   "repository": {
     "type": "git",

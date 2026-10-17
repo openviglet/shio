@@ -86,7 +86,7 @@ export function Surface() {
             </dl>
             <p className="mt-5 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
               <LawChip id="P1" /> A capability the console has and the agent does not
-              is an unshipped feature. Where something genuinely lives elsewhere, the
+              is an unshipped feature. Where something lives elsewhere, the
               manifest says so by name instead of reporting{" "}
               <span className="font-mono">false</span> and letting a client guess.
             </p>

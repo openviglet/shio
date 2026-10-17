@@ -20,7 +20,7 @@ export function CopyCommand({
         window.setTimeout(() => setCopied(false), 1500);
       })
       .catch(() => {
-        /* clipboard blocked — no-op */
+        /* clipboard blocked: no-op */
       });
   };
 
@@ -28,7 +28,7 @@ export function CopyCommand({
     <div
       className={cn(
         // inline-flex keeps it a compact pill on desktop; max-w-full caps it to
-        // the parent so a long command can't push the page wider on mobile — the
+        // the parent so a long command can't push the page wider on mobile; the
         // command itself scrolls horizontally instead (min-w-0 lets it shrink).
         "inline-flex max-w-full items-center gap-3 rounded-lg border border-white/15 bg-black/30 px-4 py-2.5 font-mono text-sm text-[#f0ded6] backdrop-blur",
         className

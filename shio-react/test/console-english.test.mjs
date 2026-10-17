@@ -57,10 +57,10 @@ const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src")
  * here is a diff somebody reviews with the reason beside it.</p>
  */
 const UNTRANSLATED = new Map(Object.entries({
-  "app/login/login.page.tsx | text | Viglet Shio CMS":
+  "app/login/login.page.tsx | text | Viglet Shio":
     "The product's name. Translating it would rename the product per locale, and the login page is "
     + "the one screen where a reader has no other confirmation of what they have connected to.",
-  "app/setup/setup.page.tsx | text | Viglet Shio CMS":
+  "app/setup/setup.page.tsx | text | Viglet Shio":
     "The same name on the first-run screen, and the same reason.",
   "app/admin/tenant/tenant.page.tsx | prop | FREE":
     "A plan identifier the backend stores and compares (`plan: \"FREE\"`), shown as the field's "

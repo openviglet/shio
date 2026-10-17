@@ -28,7 +28,7 @@ test("the twin carries the route's own metadata", () => {
   assert.match(out, /^Canonical: https:\/\/shio\.viglet\.org\/x$/m);
 });
 
-test("the nav and the footer are dropped — they are chrome on all ten routes", () => {
+test("the nav and the footer are dropped: they are chrome on all ten routes", () => {
   const out = md("<p>Body.</p>");
   assert.doesNotMatch(out, /Viglet Shio\]/);
   assert.doesNotMatch(out, /© 2026/);
@@ -53,7 +53,7 @@ test("a code block survives verbatim, newlines and all", () => {
 test("a code block whose lines are separate spans keeps one line per span", () => {
   // The session panels colour each line on its own, so they emit one
   // `<span class="block">` per line and no newline characters at all. Joining
-  // the children ran a whole artefact — a file tree, a diff — into a single
+  // the children ran a whole artefact (a file tree, a diff) into a single
   // line in the twin, which reads as mangled rather than as missing.
   const out = md(
     '<pre><code><span class="block">acme</span><span class="block whitespace-pre">  └─ Home</span></code></pre>'
@@ -94,7 +94,7 @@ test("an icon and a decorative element leave nothing behind", () => {
 });
 
 test("an empty overlay button gives a step a click target and costs the twin nothing", () => {
-  // SH571 — the transcript's steps became clickable. A <button> is dropped whole,
+  // SH571: the transcript's steps became clickable. A <button> is dropped whole,
   // children included, which is right for the CTA and would have deleted all six
   // calls from every twin had the text moved inside it. The affordance therefore
   // sits beside the text, not around it, and this is the assertion that says so:
@@ -126,8 +126,8 @@ test("the scanner survives an unbalanced close tag instead of throwing", () => {
 });
 
 test("entities decode, including the ones this site actually writes", () => {
-  assert.equal(decodeEntities("a &mdash; b &middot; c &rarr; d"), "a — b · c → d");
-  assert.equal(decodeEntities("&#8212;"), "—");
+  assert.equal(decodeEntities("a &mdash; b &middot; c &rarr; d"), "a \u2014 b · c → d");
+  assert.equal(decodeEntities("&#8212;"), "\u2014");
   assert.equal(decodeEntities("&unknownentity;"), "&unknownentity;");
 });
 

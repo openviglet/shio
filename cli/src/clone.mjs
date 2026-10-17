@@ -790,7 +790,7 @@ export function scanPage(html, pageUrl) {
       if (inTitle && !doc.title) doc.title = collapse(decodeEntities(token.text)) || null;
       // SH468 — a separator, because an append after the first crosses an element boundary: the
       // tokenizer emits one text token per run, so two of them in one anchor were separated by a
-      // tag. Without one a 48×48 brand tile beside its label produced `DuDumont DEP`, `ShShio CMS`,
+      // tag. Without one a 48×48 brand tile beside its label produced `DuDumont DEP`, `ShViglet Shio`,
       // `TuTuring ES` — a token the source never contained, and `collapse()` then normalised
       // whitespace that was never inserted. A fabricated word is worse than a dropped one: `Dumont
       // DEP` and `DuDumont DEP` both look like content, so nothing downstream — not `verify`, not a

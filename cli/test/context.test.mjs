@@ -12,7 +12,7 @@ import { test } from "node:test";
 import * as context from "../src/commands/context.mjs";
 
 const TERSE_PACK = `shio-context 1 manifest=/api/v2/agent/manifest
-instance "Viglet Shio CMS" dev locale=en
+instance "Viglet Shio" dev locale=en
 site Blog id=s1 root=f1 posts=3
 type Article managed posts=3 fields="title:Text!,body:HTML Editor"
 node folder / id=f1 folders=1

@@ -7,8 +7,8 @@
     <artifactId>shio</artifactId>
     <packaging>pom</packaging>
     <version>${revision}</version>
-    <name>Shio CMS Master</name>
-    <description>Viglet Shio CMS</description>
+    <name>Viglet Shio Master</name>
+    <description>Viglet Shio</description>
 
     <!-- The one place in the tree that declared no license at all. LICENSE, the
          README badge and every package.json now say the same thing; a POM that

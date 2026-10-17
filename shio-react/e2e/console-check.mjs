@@ -1669,7 +1669,7 @@ const isOurs = (site) => site?.description === PROVISIONED
  * two servers do not give the same answers — the Monaco workers fall back to the main thread under
  * the dev server and start normally from the jar, which is the rest of SH927.
  */
-const SHIO_TITLE = "Viglet Shio CMS"
+const SHIO_TITLE = "Viglet Shio"
 
 async function identifyServer() {
   let dev = false

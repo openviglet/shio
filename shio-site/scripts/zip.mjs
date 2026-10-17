@@ -1,21 +1,21 @@
-// SH676 — a deterministic ZIP writer, stored, with no dependencies.
+// SH676: a deterministic ZIP writer, stored, with no dependencies.
 //
 // ## Why hand-rolled rather than a package
 //
 // This workspace has no zip library and the site build has no runtime dependencies at
-// all — every script here reads something the repo already owns and writes a derived
+// all: every script here reads something the repo already owns and writes a derived
 // artefact. Adding `archiver` to produce six small archives would be the largest
 // dependency decision in this package, made for the least code.
 //
 // A *stored* zip (method 0, no compression) is the part of the format that is genuinely
 // simple: a local header per entry, a central directory, an end record. There is no
-// deflate stream to get wrong. The saving compression would buy is irrelevant — these
+// deflate stream to get wrong. The saving compression would buy is irrelevant: these
 // packages are 50-110 KB of source text and they are downloaded once.
 //
 // ## Deterministic, because a published artefact should be checkable (P5)
 //
-// The archives are **not** committed — they are built by the GitHub Pages workflow and
-// gitignored — so the reason is not diff noise. It is that a package somebody downloads
+// The archives are **not** committed (they are built by the GitHub Pages workflow and
+// gitignored), so the reason is not diff noise. It is that a package somebody downloads
 // from shio.viglet.org should be reproducible from the commit it was built at: rebuild
 // the same tree, get the same bytes, and a mismatch means something other than the
 // packages changed. A zip that embedded the build clock cannot make that promise, and it
@@ -27,7 +27,7 @@
 // ## What it deliberately does not do
 //
 // No zip64 (a package this size cannot reach 4 GB), no encryption, no data descriptors,
-// no directory entries — a reader creates a parent directory when it meets `a/b.txt`,
+// no directory entries: a reader creates a parent directory when it meets `a/b.txt`,
 // which is what both `ShMarketplaceInstaller` and Python's `zipfile` do.
 
 import { crc32 } from "node:zlib";
@@ -40,7 +40,7 @@ const LOCAL_SIGNATURE = 0x04034b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
 const END_SIGNATURE = 0x06054b50;
 
-/** Version 2.0 — what "stored, no zip64" needs and nothing more. */
+/** Version 2.0: what "stored, no zip64" needs and nothing more. */
 const VERSION = 20;
 
 /** Bit 11: the name is UTF-8. Set always, so a non-ASCII path is never mojibake. */
@@ -100,7 +100,7 @@ export function zip(entries) {
     central.writeUInt16LE(0, 36); // internal attrs
     // External attributes: a regular file, 0644, in the high word. Shifted with `>>> 0` because
     // `<<` in JavaScript yields a SIGNED int32 and 0o100644 << 16 is negative, which
-    // `writeUInt32LE` rejects — the one arithmetic trap in this whole format.
+    // `writeUInt32LE` rejects: the one arithmetic trap in this whole format.
     central.writeUInt32LE((0o100644 << 16) >>> 0, 38);
     central.writeUInt32LE(offset, 42);
     centrals.push(central, name);

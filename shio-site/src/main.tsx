@@ -4,7 +4,7 @@ import App from "./App.tsx";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./index.css";
 
-// The route is derived from the URL — the same trivial rule the server used.
+// The route is derived from the URL: the same trivial rule the server used.
 const container = document.getElementById("root")!;
 const tree = (
   <React.StrictMode>

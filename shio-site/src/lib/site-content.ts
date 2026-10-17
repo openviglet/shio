@@ -40,7 +40,7 @@ import { ceiling } from "./token-budgets";
  * a measurement, the test that measures it is named in a comment.
  *
  * Two things run over what you write here (SH925). `scripts/ai-writing.test.mjs`
- * is the AI-writing checklist as a lint — the puffery vocabulary, and the counts
+ * is the AI-writing checklist as a lint: the puffery vocabulary, and the counts
  * that can be read back from the surface they describe. And the `ai-writing`
  * skill is the pass somebody still has to make by reading: the tells worth
  * catching are density and inflation, which no grep can see.
@@ -155,7 +155,7 @@ export interface TranscriptStep {
 }
 
 /**
- * A session that builds one page, start to finish. Scripted — and the page says
+ * A session that builds one page, start to finish. Scripted, and the page says
  * so, because a recording dressed as a live connection is exactly the thing
  * this product's design laws refuse. SH531 turns it into a stepped player and
  * SH540 points it at a public instance.
@@ -278,7 +278,7 @@ export interface ConsoleStep {
 /**
  * The counterpart to `TRANSCRIPT`, and the reason both are on the page: they
  * end at the same draft. The site used to open on the agent session alone,
- * which reads as a CMS you cannot use without one — an impression the product
+ * which reads as a CMS you cannot use without one: an impression the product
  * does not deserve and the console disproves in six clicks.
  *
  * Every screen named here is a route in the console (`shio-react/src/app/`),
@@ -383,7 +383,7 @@ export interface UsePath {
   tag: string;
   /** Who arrives on this path. */
   audience: string;
-  /** What it takes to start — the honest prerequisite. */
+  /** What it takes to start: the honest prerequisite. */
   needs: string;
   body: string;
   surface: string[];
@@ -397,8 +397,8 @@ export interface UsePath {
  * in the wrong place, and a page that implies otherwise loses them in one
  * paragraph.
  *
- * These are not tiers and not a migration path — they are four doors onto one
- * content engine. The same posts, the same drafts, the same publish act.
+ * These are four doors onto one content engine, not tiers and not a migration
+ * path. The same posts, the same drafts, the same publish act.
  */
 export const PATHS: UsePath[] = [
   {
@@ -458,7 +458,7 @@ export interface UseCase {
   title: string;
   who: string;
   body: string;
-  /** Ids from PATHS — which doors this scenario actually walks through. */
+  /** Ids from PATHS: which doors this scenario actually walks through. */
   paths: string[];
 }
 
@@ -531,7 +531,7 @@ export interface Role {
 /**
  * Three seats, and the sentence that has to travel with them: **any of them can
  * be empty, and one person can hold all three.** The person's seat is first
- * because it is the only one that is never optional — an instance with no agent
+ * because it is the only one that is never optional: an instance with no agent
  * is an ordinary CMS, and an instance with no person is not a product anyone
  * should ship.
  */
@@ -565,9 +565,9 @@ export const ROLES: Role[] = [
 /* ── P2 / P3: what a call costs ────────────────────────────── */
 
 /**
- * SH533 — generated, never typed. `scripts/token-budgets.mjs` reads the build's
- * own `token-budgets.properties` — the single file the Java suite asserts every
- * response against — and writes the JSON imported below, on every build. A
+ * SH533: generated, never typed. `scripts/token-budgets.mjs` reads the build's
+ * own `token-budgets.properties` (the single file the Java suite asserts every
+ * response against) and writes the JSON imported below, on every build. A
  * renamed key fails the build rather than dropping a bar.
  *
  * They are **ceilings**, not measurements: what the build refuses to exceed. That
@@ -848,9 +848,9 @@ export interface ComparisonRow {
 }
 
 /**
- * The axis is agent-operability, not features — every headless CMS has content
+ * The axis is agent-operability, not features: every headless CMS has content
  * types and a delivery API. SH534 turns this teaser into a page that also names
- * where each alternative genuinely wins, which is what makes the rest credible.
+ * where each alternative wins, which is what makes the rest credible.
  */
 export const COMPARISON: ComparisonRow[] = [
   { feature: "One call replaces discovery", shio: "yes", headless: "no", diy: "n/a" },
@@ -865,7 +865,7 @@ export const COMPARISON: ComparisonRow[] = [
   { feature: "Self-host, your database", shio: "yes", headless: "no", diy: "yes" },
 ];
 
-/* ── /curator — the curator's half ───────────────────────────────────────────── */
+/* ── /curator: the curator's half ────────────────────────────────────────────── */
 
 export interface CuratorMoment {
   when: string;
@@ -874,7 +874,7 @@ export interface CuratorMoment {
 }
 
 /**
- * What a curator's Tuesday actually looks like — deliberately a narrative and
+ * What a curator's Tuesday actually looks like: deliberately a narrative and
  * not an architecture diagram, because the reader this page is for does not
  * want to know which service owns the review session.
  */
@@ -945,7 +945,7 @@ export const GATES: Gate[] = [
     mechanism:
       "The review queue is console-authenticated and deliberately not on the agent namespace at all. An agent token cannot reach the approve call.",
     because:
-      "A credential that can both make a change and sign it off is not a review step, it is a log line.",
+      "A credential that can both make a change and sign it off turns the review step into a log line.",
   },
   {
     icon: Undo2,
@@ -988,7 +988,7 @@ export const LIFECYCLE = [
   },
 ];
 
-/* ── /console — the CMS, with nothing attached to it ─────────────────────── */
+/* ── /console: the CMS, with nothing attached to it ──────────────────────── */
 
 export interface CapabilityGroup {
   icon: LucideIcon;
@@ -998,7 +998,7 @@ export interface CapabilityGroup {
 
 /**
  * What the console does on its own. Each line is a screen in
- * `shio-react/src/app/` (content, admin, editor) — this list is a walk of those directories rather
+ * `shio-react/src/app/` (content, admin, editor); this list is a walk of those directories rather
  * than a wish, because the failure it prevents is the one this page exists to
  * correct: a claim about the curator's half that nobody checked against the
  * curator's half.
@@ -1066,7 +1066,7 @@ export const CONSOLE_CAPABILITIES: CapabilityGroup[] = [
 
 /**
  * And the honest other half. Naming these is what makes the list above worth
- * reading: three capabilities genuinely live on the command line, because they
+ * reading: four capabilities live only on the command line, because they
  * need a shell or a browser the instance deliberately does not run.
  */
 export const CONSOLE_LIMITS = [
@@ -1108,7 +1108,7 @@ export const AGENT_LATER = [
   },
 ];
 
-/* ── /replicate — capture, propose, convert, prove, accept ──────────────── */
+/* ── /replicate: capture, propose, convert, prove, accept ───────────────── */
 
 export interface Phase {
   verb: string;
@@ -1265,7 +1265,7 @@ export const PROPOSE_OUTPUT = `$ shio propose --site example
 
   2 candidate(s) - accept with --accept hero-a91c grid-4f02`;
 
-/* ── /compare — the matrix, and where it loses ───────────────────────────── */
+/* ── /compare: the matrix, and where it loses ────────────────────────────── */
 
 export const COMPARE_COLUMNS = ["Shio", "Contentful", "Sanity", "Strapi", "WordPress"] as const;
 
@@ -1288,7 +1288,7 @@ export interface CompareGroup {
  * ten laws turned into a question with a checkable answer.
  *
  * **How to read the competitor columns.** They say whether the product
- * *documents the property as a guarantee*, not whether some path exists — an
+ * *documents the property as a guarantee*, not whether some path exists: an
  * export command is not a file projection with a three-way merge, and an MCP
  * server over an API designed for a browser is not a protocol designed for an
  * agent. Where a product's answer is "you can build it", the cell says so.
@@ -1313,7 +1313,7 @@ export const COMPARE_GROUPS: CompareGroup[] = [
         cells: ["yes", "no", "no", "no", "no"],
       },
       {
-        // SH601 — the finding behind this row is that the manifest was already complete, and
+        // SH601: the finding behind this row is that the manifest was already complete, and
         // completeness was never the constraint: mapping an intent onto it was the unbudgeted work.
         feature: "The manifest routes an intent to the one call, instead of listing everything",
         cells: ["yes", "no", "no", "no", "no"],
@@ -1418,7 +1418,7 @@ export interface Rival {
 }
 
 /**
- * Where each alternative genuinely wins. Turing's compare page earns its
+ * Where each alternative wins. Viglet Turing's compare page earns its
  * credibility this way and this one has to do the same, or the matrix above is
  * worth nothing: a table where one column is all ticks is a table nobody reads
  * twice.
@@ -1432,7 +1432,7 @@ export const RIVALS: Rival[] = [
   },
   {
     name: "Sanity",
-    wins: "The best structured-content editing experience in the category: real-time collaboration, a genuinely good query language, and a studio you shape to the model.",
+    wins: "Structured-content editing: real-time collaboration, its own query language, and a studio you shape to the model.",
     chooseIt:
       "editors are the primary operator and the depth of the editing experience is the thing you are buying.",
   },
@@ -1466,7 +1466,7 @@ export const OBJECTIONS: Objection[] = [
   },
   {
     q: "Our editors will never open a terminal. Is the console a second-class citizen?",
-    a: "It is the surface the product is judged on by everyone who is not an agent, and it carries the whole ordinary job: sites, folders, post types with fifteen field widgets, a media library, search, a trash that restores, publishing and scheduling, users, groups, roles and tokens. Four things genuinely live on the command line (capturing an existing site, applying a blueprint, the browser audit and the file projection), and each is named on the console page rather than left for you to discover.",
+    a: "It is the surface the product is judged on by everyone who is not an agent, and it carries the whole ordinary job: sites, folders, post types with fifteen field widgets, a media library, search, a trash that restores, publishing and scheduling, users, groups, roles and tokens. Four things live only on the command line (capturing an existing site, applying a blueprint, the browser audit and the file projection), and each is named on the console page rather than left for you to discover.",
   },
   {
     q: "Java and Spring, in 2026?",
@@ -1495,7 +1495,7 @@ export interface Pillar {
 export const PILLARS: Pillar[] = [
   {
     icon: Workflow,
-    iconClass: "from-[#d94328] to-[#ff6347]",
+    iconClass: "from-[#5b21b6] to-[#7c3aed]",
     title: "The agent gateway",
     description:
       "MCP over the same services the console uses, a manifest that answers first, and a context pack that ends the discovery session.",
@@ -1543,7 +1543,7 @@ export const PILLARS: Pillar[] = [
   },
 ];
 
-/* ── /claude-code — the first five minutes ───────────────────────────────── */
+/* ── /claude-code: the first five minutes ────────────────────────────────── */
 
 export const PLUGIN_INSTALL = `claude plugin marketplace add openviglet/shio
 claude plugin install shio
@@ -1621,7 +1621,7 @@ export const PLUGIN_PARTS: PluginPart[] = [
 ];
 
 /**
- * The rules the plugin encodes — the ones that are expensive to learn by making
+ * The rules the plugin encodes: the ones that are expensive to learn by making
  * the mistake. Kept in sync with `claude-plugin/README.md`.
  */
 export const PLUGIN_RULES = [
@@ -1668,7 +1668,7 @@ export interface TokenScope {
 }
 
 /**
- * `ShApiTokenScope` — the four scopes, verbatim in meaning. AGENT is the one
+ * `ShApiTokenScope`: the four scopes, verbatim in meaning. AGENT is the one
  * this page exists to explain: it is deliberately not a superset of WRITE.
  */
 export const TOKEN_SCOPES: TokenScope[] = [

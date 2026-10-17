@@ -1,4 +1,4 @@
-// SH533 — the token numbers on the site come from the build's own budget file.
+// SH533: the token numbers on the site come from the build's own budget file.
 //
 // ## Why a generator and not four numbers typed into site-content.ts
 //
@@ -6,12 +6,12 @@
 // is the site's sharpest differentiating claim. A number on a marketing page
 // that has drifted from the build is worse than no number at all: it turns the
 // one falsifiable thing being said into the one thing that is false. So the
-// pipeline is the deliverable — `shio-app/src/test/resources/token-budgets.properties`
+// pipeline is the deliverable: `shio-app/src/test/resources/token-budgets.properties`
 // is the single source the Java suite already asserts against, this reads it,
 // and the site imports what this writes.
 //
 // The coupling across packages is deliberate and is the point. The alternative
-// is a copy, and a second place to keep a number is a place that goes stale —
+// is a copy, and a second place to keep a number is a place that goes stale,
 // which is the reasoning the budgets file itself carries for keeping every
 // ceiling in one file rather than in the assertions.
 //
@@ -24,7 +24,7 @@
 //
 // ## The ratio unit, which is a trap
 //
-// `ShAgentTaskBenchmarkTest.ratio()` returns **integer tenths** — `30` is 3.0x,
+// `ShAgentTaskBenchmarkTest.ratio()` returns **integer tenths**: `30` is 3.0x,
 // not 30x. Reading it as a whole number would have put a claim on the page an
 // order of magnitude larger than anything measured. Converted here, once.
 

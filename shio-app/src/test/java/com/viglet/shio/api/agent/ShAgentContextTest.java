@@ -180,7 +180,7 @@ class ShAgentContextTest {
 
         assertThat(pack.protocol()).isEqualTo(ShAgentManifestService.PROTOCOL);
         assertThat(pack.manifest()).isEqualTo("/api/v2/agent/manifest");
-        assertThat(pack.instance().product()).isEqualTo("Viglet Shio CMS");
+        assertThat(pack.instance().product()).isEqualTo("Viglet Shio");
         assertThat(pack.sites()).extracting(ShAgentContext.Site::name).contains(siteName);
         assertThat(pack.model()).extracting(ShAgentContext.Type::name).contains(postTypeName);
         assertThat(pack.sitemap()).isNotEmpty();

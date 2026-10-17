@@ -1,4 +1,4 @@
-// SH566 — the proof the source lint cannot make: the page does not move on its own.
+// SH566: the proof the source lint cannot make: the page does not move on its own.
 //
 // `scroll-ownership.test.mjs` asserts the *shape* (nobody but the router calls
 // `scrollIntoView`), which is what runs on every CI build. This file asserts the
@@ -9,7 +9,7 @@
 //   pnpm --filter shio-site dev            # or: vite preview, or the deployed site
 //   SHIO_SITE_URL=http://localhost:5173/ pnpm --filter shio-site test
 //
-// playwright is the workspace's own optional browser — the same dependency
+// playwright is the workspace's own optional browser, the same dependency
 // `shio clone --render`, `snapshot` and `audit` resolve through
 // `cli/src/browser.mjs`. Absent, this skips rather than fails: the CLI's rule is
 // that a missing browser is a refusal with an install line, never a red build.
@@ -43,7 +43,7 @@ async function browser() {
  * became clickable, which keeps this helper usable by both tests.
  *
  * The waits that follow it are deliberately fixed. They are not synchronising
- * on anything — they *are* the measurement: both assertions here are about what
+ * on anything; they *are* the measurement: both assertions here are about what
  * fails to happen over a known span of wall clock, and there is no event for
  * "the page did not move".
  */
@@ -58,8 +58,8 @@ const armed = (page) =>
 /**
  * Bring the agent session on screen.
  *
- * The hero now opens on the console session — a person building the same page
- * without an agent — and the transcript is the second tab. Everything below
+ * The hero now opens on the console session (a person building the same page
+ * without an agent), and the transcript is the second tab. Everything below
  * asserts the transcript's behaviour, and a hidden panel never intersects, so
  * `armed()` would wait forever without this click. Selecting the tab is also
  * what makes the observer fire, so no extra scrolling is needed.
@@ -84,7 +84,7 @@ test("the hero player never scrolls the window (SH566)", async (t) => {
 
     // Wait for the scroll to arrive rather than for half a second. The site sets
     // `scroll-behavior: smooth`, so `scrollTo` is animated and how long it takes
-    // depends on the distance — a fixed wait reads a position mid-flight and then
+    // depends on the distance: a fixed wait reads a position mid-flight and then
     // reports the rest of the animation as drift, which is the opposite of what
     // this test is for. Measured here: 500ms was landing ~460px short.
     await page.waitForFunction(
@@ -105,7 +105,7 @@ test("the hero player never scrolls the window (SH566)", async (t) => {
 
     assert.ok(
       Math.abs(after - before) <= TOLERANCE_PX,
-      `the page scrolled itself by ${after - before}px while the transcript played — ` +
+      `the page scrolled itself by ${after - before}px while the transcript played: ` +
         `the reader is driving, the player is not (P7)`
     );
   } finally {
@@ -119,7 +119,7 @@ test("the hero opens on the console session, and the agent one is one click away
   if (!chromium) return t.skip("playwright is not installed: pnpm add -D playwright");
 
   // The positioning fix, asserted where it can actually be checked. The claim is
-  // not "there is a tab component" — it is that a first-time visitor who never
+  // not "there is a tab component"; it is that a first-time visitor who never
   // touches the switch sees a person building a page, because the previous
   // default said, without meaning to, that the CMS needs an agent.
   const instance = await chromium.launch();
@@ -178,7 +178,7 @@ test("clicking a step selects it and shows what that call produced (SH571)", asy
     );
     // Exactly one step is lit. Scoped to the step buttons on purpose: the progress
     // dots are `<ol><li><button>` too, and the dot for the same call is *also*
-    // aria-current — two views of one selection, which is correct and would make
+    // aria-current: two views of one selection, which is correct and would make
     // an unscoped count read 2 and mean nothing.
     assert.equal(
       await page.locator("button[aria-label^='Show call'][aria-current='step']").count(),
@@ -188,7 +188,7 @@ test("clicking a step selects it and shows what that call produced (SH571)", asy
     // And the point of clicking it: the artefact pane shows *that* call's output.
     // Asserted as a round trip rather than against a literal, because the copy
     // lives in site-content.ts and a test that repeats it is a second place for
-    // it to go stale — away and back must land on the same bytes.
+    // it to go stale: away and back must land on the same bytes.
     const artefact = page.locator(".scanlines pre");
     const fourth = await artefact.innerText();
     await steps.nth(0).click();

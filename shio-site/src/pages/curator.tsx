@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { CURATOR_DAY, GATES, LIFECYCLE, ROLES } from "@/lib/site-content";
 
 /**
- * SH536 — the site showed only the agent, which reads as a CMS with no editor.
+ * SH536: the site showed only the agent, which reads as a CMS with no editor.
  *
  * Written for the person who will be asked to approve the agent's work, not for
  * the engineer who wires it up: a Tuesday first, mechanisms second, and the
  * product's three-role shape last, in plain words. The objection this page
- * answers is never "can the agent do it" — it is "what stops it".
+ * answers is "what stops it", never "can the agent do it".
  */
 export function CuratorPage() {
   return (
@@ -30,10 +30,9 @@ export function CuratorPage() {
           }
           lead={
             <>
-              That sentence is the product. Shio is built so a coding agent can do
-              the work and a person still decides what the world sees, not as a
-              policy somebody wrote down, but as mechanisms that are on by default
-              and that an eager script cannot switch off on its way past.
+              In Viglet Shio a coding agent can do the work while a person decides
+              what readers see. What enforces that is a set of mechanisms, on by
+              default, that an eager script cannot switch off on its way past.
             </>
           }
         >
@@ -65,7 +64,7 @@ export function CuratorPage() {
                   <span className="text-primary">Tuesday morning</span>
                 </>
               }
-              description="Not an architecture diagram. This is the whole interaction most curators will ever have with the fact that an agent built the site."
+              description="What a curator does with the work an agent did overnight, from the review queue to the publish."
             />
 
             <ol className="relative space-y-6 border-l border-border pl-8">
@@ -91,7 +90,7 @@ export function CuratorPage() {
             <SectionHeader
               eyebrow="The lifecycle"
               title="Five states, and only one of them is public"
-              description="A published post is an immutable snapshot sitting beside the editable draft rather than an entry in a long history, which is exactly why the diff, the restore and the preview are cheap enough to be always available."
+              description="A published post is an immutable snapshot sitting beside the editable draft rather than an entry in a long history, which is why the diff, the restore and the preview are cheap enough to be always available."
             />
 
             <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -144,7 +143,7 @@ export function CuratorPage() {
               <div className="rounded-2xl border border-border bg-card p-6">
                 <div className="flex items-center gap-2 border-b border-border pb-3">
                   <span className="flex gap-1.5" aria-hidden>
-                    <span className="size-2.5 rounded-full bg-[#ff6347]/60" />
+                    <span className="size-2.5 rounded-full bg-[#7c3aed]/60" />
                     <span className="size-2.5 rounded-full bg-[#f5c46b]/60" />
                     <span className="size-2.5 rounded-full bg-[#7dd3a0]/60" />
                   </span>
@@ -184,7 +183,7 @@ export function CuratorPage() {
           className="relative isolate overflow-hidden bg-[#150e0c] py-20 text-[#f6ece8]"
         >
           <div className="grid-bg pointer-events-none absolute inset-0 -z-10" />
-          <div className="animate-orb-a pointer-events-none absolute -top-32 left-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#ff6347,transparent_70%)] opacity-30 blur-[80px]" />
+          <div className="animate-orb-a pointer-events-none absolute -top-32 left-1/4 -z-10 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,#7c3aed,transparent_70%)] opacity-30 blur-[80px]" />
 
           <Container>
             <div className="mx-auto mb-12 max-w-2xl text-center">
@@ -207,7 +206,7 @@ export function CuratorPage() {
                   key={g.title}
                   className="rounded-xl border border-white/10 bg-white/[0.03] p-6"
                 >
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-[#ff6347]/12 text-[#ff9478]">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-[#7c3aed]/12 text-[#c4b5fd]">
                     <g.icon className="size-5" />
                   </div>
                   <h3 className="mt-4 font-bold">{g.title}</h3>
@@ -215,7 +214,7 @@ export function CuratorPage() {
                     {g.mechanism}
                   </p>
                   <p className="mt-3 border-t border-white/10 pt-3 text-sm leading-relaxed text-[#a89189]">
-                    <span className="font-semibold text-[#ff9478]">Because</span>{" "}
+                    <span className="font-semibold text-[#c4b5fd]">Because</span>{" "}
                     {g.because}
                   </p>
                 </div>
@@ -230,7 +229,7 @@ export function CuratorPage() {
             <SectionHeader
               eyebrow="In plain words"
               title="Three seats, and you can hold all of them"
-              description="If you take one thing from this page, take this: it is the whole product, and it is the answer to “so what does the CMS actually do now”."
+              description="Who does what on an instance, and which seat may stay empty."
             />
 
             <div className="grid gap-6 md:grid-cols-3">

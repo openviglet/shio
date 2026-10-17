@@ -15,7 +15,7 @@ export function Layout() {
       </nav>
       <Outlet />
       <footer className="footer">
-        <p>Built with <a href="#">Shio CMS</a> &mdash; Powered by @viglet/shio-react-sdk</p>
+        <p>Built with <a href="#">Viglet Shio</a> &mdash; Powered by @viglet/shio-react-sdk</p>
       </footer>
     </>
   )

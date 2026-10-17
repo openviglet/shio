@@ -1,9 +1,9 @@
-# SH14 — Versioning UI (draft↔published diff + restore) — implementable spec
+# SH14: Versioning UI (draft↔published diff + restore), implementable spec
 
 > Roadmap: [ROADMAP.md](../ROADMAP.md) Block C · Design: [IMPROVEMENTS.md](../IMPROVEMENTS.md) §III.3
-> Status: ⏳ partial · deps: —
+> Status: ⏳ partial · deps:,
 
-## 1. Context — what already exists (do not rebuild)
+## 1. Context: what already exists (do not rebuild)
 
 - **Versioning is row-per-state, not a long history.** The unified model
   ([ShPostUnified](../../shio-app/src/main/java/com/viglet/shio/persistence/model/post/unified/ShPostUnified.java))
@@ -33,7 +33,7 @@
   and renders a `StickySaveBar` whose `actions` slot already hosts Preview/Save/
   Save&Close/Cancel buttons (SH13). SH14 adds one more button there.
 
-**What SH14 adds:** the console UI the roadmap calls for — a **History** dialog
+**What SH14 adds:** the console UI the roadmap calls for, a **History** dialog
 that shows the two states side-by-side, computes a **field-level diff** of the
 unpublished draft against the live published snapshot, and offers a **Restore**
 action that reverts the draft to the published version (discards unpublished
@@ -43,14 +43,14 @@ is read-only over the existing `/versions` data.
 ## 2. Goal & scope
 
 **In scope**
-- Backend: `ShPostUnifiedWriteService.restoreDraftFromPublished(postId, modifier)`
-  — copies the `PUBLISHED` row's `data`/title/summary/furl into the `DRAFT` row
+- Backend: `ShPostUnifiedWriteService.restoreDraftFromPublished(postId, modifier)`,
+  copies the `PUBLISHED` row's `data`/title/summary/furl into the `DRAFT` row
   (creating the `DRAFT` row from the published one if it does not exist), stamps
   `modifiedDate`/`modifier`, and returns the updated draft. `POST
   /api/v2/post-unified/{id}/restore` exposes it (console-authenticated, like the
-  rest of the controller). No Liquibase change — reuses existing columns.
+  rest of the controller). No Liquibase change, reuses existing columns.
 - Frontend: `ShPostUnifiedService.restore(id)`.
-- Frontend: a `PostVersionsDialog` component — fetches `/versions`, splits into
+- Frontend: a `PostVersionsDialog` component, fetches `/versions`, splits into
   draft/published, renders metadata for each state and a field-level diff table
   (driven by the post-type schema), with an "only changes" toggle and a
   two-step **Restore published version** button.
@@ -64,7 +64,7 @@ is read-only over the existing `/versions` data.
   larger task and is **not** implied by "the `/versions` endpoint exists".
 - Restoring *into* `PUBLISHED` directly (that is `publish`, already shipped) or
   field-level cherry-pick restore. Restore is whole-document, draft←published.
-- Inline rich diffing of HTML/relator internals — values are compared and shown
+- Inline rich diffing of HTML/relator internals, values are compared and shown
   as normalized text/JSON; structural diffing is not in scope.
 
 ## 3. The two "versions", precisely
@@ -83,7 +83,7 @@ Given the row-per-state model, the UI presents exactly the states that exist:
 - **DRAFT only** (never published) → nothing to compare/restore; the dialog shows
   a "not yet published" state and disables Restore.
 
-## 4. Backend — restore
+## 4. Backend: restore
 
 `ShPostUnifiedWriteService`:
 ```java
@@ -119,7 +119,7 @@ public ShPostUnified restoreDraftFromPublished(String postId, String modifier) {
     return shPostUnifiedRepository.save(draft);
 }
 ```
-No webhook is fired — restore mutates only the draft, which is never the public
+No webhook is fired, restore mutates only the draft, which is never the public
 content (so SH12's publish/unpublish/delete contract is untouched).
 
 `ShPostUnifiedAPI`:
@@ -134,9 +134,9 @@ public ResponseEntity<ShPostUnified> restore(@PathVariable String id, Principal 
     }
 }
 ```
-Security is unchanged — `/api/v2/post-unified/**` falls under `anyRequest().authenticated()`.
+Security is unchanged, `/api/v2/post-unified/**` falls under `anyRequest().authenticated()`.
 
-## 5. Frontend — diff & dialog
+## 5. Frontend: diff & dialog
 
 `ShPostUnifiedService.restore`:
 ```ts
@@ -149,7 +149,7 @@ async restore(id: string): Promise<ShPostUnified> {
 `PostVersionsDialog` (`src/components/post-versions.dialog.tsx`), props
 `{ postId, schema, open, setOpen, onRestored }`:
 1. On open, `versions(postId)` → split into `draft`/`published` by `state`.
-2. **Coerce `data` defensively** — it may arrive as a JSON string or an object:
+2. **Coerce `data` defensively**: it may arrive as a JSON string or an object:
    ```ts
    function asDataObject(d: unknown): Record<string, unknown> {
      if (typeof d === "string") { try { return JSON.parse(d) ?? {} } catch { return {} } }
@@ -200,7 +200,7 @@ async restore(id: string): Promise<ShPostUnified> {
 
 ## 8. Tests
 
-- `ShPostUnifiedAPITest` (extend the existing staged flow) — after publish
+- `ShPostUnifiedAPITest` (extend the existing staged flow): after publish
   (stage06) and versions (stage07): update the draft to a new title, `POST
   /{id}/restore`, then `GET` the draft and assert its title reverted to the
   published value; assert `restore` on a deleted/unknown id returns `404`.

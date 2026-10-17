@@ -40,7 +40,7 @@ export function Comparison() {
               <span className="text-primary">Few were designed for the caller.</span>
             </>
           }
-          description="The axis is agent-operability, not feature count. On everything else (an ecosystem, hosted scale, an editor everyone already knows) the alternatives are strong, and pretending otherwise would make this table worthless."
+          description="The axis is agent-operability, not feature count. On everything else (an ecosystem, hosted scale, an editor everyone already knows) the alternatives are strong, and the full comparison names where each one wins."
         />
 
         <TableScroll fadeClassName="from-muted/40" className="rounded-xl border border-border bg-card">
@@ -83,7 +83,7 @@ export function Comparison() {
         </TableScroll>
 
         <p className="mx-auto mt-6 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
-          The honest summary is one row: everywhere else an agent is a client of an
+          The difference in one line: everywhere else an agent is a client of an
           API designed for a browser, and the protocol quality it gets is whatever
           fell out.
         </p>

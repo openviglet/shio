@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { VigletLogo } from "@/components/viglet-logo";
 
-/** The Viglet "Sh" mark plus the wordmark. */
+/** The Viglet Shio cube mark plus the wordmark. */
 export function Logo({
   className,
   showWord = true,
@@ -67,7 +67,7 @@ export function TableScroll({
  */
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-block bg-gradient-to-r from-[#d94328] to-[#f59e0b] bg-clip-text font-mono text-xs font-bold tracking-[0.12em] text-transparent uppercase">
+    <span className="inline-block bg-gradient-to-r from-[#5b21b6] to-[#f59e0b] bg-clip-text font-mono text-xs font-bold tracking-[0.12em] text-transparent uppercase">
       {children}
     </span>
   );
@@ -115,7 +115,7 @@ export function LawChip({
       className={cn(
         "inline-flex items-center rounded-md border px-1.5 py-0.5 font-mono text-[0.7rem] font-bold",
         tone === "dark"
-          ? "border-[#ff6347]/40 bg-[#ff6347]/10 text-[#ff9478]"
+          ? "border-[#7c3aed]/40 bg-[#7c3aed]/10 text-[#c4b5fd]"
           : "border-primary/30 bg-primary/10 text-primary",
         className
       )}

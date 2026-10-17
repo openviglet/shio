@@ -36,7 +36,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
       { label: "Roadmap", href: LINKS.roadmap },
       { label: "Changelog", href: LINKS.changelog },
       { label: "npm", href: LINKS.npm },
-      { label: "Viglet Turing ES", href: LINKS.turing },
+      { label: "Viglet Turing", href: LINKS.turing },
     ],
   },
 ];

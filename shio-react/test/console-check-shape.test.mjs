@@ -111,7 +111,7 @@ test("SH927: the check refuses an origin that is not answering as Shio", () => {
    * Red-for-the-environment is what SH927 was filed about and it is the smaller problem. A check
    * that answers confidently about the wrong application is one people believe.
    */
-  assert.match(source, /const SHIO_TITLE = "Viglet Shio CMS"/,
+  assert.match(source, /const SHIO_TITLE = "Viglet Shio"/,
     "SH927: the check no longer knows what title this console serves, so it cannot tell its own "
       + "front end from another product's on the same port.")
   assert.match(source, /process\.exitCode = 1/,
