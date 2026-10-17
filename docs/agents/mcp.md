@@ -229,6 +229,16 @@ instance** cannot, which is also why the replication procedure moved out of this
 `.claude/skills/`: 223 lines that existed in one clone, into `shio-replicate`, keeping only
 what is true of any instance.
 
+### The MCP Registry entry (SH1245)
+
+`cli/server.json` is the official MCP Registry's description of the stdio bridge: npm package
+`@viglet/shio`, argument `mcp`, and the three variables `resolveAdmin` reads. The registry
+checks ownership by matching its `name` against `mcpName` in `cli/package.json`, and installs
+exactly the version it names, so the release workflow stamps `server.json` together with the
+workspace version and commits it. `cli/test/mcp-registry.test.mjs` reads every fact back from
+the package. Publishing the entry (`mcp-publisher publish`) is the owner's step, under the
+`io.github.openviglet` namespace.
+
 
 ## The fourth registry is the published one (SH604)
 

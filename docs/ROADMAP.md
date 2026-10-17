@@ -16,7 +16,7 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
-- 📋 **SH1245** (deps: —) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Claude Code users are the audience the owner reaches this quarter through claude-tray, and Shio is the one Viglet product built for them. → §XI.28
+- ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The owner publishes server.json with mcp-publisher, submits the Claude Code lists and the More tools line, and records each link in actions.json. → §XI.28
 
 ## Priority
 
@@ -26,6 +26,13 @@
   openviglet/shio` prints the descriptor from LVIII.1 as description,
   https://shio.viglet.org as homepage, and no angularjs/nashorn/wcm topics; shio-ce is
   archived or carries the same text.
+
+## Done when — SH1245
+
+- **Every directory entry is live and its link is recorded** The MCP Registry lists
+  io.github.openviglet/shio, the Claude Code lists the visibility repo tracks name Shio,
+  the More tools section carries a Shio line, and each link is in that repo's
+  actions.json.
 
 ## Non-goals (do NOT add as tasks)
 

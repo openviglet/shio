@@ -1,0 +1,52 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.openviglet/shio",
+  "title": "Viglet Shio",
+  "description": "Open-source, agent-ready CMS: build, edit and publish a site from Claude Code or any MCP client.",
+  "repository": {
+    "url": "https://github.com/openviglet/shio",
+    "source": "github",
+    "subfolder": "cli"
+  },
+  "websiteUrl": "https://shio.viglet.org/claude-code/",
+  "version": "2026.3.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@viglet/shio",
+      "version": "2026.3.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "SHIO_URL",
+          "description": "The Shio instance to drive",
+          "default": "http://localhost:2710",
+          "isRequired": false,
+          "format": "string"
+        },
+        {
+          "name": "SHIO_USER",
+          "description": "Console user the bridge signs in as",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "SHIO_PASSWORD",
+          "description": "That user's password",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}

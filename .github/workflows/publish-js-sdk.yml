@@ -115,6 +115,15 @@ jobs:
           echo "Releasing version $VERSION"
           pnpm -r --include-workspace-root exec -- \
             npm version "$VERSION" --no-git-tag-version --allow-same-version
+          # SH1245: the MCP Registry entry names the npm version it installs, so it is
+          # stamped with the rest; cli/test/mcp-registry.test.mjs fails on a mismatch.
+          node -e "
+            const fs = require('fs');
+            const s = JSON.parse(fs.readFileSync('cli/server.json', 'utf8'));
+            s.version = '$VERSION';
+            for (const p of s.packages) p.version = '$VERSION';
+            fs.writeFileSync('cli/server.json', JSON.stringify(s, null, 2) + '\n');
+          "
 
       # ── The invariant, asserted before anything is published ──
       #
@@ -244,7 +253,7 @@ jobs:
           # packages here would reintroduce exactly the hand-maintained list the bump
           # step just got rid of, and leave a newly added package's bump uncommitted.
           # node_modules is gitignored, so it cannot be swept in.
-          git add ':(glob)**/package.json' package.json \
+          git add ':(glob)**/package.json' package.json cli/server.json \
                   shio-app/src/main/resources/blueprints
           git commit -m "chore: release JS packages v${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
           git push

@@ -371,6 +371,7 @@
 - **SH682** — The marketplace install and uninstall are hasRole("ADMIN") on both chains, with the assertion SH677 could not write: a non-admin is refused and the seeded admin is not.
 - **SH881** — Both packages provision SectionMarkup now, and a check holds directory and manifest together both ways; landing already provisioned three unused types, which settled the direction.
 - **SH884** — Both package layouts annotate the page's own title where they draw it and declare description in a hidden element, so a curator can edit the page as well as its sections.
+- **SH1245 (MCP Registry entry)** — cli/server.json describes the stdio bridge for the official MCP Registry, package.json carries its mcpName, the release stamps its version, and a test reads every fact back from the package.
 
 ## Block M — Token economy, measured (SH74)
 
