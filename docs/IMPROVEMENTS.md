@@ -1037,24 +1037,6 @@ API.
 Measure: clicks and CTR for the home in Search Console, month by month, against 0 clicks
 out of 166 impressions.
 
-### LVIII.7 The vendored page reference was hand-edited (SH1247)
-
-The em-dash pass in the brand commit (a4bba8d72) edited six files under `docs/design/`
-by hand: `vds-detail`, `vds-form-hero`, `vds-list`, `vds-page-anatomy`, `vds-panel` and
-`vds-split`, one comment each. Those files are vendored from
-`@viglet/viglet-design-system` by `viglet-ds-page-reference`, and
-`cli/test/page-reference-drift.test.mjs` (SH942) fails the JS gate when the copy stops
-matching the package, which it then did. The failure was hidden behind the
-create-shio-app red of SH1246, because the recursive run stops at the first package that
-fails.
-
-The fix is to re-run the bin (`node
-shio-react/node_modules/@viglet/viglet-design-system/scripts/page-reference.mjs --root
-.`), which restores the package's bytes, em dashes included. The rule the test states
-holds: nothing in that tree is hand-authored, and if the comments should lose the em
-dash, that change belongs in the design system, where every consumer gets it. No
-Shio-side exemption is added.
-
 ## LIX What the Turing round left in the build and in a guard
 
 ## LXI The live defects, fixed before anything is built on them (Block AV)

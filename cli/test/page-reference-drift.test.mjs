@@ -131,6 +131,7 @@ test("SH942: the vendored page reference in this repository is current", () => {
     stale.map((surface) => `${surface.state}  ${surface.to}`),
     [],
     `The vendored page reference has drifted from @viglet/viglet-design-system@${report.version}.`
+      + " A copy-wide edit reaches these files too (SH1247: an em-dash pass rewrote six of them)."
       + `\n${REFRESH}`,
   );
   assert.deepEqual(
