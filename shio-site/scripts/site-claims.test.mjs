@@ -173,6 +173,26 @@ test("the console page names what the console cannot do", () => {
   );
 });
 
+test("SH1242: the two niche pages say the words a searcher types, in the title", () => {
+  // A CMS an agent drives is the niche Shio ranks in unaided, and the titles used to name only the
+  // mechanism ("the plugin, the MCP bridge"), which nobody searches for.
+  const route = (path) => {
+    const at = ENTRY_SERVER.indexOf(`path: "${path}"`);
+    return ENTRY_SERVER.slice(at, ENTRY_SERVER.indexOf("},", at));
+  };
+  assert.match(route("/claude-code"), /title: "[^"]*CMS for Claude Code/,
+    "SH1242: /claude-code's title says it is a CMS for Claude Code");
+  assert.match(route("/claude-code"), /description:\s*"[^"]*agent-ready CMS[^"]*MCP/,
+    "SH1242: and its description names the agent-ready CMS and MCP");
+
+  const features = read("../src/lib/feature-content.ts");
+  const gateway = blockBetween(features, "const AGENT_GATEWAY", "const CONTENT_AS_FILES");
+  assert.match(gateway, /metaTitle: "[^"]*agent-ready CMS/,
+    "SH1242: /features/agent-gateway's title names the agent-ready CMS");
+  assert.match(gateway, /metaDescription:\s*"[^"]*MCP server/,
+    "SH1242: and its description names the MCP server it sits behind");
+});
+
 test("SH537: every prerendered route also gets its Markdown twin", () => {
   // SH537's actual claim, which the route test above does not make: each route emits `<path>.md`
   // beside its HTML, so a reader (or an agent) can fetch the page as text. Asserted on the
