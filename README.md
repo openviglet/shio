@@ -1,5 +1,7 @@
 # Viglet Shio: the open source, agent-ready CMS
 
+![Viglet Shio, Agent-ready CMS](.github/banner.png)
+
 [![Website](https://img.shields.io/badge/Website-shio.viglet.org-0ea5e9?style=for-the-badge&logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
 [![Docs](https://img.shields.io/badge/Docs-docs.viglet.org%2Fshio-6366f1?style=for-the-badge&logo=readthedocs&logoColor=white)](https://docs.viglet.org/shio/)
 [![npm](https://img.shields.io/npm/v/@viglet/shio?style=for-the-badge&logo=npm&label=%40viglet%2Fshio)](https://www.npmjs.com/package/@viglet/shio)
@@ -41,6 +43,7 @@ Shio (pronounced [strong /ʃiː/ · weak /ʃɪ/ o]).
 - [Architecture](#architecture)
 - [Build from source](#build-from-source)
 - [FAQ](#faq)
+- [Part of the Viglet suite](#part-of-the-viglet-suite)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -318,6 +321,20 @@ Yes: `shio clone` / `propose` / `convert` / `publish` / `judge`, and `judge` is
 the one that tells you when to stop. See
 [shio.viglet.org/replicate](https://shio.viglet.org/replicate/).
 
+## Part of the Viglet suite
+
+![The Viglet suite: Dumont, Turing and Shio](.github/viglet-suite.png)
+
+Three open source products that work together, or each on its own:
+
+| Product | What it does |
+|---|---|
+| [**Viglet Dumont**](https://github.com/openviglet/dumont) · Data Exchange Platform | Connects your sources (AEM, WordPress, databases, files, web) and delivers their content to Turing or any other search engine |
+| [**Viglet Turing**](https://github.com/openviglet/turing) · Enterprise Search | Search, semantic navigation, RAG chat with citations and AI agents over your content, self-hosted |
+| **Viglet Shio** · Agent-ready CMS | This repository: the CMS that people run from the console and AI agents run over MCP |
+
+More at [viglet.org](https://www.viglet.org).
+
 ## Contributing
 
 We use [GitHub issues](https://github.com/openviglet/shio/issues) for requests
@@ -332,7 +349,5 @@ and bugs. Please review the
 
 ---
 
-**Viglet Shio** is part of the [Viglet](https://www.viglet.org) open source
-family, alongside [Viglet Turing](https://turing.viglet.org) (search, semantic
-navigation and personalization). Learn more at
-**[shio.viglet.org](https://shio.viglet.org/)**.
+Built by the [Viglet](https://www.viglet.org) Team ·
+**[shio.viglet.org](https://shio.viglet.org/)**
