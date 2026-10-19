@@ -1138,3 +1138,26 @@ it. The sections below are the Shio half: the backend facts a row needs, the sit
 and its grid, the admin lists and the content browser on the same cells, and the ten
 hand-drawn tables moved onto the design system's one table, after a lint names them. The
 package half is VDS204 to VDS207 in the design system's own backlog.
+
+## XCII The public site (shio.viglet.org)
+
+### XCII.1 Publish the release notes as changelog.json (SH1248)
+
+www.viglet.org/shio/release-notes/ renders a copy of Shio's releases that the
+openviglet/site repo curates by hand (`public/static_files/json/shio/changelog.json`),
+so it drifts from what Shio actually ships. Turing already owns its list: the Turing
+site serves `frontend/apps/site/public/changelog.json` at
+turing.viglet.org/changelog.json, and www.viglet.org reads it cross-origin.
+
+Build: `shio-site/public/changelog.json`, served at shio.viglet.org/changelog.json.
+GitHub Pages already sends `Access-Control-Allow-Origin: *`, which the cross-origin read
+needs. The shape is the one Turing and www.viglet.org already agree on: a JSON array,
+newest release first, of `{ "version": string, "pub_date": ISO date or null, "notes":
+string[] }`. Each note starts with `[new]`, `[added]`, `[improved]`, `[fixed]` or
+`[removed]` (anything else renders as a plain bullet; `[pretext]` lines are skipped),
+and `#123` becomes a link to the issue. Seed it from the copy in openviglet/site and add
+the releases since 0.3.8.
+
+On ship: in openviglet/site, set `changelogUrl:
+'https://shio.viglet.org/changelog.json'` on Shio in `src/data/solutions.ts` and delete
+the curated copy there.

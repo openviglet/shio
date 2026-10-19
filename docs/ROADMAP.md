@@ -13,6 +13,10 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The owner publishes server.json with mcp-publisher, submits the Claude Code lists and the More tools line, and records each link in actions.json. → §XI.28
 
+## Block S — The public site (shio.viglet.org)
+
+- 📋 **SH1248** (deps: —) **shio.viglet.org publishes no changelog.json** — www.viglet.org reads Shio's release notes from a hand-kept copy that drifts; Turing already serves its own at turing.viglet.org/changelog.json. → §XCII.1
+
 ## Priority
 
 ## Done when — SH1245
