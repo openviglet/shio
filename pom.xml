@@ -28,7 +28,7 @@
         <spring-boot.version>4.1.1</spring-boot.version>
         <!-- Shared backend platform — external project (github.com/openviglet/viglet-core),
              published to Maven Central and versioned independently; SH1076 checks the pin is. -->
-        <viglet-core.version>2026.3.12</viglet-core.version>
+        <viglet-core.version>2026.3.13</viglet-core.version>
         <!-- turing-java-sdk — Turing's indexing client (SH84). The same artifact Dumont's
              DumTuringIndexingPlugin indexes through, so Shio speaks the ecosystem's existing
              contract (TurSNJobItems → POST /api/sn/import) rather than a second one. -->
