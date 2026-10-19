@@ -154,8 +154,8 @@ deploy at the custom domain.
 
 [`.github/workflows/publish-github-pages.yml`](../.github/workflows/publish-github-pages.yml)
 is the whole path to [shio.viglet.org](https://shio.viglet.org/): it installs the
-workspace, runs `pnpm run build:site`, assembles `_site/` from `dist/` and pushes
-that to the `github-pages` branch of `openviglet/shio-ce`.
+workspace, runs `pnpm run build:site`, assembles `_site/` from `dist/` and deploys
+it to this repository's GitHub Pages with `actions/deploy-pages`.
 
 It is **`workflow_dispatch` only**, like `publish-js-sdk.yml`: a deploy that
 fires on every push to a long-lived branch is one nobody can hold still while
@@ -164,8 +164,8 @@ reviewing it. Run it from the Actions tab when the site is ready to go out.
 The build *is* the gate: `tsc -b` fails the job on a type error, and the
 prerender throws on a drifted template or on a route declared in only one of the
 two tables. `dist-ssr/` is a build input and never reaches the published tree.
-The job needs the `GH_PKG_TOKEN` secret, the same one `publish-docker.yml` uses
-for that repository.
+The job needs no secret, only a one-time repository setting: **Settings → Pages →
+Source = GitHub Actions**, with `shio.viglet.org` as the custom domain.
 
 ## Backlog
 

@@ -23,8 +23,12 @@
 # and the example sites mount beside the root site, not inside it. One `cp` today, one
 # more per surface later.
 #
-# Requires repo secret: GH_PKG_TOKEN (push rights to openviglet/shio-ce), the same token
-# `publish-docker.yml` uses for that repository.
+# Published from this repository with the native Pages deploy (upload-pages-artifact +
+# deploy-pages), so it needs no secret: the job's own GITHUB_TOKEN carries `pages: write`.
+# It used to push to the github-pages branch of openviglet/shio-ce, which no longer exists.
+# One-time repository setting: Settings → Pages → Source = "GitHub Actions", custom domain
+# shio.viglet.org. With an Actions deploy the domain lives in that setting, not in a branch,
+# so a publish can no longer drop it.
 name: Publish GitHub Pages
 
 on:
@@ -32,6 +36,8 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -41,6 +47,9 @@ jobs:
   deploy:
     name: Build and publish shio.viglet.org
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - uses: actions/checkout@v7
@@ -82,14 +91,11 @@ jobs:
 
           find _site -name index.html | sort
 
-      - name: Deploy to openviglet/shio-ce (github-pages branch)
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload the Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          personal_token: ${{ secrets.GH_PKG_TOKEN }}
-          external_repository: openviglet/shio-ce
-          publish_branch: github-pages
-          publish_dir: ./_site
-          # Belt and braces with public/CNAME, and the one that matters: each publish
-          # overwrites the branch, so without a CNAME in the published root GitHub Pages
-          # drops the custom domain and it has to be re-added by hand.
-          cname: shio.viglet.org
+          path: ./_site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
