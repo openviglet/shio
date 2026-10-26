@@ -25,14 +25,14 @@
         <revision>2026.3</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring-boot.version>4.1.1</spring-boot.version>
+        <spring-boot.version>4.1.2</spring-boot.version>
         <!-- Shared backend platform — external project (github.com/openviglet/viglet-core),
              published to Maven Central and versioned independently; SH1076 checks the pin is. -->
         <viglet-core.version>2026.3.13</viglet-core.version>
         <!-- turing-java-sdk — Turing's indexing client (SH84). The same artifact Dumont's
              DumTuringIndexingPlugin indexes through, so Shio speaks the ecosystem's existing
              contract (TurSNJobItems → POST /api/sn/import) rather than a second one. -->
-        <turing.version>2026.3.4</turing.version>
+        <turing.version>2026.3.6</turing.version>
         <sonar.organization>viglet</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
