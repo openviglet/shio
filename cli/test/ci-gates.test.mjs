@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { test } from "node:test";
 
+import { DEFAULT_DOCS_DIR } from "../../scripts/docs-location.mjs";
+
 // @scans prose reason: workflow YAML and package scripts are read as text, and the gate names
 // inside them are the subject rather than any code around them (SH740).
 
@@ -119,19 +121,19 @@ test("SH1102: the docs gate runs on every push, bare, now that the lint is clean
  * The consequence is the one worth naming: the instrument SH628 landed could not fail anywhere but
  * that one machine, which makes it a check nobody was running rather than a check that passed.</p>
  *
- * <p>Asserted as two facts because they can break apart. The checkout must exist, and the variable
- * must point at it — a job with the repository cloned and no `SHIO_DOCS_DIR` reads the drive letter
- * again and fails identically, which would read as the docs being wrong.</p>
+ * <p>SH1262 removed the second repository: the pages and COVERAGE.md moved into
+ * `shio-site/docs/src/content/docs`, and the readers default to it. So the facts held now are that
+ * the default resolves inside this checkout and that CI no longer clones vigletdocs, whose frozen
+ * copy would be read instead of the pages this commit ships.</p>
  */
-test("SH655: the docs suites have a checkout of the repository they read, and are pointed at it", () => {
+test("SH655, SH1262: the docs suites read the pages in this checkout, not a second repository", () => {
   const suites = read("suites.yml");
 
-  assert.match(suites, /repository: vigletdocs\/vigletdocs\.github\.io/,
-    "SH655: the published pages are a different repository, and a runner has only this one — "
-      + "without `actions/checkout` naming it, every docs instrument fails on an absent path");
-  assert.match(suites, /SHIO_DOCS_DIR:/,
-    "and the suites have to be told where it landed: a clone nothing points at is the same "
-      + "absent directory with an extra step");
+  assert.ok(existsSync(join(DEFAULT_DOCS_DIR, "COVERAGE.md")),
+    `SH1262: the docs readers default to ${DEFAULT_DOCS_DIR}, and the coverage matrix is not there`);
+  assert.doesNotMatch(suites, /repository: vigletdocs\/vigletdocs\.github\.io|SHIO_DOCS_DIR:/,
+    "SH1262: the pages live in this repository now; a vigletdocs checkout, or SHIO_DOCS_DIR pointed "
+      + "at one, makes the gates read a frozen copy instead of the pages this commit ships");
 
   // The split is the decision SH655 asked for, so it is held rather than left to a reader of YAML:
   // two of the three need no instance, and putting them behind the boot would mean the cheapest

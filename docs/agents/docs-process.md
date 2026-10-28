@@ -710,9 +710,12 @@ generated rather than written, and `docs-coverage.conformance.mjs` asserts it st
 real matrix names. A hand-edit, or a mirror left stale across a matrix change, fails the gate that
 reads the authoritative file. The copy is checked against the authority, never trusted beside it.
 
-**Workflow:** name the ids in their cluster rows in `docs-shio/COVERAGE.md`, then
-`SHIO_DOCS_DIR=<path>/docs-shio pnpm run coverage:mirror`, and commit the mirror here in the same
-pass as the matrix there.
+**Workflow:** name the ids in their cluster rows in
+`shio-site/docs/src/content/docs/COVERAGE.md`, then `pnpm run coverage:mirror`, and commit both in
+the ship's own commit. SH1262 moved the matrix into this tree, so the two-repository interval this
+section and SH771/SH1115 below were written against no longer exists. `refresh` recognises a matrix
+in the same repository and records it as settled (`sameRepository: true`), since the commit that
+carries the mirror carries the matrix too.
 
 **And the authority it is checked against was a directory, which is not a revision (SH1115).** Both
 readers above take `COVERAGE.md` out of a working *checkout*, so nothing asked whether the edit that

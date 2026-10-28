@@ -37,8 +37,11 @@ function slugify(heading) {
 /** Prose only: a link inside fenced code is an example, not a link. */
 const prose = (text) => text.split(/^```[\s\S]*?^```\s*$/m).join("\n");
 
+/** The coverage matrix sits beside the pages and is not one: the collection leaves it out. */
+const MATRIX = join(CONTENT, "COVERAGE.md");
+
 const pages = new Map();
-for (const file of walk(CONTENT).filter((path) => /\.mdx?$/.test(path))) {
+for (const file of walk(CONTENT).filter((path) => /\.mdx?$/.test(path) && path !== MATRIX)) {
   const slug = relative(CONTENT, file).split(sep).join("/").replace(/\.mdx?$/, "").replace(/(^|\/)index$/, "");
   const text = readFileSync(file, "utf8");
   const anchors = new Set();
@@ -82,4 +85,19 @@ test("SH1262: every link inside /docs reaches a page, and its anchor a heading o
     }
   }
   assert.deepEqual(broken, [], `${broken.length} broken link(s) in the documentation`);
+});
+
+test("SH1262: every page and #anchor COVERAGE.md cites exists", () => {
+  // The matrix's verdicts are page + anchor; a ✅ pointing at a heading Starlight spells differently
+  // is a verdict nothing backs. Its links stay file-relative (`./cli.md#…`) so they also read on
+  // GitHub, which is why they are resolved here rather than rewritten.
+  const text = readFileSync(MATRIX, "utf8");
+  const broken = [];
+  for (const [, target, hash] of text.matchAll(/\]\(\.\/([^)\s#]+?)\.mdx?(?:#([^)\s]*))?\)/g)) {
+    const page = pages.get(target.replace(/(^|\/)index$/, ""));
+    if (!page) broken.push(`${target} (no such page)`);
+    else if (hash && !page.anchors.has(hash)) broken.push(`${target}#${hash} (no such anchor)`);
+  }
+  assert.ok(text.includes("](./"), "COVERAGE.md cites no page, so this check read nothing");
+  assert.deepEqual([...new Set(broken)], [], `${broken.length} broken citation(s) in COVERAGE.md`);
 });

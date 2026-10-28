@@ -97,27 +97,17 @@ jobs:
   # published pages still name this product's verbs and its real stack" in the time `pnpm test`
   # takes, and there is no reason for that question to wait behind a JVM.
   #
-  # **Their input is another repository**, which is why they had never run in CI: `SHIO_DOCS_DIR`
-  # defaults to one contributor's drive letter, so on a runner the directory was simply absent —
-  # and absent is a hard failure by design (SH499 chose to fail rather than skip, so an unread
-  # checkout could not pass quietly). The price of that choice is that the workflow has to supply
-  # the checkout, and nothing did.
-  #
-  # No token: `vigletdocs.github.io` is public, and the default `GITHUB_TOKEN` is scoped to this
-  # repository. Pinned to nothing — the docs are the *current* published pages, and testing this
-  # commit against a frozen copy of them would assert a pair that agreed once.
+  # Their input used to be another repository (vigletdocs' `docs-shio/`), which this job had to
+  # check out beside this one. SH1262 moved the pages and COVERAGE.md into
+  # `shio-site/docs/src/content/docs`, the readers default to that path
+  # (`scripts/docs-location.mjs`), and the one checkout is the whole input: the pages and the
+  # code they describe are tested at the same commit.
   docs:
     name: pnpm conformance:docs
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-
-      - name: Check out the published documentation
-        uses: actions/checkout@v7
-        with:
-          repository: vigletdocs/vigletdocs.github.io
-          path: vigletdocs
 
       - uses: pnpm/action-setup@v6
         with:
@@ -137,8 +127,6 @@ jobs:
         run: pnpm run build:sdk
 
       - run: pnpm conformance:docs
-        env:
-          SHIO_DOCS_DIR: ${{ github.workspace }}/vigletdocs/docs-shio
 
   # SH241 — the third gate, and the one only CI can give honestly.
   #
@@ -228,15 +216,8 @@ jobs:
       - uses: actions/checkout@v7
 
       # SH655 — `docs-examples` is the third docs instrument and the only one that needs the booted
-      # app, so it belongs to this job rather than to `docs` above. Without this checkout it read a
-      # path that does not exist on a runner and failed by design, which is how the whole docs half
-      # of `pnpm conformance` had never run anywhere but one machine.
-      - name: Check out the published documentation
-        uses: actions/checkout@v7
-        with:
-          repository: vigletdocs/vigletdocs.github.io
-          path: vigletdocs
-
+      # app, so it belongs to this job rather than to `docs` above. Since SH1262 the pages it
+      # executes are in this checkout, so no second one is needed.
       - name: Set up JDK 21
         uses: actions/setup-java@v6
         with:
@@ -284,8 +265,6 @@ jobs:
           echo "the app did not come up with a working admin login"; tail -100 "$RUNNER_TEMP/shio.log"; exit 1
 
       - run: pnpm conformance
-        env:
-          SHIO_DOCS_DIR: ${{ github.workspace }}/vigletdocs/docs-shio
 
       # The suite seeds `ShioConf…` sites and removes them in `after`; what is worth keeping is the
       # server's side of a failure, because half of this suite's findings are 500s with no body.

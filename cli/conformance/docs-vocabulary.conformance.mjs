@@ -27,8 +27,9 @@
  *
  * ## Why it lives here and not in `cli/test/`
  *
- * Its input is a **different repository** — `vigletdocs.github.io/docs-shio` — which a clone of
- * this one does not have. `cli/test/` must run with nothing external, so a gate there would have
+ * Its input was a **different repository** — `vigletdocs.github.io/docs-shio` — which a clone of
+ * this one did not have (the pages moved into `shio-site/docs` with SH1262, and the suite stayed
+ * opt-in). `cli/test/` must run with nothing external, so a gate there would have
  * to skip when the checkout is absent, and a skip is the failure mode this whole directory exists
  * to refuse (`support/instance.mjs`: *absent is a failure, never a skip*). Here the bargain is
  * already opt-in, so an absent checkout is a **failed run naming the fix**, exactly as an
@@ -41,6 +42,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 
+import { DOCS_DIR } from "../../scripts/docs-location.mjs";
 import { AUDIT_RULES } from "../src/audit.mjs";
 
 import { CLAIMS, extract, toolRows } from "./docs-examples.mjs";
@@ -55,8 +57,7 @@ import { productVocabulary, routeExists } from "./support/product-vocabulary.mjs
  * <p>An override rather than a hard-coded path, because the one thing certain about a sibling
  * checkout is that it is not in the same place on two machines.</p>
  */
-const DOCS = process.env.SHIO_DOCS_DIR
-  ?? "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
+const DOCS = DOCS_DIR;
 
 /** This repository, for the shipped model SH775 compares the documentation against. */
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -111,9 +112,8 @@ function docs() {
       `SH499: the published documentation is not at ${DOCS}.\n` +
         "This suite compares what those pages tell a reader to type against what this product\n" +
         "declares, so without them it proves nothing — and reporting nothing as a pass is what\n" +
-        "let the 2018 pages rot in the first place. Clone the docs repo and point at it:\n" +
-        "  git clone https://github.com/vigletdocs/vigletdocs.github.io\n" +
-        "  SHIO_DOCS_DIR=<path>/docs-shio pnpm conformance",
+        "let the 2018 pages rot in the first place. They are shio-site/docs/src/content/docs\n" +
+        "in this tree (SH1262), or SHIO_DOCS_DIR.",
     );
   }
   return extract(DOCS);

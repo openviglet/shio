@@ -1,6 +1,6 @@
 ---
 name: shio-roadmap-docs
-description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), which are owned by the roadkeep CLI and never hand-edited, plus their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule, the per-task end-user documentation decision (vigletdocs docs-shio), and the block-completion sweep — when a block's last task ships, docs-shio + shio-site + README.md are brought up to date in one pass. Use whenever adding a new task, choosing which block a task goes under (route by job to a standing home block, reopen a finished one with block add <label>, open a new one only when nothing can hold it and title it generically, never one per round or finding), marking a task shipped, shipping, retiring, linting, editing any of those files or agents.md, picking the next SH-number, or finishing a block. Covers roadkeep, roadkeep.toml, task numbering, non-goals, keeping the files in sync, COVERAGE.md, sidebars-shio.ts, site-content.ts, and batching under /loop.
+description: How to maintain the Shio roadmap/docs — the three docs/ files (ROADMAP.md, CHANGELOG.md, IMPROVEMENTS.md), which are owned by the roadkeep CLI and never hand-edited, plus their single-responsibility split, the cross-file update rules, and where a finished task's decision goes (docs/agents/ + docs/specs/). Also the one-task-one-commit rule, the per-task end-user documentation decision (shio-site/docs, served at /docs), and the block-completion sweep — when a block's last task ships, the docs area + shio-site + README.md are brought up to date in one pass. Use whenever adding a new task, choosing which block a task goes under (route by job to a standing home block, reopen a finished one with block add <label>, open a new one only when nothing can hold it and title it generically, never one per round or finding), marking a task shipped, shipping, retiring, linting, editing any of those files or agents.md, picking the next SH-number, or finishing a block. Covers roadkeep, roadkeep.toml, task numbering, non-goals, keeping the files in sync, COVERAGE.md, the docs sidebar, site-content.ts, and batching under /loop.
 ---
 
 # Roadmap & docs maintenance
@@ -126,7 +126,7 @@ real maximum block letter** — grep it to confirm before creating a block.
      | The curator↔agent return channel, the assistant dock | **BB** · **AX** |
      | Localization · the design system contract · Turing indexing | **BH** · **AU** · **AS** |
      | A live defect found on a running instance | **AV** |
-     | End-user docs (docs-shio) · the public site | **R** · **S** |
+     | End-user docs (shio-site/docs) · the public site | **R** · **S** |
 
      The table routes a task. `block list` is still the authority on what exists.
      A home that turns out wrong is fixed with one `amend`.
@@ -229,19 +229,21 @@ real maximum block letter** — grep it to confirm before creating a block.
 ## Propagating to end-user documentation
 
 The three `docs/` files above are the **internal** engineering roadmap. The
-**end-user** documentation is a *separate Docusaurus repo*:
+**end-user** documentation is the Astro Starlight area served at
+https://shio.viglet.org/docs/, **in this repository** (SH1262; it used to be
+vigletdocs' `docs-shio/`, which is now frozen and marked moved, so never edit it):
 
 ```
-D:\Git\viglet\vigletdocs\vigletdocs.github.io\docs-shio
+shio-site/docs/src/content/docs/
 ```
 
-**The gate is [`docs-shio/COVERAGE.md`](https://github.com/vigletdocs/vigletdocs.github.io/blob/main/docs-shio/COVERAGE.md)** (SH479), the matrix mapping every
+**The gate is [`COVERAGE.md`](../../../shio-site/docs/src/content/docs/COVERAGE.md)** (SH479), the matrix mapping every
 shipped block or feature cluster to either an end-user page **with an anchor**, or an
 explicit 🔒 "deliberately internal — no public page" row. It carries the same shape as
 Turing's `docs-turing/COVERAGE.md`, plus one verdict Turing does not need: ⚠️, *a page
 exists but describes a shape the product left* — because every page published before
-2026.3 predates the renderer. It is not in the sidebar; it is a maintenance artefact
-that still builds as an unlisted route.
+2026.3 predates the renderer. It sits beside the pages but is not one:
+`shio-site/docs/src/content.config.ts` leaves it out of the collection.
 
 **The decision below has a file to answer in now.** A shipped block with no row is a
 visible defect rather than a habit nobody kept, so the row is part of shipping — not a
@@ -270,15 +272,9 @@ adding one.
    verdict of "internal" is a *row*, not a silence: an absent row is indistinguishable
    from a forgotten one, which is the defect the matrix exists to make visible.
 
-**Commit the docs separately.** `docs-shio` lives in a *different git repo*, so its
-changes are their own commit there (`cd` into the vigletdocs repo first —
-`run-commit.cmd` stages relative to CWD). The Shio-repo commit (rule 7) carries the
-code + internal `docs/` sync. Keep `-m` titles ASCII.
-
-**Batch note.** When shipping a run of tasks under `/loop` (rule 8), this decision
-runs per task, but it is fine to accumulate several small page edits and land them in
-one focused vigletdocs commit at a natural boundary (e.g. once a whole block ships)
-rather than a trivial commit per task.
+**The page, the COVERAGE row and `pnpm run coverage:mirror` go in the task's own
+commit** (rule 7): since SH1262 they are all in this tree, so there is no second
+commit and no second repository. Keep `-m` titles ASCII.
 
 ---
 
@@ -320,10 +316,10 @@ The order is deliberate: the docs page is the deepest and most correct text, so
 write it first and let the site and the README quote *it* rather than the other
 way round.
 
-**1. `docs-shio` — the block's COVERAGE rows go green, all of them.**
+**1. The docs area — the block's COVERAGE rows go green, all of them.**
 
 ```
-D:\Git\viglet\vigletdocs\vigletdocs.github.io\docs-shio
+shio-site/docs/src/content/docs/
 ```
 
 Grep `COVERAGE.md` for `**Block <x>**` and resolve **every** row to ✅ / 🧩 / 🔒.
@@ -334,10 +330,9 @@ re-running before committing.
 - **⚠️ is a rewrite, not an addition.** It means a page exists and describes a
   shape the product left; a new section under it makes the page *contradict
   itself*. Fix the stale prose first, then add.
-- **A new page needs a sidebar row or it does not exist.** Add it to
-  [`sidebars-shio.ts`](https://github.com/vigletdocs/vigletdocs.github.io/blob/main/sidebars-shio.ts)
-  (`vigletdocs.github.io/sidebars-shio.ts`, one level *above* `docs-shio/`)
-  under the hub the COVERAGE section names — the matrix is grouped by *who does
+- **A new page needs a sidebar row or it does not exist.** Add it to the
+  `sidebar` in [`shio-site/docs/astro.config.mjs`](../../../shio-site/docs/astro.config.mjs)
+  under the hub the COVERAGE section names, and to that hub page's card grid — the matrix is grouped by *who does
   the job* (agent builds it / human curates it / CDA delivers it), and since SH482
   those four hubs **are** the sidebar. A page absent from it builds as an unlisted
   route and no reader ever reaches it.
@@ -345,9 +340,10 @@ re-running before committing.
   `cda-delivers-it.mdx`, `run-it.mdx`) is what most block completions actually
   change: it is the text that summarises the capability, and it is the text a
   per-task edit never touches.
-- Gate: `npm run build` in the vigletdocs root — Docusaurus fails on a broken
-  internal link or an unknown sidebar id, which is exactly the mistake this step
-  invites.
+- Gate: `pnpm --filter shio-site build` (Starlight fails on an unknown sidebar
+  id) and `pnpm --filter shio-site test`, whose `docs-links.test.mjs` fails on a
+  link or `#anchor` inside /docs that reaches nothing, which is exactly the
+  mistake this step invites.
 
 **2. `shio-site` — only if the block changed a claim the site makes.**
 
@@ -409,14 +405,11 @@ There are still **no roadkeep markers in this README** — `export --readme` is 
 wired here — so every row above is an ordinary edit. That is about *who writes
 them*, not about whether anything checks them.
 
-**4. Commit — two repos, two commits, and the block drop goes with the code.**
+**4. Commit — one commit, and the block drop goes with it.**
 
-- **Shio repo:** `README.md` + `shio-site/**` + `block drop <x>` + any
-  `docs/agents/` update, one commit from the repo root:
-  `run-commit.cmd -m "docs(block-<x>): <ascii title>"`.
-- **vigletdocs repo:** `cd` into
-  `D:\Git\viglet\vigletdocs\vigletdocs.github.io` first (`run-commit.cmd` stages
-  relative to CWD) and commit the pages + `COVERAGE.md` there.
+`README.md` + `shio-site/**` (the docs pages and `COVERAGE.md` included) +
+`block drop <x>` + any `docs/agents/` update, from the repo root:
+`run-commit.cmd -m "docs(block-<x>): <ascii title>"`.
 
 ### What the sweep is not
 

@@ -3193,6 +3193,15 @@ not a check that passed, a check nobody was running. Both jobs now check out
 `ci-gates.test.mjs` holds both halves, a clone nothing points at is the same absent directory with
 an extra step.
 
+**SH1262 removed the second repository.** The pages and `COVERAGE.md` moved into
+`shio-site/docs/src/content/docs`, the Starlight area at shio.viglet.org/docs, and every reader takes
+its default from `scripts/docs-location.mjs`. `COVERAGE.md` sits beside the pages so its
+`./page.md#anchor` links and the readers' one-directory walk keep working; `content.config.ts`
+leaves it out of the collection, so it never renders. CI no longer clones vigletdocs, and
+`ci-gates.test.mjs` now asserts the opposite of SH655: no vigletdocs checkout and no
+`SHIO_DOCS_DIR`, because a frozen copy would be read instead of the pages the commit ships.
+`SHIO_DOCS_DIR` remains as an override for fixtures.
+
 **They are split by cost, and that split was the decision rather than the wiring.** Two of the three
 touch no instance: `docs-vocabulary` reads source and `docs-stack` reads build files, so
 `pnpm conformance:docs` runs them in its own job beside `pnpm test`, on every push, in about a

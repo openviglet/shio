@@ -20,7 +20,6 @@
 ## Block S — The public site (shio.viglet.org)
 
 - 📋 **SH1258** (deps: SH1256, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
-- ⏳ **SH1262** (deps: —) **Shio's end-user docs live in the vigletdocs Docusaurus repo, not at shio.viglet.org/docs** — COVERAGE.md, the docs conformance suites and the skill still read vigletdocs, its copy is not marked moved, and old hub slugs do not redirect. → §XIX.16
 
 ## Priority
 
@@ -37,13 +36,6 @@
   owner's photo set (own or CC0, credits recorded) in assets/, the package applies the
   Quilhara site in en-us and pt-br, passes ShBlueprintAccessibilityTest and verify's
   lint with no finding, and the apply's token cost is recorded.
-
-## Done when — SH1262
-
-- **The /docs area wears the design system and the vigletdocs copy is retired**
-  Starlight is overridden with the Viglet design system's tokens, typography, header and
-  footer in light and dark; COVERAGE.md and the shio-roadmap-docs skill point at
-  shio-site/docs; vigletdocs docs-shio says it moved; old slugs redirect.
 
 ## Non-goals (do NOT add as tasks)
 

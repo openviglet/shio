@@ -5,7 +5,7 @@
  * is exactly how the 2018 pages became wrong: written once, product moved, never compared.
  *
  * This module does the *measurement* the task asks for before the harness is designed:
- * walk `docs-shio/**`, find the fenced blocks that are executable claims about this
+ * walk the documentation pages (`shio-site/docs/src/content/docs/**`), find the fenced blocks that are executable claims about this
  * product, classify them, and print the counts. The count is what decides whether the
  * eventual runner is a build gate or a periodic check.
  *
@@ -20,10 +20,12 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
+import { DOCS_DIR } from "../../scripts/docs-location.mjs";
+
 // @scans prose reason: it reads Markdown tables and fences on the published pages; SH663 exists
 // because it was NOT reading the table half (SH740).
 
-const DEFAULT_DOCS = "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
+const DEFAULT_DOCS = DOCS_DIR;
 
 /** A fenced block is executable when it makes a checkable claim about this instance. */
 export const CLAIMS = [

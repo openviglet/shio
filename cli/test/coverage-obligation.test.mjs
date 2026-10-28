@@ -119,7 +119,7 @@ test("SH758: what shipped since the matrix was refreshed, named while somebody r
   }
   console.log(
     `\nSH758: ${owing.length} shipped id(s) COVERAGE.md does not name yet: ${owing.join(" ")}\n`
-    + "  Name each in its cluster row in vigletdocs/docs-shio/COVERAGE.md — a sentence saying what\n"
+    + "  Name each in its cluster row in shio-site/docs/src/content/docs/COVERAGE.md — a sentence saying what\n"
     + "  a reader can now do — then: pnpm run coverage:mirror\n"
     + "  Printed rather than failed on purpose (SH758): SH747's ratchet is the enforcement, and\n"
     + "  this is only the part that asks while the reasons are still fresh.\n",
@@ -130,13 +130,11 @@ test("SH758: what shipped since the matrix was refreshed, named while somebody r
     !isBacklog(owing),
     `SH799: ${owing.length} shipped ids are waiting to be named, over the ${QUEUE_CEILING} this `
       + "reader will carry.\n"
-      + "SH758 prints rather than fails because the fix is in another repository, and that argument "
-      + "holds for A QUEUE — one or two ids between a ship and the next docs pass. It stops holding "
-      + "here: this is no longer the commit in front of you owing something, it is a backlog, and "
-      + "the only thing that was ever going to notice is the gate that needs vigletdocs checked "
-      + "out.\nTwo commits, in two repositories:\n"
-      + "  1. vigletdocs/docs-shio/COVERAGE.md — name them in their cluster rows\n"
-      + "  2. here — pnpm run coverage:mirror\n"
+      + "SH758 prints rather than fails, and that argument holds for A QUEUE — one or two ids "
+      + "between a ship and the next docs pass. It stops holding here: this is no longer the commit "
+      + "in front of you owing something, it is a backlog.\nOne commit, in this repository:\n"
+      + "  1. shio-site/docs/src/content/docs/COVERAGE.md — name them in their cluster rows\n"
+      + "  2. pnpm run coverage:mirror\n"
       + `Ids: ${owing.join(" ")}`,
   );
 });
@@ -283,19 +281,22 @@ test("SH758: the report fires on an id that shipped and is not named", () => {
  * about a fix that can be carried out, and an instruction that cannot be carried out in the
  * repository it is printed in fails that in the most expensive way — it looks actionable.</p>
  */
-test("SH771: the coverage ratchet's refusal names both repositories, not one commit", () => {
+test("SH771, SH1262: the coverage ratchet's refusal names where the matrix lives and the commit it takes", () => {
   // Comments stripped, through the one shared stripper (SH740). Found by writing this: the comment
   // that explains why the old instruction was wrong QUOTES the old instruction, and a raw scan read
   // the explanation as the defect it warns about — the same shape SH769 met one file over.
   const ratchet = code(readFileSync(
     join(ROOT, "cli", "conformance", "docs-coverage.conformance.mjs"), "utf8"));
 
-  assert.match(ratchet, /two commits, in two repositories/,
-    "SH771: the refusal must say that the fix spans two repositories. Without it the reader is "
-    + "told to do something in this tree that cannot be done in this tree.");
-  assert.match(ratchet, /vigletdocs\/docs-shio/,
-    "and it must name where the matrix actually lives, because the reader is standing in the other "
-    + "repository when they read it");
+  // SH771 asserted "two commits, in two repositories" while the matrix was in vigletdocs. SH1262
+  // moved it here, so the refusal must now name this tree's path and not send a reader elsewhere.
+  assert.match(ratchet, /One commit, in this repository/,
+    "SH1262: the matrix is in this tree now, so the fix is one commit; a refusal still naming two "
+    + "repositories sends the reader to a copy that is no longer read.");
+  assert.match(ratchet, /shio-site\/docs\/src\/content\/docs\//,
+    "and it must name where the matrix actually lives");
+  assert.doesNotMatch(ratchet, /vigletdocs\/docs-shio/,
+    "SH1262: vigletdocs' copy is marked moved and nothing reads it");
   assert.match(ratchet, /coverage:mirror/,
     "and the command that closes the second half here, which is the step somebody who only edited "
     + "the matrix would leave undone");
@@ -377,6 +378,34 @@ test("SH1115: a mirror taken from an uncommitted matrix names the ids it cannot 
     assert.deepEqual(refresh(shio, docs).matrix.provisional, [],
       "SH1115: committing the matrix is what clears it, and nothing else — a re-run against the "
       + "same dirty tree must keep reporting, which is what `provisional` buys over a refusal");
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test("SH1262: a matrix inside this repository is settled by the commit that carries the mirror", () => {
+  // The matrix moved into the Shio tree, so it and the mirror land in ONE commit and the matrix is
+  // always dirty when the mirror is taken. SH1115's rule applied here would mark every id the ship
+  // names provisional and withhold its credit forever after the commit.
+  const base = mkdtempSync(join(tmpdir(), "sh1262-"));
+  const docs = join(base, "shio-site", "docs", "src", "content", "docs");
+  mkdirSync(docs, { recursive: true });
+  mkdirSync(join(base, "docs"), { recursive: true });
+  const git = (...args) => execFileSync("git", args, { cwd: base, encoding: "utf8", stdio: "pipe" });
+  try {
+    git("init", "-q");
+    git("config", "user.email", "t@example.invalid");
+    git("config", "user.name", "t");
+    git("commit", "-q", "--allow-empty", "-m", "root");
+    writeFileSync(join(docs, "COVERAGE.md"), "| cluster | ids |\n| a | SH9005 |\n", "utf8");
+
+    const mirror = refresh(base, docs);
+    assert.equal(mirror.matrix.sameRepository, true,
+      "SH1262: the matrix and the mirror share a repository, and the mirror must say so");
+    assert.deepEqual(mirror.matrix.provisional, [],
+      "SH1262: an id named by the uncommitted matrix is not provisional when the same commit carries "
+      + "the matrix and the mirror");
+    assert.deepEqual(mirror.named, ["SH9005"]);
   } finally {
     rmSync(base, { recursive: true, force: true });
   }

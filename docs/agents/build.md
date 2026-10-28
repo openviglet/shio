@@ -16,7 +16,7 @@ Four suites are gates, and each one is a command a person types:
 | `java` | `./mvnw -pl shio-app -am clean test -Dskip.npm=true` | nothing |
 | `js` | `pnpm test` | `pnpm install` at the root |
 | `conformance` | `pnpm conformance` | a **running instance** built from HEAD |
-| `docs` | `pnpm conformance:docs` | a checkout of `vigletdocs`, via `SHIO_DOCS_DIR` |
+| `docs` | `pnpm conformance:docs` | nothing: the pages are `shio-site/docs/src/content/docs` (SH1262) |
 
 The first three are the ones `agents.md` calls the gates, because they are what validates a change.
 `docs` is the fourth **key** (its own job in `suites.yml`, its own trigger, its own red) and it

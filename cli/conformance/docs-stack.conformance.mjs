@@ -28,8 +28,8 @@
  *    instead — because "remove the row" is not actionable and "the search story is Turing over
  *    HTTP, optional and off by default" is.
  *
- * The docs live in a **different repository**, so this file follows `docs-vocabulary`'s bargain:
- * an absent checkout is a failed run naming the fix, never a skip.
+ * The docs live in `shio-site/docs` (SH1262; a different repository before that), and this file
+ * keeps `docs-vocabulary`'s bargain: absent pages are a failed run naming the fix, never a skip.
  */
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -37,14 +37,15 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
+import { DOCS_DIR } from "../../scripts/docs-location.mjs";
+
 // @scans prose reason: it holds a published Markdown table against build files, both read as
 // text; the versions inside them are the subject (SH740).
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..");
 
-const DOCS = process.env.SHIO_DOCS_DIR
-  ?? "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
+const DOCS = DOCS_DIR;
 
 const read = (path) => readFileSync(path, "utf8");
 
@@ -155,9 +156,8 @@ function pages() {
       `SH628: the published documentation is not at ${DOCS}.\n`
         + "This suite compares the versions those pages state against this repository's own build\n"
         + "files, so without them it proves nothing — and a stale stack table is precisely the\n"
-        + "defect that survives by nobody looking. Clone the docs repo and point at it:\n"
-        + "  git clone https://github.com/vigletdocs/vigletdocs.github.io\n"
-        + "  SHIO_DOCS_DIR=<path>/docs-shio pnpm conformance",
+        + "defect that survives by nobody looking. They are shio-site/docs/src/content/docs in\n"
+        + "this tree (SH1262), or SHIO_DOCS_DIR.",
     );
   }
   const out = [];

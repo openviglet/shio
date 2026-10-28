@@ -42,14 +42,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { before, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { DOCS_DIR } from "../../scripts/docs-location.mjs";
+
 import { extract } from "./docs-examples.mjs";
 import { basic, requireInstance } from "./support/instance.mjs";
 
 // @scans prose reason: it extracts the requests published on Markdown pages, so the prose is
 // what it reads and a fenced block is the payload rather than noise (SH740).
 
-const DOCS = process.env.SHIO_DOCS_DIR
-  ?? "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
+const DOCS = DOCS_DIR;
 
 /**
  * Endpoints a page presents as working on any instance, with no site of its own.
@@ -108,7 +109,7 @@ function docs() {
   if (!existsSync(DOCS)) {
     throw new Error(
       `SH499: the published documentation is not at ${DOCS}.\n` +
-        "Set SHIO_DOCS_DIR to a checkout of vigletdocs.github.io/docs-shio, or this suite\n" +
+        "They are shio-site/docs/src/content/docs in this tree (SH1262), or SHIO_DOCS_DIR; without them this suite\n" +
         "has nothing to execute and would pass by having no subjects.",
     );
   }

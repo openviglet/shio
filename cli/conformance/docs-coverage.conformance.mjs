@@ -43,14 +43,14 @@ import { describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { namedIn } from "../../scripts/coverage-mirror.mjs";
+import { DOCS_DIR } from "../../scripts/docs-location.mjs";
 
 import { manifestFeatures } from "./support/product-vocabulary.mjs";
 
 // @scans prose reason: COVERAGE.md is Markdown and its table rows ARE the subject — the
 // summary is derived from them, so nothing here can be stripped away (SH740).
 
-const DOCS = process.env.SHIO_DOCS_DIR
-  ?? "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
+const DOCS = DOCS_DIR;
 
 const MATRIX = "COVERAGE.md";
 
@@ -67,8 +67,7 @@ function matrix() {
       `SH653: the coverage matrix is not at ${path}.\n`
         + "This suite derives that file's own summary from its own tables, so without it there is\n"
         + "nothing to compare and reporting nothing as a pass is the failure it exists to stop.\n"
-        + "  git clone https://github.com/vigletdocs/vigletdocs.github.io\n"
-        + "  SHIO_DOCS_DIR=<path>/docs-shio pnpm conformance:docs",
+        + "  It lives at shio-site/docs/src/content/docs/COVERAGE.md (SH1262), or under SHIO_DOCS_DIR.",
     );
   }
   return readFileSync(path, "utf8");
@@ -300,7 +299,7 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
     assert.deepEqual(held.named, named,
       "SH758: docs/coverage-named.json and COVERAGE.md name different sets. The mirror is "
       + "generated and never edited — regenerate it in the same commit that changes the matrix: "
-      + "SHIO_DOCS_DIR=<path>/docs-shio pnpm run coverage:mirror. "
+      + "pnpm run coverage:mirror. "
       + "Two copies of one fact only stay honest while something compares them, and this is that "
       + "something.");
   });
@@ -330,13 +329,11 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
         + "task shipped and the matrix did not move, which is the defect SH747 exists for — six "
         + "went past in one session. Name each in its cluster row, or add the 🔒 row saying why "
         + "there is no page.\n"
-        // SH771 — the instruction used to end "then lower UNNAMED in the same commit", and that
-        // commit does not exist: the matrix is in `vigletdocs` and the ceiling is in this file, in
-        // this repository. Naming the two is the difference between a fix somebody can perform and
-        // one they discover is impossible after following the instruction.
-        + "  It takes two commits, in two repositories, and that is not a workaround:\n"
-        + `    1. vigletdocs/docs-shio/${MATRIX} — name the ids in their cluster rows\n`
-        + "    2. here — `pnpm run coverage:mirror`, then lower UNNAMED to the new count\n"
+        // SH771 named two commits in two repositories, because the matrix was in `vigletdocs`.
+        // SH1262 moved it into this tree, so the fix is the ship's own commit again.
+        + "  One commit, in this repository:\n"
+        + `    1. shio-site/docs/src/content/docs/${MATRIX} — name the ids in their cluster rows\n`
+        + "    2. `pnpm run coverage:mirror`, then lower UNNAMED to the new count\n"
         + "  `pnpm test` prints what is owed on every commit (SH758), so this is a queue rather "
         + "than a surprise.\n  newest unnamed: "
         + unnamed.slice(-8).join(" "),
@@ -363,8 +360,8 @@ describe("SH1069 conformance: every manifest feature key reaches the coverage ma
    * Feature keys the matrix does not name. It opened at 62 on 2026-09-24 and SH1069 paid it to
    * zero on 2026-09-25 with a key-by-key table in COVERAGE.md, each row naming the page that
    * documents the capability, so from here it is not a ratchet but the rule: a key added to the
-   * manifest with no row fails. The fix is two commits in two repositories, SH771's shape: add the
-   * key's row in vigletdocs, then nothing here.
+   * manifest with no row fails. Since SH1262 the fix is one commit: the key's row in COVERAGE.md,
+   * which lives in this tree.
    */
   const UNNAMED_FEATURES = 0;
 
@@ -387,9 +384,9 @@ describe("SH1069 conformance: every manifest feature key reaches the coverage ma
       `${unnamed.length} manifest feature keys are not named in ${MATRIX}, against a recorded `
         + `${UNNAMED_FEATURES}. A capability is advertised to every agent and documented for no `
         + "reader, which is the defect SH1069 exists for.\n"
-        + "  It takes two commits, in two repositories:\n"
-        + `    1. vigletdocs/docs-shio/${MATRIX} — name the key, in backticks, in its cluster row\n`
-        + "    2. here — lower UNNAMED_FEATURES to the new count\n  unnamed: "
+        + "  One commit, in this repository:\n"
+        + `    1. shio-site/docs/src/content/docs/${MATRIX} — name the key, in backticks, in its cluster row\n`
+        + "    2. lower UNNAMED_FEATURES to the new count\n  unnamed: "
         + unnamed.join(" "),
     );
   });

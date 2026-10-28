@@ -667,31 +667,6 @@ number typed by hand, and the `ai-writing` lint. The docs-shio half (a "Tour the
 showcase" page and its COVERAGE row) is the ordinary per-task end-user docs decision for
 the showcase tasks, so it is not filed separately here.
 
-### XIX.16 XIX.16 The documentation moves to shio.viglet.org/docs (SH1262)
-
-The end-user documentation is `docs-shio/` in
-`D:\Git\viglet\vigletdocs\vigletdocs.github.io`: about forty Markdown and MDX pages, the
-four job hubs, `sidebars-shio.ts` and `COVERAGE.md`, built by a Docusaurus shared with
-Turing and Dumont. Every Shio ship that needs a page costs a commit in a second
-repository, and the block sweep spans two repos for the same reason.
-
-The target copies the shape roadkeep already runs in
-`D:\Git\alegauss\roadkeep\site\docs`: a separate Astro + Starlight project inside the
-site, with base `/docs`, building into `shio-site/dist/docs` as the last step of the
-site build so that `vite build` cannot empty it, and with no runtime server. Each page's
-content comes across intact. The sidebar keeps the four hubs, and every slug keeps its
-path under `/docs/` so a redirect table can be generated rather than typed.
-
-The difference from roadkeep is the layout. Stock Starlight is not acceptable here: the
-area has to use the Viglet design system's tokens, typography, header and footer, and
-share the chrome of the site next door, overriding Starlight components where that is
-needed, in light and dark.
-
-Done means `pnpm --filter shio-site build` produces `/docs` with every page, a link
-check is green, `COVERAGE.md` and the `shio-roadmap-docs` skill point at the new tree,
-and the vigletdocs copy is marked as moved. Redirecting docs.viglet.org to `/docs` is
-later work and is not part of this task.
-
 ## XX End-user documentation, round two (Block T)
 
 Block R measured this and could not fix it. It took the coverage matrix from **33 wrong

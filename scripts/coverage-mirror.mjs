@@ -7,7 +7,7 @@
  *
  * ## The distance this closes
  *
- * `COVERAGE.md` lives in **vigletdocs**. The ship lives here. So SH747's ratchet — which works, and
+ * `COVERAGE.md` lived in **vigletdocs** until SH1262 moved it to `shio-site/docs`. The ship lives here. So SH747's ratchet — which works, and
  * has caught six ids in one session and five in the next — can only fire from a conformance run
  * that needs an instance, the docs checkout and somebody choosing to look. By then several tasks
  * have shipped and the person being asked to write a cluster sentence is the person furthest from
@@ -35,12 +35,13 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { DOCS_DIR } from "./docs-location.mjs";
+
 // @scans prose reason: COVERAGE.md is a documentation page and the ledger diff is text;
 // what is extracted from both is the id, which no code stripper would help with (SH740).
 
 /** Where the matrix lives, with the same default and the same override the conformance suite uses. */
-export const DOCS = process.env.SHIO_DOCS_DIR
-  ?? "D:/Git/viglet/vigletdocs/vigletdocs.github.io/docs-shio";
+export const DOCS = DOCS_DIR;
 
 export const MIRROR = join("docs", "coverage-named.json");
 
@@ -117,6 +118,16 @@ function headSha(root) {
   }
 }
 
+/** The working tree's top level, normalized, or `null` outside git. */
+function topLevel(dir) {
+  try {
+    return execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: dir, encoding: "utf8" })
+      .trim().replace(/\\/g, "/").toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 /** `COVERAGE.md`, as the matrix's own repository has it committed, or `null` where it cannot say. */
 function committedMatrix(docs) {
   try {
@@ -150,7 +161,14 @@ function committedMatrix(docs) {
  * thing in the right order. Naming the ids lets the reader decline to credit them and keep asking,
  * which is what §LXIV.18 wanted from "provisional".</p>
  */
-function matrixRevision(docs, working) {
+function matrixRevision(docs, working, root) {
+  // SH1262 — the matrix moved into this repository, so it and the mirror land in ONE commit and
+  // the matrix is always uncommitted at the moment the mirror is taken. Marking that provisional
+  // would withhold credit for every id the ship's own commit names, so a matrix in this tree is
+  // settled by the commit that carries both.
+  if (root && topLevel(docs) !== null && topLevel(docs) === topLevel(root)) {
+    return { at: headSha(docs), clean: true, provisional: [], sameRepository: true };
+  }
   const at = headSha(docs);
   const committed = committedMatrix(docs);
   if (at === null || committed === null) {
@@ -172,15 +190,14 @@ export function refresh(root, docs = DOCS) {
   if (!existsSync(path)) {
     throw new Error(
       `SH758: the coverage matrix is not at ${path}.\n`
-        + "  git clone https://github.com/vigletdocs/vigletdocs.github.io\n"
-        + "  SHIO_DOCS_DIR=<path>/docs-shio pnpm run coverage:mirror",
+        + "  It lives at shio-site/docs/src/content/docs/COVERAGE.md (SH1262), or under SHIO_DOCS_DIR.",
     );
   }
   const working = readFileSync(path, "utf8");
   const named = namedIn(working);
-  const matrix = matrixRevision(docs, working);
+  const matrix = matrixRevision(docs, working, root);
   const body = {
-    note: "SH758 — generated from docs-shio/COVERAGE.md by `pnpm run coverage:mirror`. Never edited "
+    note: "SH758 — generated from shio-site/docs/src/content/docs/COVERAGE.md by `pnpm run coverage:mirror`. Never edited "
       + "by hand: docs-coverage.conformance.mjs asserts it still agrees with the matrix, so an "
       + "edit here that the matrix does not carry fails the gate that reads the real file.",
     at: headSha(root),
@@ -216,7 +233,7 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "
         ? `  ${provisional.length} id(s) named only by that edit: ${provisional.join(" ")}\n`
           + "  They are recorded as provisional and are NOT credited, so they keep being reported.\n"
         : "  No id depends on the edit, so nothing here is provisional.\n")
-      + "  Commit COVERAGE.md in vigletdocs and re-run: pnpm run coverage:mirror\n",
+      + "  Commit COVERAGE.md and re-run: pnpm run coverage:mirror\n",
     );
   }
 }
