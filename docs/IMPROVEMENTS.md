@@ -241,29 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.29 XI.29 The showcase site, designed before it is built (SH1250)
-
-Adobe ships WKND, a fictional adventure magazine, so that anyone evaluating AEM can
-install it, click through it and see each capability on a real page. Shio has six
-blueprints and none of them plays that role: they are starting points, deliberately
-plain, and nothing in the marketplace shows what a finished Shio site looks like.
-
-The showcase is the marketing surface for the product, installed from the console
-marketplace the same way Turing installs its demo packages. It has to be complete,
-good-looking and explicit about which feature each page demonstrates.
-
-This task is the spec, `docs/specs/SH1250-showcase-site.md`, and nothing else:
-
-- a fictional brand and its voice (no real company, no borrowed trademarks);
-- the page map: home, brand pages, listings, detail pages, the feature tour;
-- the visual direction: theme tokens, typography, the image set and its licence (own or CC0 only);
-- the languages, en and pt at least, since localization (Block BH) is a feature to show;
-- the feature-to-page matrix: every key of the manifest's `features`, every MCP tool, and the curator surfaces (Universal Editor, releases, revisions, review queue, preview links), each mapped to the page that demonstrates it or to a stated reason it has none.
-
-The matrix is what the coverage test filed after this task reads, so it is written as
-data a test can load. Content is not written here: a matrix settled first is what stops
-the demo becoming a pile of pages that happened to be easy.
-
 ### XI.30 XI.30 Install and create a site in one step (SH1251)
 
 Turing's marketplace downloads a package and imports it, site and content, in one
