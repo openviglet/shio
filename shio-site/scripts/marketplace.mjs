@@ -62,6 +62,12 @@ const PREFIX = "shio-blueprint-";
 /** Who publishes these. */
 const AUTHOR = "Viglet";
 
+/** SH1253 — a package's preview images, and the ones the instance's proxy will serve. */
+const SCREENSHOTS = "screenshots/";
+const SCREENSHOT_TYPES = /\.(png|jpe?g|gif|webp)$/i;
+/** `ShMarketplaceItem.MAX_SCREENSHOTS`: the instance keeps no more than this per entry. */
+const MAX_SCREENSHOTS = 4;
+
 /** The bucket they are listed under. */
 const CATEGORY = "first-party";
 
@@ -163,8 +169,16 @@ export function build({ write = true } = {}) {
     const published = { ...manifest, name: id };
 
     const entries = [{ name: `${id}/blueprint.json`, body: JSON.stringify(published, null, 2) }];
+    // SH1253 — images under `screenshots/` are what the console shows before an install. They
+    // are published beside the zip and left out of it: they describe the package, and an install
+    // has no use for them.
+    const screenshots = [];
     for (const file of walk(dir)) {
       if (file === "blueprint.json") continue;
+      if (file.startsWith(SCREENSHOTS)) {
+        if (SCREENSHOT_TYPES.test(file) && screenshots.length < MAX_SCREENSHOTS) screenshots.push(file);
+        continue;
+      }
       entries.push({ name: `${id}/${file}`, body: readFileSync(join(dir, file)) });
     }
 
@@ -185,12 +199,19 @@ export function build({ write = true } = {}) {
       params: manifest.params ?? null,
       requires: [],
     };
+    // Only when there are some, so the six plain packages publish exactly the bytes they did.
+    if (screenshots.length) {
+      item.screenshots = screenshots.map((file) => `${BASE}/${id}/${file.slice(SCREENSHOTS.length)}`);
+    }
     items.push(item);
 
     if (write) {
       mkdirSync(join(OUT, id), { recursive: true });
       writeFileSync(join(OUT, id, `${id}.zip`), archive);
       writeFileSync(join(OUT, id, "README.md"), readme(manifest, id), "utf8");
+      for (const file of screenshots) {
+        writeFileSync(join(OUT, id, file.slice(SCREENSHOTS.length)), readFileSync(join(dir, file)));
+      }
     }
   }
 

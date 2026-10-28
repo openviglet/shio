@@ -1034,3 +1034,18 @@ omitted when empty, and the CLI and the console's plan print them.
 installer's 64 MB unpacked bound, against a showcase that plans under 8 MB. Raise it only for a
 package that measures above it, and write the number beside the constant. The bytes are
 `@JsonIgnore`, so no listing that names a package can carry its photography.
+
+## A catalogue entry a curator can see (SH1253)
+
+An entry may declare `screenshots`, up to `ShMarketplaceItem.MAX_SCREENSHOTS` (four) image URLs.
+`GET /api/v2/marketplace/screenshot?url=` proxies them on the README's allow-list: only a URL the
+configured catalogue declares, and only a PNG, JPEG, GIF or WebP, served with `nosniff`. A declared
+SVG is refused too, because it is a document that can carry script and the console's origin is the
+one SH951 keeps such files off. The card shows the first, the dialog all of them, and
+`shio marketplace show` prints the URLs. `shio-site/scripts/marketplace.mjs` publishes a package's
+`screenshots/` images beside its zip and leaves them out of the archive.
+
+The README is rendered now, which closes SH679's recorded shortfall. No library:
+`marketplace.readme.tsx` covers the subset the generator writes (headings, paragraphs, lists, fenced
+code, inline code, bold, links), builds React elements rather than HTML, so a stranger's README cannot
+inject markup, and loads behind `import()` with the setup panel, so the eager budget does not carry it.

@@ -24,6 +24,8 @@ export interface ShMarketplaceItem {
   builtIn: boolean
   /** The registry already holds a package under this name. */
   installed: boolean
+  /** SH1253 — preview images, loaded through the instance's proxy. Absent when there are none. */
+  screenshots?: string[]
 }
 
 /** Only the parts of the package's JSON Schema the install form reads. */

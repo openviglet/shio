@@ -24,6 +24,7 @@ const CATALOGUE = {
       installed: false, category: "community", tags: ["news"],
       downloadUrl: "https://example.invalid/n.zip",
       readmeUrl: "https://example.invalid/n/README.md", params: null, requires: ["createSite"],
+      screenshots: ["https://example.invalid/n/home.png"],
     },
   ],
   source: { url: "https://example.invalid/marketplace.json", state: "remote", reason: null },
@@ -116,6 +117,8 @@ test("SH677: show prints the entry and fetches the README through the instance",
   assert.match(output(), /requires: createSite/,
     "SH677: the opt-ins are printed, because 'this will alter a post-type you already have' is "
       + "the thing P7 says must not be a surprise");
+  assert.match(output(), /screenshot: https:\/\/example\.invalid\/n\/home\.png/,
+    "SH1253: a terminal cannot draw the screenshots, so `show` names them");
   const readmeCall = calls.find((call) => call.url.includes("/readme"));
   assert.ok(readmeCall, "the README goes through the instance, which only proxies a URL its own "
     + "catalogue declares — so `show` cannot be talked into fetching an arbitrary host");

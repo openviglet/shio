@@ -125,6 +125,8 @@ async function show(client, flags, positionals, ctx) {
   if (item.requires?.length) ctx.stdout.write(`  requires: ${item.requires.join(", ")}\n`);
   const params = Object.keys(item.params?.properties ?? {});
   if (params.length) ctx.stdout.write(`  params:   ${params.join(", ")}\n`);
+  // SH1253 — a terminal cannot draw them, so it names them.
+  for (const url of item.screenshots ?? []) ctx.stdout.write(`  screenshot: ${url}\n`);
   if (readme) ctx.stdout.write(`\n${readme}\n`);
   return { ...item, readme };
 }

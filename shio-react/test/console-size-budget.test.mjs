@@ -241,9 +241,10 @@ test("SH1043: the ceilings have room under them", async (t) => {
 test("SH1235: the eager ceilings keep 4% of room over the last measured totals, with no build", () => {
   // The headroom check above only runs on a build of this tree, so a ceiling lowered back under the
   // last measurement would pass every run that has none. SH1235 measured 1905.0 KB raw / 521.0 KB
-  // gzip after SH1214, SH1216 and design system 2026.3.18 had used the room up.
+  // gzip after SH1214, SH1216 and design system 2026.3.18 had used the room up; SH1253 measured
+  // 1919.8 KB raw / 527.3 KB gzip after the marketplace dialog's strings and screenshots.
   for (const [name, ceiling, measured] of [
-    ["raw", budget.eager.raw, 1905.0 * 1024], ["gzip", budget.eager.gzip, 521.0 * 1024],
+    ["raw", budget.eager.raw, 1919.8 * 1024], ["gzip", budget.eager.gzip, 527.3 * 1024],
   ]) {
     assert.ok(ceiling - measured >= Math.round(ceiling * 0.04),
       `SH1235: the eager ${name} ceiling ${kb(ceiling)} leaves under 4% over the ${kb(measured)} last `

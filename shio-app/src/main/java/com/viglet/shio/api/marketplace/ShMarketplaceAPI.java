@@ -99,6 +99,23 @@ public class ShMarketplaceAPI {
     }
 
     /**
+     * SH1253 — one entry's screenshot, proxied for the README's reason and on its allow-list.
+     *
+     * <p>{@code nosniff}, so the browser keeps the image type the server decided rather than
+     * guessing another one from the bytes.</p>
+     */
+    @GetMapping("/screenshot")
+    @Operation(summary = "A screenshot of a catalogue entry, by one of its declared screenshot URLs")
+    public ResponseEntity<byte[]> screenshot(@RequestParam(name = "url") String url) {
+        ShMarketplaceCatalog.Screenshot image = catalog.screenshot(url);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(image.contentType()))
+                .header("X-Content-Type-Options", "nosniff")
+                .cacheControl(org.springframework.http.CacheControl.maxAge(java.time.Duration.ofHours(1)))
+                .body(image.bytes());
+    }
+
+    /**
      * Download a catalogue entry and put it where the registry will load it (SH675).
      *
      * <p>{@code dryRun=true} does everything except the move into place: it fetches, expands,

@@ -12,7 +12,6 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The owner publishes server.json with mcp-publisher, submits the Claude Code lists and the More tools line, and records each link in actions.json. → §XI.28
-- 📋 **SH1253** (deps: —) **A marketplace entry has no preview image and its README shows as raw markdown, so the showcase looks like any package** — Screenshots the catalogue declares, proxied like the README, and a rendered README let a curator see the demo before installing it. → §XI.32
 - 📋 **SH1254** (deps: SH1250 ✅, SH1252 ✅) **No package ships a designed, bilingual site with real imagery, so a first install shows Shio at its plainest** — One marketplace package builds the showcase's model, theme, layouts, menus and brand pages in en and pt, clean under the a11y gate. → §XI.33
 - 📋 **SH1255** (deps: SH1254) **Nothing fails when Shio ships a capability the showcase does not demonstrate** — A test maps each manifest features key and MCP tool to a showcase page or a stated exclusion, holding the gap as a named list so the demo cannot fall behind. → §XI.34
 - 📋 **SH1256** (deps: SH1255) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — Tour pages, each with a how-it-was-built panel naming the console screen, MCP tool and CDA call behind it, drain SH1255's debt to zero. → §XI.35

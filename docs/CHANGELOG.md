@@ -375,6 +375,7 @@
 - **SH1250** — The showcase spec fixes the Quilhara brand, the bilingual page map, the visual direction and a feature-to-page matrix that a test holds complete against the manifest and MCP tools (design §XI.29 recorded in `docs/specs/SH1250-showcase-site.md`).
 - **SH1251** — The marketplace dialog builds a site from a package: params form, site name, a plan of install and apply that the confirm requires, then the site; the CLI and the setup route do the same (design §XI.30 recorded in `docs/agents/blueprints.md`).
 - **SH1252** — A blueprint declares assets under assets/; apply uploads them into the site's folders, planned first, noop for identical bytes and replace keeping the id for changed ones, within a 32 MB bound (design §XI.31 recorded in `docs/agents/blueprints.md`).
+- **SH1253** — Catalogue entries carry up to four screenshots, proxied on the README's allow-list and shown on the card and in the dialog, and the dialog renders the README instead of raw markdown (design §XI.32 recorded in `docs/agents/blueprints.md`).
 
 ## Block M — Token economy, measured (SH74)
 

@@ -284,6 +284,41 @@ class ShMarketplaceCatalogTest {
     }
 
     @Test
+    @DisplayName("SH1253: the screenshot proxy fetches only a declared raster image, and an entry keeps four")
+    void theScreenshotProxyIsNotAnOpenProxy() throws IOException {
+        String base = serve("""
+                [
+                  {
+                    "id": "shio-blueprint-showcase",
+                    "title": "Showcase",
+                    "screenshots": ["%1$s/home.png", "%1$s/logo.svg", "%1$s/c.png", "%1$s/d.png",
+                                    "%1$s/e.png"]
+                  }
+                ]
+                """);
+        server.createContext("/home.png", exchange -> respond(exchange, "png bytes"));
+        server.createContext("/logo.svg", exchange -> respond(exchange, "<svg onload='x()'/>"));
+
+        var item = catalog.catalogue().items().stream()
+                .filter(each -> "shio-blueprint-showcase".equals(each.id())).findFirst().orElseThrow();
+        assertThat(item.screenshots())
+                .as("SH1253: a card and a dialog's worth; the fifth is dropped, not fetched")
+                .hasSize(ShMarketplaceItem.MAX_SCREENSHOTS);
+
+        ShMarketplaceCatalog.Screenshot shot = catalog.screenshot(base + "/home.png");
+        assertThat(shot.contentType()).isEqualTo("image/png");
+        assertThat(new String(shot.bytes(), java.nio.charset.StandardCharsets.UTF_8)).isEqualTo("png bytes");
+
+        assertThatThrownBy(() -> catalog.screenshot("http://169.254.169.254/latest/meta-data/x.png"))
+                .as("SH1253: the README's allow-list, applied to images: undeclared is refused")
+                .isInstanceOf(ShMarketplaceCatalog.UndeclaredScreenshotException.class);
+        assertThatThrownBy(() -> catalog.screenshot(base + "/logo.svg"))
+                .as("SH1253: an SVG can carry script, so even a declared one is not served under the "
+                        + "console's origin (the hole SH951 closed for uploads)")
+                .isInstanceOf(ShMarketplaceCatalog.UndeclaredScreenshotException.class);
+    }
+
+    @Test
     @DisplayName("SH646: with the feature off, the README proxy names the property rather than 404ing blankly")
     void theReadmeProxyTeachesWhenDisabled() {
         assertThatThrownBy(() -> catalog.readme("https://example.invalid/README.md"))
@@ -307,7 +342,7 @@ class ShMarketplaceCatalogTest {
     private String serve(String body) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         String base = "http://127.0.0.1:" + server.getAddress().getPort();
-        String catalogue = body.contains("%s") ? body.formatted(base) : body;
+        String catalogue = body.contains("%s") || body.contains("%1$s") ? body.formatted(base) : body;
 
         server.createContext("/marketplace.json", exchange -> respond(exchange, catalogue));
         server.createContext("/README.md", exchange -> respond(exchange, "# the readme body"));

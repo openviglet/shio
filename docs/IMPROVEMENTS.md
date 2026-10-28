@@ -241,22 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.32 XI.32 Marketplace entries a curator can see before installing (SH1253)
-
-The console's marketplace card is a title, an id, a description and badges. The detail
-dialog shows the README as monospace raw markdown, a shortfall SH679 recorded rather
-than chose. For six plain blueprints that was enough. For a showcase whose whole point
-is how it looks, a curator would be choosing a site they cannot see.
-
-Two additions, both inside the trust model SH646 set:
-
-- **`screenshots`**, a catalogue key holding up to a few image URLs per entry. `icon` stays a name and never a URL, because a catalogue must not make a browser fetch from a host the operator did not name. Screenshots keep that rule the way the README does: the instance proxies them, and only for URLs its own catalogue declares, so the reachable set is still what the operator's catalogue offered. The card shows the first one; the dialog shows all of them.
-- **A rendered README.** The console needs a markdown renderer for exactly this panel. The choice of library (or reusing one the design system already has) is part of the task, with its bundle cost measured against the console's load budgets (Block BG).
-
-`ShMarketplaceItem.KEYS` gains the key, so an unknown key is still a refusal.
-`shio-site/scripts/marketplace.mjs` publishes the images beside each zip, and the CLI's
-`marketplace show` prints the screenshot URLs, since a terminal cannot draw them.
-
 ### XI.33 XI.33 The showcase package (SH1254)
 
 The package that turns SH1250's spec into a site. It is the site itself, without the

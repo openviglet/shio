@@ -31,6 +31,10 @@ import { toast } from "@viglet/viglet-design-system"
 const MarketplaceSetup = lazy(() =>
   import("./marketplace.setup").then((module) => ({ default: module.MarketplaceSetup })),
 )
+// SH1253 — the README renderer, lazy for the same reason: it only ever draws in an opened dialog.
+const MarketplaceReadme = lazy(() =>
+  import("./marketplace.readme").then((module) => ({ default: module.MarketplaceReadme })),
+)
 
 const service = new ShMarketplaceService()
 
@@ -240,6 +244,14 @@ export default function MarketplaceListPage() {
                 onClick={() => open(item)}
                 className="flex w-full flex-col gap-2 p-4 text-left"
               >
+                {item.screenshots?.[0] && (
+                  <img
+                    src={service.screenshotSrc(item.screenshots[0])}
+                    alt=""
+                    loading="lazy"
+                    className="aspect-video w-full rounded-md border object-cover"
+                  />
+                )}
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-medium break-all">{item.title ?? item.id}</span>
                   <Badge variant={item.installed ? "secondary" : "outline"}>
@@ -302,10 +314,26 @@ export default function MarketplaceListPage() {
                 <MarketplaceSetup key={selected.id} item={selected} onDone={load} />
               </Suspense>
 
+              {(selected.screenshots?.length ?? 0) > 0 && (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {selected.screenshots?.map((url, index) => (
+                    <img
+                      key={url}
+                      src={service.screenshotSrc(url)}
+                      alt={t("marketplace.screenshotAlt", { title: selected.title ?? selected.id, n: index + 1 })}
+                      className="w-full rounded-md border"
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* SH1253 — rendered, not raw: a showcase's README is part of how it looks. */}
               {readme && (
-                <pre className="max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
-                  {readme}
-                </pre>
+                <div className="max-h-64 overflow-auto rounded-md border p-3">
+                  <Suspense fallback={<pre className="text-xs whitespace-pre-wrap">{readme}</pre>}>
+                    <MarketplaceReadme source={readme} />
+                  </Suspense>
+                </div>
               )}
 
               {plan && <p className="text-sm text-muted-foreground">{plan}</p>}

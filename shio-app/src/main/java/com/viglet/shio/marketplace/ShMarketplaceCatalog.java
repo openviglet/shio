@@ -179,6 +179,54 @@ public class ShMarketplaceCatalog {
     }
 
     /**
+     * SH1253 — one entry's screenshot, fetched by the server rather than the browser.
+     *
+     * <p>The README's allow-list, applied to the {@code screenshots} the catalogue declares: an
+     * image the operator's catalogue did not name is refused, so this cannot be pointed at an
+     * arbitrary address. Only an image comes back; anything else is refused rather than served
+     * under the console's origin.</p>
+     *
+     * @param url a {@code screenshots} entry of an item in the current catalogue
+     * @return the bytes and their content type
+     */
+    public Screenshot screenshot(String url) {
+        if (!properties.hasRemote()) {
+            throw new DisabledException();
+        }
+        Set<String> declared = new LinkedHashSet<>();
+        for (ShMarketplaceItem item : catalogue().items()) {
+            declared.addAll(item.screenshots());
+        }
+        if (url == null || !declared.contains(url)) {
+            throw new UndeclaredScreenshotException(url);
+        }
+        String type = java.net.URLConnection.guessContentTypeFromName(url.replaceAll("[?#].*$", ""));
+        if (type == null || !type.startsWith("image/") || type.contains("svg")) {
+            // SVG is refused with the rest: it is a document that can carry script, and serving
+            // one under the console's origin is the hole SH951 closed for uploads.
+            throw new UndeclaredScreenshotException(url);
+        }
+        return new Screenshot(download(url), type);
+    }
+
+    /** SH1253 — a proxied screenshot. */
+    public record Screenshot(byte[] bytes, String contentType) {
+    }
+
+    /** A screenshot URL the current catalogue does not declare, or one that is not a raster image. */
+    public static class UndeclaredScreenshotException extends ShTeachingException {
+
+        public UndeclaredScreenshotException(String sent) {
+            super(ShProblem.of("undeclared-marketplace-screenshot", HttpStatus.BAD_REQUEST,
+                            "Not a screenshot this catalogue declares")
+                    .withDetail("The proxy only fetches a PNG, JPEG, GIF or WebP named in an entry's "
+                            + "`screenshots`, so it cannot be pointed at another address; got '"
+                            + (sent == null ? "" : sent) + "'.")
+                    .withFix("Use a `screenshots` URL of an entry from GET /api/v2/marketplace."));
+        }
+    }
+
+    /**
      * The bytes of one entry's package zip.
      *
      * <p>Same allow-list as {@link #readme(String)} and for the same reason: the reachable set is
@@ -271,7 +319,7 @@ public class ShMarketplaceCatalog {
                 text(entry, "version"), text(entry, "author"), text(entry, "category"),
                 strings(entry, "tags"), text(entry, "icon"), text(entry, "downloadUrl"),
                 text(entry, "readmeUrl"), entry.get("params"), strings(entry, "requires"),
-                false, false);
+                false, false, strings(entry, "screenshots"));
     }
 
     private static String text(JsonNode entry, String key) {

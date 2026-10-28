@@ -39,6 +39,7 @@
     "setupContent": "Conteúdo: {{changed}} alteração(ões) de {{ops}} operação(ões)",
     "setupMore": "e mais {{count}}",
     "setupAsset": "Imagem {{path}}: {{action}}",
+    "screenshotAlt": "{{title}}, captura de tela {{n}}",
     "setupDone": "{{site}} está pronto.",
     "setupOpen": "Abrir o navegador de conteúdo",
     "setupFailed": "O pacote não pôde ser aplicado."

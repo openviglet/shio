@@ -39,6 +39,14 @@ export class ShMarketplaceService {
     return response.data
   }
 
+  /**
+   * SH1253 — where an `<img>` loads one entry's screenshot: through the instance, which serves
+   * only a URL its own catalogue declares, like the README.
+   */
+  screenshotSrc(url: string): string {
+    return `${axios.defaults.baseURL ?? "/api"}/v2/marketplace/screenshot?url=${encodeURIComponent(url)}`
+  }
+
   /** Download and install. `dryRun` validates everything and writes nothing (P7). */
   async install(id: string, dryRun = false): Promise<ShMarketplaceInstalled> {
     const response = await axios.post<ShMarketplaceInstalled>(

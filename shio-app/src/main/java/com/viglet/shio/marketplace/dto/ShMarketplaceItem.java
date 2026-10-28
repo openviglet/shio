@@ -10,6 +10,9 @@ package com.viglet.shio.marketplace.dto;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -57,6 +60,10 @@ import tools.jackson.databind.JsonNode;
  * @param requires    opt-in names the package needs before it may be applied
  * @param builtIn     true when this package shipped with the instance
  * @param installed   true when the registry already has a package under this name
+ * @param screenshots SH1253 — up to {@link #MAX_SCREENSHOTS} image URLs showing what the package
+ *                    builds. Proxied like the README and for its reason: the instance fetches
+ *                    only a URL its own catalogue declares, so a catalogue still cannot make a
+ *                    browser reach a host the operator did not name. Omitted when empty
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -64,7 +71,8 @@ import tools.jackson.databind.JsonNode;
 public record ShMarketplaceItem(String id, String title, String description, String version,
                                 String author, String category, List<String> tags, String icon,
                                 String downloadUrl, String readmeUrl, JsonNode params,
-                                List<String> requires, boolean builtIn, boolean installed) {
+                                List<String> requires, boolean builtIn, boolean installed,
+                                @JsonInclude(Include.NON_EMPTY) List<String> screenshots) {
 
     /** The category the first-party packages are listed under. */
     public static final String FIRST_PARTY = "first-party";
@@ -72,18 +80,33 @@ public record ShMarketplaceItem(String id, String title, String description, Str
     /** Who publishes the packages that ship with the instance. */
     public static final String VIGLET = "Viglet";
 
+    /** SH1253 — a card and a dialog's worth; a catalogue is not a gallery host. */
+    public static final int MAX_SCREENSHOTS = 4;
+
     /** Every key a catalogue file may carry — anything else is a typo, and typos are refusals. */
     public static final List<String> KEYS = List.of("id", "title", "description", "version",
-            "author", "category", "tags", "icon", "downloadUrl", "readmeUrl", "params", "requires");
+            "author", "category", "tags", "icon", "downloadUrl", "readmeUrl", "params", "requires",
+            "screenshots");
 
     public ShMarketplaceItem {
         tags = tags == null ? List.of() : List.copyOf(tags);
         requires = requires == null ? List.of() : List.copyOf(requires);
+        screenshots = screenshots == null ? List.of()
+                : List.copyOf(screenshots.subList(0, Math.min(screenshots.size(), MAX_SCREENSHOTS)));
+    }
+
+    /** The pre-SH1253 form: an entry with no screenshots. */
+    public ShMarketplaceItem(String id, String title, String description, String version,
+                             String author, String category, List<String> tags, String icon,
+                             String downloadUrl, String readmeUrl, JsonNode params,
+                             List<String> requires, boolean builtIn, boolean installed) {
+        this(id, title, description, version, author, category, tags, icon, downloadUrl, readmeUrl,
+                params, requires, builtIn, installed, List.of());
     }
 
     /** The same entry, with this instance's answer to "do I already have it?" stamped on. */
     public ShMarketplaceItem asInstalled(boolean present) {
         return new ShMarketplaceItem(id, title, description, version, author, category, tags,
-                icon, downloadUrl, readmeUrl, params, requires, builtIn, present);
+                icon, downloadUrl, readmeUrl, params, requires, builtIn, present, screenshots);
     }
 }
