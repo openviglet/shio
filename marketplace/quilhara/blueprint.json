@@ -25,7 +25,9 @@
     "post-types/SectionLogoWall.json",
     "post-types/SectionMarkup.json",
     "post-types/SectionRichText.json",
-    "post-types/SectionTestimonial.json"
+    "post-types/SectionTestimonial.json",
+    "post-types/BuildNote.json",
+    "post-types/SearchPage.json"
   ],
   "content": [
     "content/theme.json",
@@ -92,7 +94,13 @@
       "/trips/wind-crest-overnight",
       "/viagens/travessia-crista-do-vento",
       "/about",
-      "/sobre"
+      "/sobre",
+      "/tour",
+      "/visita",
+      "/tour/agent",
+      "/visita/agente",
+      "/search",
+      "/busca"
     ],
     "checks": "content"
   }

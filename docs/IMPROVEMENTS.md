@@ -488,6 +488,71 @@ report the extra SQL in its message, because "Measured [6, 3]" names a number an
 cause. SH250's rule applies: a benchmark that fails one run in N is the assertion people
 learn to rerun.
 
+### XI.49 XI.49 A package declares who reads a folder (SH1277)
+
+Found building SH1256. The showcase matrix maps `contentAcl` to `/members`, a page only
+a signed-in member sees, and it is the one subject the tour could not build: the
+blueprint content format has `folders` and `posts` and no way to say who may read
+either. `ShBlueprintService` never touches `ShContentAclService`, so a package that
+wants a members area has to ship it public and ask the operator to lock it by hand in
+the console, which is a step P8 says a package exists to remove.
+
+What to build: an optional `acl` on a folder entry in a blueprint content document, the
+same shape the console's ACL editor writes (a list of groups or users with a
+permission), applied through the existing ACL service after the folder exists, and
+reported as an op in the apply plan so a dry run shows it. A folder rather than a post,
+because the ACL already inherits down the folder tree
+(`ShContentAclServiceTest.aclInheritsDownTheFolderTreeToSubfolderAndPost`), and one rule
+per area is what a members section is. The group the rule names has to exist; the
+package either declares it or the apply answers a teaching error naming the missing
+group, never a silent public folder.
+
+Then Quilhara adds `/members` (pt `/membros`) under a restricted folder, and
+`cli/test/showcase-coverage.test.mjs` drops `/members` and `feature:contentAcl` from its
+lists, which empties the showcase debt. The agent path stays bound by the same ACL
+(non-goal: the agent path is not a privilege escalation).
+
+### XI.50 XI.50 Search and query take the page's locale (SH1278)
+
+Measured on a clean instance with Quilhara applied:
+`/sites/quilhara/default/en-us/search?q=Marina` lists ten rows, five of them Portuguese
+posts. `{{#search}}` takes `q`, `type` and `limit` and calls `searchBySitesAndStateIn`
+or `searchBySiteAndTypesAndStateIn`, neither of which knows a locale, and the template
+has no equality helper to skip a row whose `locale` differs, so a bilingual site cannot
+build a results page in one language. The CDA's `/search` already takes `locale`, so the
+delivery API and the renderer disagree about what a site search is.
+
+What to build: a `locale=` hash argument on `{{#search}}` (and on `{{#query}}`, which
+has the same gap), resolved the way the CDA resolves its `locale` parameter so there is
+one meaning across the two surfaces, and accepting `locale=post.locale` so a layout
+writes it once. Default unchanged (every locale), because an existing template must not
+start returning less. Quilhara's search layout then passes it and the per-row `lang`
+attribute stays as a harmless belt.
+
+Assert with a render test that applies two posts in different locales matching one term
+and expects only the page locale's row.
+
+### XI.51 XI.51 A delivered link carries its row's own locale (SH1279)
+
+Measured on a clean instance with Quilhara applied: a search row for a pt-br post,
+rendered on the en-us search page, links to
+`/sites/quilhara/default/en-us/trilhas/crista-do-vento`, and that URL answers 200 with
+the Portuguese page. So the delivered-link rewrite prefixes every row with the locale of
+the page being rendered rather than the row's own, and the `/sites/**` resolver accepts
+a post under a locale segment that is not its locale.
+
+Two consequences a visitor and a crawler both meet: the same page is reachable at two
+addresses (one with the wrong language in its path, against a canonical that names the
+right one), and a link from one language's listing silently moves the visitor's locale
+context to the other.
+
+What to build: the rewrite reads the row's `locale` (every row has carried it since
+SH383) when it builds a delivered link; and the resolver, given a locale segment, either
+refuses a post whose locale differs or redirects to the post's own locale prefix. A
+redirect is the kinder choice for a link already in the wild, and it matches how a moved
+page is handled. Assert both at the delivery boundary: the rendered href carries the
+row's locale, and the mismatched URL does not answer 200 with content.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

@@ -30,93 +30,17 @@ const blueprint = JSON.parse(readFileSync(join(PACKAGE, "blueprint.json"), "utf8
 const posts = blueprint.content.flatMap((file) =>
   JSON.parse(readFileSync(join(PACKAGE, file), "utf8")).posts ?? []);
 
-/** Matrix pages the package does not hold yet: the tour, members and search. */
+/**
+ * Matrix pages the package does not hold yet. `/members` needs a content ACL, which a package
+ * cannot declare (SH1277).
+ */
 const PAGES_OWED = [
   "/members",
-  "/search",
-  "/tour",
-  "/tour/agent",
-  "/tour/curator",
-  "/tour/delivery",
-  "/tour/files",
-  "/tour/media",
-  "/tour/replication",
-  "/tour/verification",
-  "/tour/writes",
 ];
 
-/** Subjects whose page is in PAGES_OWED, as `<kind>:<key>`. Drained by SH1256. */
+/** Subjects whose page is in PAGES_OWED, as `<kind>:<key>`. */
 const DEBT = [
-  "curator:preview-links",
-  "curator:releases",
-  "curator:review-queue",
-  "curator:revisions",
-  "curator:universal-editor",
-  "feature:agentContext",
-  "feature:agentTokenScope",
-  "feature:agentsMd",
-  "feature:appearanceDigest",
-  "feature:assetUsage",
-  "feature:batchWrites",
-  "feature:blueprints",
-  "feature:changeCursor",
-  "feature:conditionalReads",
-  "feature:confirmTokens",
   "feature:contentAcl",
-  "feature:contentAsFiles",
-  "feature:contentLint",
-  "feature:contextCapabilities",
-  "feature:conversionProposal",
-  "feature:deliveryProof",
-  "feature:desiredState",
-  "feature:diagnostics",
-  "feature:durableIncidents",
-  "feature:exchange",
-  "feature:fieldProjection",
-  "feature:folderMove",
-  "feature:folderPrune",
-  "feature:graphql",
-  "feature:instanceMemory",
-  "feature:manifestProjection",
-  "feature:marketplace",
-  "feature:mcp",
-  "feature:pageAudit",
-  "feature:pathAddressing",
-  "feature:postMove",
-  "feature:postTypeMerge",
-  "feature:postTypesAsCode",
-  "feature:previewTokens",
-  "feature:publishGate",
-  "feature:renderDigest",
-  "feature:renderFetch",
-  "feature:reviewQueue",
-  "feature:reviewVerdicts",
-  "feature:routeCheck",
-  "feature:scheduledPublish",
-  "feature:search",
-  "feature:siteCapture",
-  "feature:siteConversion",
-  "feature:siteDelete",
-  "feature:siteUpsert",
-  "feature:teachingErrors",
-  "feature:terseResponses",
-  "feature:trash",
-  "feature:universalEditor",
-  "feature:visualSnapshot",
-  "feature:webhooks",
-  "feature:writeProof",
-  "mcp:shio_apply",
-  "mcp:shio_assets",
-  "mcp:shio_changes",
-  "mcp:shio_context",
-  "mcp:shio_digest",
-  "mcp:shio_find",
-  "mcp:shio_marketplace",
-  "mcp:shio_publish",
-  "mcp:shio_read",
-  "mcp:shio_remember",
-  "mcp:shio_verify",
-  "mcp:shio_write",
 ];
 
 const [primary, ...others] = matrix.locales;
@@ -158,4 +82,21 @@ test("SH1255: every subject has a built showcase page or an exclusion, except th
   process.stdout.write(`SH1255 showcase coverage: ${all.length} subjects, ${debt.length} in debt\n`);
   assert.deepEqual(debt, [...DEBT].sort(),
     "SH1255: build the page or write its exclusion in the matrix; a paid entry leaves DEBT");
+});
+
+test("SH1256: every tour page, in every language, ends with a complete how-it-was-built note", () => {
+  const byUrl = new Map(posts.map((post) => [post.url, post]));
+  const tourPages = posts.filter((post) => post.type === "InfoPage"
+    && Object.keys(matrix.pages).some((page) => page.startsWith("/tour")
+      && (post.url === page || post.translationOf === page)));
+  assert.equal(tourPages.length, Object.keys(matrix.pages).filter((page) => page.startsWith("/tour")).length
+    * matrix.locales.length, "SH1256: a tour page is missing in one of the showcase languages");
+  for (const page of tourPages) {
+    const note = byUrl.get(page.data.sections.at(-1));
+    assert.equal(note?.type, "BuildNote", `SH1256: ${page.url} does not end with a BuildNote`);
+    assert.equal(note.locale, page.locale, `SH1256: ${page.url} borrows another language's note`);
+    for (const field of ["consoleRoute", "mcpCall", "cliLine", "cdaRequest"]) {
+      assert.ok(note.data[field]?.trim(), `SH1256: ${note.url} has no ${field}`);
+    }
+  }
 });

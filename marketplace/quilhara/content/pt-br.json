@@ -467,6 +467,19 @@
       "locale": "pt-br"
     },
     {
+      "url": "/menu/pt-br/tour",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Visita",
+        "target": [
+          "/visita"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
       "url": "/menu/pt-br",
       "type": "Menu",
       "folder": "/menu/pt-br",
@@ -478,12 +491,419 @@
           "/menu/pt-br/stories",
           "/menu/pt-br/guides",
           "/menu/pt-br/trips",
+          "/menu/pt-br/tour",
           "/menu/pt-br/about",
           "/menu/pt-br/contact"
         ]
       },
       "publish": true,
       "locale": "pt-br"
+    },
+    {
+      "url": "/pt/secoes/tour-index",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Um pacote, três papéis",
+        "body": "<p>A Quilhara foi instalada a partir de um único pacote do marketplace. Um agente constrói e mantém um site Shio, uma pessoa curadora aprova o que ele fez, e a API de entrega de conteúdo o serve. Cada página abaixo mostra uma parte disso, sobre o conteúdo deste próprio site.</p><ul><li><a href=\"/visita/agente\">Como um agente lê este site</a></li><li><a href=\"/visita/escrita\">Como o agente o escreveu</a></li><li><a href=\"/visita/verificacao\">Como o agente o comprovou</a></li><li><a href=\"/visita/curadoria\">O que a curadoria fez</a></li><li><a href=\"/visita/arquivos\">O mesmo site como arquivos</a></li><li><a href=\"/visita/entrega\">O mesmo conteúdo por REST e GraphQL</a></li><li><a href=\"/visita/midia\">Onde cada imagem é usada</a></li><li><a href=\"/visita/replicacao\">Como um site existente vira um site editável</a></li><li><a href=\"/busca\">Busca no site</a></li></ul><p>Cada página termina com a tela do console, a chamada MCP, a linha de CLI e a requisição de entrega por trás dela. Elas rodam contra a instância que você está lendo, então dá para copiar uma e testar.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-index"
+    },
+    {
+      "url": "/pt/secoes/tour-index-built",
+      "type": "BuildNote",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como foi feito",
+        "consoleRoute": "/bento/admin/marketplace",
+        "mcpCall": "shio_marketplace {\"id\": \"quilhara\"}, then shio_apply {\"site\": \"quilhara\", \"blueprint\": \"quilhara\"}",
+        "cliLine": "shio apply --blueprint quilhara --site quilhara --create-site",
+        "cdaRequest": "GET /api/v2/cda/site"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-index-built"
+    },
+    {
+      "url": "/visita",
+      "type": "InfoPage",
+      "folder": "/pt/visita",
+      "data": {
+        "title": "Como este site foi feito",
+        "description": "A visita guiada: qual recurso do Shio cada página da Quilhara mostra, e como fazer o mesmo.",
+        "sections": [
+          "/pt/secoes/tour-index",
+          "/pt/secoes/tour-index-built"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/tour"
+    },
+    {
+      "url": "/pt/secoes/tour-agent",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "A descoberta é uma chamada",
+        "body": "<p>Um agente que encontra esta instância pela primeira vez pede o pacote de contexto. A resposta traz cada tipo de post e seus campos, as páginas do site endereçadas por caminho e as convenções seguidas aqui. A projeção do manifesto e a lista de capacidades dizem quais recursos esta instância ligou, e um digest permite à próxima sessão pular a leitura quando nada mudou.</p><p>As páginas são nomeadas por endereço, como <code>post:quilhara/trilhas/crista-do-vento</code>, nunca por um id que o agente teria de procurar antes. Uma leitura pode pedir só alguns campos, uma leitura condicional responde \"sem mudança\" sem custo, e as respostas são enxutas por padrão. Um pedido errado volta com o que corrigir, o que é permitido e um exemplo, para que a próxima chamada acerte.</p><p>O mesmo pacote pode ser gravado como instruções de projeto (<code>AGENTS.md</code>), o agente pode guardar uma decisão para a próxima sessão, e um token de agente fica restrito aos sites que pode alterar.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-agent"
+    },
+    {
+      "url": "/pt/secoes/tour-agent-built",
+      "type": "BuildNote",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como foi feito",
+        "consoleRoute": "/bento/admin/tokens",
+        "mcpCall": "shio_context {\"site\": \"quilhara\"}; shio_find {\"site\": \"quilhara\", \"type\": \"Trail\"}; shio_read {\"address\": \"post:quilhara/trails/wind-crest\", \"fields\": \"name,facts\"}; shio_remember {\"site\": \"quilhara\", \"key\": \"voice\", \"note\": \"Field guide, not brochure\"}",
+        "cliLine": "shio context --site quilhara --as agents-md --out AGENTS.md",
+        "cdaRequest": "GET /api/v2/agent/manifest"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-agent-built"
+    },
+    {
+      "url": "/visita/agente",
+      "type": "InfoPage",
+      "folder": "/pt/visita",
+      "data": {
+        "title": "Como um agente lê este site",
+        "description": "Uma chamada devolve o modelo de conteúdo, o mapa do site e as regras da casa, e o agente começa sem explorar.",
+        "sections": [
+          "/pt/secoes/tour-agent",
+          "/pt/secoes/tour-agent-built"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/tour/agent"
+    },
+    {
+      "url": "/pt/secoes/tour-writes",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Estado desejado, aplicado duas vezes com o mesmo resultado",
+        "body": "<p>Cada página aqui foi escrita como um documento de estado desejado: o site, seus tipos de post e seus posts, aplicados num único lote. Aplicar de novo não muda nada, então repetir é seguro. Um dry run mostra o plano antes, e um passo destrutivo, como podar uma pasta ou apagar um site, precisa de um token de confirmação daquele plano para rodar.</p><p>O pacote é um blueprint: os tipos de post se juntam aos que a instância já tem, pastas e posts podem mudar de lugar sem quebrar seus endereços, e cada escrita responde com a prova do que gravou. Nada vai ao ar antes de ser publicado, e publicar é uma chamada à parte.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-writes"
+    },
+    {
+      "url": "/pt/secoes/tour-writes-built",
+      "type": "BuildNote",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como foi feito",
+        "consoleRoute": "/bento/content",
+        "mcpCall": "shio_apply {\"site\": \"quilhara\", \"blueprint\": \"quilhara\", \"dryRun\": true}; shio_write {\"address\": \"post:quilhara/trails/wind-crest\", \"data\": {\"summary\": \"A granite ridge above the clouds.\"}}; shio_publish {\"address\": \"post:quilhara/trails/wind-crest\"}",
+        "cliLine": "shio apply --blueprint quilhara --site quilhara --dry-run",
+        "cdaRequest": "POST /api/v2/agent/batch"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-writes-built"
+    },
+    {
+      "url": "/visita/escrita",
+      "type": "InfoPage",
+      "folder": "/pt/visita",
+      "data": {
+        "title": "Como o agente o escreveu",
+        "description": "Planos, lotes e aplicações idempotentes: como as páginas deste site foram escritas e publicadas.",
+        "sections": [
+          "/pt/secoes/tour-writes",
+          "/pt/secoes/tour-writes-built"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/tour/writes"
+    },
+    {
+      "url": "/pt/secoes/tour-verification",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Prova barata no lugar de um print",
+        "body": "<p>Antes de este site ser publicado, o verify revisou o conteúdo e as rotas: campos obrigatórios vazios, referências a nada, duas páginas no mesmo endereço, links que não levam a lugar nenhum. O digest de renderização descreve uma página em texto, com seus títulos, regiões, links e imagens, por uma fração do custo de um print, e uma auditoria de página aponta o que está errado com um seletor para cada item.</p><p>As mesmas checagens rodam depois de cada mudança. Um cursor de mudanças diz o que aconteceu desde a última olhada, diagnósticos e incidentes sobrevivem a um reinício, uma prova de entrega busca as rotas publicadas no próprio endereço do site, e quando uma imagem é necessária um snapshot visual diz se a página ficou diferente.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-verification"
+    },
+    {
+      "url": "/pt/secoes/tour-verification-built",
+      "type": "BuildNote",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como foi feito",
+        "consoleRoute": "/bento/admin/activity",
+        "mcpCall": "shio_verify {\"site\": \"quilhara\", \"checks\": \"content,routes\"}; shio_digest {\"address\": \"post:quilhara/trails/wind-crest\"}; shio_changes {\"site\": \"quilhara\", \"limit\": 20}",
+        "cliLine": "shio verify --site quilhara --checks content,routes,a11y",
+        "cdaRequest": "GET /api/v2/agent/verify?site=quilhara"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-verification-built"
+    },
+    {
+      "url": "/visita/verificacao",
+      "type": "InfoPage",
+      "folder": "/pt/visita",
+      "data": {
+        "title": "Como o agente o comprovou",
+        "description": "Lint, checagem de rotas e digests de renderização: prova em texto de que o site funciona, sem ninguém olhar.",
+        "sections": [
+          "/pt/secoes/tour-verification",
+          "/pt/secoes/tour-verification-built"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/tour/verification"
+    },
+    {
+      "url": "/pt/secoes/tour-curator",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "O agente propõe, uma pessoa aprova",
+        "body": "<p>Uma pessoa curadora abriu estas páginas no Universal Editor e mudou o texto onde ele aparece na página. O que o agente escreveu esperou na fila de revisão, e o veredito sobre cada item fica registrado. O portão de publicação lista as checagens que uma página passa antes de ir ao ar.</p><p>A publicação pode ser agendada, e um release põe várias páginas no ar juntas. Cada gravação guarda uma revisão, então uma versão anterior pode ser comparada e restaurada, e uma página apagada vai para a lixeira em vez de sumir. Um link de prévia mostra um rascunho para quem não tem conta, enquanto o link durar.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-curator"
+    },
+    {
+      "url": "/pt/secoes/tour-curator-built",
+      "type": "BuildNote",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como foi feito",
+        "consoleRoute": "/bento/universal-editor",
+        "mcpCall": "shio_publish {\"address\": \"post:quilhara/trails/wind-crest\", \"when\": \"2026-12-01T09:00:00Z\"}; shio_read {\"address\": \"post:quilhara/trails/wind-crest\", \"revisions\": true}",
+        "cliLine": "shio share post:quilhara/trails/wind-crest",
+        "cdaRequest": "GET /api/v2/cda/post/by-url?siteId=<site id>&url=/trails/wind-crest&state=draft"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-curator-built"
+    },
+    {
+      "url": "/visita/curadoria",
+      "type": "InfoPage",
+      "folder": "/pt/visita",
+      "data": {
+        "title": "O que a curadoria fez",
+        "description": "Editar no lugar, revisar o que o agente deixou, agendar e restaurar uma versão anterior.",
+        "sections": [
+          "/pt/secoes/tour-curator",
+          "/pt/secoes/tour-curator-built"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/tour/curator"
+    },
+    {
+      "url": "/pt/secoes/tour-files",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Arquivos são o jeito mais barato de editar",
+        "body": "<p>Cada página deste site pode ser puxada para um arquivo: frontmatter para os campos e Markdown para o corpo, com imagens como caminhos em vez de ids. Os tipos de post também são arquivos JSON, versionados ao lado do código que os renderiza.</p><p>Edite um arquivo, envie, e um merge de três vias aplica só o que mudou; um campo que os dois lados mudaram é relatado, não sobrescrito. Um site inteiro também viaja entre instâncias como um pacote de exchange.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-files"
+    },
+    {
+      "url": "/pt/secoes/tour-files-built",
+      "type": "BuildNote",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como foi feito",
+        "consoleRoute": "/bento/content/post-type",
+        "mcpCall": "shio_read {\"address\": \"post:quilhara/trails/wind-crest\"}",
+        "cliLine": "shio pull --content --site quilhara",
+        "cdaRequest": "GET /api/v2/cda/post-type/Trail"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-files-built"
+    },
+    {
+      "url": "/visita/arquivos",
+      "type": "InfoPage",
+      "folder": "/pt/visita",
+      "data": {
+        "title": "O mesmo site como arquivos",
+        "description": "Puxe este site para o disco como Markdown e JSON, edite com ferramentas comuns e envie de volta.",
+        "sections": [
+          "/pt/secoes/tour-files",
+          "/pt/secoes/tour-files-built"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/tour/files"
+    },
+    {
+      "url": "/pt/secoes/tour-delivery",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Um repositório de conteúdo, vários front ends",
+        "body": "<p>O Shio renderiza este site sozinho, e o mesmo conteúdo fica aberto a qualquer outro front end. A API REST de entrega lê uma página pelo endereço e pelo idioma, lista uma pasta ou um tipo de post, e faz buscas. O GraphQL pede exatamente os campos de que um componente precisa. Um webhook avisa outro sistema quando uma página é publicada, para que um build estático ou um cache saiba que deve atualizar.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-delivery"
+    },
+    {
+      "url": "/pt/secoes/tour-delivery-built",
+      "type": "BuildNote",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como foi feito",
+        "consoleRoute": "/bento/admin/webhooks",
+        "mcpCall": "shio_find {\"site\": \"quilhara\", \"type\": \"Trail\", \"locale\": \"pt-br\"}",
+        "cliLine": "shio types --out shio.d.ts",
+        "cdaRequest": "GET /api/v2/cda/post/by-url?siteId=<site id>&url=/trails/wind-crest&locale=en-us; POST /graphql"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-delivery-built"
+    },
+    {
+      "url": "/visita/entrega",
+      "type": "InfoPage",
+      "folder": "/pt/visita",
+      "data": {
+        "title": "O mesmo conteúdo por REST e GraphQL",
+        "description": "Leia estas páginas de qualquer front end por REST ou GraphQL, e saiba das mudanças por webhooks.",
+        "sections": [
+          "/pt/secoes/tour-delivery",
+          "/pt/secoes/tour-delivery-built"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/tour/delivery"
+    },
+    {
+      "url": "/pt/secoes/tour-media",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Imagens que sabem onde estão",
+        "body": "<p>As fotografias deste site vieram com o pacote, cada uma com uma descrição para quem não pode vê-la. A lista de arquivos diz quais páginas usam cada uma, então uma imagem que nada referencia pode ser encontrada e removida, e uma que a página ainda usa nunca é apagada por engano.</p><p>As listagens servem cada imagem nos tamanhos de que um card precisa, e não o original inteiro, e as páginas de histórias mostram a legenda e o texto alternativo guardados com a foto.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-media"
+    },
+    {
+      "url": "/pt/secoes/tour-media-built",
+      "type": "BuildNote",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como foi feito",
+        "consoleRoute": "/bento/content/files",
+        "mcpCall": "shio_assets {\"site\": \"quilhara\", \"usage\": true}",
+        "cliLine": "shio assets prune --site quilhara --dry-run",
+        "cdaRequest": "GET /api/v2/cda/query?siteId=<site id>&postType=Story"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-media-built"
+    },
+    {
+      "url": "/visita/midia",
+      "type": "InfoPage",
+      "folder": "/pt/visita",
+      "data": {
+        "title": "Onde cada imagem é usada",
+        "description": "Cada fotografia deste site, o que ela mostra, quais páginas a usam e os tamanhos em que é servida.",
+        "sections": [
+          "/pt/secoes/tour-media",
+          "/pt/secoes/tour-media-built"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/tour/media"
+    },
+    {
+      "url": "/pt/secoes/tour-replication",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Capturar, propor, converter",
+        "body": "<p>A Quilhara foi escrita para o pacote, mas a maioria dos sites já existe em algum lugar. O Shio captura um site percorrendo-o e montando um inventário de páginas, marcação e arquivos, sem escrever conteúdo nesse passo. Uma proposta então diz quais blocos repetidos podem virar seções e o que cada um perderia.</p><p>A conversão aplica o plano aceito como rascunho: tipos de post para as seções, um tema a partir dos estilos capturados e páginas que a curadoria pode editar. Nada é publicado antes de alguém revisar.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-replication"
+    },
+    {
+      "url": "/pt/secoes/tour-replication-built",
+      "type": "BuildNote",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Como foi feito",
+        "consoleRoute": "/bento/admin/review",
+        "mcpCall": "shio_changes {\"site\": \"quilhara\", \"by\": \"agent\"}",
+        "cliLine": "shio clone https://example.org --depth 2",
+        "cdaRequest": "GET /api/v2/cda/site/<site id>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/tour-replication-built"
+    },
+    {
+      "url": "/visita/replicacao",
+      "type": "InfoPage",
+      "folder": "/pt/visita",
+      "data": {
+        "title": "Como um site existente vira um site editável",
+        "description": "Capture um site que já existe, escolha quais blocos viram seções e converta tudo como rascunho.",
+        "sections": [
+          "/pt/secoes/tour-replication",
+          "/pt/secoes/tour-replication-built"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/tour/replication"
+    },
+    {
+      "url": "/busca",
+      "type": "SearchPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Busca",
+        "description": "Busque nas trilhas, histórias e guias da Quilhara.",
+        "label": "Buscar por",
+        "button": "Buscar",
+        "prompt": "Digite um lugar, uma trilha ou um nome.",
+        "trailsHeading": "Trilhas",
+        "storiesHeading": "Histórias",
+        "guidesHeading": "Guias",
+        "empty": "Nada encontrado."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/search"
     }
   ]
 }

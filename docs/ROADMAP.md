@@ -12,7 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- 📋 **SH1256** (deps: SH1255 ✅) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — Tour pages, each with a how-it-was-built panel naming the console screen, MCP tool and CDA call behind it, drain SH1255's debt to zero. → §XI.35
+- ⏳ **SH1256** (deps: SH1255 ✅, SH1277) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — The /members page for contentAcl is still owed: a package cannot declare who reads a folder until SH1277 lands. → §XI.35
 - 📋 **SH1257** (deps: SH1254 ✅) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo only sells Shio if a first boot can reach it; decide between enabling the published catalogue by default and a narrower showcase entry, with the trust cost stated. → §XI.36
 - 📋 **SH1266** (deps: —) **verify's page check passes a rendered img whose src is empty, so a page showing no images reports no finding** — SH1265 put src="" on every card of a site and verify stayed green, because it reads stored values and skips an empty reference. → §XI.37
 - 📋 **SH1267** (deps: —) **A menu row does not say whether it is the page being rendered, so a layout cannot mark the current item** — Every Shio site's navigation lacks aria-current and a visible current state, which screen readers and visitors both use. → §XI.40
@@ -24,10 +24,13 @@
 - 📋 **SH1274** (deps: —) **The console shows a site's root folder as a folder named like the site, so every path reads quilhara, quilhara** — Opening a site lands on a list holding one folder, the same name twice in every breadcrumb, which costs a click and looks like a mistake. → §XI.46
 - 📋 **SH1275** (deps: —) **The content browser's create button offers an arbitrary post type, Novo Guide in every Quilhara folder** — The first action on every folder suggests the wrong thing, even in a folder whose posts are all Trails. → §XI.47
 - 📋 **SH1276** (deps: —) **ShSiteListingCostTest fails about one full run in four: its first measurement sometimes counts 6 statements, then 3** — A red Java gate on a commit that never touched the site listing stops the work and teaches people to rerun until green. → §XI.48
+- 📋 **SH1277** (deps: —) **A blueprint cannot restrict who reads a folder, so a package's members area ships public** — Quilhara's /members page, the showcase's contentAcl demo, cannot be built without an operator locking it by hand. → §XI.49
+- 📋 **SH1278** (deps: —) **The search helper cannot narrow to the page's language, so a bilingual results page lists both** — Quilhara's English search for Marina returns five Portuguese posts, while the CDA's /search already takes a locale. → §XI.50
+- 📋 **SH1279** (deps: —) **A row in another language links under the current page's locale, and that wrong URL serves the page** — On the en-us search page a pt-br trail links to /en-us/trilhas/..., which answers 200, so one page has two addresses. → §XI.51
 
 ## Block S — The public site (shio.viglet.org)
 
-- 📋 **SH1258** (deps: SH1256, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
+- 📋 **SH1258** (deps: SH1256 ⏳, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
 
 ## Priority
 
@@ -37,6 +40,12 @@
   io.github.openviglet/shio, the Claude Code lists the visibility repo tracks name Shio,
   the More tools section carries a Shio line, and each link is in that repo's
   actions.json.
+
+## Done when — SH1256
+
+- **The showcase debt list is empty** cli/test/showcase-coverage.test.mjs holds DEBT and
+  PAGES_OWED with no entries, which means /members exists in en and pt, and verify plus
+  the a11y check pass on it.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -1098,3 +1098,12 @@ and the matrix pages not yet built are a second list, `PAGES_OWED`. Both are ass
 a new feature, a renamed page and a paid entry all turn it red until the list says so. The matrix
 page keys are the package's `en-us` urls; a page is built by adding the post, then deleting its
 names from both lists. SH1256 drains them with the tour pages.
+
+**The feature tour (SH1256).** `/tour` (pt `/visita`) and eight topic pages are `InfoPage`s whose
+last section is a `BuildNote`: the console route, MCP call, CLI line and CDA request behind the page,
+rendered as a `<dl class="q-built">` by the `Quilhara page` layout's section loop. Its labels
+(Console, MCP, CLI, CDA) are product names and read the same in both languages, which is why the
+layout can hard-code them. `/search` (pt `/busca`) is a `SearchPage` on its own layout, three
+`{{#search q=param.q type=...}}` blocks over Trail, Story and Guide; each result carries `lang`,
+because the helper does not narrow to the page's locale (SH1278). `/members` is the one page still
+owed: a package cannot declare a content ACL (SH1277).

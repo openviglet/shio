@@ -451,6 +451,19 @@
       "locale": "en-us"
     },
     {
+      "url": "/menu/en-us/tour",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Tour",
+        "target": [
+          "/tour"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
       "url": "/menu/en-us",
       "type": "Menu",
       "folder": "/menu/en-us",
@@ -462,9 +475,388 @@
           "/menu/en-us/stories",
           "/menu/en-us/guides",
           "/menu/en-us/trips",
+          "/menu/en-us/tour",
           "/menu/en-us/about",
           "/menu/en-us/contact"
         ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-index",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "One package, three jobs",
+        "body": "<p>Quilhara was installed from one marketplace package. An agent builds and maintains a Shio site, a curator approves what it did, and the content delivery API serves it. Each page below shows one part of that, on this site's own content.</p><ul><li><a href=\"/tour/agent\">How an agent reads this site</a></li><li><a href=\"/tour/writes\">How the agent wrote it</a></li><li><a href=\"/tour/verification\">How the agent proved it</a></li><li><a href=\"/tour/curator\">What the curator did</a></li><li><a href=\"/tour/files\">The same site as files</a></li><li><a href=\"/tour/delivery\">The same content over REST and GraphQL</a></li><li><a href=\"/tour/media\">Where each image is used</a></li><li><a href=\"/tour/replication\">How an existing site becomes an authorable one</a></li><li><a href=\"/search\">Site search</a></li></ul><p>Every page ends with the console screen, the MCP call, the CLI line and the delivery request behind it. They run against the instance you are reading, so you can copy one and try it.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-index-built",
+      "type": "BuildNote",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How this was built",
+        "consoleRoute": "/bento/admin/marketplace",
+        "mcpCall": "shio_marketplace {\"id\": \"quilhara\"}, then shio_apply {\"site\": \"quilhara\", \"blueprint\": \"quilhara\"}",
+        "cliLine": "shio apply --blueprint quilhara --site quilhara --create-site",
+        "cdaRequest": "GET /api/v2/cda/site"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/tour",
+      "type": "InfoPage",
+      "folder": "/en/tour",
+      "data": {
+        "title": "How this site was built",
+        "description": "The feature tour: which Shio capability each page of Quilhara shows, and how to do the same.",
+        "sections": [
+          "/en/sections/tour-index",
+          "/en/sections/tour-index-built"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-agent",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Discovery is one call",
+        "body": "<p>An agent that meets this instance for the first time asks for the context pack. It answers with every post type and its fields, the site's pages addressed by path, and the conventions an author here follows. Its manifest projection and capability list say which features this instance has switched on, and a digest lets the next session skip the read when nothing changed.</p><p>Pages are named by address, such as <code>post:quilhara/trails/wind-crest</code>, never by an id the agent would have to look up first. A read can ask for some fields only, a conditional read answers \"unchanged\" for nothing, and responses are terse by default. A request that goes wrong comes back with what to fix, what is allowed and an example, so the next call is the right one.</p><p>The same pack can be written out as project instructions (<code>AGENTS.md</code>), an agent can store a decision for the next session, and an agent token is scoped to the sites it may touch.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-agent-built",
+      "type": "BuildNote",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How this was built",
+        "consoleRoute": "/bento/admin/tokens",
+        "mcpCall": "shio_context {\"site\": \"quilhara\"}; shio_find {\"site\": \"quilhara\", \"type\": \"Trail\"}; shio_read {\"address\": \"post:quilhara/trails/wind-crest\", \"fields\": \"name,facts\"}; shio_remember {\"site\": \"quilhara\", \"key\": \"voice\", \"note\": \"Field guide, not brochure\"}",
+        "cliLine": "shio context --site quilhara --as agents-md --out AGENTS.md",
+        "cdaRequest": "GET /api/v2/agent/manifest"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/tour/agent",
+      "type": "InfoPage",
+      "folder": "/en/tour",
+      "data": {
+        "title": "How an agent reads this site",
+        "description": "One call returns the content model, the sitemap and the house rules, so an agent starts work without exploring.",
+        "sections": [
+          "/en/sections/tour-agent",
+          "/en/sections/tour-agent-built"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-writes",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Desired state, applied twice with the same result",
+        "body": "<p>Every page here was written as a desired-state document: the site, its post types and its posts, applied in one batch. Applying it again changes nothing, so a retry is safe. A dry run prints the plan first, and a destructive step, such as pruning a folder or deleting a site, needs a confirm token from that plan before it runs.</p><p>The package is a blueprint: the post types merge into whatever the instance already has, folders and posts can move without breaking their addresses, and each write answers with proof of what it stored. Nothing goes live until it is published, and publishing is its own call.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-writes-built",
+      "type": "BuildNote",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How this was built",
+        "consoleRoute": "/bento/content",
+        "mcpCall": "shio_apply {\"site\": \"quilhara\", \"blueprint\": \"quilhara\", \"dryRun\": true}; shio_write {\"address\": \"post:quilhara/trails/wind-crest\", \"data\": {\"summary\": \"A granite ridge above the clouds.\"}}; shio_publish {\"address\": \"post:quilhara/trails/wind-crest\"}",
+        "cliLine": "shio apply --blueprint quilhara --site quilhara --dry-run",
+        "cdaRequest": "POST /api/v2/agent/batch"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/tour/writes",
+      "type": "InfoPage",
+      "folder": "/en/tour",
+      "data": {
+        "title": "How the agent wrote it",
+        "description": "Plans, batches and idempotent applies: how the pages of this site were written and published.",
+        "sections": [
+          "/en/sections/tour-writes",
+          "/en/sections/tour-writes-built"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-verification",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Cheap proof instead of a screenshot",
+        "body": "<p>Before this site was published, verify linted its content and its routes: empty required fields, references to nothing, two pages on one address, links that resolve nowhere. The render digest describes a page as text, its outline, landmarks, links and images, at a fraction of a screenshot's cost, and a page audit names what is wrong with a selector each.</p><p>The same checks run after every change. A change cursor says what happened since the last look, diagnostics and incidents survive a restart, a delivery proof fetches the published routes from the site's own address, and when a picture is needed a visual snapshot says whether the page looks different from last time.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-verification-built",
+      "type": "BuildNote",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How this was built",
+        "consoleRoute": "/bento/admin/activity",
+        "mcpCall": "shio_verify {\"site\": \"quilhara\", \"checks\": \"content,routes\"}; shio_digest {\"address\": \"post:quilhara/trails/wind-crest\"}; shio_changes {\"site\": \"quilhara\", \"limit\": 20}",
+        "cliLine": "shio verify --site quilhara --checks content,routes,a11y",
+        "cdaRequest": "GET /api/v2/agent/verify?site=quilhara"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/tour/verification",
+      "type": "InfoPage",
+      "folder": "/en/tour",
+      "data": {
+        "title": "How the agent proved it",
+        "description": "Lint, route checks and render digests: proof in text that the site works, without anyone looking at it.",
+        "sections": [
+          "/en/sections/tour-verification",
+          "/en/sections/tour-verification-built"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-curator",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "The agent proposes, a person approves",
+        "body": "<p>A curator opened these pages in the Universal Editor and changed text where it sits on the page. What the agent wrote waited in the review queue, and the curator's verdict on each item is recorded. The publish gate lists the checks a page passes before it goes live.</p><p>Publishing can be scheduled, and a release brings several pages live together. Every save keeps a revision, so an earlier version can be compared and restored, and a deleted page goes to the trash rather than away. A preview link shows a draft to someone without an account, for as long as the link lives.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-curator-built",
+      "type": "BuildNote",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How this was built",
+        "consoleRoute": "/bento/universal-editor",
+        "mcpCall": "shio_publish {\"address\": \"post:quilhara/trails/wind-crest\", \"when\": \"2026-12-01T09:00:00Z\"}; shio_read {\"address\": \"post:quilhara/trails/wind-crest\", \"revisions\": true}",
+        "cliLine": "shio share post:quilhara/trails/wind-crest",
+        "cdaRequest": "GET /api/v2/cda/post/by-url?siteId=<site id>&url=/trails/wind-crest&state=draft"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/tour/curator",
+      "type": "InfoPage",
+      "folder": "/en/tour",
+      "data": {
+        "title": "What the curator did",
+        "description": "Edit in place, review what the agent left, schedule, and restore an earlier version.",
+        "sections": [
+          "/en/sections/tour-curator",
+          "/en/sections/tour-curator-built"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-files",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Files are the cheapest way to edit",
+        "body": "<p>Each page of this site can be pulled to a file: frontmatter for its fields and Markdown for its body, with images as paths rather than ids. The post types are JSON files too, kept in version control next to the code that renders them.</p><p>Edit a file, push it, and a three-way merge applies only what changed; a field both sides changed is reported, not overwritten. A whole site also travels between instances as an exchange package.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-files-built",
+      "type": "BuildNote",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How this was built",
+        "consoleRoute": "/bento/content/post-type",
+        "mcpCall": "shio_read {\"address\": \"post:quilhara/trails/wind-crest\"}",
+        "cliLine": "shio pull --content --site quilhara",
+        "cdaRequest": "GET /api/v2/cda/post-type/Trail"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/tour/files",
+      "type": "InfoPage",
+      "folder": "/en/tour",
+      "data": {
+        "title": "The same site as files",
+        "description": "Pull this site to disk as Markdown and JSON, edit it with ordinary tools, and push it back.",
+        "sections": [
+          "/en/sections/tour-files",
+          "/en/sections/tour-files-built"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-delivery",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "One content store, several front ends",
+        "body": "<p>Shio renders this site itself, and the same content is open to any other front end. The REST delivery API reads a page by its address and language, lists a folder or a post type, and searches. GraphQL asks for exactly the fields a component needs. A webhook tells another system when a page is published, so a static build or a cache knows to refresh.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-delivery-built",
+      "type": "BuildNote",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How this was built",
+        "consoleRoute": "/bento/admin/webhooks",
+        "mcpCall": "shio_find {\"site\": \"quilhara\", \"type\": \"Trail\", \"locale\": \"pt-br\"}",
+        "cliLine": "shio types --out shio.d.ts",
+        "cdaRequest": "GET /api/v2/cda/post/by-url?siteId=<site id>&url=/trails/wind-crest&locale=en-us; POST /graphql"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/tour/delivery",
+      "type": "InfoPage",
+      "folder": "/en/tour",
+      "data": {
+        "title": "The same content over REST and GraphQL",
+        "description": "Read these pages from any front end over REST or GraphQL, and hear about changes through webhooks.",
+        "sections": [
+          "/en/sections/tour-delivery",
+          "/en/sections/tour-delivery-built"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-media",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Images that know where they are",
+        "body": "<p>The photographs on this site came in with the package, each with a description for someone who cannot see it. The asset list says which pages use each one, so an image nothing references can be found and removed, and one a page still needs is never deleted by mistake.</p><p>The listings serve each image in the sizes a card needs rather than the full original, and the story pages show the caption and alt text stored with the picture.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-media-built",
+      "type": "BuildNote",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How this was built",
+        "consoleRoute": "/bento/content/files",
+        "mcpCall": "shio_assets {\"site\": \"quilhara\", \"usage\": true}",
+        "cliLine": "shio assets prune --site quilhara --dry-run",
+        "cdaRequest": "GET /api/v2/cda/query?siteId=<site id>&postType=Story"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/tour/media",
+      "type": "InfoPage",
+      "folder": "/en/tour",
+      "data": {
+        "title": "Where each image is used",
+        "description": "Every photograph on this site, what it shows, which pages use it, and the sizes it is served in.",
+        "sections": [
+          "/en/sections/tour-media",
+          "/en/sections/tour-media-built"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-replication",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "Capture, propose, convert",
+        "body": "<p>Quilhara was written for the package, but most sites already exist somewhere. Shio captures one by crawling it into an inventory of pages, markup and assets, and writes no content while it does. A proposal then names which repeated blocks could become sections and what each would lose.</p><p>Converting applies the accepted plan as drafts: post types for the sections, a theme from the captured styles, and pages a curator can edit. Nothing is published until someone reviews it.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/tour-replication-built",
+      "type": "BuildNote",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "How this was built",
+        "consoleRoute": "/bento/admin/review",
+        "mcpCall": "shio_changes {\"site\": \"quilhara\", \"by\": \"agent\"}",
+        "cliLine": "shio clone https://example.org --depth 2",
+        "cdaRequest": "GET /api/v2/cda/site/<site id>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/tour/replication",
+      "type": "InfoPage",
+      "folder": "/en/tour",
+      "data": {
+        "title": "How an existing site becomes an authorable one",
+        "description": "Capture a site that already exists, choose which of its blocks become sections, and convert it as drafts.",
+        "sections": [
+          "/en/sections/tour-replication",
+          "/en/sections/tour-replication-built"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/search",
+      "type": "SearchPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Search",
+        "description": "Search the trails, stories and guides of Quilhara.",
+        "label": "Search for",
+        "button": "Search",
+        "prompt": "Type a place, a trail or a name.",
+        "trailsHeading": "Trails",
+        "storiesHeading": "Stories",
+        "guidesHeading": "Guides",
+        "empty": "Nothing matched."
       },
       "publish": true,
       "locale": "en-us"

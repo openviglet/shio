@@ -382,6 +382,7 @@
 - **SH1254** — marketplace/quilhara ships the showcase in en-us and pt-br: model, theme, seven layouts, menus, polyweave-bought photos and self-hosted fonts, published as shio-blueprint-quilhara and judged by the a11y test at 0 findings.
   checked **The showcase package installs a bilingual site with licensed photography** With the owner's photo set (own or CC0, credits recorded) in assets/, the package applies the Quilhara site in en-us and pt-br, passes ShBlueprintAccessibilityTest and verify's lint with no finding, and the apply's token cost is recorded.
 - **SH1255** — showcase-coverage.test.mjs holds every manifest feature, MCP tool and curator surface to a built bilingual Quilhara page or an exclusion; the rest is a named debt list SH1256 drains (design §XI.34 recorded in `docs/agents/blueprints.md`).
+- **SH1256 (tour and search)** — Quilhara carries /tour, eight topic pages and /search in en and pt, each tour page ending in a BuildNote naming its console route, MCP call, CLI line and CDA request; showcase debt is down to contentAcl.
 
 ## Block M — Token economy, measured (SH74)
 

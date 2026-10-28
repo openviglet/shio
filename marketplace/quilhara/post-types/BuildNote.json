@@ -1,0 +1,70 @@
+{
+  "name": "BuildNote",
+  "title": "How this was built",
+  "namePlural": "Build notes",
+  "description": "A section naming the console screen, MCP call, CLI line and CDA request behind a page, so a visitor can repeat it.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "heading",
+      "label": "Heading",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "consoleRoute",
+      "label": "Console screen",
+      "description": "The console route a curator opens.",
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "mcpCall",
+      "label": "MCP call",
+      "description": "The tool and its arguments, as an agent sends them.",
+      "widget": "Text Area",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "cliLine",
+      "label": "CLI line",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "cdaRequest",
+      "label": "CDA request",
+      "description": "The delivery request a front end makes.",
+      "widget": "Text Area",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 5,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}
