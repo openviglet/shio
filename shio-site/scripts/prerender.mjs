@@ -176,7 +176,7 @@ const manifest = {
     "/llms.txt is the whole product in one file.",
   routes: index,
   product: {
-    docs: "https://docs.viglet.org/shio/",
+    docs: "https://shio.viglet.org/docs/",
     source: "https://github.com/openviglet/shio",
     mcp: "claude mcp add shio -- npx @viglet/shio mcp",
     firstCall: "GET /api/v2/agent/manifest?include=features,limits",

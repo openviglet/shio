@@ -1686,7 +1686,7 @@ export const TOKEN_SCOPES: TokenScope[] = [
 /* ── Links ───────────────────────────────────────────────────────────────── */
 
 export const LINKS = {
-  docs: "https://docs.viglet.org/shio/",
+  docs: "/docs/",
   repo: "https://github.com/openviglet/shio",
   license: "https://github.com/openviglet/shio/blob/HEAD/LICENSE",
   roadmap: "https://github.com/openviglet/shio/blob/HEAD/docs/ROADMAP.md",

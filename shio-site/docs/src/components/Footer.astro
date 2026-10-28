@@ -1,0 +1,137 @@
+---
+/**
+ * SH1262 — Starlight's page footer (pagination, last updated), then shio.viglet.org's footer:
+ * the same columns and the same dark band as shio-site/src/components/sections/site-footer.tsx.
+ */
+import Default from "@astrojs/starlight/components/Footer.astro";
+import mark from "../assets/shio-mark.svg";
+
+const columns = [
+  {
+    heading: "Ways to use it",
+    links: [
+      { label: "In the console, by hand", href: "/console/" },
+      { label: "With a coding agent", href: "/claude-code/" },
+      { label: "As files in your repository", href: "/features/content-as-files/" },
+      { label: "Through the delivery API", href: "/features/delivery/" },
+    ],
+  },
+  {
+    heading: "The product",
+    links: [
+      { label: "What stops an agent write", href: "/curator/" },
+      { label: "Rendering and design tokens", href: "/features/rendering/" },
+      { label: "Replicate a site", href: "/replicate/" },
+      { label: "Compare", href: "/compare/" },
+    ],
+  },
+  {
+    heading: "Open and inspectable",
+    links: [
+      { label: "Source", href: "https://github.com/openviglet/shio" },
+      { label: "Roadmap", href: "https://github.com/openviglet/shio/blob/2026.3/docs/ROADMAP.md" },
+      { label: "Changelog", href: "https://www.viglet.org/shio/release-notes/" },
+      { label: "viglet.org", href: "https://www.viglet.org" },
+    ],
+  },
+];
+const year = new Date().getFullYear();
+---
+
+<Default />
+<footer class="shio-footer not-content">
+  <div class="shio-footer-grid">
+    <div>
+      <span class="shio-footer-brand">
+        <img src={mark.src} alt="" width="28" height="28" />
+        Viglet Shio
+      </span>
+      <p>
+        An open-source, agent-ready CMS with four ways in: a full console, a coding agent, files in
+        your repository, and the delivery API.
+      </p>
+    </div>
+    {
+      columns.map((col) => (
+        <div>
+          <h3>{col.heading}</h3>
+          <ul>
+            {col.links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  target={link.href.startsWith("http") ? "_blank" : undefined}
+                  rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+  </div>
+  <div class="shio-footer-legal">© {year} Viglet Shio · Apache 2.0 License</div>
+</footer>
+
+<style>
+  .shio-footer {
+    margin-top: 3rem;
+    padding: 2.5rem 1.5rem 1.5rem;
+    background: #0f0a09;
+    color: #a89189;
+    border-radius: var(--shio-radius);
+    font-size: var(--sl-text-sm);
+  }
+  .shio-footer-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 50rem) {
+    .shio-footer-grid {
+      grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    }
+  }
+  .shio-footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 800;
+    color: #f6ece8;
+  }
+  .shio-footer p {
+    margin-top: 0.75rem;
+    line-height: 1.6;
+  }
+  .shio-footer h3 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #f6ece8;
+  }
+  .shio-footer ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+  }
+  .shio-footer li + li {
+    margin-top: 0.6rem;
+  }
+  .shio-footer a {
+    color: #a89189;
+    text-decoration: none;
+  }
+  .shio-footer a:hover {
+    color: #f6ece8;
+  }
+  .shio-footer-legal {
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #241a17;
+    font-size: 0.75rem;
+    color: #7a6660;
+  }
+</style>

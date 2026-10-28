@@ -1,0 +1,59 @@
+---
+/**
+ * SH1262 — the site's top-level links in the docs header, before Starlight's own icons, so a
+ * reader can go back to the product pages from any page here. Root-anchored on
+ * shio.viglet.org, as the site's own nav is.
+ */
+import Default from "@astrojs/starlight/components/SocialIcons.astro";
+
+const links = [
+  { label: "Home", href: "/" },
+  { label: "Console", href: "/console/" },
+  { label: "Coding agent", href: "/claude-code/" },
+  { label: "Compare", href: "/compare/" },
+  { label: "Get started", href: "/docs/installation-guide/", highlight: true },
+];
+---
+
+<nav class="shio-nav" aria-label="Viglet Shio">
+  {
+    links.map((link) => (
+      <a href={link.href} class:list={["shio-nav-link", { "shio-nav-pill": link.highlight }]}>
+        {link.label}
+      </a>
+    ))
+  }
+</nav>
+<Default />
+
+<style>
+  .shio-nav {
+    display: none;
+    align-items: center;
+    gap: 1.1rem;
+    margin-inline-end: 0.5rem;
+  }
+  .shio-nav-link {
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--sl-color-gray-3);
+    text-decoration: none;
+  }
+  .shio-nav-link:hover {
+    color: var(--sl-color-white);
+  }
+  .shio-nav-pill {
+    color: var(--sl-color-accent);
+    background: color-mix(in oklab, var(--sl-color-accent) 12%, transparent);
+    border: 1px solid color-mix(in oklab, var(--sl-color-accent) 35%, transparent);
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+    font-weight: 700;
+  }
+  @media (min-width: 64rem) {
+    .shio-nav {
+      display: flex;
+    }
+  }
+</style>

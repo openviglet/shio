@@ -27,7 +27,28 @@ export default defineConfig({
     starlight({
       title: "Viglet Shio",
       description: "The documentation of Viglet Shio, the open-source, agent-ready CMS.",
+      logo: { src: "./src/assets/shio-mark.svg", alt: "Viglet Shio" },
+      favicon: "/favicon.svg",
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/openviglet/shio" }],
+      // shio.viglet.org's look, as Turing's docs carry turing.viglet.org's (T1162): the site's
+      // fonts, its palette on Starlight's tokens, and its brand, nav and footer.
+      customCss: ["./src/styles/docs.css"],
+      head: [
+        { tag: "link", attrs: { rel: "preconnect", href: "https://fonts.googleapis.com" } },
+        { tag: "link", attrs: { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: true } },
+        {
+          tag: "link",
+          attrs: {
+            rel: "stylesheet",
+            href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap",
+          },
+        },
+      ],
+      components: {
+        SiteTitle: "./src/components/SiteTitle.astro",
+        SocialIcons: "./src/components/SocialIcons.astro",
+        Footer: "./src/components/Footer.astro",
+      },
       editLink: { baseUrl: "https://github.com/openviglet/shio/edit/2026.3/shio-site/docs/" },
       lastUpdated: false,
       // The four hubs Docusaurus had, in its order: a reader picks by job, not by subsystem.

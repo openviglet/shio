@@ -1,0 +1,50 @@
+---
+/**
+ * SH1262 — the header's brand as shio.viglet.org draws it: the cube mark and "Viglet Shio",
+ * a "Docs" label, and the "part of viglet.org" pill. Starlight's own SiteTitle renders the logo
+ * and the link to the docs home.
+ */
+import Default from "@astrojs/starlight/components/SiteTitle.astro";
+---
+
+<div class="shio-brand">
+  <Default />
+  <span class="shio-docs-label">Docs</span>
+  <a class="shio-pill" href="https://www.viglet.org" target="_blank" rel="noreferrer">part of viglet.org ↗</a>
+</div>
+
+<style>
+  .shio-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+  .shio-docs-label {
+    font-size: var(--sl-text-sm);
+    font-weight: 700;
+    color: var(--sl-color-accent);
+    padding-inline-start: 0.6rem;
+    border-inline-start: 1px solid var(--sl-color-hairline);
+  }
+  .shio-pill {
+    display: none;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--sl-color-gray-3);
+    text-decoration: none;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 999px;
+    padding: 0.1rem 0.5rem;
+  }
+  .shio-pill:hover {
+    color: var(--sl-color-white);
+    border-color: var(--sl-color-gray-4);
+  }
+  @media (min-width: 72rem) {
+    .shio-pill {
+      display: inline-flex;
+    }
+  }
+</style>

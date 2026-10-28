@@ -1,0 +1,119 @@
+/*
+ * SH1262 — the docs area in shio.viglet.org's look (shio-site/src/index.css): its oklch palette
+ * on Starlight's tokens (violet primary at hue 293 over warm neutrals at hue 40), Plus Jakarta
+ * Sans and JetBrains Mono, the 0.75rem radius, and the eyebrow's violet-to-amber gradient.
+ * Starlight's scale runs from --sl-color-white (strongest text) to --sl-color-black (the page),
+ * so the light theme inverts it. The same shape Turing's docs use (T1162).
+ */
+:root {
+  --sl-font: "Plus Jakarta Sans", system-ui, sans-serif;
+  --sl-font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --shio-radius: 0.75rem;
+  --shio-gradient: linear-gradient(110deg, #ddd6fe, #a78bfa 45%, #f0abfc);
+
+  /* Dark, the site's .dark tokens. */
+  --sl-color-white: oklch(0.96 0.005 60);
+  --sl-color-gray-1: oklch(0.9 0.008 55);
+  --sl-color-gray-2: oklch(0.8 0.012 50);
+  --sl-color-gray-3: oklch(0.7 0.015 45);
+  --sl-color-gray-4: oklch(0.48 0.018 40);
+  --sl-color-gray-5: oklch(0.29 0.018 38);
+  --sl-color-gray-6: oklch(0.19 0.015 38);
+  --sl-color-black: oklch(0.15 0.012 40);
+  --sl-color-accent-low: oklch(0.28 0.05 293);
+  --sl-color-accent: oklch(0.72 0.16 293);
+  --sl-color-accent-high: oklch(0.88 0.07 293);
+  --sl-color-bg-nav: color-mix(in oklab, var(--sl-color-black) 85%, transparent);
+}
+
+:root[data-theme="light"] {
+  --shio-gradient: linear-gradient(110deg, #5b21b6, #7c3aed 55%, #c026d3);
+
+  /* Light, the site's :root tokens. */
+  --sl-color-white: oklch(0.17 0.015 40);
+  --sl-color-gray-1: oklch(0.27 0.02 40);
+  --sl-color-gray-2: oklch(0.38 0.02 40);
+  --sl-color-gray-3: oklch(0.52 0.02 40);
+  --sl-color-gray-4: oklch(0.7 0.015 45);
+  --sl-color-gray-5: oklch(0.92 0.01 50);
+  --sl-color-gray-6: oklch(0.97 0.008 55);
+  --sl-color-gray-7: oklch(0.985 0.004 55);
+  --sl-color-black: oklch(1 0 0);
+  --sl-color-accent-low: oklch(0.96 0.02 293);
+  --sl-color-accent: oklch(0.49 0.24 293);
+  --sl-color-accent-high: oklch(0.32 0.1 293);
+  --sl-color-bg-nav: color-mix(in oklab, var(--sl-color-black) 85%, transparent);
+}
+
+body {
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The header reads as the site's sticky nav: the page colour, opaque. */
+header.header {
+  background-color: var(--sl-color-black);
+}
+
+/* The brand as the site draws it: foreground colour, extra-bold, nav-sized. */
+.site-title {
+  color: var(--sl-color-white);
+  font-size: 1.05rem;
+  font-weight: 800;
+  gap: 0.5rem;
+}
+.site-title img {
+  height: 2rem;
+  width: auto;
+}
+
+/* The current page: the site's soft primary pill, not a solid block. */
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover {
+  background: color-mix(in oklab, var(--sl-color-accent) 14%, transparent);
+  color: var(--sl-color-accent-high);
+  font-weight: 700;
+}
+
+/* The page title carries the brand gradient, as the site's headline words do. */
+.hero h1,
+.content-panel h1#_top {
+  background: var(--shio-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.sl-link-button.primary {
+  background: var(--sl-color-accent);
+  border: none;
+  color: var(--sl-color-black);
+}
+
+/* Cards, asides, code and tables on the site's radius. */
+.card,
+.sl-link-card,
+.starlight-aside,
+.expressive-code .frame,
+.sl-markdown-content table,
+site-search dialog {
+  border-radius: var(--shio-radius);
+}
+
+.sl-link-card:hover {
+  border-color: var(--sl-color-accent);
+  box-shadow: 0 4px 20px color-mix(in oklab, var(--sl-color-accent) 18%, transparent);
+}
+
+.starlight-aside--note,
+.starlight-aside--tip {
+  --sl-color-asides-text-accent: var(--sl-color-accent-high);
+}
+
+.sl-markdown-content table {
+  display: block;
+  overflow-x: auto;
+}

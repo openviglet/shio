@@ -127,7 +127,7 @@ A feature that breaks one is wrong even if it was requested.
 
 ## Links
 
-- Documentation: https://docs.viglet.org/shio/
+- Documentation: https://shio.viglet.org/docs/
 - Source: https://github.com/openviglet/shio
 - The design laws: https://github.com/openviglet/shio/blob/HEAD/agents.md
 - The concept spec: https://github.com/openviglet/shio/blob/HEAD/docs/specs/SH74-agent-native-cms.md
