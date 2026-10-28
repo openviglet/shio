@@ -63,6 +63,8 @@ class ShBlueprintAssetsTest {
     private ShStaticFileService shStaticFileService;
     @Autowired
     private PlatformTransactionManager transactionManager;
+    @Autowired
+    private com.viglet.shio.api.reference.ShObjectReferenceService shObjectReferenceService;
 
     @TempDir
     private Path packages;
@@ -155,6 +157,56 @@ class ShBlueprintAssetsTest {
             assertThat(asset.name()).isEqualTo("pixel.png");
             assertThat(asset.sha256()).hasSize(64);
         });
+    }
+
+    @Test
+    @DisplayName("SH1263: a package's File field holds its own asset's id, and the asset carries its alt")
+    void contentReferencesItsOwnAsset() throws IOException {
+        Path dir = Files.createDirectories(packages.resolve("sh1263-card"));
+        Files.createDirectories(dir.resolve("assets/images"));
+        Files.write(dir.resolve("assets/images/pixel.png"), PIXEL);
+        Files.writeString(dir.resolve("Sh1263Card.json"), """
+                {"name":"Sh1263Card","title":"Sh1263Card","namePlural":"Sh1263Cards","fields":[
+                  {"name":"title","label":"Title","widget":"Text","required":true,"isTitle":true,"ordinal":1},
+                  {"name":"picture","label":"Picture","widget":"File","ordinal":2}]}
+                """);
+        Files.writeString(dir.resolve("content.json"), """
+                {"folders":[{"path":"/gallery"}],"posts":[{"url":"/gallery/card","type":"Sh1263Card",
+                  "folder":"/gallery","publish":true,
+                  "data":{"title":"A card","picture":"asset:/images/pixel.png"}}]}
+                """);
+        Files.writeString(dir.resolve(ShBlueprintManifest.FILE_NAME), """
+                {"formatVersion":1,"name":"sh1263-card","title":"A card with its picture","version":"0.1.0",
+                 "postTypes":["Sh1263Card.json"],"content":["content.json"],
+                 "assets":[{"path":"assets/images/pixel.png","alt":"One transparent pixel"}]}
+                """);
+        registry.reload();
+        String site = "sh1263-" + UUID.randomUUID().toString().substring(0, 8);
+        var options = new ShBlueprintWriteService.Options(true, false);
+        var params = JsonNodeFactory.instance.objectNode();
+
+        ShBlueprintApplied applied = shBlueprintService.apply("sh1263-card", site, params, "admin", options);
+        assertThat(applied.createdSite())
+                .as("SH1263: the site is now created by the asset folders' document, and the response "
+                        + "must still say this apply created it")
+                .isEqualTo(site);
+        String folder = shAddressResolver.find(ShAddress.folder(site, "/images")).orElseThrow().id();
+        String fileId = fileIdIn(folder).orElseThrow();
+
+        assertThat(shObjectReferenceService.isReferenced(fileId))
+                .as("SH1263: the File field holds the asset's id rather than the token, so the reference "
+                        + "index counts it and asset-unused has nothing to report")
+                .isTrue();
+        assertThat(shStaticFileService.listFiles(folder, null, null, null))
+                .singleElement()
+                .satisfies(item -> assertThat(item.alt())
+                        .as("SH1263: the package's description lands as the File post's ALT")
+                        .isEqualTo("One transparent pixel"));
+
+        ShBlueprintApplied again = shBlueprintService.apply("sh1263-card", site, params, "admin", options);
+        assertThat(again.content().changed())
+                .as("SH1263: P5 — the token resolves to the same id on a re-apply, so the content converges")
+                .isZero();
     }
 
     @Test

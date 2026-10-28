@@ -12,10 +12,12 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The owner publishes server.json with mcp-publisher, submits the Claude Code lists and the More tools line, and records each link in actions.json. → §XI.28
-- ⏳ **SH1254** (deps: SH1250 ✅, SH1252 ✅, owner supplies the photo set) **No package ships a designed, bilingual site with real imagery, so a first install shows Shio at its plainest** — One marketplace package builds the showcase's model, theme, layouts, menus and pages in en and pt, clean under a11y. → §XI.33
+- ⏳ **SH1254** (deps: SH1250 ✅, SH1252 ✅, SH1263 ✅) **No package ships a designed, bilingual site with real imagery, so a first install shows Shio at its plainest** — One marketplace package builds the showcase's model, theme, layouts, menus and pages in en and pt, clean under a11y. → §XI.33
 - 📋 **SH1255** (deps: SH1254) **Nothing fails when Shio ships a capability the showcase does not demonstrate** — A test maps each manifest features key and MCP tool to a showcase page or a stated exclusion, holding the gap as a named list so the demo cannot fall behind. → §XI.34
 - 📋 **SH1256** (deps: SH1255) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — Tour pages, each with a how-it-was-built panel naming the console screen, MCP tool and CDA call behind it, drain SH1255's debt to zero. → §XI.35
 - 📋 **SH1257** (deps: SH1254) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo only sells Shio if a first boot can reach it; decide between enabling the published catalogue by default and a narrower showcase entry, with the trust cost stated. → §XI.36
+- 📋 **SH1264** (deps: —) **translation-missing counts a site's layouts and theme, always in en, as a language its translated pages lack** — A site written in en-us and pt-br gets one warning per translated page asking for an en version nobody meant to write. → §XI.39
+- 📋 **SH1265** (deps: —) **On the public sites route an img whose src is a site path renders empty, while a CSS url() to such a path is rebased** — A page naming its images by site path shows none to a visitor, and verify's page check passes it. → §XI.38
 
 ## Block S — The public site (shio.viglet.org)
 

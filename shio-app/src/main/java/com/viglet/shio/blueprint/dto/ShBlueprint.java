@@ -87,15 +87,30 @@ public record ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes
      * @param name   the file name, e.g. {@code hero.webp}
      * @param sha256 the digest, which is what makes a re-apply of the same bytes a no-op (P5)
      * @param bytes  the content
+     * @param alt    SH1263 — what it shows, written as the {@code File} post's {@code ALT}, or
+     *               {@code null} when the package does not describe it
      */
     public record Asset(String folder, String name, String sha256,
-                        @JsonIgnore byte[] bytes) {
+                        @JsonIgnore byte[] bytes, String alt) {
+
+        /** The SH1252 form: an asset the package does not describe. */
+        public Asset(String folder, String name, String sha256, byte[] bytes) {
+            this(folder, name, sha256, bytes, null);
+        }
 
         /** Where it is addressed in the site, which is how content references it. */
         public String path() {
             return folder + "/" + name;
         }
+
+        /** SH1263 — the whole field value a package's content writes to mean "this asset's id". */
+        public String token() {
+            return TOKEN_PREFIX + path();
+        }
     }
+
+    /** SH1263 — {@code asset:/images/hero.webp} in a field value is replaced by that asset's id. */
+    public static final String TOKEN_PREFIX = "asset:";
 
     /** True when this package did not ship with the instance — an operator added it. */
     public boolean isLocal() {

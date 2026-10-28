@@ -15,7 +15,9 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -89,14 +91,35 @@ public class ShBlueprintAssetWriter {
             Optional<String> existing = shStaticFileService.findFileId(folderId, asset.name());
             String action = action(asset, existing);
             MultipartFile file = new Bytes(asset.name(), asset.bytes());
+            String id = existing.orElse(null);
             if (CREATE.equals(action)) {
-                shStaticFileService.upload(file, folderId, actor);
+                id = shStaticFileService.upload(file, folderId, actor).getId();
             } else if (REPLACE.equals(action)) {
-                shStaticFileService.replace(file, existing.orElseThrow(), actor);
+                shStaticFileService.replace(file, id, actor);
             }
+            // SH1263 — the package's description, on every action including a noop: a package
+            // that gained an `alt` since the bytes were uploaded converges on re-apply.
+            shStaticFileService.describe(id, asset.alt(), actor);
             rows.add(new ShBlueprintApplied.AssetRow(asset.path(), action, asset.bytes().length));
         }
         return rows;
+    }
+
+    /**
+     * SH1263 — each asset's {@code File} post id in {@code site}, for the ones that are there.
+     *
+     * <p>What a package's {@code asset:/images/hero.webp} field values become before its content is
+     * applied. An asset the site does not have yet is absent from the map, which on a dry run leaves
+     * the token in the plan: the id it will get does not exist until the upload.</p>
+     */
+    @Transactional(readOnly = true)
+    public Map<String, String> ids(List<ShBlueprint.Asset> assets, String site) {
+        Map<String, String> ids = new LinkedHashMap<>();
+        for (ShBlueprint.Asset asset : assets) {
+            folderId(asset, site).flatMap(folder -> shStaticFileService.findFileId(folder, asset.name()))
+                    .ifPresent(id -> ids.put(asset.path(), id));
+        }
+        return ids;
     }
 
     private String action(ShBlueprint.Asset asset, String site, Optional<String> folderId) {

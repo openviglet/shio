@@ -153,21 +153,37 @@ public class ShBlueprintService {
         Map<String, String> values =
                 ShBlueprintParams.resolve(blueprint.manifest(), params, siteName);
         List<ShPostTypeDef> defs = defs(blueprint, values);
-        ShAgentDesiredState desired = desired(blueprint, values, siteName);
+
+        // SH1263 — assets first, so the content can hold their ids. SH1252 uploaded them after the
+        // content apply because the content created their folders, and that order is what left a
+        // package no way to point a File field at its own image: the id did not exist yet. So the
+        // folders are created by a document of their own, the assets land in them, and only then is
+        // the content document built, with each `asset:<path>` field value replaced by its id. A
+        // plan reads the ids of what is already there and leaves the rest as tokens.
+        String createdSite = null;
+        List<ShBlueprintApplied.AssetRow> assets;
+        if (dryRun) {
+            assets = shBlueprintAssetWriter.plan(blueprint.assets(), siteName);
+        } else if (blueprint.assets().isEmpty()) {
+            assets = List.of();
+        } else {
+            createdSite = shBlueprintWriteService.apply(List.of(), assetFolders(blueprint, siteName),
+                    actor, options).site();
+            assets = shBlueprintAssetWriter.apply(blueprint.assets(), siteName, actor);
+        }
+        Map<String, String> assetIds = blueprint.assets().isEmpty()
+                ? Map.of()
+                : shBlueprintAssetWriter.ids(blueprint.assets(), siteName);
+        ShAgentDesiredState desired = desired(blueprint, values, siteName, assetIds);
 
         ShBlueprintWriteService.Written written = dryRun
                 ? shBlueprintWriteService.plan(defs, desired, actor, options)
                 : shBlueprintWriteService.apply(defs, desired, actor, options);
-        // SH1252 — after the content apply, which created the folders they land in, and before
-        // the verify, so the proof reads a site that has its images.
-        List<ShBlueprintApplied.AssetRow> assets = dryRun
-                ? shBlueprintAssetWriter.plan(blueprint.assets(), siteName)
-                : shBlueprintAssetWriter.apply(blueprint.assets(), siteName, actor);
 
         return new ShBlueprintApplied(dryRun, blueprint.name(), blueprint.manifest().version(),
                 siteName, values, written.postTypes(), written.content(),
                 carriedFiles(blueprint), dryRun ? null : verify(blueprint, values, siteName),
-                written.site(),
+                createdSite != null ? createdSite : written.site(),
                 dryRun ? null : record(blueprint, values, siteName, actor), assets);
     }
 
@@ -228,7 +244,7 @@ public class ShBlueprintService {
      * order, addressed to the caller's site and never pruning.
      */
     private ShAgentDesiredState desired(ShBlueprint blueprint, Map<String, String> values,
-                                        String site) {
+                                        String site, Map<String, String> assetIds) {
         ObjectNode document = codec.object();
         document.put("site", site);
         ArrayNode folders = document.putArray("folders");
@@ -242,7 +258,7 @@ public class ShBlueprintService {
         for (JsonNode raw : blueprint.content()) {
             JsonNode tree = ShBlueprintParams.substitute(raw, values, blueprint.name());
             append(folders, tree.get("folders"));
-            append(posts, tree.get("posts"));
+            append(posts, withAssetIds(tree.get("posts"), assetIds));
             append(postTypes, tree.get("postTypes"));
             JsonNode declaredBinding = tree.get("postTypeLayout");
             if (declaredBinding != null && declaredBinding.isObject()) {
@@ -258,15 +274,7 @@ public class ShBlueprintService {
         // content declared it.
         java.util.Set<String> declared = new java.util.HashSet<>();
         folders.forEach(folder -> declared.add(folder.path("path").asString("")));
-        for (ShBlueprint.Asset asset : blueprint.assets()) {
-            StringBuilder path = new StringBuilder();
-            for (String segment : asset.folder().substring(1).split("/")) {
-                path.append('/').append(segment);
-                if (declared.add(path.toString())) {
-                    folders.addObject().put("path", path.toString());
-                }
-            }
-        }
+        addAssetFolders(blueprint, folders, declared);
         if (!postTypes.isEmpty()) {
             document.set("postTypes", postTypes);
         }
@@ -282,6 +290,67 @@ public class ShBlueprintService {
         if (source != null && source.isArray()) {
             source.forEach(target::add);
         }
+    }
+
+    /** SH1263 — the folders a package's assets land in, as a document of their own. */
+    private ShAgentDesiredState assetFolders(ShBlueprint blueprint, String site) {
+        ObjectNode document = codec.object();
+        document.put("site", site);
+        addAssetFolders(blueprint, document.putArray("folders"), new java.util.HashSet<>());
+        return codec.convert(document, ShAgentDesiredState.class);
+    }
+
+    /** Each asset's folder and its ancestors, none twice and none already declared. */
+    private static void addAssetFolders(ShBlueprint blueprint, ArrayNode folders,
+                                        java.util.Set<String> declared) {
+        for (ShBlueprint.Asset asset : blueprint.assets()) {
+            StringBuilder path = new StringBuilder();
+            for (String segment : asset.folder().substring(1).split("/")) {
+                path.append('/').append(segment);
+                if (declared.add(path.toString())) {
+                    folders.addObject().put("path", path.toString());
+                }
+            }
+        }
+    }
+
+    /**
+     * SH1263 — the posts with every field value {@code asset:<path>} replaced by that asset's id.
+     *
+     * <p>Whole values only, at any depth (a Relator row's File field is as much a field as a top-level
+     * one), so a sentence that happens to contain the word is never rewritten. A token whose asset is
+     * not in {@code ids} stays as written: on a plan the asset is not uploaded yet, and on an apply a
+     * token naming an asset the package does not declare is the package's mistake, which the stored
+     * value then shows rather than hides.</p>
+     */
+    private JsonNode withAssetIds(JsonNode posts, Map<String, String> ids) {
+        if (posts == null || ids.isEmpty()) {
+            return posts;
+        }
+        return replaceTokens(posts.deepCopy(), ids);
+    }
+
+    private JsonNode replaceTokens(JsonNode node, Map<String, String> ids) {
+        if (node.isString()) {
+            String value = node.asString();
+            if (value.startsWith(ShBlueprint.TOKEN_PREFIX)) {
+                String id = ids.get(value.substring(ShBlueprint.TOKEN_PREFIX.length()));
+                if (id != null) {
+                    return tools.jackson.databind.node.JsonNodeFactory.instance.stringNode(id);
+                }
+            }
+            return node;
+        }
+        if (node instanceof ObjectNode object) {
+            for (String name : List.copyOf(object.propertyNames())) {
+                object.set(name, replaceTokens(object.get(name), ids));
+            }
+        } else if (node instanceof ArrayNode array) {
+            for (int index = 0; index < array.size(); index++) {
+                array.set(index, replaceTokens(array.get(index), ids));
+            }
+        }
+        return node;
     }
 
     /**

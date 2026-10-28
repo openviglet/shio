@@ -1030,6 +1030,21 @@ bytes differ; the post keeps its id and SH1035 keeps the old bytes as a renditio
 SHA-256), so a converged re-apply writes nothing (P5). The rows ride on `ShBlueprintApplied.assets`,
 omitted when empty, and the CLI and the console's plan print them.
 
+**Content points at its own assets by token, and the assets go first (SH1263).** As SH1252 shipped
+it, content was applied before the upload, so a File field could not hold an asset's id and the
+"references it by that path" above had nothing that made a path work: `{{#image}}` and
+`{{file_url}}` read an id, the reference index counts only File and Content Select fields, and the
+preview rewrites nothing. The Quilhara package measured it on a clean instance: 13 `asset-unused`,
+10 `asset-no-alt` and every image broken in `/preview`. So an apply now creates the asset folders
+with a document of their own, uploads, and only then builds the content document, replacing every
+whole field value `asset:/images/hero.webp` (at any depth) with that `File` post's id. A plan reads
+the ids of files already there and leaves the rest as tokens. A manifest asset may also be
+`{"path": "assets/images/hero.webp", "alt": "..."}`; the writer sets `ALT` through
+`ShStaticFileService.describe`, which touches nothing else and writes nothing when the value already
+matches, so a curator's caption survives a re-apply. The cost is atomicity: folders, assets and
+content are three commits, where SH1252 was two. `ShBlueprintAssetsTest` holds the id, the `ALT`, the
+reference and the converged re-apply.
+
 `ShBlueprintRegistry.MAX_ASSET_BYTES` is 32 MB for a package's assets together: half the
 installer's 64 MB unpacked bound, against a showcase that plans under 8 MB. Raise it only for a
 package that measures above it, and write the number beside the constant. The bytes are

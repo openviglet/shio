@@ -1027,10 +1027,7 @@ public class ShStaticFileService {
     @Transactional
     public ShStaticFileItem updateMeta(String id, String alt, String caption, List<String> tags,
                                        String actor) {
-        ShPostUnified post = shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED)
-                .filter(p -> p.getShPostType() != null
-                        && ShSystemPostType.FILE.equals(p.getShPostType().getName()))
-                .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
+        ShPostUnified post = publishedFile(id);
 
         ObjectNode data = dataOf(post);
         // Read before the merge overwrites it: this row holds both sides, so naming the fields
@@ -1045,7 +1042,36 @@ public class ShStaticFileService {
             var arr = data.putArray(DATA_TAGS);
             tags.stream().filter(s -> s != null && !s.isBlank()).map(String::trim).forEach(arr::add);
         }
+        return saveMeta(post, data, before, actor);
+    }
 
+    /**
+     * SH1263 — a {@code File} post's {@code ALT} alone, as a blueprint's asset declares it.
+     *
+     * <p>Not {@link #updateMeta}, which treats an absent caption or tag list as "clear it": a package
+     * re-applied over an image a curator captioned would erase the caption. Writes nothing when the
+     * stored value already matches, so a converged re-apply leaves no row in the feed.</p>
+     */
+    @Transactional
+    public void describe(String id, String alt, String actor) {
+        ShPostUnified post = publishedFile(id);
+        ObjectNode data = dataOf(post);
+        if (alt == null || alt.equals(data.path(DATA_ALT).asString(null))) {
+            return;
+        }
+        String before = post.getData();
+        data.put(DATA_ALT, alt);
+        saveMeta(post, data, before, actor);
+    }
+
+    private ShPostUnified publishedFile(String id) {
+        return shPostUnifiedRepository.findByIdAndState(id, ShPostState.PUBLISHED)
+                .filter(p -> p.getShPostType() != null
+                        && ShSystemPostType.FILE.equals(p.getShPostType().getName()))
+                .orElseThrow(() -> new java.util.NoSuchElementException("File post not found: " + id));
+    }
+
+    private ShStaticFileItem saveMeta(ShPostUnified post, ObjectNode data, String before, String actor) {
         post.setData(objectMapper.writeValueAsString(data));
         post.setModifiedDate(Instant.now());
         if (actor != null) {

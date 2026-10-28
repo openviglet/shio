@@ -10,7 +10,9 @@ package com.viglet.shio.blueprint.dto;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import tools.jackson.databind.JsonNode;
@@ -94,7 +96,7 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
                                   String description, String version, JsonNode params,
                                   List<String> postTypes, List<String> content,
                                   List<FileRef> files, Verify verify,
-                                  @JsonInclude(Include.NON_EMPTY) List<String> assets) {
+                                  @JsonInclude(Include.NON_EMPTY) List<AssetRef> assets) {
 
     /** The only format revision that exists. */
     public static final int FORMAT_VERSION = 1;
@@ -137,6 +139,30 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
         /** The package-relative source path — {@code from} when given, else {@code path}. */
         public String source() {
             return from == null || from.isBlank() ? path : from;
+        }
+    }
+
+    /**
+     * SH1263 — one declared asset: its path in the package and, optionally, what it shows.
+     *
+     * <p>Written either as the path alone, the SH1252 form every package before this one uses, or
+     * as {@code {"path": ..., "alt": ...}}. The description lands as the {@code File} post's
+     * {@code ALT}, so {@code {{#image}}} emits it and {@code asset-no-alt} has nothing to say about
+     * an image the package described.</p>
+     */
+    @JsonInclude(Include.NON_NULL)
+    public record AssetRef(String path, String alt) {
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        public AssetRef(@JsonProperty("path") String path, @JsonProperty("alt") String alt) {
+            this.path = path;
+            this.alt = alt == null || alt.isBlank() ? null : alt;
+        }
+
+        /** The SH1252 form: a bare path. */
+        @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+        public static AssetRef of(String path) {
+            return new AssetRef(path, null);
         }
     }
 

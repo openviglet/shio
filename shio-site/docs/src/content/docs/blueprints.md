@@ -241,7 +241,17 @@ in the package, each inside a folder:
 ```
 
 On apply, `assets/images/hero.webp` becomes the file `hero.webp` in the site folder
-`/images`, so the package's content refers to it by that path. The plan lists every image
+`/images`. To point a field at it, give a `File` field the value `asset:/images/hero.webp`:
+the images are uploaded before the content is written, and each such value is replaced by
+that image's id, so the field works with `{{#image}}` and `{{file_url}}` like any image a
+curator picked. To describe an image, declare it as an object; the text becomes the image's
+alt text in the Media Library:
+
+```json
+"assets": [{ "path": "assets/images/hero.webp", "alt": "Two hikers on a cliff path at dawn" }]
+```
+
+The plan lists every image
 and what would happen to it: `create`, `replace` when your copy's bytes differ (the file
 keeps its identity, so everything pointing at it still works, and the old bytes are kept
 as a previous version), or `noop` when they are identical, which is every image of a

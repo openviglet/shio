@@ -436,7 +436,7 @@ public class ShBlueprintRegistry {
      * apart from the package's own files, and a folder is required because a site's root is not a
      * folder an upload can address.
      */
-    private ShBlueprint.Asset asset(Resource manifest, String path, String blueprint) {
+    private ShBlueprint.Asset asset(Resource manifest, String path, String blueprint, String alt) {
         String prefix = ShBlueprintManifest.ASSETS_DIRECTORY;
         String rest = path == null ? "" : path.substring(Math.min(path.length(),
                 path.startsWith(prefix) ? prefix.length() : 0));
@@ -453,7 +453,7 @@ public class ShBlueprintRegistry {
                     + ShIoFailure.describe(unreadable));
         }
         return new ShBlueprint.Asset("/" + rest.substring(0, slash), rest.substring(slash + 1),
-                sha256(bytes), bytes);
+                sha256(bytes), bytes, alt);
     }
 
     private static String sha256(byte[] bytes) {
@@ -496,8 +496,10 @@ public class ShBlueprintRegistry {
         List<ShBlueprint.Asset> assets = new ArrayList<>();
         Set<String> assetPaths = new LinkedHashSet<>();
         long assetBytes = 0;
-        for (String path : manifest.assets()) {
-            ShBlueprint.Asset asset = asset(manifestResource, path, manifest.name());
+        for (ShBlueprintManifest.AssetRef ref : manifest.assets()) {
+            String path = ref == null ? null : ref.path();
+            ShBlueprint.Asset asset = asset(manifestResource, path, manifest.name(),
+                    ref == null ? null : ref.alt());
             if (!assetPaths.add(asset.path())) {
                 throw new BlueprintFormatException(manifest.name(),
                         "declares the asset '" + path + "' twice");

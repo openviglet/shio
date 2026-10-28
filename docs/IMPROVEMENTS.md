@@ -329,6 +329,47 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
+### XI.39 XI.39 Templates are not a language a page lacks (SH1264)
+
+Found applying the Quilhara package (SH1254) to a clean instance: 16
+`translation-missing` warnings, one per translation group, each saying the page is in
+en-us and pt-br "but not into en, which the rest of this site has". The only posts in
+`en` were the package's seven `PageLayout`s and its `Theme`, which carry `en` because
+every row gets a locale on write.
+
+SH1130 met this exact shape in `siteLocales` and answered it with
+`NOT_WRITTEN_IN_A_LANGUAGE` (Region, Theme, PageLayout, SiteScripts, File, Redirect).
+`untranslated` in `ShAgentVerifyService` builds its own locale set from `scan.posts()`
+and never consults that list, so the two rules disagree about what a site's languages
+are.
+
+The fix is to read the one set in both places: skip those types when `untranslated`
+collects a site's locales. The assertion is a site with en-us and pt-br pages and an
+untagged layout that reports no `translation-missing`, beside the existing case that
+still reports a real gap.
+
+### XI.38 XI.38 An img src that is a site path comes out empty (SH1265)
+
+Found on a clean instance (port 2711) applying the Quilhara package (SH1254) before
+SH1263, when its layouts still wrote `<img src="{{image}}">` with `image` holding
+`/images/trail-ridge.webp`, a file the site serves.
+
+`GET /sites/quilhara/default/en-us/trails` answered 200 with every card's `src=""`. The
+same page's theme carries `url("/fonts/inter-400.woff2")`, and that one came out rebased
+to `/sites/quilhara/default/en-us/fonts/inter-400.woff2`, so the rewrite reaches CSS and
+loses the attribute. In `/preview/quilhara/trails` the attribute survives unrewritten
+and 404s against the server root, which SH1263 answers for packages but not for a
+hand-written layout.
+
+Meanwhile `verify` reported no `page-reference-broken`: the page check resolves
+`/images/trail-ridge.webp` against the site, finds the asset, and calls it served, while
+the visitor's HTML no longer names it.
+
+Two things to find and fix: where the delivered HTML's `src` is emptied (SH437's
+rewrite, or a sanitizer after it), and why the page check reads references from a render
+that is not the delivered bytes. The assertion is a page with a site-path `<img>` whose
+delivered `src` is the rebased path, and a check that fails when it is not.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
