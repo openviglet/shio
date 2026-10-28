@@ -1441,6 +1441,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1241** — gh repo view shows openviglet/shio and shio-ce with the agent-ready descriptor, homepage https://shio.viglet.org, and mcp, mcp-server, claude-code and ai-agents topics in place of wcm.
   checked **gh repo view shows the agent-ready descriptor and shio.viglet.org** `gh repo view openviglet/shio` prints the descriptor from LVIII.1 as description, https://shio.viglet.org as homepage, and no angularjs/nashorn/wcm topics; shio-ce is archived or carries the same text.
 - **SH1243** — shio.viglet.org loads Google Analytics only after the visitor accepts a consent banner, with no consent-mode pings, the W42 rule www.viglet.org runs; the footer reopens the choice.
+- **SH1248** — shio.viglet.org/changelog.json now publishes Shio's releases, 0.2.0 through 2026.3, in the shape Turing's uses, asserted by shio-site's changelog test; www.viglet.org reads it instead of a hand-kept copy (design §XCII.1 recorded in `shio-site/scripts/changelog.test.mjs`).
 
 ## Block T — End-user documentation, round two (the curator's half)
 

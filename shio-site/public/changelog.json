@@ -1,0 +1,197 @@
+[
+  {
+    "version": "2026.3",
+    "pub_date": "2026-07-08T12:00:00Z",
+    "notes": [
+      "[New] Agent-ready CMS: every capability lands MCP, then files/CLI, then REST, then console.",
+      "[New] MCP server (POST /mcp) with 12 tools, from shio_context to shio_verify.",
+      "[New] Claude Code plugin with the shio-site, shio-content-model and shio-verify skills.",
+      "[New] Agent gateway (/api/v2/agent/**): manifest, context pack, planned batches and a review queue.",
+      "[New] Teaching errors: every 4xx carries fix, allowed, didYouMean and example.",
+      "[New] Content as files: the site projected to Markdown on disk, with a three-way merge back.",
+      "[New] The shio CLI (@viglet/shio): pull, push, apply, publish, verify, clone, convert and more.",
+      "[New] Content Delivery API (/api/v2/cda/**): REST and GraphQL reads with zero-dependency TypeScript SDKs.",
+      "[New] npm create @viglet/shio-app: build a front end in JavaScript with no Java.",
+      "[New] Replicate an existing website with shio clone and shio convert.",
+      "[New] Universal Editor, review queue and preview links in the console.",
+      "[New] Multi-tenancy.",
+      "[New] Docker image ghcr.io/openviglet/shio-ce, with SHIO_ADMIN_PASSWORD for a scriptable first start.",
+      "[Improved] React console replaces the AngularJS one, with 15 form widgets.",
+      "[Improved] Liquibase schema, proved on PostgreSQL and MariaDB by containerized integration tests.",
+      "[Improved] Response sizes are a measured token budget asserted in CI.",
+      "[Improved] Java 21 and Spring Boot 4."
+    ]
+  },
+  {
+    "version": "0.3.8",
+    "pub_date": "2021-10-10T12:00:00Z",
+    "notes": [
+      "[New] Blogger Importer.",
+      "[New] Export Folder.",
+      "[New] Using Github Actions",
+      "[New] Hazelcache Module Parameters",
+      "[Improved] Nashorn improvements",
+      "[Improved] ShCachePageLayout improvements",
+      "[Improved] JUnit: @ParameterizedTest",
+      "[Improved] Using zip4j",
+      "[Improved] Code Smell and Bugs were fixed",
+      "[Improved] Cache, Update Draft Content, Logs",
+      "[Improved] Latest releases of libraries",
+      "[Improved] JDK 14",
+      "[Improved] Spring Boot 2.5.5.",
+      "[Improved] Gradle 7.0.2."
+    ]
+  },
+  {
+    "version": "0.3.7",
+    "pub_date": "2020-07-28T12:00:00Z",
+    "notes": [
+      "[New] GraphQL.",
+      "[New] GraphQL Documentation.",
+      "[New] GraphiQL Console.",
+      "[New] Background Image on Login Page.",
+      "[New] Sidebar.",
+      "[New] Executable Jar.",
+      "[Improved] Site Name Unique.",
+      "[Improved] Code Smells.",
+      "[Improved] Export Site.",
+      "[Improved] Import check if package has posts.",
+      "[Improved] Using thymeleaf versioning files.",
+      "[Improved] Log shows importing steps.",
+      "[Improved] Using turing-sdk-java.",
+      "[Improved] Spring Boot 2.3.1.",
+      "[Improved] Gradle 6.5."
+    ]
+  },
+  {
+    "version": "0.3.6",
+    "pub_date": "2020-03-07T12:00:00Z",
+    "notes": [
+      "[New] Product name was changed to Shio.",
+      "[New] Git as Version Control.",
+      "[New] Commit Git Commit Id on Version.",
+      "[New] Email configuration page.",
+      "[New] AuthProvider using /config.",
+      "[New] OTDS as AuthProvider.",
+      "[New] ExchangeProvider using /config.",
+      "[New] OTCS as Exchange Provider.",
+      "[New] OTMM as Exchange Provider.",
+      "[New] Configuration Console.",
+      "[New] Import Dialog to use Exchange Provider.",
+      "[New] Page Security Configuration.",
+      "[Improved] Comment URL Formatter.",
+      "[Improved] Commit Page with links.",
+      "[Improved] Pre-Upload: Check if the file exists.",
+      "[Improved] Void duplicated static files.",
+      "[Improved] Spring Boot 2.2.5.",
+      "[Improved] Gradle 6.2.2."
+    ]
+  },
+  {
+    "version": "0.3.5",
+    "pub_date": "2019-11-18T12:00:00Z",
+    "notes": [
+      "[New] Protected Pages.",
+      "[New] Users and Groups.",
+      "[New] Workflow and Tasks.",
+      "[New] TinyMCE Integration.",
+      "[New] Upload Multiple Files.",
+      "[New] Published, Unpublished and Draft.",
+      "[New] Checkbox Widget.",
+      "[New] Export Folder as Spreadsheet.",
+      "[Improved] Cache Improvements.",
+      "[Improved] Sample Site with new Post Type Association JSON.",
+      "[Improved] History: Pagination.",
+      "[Improved] Sync Nested Attributes PostType into Post.",
+      "[Improved] Tomcat Special chars and removed System msgs.",
+      "[Improved] Spring Boot 2.1.9 and Gradle 5.6.2."
+    ]
+  },
+  {
+    "version": "0.3.4",
+    "pub_date": "2019-03-04T12:00:00Z",
+    "notes": [
+      "[New] Multi Select Widget.",
+      "[New] Export/Import MultiSelect (ArrayValue).",
+      "[New] Banner: App Version and Color.",
+      "[New] Export Post Types from Post Type Page Layout as dependency.",
+      "[New] Sortable for Relator.",
+      "[New] Javascript: shObject.getRelation().",
+      "[New] Kubernetes: Deployments files.",
+      "[Improved] Reference JSON and it shows Javascript Code error into logs.",
+      "[Improved] Delete old reference before update Post.",
+      "[Improved] Turing Integration: Index using SNJob.",
+      "[Improved] Reference Refactory.",
+      "[Improved] Import Relator with postion.",
+      "[Improved] FolderMap (JS).",
+      "[Improved] Unwrap sh-region.",
+      "[Improved] Removed UI Local Files, using submodule shiohara-ui.",
+      "[Improved] Removed MongoDB.",
+      "[Improved] Spring Boot 2.1.3 and Gradle 5.2.1."
+    ]
+  },
+  {
+    "version": "0.3.3",
+    "pub_date": "2019-01-04T12:00:00Z",
+    "notes": [
+      "[New] Turing Semantic Navigation Settings into Post Type.",
+      "[New] Turing Semantic Navigation Search.",
+      "[New] Searchable Post Types.",
+      "[New] Turing Integration: Deindexing Content.",
+      "[New] Docker Compose.",
+      "[Improved] Sites Context: UTF-8 Encoding.",
+      "[Improved] Download Site Button into Object List View.",
+      "[Improved] Spring Boot 2.1.1 and Gradle 5.1."
+    ]
+  },
+  {
+    "version": "0.3.2",
+    "pub_date": "2018-08-27T12:00:00Z",
+    "notes": [
+      "[New] MongoDB",
+      "[New] Show content files from /sites URL: Response file with mime type.",
+      "[New] E-Commerce: reCAPTCHA Field Type.",
+      "[New] E-Commerce: Payment Field Type.",
+      "[New] E-Commerce: Payment Types and Settings.",
+      "[New] Viglet Turing Integration: Indexing Posts in Semantic Navigation.",
+      "[New] InContext Editing using Float Menu to Regions.",
+      "[New] Site Form: Create Forms into Site and save as Posts into Shiohara CMS.",
+      "[New] Combo Box Field Type.",
+      "[New] Hidden Field Type.",
+      "[New] Form Configuration Field Type.",
+      "[Improved] Spring Boot 2.0.4 and Gradle 4.9"
+    ]
+  },
+  {
+    "version": "0.3.1",
+    "pub_date": "2018-07-06T12:00:00Z",
+    "notes": [
+      "[New] Site Template: Create a new site using template",
+      "[New] Clone Site: Clone a site with different Ids.",
+      "[New] In-Context Editing: New toolbar in Preview Site, that allows edit the content directly.",
+      "[New] Default Folder Page Layout: Create a empty Folder using default Page Layout.",
+      "[Improved] Spring Boot 2.0.3 and Gradle 4.8.1"
+    ]
+  },
+  {
+    "version": "0.3.0",
+    "pub_date": "2018-06-23T12:00:00Z",
+    "notes": [
+      "[New] Relator: Create fields as children of parent field.",
+      "[New] Sort: Drag and Drop Folders and Posts to reorder into /content, this change will reflect Navigation and Query Component order.",
+      "[Improved] New Post Type Editor: Edit Fields of Post Types in same window without pop up. Using accordion component encapsulate entire fields details"
+    ]
+  },
+  {
+    "version": "0.2.0",
+    "pub_date": "2018-05-04T12:00:00Z",
+    "notes": [
+      "[New] Search: You can search for objects into /content",
+      "[New] Content Select Widget: Create a Post Type field that allows elect some post",
+      "[New] File Widget: Create a Post Type field that allows select some File.",
+      "[Improved] Unit Test",
+      "[Improved] Using H2 instead of HSQL",
+      "[Improved] Removed GlobalId because Posts, Folders and Sites Ids are unique"
+    ]
+  }
+]
