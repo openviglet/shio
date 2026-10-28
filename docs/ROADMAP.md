@@ -17,6 +17,10 @@
 
 - 📋 **SH1248** (deps: —) **shio.viglet.org publishes no changelog.json** — www.viglet.org reads Shio's release notes from a hand-kept copy that drifts; Turing already serves its own at turing.viglet.org/changelog.json. → §XCII.1
 
+## Block BI — The areas this round did not reach
+
+- 📋 **SH1249** (deps: —) **Nothing measures whether Shio builds and boots as a GraalVM CE native image, or what that would buy** — An ephemeral playground tenant and small containers want fast boot and low memory, and only a spike says whether Artemis, Hazelcast and imageio survive closed-world AOT. → §LXXV.3
+
 ## Priority
 
 ## Done when — SH1245

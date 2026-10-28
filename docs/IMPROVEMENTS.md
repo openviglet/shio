@@ -1126,6 +1126,31 @@ translates, reached through the assistant, and every result lands as a reviewabl
 
 ## LXXV The areas this round did not reach
 
+### LXXV.3 A GraalVM CE native-image spike, measured against the JAR (SH1249)
+
+The question is whether a native image is worth a second build target, and it is
+answered by numbers, not by argument. The spike uses GraalVM Community Edition only:
+GPLv2 with the Classpath Exception, so the binary carries no obligation on Shio's code
+and no update terms can change later, which rules out Oracle GraalVM under the GFTC.
+Images are built and run with freewilly, never Docker Desktop.
+
+The baseline is today's image: eclipse-temurin:21-jre running viglet-shio.jar with
+-Xmx512m. Against it the spike records native build time and peak build RAM, image size,
+time to the first 200 from the CDA and from /mcp, idle RSS, and RSS plus p95 latency
+under a fixed replay of agent and CDA requests. The same table also measures the two
+cheaper JVM levers, class data sharing and a tuned heap with SerialGC, because a native
+image that beats only an untuned JVM proves nothing.
+
+Known risks, each recorded as works, needs hints, or blocks: embedded Artemis and Netty,
+Hazelcast, JGit, jai-imageio and webp-imageio (ServiceLoader and native code),
+Handlebars helpers resolved by reflection, Liquibase changelogs as resources, and
+Hibernate under Spring AOT. A blocker ends the spike with its name, which is itself the
+answer.
+
+The deliverable is docs/specs/SH1249-graalvm-native-spike.md with the table and a go or
+no-go, the decision summarised in docs/agents/build.md, and no change to the shipped
+Dockerfile.
+
 ## XCI Finding, selecting and acting on content
 
 ## LXXVI Documentation the matrix still names
