@@ -15,6 +15,7 @@ import axios from "axios"
 import { isCancelled } from "@/lib/read-options"
 import type { ShFolder } from "@/models/folder/folder"
 import type { ShSite } from "@/models/site/site"
+import { breadcrumbFrom, soleRootFolder } from "@/app/content/content-browser/browser-view"
 import { Spinner } from "@/components/spinner"
 
 /**
@@ -193,12 +194,20 @@ function ContentBrowserBody({
   // Load children of an object (site or folder)
   const fetchChildren = useCallback((objectId: string, crumbs: BreadcrumbItem[], signal: AbortSignal) => axios
     .get<ObjectListResponse>(`/v2/object/${objectId}/list?page=0&size=${PICKER_PAGE_SIZE}`, { signal })
-    .then((res) => {
+    // SH1274 — a site whose only child is its root folder is that folder, so the picker opens there
+    // rather than offering one row named like the site.
+    .then(async (first) => {
+      const sole = soleRootFolder(first.data)
+      return sole
+        ? { at: sole, res: await axios.get<ObjectListResponse>(`/v2/object/${sole}/list?page=0&size=${PICKER_PAGE_SIZE}`, { signal }) }
+        : { at: objectId, res: first }
+    })
+    .then(({ at, res }) => {
       setFolders(res.data.folders ?? [])
       setPosts(res.data.posts ?? [])
       setPostPage(res.data.page ?? 0)
       setTotalPosts(res.data.totalPosts ?? 0)
-      setCurrentFolder(objectId)
+      setCurrentFolder(at)
       setSites([])
       setBreadcrumb(crumbs)
     })
@@ -303,13 +312,9 @@ function ContentBrowserBody({
         const crumbs: BreadcrumbItem[] = [
           { id: "__sites__", name: t("content.sites"), type: "SITE_LIST" },
         ]
-        if (data.site) {
-          crumbs.push({ id: data.site.id, name: data.site.name, type: "SITE" })
-        }
-        if (Array.isArray(data.breadcrumb)) {
-          for (const c of data.breadcrumb) {
-            crumbs.push({ id: c.id, name: c.name, type: "FOLDER" })
-          }
+        // SH1274 — the site once, never its root folder's copy of the name.
+        for (const c of breadcrumbFrom(data)) {
+          crumbs.push({ id: c.id, name: c.name, type: c.type === "SITE" ? "SITE" : "FOLDER" })
         }
         void fetchChildren(startFolderId, crumbs, signal)
       }).catch((reason: unknown) => {

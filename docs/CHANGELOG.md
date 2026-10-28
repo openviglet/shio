@@ -390,6 +390,7 @@
 - **SH1271** — {{t "key"}} reads a layout's own text from the Strings table in the page's locale, so one Quilhara layout renders its skip link, nav labels and footer in English or Portuguese (design §XI.41 recorded in `docs/agents/renderer.md`).
 - **SH1272** — The console listing derives published from whether a live row exists, and marks a live page with unpublished edits as CHANGED, so an agent-applied site no longer reads as all drafts (design §XI.44 recorded in `docs/agents/content-api.md`).
 - **SH1273** — The proposed render rebases its markup into the site's /sites/** space and that route serves fonts with Access-Control-Allow-Origin: *, so the editor's live preview loads a theme's self-hosted fonts (design §XI.45 recorded in `docs/agents/console-ui.md`).
+- **SH1274** — A site page whose only child is its root folder opens on that folder, and the File and Content Select widgets and the content picker name the site once, so Quilhara no longer reads quilhara > quilhara (design §XI.46 recorded in `docs/agents/console-ui.md`).
 
 ## Block M — Token economy, measured (SH74)
 

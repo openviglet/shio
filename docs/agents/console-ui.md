@@ -2293,6 +2293,15 @@ folder and flags it `root`; `breadcrumbFrom` keeps that flag, and `searchHereFor
 name is dropped (`createBlank` names it after the site, which drew `site/site/menu`) while a root
 with a name of its own ("Home") stays as a step.
 
+**A site page opens on its root folder, and every path names the site once (SH1274).** A site holds
+content only through its root folder (SH128), so opening Quilhara showed one row, a folder called
+`quilhara`, under a title saying `quilhara`. `soleRootFolder` names the folder when a site's listing
+is exactly one root folder and no posts, and `useSoleRootRedirect` replaces the route with that
+folder's (replace, so Back leaves the site), where the trail already reads as the site. The File and
+Content Select widgets and the content picker built their location from `/path` by hand and printed
+`quilhara > quilhara > images`; they go through `breadcrumbFrom` now, and the picker descends through
+a lone root folder the same way. A site with two root folders is shown as it is.
+
 **The search route is passed, never defaulted (SH1187).** `searchHereFor` takes the route as a
 required argument and the browser passes `ROUTES.SEARCH`. Its old default, a bare `/search`, is
 not a route the router declares, so the button opened a 404.

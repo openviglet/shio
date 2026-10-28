@@ -243,6 +243,24 @@ export function breadcrumbFrom(data: {
 }
 
 /**
+ * SH1274 — the folder a site's listing is standing in for, when it is the only thing there.
+ *
+ * <p>A site holds content only through its root folder (SH128), so its own listing is one row, a
+ * folder usually named like the site: a curator opened `quilhara` and was shown `quilhara`. When the
+ * listing is exactly one root folder and no posts, that folder's contents are what the site page
+ * means, and this names it so the page can open there. A site with two root folders, or a listing
+ * that is a folder's, answers null and is shown as it is.</p>
+ */
+export function soleRootFolder(listing: {
+  folders?: readonly { id: string; root?: boolean }[] | null
+  posts?: readonly unknown[] | null
+} | null | undefined): string | null {
+  const folders = listing?.folders ?? []
+  if (folders.length !== 1 || (listing?.posts?.length ?? 0) > 0) return null
+  return folders[0].root === true ? folders[0].id : null
+}
+
+/**
  * SH1192 — a nested entity's location, as the hero's trail (VDS184): the site list first, then
  * each ancestor the path names, the last being the entity's parent.
  *

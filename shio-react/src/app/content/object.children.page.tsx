@@ -16,6 +16,7 @@ import {
 import { BrowserItem } from "./content-browser/browser-views"
 import { useBrowserKeyboard } from "./content-browser/use-browser-keyboard"
 import { useBrowserListing } from "./content-browser/use-browser-listing"
+import { useSoleRootRedirect } from "./content-browser/use-sole-root"
 import { FolderPickerDialog, type FolderPickerRequest } from "./content-browser/folder-picker.dialog"
 import { BulkPlanDialog } from "./content-browser/bulk-plan.dialog"
 import { BrowserToolbar } from "./content-browser/browser-toolbar"
@@ -114,6 +115,7 @@ export default function ObjectChildrenPage() {
     siteId, siteName, folderCount, postCount,
   } = useBrowserListing({ objectId, listKey: list.key, sortBy, t })
 
+  useSoleRootRedirect(objectId, siteId, listData)
   /**
    * SH1024 — the bar's value and handler, stable across renders. The bar debounces typing in an
    * effect that depends on both, so a fresh object each render restarts its timer and the query is

@@ -283,27 +283,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.46 XI.46 A site is its root folder, once (SH1274)
-
-Found opening the Quilhara site (SH1254) in the console with Playwright.
-`/bento/content/object/<site>` shows "1 pasta, 0 post" and a single row, a folder called
-`quilhara`, beneath a title that already says `quilhara`; the tree repeats it (`quilhara
-> quilhara`). Every content screen then carries the doubled name: the editor's File
-field shows the asset at `quilhara > quilhara > images`, and the browser breadcrumb
-reads `SITES > QUILHARA > EN` only after a click into a folder the curator did not
-create.
-
-The root folder is a storage fact (SH128: only a site's root folder carries the site),
-not something a curator chose or can usefully act on, and it is the only child the site
-object ever has.
-
-The site page should open on the root folder's contents (its folders and posts, its
-"Novo" and "Importar" actions), and every path a curator reads (tree, breadcrumbs, the
-File field's location, the move dialog) should start at the site and omit the root
-folder's own name. Addresses already do this (`folder:quilhara/en/trails`), so the
-console would match the agent surface. The assertion opens a site and finds its folders
-on the first screen, and reads a file location that names the site once.
-
 ### XI.47 XI.47 The create button suggests what the folder holds (SH1275)
 
 Found in the console on the Quilhara site (SH1254), with Playwright. The content

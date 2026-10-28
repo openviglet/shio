@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next"
 import axios from "axios"
 import type { WidgetProps } from "./index"
 import { ContentBrowserDialog, type ContentBrowserSelection } from "./content-browser-dialog"
+import { breadcrumbFrom } from "@/app/content/content-browser/browser-view"
 import { isObjectReference } from "@/lib/object-reference"
 
 interface PathSegment {
@@ -51,14 +52,8 @@ async function resolveFullPath(contentId: string, read: ShRead = {}): Promise<Re
       const pathRes = await axios.get(`/v2/object/${folderId}/path`, { signal: read.signal }).catch(() => null)
       if (pathRes?.data) {
         const data = pathRes.data
-        if (data.site) {
-          pathSegments.push({ id: data.site.id, name: data.site.name })
-        }
-        if (Array.isArray(data.breadcrumb)) {
-          for (const c of data.breadcrumb) {
-            pathSegments.push({ id: c.id, name: c.name })
-          }
-        }
+        // SH1274 — the site once, never its root folder's copy of the name.
+        for (const c of breadcrumbFrom(data)) pathSegments.push({ id: c.id, name: c.name })
       } else {
         // Fallback: use what we have from the post
         if (post.shFolder?.shSite?.name) pathSegments.push({ id: post.shFolder.shSite.id ?? "", name: post.shFolder.shSite.name })
@@ -80,14 +75,8 @@ async function resolveFullPath(contentId: string, read: ShRead = {}): Promise<Re
       const pathRes = await axios.get(`/v2/object/${parentId}/path`).catch(() => null)
       if (pathRes?.data) {
         const data = pathRes.data
-        if (data.site) {
-          pathSegments.push({ id: data.site.id, name: data.site.name })
-        }
-        if (Array.isArray(data.breadcrumb)) {
-          for (const c of data.breadcrumb) {
-            pathSegments.push({ id: c.id, name: c.name })
-          }
-        }
+        // SH1274 — the site once, never its root folder's copy of the name.
+        for (const c of breadcrumbFrom(data)) pathSegments.push({ id: c.id, name: c.name })
       }
     }
 

@@ -10,6 +10,7 @@ import { toast } from "@viglet/viglet-design-system"
 import type { WidgetProps } from "./index"
 import { ContentBrowserDialog, type ContentBrowserSelection } from "./content-browser-dialog"
 import { isObjectReference } from "@/lib/object-reference"
+import { breadcrumbFrom } from "@/app/content/content-browser/browser-view"
 import { Spinner } from "@/components/spinner"
 
 interface PathSegment {
@@ -68,10 +69,8 @@ async function resolveFullPath(fileId: string, read: ShRead = {}): Promise<Resol
       const pathRes = await axios.get(`/v2/object/${folderId}/path`, { signal: read.signal }).catch(() => null)
       if (pathRes?.data) {
         const data = pathRes.data
-        if (data.site) pathSegments.push({ id: data.site.id, name: data.site.name })
-        if (Array.isArray(data.breadcrumb)) {
-          for (const c of data.breadcrumb) pathSegments.push({ id: c.id, name: c.name })
-        }
+        // SH1274 — the site once, never its root folder's copy of the name.
+        for (const c of breadcrumbFrom(data)) pathSegments.push({ id: c.id, name: c.name })
       } else {
         if (post.shFolder?.shSite?.name) pathSegments.push({ id: post.shFolder.shSite.id ?? "", name: post.shFolder.shSite.name })
         if (post.shFolder?.name) pathSegments.push({ id: post.shFolder.id, name: post.shFolder.name })
@@ -91,10 +90,8 @@ async function resolveFullPath(fileId: string, read: ShRead = {}): Promise<Resol
       const pathRes = await axios.get(`/v2/object/${parentId}/path`).catch(() => null)
       if (pathRes?.data) {
         const data = pathRes.data
-        if (data.site) pathSegments.push({ id: data.site.id, name: data.site.name })
-        if (Array.isArray(data.breadcrumb)) {
-          for (const c of data.breadcrumb) pathSegments.push({ id: c.id, name: c.name })
-        }
+        // SH1274 — the site once, never its root folder's copy of the name.
+        for (const c of breadcrumbFrom(data)) pathSegments.push({ id: c.id, name: c.name })
       }
     }
 

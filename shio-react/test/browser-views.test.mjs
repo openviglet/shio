@@ -12,7 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import {
-  breadcrumbFrom, browserView, editableTitleField, listboxClass, readTableLayout, searchBackState, searchBackTo, searchHereFor, stepFor,
+  breadcrumbFrom, browserView, editableTitleField, listboxClass, readTableLayout, searchBackState, searchBackTo, searchHereFor, soleRootFolder, stepFor,
   tableLayoutKey, thumbnailSrc, fullWindow, visibleWindow, WINDOW_THRESHOLD,
 } from "../src/app/content/content-browser/browser-view.ts"
 import { browserSource } from "./support/browser-source.mjs"
@@ -60,6 +60,25 @@ test("SH1184: a root folder named after its site is not drawn twice, and no root
   assert.deepEqual(breadcrumbFrom(undefined), [])
 })
 
+test("SH1274: a site whose only child is its root folder opens on that folder, and every path names the site once", () => {
+  assert.equal(soleRootFolder({ folders: [{ id: "r", root: true }], posts: [] }), "r",
+    "SH1274: opening quilhara showed one row, a folder called quilhara")
+  assert.equal(soleRootFolder({ folders: [{ id: "r", root: true }, { id: "r2", root: true }], posts: [] }), null,
+    "SH1274: two root folders are two places, and the site page shows both")
+  assert.equal(soleRootFolder({ folders: [{ id: "f", root: false }], posts: [] }), null,
+    "SH1274: a folder's single subfolder is a real step, not the site standing in")
+  assert.equal(soleRootFolder({ folders: [{ id: "r", root: true }], posts: [{}] }), null)
+  assert.equal(soleRootFolder(undefined), null)
+
+  const widgets = ["file.widget.tsx", "content-select.widget.tsx", "content-browser-dialog.tsx"]
+    .map((file) => stripComments(read("components", "widgets", file)))
+  for (const source of widgets) {
+    assert.ok(source.includes("breadcrumbFrom(data)"),
+      "SH1274: a widget that builds a location from /path does it through breadcrumbFrom, which drops the root's copy of the site name")
+    assert.ok(!/data\.breadcrumb\)/.test(source),
+      "SH1274: and no widget walks data.breadcrumb itself, which is how the File field read quilhara > quilhara > images")
+  }
+})
 test("SH1187: \"search in this folder\" opens the console's search route, not a bare /search", () => {
   const crumbs = [{ name: "favicons", type: "FOLDER" }]
   assert.ok(searchHereFor("VigR3", crumbs, "/bento/content/search").startsWith("/bento/content/search?"))
