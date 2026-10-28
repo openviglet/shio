@@ -241,26 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.34 XI.34 Every feature has a showcase page, or a reason (SH1255)
-
-A demo that shows every feature on the day it ships shows most of them a year later.
-WKND went through exactly that, and nobody notices until a prospect asks where a
-capability is. In this project the answer to "a rule nobody checks" is an instrument
-(SH322, SH338), and it lands before the pages it judges.
-
-`ShShowcaseCoverageTest`, or a `cli/test` equivalent if the package source is easier to
-read from Node:
-
-- the subjects are read, never listed: the manifest's `features` keys, the registered MCP tools, and the curator surfaces SH1250's matrix names;
-- the coverage is SH1250's matrix, loaded as data: each subject maps to a showcase page path, or to an exclusion with a reason (for example an operator-only setting with nothing a visitor could see);
-- a page the matrix names must exist in the package's content, so a renamed page fails here rather than in front of a visitor;
-- the subjects with neither a page nor an exclusion are the **debt**, held as an asserted list the way `assertion-debt.test.mjs` holds its own. A new feature lands red until somebody either builds its page or writes why it has none.
-
-It prints both counts on every run, writes no figure into prose (agents.md's citation
-rule), and carries a vacuity guard: an empty feature list or an unreadable package would
-otherwise agree with every claim. When it first runs, the debt is the feature tour's
-backlog, which the next task drains.
-
 ### XI.35 XI.35 The feature tour (SH1256)
 
 The brand pages make the showcase look like a real site. The tour is what makes it a

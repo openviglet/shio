@@ -38,8 +38,10 @@ rule (SH930) and the copy rules `shio-site` applies to its own pages.
 
 ## The page map
 
-Paths are relative to a locale root (`/en-us/...`, `/pt-br/...`), and every page exists in both.
-The authoritative list is the matrix's `pages` object; in summary:
+Paths are the package's `en-us` post urls, and every page exists in both languages: the `pt-br`
+page is the post whose `translationOf` names the English one, under its own Portuguese slug
+(SH1254 built them that way, and SH1255 aligned the matrix with it). The authoritative list is the
+matrix's `pages` object; in summary:
 
 | Section | Pages | What it is for |
 |---|---|---|
