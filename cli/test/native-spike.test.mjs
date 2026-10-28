@@ -49,6 +49,20 @@ test("SH1260: both shipped images start from the class data sharing archive with
   }
 });
 
+test("SH1261: Hazelcast and JGit, which nothing used, stay out of the jar", () => {
+  // The spike found both on the classpath with nothing importing them and no Hazelcast instance
+  // ever starting: about 30 of the jar's 163 MB, plus a hazelcast.xml that told a reader a cache
+  // was running. A cluster cache that comes back does so as its own task, with a test that proves
+  // the instance starts, so this refuses the quiet return of either artifact.
+  const pom = read("shio-app/pom.xml");
+  for (const artifact of ["hazelcast-all", "hazelcast", "org.eclipse.jgit"]) {
+    assert.ok(!pom.includes(`<artifactId>${artifact}</artifactId>`),
+      `shio-app/pom.xml declares ${artifact} again`);
+  }
+  assert.ok(!existsSync(join(ROOT, "shio-app", "src", "main", "resources", "hazelcast.xml")),
+    "hazelcast.xml configures a cache nothing starts");
+});
+
 test("SH1249: the spike can still be reproduced from the files the spec names", () => {
   for (const file of ["Dockerfile.native", "Dockerfile.jvm", "measure.mjs", "measure-all.ps1",
     "probe.mjs", "prune-agent-metadata.mjs"]) {

@@ -20,9 +20,9 @@ import org.springframework.stereotype.Component;
  *
  * <p><strong>Single-instance.</strong> Buckets live in this JVM's heap, so the
  * budget is enforced per node. A multi-node deployment behind a load balancer
- * gets {@code N ×} the configured budget; a Hazelcast-backed bucket (Hazelcast
- * is already on the classpath) is the later hardening step, intentionally out
- * of SH3 scope.</p>
+ * gets {@code N ×} the configured budget; a shared bucket (a distributed cache,
+ * brought in by its own task since SH1261 removed the unused Hazelcast) is the
+ * later hardening step, intentionally out of SH3 scope.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.2

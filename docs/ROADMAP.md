@@ -22,10 +22,6 @@
 - 📋 **SH1258** (deps: SH1256, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
 - 📋 **SH1262** (deps: —) **Shio's end-user docs live in the vigletdocs Docusaurus repo, not at shio.viglet.org/docs** — Moving docs-shio into this repo as an Astro Starlight area under shio-site, styled by the design system, puts the docs beside the code they describe. → §XIX.16
 
-## Block BI — The areas this round did not reach
-
-- 📋 **SH1261** (deps: —) **hazelcast-all and JGit ship in viglet-shio.jar though nothing starts or imports either** — About 30 of the jar's 163 MB is dead weight with its own CVE surface, and hazelcast.xml tells a reader a cache is running when none is. → §LXXV.5
-
 ## Priority
 
 ## Done when — SH1245

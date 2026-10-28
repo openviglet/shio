@@ -7,7 +7,6 @@
 			</Pattern>
 		</encoder>
 	</appender>
-	<logger name="com.hazelcast.internal.diagnostics.HealthMonitor" level="OFF" />
 	<include resource="org/springframework/boot/logging/logback/defaults.xml" />
 	<root level="INFO">
 		<appender-ref ref="CONSOLE" />

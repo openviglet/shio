@@ -1258,29 +1258,6 @@ translates, reached through the assistant, and every result lands as a reviewabl
 
 ## LXXV The areas this round did not reach
 
-### LXXV.5 Remove the Hazelcast and JGit dependencies nothing uses (SH1261)
-
-Found during SH1249. `shio-app/pom.xml` declares `hazelcast-all` 4.2.8 (26.9 MB) and
-`org.eclipse.jgit` (3.3 MB), and both ship in `viglet-shio.jar`, about 30 of its 163 MB.
-
-Nothing uses either. No class under `shio-app/src/main` imports `com.hazelcast` or
-`org.eclipse.jgit`. A `hazelcast.xml` ships in the resources, but no Hazelcast instance
-starts on the JVM image: nothing listens on 5701 after boot. `ShCdaCacheControlFilter`'s
-javadoc already says "Hazelcast is configured but unused", and `ShCdaRateLimiter` names
-a Hazelcast-backed bucket only as something a cluster would need later. JGit is history:
-Shio used Git as version control in 0.3.6 and that code is gone.
-
-Build: remove both dependencies and `hazelcast.xml`, then run `clean test` and the
-conformance gate. Before deleting, grep the test tree and `META-INF` for either name,
-and check that Spring Boot's cache auto-configuration does not change provider once
-Hazelcast leaves the classpath (it should fall back to the simple provider, which is
-what runs today). If a cluster-wide cache or rate limit is wanted later, it comes back
-as its own task, with a test that proves the instance starts.
-
-Why it matters: 4.2.8 is an old Hazelcast line that keeps adding to the image's CVE
-surface on every release, the jar is 18% bigger than it needs to be, and a reader who
-finds `hazelcast.xml` assumes a cache that is not running.
-
 ## XCI Finding, selecting and acting on content
 
 ## LXXVI Documentation the matrix still names

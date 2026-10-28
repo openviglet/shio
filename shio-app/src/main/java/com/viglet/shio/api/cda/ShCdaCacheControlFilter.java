@@ -37,7 +37,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * body-hash {@code ETag} collision between tenants is harmless on its own: a
  * {@code 304} makes a client re-use <em>its own</em> cached (tenant-correct) body,
  * and {@code Vary} keeps shared-cache entries separate. (No server-side cache is
- * involved — Hazelcast is configured but unused; were one added, its keys would
+ * involved, and since SH1261 none is even on the classpath; were one added, its keys would
  * have to be {@code {tenantId}:{id}}.)</p>
  *
  * @author Alexandre Oliveira
