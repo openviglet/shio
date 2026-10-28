@@ -329,27 +329,24 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.38 XI.38 An img src that is a site path comes out empty (SH1265)
+### XI.37 XI.37 An empty image source is a page finding (SH1266)
 
-Found on a clean instance (port 2711) applying the Quilhara package (SH1254) before
-SH1263, when its layouts still wrote `<img src="{{image}}">` with `image` holding
-`/images/trail-ridge.webp`, a file the site serves.
+Found with SH1265 on the Quilhara package (SH1254): every card on `/trails` rendered
+`<img src="" alt="...">`, a broken image for a visitor, and `verify` with the page and
+a11y checks reported nothing. `ShPreviewLinks.referencesIn` walks the rendered HTML, but
+an empty attribute is not a reference, so the page check has nothing to resolve; the
+a11y check reads `alt`, which was present.
 
-`GET /sites/quilhara/default/en-us/trails` answered 200 with every card's `src=""`. The
-same page's theme carries `url("/fonts/inter-400.woff2")`, and that one came out rebased
-to `/sites/quilhara/default/en-us/fonts/inter-400.woff2`, so the rewrite reaches CSS and
-loses the attribute. In `/preview/quilhara/trails` the attribute survives unrewritten
-and 404s against the server root, which SH1263 answers for packages but not for a
-hand-written layout.
+An `<img>`, `<source>` or `<video poster>` whose `src` (or every `srcset` candidate) is
+empty or whitespace is never what an author meant: in HTML it requests the page itself
+again. It is the signature of a template field that resolved to nothing, the same
+symptom whatever the cause (a misspelled field, an unpublished asset, a shadowed name).
 
-Meanwhile `verify` reported no `page-reference-broken`: the page check resolves
-`/images/trail-ridge.webp` against the site, finds the asset, and calls it served, while
-the visitor's HTML no longer names it.
-
-Two things to find and fix: where the delivered HTML's `src` is emptied (SH437's
-rewrite, or a sanitizer after it), and why the page check reads references from a render
-that is not the delivered bytes. The assertion is a page with a site-path `<img>` whose
-delivered `src` is the rebased path, and a check that fails when it is not.
+So the page check should emit `page-image-empty` per page, as an error, naming the
+element's position or its `alt` so the author can find it, with a fix that names the
+field the template reads there when the scanner can tell. The assertion is a layout
+writing `src="{{missing}}"` that fails verify, beside one writing a real asset that
+passes.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

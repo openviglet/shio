@@ -136,11 +136,33 @@ public class ShTemplateEngine {
      */
     public void register(String name, ShHelperShape shape, String signature,
                          Helper<Object> helper) {
-        handlebars.registerHelper(name, helper);
-        registered.put(name, shape == null ? ShHelperShape.BLOCK : shape);
+        ShHelperShape declared = shape == null ? ShHelperShape.BLOCK : shape;
+        handlebars.registerHelper(name, declared == ShHelperShape.INLINE_PATH_ARG
+                ? helper : fieldWhenNotABlock(name, helper));
+        registered.put(name, declared);
         if (signature != null && !signature.isBlank()) {
             signatures.put(name, signature.trim());
         }
+    }
+
+    /**
+     * SH1265 — a block helper's name written as a plain variable reads the field of that name.
+     *
+     * <p>Handlebars resolves a helper before a context value, so a post-type with a field called
+     * {@code image} (the section vocabulary's {@code SectionHero} has one) rendered {@code {{image}}}
+     * by calling the {@code {{#image}}} helper with no block, which emits nothing: an empty
+     * {@code src} on every page, in the preview and on {@code /sites/**} alike, and no finding,
+     * because the page check resolves the stored value rather than the markup. A block helper has no
+     * meaning outside a block, so {@code {{name}}} with no parameter can only have meant the field.</p>
+     */
+    private static Helper<Object> fieldWhenNotABlock(String name, Helper<Object> helper) {
+        return (context, options) -> {
+            if (options.tagType.inline() && options.params.length == 0
+                    && (context == null || context == options.context.model())) {
+                return options.context.get(name);
+            }
+            return helper.apply(context, options);
+        };
     }
 
     /**

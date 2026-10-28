@@ -110,6 +110,28 @@ class ShTemplateHelperDiscoveryTest {
                 .contains("{{#form type=}}…{{/form}}");
     }
 
+    @Test
+    @DisplayName("SH1265: a field named like a block helper renders its value, and the block still works")
+    void aFieldNamedLikeABlockHelperRendersItsValue() {
+        // SectionHero has an `image` field and `{{#image}}` is a helper, so `{{image}}` called the
+        // helper with no block and every page emitted `src=""`. Every block helper's name is checked,
+        // derived from the engine, so the next one registered cannot reopen this.
+        var helpers = shTemplateEngine.registeredHelpers();
+        assertThat(helpers).as("the engine registered no helpers, so this would check nothing")
+                .containsKey("image");
+        for (var entry : helpers.entrySet()) {
+            String helper = entry.getKey();
+            if (entry.getValue() == ShTemplateEngine.ShHelperShape.INLINE_PATH_ARG) {
+                continue;
+            }
+            assertThat(shTemplateEngine.render("<p>{{" + helper + "}}</p><p>{{{" + helper + "}}}</p>",
+                    java.util.Map.of(helper, "/images/a&b.webp")))
+                    .as("SH1265: `{{%s}}` is the field, escaped, and `{{{%s}}}` is the field, raw",
+                            helper, helper)
+                    .isEqualTo("<p>/images/a&amp;b.webp</p><p>/images/a&b.webp</p>");
+        }
+    }
+
     private List<String> conventions(String site) {
         return contextService.context(site, null, 0, "conventions", null).conventions();
     }

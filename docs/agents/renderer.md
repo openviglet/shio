@@ -217,6 +217,13 @@ renderer over one body of content at a second address. See the section on it bel
   which is what SH384's note predicted; and the first draft of the signing assertion looked for a raw
   `&` and failed, because Handlebars **escapes** `{{srcset}}` as an attribute value. Asserting the raw
   form would have been asserting that the renderer had an XSS hole.
+- **A block helper's name, written as a plain variable, is the field (SH1265).** Handlebars resolves
+  a helper before a context value, so registering `{{#image}}` silently broke every `{{image}}`,
+  including `SectionHero`'s own field: an empty `src` on every route, and no finding (SH1266 is that
+  half). `ShTemplateEngine.register` wraps every non-inline helper: called as `{{name}}` or
+  `{{{name}}}` with no parameter, it returns the field of that name, escaped or raw as written. A
+  block helper means nothing outside a block, so this takes no capability away, and
+  `ShTemplateHelperDiscoveryTest` walks every registered block helper so the next one cannot reopen it.
 - **`site.scripts` is one ordered list per site, and Shio *never injects* it (SH389).** Browser
   JavaScript had two homes (a `Theme`'s `JAVASCRIPT` and a `Region`'s (SH248)) and both are
   per-layout, so a site with four layouts held **four copies** whose load order was a property of each
