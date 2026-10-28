@@ -397,11 +397,12 @@ public class ShRenderHelpers {
             return options.inverse();
         }
         ShPostState state = state(options);
-        Optional<ShPostUnified> found = menuByTitle(siteId, title, state);
+        String pageLocale = string(options.context.get("post.locale"));
+        Optional<ShPostUnified> found = menuByTitle(siteId, title, state, pageLocale);
         if (found.isEmpty()) {
             return options.inverse();
         }
-        ShPostUnified menu = found.get();
+        ShPostUnified menu = inLocale(siteId, found.get(), pageLocale, state);
         if (!OPEN_MENUS.get().add(menu.getId())) {
             return options.inverse();
         }
@@ -460,7 +461,8 @@ public class ShRenderHelpers {
      * "Looks like a menu" is the structural test above — it has a non-empty {@code items} — so a page
      * that happens to share the title is not a candidate and the helper stays free of a type name.</p>
      */
-    private Optional<ShPostUnified> menuByTitle(String siteId, String title, ShPostState state) {
+    private Optional<ShPostUnified> menuByTitle(String siteId, String title, ShPostState state,
+                                                String pageLocale) {
         List<ShPostUnified> candidates = preferDraft(
                 rowsOf(siteId, statesFor(state)).stream()
                         .filter(post -> title.equalsIgnoreCase(
@@ -468,7 +470,46 @@ public class ShRenderHelpers {
                         .filter(post -> !referencesOf(shRenderModel.fieldsOf(post).get(ITEMS)).isEmpty())
                         .toList(),
                 state);
-        return candidates.size() == 1 ? Optional.of(candidates.getFirst()) : Optional.empty();
+        if (candidates.size() == 1) {
+            return Optional.of(candidates.getFirst());
+        }
+        // SH1271 — translations of one menu may share its title. That is one menu in several
+        // languages rather than two candidates, so the page's language picks; two menus that are
+        // not translations of each other stay ambiguous, for SH381's reason.
+        String group = candidates.isEmpty() ? null : candidates.getFirst().getTranslationGroupId();
+        if (group == null || group.isBlank()
+                || !candidates.stream().allMatch(post -> group.equals(post.getTranslationGroupId()))) {
+            return Optional.empty();
+        }
+        return candidates.stream()
+                .filter(post -> pageLocale != null && pageLocale.equalsIgnoreCase(ShRenderModel.locale(post)))
+                .findFirst();
+    }
+
+    /**
+     * SH1271 — the translation of this menu into the page's language, or the menu itself.
+     *
+     * <p>A layout serves every language a site publishes and names its menu once. Menus are posts,
+     * so they already carry SH348's translation group, and a curator translates one the way they
+     * translate a page; this is what lets {@code {{#menu title="Main"}}} render the Portuguese menu
+     * on a Portuguese page without the layout knowing either title. No sibling in the page's
+     * language yields the menu that was named, which is the monolingual case unchanged.</p>
+     */
+    private ShPostUnified inLocale(String siteId, ShPostUnified menu, String pageLocale,
+                                   ShPostState state) {
+        String group = menu.getTranslationGroupId();
+        if (pageLocale == null || group == null || group.isBlank()
+                || pageLocale.equalsIgnoreCase(ShRenderModel.locale(menu))) {
+            return menu;
+        }
+        return preferDraft(rowsOf(siteId, statesFor(state)).stream()
+                        .filter(post -> group.equals(post.getTranslationGroupId()))
+                        .filter(post -> pageLocale.equalsIgnoreCase(ShRenderModel.locale(post)))
+                        .filter(post -> !referencesOf(shRenderModel.fieldsOf(post).get(ITEMS)).isEmpty())
+                        .toList(),
+                state).stream()
+                .findFirst()
+                .orElse(menu);
     }
 
     /**

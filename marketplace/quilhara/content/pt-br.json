@@ -484,7 +484,7 @@
       "type": "Menu",
       "folder": "/menu/pt-br",
       "data": {
-        "title": "pt-br",
+        "title": "Principal",
         "items": [
           "/menu/pt-br/home",
           "/menu/pt-br/trails",
@@ -497,7 +497,8 @@
         ]
       },
       "publish": true,
-      "locale": "pt-br"
+      "locale": "pt-br",
+      "translationOf": "/menu/en-us"
     },
     {
       "url": "/pt/secoes/tour-index",

@@ -468,7 +468,7 @@
       "type": "Menu",
       "folder": "/menu/en-us",
       "data": {
-        "title": "en-us",
+        "title": "Main",
         "items": [
           "/menu/en-us/home",
           "/menu/en-us/trails",

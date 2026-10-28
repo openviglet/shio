@@ -14,7 +14,7 @@
 - ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1256** (deps: SH1255 ✅, SH1277) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — The /members page for contentAcl is still owed: a package cannot declare who reads a folder until SH1277 lands. → §XI.35
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
-- 📋 **SH1271** (deps: —) **A layout cannot pick the menu or fixed text of the page's language, so a bilingual site names menus after locale tags** — Quilhara titles its menus en-us and pt-br and leaves its footer bare, because a template has no locale-keyed lookup. → §XI.41
+- ⏳ **SH1271** (deps: —) **A layout cannot pick the menu or fixed text of the page's language, so a bilingual site names menus after locale tags** — Fixed layout text (skip link, footer lines, nav aria-label) still has one language: a per-locale string table read as {{t "key"}} is left. → §XI.41
 - 📋 **SH1272** (deps: —) **After an agent publish the console listing marks a live post Rascunho, while agent read says published** — A curator opening a freshly applied site sees every page as an unpublished draft and may publish again or distrust the apply. → §XI.44
 - 📋 **SH1273** (deps: —) **The editor's live preview cannot load a theme's self-hosted fonts: CORS blocks them from its null origin** — A curator judges a page in the wrong typeface, since the sandboxed preview falls back to system fonts the site never shows. → §XI.45
 - 📋 **SH1274** (deps: —) **The console shows a site's root folder as a folder named like the site, so every path reads quilhara, quilhara** — Opening a site lands on a list holding one folder, the same name twice in every breadcrumb, which costs a click and looks like a mistake. → §XI.46
@@ -51,6 +51,13 @@
   marketplace properties set, the admin marketplace, shio marketplace list and
   shio_marketplace all name quilhara, and the chosen trust cost is stated in
   docs/agents/blueprints.md.
+
+## Done when — SH1271
+
+- **One layout renders its own fixed text in each page's language** A layout reading {{t
+  "skip"}} renders the en-us string on an English page and the pt-br string on a
+  Portuguese one, from a per-locale table a curator edits, and Quilhara's footer and
+  skip link use it.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -387,6 +387,7 @@
 - **SH1267** — Menu rows carry current and ancestor, so a layout writes aria-current="page"; landing, marketing-site and Quilhara now mark the page a visitor is on (design §XI.40 recorded in `docs/agents/renderer.md`).
 - **SH1268** — verify withdraws asset-unused for any asset a rendered page loads when the page check runs, so Quilhara's self-hosted fonts are no longer reported; a content-only run says it did not count them (design §XI.42 recorded in `docs/agents/agent-surface.md`).
 - **SH1270** — A translations row carries language, the language named in itself from a product-owned table, so Quilhara's switcher reads Português and English instead of a headline or a code (design §XI.43 recorded in `docs/agents/renderer.md`).
+- **SH1271 (menu in the page language)** — {{#menu title=}} renders the named menu's translation in the page's locale, so Quilhara's one layout shows Main on English pages and Principal on Portuguese ones.
 
 ## Block M — Token economy, measured (SH74)
 

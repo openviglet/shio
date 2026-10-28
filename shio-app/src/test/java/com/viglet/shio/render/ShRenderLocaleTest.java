@@ -71,6 +71,7 @@ class ShRenderLocaleTest {
             </head><body><nav class="lang">
             {{#translations}}<a href="{{url}}" hreflang="{{locale}}">{{title}}</a><b>{{language}}</b>\
             {{else}}<span class="only">one language</span>{{/translations}}
+            </nav><nav class="menu">{{#menu title="Main"}}<a href="{{url}}">{{name}}</a>{{/menu}}\
             </nav><p class="default">{{render.defaultLocale}}</p></body></html>""";
 
     @Autowired
@@ -127,6 +128,15 @@ class ShRenderLocaleTest {
             // A page alone in its own group: translated by nobody, which is not a defect.
             String lone = UUID.randomUUID().toString();
             post(lone, site, root, page, "Alone", "/alone", "{}", when, ShPostState.DRAFT, "en", lone);
+
+            // SH1271 — one menu in two languages, translated the way a page is. The Portuguese one
+            // has its own title, so only the translation group can tell the layout it is "Main".
+            ShPostType menuType = postType("Sh1271Menu" + suffix, when);
+            String menus = UUID.randomUUID().toString();
+            post(menus, site, root, menuType, "Main", "/menu/main", "{\"items\":[\"/alone\"]}", when,
+                    ShPostState.DRAFT, "en", menus);
+            post(UUID.randomUUID().toString(), site, root, menuType, "Principal", "/menu/principal",
+                    "{\"items\":[\"/pt/\"]}", when, ShPostState.DRAFT, "pt-br", menus);
         });
     }
 
@@ -165,6 +175,21 @@ class ShRenderLocaleTest {
         assertThat(html).contains("<link rel=\"alternate\" hreflang=\"pt-br\" href=\"/pt/\">");
         // The sibling's own title stays on the row, in the target language by construction.
         assertThat(html).contains("<a href=\"/pt/\" hreflang=\"pt-br\">Início</a>");
+    }
+
+    @Test
+    @DisplayName("SH1271: one layout naming one menu renders the menu translated into the page's language")
+    void theMenuFollowsThePageLanguage() {
+        assertThat(render("/"))
+                .as("SH1271: the English page renders the menu it named")
+                .contains("<nav class=\"menu\"><a href=\"/alone\">Alone</a>");
+        assertThat(render("/pt/"))
+                .as("SH1271: the Portuguese page renders Main's pt-br translation, though it is titled "
+                        + "Principal and the layout never says so")
+                .contains("<nav class=\"menu\"><a href=\"/pt/\">Início</a>");
+        assertThat(render("/de/"))
+                .as("SH1271: a language the menu was never translated into keeps the one named")
+                .contains("<nav class=\"menu\"><a href=\"/alone\">Alone</a>");
     }
 
     @Test

@@ -1456,6 +1456,13 @@ renderer over one body of content at a second address. See the section on it bel
   `url` misses a nested group. Both keys are declared in `MENU_KEYS`, which `rowKeysFor("menu")`
   answers so SH251's field lint accepts them. `landing`, `marketing-site` and Quilhara mark the
   current item; Quilhara also styles the ancestor.
+  **A menu follows the page's language (SH1271)**: menus are posts, so a curator translates one the
+  way they translate a page, and `{{#menu title="Main"}}` renders the translation in `post.locale`
+  when the named menu has one, whatever that translation is titled. Translations sharing a title are
+  one menu in several languages, so the page's locale picks rather than the two-candidates rule
+  refusing; two menus with one title that are *not* translations of each other still yield nothing.
+  No sibling in the page's language keeps the menu that was named. Quilhara's menus are `Main` and
+  its translation `Principal`, where they used to be titled after locale codes.
   **`{{#query}}` gets a second page, an order and a filter, and the measurement came first (SH384).**
   `folder`/`type`/`limit` meant the helper could render only *the first page* of anything, so an
   insights hub with two hundred articles (the commonest page shape after a homepage) was not
