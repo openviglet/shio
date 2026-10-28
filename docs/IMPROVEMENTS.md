@@ -250,7 +250,7 @@ alone.
 What it carries:
 
 - the content model: the section vocabulary plus whatever types the brand needs (stories, places, people, products, whatever the spec chose);
-- a `Theme`, `PageLayout`s and `Region`s with a real design, not the six packages' starting-point styling;
+- a `Theme`, `PageLayout`s and `Region`s with a real design, and photography a person licenses (own or CC0);
 - `Primary` and footer menus through `{{#menu}}` (SH873's pattern, never a title-sorted query);
 - home, listing and detail pages, filled with copy written for the brand and images delivered through SH1252;
 - en and pt variants of every page, through the localization model Block BH shipped.
