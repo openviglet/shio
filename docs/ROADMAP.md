@@ -12,10 +12,22 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The owner publishes server.json with mcp-publisher, submits the Claude Code lists and the More tools line, and records each link in actions.json. → §XI.28
+- 📋 **SH1250** (deps: —) **Shio has no demo site that shows every capability in one place, the role WKND plays for AEM** — A spec fixes the fictional brand, the page map and a feature-to-page matrix before content is written, so the demo is designed rather than accumulated. → §XI.29
+- 📋 **SH1251** (deps: —) **Marketplace install only puts a package on disk; the console cannot turn it into a site, as Turing's import does** — Installing the showcase should end on a working site: the dialog draws the params form, names the site, shows the dry-run plan, then installs and applies. → §XI.30
+- 📋 **SH1252** (deps: —) **A blueprint carries text files only, so a package cannot bring the images a good-looking site needs** — Binary files under a package's assets/ directory become the site's static files on apply, bounded in size, so the showcase is complete after one install. → §XI.31
+- 📋 **SH1253** (deps: —) **A marketplace entry has no preview image and its README shows as raw markdown, so the showcase looks like any package** — Screenshots the catalogue declares, proxied like the README, and a rendered README let a curator see the demo before installing it. → §XI.32
+- 📋 **SH1254** (deps: SH1250, SH1252) **No package ships a designed, bilingual site with real imagery, so a first install shows Shio at its plainest** — One marketplace package builds the showcase's model, theme, layouts, menus and brand pages in en and pt, clean under the a11y gate. → §XI.33
+- 📋 **SH1255** (deps: SH1254) **Nothing fails when Shio ships a capability the showcase does not demonstrate** — A test maps each manifest features key and MCP tool to a showcase page or a stated exclusion, holding the gap as a named list so the demo cannot fall behind. → §XI.34
+- 📋 **SH1256** (deps: SH1255) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — Tour pages, each with a how-it-was-built panel naming the console screen, MCP tool and CDA call behind it, drain SH1255's debt to zero. → §XI.35
+- 📋 **SH1257** (deps: SH1254) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo only sells Shio if a first boot can reach it; decide between enabling the published catalogue by default and a narrower showcase entry, with the trust cost stated. → §XI.36
 
 ## Block BI — The areas this round did not reach
 
-- 📋 **SH1249** (deps: —) **Nothing measures whether Shio builds and boots as a GraalVM CE native image, or what that would buy** — An ephemeral playground tenant and small containers want fast boot and low memory, and only a spike says whether Artemis, Hazelcast and imageio survive closed-world AOT. → §LXXV.3
+- 🛠 **SH1249** (deps: —) **Nothing measures whether Shio builds and boots as a GraalVM CE native image, or what that would buy** — An ephemeral playground tenant and small containers want fast boot and low memory, and only a spike says whether Artemis, Hazelcast and imageio survive closed-world AOT. → §LXXV.3
+
+## Block S — The public site (shio.viglet.org)
+
+- 📋 **SH1258** (deps: SH1256, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
 
 ## Priority
 

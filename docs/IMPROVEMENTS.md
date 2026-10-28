@@ -241,6 +241,179 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
+### XI.29 XI.29 The showcase site, designed before it is built (SH1250)
+
+Adobe ships WKND, a fictional adventure magazine, so that anyone evaluating AEM can
+install it, click through it and see each capability on a real page. Shio has six
+blueprints and none of them plays that role: they are starting points, deliberately
+plain, and nothing in the marketplace shows what a finished Shio site looks like.
+
+The showcase is the marketing surface for the product, installed from the console
+marketplace the same way Turing installs its demo packages. It has to be complete,
+good-looking and explicit about which feature each page demonstrates.
+
+This task is the spec, `docs/specs/SH1250-showcase-site.md`, and nothing else:
+
+- a fictional brand and its voice (no real company, no borrowed trademarks);
+- the page map: home, brand pages, listings, detail pages, the feature tour;
+- the visual direction: theme tokens, typography, the image set and its licence (own or CC0 only);
+- the languages, en and pt at least, since localization (Block BH) is a feature to show;
+- the feature-to-page matrix: every key of the manifest's `features`, every MCP tool, and the curator surfaces (Universal Editor, releases, revisions, review queue, preview links), each mapped to the page that demonstrates it or to a stated reason it has none.
+
+The matrix is what the coverage test filed after this task reads, so it is written as
+data a test can load. Content is not written here: a matrix settled first is what stops
+the demo becoming a pile of pages that happened to be easy.
+
+### XI.30 XI.30 Install and create a site in one step (SH1251)
+
+Turing's marketplace downloads a package and imports it, site and content, in one
+action: the operator clicks Install and ends on something that works. Shio's marketplace
+(SH675, SH679) deliberately stops earlier. Install puts the blueprint where the registry
+loads it, and applying it to a site is `POST /agent/blueprints/{name}/apply`, reachable
+from the CLI and MCP but not from the console. A curator who installs the showcase from
+the admin area is left with a package and no site, and has to learn `shio apply` to see
+what they installed.
+
+Keeping install and apply as two operations stays right (SH675's reasons: auditable,
+re-appliable, the package survives). What changes is that the console offers both in one
+flow:
+
+1. the dialog draws a form from the catalogue's `params` schema, which the listing already carries;
+2. the curator names a new site, or picks an existing one;
+3. the dry run reports the install and the apply plan together, including `createSite` and `mergePostTypes` as consents (P7), before anything is written;
+4. confirm installs if needed, then applies, then links to the new site and its preview.
+
+P1 order: the CLI gains the same chain first, `shio marketplace install <id> --apply
+--site <name>`, so the console is the last surface rather than the only one. A built-in
+package skips the install half. A failed apply leaves the installed package in place and
+says so, since the package is still valid and the next apply can use it.
+
+### XI.31 XI.31 A blueprint that carries its images (SH1252)
+
+`ShBlueprint.File` is text-only on purpose: its comment says a format that could carry a
+binary would invite packages to ship images that belong in the asset subsystem (SH38).
+That was the right refusal for front-end source. It leaves no way for a package to
+deliver the images its own content references, and a showcase without photography is not
+one: every hero, card and gallery would point at nothing, or at a host the operator
+never named.
+
+The asset subsystem is still where the images belong. What is missing is the route from
+the package to it:
+
+- a package may declare an `assets/` directory; its files are uploaded through the same write path as `shio/assets/**` in the content projection (SH38 and the sidecar format), into the target site, on apply;
+- content references them by site path, so the substitution rule stays `{{name}}` and nothing new;
+- the plan lists each asset it would write, and a re-apply of identical bytes writes nothing (P5);
+- a per-package size bound stays, raised from the installer's 64 MB only if the showcase measures above it, with the number recorded beside the constant;
+- `ShBlueprintBoundsTest` gains the rule that an asset cannot escape the site it is applied to.
+
+The marketplace zip already has room for this. The registry's load validation needs to
+accept the directory and check every referenced asset exists, as it does for `postTypes`
+and `content` today.
+
+### XI.32 XI.32 Marketplace entries a curator can see before installing (SH1253)
+
+The console's marketplace card is a title, an id, a description and badges. The detail
+dialog shows the README as monospace raw markdown, a shortfall SH679 recorded rather
+than chose. For six plain blueprints that was enough. For a showcase whose whole point
+is how it looks, a curator would be choosing a site they cannot see.
+
+Two additions, both inside the trust model SH646 set:
+
+- **`screenshots`**, a catalogue key holding up to a few image URLs per entry. `icon` stays a name and never a URL, because a catalogue must not make a browser fetch from a host the operator did not name. Screenshots keep that rule the way the README does: the instance proxies them, and only for URLs its own catalogue declares, so the reachable set is still what the operator's catalogue offered. The card shows the first one; the dialog shows all of them.
+- **A rendered README.** The console needs a markdown renderer for exactly this panel. The choice of library (or reusing one the design system already has) is part of the task, with its bundle cost measured against the console's load budgets (Block BG).
+
+`ShMarketplaceItem.KEYS` gains the key, so an unknown key is still a refusal.
+`shio-site/scripts/marketplace.mjs` publishes the images beside each zip, and the CLI's
+`marketplace show` prints the screenshot URLs, since a terminal cannot draw them.
+
+### XI.33 XI.33 The showcase package (SH1254)
+
+The package that turns SH1250's spec into a site. It is the site itself, without the
+feature tour, which is a separate task so this one can ship and be judged on looks
+alone.
+
+What it carries:
+
+- the content model: the section vocabulary plus whatever types the brand needs (stories, places, people, products, whatever the spec chose);
+- a `Theme`, `PageLayout`s and `Region`s with a real design, not the six packages' starting-point styling;
+- `Primary` and footer menus through `{{#menu}}` (SH873's pattern, never a title-sorted query);
+- home, listing and detail pages, filled with copy written for the brand and images delivered through SH1252;
+- en and pt variants of every page, through the localization model Block BH shipped.
+
+**Where it lives.** Not on the classpath: the image set would bloat every jar for an
+instance that never installs the demo. The source sits in the repo outside
+`src/main/resources`, and `shio-site/scripts/marketplace.mjs` packs it into the
+published catalogue beside the six first-party packages.
+
+**What proves it.** `ShBlueprintAccessibilityTest` picks it up by declaring a
+`PageLayout`, if the test can reach a package that is not on the classpath; that reach
+is part of this task. The render must also pass `verify`'s lint with no finding, and the
+published sample content follows SH930's em-dash rule. The token cost of applying it is
+measured and recorded, because the apply's report grows with every op and P3 makes that
+a number, not an impression.
+
+### XI.34 XI.34 Every feature has a showcase page, or a reason (SH1255)
+
+A demo that shows every feature on the day it ships shows most of them a year later.
+WKND went through exactly that, and nobody notices until a prospect asks where a
+capability is. In this project the answer to "a rule nobody checks" is an instrument
+(SH322, SH338), and it lands before the pages it judges.
+
+`ShShowcaseCoverageTest`, or a `cli/test` equivalent if the package source is easier to
+read from Node:
+
+- the subjects are read, never listed: the manifest's `features` keys, the registered MCP tools, and the curator surfaces SH1250's matrix names;
+- the coverage is SH1250's matrix, loaded as data: each subject maps to a showcase page path, or to an exclusion with a reason (for example an operator-only setting with nothing a visitor could see);
+- a page the matrix names must exist in the package's content, so a renamed page fails here rather than in front of a visitor;
+- the subjects with neither a page nor an exclusion are the **debt**, held as an asserted list the way `assertion-debt.test.mjs` holds its own. A new feature lands red until somebody either builds its page or writes why it has none.
+
+It prints both counts on every run, writes no figure into prose (agents.md's citation
+rule), and carries a vacuity guard: an empty feature list or an unreadable package would
+otherwise agree with every claim. When it first runs, the debt is the feature tour's
+backlog, which the next task drains.
+
+### XI.35 XI.35 The feature tour (SH1256)
+
+The brand pages make the showcase look like a real site. The tour is what makes it a
+demo: a visitor, or a prospect sitting with a salesperson, should be able to land on any
+page and learn which capability it shows and how they would do the same.
+
+Each tour page demonstrates one capability on live content, grouped by SH74's three
+jobs:
+
+- **the agent builds it**: blueprints, content as files, the MCP tools, verify and the render digest, replication (a page rebuilt from a captured one);
+- **the curator approves it**: the Universal Editor and section composer, releases and scheduling, revisions and restore, the review queue, preview links, the publish gate, localization;
+- **the CDA delivers it**: REST and GraphQL reads, the TS SDK, a Next.js page, Turing search when it is enabled, redirects and menus.
+
+Every page carries one reusable "How this was built" section (a vocabulary section, so
+it is itself editable) listing the console route, the MCP tool and arguments, the CLI
+line and the CDA request that produce what the page shows. These are real calls against
+the visitor's own instance, which is the point: the visitor can copy one and run it.
+
+A capability that needs something the instance may not have (Turing, an OIDC provider)
+says so on its page rather than hiding, the way `features` reports a disabled flag.
+
+Done means SH1255's debt list is empty and every tour page passes `verify` and the a11y
+gate in both languages.
+
+### XI.36 XI.36 A fresh instance can reach the showcase (SH1257)
+
+`shio.marketplace.enabled` defaults to false and `shio.marketplace.url` to nothing
+(SH646). That default was the trust model: the catalogue is off until an operator names
+a URL, the same act as naming a blueprint directory. A side effect is that someone who
+downloads Shio to evaluate it opens the admin marketplace and finds the six built-in
+packages and no showcase, which is the opposite of what the showcase is for.
+
+Two candidate answers, and the task is to pick one with its cost written down:
+
+- **Enable the published catalogue by default**, pointing at `shio.viglet.org/marketplace/marketplace.json`. Simple, and it matches what an evaluator expects. Cost: a fresh instance makes an outbound request to a Viglet host on the marketplace read, and an install writes a downloaded package, which SH96 refused to do without an operator's decision. Air-gapped and multi-tenant operators then have to turn it off.
+- **Keep the catalogue off, and list the showcase as a known entry** the instance can install from a fixed, versioned URL, with the console saying where it comes from before the download. Narrower trust widening, more code.
+
+Either way `shio.blueprint.path` needs a usable default for the install to work at all
+(the installer refuses without one), and the quick start in the README and docs-shio
+gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
+CLI quick start are part of the same check.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
@@ -559,6 +732,25 @@ token count, a teaching 4xx, a file tree, a draft that did not publish itself.
 The site is also written for the reader it is about. An agent evaluating a CMS reads the
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
+
+### XIX.15 XIX.15 The showcase on the public site (SH1258)
+
+The showcase exists to sell Shio, and the place a stranger meets Shio first is
+shio.viglet.org. The site's copy describes surfaces, which is right (every claim is
+about a real surface), but it shows no finished site built with them. WKND works for AEM
+because it is linked from everywhere a prospect looks.
+
+What the site gains:
+
+- a showcase section on the landing page, and a `/showcase` route (two rows, `ROUTES` in `src/App.tsx` and the `routes` entry in `src/entry-server.tsx`, which `routesAreDeclared()` enforces);
+- screenshots of the brand pages and a few tour pages, the same images the marketplace entry publishes, generated rather than hand-cropped so they stay current with the package;
+- the two install paths, side by side: the admin marketplace (console) and `shio marketplace install <id> --apply --site <name>` (CLI), plus the one line from the quick start that gets a fresh instance there;
+- a link from each feature already described on the site to the tour page that demonstrates it, read from the showcase's coverage matrix rather than retyped.
+
+All copy goes in `src/lib/site-content.ts`, under the site's own rules: no measured
+number typed by hand, and the `ai-writing` lint. The docs-shio half (a "Tour the
+showcase" page and its COVERAGE row) is the ordinary per-task end-user docs decision for
+the showcase tasks, so it is not filed separately here.
 
 ## XX End-user documentation, round two (Block T)
 
