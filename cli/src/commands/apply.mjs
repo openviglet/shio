@@ -195,7 +195,7 @@ function broken(change) {
  * text ("looks numeric, send a number") would silently disagree with the package for a
  * string parameter whose value happens to be digits — a version, a SKU, a postcode.
  */
-async function applyBlueprint(flags, positionals, ctx) {
+export async function applyBlueprint(flags, positionals, ctx) {
   const name = typeof flags.blueprint === "string" ? flags.blueprint : positionals[0];
   if (!name) {
     throw new Error(

@@ -20,6 +20,11 @@
  *
  * Two commands, no console, no session — which is the shape P2 is about.
  *
+ * SH1251 makes it one when that is what the operator wants: `install <id> --apply --site <name>`
+ * installs (or skips that half for a package already here) and then runs the very apply
+ * `shio apply --blueprint` runs, with the same flags. Still two operations on the server, so the
+ * package survives an apply that fails and the next apply can use it.
+ *
  * ## Install is not apply, here too
  *
  * `install` puts the package where the registry can see it and stops. Applying it to a site stays
@@ -30,6 +35,7 @@
 import { ShioAdminClient } from "../admin-client.mjs";
 import { resolveAdmin } from "../context.mjs";
 import { helpText } from "../help.mjs";
+import { applyBlueprint } from "./apply.mjs";
 
 export const HELP = helpText("marketplace");
 
@@ -126,6 +132,7 @@ async function show(client, flags, positionals, ctx) {
 /** Download and install, or — with `--dry-run` — say what would happen and write nothing. */
 async function install(client, flags, positionals, ctx) {
   const id = requireId(positionals, "install");
+  if (flags.apply) return installAndApply(client, id, flags, ctx);
   const dryRun = Boolean(flags["dry-run"] ?? flags.dryRun);
   const result = await client.installPackage(id, { dryRun });
 
@@ -142,6 +149,63 @@ async function install(client, flags, positionals, ctx) {
     ctx.stdout.write(`Apply it with: shio apply --blueprint ${id} --site <site>\n`);
   }
   return result;
+}
+
+/**
+ * SH1251 — install if the package is not here yet, then apply it to a site.
+ *
+ * <p>The catalogue is read first because the install half is not always there: a built-in package
+ * and one already installed have nothing to download, and the server refuses both (409). Skipping
+ * the call is the honest version of "install if needed".</p>
+ *
+ * <p>A dry run plans the install, and plans the apply only when the package is already in the
+ * registry: the apply plan is computed by the server from the package, and a package that has not
+ * been downloaded is one the server has not read. Saying so beats a plan of nothing.</p>
+ */
+async function installAndApply(client, id, flags, ctx) {
+  if (typeof flags.site !== "string") {
+    throw new Error(`shio marketplace install ${id} --apply: needs --site <name>, the site to `
+      + `apply it to. Add --create-site to make a new one.`);
+  }
+  const catalogue = await client.marketplace();
+  const item = (catalogue.items ?? []).find((each) => each.id === id);
+  if (!item) {
+    throw new Error(`shio marketplace install: no entry with id "${id}". `
+      + `Run \`shio marketplace list\` to see what this instance offers.`);
+  }
+  const dryRun = Boolean(flags["dry-run"] ?? flags.dryRun);
+  const needsInstall = !item.builtIn && !item.installed;
+
+  let installed = null;
+  if (needsInstall) {
+    installed = await client.installPackage(id, { dryRun });
+    ctx.stdout.write(dryRun
+      ? `shio marketplace: ${id} ${installed.version ?? ""} would install into ${installed.origin}.\n`
+      : `shio marketplace: installed ${id} ${installed.version ?? ""} into ${installed.origin}.\n`);
+  } else {
+    ctx.stdout.write(`shio marketplace: ${id} is ${item.builtIn ? "built in" : "already installed"}`
+      + `, so there is nothing to install.\n`);
+  }
+
+  if (dryRun && needsInstall) {
+    ctx.stdout.write(`shio marketplace: the apply plan needs the package installed, so it is not `
+      + `shown — nothing was written. Install it, then run `
+      + `\`shio apply --blueprint ${id} --site ${flags.site} --dry-run\`.\n`);
+    return { install: installed, apply: null };
+  }
+
+  try {
+    const applied = await applyBlueprint({ ...flags, blueprint: id }, [], ctx);
+    return { install: installed, apply: applied, exitCode: applied?.exitCode };
+  } catch (error) {
+    if (installed && !dryRun) {
+      // The package is valid and stays where the registry sees it: say so, or the operator
+      // reinstalls and meets the 409 for a package that never left.
+      error.message = `${error.message}\nshio marketplace: ${id} stays installed; `
+        + `retry with \`shio apply --blueprint ${id} --site ${flags.site}\`.`;
+    }
+    throw error;
+  }
 }
 
 async function uninstall(client, positionals, ctx) {

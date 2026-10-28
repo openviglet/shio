@@ -793,6 +793,24 @@ its problem.
 
 The writes still want the role SH682 will give them.
 
+## Install and apply in one command, still two operations (SH1251)
+
+`shio marketplace install <id> --apply --site <name>` installs, then runs the apply
+`shio apply --blueprint` runs, with the same flags (`--create-site`, `--merge-post-types`,
+`--param`, `--dry-run`). The server keeps them as two operations (SH675's reasons hold: an install
+is auditable and survives an apply that fails), so a failed apply leaves the package installed and
+the error says to retry with `shio apply`.
+
+It reads the catalogue first, because the install half is not always there: a built-in package and
+an installed one have nothing to download, and the server answers 409 to both. Calling it anyway
+and swallowing the 409 would hide a real conflict behind an expected one.
+
+**A dry run cannot plan the apply of a package that is not installed yet.** The apply plan is the
+server's, computed from the package, and the server has not downloaded it. The CLI plans the install
+and says why there is no apply plan rather than printing an empty one. The console dialog that is
+this task's remaining half needs both plans together, so it needs a server route that plans an apply
+from a staged download; that route is the first thing the console half builds.
+
 ## The published catalogue, and why the six are republished under a prefix (SH676)
 
 `shio-site/scripts/marketplace.mjs` derives the catalogue from

@@ -373,6 +373,7 @@
 - **SH884** — Both package layouts annotate the page's own title where they draw it and declare description in a hidden element, so a curator can edit the page as well as its sections.
 - **SH1245 (MCP Registry entry)** — cli/server.json describes the stdio bridge for the official MCP Registry, package.json carries its mcpName, the release stamps its version, and a test reads every fact back from the package.
 - **SH1250** — The showcase spec fixes the Quilhara brand, the bilingual page map, the visual direction and a feature-to-page matrix that a test holds complete against the manifest and MCP tools (design §XI.29 recorded in `docs/specs/SH1250-showcase-site.md`).
+- **SH1251 (CLI half)** — shio marketplace install <id> --apply --site <name> installs when needed, then runs the same apply as shio apply --blueprint; a failed apply says the package stays installed.
 
 ## Block M — Token economy, measured (SH74)
 

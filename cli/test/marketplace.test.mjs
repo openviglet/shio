@@ -185,6 +185,87 @@ test("SH677: uninstall removes, and an unknown action is refused with the list",
     /unknown action .* list, show, install, uninstall/);
 });
 
+/** The calls `install --apply` makes after the catalogue: the package, the site's record, the apply. */
+const APPLY_ROUTES = [
+  ["/api/v2/agent/blueprints/shio-blueprint-newsroom/apply", json({
+    blueprint: "shio-blueprint-newsroom", version: "2.0.0", site: "News", dryRun: false,
+    params: {}, postTypes: [], content: { ops: 3, changed: 3, results: [] },
+  })],
+  ["/api/v2/agent/blueprints/blog/apply", json({
+    blueprint: "blog", version: "1.0.0", site: "Notes", dryRun: true,
+    params: {}, postTypes: [], content: { ops: 2, changed: 2, results: [] },
+  })],
+  ["/api/v2/agent/blueprints/", json({ name: "x", manifest: { params: {} }, files: [] })],
+  ["/api/v2/agent/memory", json({ notes: [] })],
+];
+
+function applyContext(routes) {
+  const harness = context(routes);
+  harness.ctx.stderr = { write: () => {} };
+  return harness;
+}
+
+test("SH1251: install --apply installs a catalogue package, then applies it to the site", async () => {
+  const done = { id: "shio-blueprint-newsroom", version: "2.0.0", origin: "/pkg", installed: true, loaded: 7 };
+  const { ctx, calls, output } = applyContext([
+    ["/install", json(done)], ...APPLY_ROUTES, ["/api/v2/marketplace", json(CATALOGUE)],
+  ]);
+
+  const result = await run({ apply: true, site: "News", createSite: true },
+    ["install", "shio-blueprint-newsroom"], ctx);
+
+  const order = calls.map((call) => `${call.method} ${new URL(call.url).pathname}`);
+  const install = order.indexOf("POST /api/v2/marketplace/shio-blueprint-newsroom/install");
+  const apply = order.indexOf("POST /api/v2/agent/blueprints/shio-blueprint-newsroom/apply");
+  assert.ok(install >= 0 && apply > install,
+    `SH1251: install first, then the same apply \`shio apply --blueprint\` makes; got ${order}`);
+  assert.equal(result.apply.content.changed, 3);
+  assert.match(output(), /installed shio-blueprint-newsroom/);
+  assert.match(output(), /blueprint shio-blueprint-newsroom 2\.0\.0 → site News/);
+});
+
+test("SH1251: a built-in package skips the install half and still applies", async () => {
+  const { ctx, calls, output } = applyContext([...APPLY_ROUTES, ["/api/v2/marketplace", json(CATALOGUE)]]);
+
+  await run({ apply: true, site: "Notes", dryRun: true }, ["install", "blog"], ctx);
+
+  assert.ok(!calls.some((call) => call.url.includes("/install")),
+    "SH1251: the server answers 409 to installing a built-in package, so the call is not made");
+  assert.match(output(), /blog is built in, so there is nothing to install/);
+  assert.match(output(), /plan — nothing written/);
+});
+
+test("SH1251: a dry run of a package not yet installed plans the install and says why no apply plan", async () => {
+  const planned = { id: "shio-blueprint-newsroom", version: "2.0.0", origin: "/pkg", installed: false, loaded: 6 };
+  const { ctx, calls, output } = applyContext([
+    ["/install", json(planned)], ...APPLY_ROUTES, ["/api/v2/marketplace", json(CATALOGUE)],
+  ]);
+
+  const result = await run({ apply: true, site: "News", "dry-run": true },
+    ["install", "shio-blueprint-newsroom"], ctx);
+
+  assert.equal(result.apply, null);
+  assert.ok(!calls.some((call) => call.url.includes("/apply")),
+    "SH1251: the server plans an apply from the package, which it has not downloaded yet");
+  assert.match(output(), /the apply plan needs the package installed/);
+  assert.match(output(), /nothing was written/);
+});
+
+test("SH1251: install --apply needs a site, and a failed apply says the package stays", async () => {
+  const bare = applyContext([]);
+  await assert.rejects(() => run({ apply: true }, ["install", "blog"], bare.ctx), /needs --site/);
+
+  const done = { id: "shio-blueprint-newsroom", version: "2.0.0", origin: "/pkg", installed: true, loaded: 7 };
+  const refused = { status: 404, title: "No site named News", fix: "Pass --create-site" };
+  const { ctx } = applyContext([
+    ["/install", json(done)],
+    ["/api/v2/agent/blueprints/shio-blueprint-newsroom/apply", json(refused, 404)],
+    ...APPLY_ROUTES.slice(2), ["/api/v2/marketplace", json(CATALOGUE)],
+  ]);
+  await assert.rejects(() => run({ apply: true, site: "News" }, ["install", "shio-blueprint-newsroom"], ctx),
+    /stays installed; retry with `shio apply --blueprint shio-blueprint-newsroom --site News`/);
+});
+
 test("SH677: install and uninstall need an id, and say how to find one", async () => {
   const { ctx, output } = context([]);
   await assert.rejects(() => run({}, ["install"], ctx), /needs an id/);
