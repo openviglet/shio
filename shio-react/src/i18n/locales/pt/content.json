@@ -408,6 +408,7 @@
   "content.filterClear": "Limpar",
   "content.filterPublished": "Publicado",
   "content.filterDraft": "Rascunho",
+  "content.statusChanged": "Publicado, com alterações",
   "content.showingRows": "Mostrando {{loadedFolders}} de {{totalFolders}} pastas e {{loaded}} de {{total}} conteudos",
   "content.filterSite": "Site",
   "content.scopeSite": "Site inteiro",

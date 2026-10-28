@@ -388,6 +388,7 @@
 - **SH1268** — verify withdraws asset-unused for any asset a rendered page loads when the page check runs, so Quilhara's self-hosted fonts are no longer reported; a content-only run says it did not count them (design §XI.42 recorded in `docs/agents/agent-surface.md`).
 - **SH1270** — A translations row carries language, the language named in itself from a product-owned table, so Quilhara's switcher reads Português and English instead of a headline or a code (design §XI.43 recorded in `docs/agents/renderer.md`).
 - **SH1271** — {{t "key"}} reads a layout's own text from the Strings table in the page's locale, so one Quilhara layout renders its skip link, nav labels and footer in English or Portuguese (design §XI.41 recorded in `docs/agents/renderer.md`).
+- **SH1272** — The console listing derives published from whether a live row exists, and marks a live page with unpublished edits as CHANGED, so an agent-applied site no longer reads as all drafts (design §XI.44 recorded in `docs/agents/content-api.md`).
 
 ## Block M — Token economy, measured (SH74)
 

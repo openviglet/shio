@@ -408,6 +408,7 @@
   "content.filterClear": "Clear",
   "content.filterPublished": "Published",
   "content.filterDraft": "Draft",
+  "content.statusChanged": "Published, with changes",
   "content.showingRows": "Showing {{loadedFolders}} of {{totalFolders}} folders and {{loaded}} of {{total}} posts",
   "content.filterSite": "Site",
   "content.scopeSite": "Whole site",

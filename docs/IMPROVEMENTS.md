@@ -283,30 +283,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.44 XI.44 One answer to "is this published" (SH1272)
-
-Found applying the Quilhara package (SH1254) on a clean instance and opening it in the
-console (Playwright, `/bento/content/object/<trails folder>`). Every post shows the
-amber dot and "Rascunho". The folder listing, `GET /api/v2/object/{id}/list`, answers
-`"published": false, "publishStatus": "DRAFT"` for `/trails/black-rocks`.
-
-The same post, the same second: `GET
-/api/v2/agent/read?address=post:quilhara/trails/wind-crest` answers `published: true`
-for both the draft and the published row, the two rows' data hash to the same digest
-(nothing pending), and `/sites/quilhara/default/en-us/trails/black-rocks` serves the
-page. The apply ran `post.publish` for each post, as the package declares `publish:
-true`.
-
-So the console listing derives "published" from something the agent publish path does
-not set, plausibly a `publishStatus` column on the draft row that `post.publish` leaves
-at `DRAFT`, where `/agent/read` checks for a published row. Two surfaces answering one
-question differently is the defect, whichever is right.
-
-The fix decides one rule (a post is published when a PUBLISHED row exists; it has
-pending changes when the draft's digest differs) and makes the listing, the editor
-header, search and `/agent/read` read it. The assertion publishes through `post.publish`
-and reads the listing, expecting `published: true` and no pending-change mark.
-
 ### XI.45 XI.45 The live preview loads the site's fonts (SH1273)
 
 Found opening a Quilhara trail (SH1254) in the console editor with Playwright. The

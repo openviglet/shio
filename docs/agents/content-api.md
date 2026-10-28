@@ -26,6 +26,14 @@
   answered in another order returns other *rows*; and the DRAFT-preference is a **predicate**
   (`ShPostUnifiedRepository#pageConsoleRows`), not an in-memory dedup like the CDA's, so `LIMIT`
   and the count are the database's and a post with both rows takes one slot and is counted once.
+  **`published`/`publishStatus` on a post row are derived, not read off the row (SH1272)**: every
+  publish writes a PUBLISHED row beside the draft and leaves the draft's own columns at `DRAFT`, so
+  with the DRAFT-preference above every page ever published read as a draft, whoever published it,
+  and a site an agent had just applied looked unpublished in the console while `/agent/read` and
+  `/sites/**` served it. `ShConsoleNavigationMapper` reads the page's live rows in one query and
+  answers `PUBLISHED` (a live row, same data), `CHANGED` (a live row, the draft differs) or `DRAFT`
+  (no live row); `published` is true for the first two. The console's state mark and grid chip
+  label all three.
   **The browser's `Select → Everything` pages the rest in before selecting (SH237)**: a selection
   is a list of ids, so "everything" has to be everything, or the delete dialog says "50 item(s)" on
   a folder of five hundred and the curator is left believing it is empty. Past `SELECT_ALL_CAP`

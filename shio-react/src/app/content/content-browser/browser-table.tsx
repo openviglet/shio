@@ -60,8 +60,12 @@ function when(row: BrowserRow, language: string): string {
  */
 function StateMark({ status, t }: Readonly<{ status?: string; t: (key: string) => string }>) {
   if (!status) return null
-  const published = status === "PUBLISHED"
-  const label = published ? t("content.filterPublished") : status === "DRAFT" ? t("content.filterDraft") : status.toLowerCase()
+  // SH1272 — the listing derives these from whether a live row exists, and CHANGED is a live page
+  // whose draft has edits nobody has published yet: live, so green, with the label saying what waits.
+  const published = status === "PUBLISHED" || status === "CHANGED"
+  const label = status === "PUBLISHED" ? t("content.filterPublished")
+    : status === "CHANGED" ? t("content.statusChanged")
+    : status === "DRAFT" ? t("content.filterDraft") : status.toLowerCase()
   return (
     <span className="inline-flex items-center gap-1.5 truncate text-xs text-muted-foreground">
       <span aria-hidden="true" className={`size-1.5 rounded-full ${published ? "bg-emerald-500" : "bg-amber-500"}`} />

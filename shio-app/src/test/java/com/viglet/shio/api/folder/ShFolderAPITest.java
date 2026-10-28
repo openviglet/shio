@@ -411,6 +411,43 @@ class ShFolderAPITest {
                         .isEqualTo(siteId)));
     }
 
+    /**
+     * SH1272 — the listing answers "is this published" the way delivery does. Every publish writes a
+     * PUBLISHED row beside the draft and leaves the draft's own columns at DRAFT, and the listing
+     * prefers the draft, so a site an agent had just applied and published read as all drafts.
+     */
+    @Test
+    @org.junit.jupiter.api.DisplayName("SH1272: after any publish the listing says published, and says when edits wait")
+    void stage08hListingSaysPublishedAfterAPublish() throws Exception {
+        String folderId = createFolderWithFurl("Sh1272", "sh1272");
+        String never = createPost(folderId, "Never Published");
+        String live = createPost(folderId, "Published As Is");
+        String edited = createPost(folderId, "Published Then Edited");
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        // The one method every publish passes through: the console's, REST's, the scheduler's and
+        // the agent batch's `post.publish`.
+        tx.executeWithoutResult(status -> {
+            shPostUnifiedWriteService.publish(live, "admin");
+            shPostUnifiedWriteService.publish(edited, "admin");
+        });
+        tx.executeWithoutResult(status -> shPostUnifiedRepository
+                .findByIdAndState(edited, ShPostState.DRAFT).ifPresent(draft -> {
+                    draft.setData("{\"" + ShSystemPostTypeAttr.TITLE + "\":\"Edited since\"}");
+                    shPostUnifiedRepository.save(draft);
+                }));
+
+        mockMvc.perform(get("/api/v2/object/" + folderId + "/list").principal(mockPrincipal))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.posts[?(@.id == '" + never + "')].publishStatus").value("DRAFT"))
+                .andExpect(jsonPath("$.posts[?(@.id == '" + never + "')].published").value(false))
+                .andExpect(jsonPath("$.posts[?(@.id == '" + live + "')].publishStatus")
+                        .value("PUBLISHED"))
+                .andExpect(jsonPath("$.posts[?(@.id == '" + live + "')].published").value(true))
+                .andExpect(jsonPath("$.posts[?(@.id == '" + edited + "')].publishStatus")
+                        .value("CHANGED"))
+                .andExpect(jsonPath("$.posts[?(@.id == '" + edited + "')].published").value(true));
+    }
+
     // SH954 — `stage09ClearCacheIsOk` was here, asserting that `/clear-cache` answered 200. It did,
     // and that was the defect: the endpoint's whole body was `ResponseEntity.ok().build()` long
     // after the page cache it cleared had been removed, and the console's Clear Cache button

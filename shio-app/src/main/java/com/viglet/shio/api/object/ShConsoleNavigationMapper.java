@@ -10,6 +10,9 @@ package com.viglet.shio.api.object;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -24,6 +27,7 @@ import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 
 /**
  * Maps the content tree onto the console's navigation shapes (SH120).
@@ -48,11 +52,20 @@ public class ShConsoleNavigationMapper {
     private final ShCdaMapper cdaMapper;
     /** SH1026 — the image each card of a page shows, read for the page at once. */
     private final ShConsoleThumbnails thumbnails;
+    /** SH1272 — the live rows behind a page of drafts, read for the page at once. */
+    private final ShPostUnifiedRepository posts;
 
-    public ShConsoleNavigationMapper(ShCdaMapper cdaMapper, ShConsoleThumbnails thumbnails) {
+    public ShConsoleNavigationMapper(ShCdaMapper cdaMapper, ShConsoleThumbnails thumbnails,
+                                     ShPostUnifiedRepository posts) {
         this.cdaMapper = cdaMapper;
         this.thumbnails = thumbnails;
+        this.posts = posts;
     }
+
+    /** {@code publishStatus} on a listing row: what a curator needs to know about the page (SH1272). */
+    public static final String LIVE = "PUBLISHED";
+    public static final String CHANGED = "CHANGED";
+    public static final String UNPUBLISHED = "DRAFT";
 
     /**
      * A folder's children: its child folders, one page of posts, and the paging the CDA
@@ -69,8 +82,10 @@ public class ShConsoleNavigationMapper {
                                     List<ShPostUnified> posts, int page, int size,
                                     long totalPosts, long totalFolders) {
         Map<String, String> images = posts.isEmpty() ? Map.of() : thumbnails.of(posts);
+        Map<String, ShPostUnified> live = liveRows(posts);
         return new ShConsoleListing(folderId, folders.stream().map(this::folderRow).toList(),
-                posts.stream().map(post -> postRow(post, images.get(post.getId()))).toList(), page, size,
+                posts.stream().map(post -> postRow(post, images.get(post.getId()),
+                        live.get(post.getId()))).toList(), page, size,
                 totalPosts, totalFolders);
     }
 
@@ -88,13 +103,46 @@ public class ShConsoleNavigationMapper {
                 folder.getDate(), folder.getPosition());
     }
 
-    private ShConsolePostRow postRow(ShPostUnified post, String thumbnail) {
+    /**
+     * SH1272 — the PUBLISHED row of every draft on the page, in one query.
+     *
+     * <p>The listing prefers the DRAFT row, so the console shows the latest editable state, and
+     * publishing never touches that row: it writes a second, PUBLISHED one beside it. So the draft's
+     * own {@code published}/{@code publishStatus} columns said "draft" about every page that had ever
+     * been published, whoever published it, and a curator opening a site an agent had just applied
+     * saw every page as unpublished while {@code /agent/read} and {@code /sites/**} served it.</p>
+     */
+    private Map<String, ShPostUnified> liveRows(List<ShPostUnified> rows) {
+        List<String> drafts = rows.stream().filter(post -> post.getState() == ShPostState.DRAFT)
+                .map(ShPostUnified::getId).toList();
+        return drafts.isEmpty() ? Map.of() : posts.findByIdInAndState(drafts, ShPostState.PUBLISHED)
+                .stream().collect(Collectors.toMap(ShPostUnified::getId, Function.identity(),
+                        (first, second) -> first));
+    }
+
+    /**
+     * The one rule for "is this published" (SH1272): a live row exists. And it has changes waiting
+     * when the draft beside it holds different data, which is the same comparison a publish makes
+     * when it names what it changed.
+     */
+    static String statusOf(ShPostUnified post, ShPostUnified live) {
+        if (post.getState() == ShPostState.PUBLISHED) {
+            return LIVE;
+        }
+        if (live == null) {
+            return UNPUBLISHED;
+        }
+        return Objects.equals(post.getData(), live.getData()) ? LIVE : CHANGED;
+    }
+
+    private ShConsolePostRow postRow(ShPostUnified post, String thumbnail, ShPostUnified live) {
         var shared = cdaMapper.toSummary(post);
+        String status = statusOf(post, live);
         return new ShConsolePostRow(shared.id(), shared.title(), shared.summary(), shared.furl(),
                 shared.postType(), shared.locale(), shared.date(), shared.modifiedDate(),
                 post.getShPostType() != null ? post.getShPostType().getTitle() : null,
-                post.isPublished() || post.getState() == ShPostState.PUBLISHED,
-                post.getPublishStatus(),
+                !UNPUBLISHED.equals(status),
+                status,
                 post.getState() != null ? post.getState().name() : null,
                 thumbnail);
     }
