@@ -283,26 +283,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.42 XI.42 What a stylesheet loads is used (SH1268)
-
-Found applying the Quilhara package (SH1254) to a clean instance after SH1263: three
-warnings remained, `asset-unused` for `fraunces-600.woff2`, `inter-400.woff2` and
-`inter-600.woff2`. The theme loads all three through `@font-face { src:
-url("/fonts/...") }`, every rendered page fetches them (checked in a browser: all three
-loaded), and the fix the finding offers is `shio assets prune`, which would delete them.
-
-The reference index (SH1034) is fed only by File and Content Select fields, so a
-reference from CSS, from an inline `style`, or from a `src` a layout writes as a site
-path never counts. The spec's own direction (SH1250) is fonts self-hosted in the
-package, so every site built that way inherits the false finding.
-
-The page check already walks every reference a rendered page makes
-(`ShPreviewLinks.referencesIn`, which reads `url()` in `<style>` too) and resolves each
-to a site asset. The fix is to let `unusedAssets` consult that set when the page check
-runs: an asset a rendered page asks for is used. When the page check did not run, the
-rule keeps its current reading and says so in its note. The assertion is a theme with a
-self-hosted font that no longer reports it.
-
 ### XI.43 XI.43 A switcher says the language (SH1270)
 
 Found in the Quilhara package (SH1254), checked in a browser. `{{#translations}}` gives
@@ -513,6 +493,30 @@ refuses a post whose locale differs or redirects to the post's own locale prefix
 redirect is the kinder choice for a link already in the wild, and it matches how a moved
 page is handled. Assert both at the delivery boundary: the rendered href carries the
 row's locale, and the mismatched URL does not answer 200 with content.
+
+### XI.52 XI.52 One meaning of used across verify, prune and the media library (SH1280)
+
+Found shipping SH1268. `verify` now withdraws `asset-unused` for an asset a rendered
+page loads, but the other two surfaces that answer "is this used" still read only the
+reference index (SH1034), which File and Content Select fields feed. `shio assets prune`
+filters the media listing on `usageCount === 0`, and that count is what the console's
+media library and `shio_assets usage` show too. On Quilhara all three self-hosted fonts
+are listed as reclaimable, with the instruction to delete them, while every page fetches
+them. So two surfaces now disagree about one fact, which `cli/src/commands/assets.mjs`
+itself names as the failure to avoid.
+
+What to build: one meaning of "used" across the three. The cheap, honest form is a
+second count beside `usageCount`, `loadedBy` (pages whose rendered output requests the
+asset), computed the way SH1268 computes it, by walking rendered pages through
+`ShPreviewLinks.referencesIn` and resolving each reference with
+`ShSiteAssets.findInSite`. That is one render per page, so it is computed on request
+(`usage=true` on the listing, the prune command) and never on a plain listing. Prune
+then counts an asset as reclaimable only when both counts are zero, and says it rendered
+N pages to know.
+
+Assert on the Quilhara package: after apply, `shio assets prune --dry-run` lists none of
+the three fonts, and the media listing with usage reports each font as loaded by every
+page.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

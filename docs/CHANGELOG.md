@@ -385,6 +385,7 @@
 - **SH1256 (tour and search)** — Quilhara carries /tour, eight topic pages and /search in en and pt, each tour page ending in a BuildNote naming its console route, MCP call, CLI line and CDA request; showcase debt is down to contentAcl.
 - **SH1266** — verify's page check reports page-image-empty, an error naming the alt, when a rendered img, source or video poster has an empty source; a lazy data-src or a usable srcset stays silent (design §XI.37 recorded in `docs/agents/agent-surface.md`).
 - **SH1267** — Menu rows carry current and ancestor, so a layout writes aria-current="page"; landing, marketing-site and Quilhara now mark the page a visitor is on (design §XI.40 recorded in `docs/agents/renderer.md`).
+- **SH1268** — verify withdraws asset-unused for any asset a rendered page loads when the page check runs, so Quilhara's self-hosted fonts are no longer reported; a content-only run says it did not count them (design §XI.42 recorded in `docs/agents/agent-surface.md`).
 
 ## Block M — Token economy, measured (SH74)
 

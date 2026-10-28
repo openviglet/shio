@@ -154,6 +154,9 @@ class ShBlueprintAccessibilityTest {
                 showcaseApplyTokens = com.viglet.shio.api.agent.ShTokenBudget.estimate(
                         new ObjectMapper().writeValueAsString(applied));
             }
+            if (SHOWCASE.equals(name)) {
+                assertFontsAreUsed(site);
+            }
             ShAgentReport report = verifyService.verify(site, "a11y", 200);
             System.out.printf("SH1121:   %s — %d page(s) checked, %d finding(s)%n",
                     name, report.checked(), report.findings().size());
@@ -186,6 +189,29 @@ class ShBlueprintAccessibilityTest {
                         + "grew is a cost every agent that applies it pays, so raise the number with "
                         + "the reason beside it in token-budgets.properties")
                 .isBetween(1, ceiling);
+    }
+
+    /**
+     * SH1268 — the showcase self-hosts its fonts through the theme's {@code @font-face}, which no
+     * File field names, and every page loads them. With the page check run they are used; without
+     * it the rule falls back to the reference index, and the report says that is what it did.
+     */
+    private void assertFontsAreUsed(String site) {
+        ShAgentReport withPages = verifyService.verify(site, "content,page", 200);
+        assertThat(withPages.findings())
+                .as("SH1268: a font every page loads was reported unused, and the fix offered was "
+                        + "to delete it")
+                .noneMatch(finding -> "asset-unused".equals(finding.rule())
+                        && finding.message().contains(".woff2"));
+
+        ShAgentReport contentOnly = verifyService.verify(site, "content", 200);
+        assertThat(contentOnly.findings())
+                .as("SH1268: without the page check the index is all there is, so the fonts read "
+                        + "as unused there; this is what the note below has to explain")
+                .anyMatch(finding -> "asset-unused".equals(finding.rule()));
+        assertThat(contentOnly.notes())
+                .as("SH1268: a content-only run says the page check did not count loaded assets")
+                .anyMatch(note -> note.contains("checks=page"));
     }
 
     private static java.util.Properties budgets() {

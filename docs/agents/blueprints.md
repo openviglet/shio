@@ -1088,7 +1088,7 @@ start the jar with `--shio.blueprint.path=<repo>/marketplace`, apply with `creat
 
 **What building it found**, each a task rather than a workaround in the package: SH1263, SH1264,
 SH1265 (shipped before it), and SH1266 to SH1275 open in Block J. Three warnings remain on an applied
-site, `asset-unused` for the fonts, which is SH1268.
+site, `asset-unused` for the fonts, which SH1268 withdrew whenever the `page` check runs.
 
 **What keeps it current (SH1255).** `cli/test/showcase-coverage.test.mjs` reads the subjects from
 the product (manifest `features`, MCP tools) and the curator surfaces from SH1250's matrix, then

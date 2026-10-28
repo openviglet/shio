@@ -3840,6 +3840,15 @@ computed, deleting nothing) before it mentions a `post.delete`.
 **One row per logical asset.** A draft and a published row of one upload are one file on disk;
 reporting both would say "two unused assets" about one.
 
+**What a rendered page loads is used (SH1268).** The index is fed by File and Content Select
+fields, so a theme's `@font-face`, a CSS background or a `src` a layout writes as a site path never
+counted, and a site that self-hosts its fonts was told to delete files every page fetches. When
+the `page` check runs in the same call, every reference it resolves to a site asset is recorded and
+`asset-unused` is withdrawn for those ids, so `checks=content,page` (and the default set) answers
+correctly. A `content`-only run still reads the index alone and adds a note saying so, rather than
+rendering pages it was not asked to. `shio assets prune` and the media library's `usageCount` still
+read the index only; that disagreement is SH1280.
+
 ## Describing an asset, and asking where it is used (SH1032)
 
 Two capabilities lived on `/api/v2/staticfile/**` alone, the metadata a curator types into the

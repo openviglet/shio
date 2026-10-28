@@ -464,7 +464,16 @@ public class ShAgentVerifyService {
         // SH516 — after routes, because it asks the strictly larger question about the same site:
         // routes reads the content graph, this reads the page that graph produces.
         if (requested.contains(ShAgentCheck.PAGE)) {
-            pages(scan, findings, notes, declared);
+            Set<String> loaded = new HashSet<>();
+            pages(scan, findings, notes, declared, loaded);
+            // SH1268 — an asset a rendered page loads is used, whatever field does or does not
+            // name it: a theme's @font-face is the common case, and the index cannot see CSS.
+            findings.removeIf(finding -> "asset-unused".equals(finding.rule())
+                    && loaded.contains(finding.address().substring("id:".length())));
+        } else if (findings.stream().anyMatch(finding -> "asset-unused".equals(finding.rule()))) {
+            notes.add("asset-unused counted File and Content Select references only; the page "
+                    + "check did not run, so an asset a theme or layout loads (a font, a CSS "
+                    + "background) may be reported here. Add checks=page to count what pages load.");
         }
         // SH1055 — over the same pages the check above renders. Its own group rather than a rule
         // inside `page`, because a team running a publish gate asks for accessibility by name and
@@ -2668,7 +2677,7 @@ public class ShAgentVerifyService {
      * a clean pass, because a check that reports nothing has to say what it read.</p>
      */
     private void pages(Scan scan, List<Finding> findings, List<String> notes,
-                       ShFrontEndRoutes declared) {
+                       ShFrontEndRoutes declared, Set<String> loaded) {
         String check = ShAgentCheck.PAGE.wireName();
         // `site.postTypeLayout` names the types that are *pages* — the renderer's own definition,
         // read rather than guessed. Without it the subjects would include every `File` post (which
@@ -2685,7 +2694,7 @@ public class ShAgentVerifyService {
                 : subjects;
         int references = 0;
         for (ShPostUnified post : read) {
-            references += onePage(check, post, scan, findings, declared);
+            references += onePage(check, post, scan, findings, declared, loaded);
         }
         if (subjects.size() > read.size()) {
             notes.add("The page check read " + read.size() + " of " + subjects.size()
@@ -2763,7 +2772,7 @@ public class ShAgentVerifyService {
 
     /** One page: rendered, walked, and every reference of it resolved. Returns how many. */
     private int onePage(String check, ShPostUnified post, Scan scan, List<Finding> findings,
-                        ShFrontEndRoutes declared) {
+                        ShFrontEndRoutes declared, Set<String> loaded) {
         ShSite site = post.getShSite();
         String address = address(post);
         String url = ShAddress.normalizePath(post.getFurl());
@@ -2808,7 +2817,7 @@ public class ShAgentVerifyService {
                 continue;
             }
             references += 1;
-            brokenReference(check, address, reference, site, published, declared)
+            brokenReference(check, address, reference, site, published, declared, loaded)
                     .ifPresent(findings::add);
         }
         return references;
@@ -2817,10 +2826,12 @@ public class ShAgentVerifyService {
     /** The finding for one reference, or nothing when this instance would serve it. */
     private Optional<Finding> brokenReference(String check, String address,
                                               ShPreviewLinks.Reference reference, ShSite site,
-                                              Set<String> published, ShFrontEndRoutes declared) {
+                                              Set<String> published, ShFrontEndRoutes declared,
+                                              Set<String> loaded) {
         String path = pathOnly(reference.path());
-        boolean asset = siteAssets.findInSite(site.getId(), path, ShPostState.PUBLISHED).isPresent();
-        if (asset) {
+        Optional<ShPostUnified> asset = siteAssets.findInSite(site.getId(), path, ShPostState.PUBLISHED);
+        if (asset.isPresent()) {
+            loaded.add(asset.get().getId());
             return Optional.empty();
         }
         if (reference.asset()) {
