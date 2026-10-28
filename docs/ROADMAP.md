@@ -13,7 +13,7 @@
 
 - ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1256** (deps: SH1255 ✅, SH1277) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — The /members page for contentAcl is still owed: a package cannot declare who reads a folder until SH1277 lands. → §XI.35
-- 📋 **SH1257** (deps: SH1254 ✅) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo only sells Shio if a first boot can reach it; decide between enabling the published catalogue by default and a narrower showcase entry, with the trust cost stated. → §XI.36
+- ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
 - 📋 **SH1266** (deps: —) **verify's page check passes a rendered img whose src is empty, so a page showing no images reports no finding** — SH1265 put src="" on every card of a site and verify stayed green, because it reads stored values and skips an empty reference. → §XI.37
 - 📋 **SH1267** (deps: —) **A menu row does not say whether it is the page being rendered, so a layout cannot mark the current item** — Every Shio site's navigation lacks aria-current and a visible current state, which screen readers and visitors both use. → §XI.40
 - 📋 **SH1268** (deps: —) **asset-unused reports fonts and images a theme's CSS references, because only File and Content Select fields count** — A site that self-hosts its fonts gets an unused warning per font and is told to delete files every page loads. → §XI.42
@@ -46,6 +46,13 @@
 - **The showcase debt list is empty** cli/test/showcase-coverage.test.mjs holds DEBT and
   PAGES_OWED with no entries, which means /members exists in en and pt, and verify plus
   the a11y check pass on it.
+
+## Done when — SH1257
+
+- **A fresh instance lists the showcase in its marketplace** On a new store with no
+  marketplace properties set, the admin marketplace, shio marketplace list and
+  shio_marketplace all name quilhara, and the chosen trust cost is stated in
+  docs/agents/blueprints.md.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -275,7 +275,7 @@ packages and no showcase, which is the opposite of what the showcase is for.
 
 Two candidate answers, and the task is to pick one with its cost written down:
 
-- **Enable the published catalogue by default**, pointing at `shio.viglet.org/marketplace/marketplace.json`. Simple, and it matches what an evaluator expects. Cost: a fresh instance makes an outbound request to a Viglet host on the marketplace read, and an install writes a downloaded package, which SH96 refused to do without an operator's decision. Air-gapped and multi-tenant operators then have to turn it off.
+- **Enable the published catalogue by default**, pointing at `shio.viglet.org/marketplace/marketplace.json`. One property flip: `ShMarketplaceProperties.DEFAULT_URL` already names it. Cost: a fresh instance makes an outbound request to a Viglet host on the marketplace read, and an install writes a downloaded package, which SH96 refused to do without an operator's decision. Air-gapped and multi-tenant operators then have to turn it off.
 - **Keep the catalogue off, and list the showcase as a known entry** the instance can install from a fixed, versioned URL, with the console saying where it comes from before the download. Narrower trust widening, more code.
 
 Either way `shio.blueprint.path` needs a usable default for the install to work at all
