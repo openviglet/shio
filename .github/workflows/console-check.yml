@@ -65,16 +65,18 @@ jobs:
       - name: Install Chromium for Playwright
         run: pnpm -C shio-react exec playwright install --with-deps chromium
 
+      # SH1259 — boot with the password and wait for it to authenticate; see suites.yml. The
+      # setup POST in provision.mjs then answers "already set", which it treats as success.
       - name: Boot the app
         run: |
-          nohup java -jar shio-app/target/viglet-shio.jar > "$RUNNER_TEMP/shio.log" 2>&1 &
+          SHIO_ADMIN_PASSWORD="$SHIO_PASSWORD" nohup java -jar shio-app/target/viglet-shio.jar > "$RUNNER_TEMP/shio.log" 2>&1 &
           for i in $(seq 1 90); do
-            if curl -sf -o /dev/null "http://localhost:2710/api/v2/setup"; then
-              echo "up after ${i}s"; exit 0
+            if curl -sf -o /dev/null -u "$SHIO_USER:$SHIO_PASSWORD" "http://localhost:2710/api/v2/agent/manifest"; then
+              echo "up and authenticating after ${i}s"; exit 0
             fi
             sleep 1
           done
-          echo "the app did not come up"; tail -100 "$RUNNER_TEMP/shio.log"; exit 1
+          echo "the app did not come up with a working admin login"; tail -100 "$RUNNER_TEMP/shio.log"; exit 1
 
       # A clean instance has no admin password and no site; neither is a console defect.
       - name: Provision a site to walk

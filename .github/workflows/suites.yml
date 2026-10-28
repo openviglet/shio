@@ -267,26 +267,21 @@ jobs:
       - name: Build the app
         run: ./mvnw -B -DskipTests package
 
+      # SH1259 — ready means the credentials work, not that the port answers. ShOnStartup is an
+      # ApplicationRunner, so the app serves requests before it has seeded `admin`; a POST to
+      # /api/v2/setup in that window answered 403 (no admin row reads as "setup done"), the
+      # password was never set, and every conformance call was a 401. The password now comes from
+      # SHIO_ADMIN_PASSWORD (SH706's bootstrap), and the wait is an authenticated read.
       - name: Boot the app
         run: |
-          nohup java -jar shio-app/target/viglet-shio.jar > "$RUNNER_TEMP/shio.log" 2>&1 &
+          SHIO_ADMIN_PASSWORD="$SHIO_PASSWORD" nohup java -jar shio-app/target/viglet-shio.jar > "$RUNNER_TEMP/shio.log" 2>&1 &
           for i in $(seq 1 120); do
-            if curl -sf -o /dev/null "http://localhost:2710/api/v2/setup"; then
-              echo "up after ${i}s"; exit 0
+            if curl -sf -o /dev/null -u "$SHIO_USER:$SHIO_PASSWORD" "http://localhost:2710/api/v2/agent/manifest"; then
+              echo "up and authenticating after ${i}s"; exit 0
             fi
             sleep 1
           done
-          echo "the app did not come up"; tail -100 "$RUNNER_TEMP/shio.log"; exit 1
-
-      # A clean instance creates admin with no password; first-access setup sets it. 403 means a
-      # password is already set, which is the state this step wants to reach either way.
-      - name: Set the admin password
-        run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
-            -H 'Content-Type: application/json' \
-            -d "{\"password\":\"$SHIO_PASSWORD\"}" \
-            http://localhost:2710/api/v2/setup)
-          case "$code" in 200|201|204|403) echo "setup → $code";; *) echo "setup → $code"; exit 1;; esac
+          echo "the app did not come up with a working admin login"; tail -100 "$RUNNER_TEMP/shio.log"; exit 1
 
       - run: pnpm conformance
         env:

@@ -387,3 +387,24 @@ test("SH1126: CI builds the console and refuses to be told nothing about its siz
   assert.ok(suites.indexOf("run: pnpm run build:console") < suites.indexOf('SHIO_REQUIRE_CONSOLE_BUILD: "1"'),
     "SH1126: the console is built AFTER the run that requires it, so the suite ran against no build");
 });
+
+test("SH1259: a job that boots the jar waits for its own login, not for an open port", () => {
+  // The run that found it: setup's POST landed before ShOnStartup seeded `admin`, answered 403
+  // (no row reads as "setup done"), the step accepted 403, and every conformance call was a 401.
+  const booting = readdirSync(WORKFLOWS).filter((name) => /viglet-shio\.jar/.test(read(name)));
+  assert.ok(booting.length >= 2,
+    `SH1259: expected the conformance and console-check jobs to boot the jar, found ${booting.join(", ") || "none"}`);
+
+  for (const name of booting) {
+    const boots = runBlocks(read(name)).filter((script) => /java -jar .*viglet-shio\.jar/.test(script));
+    assert.ok(boots.length, `SH1259: ${name} names the jar and no step runs it`);
+    for (const script of boots) {
+      assert.match(script, /SHIO_ADMIN_PASSWORD="?\$SHIO_PASSWORD"? .*java -jar/,
+        `SH1259: ${name} boots the jar without SHIO_ADMIN_PASSWORD, so the password depends on `
+          + "winning a race against the first-access seed");
+      assert.match(script, /curl [^\n]*-u "\$SHIO_USER:\$SHIO_PASSWORD"/,
+        `SH1259: ${name} calls the instance ready before its credentials authenticate — an open `
+          + "port is not a usable instance");
+    }
+  }
+});
