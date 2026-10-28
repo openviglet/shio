@@ -30,8 +30,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.sun.net.httpserver.HttpServer;
+import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.blueprint.ShBlueprintProperties;
 import com.viglet.shio.blueprint.ShBlueprintRegistry;
+
+import tools.jackson.databind.node.JsonNodeFactory;
 
 /**
  * SH675 — an install leaves a package the registry loads, or it leaves nothing.
@@ -64,6 +67,9 @@ class ShMarketplaceInstallerTest {
 
     @Autowired
     private ShMarketplaceCatalog catalog;
+
+    @Autowired
+    private ShMarketplaceSetup setup;
 
     @TempDir
     private Path packages;
@@ -302,6 +308,49 @@ class ShMarketplaceInstallerTest {
         assertThatThrownBy(() -> installer.install(firstParty, false))
                 .isInstanceOfAny(ShMarketplaceInstaller.NothingToDownloadException.class,
                         ShMarketplaceInstaller.AlreadyInstalledException.class);
+    }
+
+    @Test
+    @DisplayName("SH1251: a dry run plans the apply of a package not yet installed, and leaves nothing")
+    void aSetupDryRunPlansTheApplyOfAPackageNotYetInstalled() throws IOException {
+        publish("shio-blueprint-newsroom", zipOf("shio-blueprint-newsroom/",
+                pkg("shio-blueprint-newsroom", "2.0.0")));
+
+        ShMarketplaceSetup.Result planned = setup.run("shio-blueprint-newsroom",
+                new ShMarketplaceSetup.Request("SH1251 Newsroom", JsonNodeFactory.instance.objectNode(),
+                        true, false, true), "admin");
+
+        assertThat(planned.install()).isNotNull();
+        assertThat(planned.install().installed()).isFalse();
+        assertThat(planned.apply().dryRun()).isTrue();
+        assertThat(planned.apply().blueprint()).isEqualTo("shio-blueprint-newsroom");
+        assertThat(planned.apply().content().changed())
+                .as("SH1251: the plan is the staged package's, so it already names the folder the "
+                        + "package creates; a plan that waited for the install would make the curator "
+                        + "write a package to see what it does")
+                .isPositive();
+        assertThat(Files.exists(packages.resolve("shio-blueprint-newsroom")))
+                .as("SH1251: P7 — the dry run downloaded the package to plan it and kept nothing")
+                .isFalse();
+        assertThat(registry.names()).doesNotContain("shio-blueprint-newsroom");
+    }
+
+    @Test
+    @DisplayName("SH1251: an apply that refuses after the install keeps the installed package")
+    void aSetupWhoseApplyRefusesKeepsThePackage() throws IOException {
+        publish("shio-blueprint-newsroom", zipOf("shio-blueprint-newsroom/",
+                pkg("shio-blueprint-newsroom", "2.0.0")));
+
+        assertThatThrownBy(() -> setup.run("shio-blueprint-newsroom",
+                new ShMarketplaceSetup.Request("SH1251 No Such Site", JsonNodeFactory.instance.objectNode(),
+                        false, false, false), "admin"))
+                .as("an unknown site without createSite is the apply's refusal, as it always was")
+                .isInstanceOf(ShTeachingException.class);
+
+        assertThat(registry.names())
+                .as("SH1251: the package is valid and installed, and the refusal was about the apply; "
+                        + "rolling the install back would make the next attempt download it again")
+                .contains("shio-blueprint-newsroom");
     }
 
     // --- fixtures ---

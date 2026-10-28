@@ -408,6 +408,19 @@ public class ShBlueprintRegistry {
         return manifests;
     }
 
+    /**
+     * SH1251 — a package read from a directory, held to every rule a load holds it to, and
+     * <b>not</b> registered.
+     *
+     * <p>For planning an apply of a package that has been downloaded but not installed: the plan
+     * has to come from the same parsed and validated package the install would register, or the
+     * dry run would describe a different package from the one confirm installs.</p>
+     */
+    public ShBlueprint readStaged(Path directory) {
+        return read(new FileSystemResource(directory.resolve(ShBlueprintManifest.FILE_NAME)),
+                directory.toString());
+    }
+
     /** Reads and validates one package, given its manifest resource. */
     private ShBlueprint read(Resource manifestResource, String origin) {
         String base = baseUri(manifestResource);

@@ -16,6 +16,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.Locale;
@@ -140,6 +141,38 @@ public class ShMarketplaceInstaller {
             // SH756 — the class and the reason, not just the message. A FileSystemException's
             // message IS the two paths, so this line used to answer "src -> dst" and nothing
             // else, and a move that found the target taken read exactly like one that lost a race.
+            throw new InstallFailedException(item.id(), ShIoFailure.describe(failed));
+        } finally {
+            deleteQuietly(staging);
+        }
+    }
+
+    /**
+     * SH1251 — download and validate a package exactly as a dry-run install does, then hand the
+     * unpacked directory to {@code use} before it is deleted.
+     *
+     * <p>What lets the console's dry run show the apply plan of a package that is not installed:
+     * the plan is read from these bytes, the ones a confirm would install, and nothing is left on
+     * disk afterwards. {@code use} receives the dry-run {@link Installed} too, so the caller reports
+     * the install half without downloading the package a second time.</p>
+     */
+    public <T> T staged(String id, BiFunction<Path, Installed, T> use) {
+        ShMarketplaceItem item = require(id);
+        Path root = blueprintDirectory();
+        if (item.builtIn() || item.downloadUrl() == null || item.downloadUrl().isBlank()) {
+            throw new NothingToDownloadException(item.id(), item.builtIn());
+        }
+        if (registry.names().contains(item.id())) {
+            throw new AlreadyInstalledException(item.id());
+        }
+        Path staging = null;
+        try {
+            staging = Files.createTempDirectory("shio-marketplace-");
+            Path unpacked = expand(item, staging);
+            ShBlueprintManifest manifest = manifestOf(unpacked, item);
+            return use.apply(unpacked, new Installed(item.id(), manifest.version(), root.toString(),
+                    false, registry.names().size()));
+        } catch (IOException failed) {
             throw new InstallFailedException(item.id(), ShIoFailure.describe(failed));
         } finally {
             deleteQuietly(staging);

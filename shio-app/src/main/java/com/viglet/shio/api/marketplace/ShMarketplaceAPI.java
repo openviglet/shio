@@ -8,18 +8,22 @@
  */
 package com.viglet.shio.api.marketplace;
 
+import java.security.Principal;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.marketplace.ShMarketplaceCatalog;
 import com.viglet.shio.marketplace.ShMarketplaceInstaller;
+import com.viglet.shio.marketplace.ShMarketplaceSetup;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -58,10 +62,13 @@ public class ShMarketplaceAPI {
 
     private final ShMarketplaceCatalog catalog;
     private final ShMarketplaceInstaller installer;
+    private final ShMarketplaceSetup setup;
 
-    public ShMarketplaceAPI(ShMarketplaceCatalog catalog, ShMarketplaceInstaller installer) {
+    public ShMarketplaceAPI(ShMarketplaceCatalog catalog, ShMarketplaceInstaller installer,
+                            ShMarketplaceSetup setup) {
         this.catalog = catalog;
         this.installer = installer;
+        this.setup = setup;
     }
 
     /**
@@ -110,6 +117,21 @@ public class ShMarketplaceAPI {
             @RequestParam(name = "dryRun", required = false, defaultValue = "false")
             boolean dryRun) {
         return installer.install(id, dryRun);
+    }
+
+    /**
+     * SH1251 — install if needed, then apply to a site: the console dialog's one call.
+     *
+     * <p>{@code dryRun=true} in the body plans both halves and writes nothing, including the apply
+     * plan of a package not yet installed, which is read from the download and then discarded. A
+     * real run installs first and keeps the package if the apply then refuses.</p>
+     */
+    @PostMapping("/{id}/setup")
+    @Operation(summary = "Install a package if needed and apply it to a site; dryRun plans both")
+    public ShMarketplaceSetup.Result setup(@PathVariable String id,
+                                           @RequestBody ShMarketplaceSetup.Request request,
+                                           Principal principal) {
+        return setup.run(id, request, principal == null ? null : principal.getName());
     }
 
     /**

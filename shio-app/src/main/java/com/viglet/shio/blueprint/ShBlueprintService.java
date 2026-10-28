@@ -107,9 +107,26 @@ public class ShBlueprintService {
         return run(name, site, params, actor, false, options);
     }
 
+    /**
+     * SH1251 — what applying a package the registry does not hold yet would do.
+     *
+     * <p>For the marketplace's dry run before an install: the package was downloaded and read by
+     * {@link ShBlueprintRegistry#readStaged}, and the plan is computed from that same object, so the
+     * plan describes the package the confirm will install. Plan only; an apply always goes through
+     * the registry, because a package that is not registered is not one this instance carries.</p>
+     */
+    public ShBlueprintApplied plan(ShBlueprint staged, String site, JsonNode params, String actor,
+                                   ShBlueprintWriteService.Options options) {
+        return run(staged, site, params, actor, true, options);
+    }
+
     private ShBlueprintApplied run(String name, String site, JsonNode params, String actor,
                                    boolean dryRun, ShBlueprintWriteService.Options options) {
-        ShBlueprint blueprint = shBlueprintRegistry.require(name);
+        return run(shBlueprintRegistry.require(name), site, params, actor, dryRun, options);
+    }
+
+    private ShBlueprintApplied run(ShBlueprint blueprint, String site, JsonNode params, String actor,
+                                   boolean dryRun, ShBlueprintWriteService.Options options) {
         if (site == null || site.isBlank()) {
             throw new MissingSiteException(blueprint.name(), readableSites());
         }

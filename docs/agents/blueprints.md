@@ -805,11 +805,18 @@ It reads the catalogue first, because the install half is not always there: a bu
 an installed one have nothing to download, and the server answers 409 to both. Calling it anyway
 and swallowing the 409 would hide a real conflict behind an expected one.
 
-**A dry run cannot plan the apply of a package that is not installed yet.** The apply plan is the
-server's, computed from the package, and the server has not downloaded it. The CLI plans the install
-and says why there is no apply plan rather than printing an empty one. The console dialog that is
-this task's remaining half needs both plans together, so it needs a server route that plans an apply
-from a staged download; that route is the first thing the console half builds.
+**The CLI's dry run cannot plan the apply of a package that is not installed yet**: it composes
+the two existing calls, and the apply call plans from the registry. It plans the install and says
+why there is no apply plan rather than printing an empty one.
+
+**`POST /api/v2/marketplace/{id}/setup` can**, and it is what the console dialog calls.
+`ShMarketplaceSetup` installs if needed and then applies, or, with `dryRun`, plans both: for a
+package not yet installed, `ShMarketplaceInstaller.staged` downloads and validates it into a temp
+directory, `ShBlueprintRegistry.readStaged` reads it under every rule a load applies, and
+`ShBlueprintService.plan(ShBlueprint, ...)` plans from that object. So the plan describes the bytes
+the confirm will install, and nothing is left on disk. An apply always goes through the registry:
+a package that is not registered is not one this instance carries. Admin-gated, as every
+marketplace write is (SH682).
 
 ## The published catalogue, and why the six are republished under a prefix (SH676)
 
