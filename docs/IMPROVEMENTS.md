@@ -1258,33 +1258,6 @@ translates, reached through the assistant, and every result lands as a reviewabl
 
 ## LXXV The areas this round did not reach
 
-### LXXV.4 Ship the AppCDS and SerialGC levers the native spike measured (SH1260)
-
-SH1249 measured the shipped image against two cheap JVM levers, three cold runs each on
-a fresh store (docs/specs/SH1249-graalvm-native-spike.md). The shipped `-Xms512m
--Xmx512m` on G1 reached the first 200 from /mcp in 19.3 s at 999 MB idle RSS.
-`-XX:+UseSerialGC -Xms64m -Xmx512m` gave 17.0 s and 707 MB. Adding an AppCDS archive
-trained on one context refresh (`-Dspring.context.exit=onRefresh`,
-`-XX:ArchiveClassesAtExit`) gave 13.7 s and 726 MB. p95 under the replay was 99 to 119
-ms across all three, so none of it costs latency.
-
-Build: in the shipped `Dockerfile`, extract the jar with `java -Djarmode=tools -jar
-app.jar extract`, run the training refresh in the image build, delete the store it
-leaves behind, and start from the extracted jar with `-XX:SharedArchiveFile`.
-`scripts/native-spike/Dockerfile.jvm` already does exactly this and is the reference.
-Then change `JAVA_OPTS` to the SerialGC flags. The training run boots against an empty
-H2 store, so it needs no secret and no network.
-
-Two things to settle while there. The `Dockerfile` comment pins Java 21 because embedded
-Artemis crashes on 25, but no Artemis jar is in `viglet-shio.jar` any more, so that
-reason is stale: either restate it with whatever still holds Shio on 21 or drop it. And
-SerialGC is single-threaded, which suits a small container; a large deployment can still
-override `JAVA_OPTS`.
-
-Done when: the published image's first 200 and idle RSS, measured with
-`scripts/native-spike/measure.mjs`, match the AppCDS row of the spec's table, and the
-conformance gate is green against it.
-
 ### LXXV.5 Remove the Hazelcast and JGit dependencies nothing uses (SH1261)
 
 Found during SH1249. `shio-app/pom.xml` declares `hazelcast-all` 4.2.8 (26.9 MB) and

@@ -3,9 +3,9 @@
 # base (eclipse-temurin:21-jdk + git) is inlined here so the build is
 # self-contained and needs no externally published base image.
 #
-# Java 21 (NOT 25): embedded Artemis 2.43.0 (via Netty) crashes on Java 25 with
-# "Cannot clean arbitrary ByteBuffer instances" (CleanerJava25) while loading its
-# NIO journal, which takes down the broker and every JMS listener.
+# Java 21: the release every suite runs on. The reason this file used to give (embedded Artemis
+# crashing on Java 25) no longer applies, since no Artemis jar ships in viglet-shio.jar (SH1249).
+# A move to 25 is its own change, measured, not a side effect of this one.
 FROM eclipse-temurin:21-jdk AS build
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
@@ -35,10 +35,19 @@ LABEL org.opencontainers.image.revision=$CACHE_BUST
 RUN groupadd -r java && useradd -r -g java -u 1001 java
 WORKDIR /app
 COPY --from=build /src/shio-app/target/viglet-shio.jar app.jar
-RUN mkdir -p /app/store && chown -R java:java /app
+# SH1260 — class data sharing, trained on one context refresh against an empty store, which is
+# then deleted. Measured in SH1249's spec under docs/specs: the first 200
+# from 19.3 s to 13.7 s and idle RSS from 999 MB to 726 MB, at the same p95. The archive sits in
+# the ENTRYPOINT rather than JAVA_OPTS, so overriding the heap flags keeps it.
+RUN java -Djarmode=tools -jar app.jar extract --destination cds \
+ && java -XX:ArchiveClassesAtExit=cds/app.jsa -Dspring.context.exit=onRefresh \
+         -Dlogging.config=classpath:logback-spring-console.xml -jar cds/app.jar \
+ && rm -rf /app/store /app/app.jar && mkdir -p /app/store && chown -R java:java /app
 USER java
 VOLUME ["/app/store"]
 EXPOSE 2710
-ENV JAVA_OPTS="-Xmx512m -Xms512m"
+# SerialGC and a heap that grows from 64 MB: a single-instance container does not need G1's
+# threads or a 512 MB heap committed at start. A large deployment overrides JAVA_OPTS.
+ENV JAVA_OPTS="-XX:+UseSerialGC -Xms64m -Xmx512m"
 ENV DEBUG_OPTS=""
-ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} ${DEBUG_OPTS} -Djava.security.egd=file:/dev/./urandom -Dlogging.config=classpath:logback-spring-console.xml -jar /app/app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java -XX:SharedArchiveFile=/app/cds/app.jsa ${JAVA_OPTS} ${DEBUG_OPTS} -Djava.security.egd=file:/dev/./urandom -Dlogging.config=classpath:logback-spring-console.xml -jar /app/cds/app.jar"]

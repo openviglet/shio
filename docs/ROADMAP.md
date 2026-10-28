@@ -24,7 +24,6 @@
 
 ## Block BI — The areas this round did not reach
 
-- 📋 **SH1260** (deps: —) **The shipped image boots in 19 s at 1 GB RSS without the JVM levers SH1249 measured** — AppCDS plus SerialGC took the first 200 to 13.7 s and idle RSS to 726 MB at the same p95, for one build step and one flag. → §LXXV.4
 - 📋 **SH1261** (deps: —) **hazelcast-all and JGit ship in viglet-shio.jar though nothing starts or imports either** — About 30 of the jar's 163 MB is dead weight with its own CVE surface, and hazelcast.xml tells a reader a cache is running when none is. → §LXXV.5
 
 ## Priority

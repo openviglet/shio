@@ -2515,6 +2515,13 @@ What stays true if anyone picks it up again:
   binary is the gate. That is the precondition for a go, and nothing less.
 
 The cheaper half is a go on the JVM: AppCDS plus `-XX:+UseSerialGC -Xms64m -Xmx512m` took the
-first 200 from 19.3 s to 13.7 s and idle RSS from 999 MB to 726 MB at the same p95. The opt-in
+first 200 from 19.3 s to 13.7 s and idle RSS from 999 MB to 726 MB at the same p95. **SH1260
+shipped it** in `Dockerfile` and `Dockerfile.local`: the image build extracts the jar, trains the
+archive on one context refresh against an empty store and deletes that store, and the ENTRYPOINT
+names the archive ahead of `JAVA_OPTS`, so an operator who overrides the heap keeps CDS. Measured
+back to back on the same image: 17.3 s / 985 MB with the old flags and no archive, 13.7 s / 688 MB
+with the new ones, p95 114 ms against 111 ms; the image is 433 MB instead of 575 because the fat
+jar is no longer kept beside the extracted one. `cli/test/native-spike.test.mjs` holds both files to
+it. The opt-in
 `native-spike` Maven profile and everything else that reproduces the table live in
 `scripts/native-spike/`.

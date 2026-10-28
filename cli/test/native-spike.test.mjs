@@ -31,8 +31,22 @@ test("SH1249: the native-spike profile is opt-in, never active by default", () =
 test("SH1249: the shipped image runs the JVM jar, not a native binary", () => {
   const dockerfile = read("Dockerfile");
   assert.match(dockerfile, /^FROM eclipse-temurin:\d+-jre\b/m, "the runtime stage is a JRE image");
-  assert.match(dockerfile, /-jar \/app\/app\.jar/, "the entry point starts the jar");
+  assert.match(dockerfile, /-jar \/app\/(cds\/)?app\.jar/, "the entry point starts the jar");
   assert.doesNotMatch(dockerfile, /native-image|native-spike/, "the native build stays in scripts/native-spike/");
+});
+
+test("SH1260: both shipped images start from the class data sharing archive with SerialGC", () => {
+  for (const file of ["Dockerfile", "Dockerfile.local"]) {
+    const dockerfile = read(file);
+    assert.match(dockerfile, /-XX:ArchiveClassesAtExit=cds\/app\.jsa -Dspring\.context\.exit=onRefresh/,
+      `${file}: the archive is trained in the image build`);
+    assert.match(dockerfile, /exec java -XX:SharedArchiveFile=\/app\/cds\/app\.jsa \$\{JAVA_OPTS\}/,
+      `${file}: the archive is in the ENTRYPOINT, ahead of JAVA_OPTS, so overriding the heap keeps it`);
+    assert.match(dockerfile, /ENV JAVA_OPTS="-XX:\+UseSerialGC -Xms64m -Xmx512m"/,
+      `${file}: the SerialGC flags SH1249 measured, not the pinned 512 MB G1 heap`);
+    assert.doesNotMatch(dockerfile, /Artemis 2\.43\.0 \(via Netty\) crashes/,
+      `${file}: the old Java 21 reason is gone, because no Artemis jar ships any more`);
+  }
 });
 
 test("SH1249: the spike can still be reproduced from the files the spec names", () => {
