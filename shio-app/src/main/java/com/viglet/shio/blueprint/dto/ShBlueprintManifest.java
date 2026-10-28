@@ -79,6 +79,12 @@ import tools.jackson.databind.JsonNode;
  * @param verify        what the package promises exists once it has been applied. A
  *                      blueprint that cannot prove it worked is a liability (SH94), and
  *                      this is the proof, checked against the real instance after apply
+ * @param assets        SH1252 — binary files under the package's {@code assets/} directory,
+ *                      written into the target site as {@code File} posts on apply:
+ *                      {@code assets/images/hero.webp} becomes {@code /images/hero.webp}. Unlike
+ *                      {@code files}, these belong in the CMS, so the server writes them; the
+ *                      plan lists each one, and identical bytes already there are left alone (P5).
+ *                      Omitted from JSON when empty, so a package without any costs nothing
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -87,7 +93,8 @@ import tools.jackson.databind.JsonNode;
 public record ShBlueprintManifest(int formatVersion, String name, String title,
                                   String description, String version, JsonNode params,
                                   List<String> postTypes, List<String> content,
-                                  List<FileRef> files, Verify verify) {
+                                  List<FileRef> files, Verify verify,
+                                  @JsonInclude(Include.NON_EMPTY) List<String> assets) {
 
     /** The only format revision that exists. */
     public static final int FORMAT_VERSION = 1;
@@ -97,13 +104,26 @@ public record ShBlueprintManifest(int formatVersion, String name, String title,
 
     /** Every key the manifest may carry — anything else is a typo, and typos are 400s. */
     public static final List<String> KEYS = List.of("formatVersion", "name", "title",
-            "description", "version", "params", "postTypes", "content", "files", "verify");
+            "description", "version", "params", "postTypes", "content", "files", "verify",
+            "assets");
+
+    /** SH1252 — the directory every asset path lives under, which is also what it loses in the site. */
+    public static final String ASSETS_DIRECTORY = "assets/";
 
     public ShBlueprintManifest {
         formatVersion = formatVersion == 0 ? FORMAT_VERSION : formatVersion;
         postTypes = postTypes == null ? List.of() : List.copyOf(postTypes);
         content = content == null ? List.of() : List.copyOf(content);
         files = files == null ? List.of() : List.copyOf(files);
+        assets = assets == null ? List.of() : List.copyOf(assets);
+    }
+
+    /** The pre-SH1252 form: a package that carries no assets. */
+    public ShBlueprintManifest(int formatVersion, String name, String title, String description,
+                               String version, JsonNode params, List<String> postTypes,
+                               List<String> content, List<FileRef> files, Verify verify) {
+        this(formatVersion, name, title, description, version, params, postTypes, content, files,
+                verify, List.of());
     }
 
     /**

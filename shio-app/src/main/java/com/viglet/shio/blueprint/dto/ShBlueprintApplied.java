@@ -80,7 +80,28 @@ public record ShBlueprintApplied(boolean dryRun, String blueprint, String versio
                                  java.util.Map<String, String> params,
                                  List<PostType> postTypes, ShAgentChangeSet content,
                                  List<CarriedFile> files, Verified verify, String createdSite,
-                                 String recordedAs) {
+                                 String recordedAs,
+                                 @JsonInclude(Include.NON_EMPTY) List<AssetRow> assets) {
+
+    /** The eleven-field form: pre-SH1252, when a package carried no assets. */
+    public ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,
+                              java.util.Map<String, String> params, List<PostType> postTypes,
+                              ShAgentChangeSet content, List<CarriedFile> files, Verified verify,
+                              String createdSite, String recordedAs) {
+        this(dryRun, blueprint, version, site, params, postTypes, content, files, verify,
+                createdSite, recordedAs, List.of());
+    }
+
+    /**
+     * SH1252 — one asset the package writes into the site.
+     *
+     * @param path   its site path, which is how the package's content references it
+     * @param action {@code create}, {@code replace} when the bytes differ from what is there, or
+     *               {@code noop} when they are the same, which is every row of a converged re-apply
+     * @param bytes  its size, so a plan says what it is about to upload
+     */
+    public record AssetRow(String path, String action, long bytes) {
+    }
 
     /** The nine-field form: the site was already there, which is every pre-SH151 apply. */
     public ShBlueprintApplied(boolean dryRun, String blueprint, String version, String site,

@@ -21,10 +21,16 @@ import {
   type ShMarketplaceItem,
 } from "@/models/marketplace/marketplace.model"
 import { AlertTriangle, Download, Package, RefreshCw, Search, Trash2 } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
-import { MarketplaceSetup } from "./marketplace.setup"
+
+// SH1251's setup panel is behind `import()`: this page is imported eagerly from App.tsx, so naming
+// the panel here put its form and plan view in the bundle every console visitor downloads, and
+// SH1043's ceiling ran out of room. The panel is only ever drawn inside an opened dialog.
+const MarketplaceSetup = lazy(() =>
+  import("./marketplace.setup").then((module) => ({ default: module.MarketplaceSetup })),
+)
 
 const service = new ShMarketplaceService()
 
@@ -292,7 +298,9 @@ export default function MarketplaceListPage() {
 
               {/* SH1251 — the package's parameters as a form, a site, and the plan before the
                   write. Keyed by id so a different package starts from its own defaults. */}
-              <MarketplaceSetup key={selected.id} item={selected} onDone={load} />
+              <Suspense fallback={null}>
+                <MarketplaceSetup key={selected.id} item={selected} onDone={load} />
+              </Suspense>
 
               {readme && (
                 <pre className="max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">

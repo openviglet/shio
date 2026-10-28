@@ -1012,3 +1012,25 @@ refuses it, *two classes on one in-memory database is the shared fixture again, 
 isolation's clothes*, with an exemption only for the SH22 cross-database ITs, which are one scenario
 across files. That rule is right and this is not its exception. So `DECLARED_CONTEXTS` went 78 → 79 and
 `spring.test.context.cache.maxSize` 81 → 82 beside it, which is the deliberate act SH423 asks for.
+
+## A package carries its images (SH1252)
+
+`blueprint.json` may declare `assets`: paths under the package's `assets/` directory. Each one is
+read at load with the rest of the package, so a missing file, a path outside `assets/`, a `..`, or
+an asset at the top of `assets/` (a site's root is not a folder an upload can address) refuses the
+package by name, as a broken `postTypes` file does. `assets/images/hero.webp` lands as `hero.webp`
+in the site folder `/images`, and content references it by that path.
+
+The server writes these and the CLI does not, which is the line between `assets` and `files`:
+`files` are templates for the caller's project, `assets` are bytes that belong in the CMS (SH38).
+The folders go into the desired-state document so the content engine plans and creates them;
+`ShBlueprintAssetWriter` then uploads into them through the asset library's own `upload` and
+`replace`, after the content apply and before the verify. Each asset is `create`, `replace` (the
+bytes differ; the post keeps its id and SH1035 keeps the old bytes as a rendition) or `noop` (same
+SHA-256), so a converged re-apply writes nothing (P5). The rows ride on `ShBlueprintApplied.assets`,
+omitted when empty, and the CLI and the console's plan print them.
+
+`ShBlueprintRegistry.MAX_ASSET_BYTES` is 32 MB for a package's assets together: half the
+installer's 64 MB unpacked bound, against a showcase that plans under 8 MB. Raise it only for a
+package that measures above it, and write the number beside the constant. The bytes are
+`@JsonIgnore`, so no listing that names a package can carry its photography.

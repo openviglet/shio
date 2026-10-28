@@ -241,28 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.31 XI.31 A blueprint that carries its images (SH1252)
-
-`ShBlueprint.File` is text-only on purpose: its comment says a format that could carry a
-binary would invite packages to ship images that belong in the asset subsystem (SH38).
-That was the right refusal for front-end source. It leaves no way for a package to
-deliver the images its own content references, and a showcase without photography is not
-one: every hero, card and gallery would point at nothing, or at a host the operator
-never named.
-
-The asset subsystem is still where the images belong. What is missing is the route from
-the package to it:
-
-- a package may declare an `assets/` directory; its files are uploaded through the same write path as `shio/assets/**` in the content projection (SH38 and the sidecar format), into the target site, on apply;
-- content references them by site path, so the substitution rule stays `{{name}}` and nothing new;
-- the plan lists each asset it would write, and a re-apply of identical bytes writes nothing (P5);
-- a per-package size bound stays, raised from the installer's 64 MB only if the showcase measures above it, with the number recorded beside the constant;
-- `ShBlueprintBoundsTest` gains the rule that an asset cannot escape the site it is applied to.
-
-The marketplace zip already has room for this. The registry's load validation needs to
-accept the directory and check every referenced asset exists, as it does for `postTypes`
-and `content` today.
-
 ### XI.32 XI.32 Marketplace entries a curator can see before installing (SH1253)
 
 The console's marketplace card is a title, an id, a description and badges. The detail

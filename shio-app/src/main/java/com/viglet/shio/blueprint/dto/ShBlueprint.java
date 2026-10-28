@@ -10,6 +10,10 @@ package com.viglet.shio.blueprint.dto;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -38,12 +42,15 @@ import tools.jackson.databind.JsonNode;
  *                  to declare and therefore not a manifest key: it is a fact about *this
  *                  instance's* configuration, and a package that could name its own origin
  *                  could claim to be first-party
+ * @param assets    SH1252 — the binary files the package writes into the site on apply, with
+ *                  their bytes, read once at load like every other part of the package
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 public record ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes,
-                          List<JsonNode> content, List<File> files, String origin) {
+                          List<JsonNode> content, List<File> files, String origin,
+                          @JsonInclude(Include.NON_EMPTY) List<Asset> assets) {
 
     /** The origin of a package that shipped with the instance. */
     public static final String CLASSPATH = "classpath";
@@ -53,12 +60,41 @@ public record ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes
         content = content == null ? List.of() : List.copyOf(content);
         files = files == null ? List.of() : List.copyOf(files);
         origin = origin == null || origin.isBlank() ? CLASSPATH : origin;
+        assets = assets == null ? List.of() : List.copyOf(assets);
+    }
+
+    /** The pre-SH1252 form: a package that carries no assets. */
+    public ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes,
+                       List<JsonNode> content, List<File> files, String origin) {
+        this(manifest, postTypes, content, files, origin, List.of());
     }
 
     /** The pre-SH96 form: everything shipped with the instance. */
     public ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes,
                        List<JsonNode> content, List<File> files) {
         this(manifest, postTypes, content, files, CLASSPATH);
+    }
+
+    /**
+     * SH1252 — one binary file the package writes into the site.
+     *
+     * <p>Not a {@link File}: those are templates the CLI writes into a project, and these are
+     * bytes the server writes into the CMS, which is where an image belongs (SH38). The bytes are
+     * never serialized; a listing that carried them would put a package's photography in every
+     * response that names it.</p>
+     *
+     * @param folder the site folder path it lands in, e.g. {@code /images}
+     * @param name   the file name, e.g. {@code hero.webp}
+     * @param sha256 the digest, which is what makes a re-apply of the same bytes a no-op (P5)
+     * @param bytes  the content
+     */
+    public record Asset(String folder, String name, String sha256,
+                        @JsonIgnore byte[] bytes) {
+
+        /** Where it is addressed in the site, which is how content references it. */
+        public String path() {
+            return folder + "/" + name;
+        }
     }
 
     /** True when this package did not ship with the instance — an operator added it. */
@@ -76,7 +112,8 @@ public record ShBlueprint(ShBlueprintManifest manifest, List<JsonNode> postTypes
      * @param path project-relative destination
      * @param text the body. Text-only, deliberately: a blueprint's front-end files are
      *             source, and a format that could carry a binary would invite packages to
-     *             ship images that belong in the asset subsystem (SH38) instead
+     *             ship images that belong in the asset subsystem (SH38) instead. An image a
+     *             package needs is an {@link Asset} (SH1252), which the server writes there
      */
     public record File(String path, String text) {
     }

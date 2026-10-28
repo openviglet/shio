@@ -38,6 +38,7 @@
     "setupPostType": "Post-type {{name}}: {{action}}",
     "setupContent": "Content: {{changed}} change(s) of {{ops}} operation(s)",
     "setupMore": "and {{count}} more",
+    "setupAsset": "Image {{path}}: {{action}}",
     "setupDone": "{{site}} is ready.",
     "setupOpen": "Open the content browser",
     "setupFailed": "The package could not be applied."

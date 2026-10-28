@@ -331,6 +331,10 @@ function renderApplied(result) {
     lines.push(`    ${change.action} ${change.address}${change.detail ? ` (${change.detail})` : ""}`);
     lines.push(...broken(change).map((line) => `  ${line}`));
   }
+  // SH1252 — the images the package writes into the site; a converged re-apply is all noop.
+  for (const asset of result.assets ?? []) {
+    if (asset.action !== "noop") lines.push(`  asset ${asset.action} ${asset.path} (${asset.bytes} bytes)`);
+  }
   if (result.verify) {
     lines.push(
       `  verify: ${result.verify.ok ? "ok" : "failed"} — ${result.verify.errors} error(s), ` +

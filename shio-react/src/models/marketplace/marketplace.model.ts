@@ -84,6 +84,8 @@ export interface ShMarketplaceApplied {
   postTypes?: { name: string; action: string; missing?: string[] }[]
   content?: { ops: number; changed: number; results?: { action: string; address: string }[] }
   createdSite?: string | null
+  /** SH1252 — the images the package writes into the site. */
+  assets?: { path: string; action: string; bytes: number }[]
 }
 
 /** The install half, absent when the package was already here, and the apply or its plan. */

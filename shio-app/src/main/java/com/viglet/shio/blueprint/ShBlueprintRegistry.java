@@ -421,6 +421,50 @@ public class ShBlueprintRegistry {
                 directory.toString());
     }
 
+    /**
+     * SH1252 — the most a package's assets may weigh, together.
+     *
+     * <p>Half the installer's 64 MB unpacked bound, so a package cannot spend the whole archive on
+     * images. The showcase, the package this exists for, plans under 8 MB (SH1250's spec); raise
+     * this only for a package that measures above it, and record that number here.</p>
+     */
+    static final long MAX_ASSET_BYTES = 32L * 1024 * 1024;
+
+    /**
+     * One declared asset, read and digested. {@code assets/images/hero.webp} lands as
+     * {@code hero.webp} in the site folder {@code /images}: the directory is what keeps an asset
+     * apart from the package's own files, and a folder is required because a site's root is not a
+     * folder an upload can address.
+     */
+    private ShBlueprint.Asset asset(Resource manifest, String path, String blueprint) {
+        String prefix = ShBlueprintManifest.ASSETS_DIRECTORY;
+        String rest = path == null ? "" : path.substring(Math.min(path.length(),
+                path.startsWith(prefix) ? prefix.length() : 0));
+        int slash = rest.lastIndexOf('/');
+        if (path == null || !path.startsWith(prefix) || slash <= 0 || slash == rest.length() - 1) {
+            throw new BlueprintFormatException(blueprint, "the asset '" + path + "' must be a file "
+                    + "in a folder under " + prefix + ", e.g. " + prefix + "images/hero.webp");
+        }
+        byte[] bytes;
+        try (InputStream in = sibling(manifest, path, blueprint).getInputStream()) {
+            bytes = in.readAllBytes();
+        } catch (IOException unreadable) {
+            throw new BlueprintFormatException(blueprint, "the asset '" + path + "' could not be read: "
+                    + ShIoFailure.describe(unreadable));
+        }
+        return new ShBlueprint.Asset("/" + rest.substring(0, slash), rest.substring(slash + 1),
+                sha256(bytes), bytes);
+    }
+
+    private static String sha256(byte[] bytes) {
+        try {
+            return java.util.HexFormat.of().formatHex(
+                    java.security.MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
+    }
+
     /** Reads and validates one package, given its manifest resource. */
     private ShBlueprint read(Resource manifestResource, String origin) {
         String base = baseUri(manifestResource);
@@ -449,10 +493,29 @@ public class ShBlueprintRegistry {
                     text(sibling(manifestResource, file.source(), manifest.name()))));
         }
 
+        List<ShBlueprint.Asset> assets = new ArrayList<>();
+        Set<String> assetPaths = new LinkedHashSet<>();
+        long assetBytes = 0;
+        for (String path : manifest.assets()) {
+            ShBlueprint.Asset asset = asset(manifestResource, path, manifest.name());
+            if (!assetPaths.add(asset.path())) {
+                throw new BlueprintFormatException(manifest.name(),
+                        "declares the asset '" + path + "' twice");
+            }
+            assetBytes += asset.bytes().length;
+            if (assetBytes > MAX_ASSET_BYTES) {
+                throw new BlueprintFormatException(manifest.name(), "its assets come to more than "
+                        + MAX_ASSET_BYTES + " bytes; keep a package's images under that, or "
+                        + "deliver the rest through the asset library");
+            }
+            assets.add(asset);
+        }
+
         // Same validation whichever source it came from (SH96): a package an operator added
         // is held to the format exactly as a first-party one is, so "it loaded" means the
         // same thing about both.
-        ShBlueprint blueprint = new ShBlueprint(manifest, postTypes, content, files, origin);
+        ShBlueprint blueprint = new ShBlueprint(manifest, postTypes, content, files, origin,
+                assets);
         validatePlaceholders(blueprint);
         validatePromise(blueprint);
         return blueprint;

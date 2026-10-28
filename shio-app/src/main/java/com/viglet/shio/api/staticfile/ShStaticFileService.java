@@ -703,15 +703,27 @@ public class ShStaticFileService {
      */
     @Transactional(readOnly = true)
     public boolean fileExists(String folderId, String fileName) {
+        return findFileId(folderId, fileName).isPresent();
+    }
+
+    /**
+     * SH1252 — the id of the {@code File} post with this name in this folder, if there is one.
+     *
+     * <p>What lets a blueprint re-apply its assets idempotently: found, the bytes are compared by
+     * digest and replaced only when they differ; absent, the asset is uploaded.</p>
+     */
+    public java.util.Optional<String> findFileId(String folderId, String fileName) {
         String name = ShFileStorageService.sanitizeFileName(fileName);
         return shFolderRepository.findById(folderId)
-                .map(folder -> shPostUnifiedRepository
+                .flatMap(folder -> shPostUnifiedRepository
                         .findByShFolderAndStateIn(folder, Set.of(ShPostState.DRAFT, ShPostState.PUBLISHED))
                         .stream()
-                        .anyMatch(p -> p.getShPostType() != null
+                        .filter(p -> p.getShPostType() != null
                                 && ShSystemPostType.FILE.equals(p.getShPostType().getName())
-                                && name.equals(p.getTitle())))
-                .orElse(false);
+                                && name.equals(p.getTitle()))
+                        .map(ShPostUnified::getId)
+                        .sorted()
+                        .findFirst());
     }
 
     /**

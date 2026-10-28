@@ -68,6 +68,7 @@ public class ShBlueprintService {
     private final ShAgentVerifyService shAgentVerifyService;
     private final ShAgentMemoryService shAgentMemoryService;
     private final ShBlueprintCodec codec;
+    private final ShBlueprintAssetWriter shBlueprintAssetWriter;
 
     public ShBlueprintService(ShBlueprintRegistry shBlueprintRegistry,
                               ShBlueprintWriteService shBlueprintWriteService,
@@ -75,7 +76,9 @@ public class ShBlueprintService {
                               ShAddressResolver shAddressResolver,
                               ShAgentVerifyService shAgentVerifyService,
                               ShAgentMemoryService shAgentMemoryService,
-                              ShBlueprintCodec codec) {
+                              ShBlueprintCodec codec,
+                              ShBlueprintAssetWriter shBlueprintAssetWriter) {
+        this.shBlueprintAssetWriter = shBlueprintAssetWriter;
         this.shBlueprintRegistry = shBlueprintRegistry;
         this.shBlueprintWriteService = shBlueprintWriteService;
         this.shAgentSiteAccess = shAgentSiteAccess;
@@ -155,12 +158,17 @@ public class ShBlueprintService {
         ShBlueprintWriteService.Written written = dryRun
                 ? shBlueprintWriteService.plan(defs, desired, actor, options)
                 : shBlueprintWriteService.apply(defs, desired, actor, options);
+        // SH1252 — after the content apply, which created the folders they land in, and before
+        // the verify, so the proof reads a site that has its images.
+        List<ShBlueprintApplied.AssetRow> assets = dryRun
+                ? shBlueprintAssetWriter.plan(blueprint.assets(), siteName)
+                : shBlueprintAssetWriter.apply(blueprint.assets(), siteName, actor);
 
         return new ShBlueprintApplied(dryRun, blueprint.name(), blueprint.manifest().version(),
                 siteName, values, written.postTypes(), written.content(),
                 carriedFiles(blueprint), dryRun ? null : verify(blueprint, values, siteName),
                 written.site(),
-                dryRun ? null : record(blueprint, values, siteName, actor));
+                dryRun ? null : record(blueprint, values, siteName, actor), assets);
     }
 
     /**
@@ -244,6 +252,21 @@ public class ShBlueprintService {
         }
         // Absent rather than empty, both of them: the desired-state service branches on
         // `!isEmpty()`, and an empty array here would be an op that provisions nothing.
+        // SH1252 — the folders the package's assets land in, created by the same engine as every
+        // other folder, so the plan names them and the asset writer only writes into what exists.
+        // Each ancestor too, and none twice: a folder the content already declares is left as the
+        // content declared it.
+        java.util.Set<String> declared = new java.util.HashSet<>();
+        folders.forEach(folder -> declared.add(folder.path("path").asString("")));
+        for (ShBlueprint.Asset asset : blueprint.assets()) {
+            StringBuilder path = new StringBuilder();
+            for (String segment : asset.folder().substring(1).split("/")) {
+                path.append('/').append(segment);
+                if (declared.add(path.toString())) {
+                    folders.addObject().put("path", path.toString());
+                }
+            }
+        }
         if (!postTypes.isEmpty()) {
             document.set("postTypes", postTypes);
         }

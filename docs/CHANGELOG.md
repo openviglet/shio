@@ -374,6 +374,7 @@
 - **SH1245 (MCP Registry entry)** — cli/server.json describes the stdio bridge for the official MCP Registry, package.json carries its mcpName, the release stamps its version, and a test reads every fact back from the package.
 - **SH1250** — The showcase spec fixes the Quilhara brand, the bilingual page map, the visual direction and a feature-to-page matrix that a test holds complete against the manifest and MCP tools (design §XI.29 recorded in `docs/specs/SH1250-showcase-site.md`).
 - **SH1251** — The marketplace dialog builds a site from a package: params form, site name, a plan of install and apply that the confirm requires, then the site; the CLI and the setup route do the same (design §XI.30 recorded in `docs/agents/blueprints.md`).
+- **SH1252** — A blueprint declares assets under assets/; apply uploads them into the site's folders, planned first, noop for identical bytes and replace keeping the id for changed ones, within a 32 MB bound (design §XI.31 recorded in `docs/agents/blueprints.md`).
 
 ## Block M — Token economy, measured (SH74)
 

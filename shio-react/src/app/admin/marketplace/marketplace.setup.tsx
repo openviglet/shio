@@ -210,6 +210,13 @@ function PlanSummary({ result }: { result: ShMarketplaceSetupResult }) {
         <li>
           {t("marketplace.setupContent", { changed: content?.changed ?? 0, ops: content?.ops ?? 0 })}
         </li>
+        {(result.apply.assets ?? [])
+          .filter((asset) => asset.action !== "noop")
+          .map((asset) => (
+            <li key={asset.path}>
+              {t("marketplace.setupAsset", { action: asset.action, path: asset.path })}
+            </li>
+          ))}
         {rows.slice(0, 12).map((row) => (
           <li key={`${row.action} ${row.address}`} className="pl-3 font-mono text-xs">
             {row.action} {row.address}

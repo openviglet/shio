@@ -27,6 +27,16 @@
       "raw": 2000,
       "gzip": 1200,
       "why": "the bundler's own module runtime, which every other chunk is loaded through"
+    },
+    "createLucideIcon.js": {
+      "raw": 106000,
+      "gzip": 35200,
+      "why": "the lucide icon set, split out of index.js when SH1252 moved the marketplace setup panel behind import(): the eager page and the lazy panel both draw icons, so the bundler shares them. Bytes that were already eager, now in their own file; the eager total fell from 1922.9 KB to 1918.6 KB with it"
+    },
+    "preload-helper.js": {
+      "raw": 1600,
+      "gzip": 900,
+      "why": "the bundler's helper for import(), eager because the marketplace page is: it is what loads the setup panel when a curator opens a package (SH1252)"
     }
   }
 }
