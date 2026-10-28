@@ -72,6 +72,7 @@ class ShRenderLocaleTest {
             {{#translations}}<a href="{{url}}" hreflang="{{locale}}">{{title}}</a><b>{{language}}</b>\
             {{else}}<span class="only">one language</span>{{/translations}}
             </nav><nav class="menu">{{#menu title="Main"}}<a href="{{url}}">{{name}}</a>{{/menu}}\
+            </nav><p class="t">{{t "skip"}}|{{t "missing"}}</p><nav>\
             </nav><p class="default">{{render.defaultLocale}}</p></body></html>""";
 
     @Autowired
@@ -137,6 +138,14 @@ class ShRenderLocaleTest {
                     ShPostState.DRAFT, "en", menus);
             post(UUID.randomUUID().toString(), site, root, menuType, "Principal", "/menu/principal",
                     "{\"items\":[\"/pt/\"]}", when, ShPostState.DRAFT, "pt-br", menus);
+
+            // SH1271 — the layout's own text, one table per locale, found by its title.
+            post(UUID.randomUUID().toString(), site, root, menuType, "Strings", "/strings/en",
+                    "{\"strings\":\"# the layout's own text\\nskip = Skip to content\"}", when,
+                    ShPostState.DRAFT, "en", null);
+            post(UUID.randomUUID().toString(), site, root, menuType, "Strings", "/strings/pt",
+                    "{\"strings\":\"skip = Pular para o conteúdo\"}", when, ShPostState.DRAFT,
+                    "pt-br", null);
         });
     }
 
@@ -190,6 +199,17 @@ class ShRenderLocaleTest {
         assertThat(render("/de/"))
                 .as("SH1271: a language the menu was never translated into keeps the one named")
                 .contains("<nav class=\"menu\"><a href=\"/alone\">Alone</a>");
+    }
+
+    @Test
+    @DisplayName("SH1271: a layout's own text comes from the string table in the page's language")
+    void theLayoutTextFollowsThePageLanguage() {
+        assertThat(render("/"))
+                .as("SH1271: the English page reads the English table, and a missing key shows itself")
+                .contains("<p class=\"t\">Skip to content|missing</p>");
+        assertThat(render("/pt/"))
+                .as("SH1271: the Portuguese page reads the Portuguese table from the same layout")
+                .contains("<p class=\"t\">Pular para o conteúdo|missing</p>");
     }
 
     @Test

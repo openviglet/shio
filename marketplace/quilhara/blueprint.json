@@ -27,7 +27,8 @@
     "post-types/SectionRichText.json",
     "post-types/SectionTestimonial.json",
     "post-types/BuildNote.json",
-    "post-types/SearchPage.json"
+    "post-types/SearchPage.json",
+    "post-types/StringTable.json"
   ],
   "content": [
     "content/theme.json",

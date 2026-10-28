@@ -860,6 +860,17 @@
       },
       "publish": true,
       "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/strings",
+      "type": "StringTable",
+      "folder": "/en/sections",
+      "data": {
+        "title": "Strings",
+        "strings": "skip = Skip to content\nnav = Main navigation\nlangs = Other languages\nfooter = A fictional trail magazine, made to show what Viglet Shio builds."
+      },
+      "publish": true,
+      "locale": "en-us"
     }
   ]
 }

@@ -905,6 +905,18 @@
       "publish": true,
       "locale": "pt-br",
       "translationOf": "/search"
+    },
+    {
+      "url": "/pt/secoes/strings",
+      "type": "StringTable",
+      "folder": "/pt/secoes",
+      "data": {
+        "title": "Strings",
+        "strings": "skip = Pular para o conteúdo\nnav = Navegação principal\nlangs = Outros idiomas\nfooter = Uma revista de trilhas fictícia, feita para mostrar o que o Viglet Shio constrói."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/strings"
     }
   ]
 }

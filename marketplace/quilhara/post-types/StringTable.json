@@ -1,0 +1,34 @@
+{
+  "name": "StringTable",
+  "title": "String table",
+  "namePlural": "String tables",
+  "description": "The text a layout writes itself, one table per language: a post titled Strings, read by {{t \"key\"}}.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "title",
+      "label": "Title",
+      "description": "Keep it Strings: that title is how a layout finds the table.",
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "strings",
+      "label": "Strings",
+      "description": "One key = value per line.",
+      "widget": "Text Area",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

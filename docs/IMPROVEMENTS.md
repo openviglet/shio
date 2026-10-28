@@ -283,27 +283,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.41 XI.41 Chrome in the page's language (SH1271)
-
-Found building the Quilhara package (SH1254), the first bilingual site a package ships.
-One `PageLayout` serves both languages, as it should. But everything the layout writes
-itself (the menu it picks, a skip link, the footer's lines, an aria-label on the
-navigation) has one language, because a template has no way to vary by `post.locale`: no
-equality helper, and `{{#menu title=}}` matches a literal title.
-
-The workaround the package uses is `{{#menu title=post.locale}}` with two menus titled
-`en-us` and `pt-br`, which a curator then meets in the console as two menus named after
-codes. The footer carries only the brand, and there is no skip link, because any
-sentence there would be English on the Portuguese pages.
-
-Two shapes would close it, and the task picks one: a `locale=` parameter on `{{#menu}}`
-that prefers the menu translated into the page's locale (menus are posts, so they
-already have translation groups), plus a site-level string table (a `Strings` post per
-locale, read as `{{t "skip"}}`); or a single `{{#i18n}}` block keyed by locale. The
-first reuses the translation model a curator already edits in the console, which argues
-for it. The assertion renders one layout in two locales and reads both menus and both
-strings.
-
 ### XI.44 XI.44 One answer to "is this published" (SH1272)
 
 Found applying the Quilhara package (SH1254) on a clean instance and opening it in the

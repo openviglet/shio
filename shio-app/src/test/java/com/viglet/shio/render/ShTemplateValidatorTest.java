@@ -127,7 +127,7 @@ class ShTemplateValidatorTest {
         assertThat(engine.registeredNames())
                 .as("sorted and total, because this set is rendered into a message (SH136)")
                 .containsExactly("file_url", "form", "getRelation", "image", "menu", "navigation",
-                        "query", "search", "translations");
+                        "query", "search", "t", "translations");
 
         // A *parameterised* unknown helper. `{{#form}}` used to serve here and cannot any more:
         // it is registered, so it exercises nothing. This is the branch that answers "what may I

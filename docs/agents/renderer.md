@@ -1463,6 +1463,13 @@ renderer over one body of content at a second address. See the section on it bel
   refusing; two menus with one title that are *not* translations of each other still yield nothing.
   No sibling in the page's language keeps the menu that was named. Quilhara's menus are `Main` and
   its translation `Principal`, where they used to be titled after locale codes.
+  **`{{t "key"}}` is a layout's own text in the page's language (SH1271)**, the skip link, a nav's
+  `aria-label`, a footer line. The table is content found by its shape, like a menu: a post titled
+  `Strings` whose `strings` field holds `key = value` lines (`#` comments, blank lines skipped), one
+  per locale. The page's locale wins, then `render.defaultLocale`, then the only table there is. A
+  key no table holds renders the key itself, visible on the page rather than silently empty. It is
+  the ninth registered helper, so `ShTemplateValidatorTest`'s exact list moved with it. Quilhara
+  ships a `StringTable` type and one table per language, and every layout now has a skip link.
   **`{{#query}}` gets a second page, an order and a filter, and the measurement came first (SH384).**
   `folder`/`type`/`limit` meant the helper could render only *the first page* of anything, so an
   insights hub with two hundred articles (the commonest page shape after a homepage) was not

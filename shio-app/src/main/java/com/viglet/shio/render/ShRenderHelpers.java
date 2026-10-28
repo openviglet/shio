@@ -237,6 +237,78 @@ public class ShRenderHelpers {
                 "{{#translations}}…{{/translations}}", this::translations);
         engine.register("image", ShHelperShape.BLOCK_PATH_ARG,
                 "{{#image FIELD sizes= decorative=}}…{{/image}}", this::image);
+        engine.register("t", ShHelperShape.INLINE_PATH_ARG,
+                "{{t \"key\"}}", this::text);
+    }
+
+    /**
+     * {@code {{t "skip"}}} — one line of a layout's own text, in the page's language (SH1271).
+     *
+     * <h3>What it closes</h3>
+     *
+     * <p>A layout serves every language a site publishes, and what it writes itself (a skip link,
+     * the footer's lines, a navigation's {@code aria-label}) had one language, because a template
+     * cannot vary by {@code post.locale}: Quilhara shipped no skip link rather than an English one
+     * on its Portuguese pages. SH1271's first half gave menus the page's language through their
+     * translation group; this is the same answer for the text a layout carries.</p>
+     *
+     * <h3>A table is a post, found by its shape, like a menu</h3>
+     *
+     * <p>A post titled {@code Strings} whose {@code strings} field holds {@code key = value} lines,
+     * one per locale: content a curator edits in the console and an agent writes with
+     * {@code post.upsert}, with no new mechanism. No post-type name is known here, for
+     * {@link #menu}'s reason. The one in the page's locale wins; with none, the one in the site's
+     * default locale; with neither, the only one there is. A key the table does not hold renders
+     * the key itself, so a missing line is visible on the page rather than silently empty.</p>
+     */
+    Object text(Object context, Options options) {
+        String key = string(context);
+        if (key == null || key.isBlank()) {
+            return "";
+        }
+        String siteId = string(options.context.get(SITE_ID));
+        if (siteId == null) {
+            return key;
+        }
+        String pageLocale = string(options.context.get("post.locale"));
+        String defaultLocale = string(options.context.get("render.defaultLocale"));
+        List<ShPostUnified> tables = preferDraft(rowsOf(siteId, statesFor(state(options))).stream()
+                        .filter(post -> STRINGS_TITLE.equalsIgnoreCase(
+                                post.getTitle() == null ? null : post.getTitle().trim()))
+                        .filter(post -> string(shRenderModel.fieldsOf(post).get(STRINGS)) != null)
+                        .toList(),
+                state(options));
+        Optional<ShPostUnified> table = tables.stream()
+                .filter(post -> pageLocale != null && pageLocale.equalsIgnoreCase(ShRenderModel.locale(post)))
+                .findFirst()
+                .or(() -> tables.stream()
+                        .filter(post -> defaultLocale != null
+                                && defaultLocale.equalsIgnoreCase(ShRenderModel.locale(post)))
+                        .findFirst())
+                .or(() -> tables.size() == 1 ? Optional.of(tables.getFirst()) : Optional.empty());
+        return table.map(post -> lines(string(shRenderModel.fieldsOf(post).get(STRINGS))).get(key.trim()))
+                .orElse(null) instanceof String value ? value : key;
+    }
+
+    /** The title that makes a post a string table, and the field its lines live in (SH1271). */
+    private static final String STRINGS_TITLE = "Strings";
+    private static final String STRINGS = "strings";
+
+    /** {@code key = value} lines; a blank line or one starting with {@code #} is not an entry. */
+    private static Map<String, String> lines(String body) {
+        Map<String, String> entries = new LinkedHashMap<>();
+        if (body == null) {
+            return entries;
+        }
+        for (String line : body.split("\\R")) {
+            String trimmed = line.trim();
+            int eq = trimmed.indexOf('=');
+            if (trimmed.isEmpty() || trimmed.startsWith("#") || eq <= 0) {
+                continue;
+            }
+            entries.putIfAbsent(trimmed.substring(0, eq).trim(), trimmed.substring(eq + 1).trim());
+        }
+        return entries;
     }
 
     /**
