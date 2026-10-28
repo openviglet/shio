@@ -241,30 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.30 XI.30 Install and create a site in one step (SH1251)
-
-Turing's marketplace downloads a package and imports it, site and content, in one
-action: the operator clicks Install and ends on something that works. Shio's marketplace
-(SH675, SH679) deliberately stops earlier. Install puts the blueprint where the registry
-loads it, and applying it to a site is `POST /agent/blueprints/{name}/apply`, reachable
-from the CLI and MCP but not from the console. A curator who installs the showcase from
-the admin area is left with a package and no site, and has to learn `shio apply` to see
-what they installed.
-
-Keeping install and apply as two operations stays right (SH675's reasons: auditable,
-re-appliable, the package survives). What changes is that the console offers both in one
-flow:
-
-1. the dialog draws a form from the catalogue's `params` schema, which the listing already carries;
-2. the curator names a new site, or picks an existing one;
-3. the dry run reports the install and the apply plan together, including `createSite` and `mergePostTypes` as consents (P7), before anything is written;
-4. confirm installs if needed, then applies, then links to the new site and its preview.
-
-P1 order: the CLI gains the same chain first, `shio marketplace install <id> --apply
---site <name>`, so the console is the last surface rather than the only one. A built-in
-package skips the install half. A failed apply leaves the installed package in place and
-says so, since the package is still valid and the next apply can use it.
-
 ### XI.31 XI.31 A blueprint that carries its images (SH1252)
 
 `ShBlueprint.File` is text-only on purpose: its comment says a format that could carry a
@@ -728,6 +704,31 @@ All copy goes in `src/lib/site-content.ts`, under the site's own rules: no measu
 number typed by hand, and the `ai-writing` lint. The docs-shio half (a "Tour the
 showcase" page and its COVERAGE row) is the ordinary per-task end-user docs decision for
 the showcase tasks, so it is not filed separately here.
+
+### XIX.16 XIX.16 The documentation moves to shio.viglet.org/docs (SH1262)
+
+The end-user documentation is `docs-shio/` in
+`D:\Git\viglet\vigletdocs\vigletdocs.github.io`: about forty Markdown and MDX pages, the
+four job hubs, `sidebars-shio.ts` and `COVERAGE.md`, built by a Docusaurus shared with
+Turing and Dumont. Every Shio ship that needs a page costs a commit in a second
+repository, and the block sweep spans two repos for the same reason.
+
+The target copies the shape roadkeep already runs in
+`D:\Git\alegauss\roadkeep\site\docs`: a separate Astro + Starlight project inside the
+site, with base `/docs`, building into `shio-site/dist/docs` as the last step of the
+site build so that `vite build` cannot empty it, and with no runtime server. Each page's
+content comes across intact. The sidebar keeps the four hubs, and every slug keeps its
+path under `/docs/` so a redirect table can be generated rather than typed.
+
+The difference from roadkeep is the layout. Stock Starlight is not acceptable here: the
+area has to use the Viglet design system's tokens, typography, header and footer, and
+share the chrome of the site next door, overriding Starlight components where that is
+needed, in light and dark.
+
+Done means `pnpm --filter shio-site build` produces `/docs` with every page, a link
+check is green, `COVERAGE.md` and the `shio-roadmap-docs` skill point at the new tree,
+and the vigletdocs copy is marked as moved. Redirecting docs.viglet.org to `/docs` is
+later work and is not part of this task.
 
 ## XX End-user documentation, round two (Block T)
 

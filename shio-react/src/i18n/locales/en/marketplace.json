@@ -24,6 +24,22 @@
     "sourceBuiltIn": "Showing the packages that shipped with this instance. No catalogue is configured.",
     "sourceRemote": "Catalogue: {{url}}",
     "sourceUnreachable": "{{url}} could not be read",
-    "sourceFallback": "The packages listed are the ones that shipped with this instance."
+    "sourceFallback": "The packages listed are the ones that shipped with this instance.",
+    "setupTitle": "Build a site from this package",
+    "setupSite": "Site",
+    "setupSitePlaceholder": "The site to apply it to",
+    "setupCreateSite": "Create the site if it does not exist",
+    "setupMerge": "Add missing fields to existing post-types",
+    "setupPlan": "Plan",
+    "setupApply": "Apply",
+    "setupInstallApply": "Install and apply",
+    "setupPlanTitle": "What would happen. Nothing has been written yet.",
+    "setupWouldCreateSite": "Create the site {{site}}",
+    "setupPostType": "Post-type {{name}}: {{action}}",
+    "setupContent": "Content: {{changed}} change(s) of {{ops}} operation(s)",
+    "setupMore": "and {{count}} more",
+    "setupDone": "{{site}} is ready.",
+    "setupOpen": "Open the content browser",
+    "setupFailed": "The package could not be applied."
   }
 }

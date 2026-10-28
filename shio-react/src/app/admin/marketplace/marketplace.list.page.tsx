@@ -24,6 +24,7 @@ import { AlertTriangle, Download, Package, RefreshCw, Search, Trash2 } from "luc
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
+import { MarketplaceSetup } from "./marketplace.setup"
 
 const service = new ShMarketplaceService()
 
@@ -289,7 +290,9 @@ export default function MarketplaceListPage() {
                 </div>
               )}
 
-              <ParamList item={selected} />
+              {/* SH1251 — the package's parameters as a form, a site, and the plan before the
+                  write. Keyed by id so a different package starts from its own defaults. */}
+              <MarketplaceSetup key={selected.id} item={selected} onDone={load} />
 
               {readme && (
                 <pre className="max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
@@ -327,34 +330,6 @@ export default function MarketplaceListPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
-  )
-}
-
-/** The package's parameters, which a later apply has to satisfy. */
-function ParamList({ item }: { item: ShMarketplaceItem }) {
-  const { t } = useTranslation()
-  const properties = item.params?.properties
-  if (!properties) return null
-  const required = new Set(item.params?.required ?? [])
-  const names = Object.keys(properties)
-  if (names.length === 0) return null
-
-  return (
-    <div className="rounded-md border p-3">
-      <p className="mb-2 text-sm font-medium">{t("marketplace.params")}</p>
-      <ul className="flex flex-col gap-1 text-sm">
-        {names.map((name) => (
-          <li key={name} className="text-muted-foreground">
-            <code className="text-foreground">{name}</code>
-            {required.has(name) && <span className="text-amber-600"> *</span>}
-            {properties[name]?.description ? ` — ${properties[name].description}` : ""}
-            {properties[name]?.default !== undefined && (
-              <span> ({String(properties[name].default)})</span>
-            )}
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }

@@ -24,6 +24,22 @@
     "sourceBuiltIn": "Mostrando os pacotes que vieram com esta instância. Nenhum catálogo está configurado.",
     "sourceRemote": "Catálogo: {{url}}",
     "sourceUnreachable": "{{url}} não pôde ser lido",
-    "sourceFallback": "Os pacotes listados são os que vieram com esta instância."
+    "sourceFallback": "Os pacotes listados são os que vieram com esta instância.",
+    "setupTitle": "Criar um site com este pacote",
+    "setupSite": "Site",
+    "setupSitePlaceholder": "O site em que ele será aplicado",
+    "setupCreateSite": "Criar o site se ele não existir",
+    "setupMerge": "Adicionar os campos que faltam aos tipos de post existentes",
+    "setupPlan": "Planejar",
+    "setupApply": "Aplicar",
+    "setupInstallApply": "Instalar e aplicar",
+    "setupPlanTitle": "O que aconteceria. Nada foi escrito ainda.",
+    "setupWouldCreateSite": "Criar o site {{site}}",
+    "setupPostType": "Tipo de post {{name}}: {{action}}",
+    "setupContent": "Conteúdo: {{changed}} alteração(ões) de {{ops}} operação(ões)",
+    "setupMore": "e mais {{count}}",
+    "setupDone": "{{site}} está pronto.",
+    "setupOpen": "Abrir o navegador de conteúdo",
+    "setupFailed": "O pacote não pôde ser aplicado."
   }
 }

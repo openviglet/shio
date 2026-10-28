@@ -818,6 +818,14 @@ the confirm will install, and nothing is left on disk. An apply always goes thro
 a package that is not registered is not one this instance carries. Admin-gated, as every
 marketplace write is (SH682).
 
+**The dialog** (`marketplace.setup.tsx`) draws the package's `params` schema as a form (with the
+declared defaults filled in), takes a site name and the two opt-ins, and offers **Plan** first.
+The confirm stays disabled until a plan exists, and **any input change throws the plan away**, so
+the confirm can only write the plan the curator saw. It replaces the read-only parameter list the
+dialog used to show. `e2e/marketplace-setup.check.mjs` walks it end to end against a running
+console with the built-in `blog` package: disabled before a plan, no site after the plan, plan
+invalidated by an edit, and the site present after the confirm.
+
 ## The published catalogue, and why the six are republished under a prefix (SH676)
 
 `shio-site/scripts/marketplace.mjs` derives the catalogue from

@@ -66,6 +66,32 @@ export interface ShMarketplaceInstalled {
   loaded: number
 }
 
+/** SH1251 — what the dialog sends to `POST /api/v2/marketplace/{id}/setup`. */
+export interface ShMarketplaceSetupRequest {
+  site: string
+  params: Record<string, string | number | boolean>
+  createSite: boolean
+  mergePostTypes: boolean
+  dryRun: boolean
+}
+
+/** The parts of `ShBlueprintApplied` the dialog shows. */
+export interface ShMarketplaceApplied {
+  dryRun: boolean
+  blueprint: string
+  version?: string | null
+  site: string
+  postTypes?: { name: string; action: string; missing?: string[] }[]
+  content?: { ops: number; changed: number; results?: { action: string; address: string }[] }
+  createdSite?: string | null
+}
+
+/** The install half, absent when the package was already here, and the apply or its plan. */
+export interface ShMarketplaceSetupResult {
+  install: ShMarketplaceInstalled | null
+  apply: ShMarketplaceApplied
+}
+
 export const MARKETPLACE_BUILTIN_ONLY = "builtin-only"
 export const MARKETPLACE_REMOTE = "remote"
 export const MARKETPLACE_UNREACHABLE = "unreachable"

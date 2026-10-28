@@ -3,6 +3,8 @@ import axios from "@/lib/axios"
 import type {
   ShMarketplaceCatalogue,
   ShMarketplaceInstalled,
+  ShMarketplaceSetupRequest,
+  ShMarketplaceSetupResult,
 } from "@/models/marketplace/marketplace.model"
 
 /**
@@ -43,6 +45,18 @@ export class ShMarketplaceService {
       `/v2/marketplace/${encodeURIComponent(id)}/install`,
       null,
       { params: dryRun ? { dryRun: true } : {} },
+    )
+    return response.data
+  }
+
+  /**
+   * SH1251 — install if needed, then apply to a site. With `dryRun` it plans both, including the
+   * apply of a package not installed yet, and writes nothing.
+   */
+  async setup(id: string, request: ShMarketplaceSetupRequest): Promise<ShMarketplaceSetupResult> {
+    const response = await axios.post<ShMarketplaceSetupResult>(
+      `/v2/marketplace/${encodeURIComponent(id)}/setup`,
+      request,
     )
     return response.data
   }
