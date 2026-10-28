@@ -265,11 +265,37 @@ public class ShSitesAPI {
     }
 
     private ResponseEntity<?> asset(RuntimeException pageProblem, Address address) {
+        ResponseEntity<org.springframework.core.io.Resource> served;
         try {
-            return assetDelivery.serve(address.site(), address.path(), ShPostState.PUBLISHED);
+            served = assetDelivery.serve(address.site(), address.path(), ShPostState.PUBLISHED);
         } catch (ShSiteAssetDelivery.UnknownAssetException ignored) {
             throw pageProblem;
         }
+        return fontsCrossOrigin(served);
+    }
+
+    /**
+     * SH1273 — a font on this route may be read from any origin.
+     *
+     * <p>A font is the one subresource a browser fetches in CORS mode, so a page shown anywhere but
+     * this origin gets the fallback typeface without this header. The console's live preview is that
+     * case: it renders in a sandboxed frame whose origin is {@code null}, and its three self-hosted
+     * fonts were blocked while every image beside them loaded. {@code *} and nothing narrower, because
+     * this route serves published bytes to anonymous readers already, so the header grants no read
+     * that was not open; and fonts only, so no other response on the route changes.</p>
+     */
+    static ResponseEntity<org.springframework.core.io.Resource> fontsCrossOrigin(
+            ResponseEntity<org.springframework.core.io.Resource> served) {
+        MediaType type = served.getHeaders().getContentType();
+        boolean font = type != null && ("font".equalsIgnoreCase(type.getType())
+                || type.getSubtype().toLowerCase(java.util.Locale.ROOT).contains("font"));
+        if (!font) {
+            return served;
+        }
+        return ResponseEntity.status(served.getStatusCode())
+                .headers(served.getHeaders())
+                .header(org.springframework.http.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                .body(served.getBody());
     }
 
     /**

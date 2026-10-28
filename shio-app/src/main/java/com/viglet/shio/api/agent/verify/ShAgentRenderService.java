@@ -113,6 +113,8 @@ public class ShAgentRenderService {
      * properties panel answer from the same definition rather than from two ideas of it.
      */
     private final ShPostTypeAdminService shPostTypeAdminService;
+    /** SH1273 — rebases a console frame's markup the way `/sites/**` does. */
+    private final com.viglet.shio.render.ShPreviewLinks previewLinks;
 
     public ShAgentRenderService(ShAddressResolver shAddressResolver,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -121,7 +123,9 @@ public class ShAgentRenderService {
                                 ShPageRenderService pageRenderService,
                                 ShPostRevisionService shPostRevisionService,
                                 ShContentAclService shContentAclService,
-                                ShPostTypeAdminService shPostTypeAdminService) {
+                                ShPostTypeAdminService shPostTypeAdminService,
+                                com.viglet.shio.render.ShPreviewLinks previewLinks) {
+        this.previewLinks = previewLinks;
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shContentAclService = shContentAclService;
         this.shPostRevisionService = shPostRevisionService;
@@ -313,12 +317,37 @@ public class ShAgentRenderService {
         if (post.getShSite() == null || post.getFurl() == null || post.getFurl().isBlank()) {
             throw new NotAPageException(rawAddress, "post");
         }
-        String markup = pageRenderService.renderProposed(post.getShSite().getId(), post.getFurl(),
-                post.getState(), data, Map.of()).html();
+        var rendered = pageRenderService.renderProposed(post.getShSite().getId(), post.getFurl(),
+                post.getState(), data, Map.of());
+        String markup = rendered.html();
         ShHtmlAppearance.Appearance look = ShHtmlAppearance.of(markup);
         ShAgentDigest digest = render(SOURCE_RENDERED, address, null, null, List.of(),
                 ShHtmlOutline.of(markup), look, markersOf(markup), regionsOf(markup, look));
-        return new ShAgentProposed(digest, html ? markup : null);
+        return new ShAgentProposed(digest, html ? framed(markup, post, rendered) : null);
+    }
+
+    /**
+     * SH1273 — the markup a console frame shows, with its site paths rebased the way delivery does.
+     *
+     * <p>The frame has no address of its own (it is a {@code srcdoc}), so a theme's
+     * {@code url("/fonts/inter-400.woff2")} resolved against the console's origin rather than the
+     * site, and asked the instance root for a font it does not serve there. Rebased into the site's
+     * public {@code /sites/**} space with {@code ShPreviewLinks}, the pass that route itself runs, the
+     * reference names bytes that route serves, and serves to a {@code null} origin since SH1273 too.
+     * The public route and not {@code /preview}, because a sandboxed frame sends no session cookie, so
+     * an authenticated route would answer it with a login. The digest above is computed from the
+     * unrebased markup on purpose: an agent reads the page's own references.</p>
+     */
+    private String framed(String markup, ShPostUnified post,
+                          com.viglet.shio.render.ShPageRenderService.ShRenderedPage rendered) {
+        String site = post.getShSite().getFurl() == null || post.getShSite().getFurl().isBlank()
+                ? post.getShSite().getName() : post.getShSite().getFurl();
+        String prefix = com.viglet.shio.render.ShSitesAPI.Address.of(
+                "/" + site + "/default/"
+                        + com.viglet.shio.migration.unified.ShPostUnifiedWriteService.localeOf(post),
+                null, null).prefix();
+        return previewLinks.rewriteInto(markup, prefix, rendered,
+                com.viglet.shio.api.agent.ShAddress.normalizePath(post.getFurl()));
     }
 
     /** The digest of the proposed page, and its markup where the caller asked for it. */

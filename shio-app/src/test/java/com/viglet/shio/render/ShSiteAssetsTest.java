@@ -310,6 +310,90 @@ class ShSiteAssetsTest {
                 ShPostState.DRAFT, "post-id", site.getId(), null);
     }
 
+    @Autowired
+    private com.viglet.shio.api.agent.verify.ShAgentRenderService shAgentRenderService;
+
+    @Test
+    @DisplayName("SH1273: a font on /sites/** may be read from any origin, and an image is unchanged")
+    void aFontIsServedCrossOrigin() throws Exception {
+        org.springframework.http.ResponseEntity<org.springframework.core.io.Resource> font =
+                org.springframework.http.ResponseEntity.ok()
+                        .contentType(org.springframework.http.MediaType.parseMediaType("font/woff2"))
+                        .body(new org.springframework.core.io.ByteArrayResource(new byte[] {1}));
+        assertThat(ShSitesAPI.fontsCrossOrigin(font).getHeaders().getAccessControlAllowOrigin())
+                .as("SH1273: the editor's preview frame has a null origin, and a font is a CORS fetch")
+                .isEqualTo("*");
+
+        mockMvc.perform(get("/sites/" + siteName + "/default/en-us/img/hero.png"))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse()
+                        .getHeader(org.springframework.http.HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN))
+                        .as("SH1273: only fonts change; an image needs no CORS and gets none")
+                        .isNull());
+    }
+
+    @Test
+    @DisplayName("SH1273: the console's proposed render rebases a stylesheet's site path into /sites/**")
+    void theProposedFrameReadsTheSiteSpace() {
+        String type = "Sh1273Page" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = entityManager.find(ShSite.class, site.getId());
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH1273_LAYOUT\"}");
+            ShFolder root = entityManager.createQuery(
+                    "select f from ShFolder f where f.shSite.id = :id and f.rootFolder = 1", ShFolder.class)
+                    .setParameter("id", site.getId()).getSingleResult();
+            com.viglet.shio.persistence.model.post.type.ShPostType pageType = typeNamed(type, (byte) 0, when);
+            com.viglet.shio.persistence.model.post.type.ShPostType layoutType =
+                    typeNamed(com.viglet.shio.post.type.ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            draft(owner, root, layoutType, "SH1273_LAYOUT", "/sh1273-layout",
+                    "{\"HTML\":\"<html><head><style>h1{background:url('/img/hero.png')}</style></head>"
+                            + "<body><main><h1>Title</h1></main></body></html>\"}", when);
+            draft(owner, root, pageType, "Fonts", "/sh1273", "{}", when);
+        });
+
+        String html = shAgentRenderService.proposed("post:" + siteName + "/sh1273", "draft",
+                tools.jackson.databind.node.JsonNodeFactory.instance.objectNode(), true).html();
+        assertThat(html)
+                .as("SH1273: in a srcdoc frame a root path resolves against the console, which does "
+                        + "not serve the site's bytes; the site's own space does")
+                .contains("/sites/" + siteName + "/default/")
+                .doesNotContain("url('/img/hero.png')");
+    }
+
+    private com.viglet.shio.persistence.model.post.type.ShPostType typeNamed(String name, byte system,
+                                                                            Instant when) {
+        return entityManager.createQuery("select t from ShPostType t where t.name = :name",
+                        com.viglet.shio.persistence.model.post.type.ShPostType.class)
+                .setParameter("name", name).getResultStream().findFirst().orElseGet(() -> {
+                    var created = new com.viglet.shio.persistence.model.post.type.ShPostType();
+                    created.setName(name);
+                    created.setTitle(name);
+                    created.setSystem(system);
+                    created.setDate(when);
+                    created.setOwner("admin");
+                    entityManager.persist(created);
+                    return created;
+                });
+    }
+
+    private void draft(ShSite owner, ShFolder folder,
+                       com.viglet.shio.persistence.model.post.type.ShPostType type, String title,
+                       String furl, String data, Instant when) {
+        var post = new com.viglet.shio.persistence.model.post.unified.ShPostUnified();
+        post.setId(UUID.randomUUID().toString());
+        post.setState(ShPostState.DRAFT);
+        post.setShSite(owner);
+        post.setShFolder(folder);
+        post.setShPostType(type);
+        post.setTitle(title);
+        post.setFurl(furl);
+        post.setData(data);
+        post.setDate(when);
+        post.setOwner("admin");
+        entityManager.persist(post);
+    }
+
     @Test
     @DisplayName("SH437: a path that is not an asset teaches where an asset comes from")
     void anUnknownAssetTeaches() {

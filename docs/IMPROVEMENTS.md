@@ -283,26 +283,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.45 XI.45 The live preview loads the site's fonts (SH1273)
-
-Found opening a Quilhara trail (SH1254) in the console editor with Playwright. The
-"Pré-visualização ao vivo" panel renders the page in a sandboxed iframe whose origin is
-`null`. The theme declares `@font-face { src: url("/fonts/inter-400.woff2") }`, and the
-browser logs, for each of the three fonts: "Access to font at
-'http://localhost:2711/fonts/inter-400.woff2' from origin 'null' has been blocked by
-CORS policy". The headings render in the fallback serif.
-
-Two defects stack. The path is the site path, unrewritten, so it asks the instance root
-rather than the site (the `/sites/**` delivery rebases it, the preview does not); and a
-font is a CORS request, so even the right URL needs `Access-Control-Allow-Origin` for an
-opaque origin. Images in the same panel load, because an `<img>` is not a CORS fetch.
-
-The fix rebases the preview's references the way delivery does
-(`ShPreviewLinks.rewriteInto` already handles `url()` in `<style>`), into a route that
-serves site assets with `Access-Control-Allow-Origin: *` for font types, which is safe
-for public bytes. The assertion loads the live preview of a page whose theme self-hosts
-a font and reads `document.fonts` as loaded, with no console error.
-
 ### XI.46 XI.46 A site is its root folder, once (SH1274)
 
 Found opening the Quilhara site (SH1254) in the console with Playwright.
@@ -475,6 +455,28 @@ line, and a separate task otherwise.
 
 Assert on a site enabling `pt-br` and `pt-pt` with labels: the switcher on the English
 page reads both labels, and with the map removed it falls back to the table.
+
+### XI.54 XI.54 The preview frame reads draft assets (SH1282)
+
+Left by SH1273. The editor's live preview renders into a sandboxed `srcdoc` frame whose
+origin is `null`, and SH1273 rebased its references into the site's public `/sites/**`
+space, which serves fonts to that origin. That route serves PUBLISHED bytes only, and
+the frame sends no session cookie, so the authenticated `/preview/**` route cannot serve
+it either. An image or font a curator has uploaded and not yet published, which is
+exactly what they are previewing, renders broken in the frame while the saved page would
+show it after a publish.
+
+What to build: a short-lived capability rather than a cookie. When
+`/agent/render?format=html` rebases a reference to an asset that exists only as a draft,
+it writes the URL with a signed, expiring token the asset route accepts in place of a
+session, the way SH1048's signed image URLs and the preview tokens already authorise one
+read without an account. Scope the token to the site and the draft state, a few minutes
+long, and keep published assets on the plain `/sites/**` URL so nothing cacheable
+changes.
+
+Assert by uploading an unpublished image, referencing it from a page, and reading the
+proposed HTML: the image's URL carries a token, and fetching it anonymously answers 200
+with the bytes, while the same URL with the token removed answers 404.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

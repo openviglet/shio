@@ -2039,6 +2039,17 @@ refreshes on demand and on every save, which is the question being asked most of
 The panel says, under the frame, that nothing in it is saved. A preview that looks like the page is
 exactly the thing a curator could mistake for having saved it.
 
+**The frame's references are rebased, and fonts are served to it cross-origin (SH1273).** A `srcdoc`
+frame has no address, so a theme's `url("/fonts/inter-400.woff2")` resolved against the console's
+origin, which does not serve the site's bytes, and the frame's origin is `null`, so a font (the one
+subresource a browser fetches in CORS mode) was blocked anyway: Quilhara's headings rendered in the
+fallback serif while its images loaded. `ShAgentRenderService.proposed` now rewrites the markup it
+returns as HTML with `ShPreviewLinks.rewriteInto` into the site's public `/sites/**` space (the
+digest is still computed from the page's own references), and `ShSitesAPI` adds
+`Access-Control-Allow-Origin: *` to font responses only. The public route and not `/preview/**`,
+because a sandboxed frame sends no session cookie; so an asset that exists only as a draft still
+does not load in the frame, which is the remaining gap.
+
 **A type that is not a page is not asked for (SH1167).** A menu, a section or a theme has no layout
 binding on its site, and the server refuses to render it with `render-no-layout-binding`. That 400 is
 correct, but the browser logs every 4xx as a console error, so eleven editor routes opened on one.
