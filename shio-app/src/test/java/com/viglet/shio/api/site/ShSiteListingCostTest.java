@@ -83,6 +83,9 @@ class ShSiteListingCostTest {
     private ObjectMapper objectMapper;
     @Autowired
     private ShSiteThumbnailStore thumbnails;
+    /** SH1276 — the sweep that prepared statements inside the window, on its own thread. */
+    @Autowired
+    private com.viglet.shio.schedule.ShScheduleProperties schedule;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -253,17 +256,22 @@ class ShSiteListingCostTest {
     }
 
     @Test
-    @DisplayName("SH1217: the listing costs the same statements at 15 sites and at 400")
+    @DisplayName("SH1217, SH1276: the listing costs the same statements at 15 sites and at 400, measured past other threads")
     void theListingIsBoundedInStatements() throws Exception {
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         boolean wasOn = statistics.isStatisticsEnabled();
+        boolean sweeping = schedule.isEnabled();
         List<String> report = new ArrayList<>();
         List<Long> counts = new ArrayList<>();
         // Without this the counter reads zero and the bound passes for the wrong reason.
         statistics.setStatisticsEnabled(true);
+        // SH1276 — the post scheduler reads its due rows every minute on its own thread, and the
+        // counter is global, so it is paused for the window; ATTEMPTS covers a sweep already running.
+        schedule.setEnabled(false);
         try {
             measure(statistics, report, counts);
         } finally {
+            schedule.setEnabled(sweeping);
             statistics.setStatisticsEnabled(wasOn);
         }
         System.out.println("\nSH1217 — GET /api/v2/site, with pages and last change per site:\n"
@@ -280,20 +288,40 @@ class ShSiteListingCostTest {
                 .isLessThanOrEqualTo(STATEMENTS);
     }
 
+    /**
+     * How many times each size is read; the listing's cost is the fewest statements any read took.
+     *
+     * <p>SH1276 — the counter is the {@code SessionFactory}'s, so it counts every thread, and this
+     * test shares the plain context, where {@code ShPostScheduler} sweeps every sixty seconds on its
+     * own. A sweep inside the window added its queries to the listing's: one full run in four failed
+     * with {@code Measured [6, 3]} and passed alone. Another thread can only <em>add</em> statements,
+     * so the minimum over a few reads is the listing's own cost, and a statement per row still fails,
+     * because it raises every read and not one. Every attempt is printed, so an outlier is visible
+     * rather than averaged away.</p>
+     */
+    private static final int ATTEMPTS = 3;
+
     private void measure(Statistics statistics, List<String> report, List<Long> counts)
             throws Exception {
         for (int size : SIZES) {
             growTo(size);
             listing(); // warm: the first read of a fresh context pays for metadata, not for rows
-            long before = statistics.getPrepareStatementCount();
-            long started = System.nanoTime();
-            JsonNode listing = listing();
-            long millis = (System.nanoTime() - started) / 1_000_000;
-            long statements = statistics.getPrepareStatementCount() - before;
+            List<Long> attempts = new ArrayList<>();
+            long millis = Long.MAX_VALUE;
+            int listed = 0;
+            for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
+                long before = statistics.getPrepareStatementCount();
+                long started = System.nanoTime();
+                JsonNode listing = listing();
+                millis = Math.min(millis, (System.nanoTime() - started) / 1_000_000);
+                attempts.add(statistics.getPrepareStatementCount() - before);
+                listed = listing.size();
+            }
+            long statements = attempts.stream().mapToLong(Long::longValue).min().orElseThrow();
             counts.add(statements);
-            report.add(String.format("  %4d sites: %d statement(s), %d ms", listing.size(),
-                    statements, millis));
-            assertThat(listing.size()).isGreaterThanOrEqualTo(size);
+            report.add(String.format("  %4d sites: %d statement(s) (reads: %s), %d ms", listed,
+                    statements, attempts, millis));
+            assertThat(listed).isGreaterThanOrEqualTo(size);
         }
     }
 }

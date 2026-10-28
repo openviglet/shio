@@ -15,7 +15,6 @@
 - ⏳ **SH1256** (deps: SH1255 ✅, SH1277) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — The /members page for contentAcl is still owed: a package cannot declare who reads a folder until SH1277 lands. → §XI.35
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
 - ⏳ **SH1275** (deps: SH1283) **The content browser's create button offers an arbitrary post type, Novo Guide in every Quilhara folder** — An empty folder still offers the first type; offering the site's page type needs a rule naming which layout-bound type is the page. → §XI.47
-- 📋 **SH1276** (deps: —) **ShSiteListingCostTest fails about one full run in four: its first measurement sometimes counts 6 statements, then 3** — A red Java gate on a commit that never touched the site listing stops the work and teaches people to rerun until green. → §XI.48
 - 📋 **SH1277** (deps: —) **A blueprint cannot restrict who reads a folder, so a package's members area ships public** — Quilhara's /members page, the showcase's contentAcl demo, cannot be built without an operator locking it by hand. → §XI.49
 - 📋 **SH1278** (deps: —) **The search helper cannot narrow to the page's language, so a bilingual results page lists both** — Quilhara's English search for Marina returns five Portuguese posts, while the CDA's /search already takes a locale. → §XI.50
 - 📋 **SH1279** (deps: —) **A row in another language links under the current page's locale, and that wrong URL serves the page** — On the en-us search page a pt-br trail links to /en-us/trilhas/..., which answers 200, so one page has two addresses. → §XI.51
@@ -23,6 +22,7 @@
 - 📋 **SH1281** (deps: —) **A site cannot relabel a language in its switcher, so pt-br and pt-pt both read Português** — SH1270 names each language from a fixed table, which has no regional or brand wording a site could set. → §XI.53
 - 📋 **SH1282** (deps: —) **The editor's live preview shows an unpublished image or font as broken, since its frame can reach published bytes only** — A curator previewing an upload they have not published sees a broken image, though the page shows it once published. → §XI.54
 - 📋 **SH1283** (deps: —) **A site cannot say which of its layout-bound types is its page, so an empty folder's New button guesses** — Quilhara binds eight types to layouts and names none as the page, so its site root offers Novo How this was built. → §XI.55
+- 📋 **SH1284** (deps: —) **Eight statement-count tests read a global counter the post scheduler also writes, and nothing checks their context** — SH1276 was one of them failing one run in four; the others can fail the same way whenever a sweep lands in their window. → §XI.56
 
 ## Block S — The public site (shio.viglet.org)
 

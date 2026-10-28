@@ -251,3 +251,15 @@ now moves through `moveInto`: an atomic move, and on `AccessDeniedException` or
 handle allows. A destination that already exists stays a refusal, so two racing installs are not
 hidden. It is tested with an injected mover refusing the rename, since a real handle cannot be
 summoned on demand; fifty Maven runs of the old flake were not measured.
+
+## A statement count is global, and the scheduler shares it (SH1276)
+
+`ShSiteListingCostTest` failed about one full run in four with `Measured [6, 3]` and passed alone.
+Hibernate's `Statistics` counter belongs to the `SessionFactory`, so it counts every thread, and the
+test shares the plain context, where `ShPostScheduler` sweeps every sixty seconds and prepares three
+statements of its own. Proved rather than argued: with `shio.schedule.sweep-interval-millis=5` the
+reads came back `[9, 6, 7]`. The test now switches `ShScheduleProperties.enabled` off for the
+measured window and takes the fewest statements over three reads per size (another thread can only
+add, and a per-row cost raises every read), and under the same 5 ms sweep every read is 3. **Any
+test that counts statements in a shared context has this exposure**: pause the sweep the same way,
+or measure in a context with `shio.schedule.enabled=false`.

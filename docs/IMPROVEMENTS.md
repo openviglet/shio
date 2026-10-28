@@ -300,29 +300,6 @@ what a curator usually wants there.
 The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
 and reads the site's page type.
 
-### XI.48 XI.48 The site listing's cost is measured warm (SH1276)
-
-Seen on 2026-10-28 while gating SH1254: one full `pnpm java` run failed
-`ShSiteListingCostTest.theListingIsBoundedInStatements` with `Measured [6, 3]`, and the
-next full run passed measuring `[3, 3]`. Run alone it passed twice. SH1254 does not
-touch `GET /api/v2/site`.
-
-The test warms with one `listing()` call before each measurement, as its comment says,
-because the first read of a fresh context pays for metadata. The `[6, 3]` shape says one
-warm call is not always enough at the smaller size: three extra statements land in the
-first window and none in the second. Two plausible sources, both global to the
-`SessionFactory` the test reads: a lazy collection or second-level cache first touched
-by the measured call rather than the warm one, or a component in the shared context
-preparing statements on another thread (a backfill runner, an event listener) inside the
-window.
-
-The fix is to find which: log the statements prepared in the window when the count
-exceeds the bound (Hibernate's `StatementInspector` gives the SQL), then either warm the
-path that pays it or measure on a session the test owns. Until then the assertion should
-report the extra SQL in its message, because "Measured [6, 3]" names a number and not a
-cause. SH250's rule applies: a benchmark that fails one run in N is the assertion people
-learn to rerun.
-
 ### XI.49 XI.49 A package declares who reads a folder (SH1277)
 
 Found building SH1256. The showcase matrix maps `contentAcl` to `/members`, a page only
@@ -477,6 +454,29 @@ Unset keeps today's behaviour.
 
 Assert that a site declaring `pageType: InfoPage` shows "New InfoPage" in an empty
 folder, and that naming an unbound type is refused with the bound list.
+
+### XI.56 XI.56 Statement counts are measured with the scheduler paused (SH1284)
+
+Found fixing SH1276. Hibernate's `Statistics` counter belongs to the `SessionFactory`,
+so a test that reads `getPrepareStatementCount()` before and after a call also counts
+whatever another thread prepared in between. `ShPostScheduler` sweeps every sixty
+seconds in any context that leaves `shio.schedule.enabled` on, and measured with a 5 ms
+sweep it added three to six statements to the site listing's reads.
+`ShSiteListingCostTest` now pauses the sweep for its window. Eight other classes count
+statements the same way (`ShWorkflowTaskFetchCostTest`, `ShAssetUsageBenchmarkTest`,
+`ShCdaAvailableLocalesBenchmarkTest`, `ShRenderHelperSweepBenchmarkTest`,
+`ShEventStreamCostBenchmarkTest`, `ShTemplateGraphScaleBenchmarkTest`,
+`ShTemplateGraphMemoBenchmarkTest`, `ShRenderSweepBenchmarkTest`), and whether each is
+exposed depends on the context it runs in, which nothing checks.
+
+What to build, instrument first (SH338): a lint test that finds every test class calling
+`getPrepareStatementCount` and requires one of two things, either its `@SpringBootTest`
+properties set `shio.schedule.enabled=false`, or the class pauses `ShScheduleProperties`
+around its measurement. It prints the population and holds any exception as a named
+list. Then fix the classes it names the same way SH1276 did, so a one-in-N red cannot
+come back through a benchmark nobody is watching. The event stream's poll only runs with
+a subscriber, and the meter's flush only when metering is on, so the sweep is the one
+source today; the lint's message should say to add a new scheduled job to the same rule.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
