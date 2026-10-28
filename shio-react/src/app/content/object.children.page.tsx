@@ -11,7 +11,8 @@ import { Folder, FileText, Download, Eye, Settings, Copy, Move, Trash2 } from "l
 import { BentoActionsMenu, BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
 import { contentFacets, fromBarValue, toBarValue, withCounts } from "@/lib/filter-bar"
 import {
-  browserView, heroTrail, listboxClass, optionClass, relativeDate, searchHereFor,
+  browserView, heroTrail, lastPostTypeKey, listboxClass, optionClass, relativeDate, searchHereFor,
+  suggestedPostType,
 } from "./content-browser/browser-view"
 import { BrowserItem } from "./content-browser/browser-views"
 import { useBrowserKeyboard } from "./content-browser/use-browser-keyboard"
@@ -83,13 +84,7 @@ export default function ObjectChildrenPage() {
    * step (SH703's shape, one screen over).
    */
   const postTypes = usePostTypes().data ?? EMPTY_POST_TYPES
-  const lastPostType = useMemo(() => {
-    const savedName = localStorage.getItem("sh-last-post-type")
-    return postTypes.find((p) => p.name === savedName)
-      ?? postTypes.find((p) => !p.system)
-      ?? postTypes[0]
-      ?? null
-  }, [postTypes])
+
   /**
    * SH1023 — the browser's whole view, in its URL.
    *
@@ -116,7 +111,11 @@ export default function ObjectChildrenPage() {
   } = useBrowserListing({ objectId, listKey: list.key, sortBy, t })
 
   useSoleRootRedirect(objectId, siteId, listData)
-  /**
+  // SH1275 — what this folder holds decides the "New …" button, not the last type made anywhere.
+  const lastPostType = useMemo(() => suggestedPostType(postTypes,
+    { counts: listData.facets?.type, posts: listData.posts },
+    localStorage.getItem(lastPostTypeKey(objectId)), localStorage.getItem("sh-last-post-type")),
+  [postTypes, listData.facets, listData.posts, objectId])  /**
    * SH1024 — the bar's value and handler, stable across renders. The bar debounces typing in an
    * effect that depends on both, so a fresh object each render restarts its timer and the query is
    * never sent; measured in a browser, where the page re-renders faster than the 300 ms pause.

@@ -243,6 +243,43 @@ export function breadcrumbFrom(data: {
 }
 
 /**
+ * SH1275 — the type a folder's "New …" button offers.
+ *
+ * <p>It offered the last type created anywhere, else the first one the instance knew, so every
+ * Quilhara folder said "Novo Guide", including one holding three Trails and nothing else. The folder
+ * says what belongs in it: the type most of its posts already have (the server's facet counts when
+ * the listing carries them, since those cover every page of it, else the rows on screen), then the
+ * type last created in this folder, then the last one created anywhere, then the first non-system
+ * type. System types (File, layouts, themes) are never the suggestion: a folder of images is filled
+ * by uploading, not by a post form.</p>
+ */
+export function suggestedPostType<T extends { name: string; system?: number | boolean | null }>(
+  postTypes: readonly T[],
+  folder: {
+    counts?: Readonly<Record<string, number>> | null
+    posts?: readonly { postType?: string | null }[] | null
+  },
+  lastHere: string | null,
+  lastAnywhere: string | null,
+): T | null {
+  const authorable = postTypes.filter((type) => !type.system)
+  const byName = (name: string | null | undefined) => authorable.find((type) => type.name === name)
+  const counts: Record<string, number> = { ...(folder.counts ?? {}) }
+  if (!folder.counts) {
+    for (const post of folder.posts ?? []) {
+      if (post.postType) counts[post.postType] = (counts[post.postType] ?? 0) + 1
+    }
+  }
+  const common = Object.entries(counts)
+    .filter(([name, count]) => count > 0 && byName(name))
+    .sort(([a, x], [b, y]) => y - x || a.localeCompare(b))[0]?.[0]
+  return byName(common) ?? byName(lastHere) ?? byName(lastAnywhere) ?? authorable[0] ?? postTypes[0] ?? null
+}
+
+/** The key the type last created in one folder is kept under (SH1275). */
+export const lastPostTypeKey = (folderId: string) => `sh-last-post-type:${folderId}`
+
+/**
  * SH1274 — the folder a site's listing is standing in for, when it is the only thing there.
  *
  * <p>A site holds content only through its root folder (SH128), so its own listing is one row, a

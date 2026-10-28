@@ -39,7 +39,7 @@ import type { ShPostType } from "@/models/post-type/post-type"
 import type { useListState } from "@/hooks/use-list-state"
 
 import { MORE_IGNORES, type BROWSER_LIST } from "./browser-listing"
-import { searchBackState, type BrowserView } from "./browser-view"
+import { lastPostTypeKey, searchBackState, type BrowserView } from "./browser-view"
 
 export interface BrowserToolbarProps {
   objectId: string
@@ -82,6 +82,7 @@ export function BrowserToolbar({
               onClick={() => {
                 if (lastPostType) {
                   localStorage.setItem("sh-last-post-type", lastPostType.name)
+                  localStorage.setItem(lastPostTypeKey(objectId), lastPostType.name)
                   navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${encodeURIComponent(lastPostType.name)}/new`)
                 }
               }}

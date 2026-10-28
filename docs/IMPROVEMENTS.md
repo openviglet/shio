@@ -457,6 +457,27 @@ Assert by uploading an unpublished image, referencing it from a page, and readin
 proposed HTML: the image's URL carries a token, and fetching it anonymously answers 200
 with the bytes, while the same URL with the token removed answers 404.
 
+### XI.55 XI.55 A site names its page type (SH1283)
+
+Left by SH1275. The content browser's "New …" button now offers what a folder holds, and
+falls back to the catalogue's first non-system type in a folder with no posts, which on
+Quilhara reads "Novo How this was built" at the site root. The design wanted "the site's
+page type" there, and nothing names one: `postTypeLayout` binds eight Quilhara types to
+layouts (Home, Listing, Trail, Story, Guide, Trip, InfoPage, SearchPage), and none of
+them is the generic page a curator adds to an empty folder.
+
+What to build: an optional `pageType` on the site, the post type a new page in this site
+starts as, validated against the site's layout bindings (a type with no layout cannot be
+a page, so naming one is a teaching error listing the bound types). It travels where
+site settings already travel: the `site.upsert` op on the agent batch, the blueprint
+manifest (Quilhara would declare `InfoPage`), the console's site settings, and the
+context pack's sitemap, so an agent creating a page reads the same answer (P1). The
+console's `suggestedPostType` takes it as the step after "last created in this folder".
+Unset keeps today's behaviour.
+
+Assert that a site declaring `pageType: InfoPage` shows "New InfoPage" in an empty
+folder, and that naming an unbound type is refused with the bound list.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

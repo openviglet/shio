@@ -13,6 +13,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { usePostTypes } from "@/hooks/use-catalogue"
 import type { ShPostType } from "@/models/post-type/post-type"
+import { lastPostTypeKey } from "./content-browser/browser-view"
 
 /**
  * SH901 — choosing what to post, as tiles.
@@ -37,6 +38,8 @@ export default function BentoPostTypeSelectPage() {
     // The content browser's New button reads this back; a curator posting twenty of one kind
     // should not scan the grid twenty times.
     localStorage.setItem("sh-last-post-type", pt.name)
+    // SH1275 — and per folder, since what a folder holds is the better guess next time.
+    localStorage.setItem(lastPostTypeKey(folderId), pt.name)
     navigate(`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${encodeURIComponent(pt.name)}/new`)
   }
 

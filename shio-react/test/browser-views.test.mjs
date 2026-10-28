@@ -12,7 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import {
-  breadcrumbFrom, browserView, editableTitleField, listboxClass, readTableLayout, searchBackState, searchBackTo, searchHereFor, soleRootFolder, stepFor,
+  breadcrumbFrom, browserView, editableTitleField, listboxClass, readTableLayout, searchBackState, searchBackTo, searchHereFor, soleRootFolder, stepFor, suggestedPostType,
   tableLayoutKey, thumbnailSrc, fullWindow, visibleWindow, WINDOW_THRESHOLD,
 } from "../src/app/content/content-browser/browser-view.ts"
 import { browserSource } from "./support/browser-source.mjs"
@@ -78,6 +78,22 @@ test("SH1274: a site whose only child is its root folder opens on that folder, a
     assert.ok(!/data\.breadcrumb\)/.test(source),
       "SH1274: and no widget walks data.breadcrumb itself, which is how the File field read quilhara > quilhara > images")
   }
+})
+test("SH1275: a folder's New button offers what the folder holds, not the first type the instance knows", () => {
+  const types = [{ name: "Guide" }, { name: "Trail" }, { name: "File", system: true }, { name: "Story" }]
+  const pick = (folder, here = null, anywhere = null) => suggestedPostType(types, folder, here, anywhere)?.name
+
+  assert.equal(pick({ posts: [{ postType: "Trail" }, { postType: "Trail" }, { postType: "Guide" }] }), "Trail",
+    "SH1275: /en/trails holds three Trails and the button said Novo Guide")
+  assert.equal(pick({ counts: { Story: 7, Trail: 2 }, posts: [{ postType: "Trail" }] }), "Story",
+    "SH1275: the server's counts cover every page of the listing, so they beat the rows on screen")
+  assert.equal(pick({ posts: [{ postType: "File" }, { postType: "File" }] }, null, "Story"), "Story",
+    "SH1275: a folder of images is filled by uploading, so a system type is never the suggestion")
+  assert.equal(pick({ posts: [] }, "Story", "Guide"), "Story",
+    "SH1275: an empty folder offers the type last created in it")
+  assert.equal(pick({ posts: [] }, null, "Trail"), "Trail")
+  assert.equal(pick({ posts: [] }), "Guide", "SH1275: and with nothing to go on, the first authorable type")
+  assert.equal(suggestedPostType([], { posts: [] }, null, null), null)
 })
 test("SH1187: \"search in this folder\" opens the console's search route, not a bare /search", () => {
   const crumbs = [{ name: "favicons", type: "FOLDER" }]

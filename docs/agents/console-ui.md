@@ -2302,6 +2302,15 @@ Content Select widgets and the content picker built their location from `/path` 
 `quilhara > quilhara > images`; they go through `breadcrumbFrom` now, and the picker descends through
 a lone root folder the same way. A site with two root folders is shown as it is.
 
+**The "New …" button offers what the folder holds (SH1275).** It offered the last type created
+anywhere, else the catalogue's first, so every Quilhara folder said "Novo Guide", including one of
+three Trails. `suggestedPostType` takes the folder's most common non-system type (the listing's
+facet counts when present, since they cover every page, else the rows on screen), then the type last
+created in this folder (`lastPostTypeKey`, written by the button and by the type picker), then the
+last created anywhere, then the first non-system type. System types are never suggested: a folder of
+images is filled by uploading. Not done: an empty folder offering the site's page type, because a
+site binds several types to layouts and nothing yet names which one is "the page".
+
 **The search route is passed, never defaulted (SH1187).** `searchHereFor` takes the route as a
 required argument and the browser passes `ROUTES.SEARCH`. Its old default, a bare `/search`, is
 not a route the router declares, so the button opened a 404.
