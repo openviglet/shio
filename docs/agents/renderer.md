@@ -1520,6 +1520,12 @@ renderer over one body of content at a second address. See the section on it bel
   **`locale` is on *every* row**, not only a translation's: it is a property of every post, already
   loaded, and a multilingual listing wants it too. A second row shape for one field is the trade
   `FORM_FIELD_KEYS` is documented as *worth* and this one plainly is not.
+  **A translations row also names its language in itself (SH1270)**: `language` is "Português",
+  "English", "Deutsch", from `ShLanguageNames`, a table keyed by the primary subtag that the product
+  owns, so a JDK upgrade (CLDR revises names and casing) moves no render digest; an unknown subtag
+  comes back upper-cased, visibly a code. The sibling's title stays on the row, but a headline is
+  not a language: Quilhara's switcher read "Trilhas de costão e de serra". `language` is on this
+  row shape only (`TRANSLATION_KEYS`), since only a switcher asks for it.
   **The helper takes no arguments**, the only one here with an empty signature, a translation set is a
   property of *this* page, not something a template selects, and **excludes the current page**, which a
   switcher would otherwise undo with `{{#unless}}` on every template (marking the current language is a

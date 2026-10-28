@@ -69,7 +69,7 @@ class ShRenderLocaleTest {
             <html lang="{{post.locale}}"><head>
             {{#translations}}<link rel="alternate" hreflang="{{locale}}" href="{{url}}">{{/translations}}
             </head><body><nav class="lang">
-            {{#translations}}<a href="{{url}}" hreflang="{{locale}}">{{title}}</a>\
+            {{#translations}}<a href="{{url}}" hreflang="{{locale}}">{{title}}</a><b>{{language}}</b>\
             {{else}}<span class="only">one language</span>{{/translations}}
             </nav><p class="default">{{render.defaultLocale}}</p></body></html>""";
 
@@ -163,10 +163,25 @@ class ShRenderLocaleTest {
 
         assertThat(html).contains("<link rel=\"alternate\" hreflang=\"de\" href=\"/de/\">");
         assertThat(html).contains("<link rel=\"alternate\" hreflang=\"pt-br\" href=\"/pt/\">");
-        // The switcher's label is the sibling's own title, which is already in the target language —
-        // no endonym is invented. A JDK-CLDR display name would be nicer and would move SH101's digest
-        // on every multilingual page the day the JDK is upgraded.
+        // The sibling's own title stays on the row, in the target language by construction.
         assertThat(html).contains("<a href=\"/pt/\" hreflang=\"pt-br\">Início</a>");
+    }
+
+    @Test
+    @DisplayName("SH1270: each sibling names its language in itself, which is what a switcher shows")
+    void theLanguageIsNamed() {
+        // A headline is not a language: Quilhara's switcher read "Trilhas de costão e de serra".
+        // From a table the product owns rather than CLDR, so a JDK upgrade moves no digest.
+        assertThat(render("/"))
+                .as("SH1270: the English page names its siblings Deutsch and Português")
+                .contains("<b>Deutsch</b>", "<b>Português</b>");
+        assertThat(render("/pt/"))
+                .as("SH1270: and the Portuguese page names English, in English")
+                .contains("<b>English</b>");
+        assertThat(com.viglet.shio.render.ShLanguageNames.of("pt_BR")).isEqualTo("Português");
+        assertThat(com.viglet.shio.render.ShLanguageNames.of("xx-yy"))
+                .as("SH1270: an unknown tag is visibly a code, never a guessed name")
+                .isEqualTo("XX");
     }
 
     @Test

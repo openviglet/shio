@@ -283,26 +283,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.43 XI.43 A switcher says the language (SH1270)
-
-Found in the Quilhara package (SH1254), checked in a browser. `{{#translations}}` gives
-each sibling's `locale`, `link` and `title`, and SH383 chose the sibling's title as the
-label on purpose: it is in the target language by construction, and a JDK display name
-would move SH101's digest on every JDK upgrade. On a real page that reads badly. The
-switcher on the English home page said "PT-BR Trilhas de costão e de serra", a whole
-headline where a visitor scans for one word, and on the trails page it said "Trilhas",
-which does not read as a language at all.
-
-The package now shows the code alone (`PT-BR`), which is short and still not what a
-visitor looks for.
-
-The row should carry `language`, the language's own name in itself ("Português",
-"English", "Deutsch"), from a fixed table the product owns rather than the JDK, so the
-digest stays stable and nothing changes on an upgrade. A site that wants another label
-(regional, or with the flag a brand insists on) overrides it per locale in SH1056's
-locale policy. The assertion renders the switcher on a two-locale page and reads
-`Português` and `English`.
-
 ### XI.41 XI.41 Chrome in the page's language (SH1271)
 
 Found building the Quilhara package (SH1254), the first bilingual site a package ships.
@@ -517,6 +497,29 @@ N pages to know.
 Assert on the Quilhara package: after apply, `shio assets prune --dry-run` lists none of
 the three fonts, and the media listing with usage reports each font as loaded by every
 page.
+
+### XI.53 XI.53 The locale policy can label a language (SH1281)
+
+Left over from SH1270. A `{{#translations}}` row now carries `language`, the language's
+name in itself from `ShLanguageNames`, a fixed table keyed by the primary subtag. Two
+things that table cannot say, and a real site needs both: a regional label ("Português
+(Brasil)" beside "Português (Portugal)" on a site that publishes both `pt-br` and
+`pt-pt`, which today render the same word twice), and a brand's own wording ("PT" in a
+compact header, or a flag the brand insists on).
+
+What to build: an optional `labels` map in SH1056's site locale policy
+(`ShSiteLocales`), keyed by the locale tag as the policy already spells `enabled` and
+`fallback`, read by the translations helper before the table. It is policy, so it
+travels the policy's existing paths: the site upsert op on the agent batch, `shio site`
+and the console's locale settings, which keeps P1 (no console-only setting). Validation
+names a key that is not in `enabled` as a teaching error, like `fallback` does.
+
+The same map is the natural source for the CDA's `availableLocales`, so a headless front
+end's switcher and a rendered one say the same word; that reuse is in scope if it is one
+line, and a separate task otherwise.
+
+Assert on a site enabling `pt-br` and `pt-pt` with labels: the switcher on the English
+page reads both labels, and with the map removed it falls back to the table.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

@@ -163,6 +163,10 @@ public class ShRenderHelpers {
     public static final Set<String> MENU_KEYS = java.util.stream.Stream.concat(ROW_KEYS.stream(),
             java.util.stream.Stream.of("current", "ancestor")).collect(java.util.stream.Collectors.toUnmodifiableSet());
 
+    /** What a {@code {{#translations}}} row carries: a listing row and its language's own name (SH1270). */
+    public static final Set<String> TRANSLATION_KEYS = java.util.stream.Stream.concat(ROW_KEYS.stream(),
+            java.util.stream.Stream.of("language")).collect(java.util.stream.Collectors.toUnmodifiableSet());
+
     /**
      * What an {@code {{#image}}} row carries (SH390) — an <b>asset</b>, not a post.
      *
@@ -201,6 +205,7 @@ public class ShRenderHelpers {
         return switch (scope == null ? "" : scope) {
             case "form" -> FORM_FIELD_KEYS;
             case "menu" -> MENU_KEYS;
+            case "translations" -> TRANSLATION_KEYS;
             case "image" -> IMAGE_KEYS;
             default -> ROW_KEYS;
         };
@@ -312,7 +317,7 @@ public class ShRenderHelpers {
                 .filter(post -> !self.equals(post.getId()))
                 .sorted(Comparator.comparing(ShRenderModel::locale)
                         .thenComparing(ShPostUnified::getId))
-                .map(this::row)
+                .map(this::translationRow)
                 .toList();
         if (siblings.isEmpty()) {
             return options.inverse();
@@ -322,6 +327,13 @@ public class ShRenderHelpers {
             out.append(options.fn(row));
         }
         return out;
+    }
+
+    /** A listing row plus {@code language}, the sibling's language named in itself (SH1270). */
+    private Map<String, Object> translationRow(ShPostUnified post) {
+        Map<String, Object> row = new LinkedHashMap<>(row(post));
+        row.put("language", ShLanguageNames.of(ShRenderModel.locale(post)));
+        return ShStableMap.copyOf(row);
     }
 
     /**

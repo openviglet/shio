@@ -14,7 +14,6 @@
 - ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1256** (deps: SH1255 ✅, SH1277) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — The /members page for contentAcl is still owed: a package cannot declare who reads a folder until SH1277 lands. → §XI.35
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
-- 📋 **SH1270** (deps: —) **A translations row has no language name, so a language switcher labels each link with the other page's title** — Quilhara's switcher read PT-BR Trilhas de costão e de serra and now shows only a code, where a visitor looks for Português. → §XI.43
 - 📋 **SH1271** (deps: —) **A layout cannot pick the menu or fixed text of the page's language, so a bilingual site names menus after locale tags** — Quilhara titles its menus en-us and pt-br and leaves its footer bare, because a template has no locale-keyed lookup. → §XI.41
 - 📋 **SH1272** (deps: —) **After an agent publish the console listing marks a live post Rascunho, while agent read says published** — A curator opening a freshly applied site sees every page as an unpublished draft and may publish again or distrust the apply. → §XI.44
 - 📋 **SH1273** (deps: —) **The editor's live preview cannot load a theme's self-hosted fonts: CORS blocks them from its null origin** — A curator judges a page in the wrong typeface, since the sandboxed preview falls back to system fonts the site never shows. → §XI.45
@@ -25,6 +24,7 @@
 - 📋 **SH1278** (deps: —) **The search helper cannot narrow to the page's language, so a bilingual results page lists both** — Quilhara's English search for Marina returns five Portuguese posts, while the CDA's /search already takes a locale. → §XI.50
 - 📋 **SH1279** (deps: —) **A row in another language links under the current page's locale, and that wrong URL serves the page** — On the en-us search page a pt-br trail links to /en-us/trilhas/..., which answers 200, so one page has two addresses. → §XI.51
 - 📋 **SH1280** (deps: —) **assets prune and the media library count a font every page loads as unused, unlike verify since SH1268** — Quilhara's three fonts are listed reclaimable with an instruction to delete them, while verify now says they are used. → §XI.52
+- 📋 **SH1281** (deps: —) **A site cannot relabel a language in its switcher, so pt-br and pt-pt both read Português** — SH1270 names each language from a fixed table, which has no regional or brand wording a site could set. → §XI.53
 
 ## Block S — The public site (shio.viglet.org)
 
