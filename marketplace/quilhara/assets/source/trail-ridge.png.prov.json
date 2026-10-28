@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 6577611,
+    "path": "assets/source/trail-ridge.png",
+    "sha256": "1c09a9863cc059f83e7956ad796ab43d6cd6943afaa7c90be8e6ea9d8833dfc7"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary travel photograph of a granite ridge trail in the Serra do Mar of southeast Brazil just after sunrise, with a stone cairn marking the path above a sea of morning clouds, shot on 35mm full-frame with Kodak Portra grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A high ridge crest in the Serra do Mar of southeast Brazil just after sunrise. A dense sea of white cumulus clouds fills the valley below, broken only by the dark green crowns of distant forested peaks poking through. Layered mountain ridges recede into atmospheric haze on the far horizon, deep forest green fading to pale blue-grey. Cool-neutral daylight from camera-left rakes across the scene. Fine Kodak Portra grain across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Narrow rocky ridge trail of weathered grey granite slabs running diagonally from the lower-left into the mid-distance, edges worn smooth by foot traffic. Soft directional light from camera-left reveals fine fissures and pale lichen patches across the slab surfaces.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Stone cairn stacked from five flat slate-grey granite pieces marking the path at the ridge's apex, slightly off-center right in the midground. Pieces taper upward, edges weathered smooth, sitting clearly against the white cloud sea behind.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Wind-bent grass tufts and low bromeliads clinging to cracks in the granite along the ridge, leaning uniformly to the left as if caught in a steady breeze. Slight motion blur at the grass tips.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Single small dark bird gliding low across the cloud sea in the middle distance, wings spread, silhouetted against the white clouds.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus granite edge slicing in from the bottom-right foreground, soft and blurred. A single dewy grass blade catches the cool daylight along its length.\"\n      }\n    ]\n  }\n}",
+    "seed": 187333233,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6577611,
+    "sha256": "1c09a9863cc059f83e7956ad796ab43d6cd6943afaa7c90be8e6ea9d8833dfc7"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:20:49Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "A rocky ridge trail across a high granite crest above a sea of morning clouds, a stone cairn marking the path, wind-bent grass, mountains of southeast Brazil. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:LlfVRP4STrC940QZ0MYF6w"
+}

@@ -379,6 +379,8 @@
 - **SH1263** — A package's File fields write asset:/path and get the asset's id, because the apply now uploads assets before content; a manifest asset may carry alt, set as ALT without touching captions.
 - **SH1264** — translation-missing now skips layouts, themes, files and the other template types when it collects a site's locales, so a site in en-us and pt-br no longer asks every page for an en version.
 - **SH1265** — A block helper written as a plain variable with no parameter now returns the field of that name, so an image, menu or query field renders its value instead of an empty string.
+- **SH1254** — marketplace/quilhara ships the showcase in en-us and pt-br: model, theme, seven layouts, menus, polyweave-bought photos and self-hosted fonts, published as shio-blueprint-quilhara and judged by the a11y test at 0 findings.
+  checked **The showcase package installs a bilingual site with licensed photography** With the owner's photo set (own or CC0, credits recorded) in assets/, the package applies the Quilhara site in en-us and pt-br, passes ShBlueprintAccessibilityTest and verify's lint with no finding, and the apply's token cost is recorded.
 
 ## Block M — Token economy, measured (SH74)
 

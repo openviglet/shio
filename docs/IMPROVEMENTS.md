@@ -241,32 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.33 XI.33 The showcase package (SH1254)
-
-The package that turns SH1250's spec into a site. It is the site itself, without the
-feature tour, which is a separate task so this one can ship and be judged on looks
-alone.
-
-What it carries:
-
-- the content model: the section vocabulary plus whatever types the brand needs (stories, places, people, products, whatever the spec chose);
-- a `Theme`, `PageLayout`s and `Region`s with a real design, and photography a person licenses (own or CC0);
-- `Primary` and footer menus through `{{#menu}}` (SH873's pattern, never a title-sorted query);
-- home, listing and detail pages, filled with copy written for the brand and images delivered through SH1252;
-- en and pt variants of every page, through the localization model Block BH shipped.
-
-**Where it lives.** Not on the classpath: the image set would bloat every jar for an
-instance that never installs the demo. The source sits in the repo outside
-`src/main/resources`, and `shio-site/scripts/marketplace.mjs` packs it into the
-published catalogue beside the six first-party packages.
-
-**What proves it.** `ShBlueprintAccessibilityTest` picks it up by declaring a
-`PageLayout`, if the test can reach a package that is not on the classpath; that reach
-is part of this task. The render must also pass `verify`'s lint with no finding, and the
-published sample content follows SH930's em-dash rule. The token cost of applying it is
-measured and recorded, because the apply's report grows with every op and P3 makes that
-a number, not an impression.
-
 ### XI.34 XI.34 Every feature has a showcase page, or a reason (SH1255)
 
 A demo that shows every feature on the day it ships shows most of them a year later.
@@ -347,6 +321,192 @@ element's position or its `alt` so the author can find it, with a fix that names
 field the template reads there when the scanner can tell. The assertion is a layout
 writing `src="{{missing}}"` that fails verify, beside one writing a real asset that
 passes.
+
+### XI.40 XI.40 The current menu item (SH1267)
+
+Found building the Quilhara layouts (SH1254). `{{#menu title=}}` yields rows with
+`name`, `url` and `link`, and nothing comparing them with the page being rendered. A
+template cannot compare either: there is no equality helper, and `post.url` versus a
+row's `url` would miss a translation, a redirect and a child page anyway.
+
+So the primary navigation of every site built on Shio renders with no
+`aria-current="page"` and no current style. That is an accessibility gap (WCAG 2.4.8,
+location) and the most common navigation cue a visitor has.
+
+The renderer knows the page: `menuRow` resolves each item's target post, and the model
+carries the current post's id. Each row should carry `current` (true when the target is
+the page being rendered) and `ancestor` (true when the page lives under the target's
+folder or the target is a parent menu of the current item), so a layout writes `{{#if
+current}} aria-current="page"{{/if}}`. Both are booleans on a row SH382 already builds,
+at no extra query. The packages that ship a layout (landing, marketing-site, quilhara)
+adopt it in the same task, and the assertion renders a menu on two pages and reads which
+item each marks.
+
+### XI.42 XI.42 What a stylesheet loads is used (SH1268)
+
+Found applying the Quilhara package (SH1254) to a clean instance after SH1263: three
+warnings remained, `asset-unused` for `fraunces-600.woff2`, `inter-400.woff2` and
+`inter-600.woff2`. The theme loads all three through `@font-face { src:
+url("/fonts/...") }`, every rendered page fetches them (checked in a browser: all three
+loaded), and the fix the finding offers is `shio assets prune`, which would delete them.
+
+The reference index (SH1034) is fed only by File and Content Select fields, so a
+reference from CSS, from an inline `style`, or from a `src` a layout writes as a site
+path never counts. The spec's own direction (SH1250) is fonts self-hosted in the
+package, so every site built that way inherits the false finding.
+
+The page check already walks every reference a rendered page makes
+(`ShPreviewLinks.referencesIn`, which reads `url()` in `<style>` too) and resolves each
+to a site asset. The fix is to let `unusedAssets` consult that set when the page check
+runs: an asset a rendered page asks for is used. When the page check did not run, the
+rule keeps its current reading and says so in its note. The assertion is a theme with a
+self-hosted font that no longer reports it.
+
+### XI.43 XI.43 A switcher says the language (SH1270)
+
+Found in the Quilhara package (SH1254), checked in a browser. `{{#translations}}` gives
+each sibling's `locale`, `link` and `title`, and SH383 chose the sibling's title as the
+label on purpose: it is in the target language by construction, and a JDK display name
+would move SH101's digest on every JDK upgrade. On a real page that reads badly. The
+switcher on the English home page said "PT-BR Trilhas de costão e de serra", a whole
+headline where a visitor scans for one word, and on the trails page it said "Trilhas",
+which does not read as a language at all.
+
+The package now shows the code alone (`PT-BR`), which is short and still not what a
+visitor looks for.
+
+The row should carry `language`, the language's own name in itself ("Português",
+"English", "Deutsch"), from a fixed table the product owns rather than the JDK, so the
+digest stays stable and nothing changes on an upgrade. A site that wants another label
+(regional, or with the flag a brand insists on) overrides it per locale in SH1056's
+locale policy. The assertion renders the switcher on a two-locale page and reads
+`Português` and `English`.
+
+### XI.41 XI.41 Chrome in the page's language (SH1271)
+
+Found building the Quilhara package (SH1254), the first bilingual site a package ships.
+One `PageLayout` serves both languages, as it should. But everything the layout writes
+itself (the menu it picks, a skip link, the footer's lines, an aria-label on the
+navigation) has one language, because a template has no way to vary by `post.locale`: no
+equality helper, and `{{#menu title=}}` matches a literal title.
+
+The workaround the package uses is `{{#menu title=post.locale}}` with two menus titled
+`en-us` and `pt-br`, which a curator then meets in the console as two menus named after
+codes. The footer carries only the brand, and there is no skip link, because any
+sentence there would be English on the Portuguese pages.
+
+Two shapes would close it, and the task picks one: a `locale=` parameter on `{{#menu}}`
+that prefers the menu translated into the page's locale (menus are posts, so they
+already have translation groups), plus a site-level string table (a `Strings` post per
+locale, read as `{{t "skip"}}`); or a single `{{#i18n}}` block keyed by locale. The
+first reuses the translation model a curator already edits in the console, which argues
+for it. The assertion renders one layout in two locales and reads both menus and both
+strings.
+
+### XI.44 XI.44 One answer to "is this published" (SH1272)
+
+Found applying the Quilhara package (SH1254) on a clean instance and opening it in the
+console (Playwright, `/bento/content/object/<trails folder>`). Every post shows the
+amber dot and "Rascunho". The folder listing, `GET /api/v2/object/{id}/list`, answers
+`"published": false, "publishStatus": "DRAFT"` for `/trails/black-rocks`.
+
+The same post, the same second: `GET
+/api/v2/agent/read?address=post:quilhara/trails/wind-crest` answers `published: true`
+for both the draft and the published row, the two rows' data hash to the same digest
+(nothing pending), and `/sites/quilhara/default/en-us/trails/black-rocks` serves the
+page. The apply ran `post.publish` for each post, as the package declares `publish:
+true`.
+
+So the console listing derives "published" from something the agent publish path does
+not set, plausibly a `publishStatus` column on the draft row that `post.publish` leaves
+at `DRAFT`, where `/agent/read` checks for a published row. Two surfaces answering one
+question differently is the defect, whichever is right.
+
+The fix decides one rule (a post is published when a PUBLISHED row exists; it has
+pending changes when the draft's digest differs) and makes the listing, the editor
+header, search and `/agent/read` read it. The assertion publishes through `post.publish`
+and reads the listing, expecting `published: true` and no pending-change mark.
+
+### XI.45 XI.45 The live preview loads the site's fonts (SH1273)
+
+Found opening a Quilhara trail (SH1254) in the console editor with Playwright. The
+"Pré-visualização ao vivo" panel renders the page in a sandboxed iframe whose origin is
+`null`. The theme declares `@font-face { src: url("/fonts/inter-400.woff2") }`, and the
+browser logs, for each of the three fonts: "Access to font at
+'http://localhost:2711/fonts/inter-400.woff2' from origin 'null' has been blocked by
+CORS policy". The headings render in the fallback serif.
+
+Two defects stack. The path is the site path, unrewritten, so it asks the instance root
+rather than the site (the `/sites/**` delivery rebases it, the preview does not); and a
+font is a CORS request, so even the right URL needs `Access-Control-Allow-Origin` for an
+opaque origin. Images in the same panel load, because an `<img>` is not a CORS fetch.
+
+The fix rebases the preview's references the way delivery does
+(`ShPreviewLinks.rewriteInto` already handles `url()` in `<style>`), into a route that
+serves site assets with `Access-Control-Allow-Origin: *` for font types, which is safe
+for public bytes. The assertion loads the live preview of a page whose theme self-hosts
+a font and reads `document.fonts` as loaded, with no console error.
+
+### XI.46 XI.46 A site is its root folder, once (SH1274)
+
+Found opening the Quilhara site (SH1254) in the console with Playwright.
+`/bento/content/object/<site>` shows "1 pasta, 0 post" and a single row, a folder called
+`quilhara`, beneath a title that already says `quilhara`; the tree repeats it (`quilhara
+> quilhara`). Every content screen then carries the doubled name: the editor's File
+field shows the asset at `quilhara > quilhara > images`, and the browser breadcrumb
+reads `SITES > QUILHARA > EN` only after a click into a folder the curator did not
+create.
+
+The root folder is a storage fact (SH128: only a site's root folder carries the site),
+not something a curator chose or can usefully act on, and it is the only child the site
+object ever has.
+
+The site page should open on the root folder's contents (its folders and posts, its
+"Novo" and "Importar" actions), and every path a curator reads (tree, breadcrumbs, the
+File field's location, the move dialog) should start at the site and omit the root
+folder's own name. Addresses already do this (`folder:quilhara/en/trails`), so the
+console would match the agent surface. The assertion opens a site and finds its folders
+on the first screen, and reads a file location that names the site once.
+
+### XI.47 XI.47 The create button suggests what the folder holds (SH1275)
+
+Found in the console on the Quilhara site (SH1254), with Playwright. The content
+browser's primary button reads "Novo Guide" in the site root, in `/en`, and in
+`/en/trails`, a folder holding three Trails and nothing else. The split button beside it
+lists the other types, so the capability is there; the default is the problem, and it
+looks like the first type the instance knows, in some order unrelated to the folder.
+
+A default is a guess, and the folder supplies a better one at no cost: the type most of
+its posts already have, then the type the curator last created in this folder (kept per
+folder in local storage), then the site's page type from `postTypeLayout`, and only then
+the first type. An empty folder at the site root would offer the page type, which is
+what a curator usually wants there.
+
+The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
+and reads the site's page type.
+
+### XI.48 XI.48 The site listing's cost is measured warm (SH1276)
+
+Seen on 2026-10-28 while gating SH1254: one full `pnpm java` run failed
+`ShSiteListingCostTest.theListingIsBoundedInStatements` with `Measured [6, 3]`, and the
+next full run passed measuring `[3, 3]`. Run alone it passed twice. SH1254 does not
+touch `GET /api/v2/site`.
+
+The test warms with one `listing()` call before each measurement, as its comment says,
+because the first read of a fresh context pays for metadata. The `[6, 3]` shape says one
+warm call is not always enough at the smaller size: three extra statements land in the
+first window and none in the second. Two plausible sources, both global to the
+`SessionFactory` the test reads: a lazy collection or second-level cache first touched
+by the measured call rather than the warm one, or a component in the shared context
+preparing statements on another thread (a backfill runner, an event listener) inside the
+window.
+
+The fix is to find which: log the statements prepared in the window when the count
+exceeds the bound (Hibernate's `StatementInspector` gives the SQL), then either warm the
+path that pays it or measure on a session the test owns. Until then the assertion should
+report the extra SQL in its message, because "Measured [6, 3]" names a number and not a
+cause. SH250's rule applies: a benchmark that fails one run in N is the assertion people
+learn to rerun.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

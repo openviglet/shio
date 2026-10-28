@@ -1,0 +1,94 @@
+{
+  "name": "Story",
+  "title": "Story",
+  "namePlural": "Stories",
+  "description": "Long-form editorial with a captioned photograph.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "headline",
+      "label": "Headline",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "summary",
+      "label": "Summary",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "image",
+      "label": "Image",
+      "description": null,
+      "widget": "File",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "imageAlt",
+      "label": "Image description",
+      "description": "What the picture shows, for someone who cannot see it.",
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "caption",
+      "label": "Caption",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 5,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "byline",
+      "label": "Byline",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 6,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "body",
+      "label": "Body",
+      "description": null,
+      "widget": "HTML Editor",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 7,
+      "widgetSettings": null,
+      "fields": []
+    }
+  ]
+}

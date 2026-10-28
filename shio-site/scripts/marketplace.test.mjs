@@ -17,7 +17,7 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 
@@ -44,13 +44,16 @@ function python() {
   return null;
 }
 
+/** SH1254 — published from `marketplace/`, built into no jar. */
+const PUBLISHED_ONLY = ["quilhara"];
+
 test("SH676: every first-party package becomes a catalogue entry", () => {
   const { items } = build({ write: false });
 
-  assert.equal(items.length, BUILT_IN.length,
+  assert.equal(items.length, BUILT_IN.length + PUBLISHED_ONLY.length,
     `expected one entry per package, got ${items.length}`);
   assert.deepEqual(items.map((item) => item.id).sort(),
-    BUILT_IN.map((name) => `shio-blueprint-${name}`).sort());
+    [...BUILT_IN, ...PUBLISHED_ONLY].map((name) => `shio-blueprint-${name}`).sort());
   for (const item of items) {
     assert.ok(item.title, `${item.id} has no title`);
     assert.ok(item.description, `${item.id} has no description`);
@@ -105,6 +108,27 @@ print(len(z.namelist()))
         + "it with a name-mismatch");
     assert.ok(Number(entries) > 1, `${item.id}: the archive carries only the manifest`);
   }
+});
+
+test("SH1254: the showcase ships its assets and leaves the polyweave project behind", () => {
+  const runner = python();
+  build();
+  const archive = join(OUT, "shio-blueprint-quilhara", "shio-blueprint-quilhara.zip");
+  const read = spawnSync(runner, ["-c", `
+import sys, zipfile
+for name in zipfile.ZipFile(sys.argv[1]).namelist():
+    print(name)
+`, archive], { encoding: "utf8" });
+  assert.equal(read.status, 0, read.stderr);
+  const names = read.stdout.trim().split(/\r?\n/);
+  assert.ok(names.includes("shio-blueprint-quilhara/assets/images/home-coast.webp"),
+    "SH1254: the showcase's photography is missing from its archive");
+  assert.ok(names.includes("shio-blueprint-quilhara/assets/fonts/inter-400.woff2"),
+    "SH1254: the self-hosted fonts are missing from the archive");
+  assert.deepEqual(names.filter((name) => /polyweave\.|assets\/source\//.test(name)), [],
+    "SH1254: the polyweave config, ledger and full-size originals are not part of the package");
+  const size = statSync(archive).size;
+  assert.ok(size < 8 * 1024 * 1024, `SH1254: the showcase archive is ${size} bytes, over the 8 MB the spec plans`);
 });
 
 test("SH676: the same packages produce the same bytes (P5)", () => {

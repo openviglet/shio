@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 7101375,
+    "path": "assets/source/trail-coast.png",
+    "sha256": "3353e0f75e449c1f79f579ce85e1415413af637a0c017853a98c15131af4591e"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary travel photograph of a narrow footpath threading over dark wet coastal rocks between two small sandy coves on the Atlantic coast, with a plain wooden waymark post anchored just left of center in the midground under flat overcast light.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Flat overcast Atlantic coastal scene under diffused daylight with a slate grey sky meeting the sea at a low horizon. A distant headland recedes into soft grey haze along the right horizon. The ground is dark basalt and granite rock slick with seawater, scattered with patches of dark green wrack and orange lichen across the midground and foreground. Cool neutral white balance throughout, deep charcoal wet rock reading against muted sage and rust vegetation tones.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Distant headland receding into soft grey haze along the right horizon, low silhouette of land fading into the overcast sky.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Lone seabird gliding low across the far water in the background, small dark silhouette with wings extended horizontally, positioned in the upper-right area above the waterline.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Two small crescent sandy coves flanking the path in the midground, pale warm cream sand meeting the wet rock line at their edges, gentle wavelets curling in from the Atlantic. One cove to the left of the path, one to the right.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Narrow dirt-and-gravel trail winding between the two coves through the midground, leading the eye from the lower-right foreground toward the distant headland. Edges softened by tufts of marram grass and low sea thrift in muted sage and rust tones.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Plain weathered wooden waymark post planted in the rock at the path's edge just left of center in the midground, single horizontal arm pointing along the trail toward the headland. Grey weathered timber, no signage or paint, simple unadorned construction.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Shallow tide pools in the lower-right foreground holding still water reflecting the grey sky, a few small limpets clinging to the pool floor and a single orange-pink starfish visible on the sandy bottom of one pool.\"\n      }\n    ]\n  }\n}",
+    "seed": 1826555718,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 7101375,
+    "sha256": "3353e0f75e449c1f79f579ce85e1415413af637a0c017853a98c15131af4591e"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:21:07Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "A trail over dark coastal rocks between two small sandy coves, tide pools, a plain wooden waymark post, overcast soft light, Atlantic coast. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:pim2bLsVS1eC-OoSaT77KA"
+}

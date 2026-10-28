@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 6127820,
+    "path": "assets/source/guide-portrait.png",
+    "sha256": "70e01af7623b9cc00273fa4f435105e77a8092769f0cf7c25e222844ceee493d"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "4x5",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "1792x2240",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary travel photograph of a weathered female trail guide in her forties standing on a windswept coastal headland in late afternoon, framed from mid-thigh up slightly left of center with the sea stretching out behind her, shot on Kodak Portra with fine grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A windswept coastal headland in late afternoon under natural overcast-to-clear daylight with a neutral cool-toned white balance. The sea stretches out behind the figure in soft muted blues and greys, softened by shallow depth of field. The horizon line sits at the lower third of the frame. A distant rocky outcrop juts from the water in the far background, rendered as a soft dark silhouette against the pale sky. Fine Kodak Portra grain runs evenly across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Distant rocky outcrop jutting from the sea in the far background, a soft dark grey-brown silhouette against the pale horizon, blurred by shallow depth of field.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Two seabirds gliding low over the water near the horizon line on the left side of the frame, small dark silhouettes with wings spread wide, slightly blurred.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Female trail guide in her forties, body filling roughly 70% of the frame height from mid-thigh up, anchored slightly left of center as the focal subject. In three-quarter front view angled toward the camera, weight settled on her back foot. Sun-weathered face with fine lines around the eyes and a faint tan line at the jaw, calm steady expression, gaze directed just past the camera to the right. Salt-and-pepper hair tucked under a faded olive-green cap with a worn brim, slight wind movement lifting strands. Faded khaki field shirt with rolled sleeves and small stains at the cuffs, dark canvas trousers, scuffed leather hiking boots. Right hand resting on her hip, left hand loose at her side holding a folded paper map. Her skin has a natural, detailed texture with visible pores and fine lines; eyes catching the cool daylight.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Weathered wooden trail marker post leaning slightly to the right of the guide, grey-brown sun-bleached timber with visible grain and cracks, vertical orientation, partially softened by shallow depth of field.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Tufted coastal grasses bending in the wind along the foreground edge of the cliff, dry pale green and straw-colored blades leaning to one side, sharp focus near the guide's boots.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus tuft of grass slicing into the lower-left foreground, soft blurred blades in muted green and tan tones, framing the lower-left corner.\"\n      }\n    ]\n  }\n}",
+    "seed": 166805719,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6127820,
+    "sha256": "70e01af7623b9cc00273fa4f435105e77a8092769f0cf7c25e222844ceee493d"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:22:22Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Outdoor portrait of a weathered trail guide in her forties wearing a faded field shirt and a cap, standing on a coastal headland, calm expression, shallow depth of field. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:QRESxL6dT0Ohydi5WB9pAQ"
+}

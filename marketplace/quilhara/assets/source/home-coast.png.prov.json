@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 6843761,
+    "path": "assets/source/home-coast.png",
+    "sha256": "834d3131a9766373dfc799007e82aeb9c7b34e2d949664c254b725c018759abf"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "16x9",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary travel photograph of two hikers walking away along a narrow coastal footpath carved into green cliffs above a turquoise Atlantic bay on the southern Brazilian coastline at early morning, shot on 35mm with Kodak Portra grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Early morning sky over the southern Brazilian coastline, pale cool blue overhead fading to a softer hazy band near the horizon. Soft atmospheric haze separates the distant headland from the sky. Low sun rakes horizontally from the right edge, catching the tops of vegetation in a thin amber rim while the rest of the scene stays cool-neutral with true-to-life greens and accurate turquoise water. Fine Kodak Portra grain across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Distant headland jutting into the bay on the right horizon, low green silhouette softened by morning haze, its edge blurred into the pale sky.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Turquoise Atlantic bay filling the midground below the cliffs, shallow water grading from pale aqua near the shore to deeper teal further out, surface calm with faint ripples.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Pale sand beach curving along the base of the cliffs in the mid-distance, a thin cream-colored arc separating the turquoise shallows from the cliff base.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Single seabird gliding low over the water in the middle distance, small dark silhouette with wings spread, viewed from a slight side angle.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Dense green cliffside vegetation of low shrubs, ferns, and tangled vines spilling toward the path's edge along the left and upper portions of the frame, tops catching a thin amber rim from the low right-side sun.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Narrow dirt-and-grass footpath entering from the lower-right foreground and curving leftward into the mid-distance along the cliff edge, worn smooth in the center with tufts of coastal grass at the edges.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Two hikers far ahead on the path in the mid-distance, walking away from camera with weight settled into mid-stride, both carrying small daypacks. Left hiker in a faded red windbreaker and dark trousers; right hiker in a pale blue long-sleeve shirt and khaki shorts. Shoulders catch a thin amber rim from the low sun on the right.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus blade of tall grass slicing diagonally into the lower-left foreground close to the lens, soft green blur against the sharper scene beyond.\"\n      }\n    ]\n  }\n}",
+    "seed": 1283597158,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6843761,
+    "sha256": "834d3131a9766373dfc799007e82aeb9c7b34e2d949664c254b725c018759abf"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:20:17Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Documentary travel photograph of a narrow coastal footpath along green cliffs above a turquoise Atlantic bay at early morning, two hikers with small backpacks far ahead, low sun, southern Brazilian coastline. Natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:C0_E22cZRjCVHYLaQ_RZXg"
+}

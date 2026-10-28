@@ -12,11 +12,19 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — The owner publishes server.json with mcp-publisher, submits the Claude Code lists and the More tools line, and records each link in actions.json. → §XI.28
-- ⏳ **SH1254** (deps: SH1250 ✅, SH1252 ✅, SH1263 ✅) **No package ships a designed, bilingual site with real imagery, so a first install shows Shio at its plainest** — One marketplace package builds the showcase's model, theme, layouts, menus and pages in en and pt, clean under a11y. → §XI.33
-- 📋 **SH1255** (deps: SH1254) **Nothing fails when Shio ships a capability the showcase does not demonstrate** — A test maps each manifest features key and MCP tool to a showcase page or a stated exclusion, holding the gap as a named list so the demo cannot fall behind. → §XI.34
+- 📋 **SH1255** (deps: SH1254 ✅) **Nothing fails when Shio ships a capability the showcase does not demonstrate** — A test maps each manifest features key and MCP tool to a showcase page or a stated exclusion, holding the gap as a named list so the demo cannot fall behind. → §XI.34
 - 📋 **SH1256** (deps: SH1255) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — Tour pages, each with a how-it-was-built panel naming the console screen, MCP tool and CDA call behind it, drain SH1255's debt to zero. → §XI.35
-- 📋 **SH1257** (deps: SH1254) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo only sells Shio if a first boot can reach it; decide between enabling the published catalogue by default and a narrower showcase entry, with the trust cost stated. → §XI.36
+- 📋 **SH1257** (deps: SH1254 ✅) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo only sells Shio if a first boot can reach it; decide between enabling the published catalogue by default and a narrower showcase entry, with the trust cost stated. → §XI.36
 - 📋 **SH1266** (deps: —) **verify's page check passes a rendered img whose src is empty, so a page showing no images reports no finding** — SH1265 put src="" on every card of a site and verify stayed green, because it reads stored values and skips an empty reference. → §XI.37
+- 📋 **SH1267** (deps: —) **A menu row does not say whether it is the page being rendered, so a layout cannot mark the current item** — Every Shio site's navigation lacks aria-current and a visible current state, which screen readers and visitors both use. → §XI.40
+- 📋 **SH1268** (deps: —) **asset-unused reports fonts and images a theme's CSS references, because only File and Content Select fields count** — A site that self-hosts its fonts gets an unused warning per font and is told to delete files every page loads. → §XI.42
+- 📋 **SH1270** (deps: —) **A translations row has no language name, so a language switcher labels each link with the other page's title** — Quilhara's switcher read PT-BR Trilhas de costão e de serra and now shows only a code, where a visitor looks for Português. → §XI.43
+- 📋 **SH1271** (deps: —) **A layout cannot pick the menu or fixed text of the page's language, so a bilingual site names menus after locale tags** — Quilhara titles its menus en-us and pt-br and leaves its footer bare, because a template has no locale-keyed lookup. → §XI.41
+- 📋 **SH1272** (deps: —) **After an agent publish the console listing marks a live post Rascunho, while agent read says published** — A curator opening a freshly applied site sees every page as an unpublished draft and may publish again or distrust the apply. → §XI.44
+- 📋 **SH1273** (deps: —) **The editor's live preview cannot load a theme's self-hosted fonts: CORS blocks them from its null origin** — A curator judges a page in the wrong typeface, since the sandboxed preview falls back to system fonts the site never shows. → §XI.45
+- 📋 **SH1274** (deps: —) **The console shows a site's root folder as a folder named like the site, so every path reads quilhara, quilhara** — Opening a site lands on a list holding one folder, the same name twice in every breadcrumb, which costs a click and looks like a mistake. → §XI.46
+- 📋 **SH1275** (deps: —) **The content browser's create button offers an arbitrary post type, Novo Guide in every Quilhara folder** — The first action on every folder suggests the wrong thing, even in a folder whose posts are all Trails. → §XI.47
+- 📋 **SH1276** (deps: —) **ShSiteListingCostTest fails about one full run in four: its first measurement sometimes counts 6 statements, then 3** — A red Java gate on a commit that never touched the site listing stops the work and teaches people to rerun until green. → §XI.48
 
 ## Block S — The public site (shio.viglet.org)
 
@@ -30,13 +38,6 @@
   io.github.openviglet/shio, the Claude Code lists the visibility repo tracks name Shio,
   the More tools section carries a Shio line, and each link is in that repo's
   actions.json.
-
-## Done when — SH1254
-
-- **The showcase package installs a bilingual site with licensed photography** With the
-  owner's photo set (own or CC0, credits recorded) in assets/, the package applies the
-  Quilhara site in en-us and pt-br, passes ShBlueprintAccessibilityTest and verify's
-  lint with no finding, and the apply's token cost is recorded.
 
 ## Non-goals (do NOT add as tasks)
 

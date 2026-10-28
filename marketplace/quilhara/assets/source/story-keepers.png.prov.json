@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 7971998,
+    "path": "assets/source/story-keepers.png",
+    "sha256": "4786dc0f10af886b5e88d51395d0a3cd4123dbf01d280e9577dfae9771edca48"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary photograph of a forest trail restoration crew working through a fallen-branch tangle on a damp Pacific Northwest path, with three volunteers in the midground and a fourth receding into the background, shot on 35mm with Kodak Portra grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A damp Pacific Northwest forest trail in late morning under overcast daylight filtering through a dense canopy of Douglas fir and western hemlock trunks rising on both sides. Mossy understory of ferns and salal fills the lower edges of the frame in true-to-life greens. Muted earth tones of bark and soil, neutral cool-toned white balance, no warm grade. Mild atmospheric haze from morning moisture softens the deeper background. The dirt trail surface is damp and packed, running diagonally through the scene.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Distant fourth volunteer barely visible deep in the background along the trail, small in scale, carrying a bundle of cut branches on one shoulder, body in three-quarter rear view walking away from camera, gaze directed forward down the trail. Softened by atmospheric haze.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Older man standing further up the trail in the midground-background, in three-quarter view facing back toward the others at center-left, head turned to look down the trail toward the kneeling woman and crouched younger man. Navy windbreaker over a grey tee, khaki work pants, worn brown boots, leather gloves. Both hands grip a long-handled bow saw held across his chest.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Pile of freshly cut branches and bark-stripped logs stacked along the right edge of the trail in the midground, pale tan wood against darker bark, irregular lengths leaning together.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Middle-aged woman kneeling on one knee on the trail at center-left midground, body angled three-quarters toward the branch she's cutting, weight settled forward, head tilted down toward the cut, gaze directed at the saw blade. Faded olive flannel rolled to the elbows, dark canvas work pants, scuffed brown leather boots, heavy tan leather work gloves. Both hands grip a small hand saw mid-cut through a six-inch branch, slight motion blur on the saw blade.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Younger man crouched low beside a half-built stone step at left-of-center midground, body angled three-quarters away from camera, head bowed toward the rock he's placing, gaze directed at his hands. Heather-grey long-sleeve henley, charcoal cargo pants, muddy hiking boots, black-and-orange work gloves. Both hands stack a flat grey river rock into place.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Hand tools scattered on the damp dirt in the lower-left foreground, partially out of focus: a folding pruning saw with dark handle, a small hand axe with a wooden handle lying flat, a coiled length of bright orange paracord, and a battered metal water bottle tipped on its side.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Half-finished stone step course of flat grey river rocks running diagonally across the lower-left foreground, partially out of focus, rocks stacked two courses high with gaps between them.\"\n      }\n    ]\n  }\n}",
+    "seed": 1827028195,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 7971998,
+    "sha256": "4786dc0f10af886b5e88d51395d0a3cd4123dbf01d280e9577dfae9771edca48"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:22:01Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Three trail volunteers in work gloves clearing fallen branches and rebuilding stone steps on a forest trail, tools on the ground, candid. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:L764RHS1TmKP3jNKPOBYvw"
+}

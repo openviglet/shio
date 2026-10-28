@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 5366305,
+    "path": "assets/source/about-map.png",
+    "sha256": "0f811a8fff655f79225ee103f0ea2ca380405cfe6c5a9911dcb4d2f55113bf5f"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "1792x2240",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary travel photograph of a wooden table by a window where someone is planning a hiking trip, with a worn topographic map, brass compass, yellow pencil, open notebook, and enamel coffee mug arranged in a loose working cluster under soft north-facing morning light.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A weathered oak table surface fills the lower two-thirds of the frame, showing visible grain, knots, and a faint ring stain near the edge. North-facing window light enters from the right, soft and directional, raking gently across the paper to reveal its texture. An out-of-focus linen curtain at the right edge of the frame gently diffuses the morning light. The upper third of the frame holds breathing room where the light source lives. Neutral cool-toned white balance with true-to-life color rendering. Fine Kodak Portra grain across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Worn paper topographic map spread across the center of the table, occupying roughly half the frame as the focal subject. Edges curled and creased from previous folds, faint contour lines and shaded relief visible across the cream-colored surface. Slight curl at the corners catching the raking light from the right.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Brass-and-black compass resting on the upper-right corner of the map. Circular brass bezel around a black dial face, glass cover catching a soft highlight from the window light. Thin red-and-white needle pointing toward the right side of the frame where the window sits.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Yellow wooden pencil lying diagonally across the lower-left portion of the map, oriented from upper-left to lower-right. Painted yellow shaft, chewed pink eraser end at one tip, graphite point worn to a fine dark tip at the other.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Small spiral-bound notebook open beside the map on the right side, pages facing up. White ruled paper with handwritten route notes in blue ballpoint ink, a few small sketched arrows and elevation marks visible on the page. Black wire spiral binding along the left edge.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Half-empty enamel mug of black coffee at the upper-left corner of the table. White enamel body with a thin chipped rim, dark coffee filling roughly half the interior. Faint wisp of steam rising from the surface.\"\n      }\n    ]\n  }\n}",
+    "seed": 1480134248,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 5366305,
+    "sha256": "0f811a8fff655f79225ee103f0ea2ca380405cfe6c5a9911dcb4d2f55113bf5f"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:22:59Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "A worn paper topographic map, a compass, a pencil and a notebook on a wooden table by a window, morning light, hiking planning. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:Q9BP-uqGRBuO-VGCRt2XvQ"
+}

@@ -257,15 +257,19 @@ test("SH929: the published copy carries no em dash", () => {
  * taken, these ten go in that pass and this note is where to start.</p>
  */
 const BLUEPRINT_CONTENT = join(repo, "shio-app", "src", "main", "resources", "blueprints");
+/** SH1254 — packages published from `marketplace/` publish sample content too. */
+const MARKETPLACE_CONTENT = join(repo, "marketplace");
 
 function sampleContentFiles() {
   const out = [];
-  for (const name of readdirSync(BLUEPRINT_CONTENT)) {
-    const dir = join(BLUEPRINT_CONTENT, name, "content");
-    if (!existsSync(dir)) continue;
-    for (const file of readdirSync(dir)) {
-      if (file.endsWith(".json")) {
-        out.push({ path: `blueprints/${name}/content/${file}`, body: readFileSync(join(dir, file), "utf8") });
+  for (const root of [BLUEPRINT_CONTENT, MARKETPLACE_CONTENT]) {
+    for (const name of readdirSync(root)) {
+      const dir = join(root, name, "content");
+      if (!existsSync(dir)) continue;
+      for (const file of readdirSync(dir)) {
+        if (file.endsWith(".json")) {
+          out.push({ path: `${relative(repo, dir)}/${file}`, body: readFileSync(join(dir, file), "utf8") });
+        }
       }
     }
   }

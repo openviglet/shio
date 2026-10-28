@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 9109584,
+    "path": "assets/source/trail-forest.png",
+    "sha256": "85ce1a30c954e01dec8c05b85e00562fa5a4b01d1d2a627930e4555db88f9b85"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary travel photograph of a shaded earthen footpath winding through dense Atlantic rainforest toward a small waterfall and clear pool, with dappled sunlight cutting through the canopy in the late morning.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Dense Atlantic rainforest interior in late morning. Towering broad-leafed trees arch overhead forming a thick canopy, with vines and lianas hanging between trunks. Shafts of dappled sunlight cut diagonally through gaps in the canopy, producing soft pools of light on the path and leaves while the surrounding forest stays cool and shaded. Saturated greens range from deep emerald to bright chartreuse where light hits, with neutral cool shadows throughout. Natural ambient daylight only, no warm grading.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Narrow earthen footpath curving from the lower-right foreground into the midground toward the left-third, packed dirt surface scattered with fallen brown leaves and exposed tree roots crossing its length. The primary leading line drawing the eye into the scene.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Dense understory of large ferns lining both sides of the path, fronds reaching across the trail edges in deep emerald green. Bromeliads clustered on low branches and moss-covered fallen logs along the path's margins.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Small waterfall at the end of the path, anchored at the left-third in the midground. White water cascading over a mossy rock ledge, breaking into a shallow clear pool below.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Clear pool at the base of the waterfall in the midground, water reflecting fragments of green canopy overhead. Smooth river stones visible through the transparent water.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus fern frond slicing diagonally into the lower-left foreground edge, soft blurred green silhouette framing the corner.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Tiny blue morpho butterfly mid-flight near the pool in the background, iridescent blue wings catching a small highlight against the darker forest behind it.\"\n      }\n    ]\n  }\n}",
+    "seed": 991958571,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 9109584,
+    "sha256": "85ce1a30c954e01dec8c05b85e00562fa5a4b01d1d2a627930e4555db88f9b85"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:21:25Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "A shaded path through dense Atlantic rainforest with ferns and bromeliads, a small waterfall and clear pool at the end, dappled light. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:8ABPwSnTTamhcu0gyBWbRA"
+}

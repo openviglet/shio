@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 6470978,
+    "path": "assets/source/story-tides.png",
+    "sha256": "9bc64c66776fd5692bbd3d7142e1ab4b2430b37fcea2899986dbb3bb6ece50b3"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary travel photograph of a hiker's weathered hands holding a folded paper tide table and a yellow pencil on a wet sandstone rock, with receding tidal water and a distant headland behind, shot on iPhone with fine Kodak Portra grain.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A late-afternoon tidal flat under a soft pale sky with neutral cool-toned white balance. Wet sand stretches across the midground, sheeting back with a thin reflective film of receding water that catches the sky as a mirror band. A low headland silhouette sits in the upper third of the frame at the far distance. Ambient natural light from a low sun behind camera-right rakes across the scene. Fine Kodak Portra grain runs evenly across the frame.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Distant low headland silhouette in the far background, sitting in the upper third of the frame slightly left of center. Dark muted blue-grey shape against the pale sky, flat-topped and softly blurred by atmospheric haze.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Lone seabird gliding low over the water in the far background, small dark silhouette with wings spread horizontally, positioned to the right of the headland near the horizon line.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Dark wet sandstone rock beneath the hands, occupying the lower-center of the frame. Slick surface glistening with seawater, scattered with tiny pale barnacles clustered along one edge and a single stranded limpet shell resting on top, conical and ridged.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Folded paper tide table held open between two weathered hands, anchored slightly right of center. Cream-colored paper with visible grid columns of printed tide data, handwritten pencil marks in the margins, edges softened and slightly creased from handling. Low sun rakes across the page from camera-right.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Weathered hands of a hiker holding the tide table open, fingers slightly sandy with faint grit on the knuckles. Left hand supports the lower edge of the paper; right thumb pins the page open. Skin has natural detailed texture with visible veins and small creases, medium skin tone, raking light catching the knuckles from camera-right.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Yellow wooden pencil with chewed pink eraser end, held between the index and middle finger of the right hand. Sharpened graphite tip angled downward toward a row on the tide table, body gripped firmly, slight wear marks along the yellow paint.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus foreground edge of a canvas daypack strap slicing diagonally in from the lower-left corner. Olive-green canvas webbing with a metal buckle partially visible, heavily blurred by shallow depth of field.\"\n      }\n    ]\n  }\n}",
+    "seed": 1055757978,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6470978,
+    "sha256": "9bc64c66776fd5692bbd3d7142e1ab4b2430b37fcea2899986dbb3bb6ece50b3"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:21:43Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Close view of a hiker's hands holding a printed tide table and a pencil, sitting on a beach rock, wet sand and receding water behind, late afternoon. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:m9DmWDdFS1qnajSo0TLoew"
+}

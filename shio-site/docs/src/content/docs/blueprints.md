@@ -67,6 +67,24 @@ no packages" are different facts, and the listing says which. When a catalogue i
 configured but cannot be reached, the source reads `unreachable` and carries the reason,
 so a list that quietly shrank cannot be mistaken for a catalogue that shrank.
 
+### The showcase site
+
+The published catalogue also carries **`shio-blueprint-quilhara`**, a finished sample site
+that ships with no instance. Quilhara is a fictional trail magazine and guided-trip
+outfitter, written in English and Brazilian Portuguese: a home page, trails, stories, a
+guide and a trip, each with its own layout, a designed theme, self-hosted fonts and its own
+photography. Install it and apply it to a new site to see what Shio renders before you
+build your own:
+
+```bash
+shio marketplace install shio-blueprint-quilhara
+shio apply --blueprint shio-blueprint-quilhara --site quilhara --create-site --merge-post-types
+```
+
+Every page exists in both languages, linked as translations, so the language switcher and
+`/sites/quilhara/default/pt-br/` work from the first apply. The brand, the places and the
+people are invented, and its About page says so.
+
 ### From a terminal
 
 ```bash

@@ -1,0 +1,155 @@
+{
+  "name": "Trip",
+  "title": "Trip",
+  "namePlural": "Trips",
+  "description": "A guided trip with dates, a price and a way to ask about it.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "name",
+      "label": "Name",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "summary",
+      "label": "Summary",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "image",
+      "label": "Image",
+      "description": null,
+      "widget": "File",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "imageAlt",
+      "label": "Image description",
+      "description": "What the picture shows, for someone who cannot see it.",
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "facts",
+      "label": "Facts",
+      "description": "Label and value pairs shown beside the photograph, in the page's language.",
+      "widget": "Relator",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 5,
+      "widgetSettings": "{\"relator\":{\"title\":\"Fact\"}}",
+      "fields": [
+        {
+          "name": "label",
+          "label": "Label",
+          "description": null,
+          "widget": "Text",
+          "required": true,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 1,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "value",
+          "label": "Value",
+          "description": null,
+          "widget": "Text",
+          "required": true,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 2,
+          "widgetSettings": null,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "name": "body",
+      "label": "Plan",
+      "description": null,
+      "widget": "HTML Editor",
+      "required": true,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 6,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "ctaLabel",
+      "label": "Button label",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 7,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "ctaHref",
+      "label": "Button link",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 8,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "trail",
+      "label": "Trail",
+      "description": null,
+      "widget": "Multi Select",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 9,
+      "widgetSettings": "{\"multiselect\":{\"references\":\"post\"}}",
+      "fields": []
+    },
+    {
+      "name": "guide",
+      "label": "Guide",
+      "description": null,
+      "widget": "Multi Select",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 10,
+      "widgetSettings": "{\"multiselect\":{\"references\":\"post\"}}",
+      "fields": []
+    }
+  ]
+}

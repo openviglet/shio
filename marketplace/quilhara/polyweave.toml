@@ -1,0 +1,16 @@
+# The Quilhara showcase's photography is bought through polyweave (SH1254), so every picture's
+# model, prompt, seed, cost and licence is recorded by the tool that fetched it.
+
+[project]
+name = "quilhara"
+
+[service.ideogram]
+base = "https://api.ideogram.ai"
+key_env = "IDEOGRAM_API_KEY"
+prices = { "4.0" = 0.06, "4.0:TURBO" = 0.03 }
+
+# Set by the owner on 2026-10-28, not by the agent that spends against it.
+[budget.ideogram]
+amount = 3.0
+unit = "USD"
+expires = "2026-12-31"

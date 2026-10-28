@@ -1,0 +1,489 @@
+{
+  "posts": [
+    {
+      "url": "/historias/ler-a-mare",
+      "type": "Story",
+      "folder": "/pt/historias",
+      "data": {
+        "headline": "Ler a maré antes da trilha",
+        "summary": "Uma tábua de marés impressa, um lápis e dez minutos separam um bom dia no Costão das Pedras Pretas de uma tarde esperando no promontório.",
+        "image": "asset:/images/story-tides.webp",
+        "imageAlt": "Mãos segurando uma tábua de marés impressa e um lápis sobre uma pedra com cracas, numa praia molhada.",
+        "caption": "Marcando a baixa-mar da manhã antes da travessia do Costão.",
+        "byline": "Por Marina Alves",
+        "body": "<p>Toda trilha de costão neste site tem uma linha sobre a maré, e toda temporada alguém a lê depois de sair. A tábua não é difícil. Ela traz duas baixa-mares e duas preamares por dia, com cerca de doze horas e meia entre elas, e o horário atrasa uns cinquenta minutos por dia.</p><p>Para o Costão das Pedras Pretas, o número que importa é a baixa-mar da manhã. Comece a andar nesse horário, atravesse a pedra na primeira hora, e a água ainda estará bem abaixo do caminho quando você chegar à enseada sul. Saia duas horas depois e os últimos cem metros estarão debaixo d'água.</p><p>Anote os horários nas costas da mão ou no mapa. O celular descarrega em dia longo; o lápis, não.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/stories/reading-the-tide"
+    },
+    {
+      "url": "/historias/quem-cuida-dos-degraus",
+      "type": "Story",
+      "folder": "/pt/historias",
+      "data": {
+        "headline": "Quem cuida dos degraus",
+        "summary": "Um inverno de sábados refez os degraus de pedra da trilha da Cachoeira das Samambaias. Três voluntários contam como.",
+        "image": "asset:/images/story-keepers.webp",
+        "imageAlt": "Três voluntários de luvas refazendo degraus de pedra numa trilha na mata, com galhos empilhados ao lado.",
+        "caption": "Assentando os degraus de baixo da trilha das Samambaias, em julho.",
+        "byline": "Pelo escritório de trilhas da Quilhara",
+        "body": "<p>Quem mais estraga a trilha é a água. Um degrau que joga a chuva para o lado dura anos; um que deixa a água correr pelo meio do caminho perde a base numa temporada. Por isso o trabalho começa pela drenagem: uma pedra atravessada no caminho, em diagonal, a cada dez metros nos trechos íngremes.</p><p>Os degraus são pedras chatas do leito do rio, encaixadas na encosta com o lado maior enterrado. Doze pessoas trabalharam aos sábados de junho a setembro e assentaram cento e quarenta degraus.</p><p>O escritório de trilhas mantém uma lista dos dias de mutirão. Ninguém precisa de experiência, só de luvas e sapato fechado.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/stories/the-step-keepers"
+    },
+    {
+      "url": "/trilhas/crista-do-vento",
+      "type": "Trail",
+      "folder": "/pt/trilhas",
+      "data": {
+        "name": "Crista do Vento",
+        "summary": "Uma crista de granito acima das nuvens, com o litoral inteiro à vista numa manhã limpa.",
+        "image": "asset:/images/trail-ridge.webp",
+        "imageAlt": "Trilha de pedra com um totem de rochas empilhadas, acima de um mar de nuvens pela manhã.",
+        "facts": [
+          {
+            "label": "Distância",
+            "value": "14 km"
+          },
+          {
+            "label": "Subida",
+            "value": "980 m"
+          },
+          {
+            "label": "Tempo",
+            "value": "6 a 7 horas"
+          },
+          {
+            "label": "Nível",
+            "value": "Difícil"
+          },
+          {
+            "label": "Água",
+            "value": "Nenhuma depois da primeira hora"
+          }
+        ],
+        "body": "<p>A trilha sai da estrada da vila na capela e sobe pelo pasto durante a primeira hora, o último lugar com água. Acima da mata ela segue a crista sobre o granito exposto, marcada por totens de pedra a cada cem metros, mais ou menos.</p><p>Saia antes das sete: a neblina costuma fechar a crista depois do meio-dia, e com ela os totens ficam difíceis de seguir. Leve dois litros de água, um corta-vento e uma lanterna de cabeça. Volte no segundo selado se o vento estiver forte a ponto de tirar você do lugar.</p>",
+        "guide": [
+          "/guias/marina-alves"
+        ],
+        "relatedHeading": "Histórias desta trilha",
+        "stories": []
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/trails/wind-crest"
+    },
+    {
+      "url": "/trilhas/costao-das-pedras-pretas",
+      "type": "Trail",
+      "folder": "/pt/trilhas",
+      "data": {
+        "name": "Costão das Pedras Pretas",
+        "summary": "Pedra escura entre duas enseadas, que só dá passagem com a maré vazando.",
+        "image": "asset:/images/trail-coast.webp",
+        "imageAlt": "Trilha sobre pedras escuras do costão, com poças de maré e um poste de sinalização de madeira, e uma enseada de areia ao fundo.",
+        "facts": [
+          {
+            "label": "Distância",
+            "value": "9 km"
+          },
+          {
+            "label": "Subida",
+            "value": "220 m"
+          },
+          {
+            "label": "Tempo",
+            "value": "Cerca de 4 horas"
+          },
+          {
+            "label": "Nível",
+            "value": "Moderado"
+          },
+          {
+            "label": "Maré",
+            "value": "Atravesse as pedras até duas horas depois da baixa-mar"
+          }
+        ],
+        "body": "<p>Da enseada norte o caminho atravessa um quilômetro de pedra preta e plana até a enseada sul, e depois sobe o promontório por uma trilha na mata. Postes de sinalização ficam nas pedras onde o traçado não é óbvio.</p><p>O trecho de pedra alaga na maré cheia. Saia da enseada norte no máximo duas horas depois da baixa-mar e use um calçado que firme na pedra molhada. O caminho do promontório fica seco com qualquer tempo.</p>",
+        "guide": [
+          "/guias/marina-alves"
+        ],
+        "relatedHeading": "Histórias desta trilha",
+        "stories": [
+          "/historias/ler-a-mare"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/trails/black-rocks"
+    },
+    {
+      "url": "/trilhas/cachoeira-das-samambaias",
+      "type": "Trail",
+      "folder": "/pt/trilhas",
+      "data": {
+        "name": "Cachoeira das Samambaias",
+        "summary": "Uma caminhada à sombra da Mata Atlântica até uma pequena cachoeira com um poço para nadar.",
+        "image": "asset:/images/trail-forest.webp",
+        "imageAlt": "Trilha de terra numa mata fechada com samambaias, e ao lado uma pequena cachoeira com poço.",
+        "facts": [
+          {
+            "label": "Distância",
+            "value": "6 km"
+          },
+          {
+            "label": "Subida",
+            "value": "310 m"
+          },
+          {
+            "label": "Tempo",
+            "value": "Cerca de 3 horas"
+          },
+          {
+            "label": "Nível",
+            "value": "Fácil"
+          },
+          {
+            "label": "Época",
+            "value": "Melhor depois da chuva, escorregadia no dia seguinte"
+          }
+        ],
+        "body": "<p>O caminho acompanha o rio vale acima sob a mata fechada, por isso fica fresco até em janeiro. Degraus de pedra vencem os dois trechos mais íngremes; voluntários os refizeram no último inverno.</p><p>O poço abaixo da queda tem fundura para nadar de março a maio. Fique na trilha perto das bromélias, que crescem nas pedras na altura do tornozelo.</p>",
+        "guide": [
+          "/guias/marina-alves"
+        ],
+        "relatedHeading": "Histórias desta trilha",
+        "stories": [
+          "/historias/quem-cuida-dos-degraus"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/trails/ferns-falls"
+    },
+    {
+      "url": "/guias/marina-alves",
+      "type": "Guide",
+      "folder": "/pt/guias",
+      "data": {
+        "name": "Marina Alves",
+        "summary": "Conduz as viagens de serra e de costão e escreve a maior parte das notas de trilha.",
+        "image": "asset:/images/guide-portrait.webp",
+        "imageAlt": "Uma mulher de camisa de campo e boné em pé num promontório coberto de capim, acima do mar.",
+        "body": "<p>Marina cresceu na vila ao pé da Crista do Vento e já percorreu a crista em todos os meses do ano. É socorrista em áreas remotas e confere cada trilha que conduz na semana anterior à viagem.</p><p>É ela quem escreve as notas de maré deste site e responde à maior parte das perguntas que chegam ao escritório de trilhas.</p>",
+        "trailsHeading": "Trilhas que a Marina conduz",
+        "trails": [
+          "/trilhas/crista-do-vento",
+          "/trilhas/costao-das-pedras-pretas"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/guides/marina-alves"
+    },
+    {
+      "url": "/viagens/travessia-crista-do-vento",
+      "type": "Trip",
+      "folder": "/pt/viagens",
+      "data": {
+        "name": "Travessia da Crista do Vento",
+        "summary": "Dois dias na crista com uma noite sob as estrelas no selado alto, para quem encara bem uma subida longa.",
+        "image": "asset:/images/trip-camp.webp",
+        "imageAlt": "Barracas pequenas num selado de capim entre picos ao anoitecer, com o grupo comendo à luz das lanternas.",
+        "facts": [
+          {
+            "label": "Datas",
+            "value": "14 e 15 de março de 2027"
+          },
+          {
+            "label": "Preço",
+            "value": "R$ 980 por pessoa"
+          },
+          {
+            "label": "Grupo",
+            "value": "Até oito pessoas"
+          },
+          {
+            "label": "Inclui",
+            "value": "Traslado, refeições, barracas e guia"
+          }
+        ],
+        "body": "<p>No primeiro dia o grupo sobe a Crista do Vento a partir da capela e acampa no selado alto, cerca de cinco horas de caminhada. No segundo, segue a crista para o norte ao nascer do sol e desce para a vila no começo da tarde.</p><p>Cada pessoa leva a própria roupa e o saco de dormir; barracas e comida sobem com o grupo e são divididas na saída. A viagem acontece se a previsão de vento na crista estiver abaixo de quarenta quilômetros por hora; se não, passa para o fim de semana seguinte.</p>",
+        "ctaLabel": "Perguntar sobre esta viagem",
+        "ctaHref": "/contato",
+        "trail": [
+          "/trilhas/crista-do-vento"
+        ],
+        "guide": [
+          "/guias/marina-alves"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/trips/wind-crest-overnight"
+    },
+    {
+      "url": "/trilhas",
+      "type": "Listing",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Trilhas",
+        "description": "Todas as trilhas da Quilhara, com distância, subida e o que a maré faz com cada uma.",
+        "intro": "As distâncias são só de ida, a não ser que a nota diga outra coisa. Confira a tábua de marés antes de qualquer trecho de costão.",
+        "listFolder": "/pt/trilhas",
+        "listType": "Trail"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/trails"
+    },
+    {
+      "url": "/historias",
+      "type": "Listing",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Histórias",
+        "description": "Textos longos das trilhas: marés, tempo e as pessoas que cuidam dos caminhos.",
+        "intro": "Textos longos das trilhas, escritos com calma e conferidos a pé.",
+        "listFolder": "/pt/historias",
+        "listType": "Story"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/stories"
+    },
+    {
+      "url": "/guias",
+      "type": "Listing",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Guias",
+        "description": "Quem conduz as viagens da Quilhara e mantém as notas de trilha em dia.",
+        "intro": "Cada guia percorre ao menos uma vez por mês as trilhas que conduz.",
+        "listFolder": "/pt/guias",
+        "listType": "Guide"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/guides"
+    },
+    {
+      "url": "/viagens",
+      "type": "Listing",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Viagens",
+        "description": "Pequenas viagens guiadas com datas marcadas e preço com comida e transporte incluídos.",
+        "intro": "Grupos de no máximo oito pessoas. O preço inclui comida, o traslado e um guia.",
+        "listFolder": "/pt/viagens",
+        "listType": "Trip"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/trips"
+    },
+    {
+      "url": "/pt/secoes/about",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "Uma marca inventada para mostrar um produto real",
+        "body": "<p>A Quilhara é inventada. As trilhas, os lugares, os guias, as viagens e as histórias deste site não existem, e nada aqui pode ser reservado. É um site de exemplo do <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, o CMS de código aberto, instalado a partir de um único pacote do marketplace.</p><p>As fotografias foram geradas para o pacote e podem ser redistribuídas com ele. As fontes são Fraunces e Inter, ambas sob a SIL Open Font Licence e servidas pelo próprio site.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/about"
+    },
+    {
+      "url": "/sobre",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Sobre a Quilhara",
+        "description": "A Quilhara é uma marca fictícia criada para mostrar o que o Viglet Shio constrói.",
+        "sections": [
+          "/pt/secoes/about"
+        ],
+        "image": "asset:/images/about-map.webp",
+        "imageAlt": "Um mapa topográfico gasto, uma bússola, um lápis e um caderno sobre uma mesa de madeira."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/about"
+    },
+    {
+      "url": "/pt/secoes/contact",
+      "type": "SectionRichText",
+      "folder": "/pt/secoes",
+      "data": {
+        "heading": "O escritório de trilhas",
+        "body": "<p>O escritório é uma casinha de madeira na saída da vila, aberta das oito ao meio-dia nos dias úteis. As condições das trilhas ficam no quadro ao lado da porta antes das nove.</p><p>Escreva para <a href=\"mailto:trilhas@quilhara.example\">trilhas@quilhara.example</a> dizendo a trilha ou a viagem que interessa e as datas que você tem em mente. Respondemos em até dois dias úteis.</p>"
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/en/sections/contact"
+    },
+    {
+      "url": "/contato",
+      "type": "InfoPage",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Contato",
+        "description": "Como falar com o escritório de trilhas da Quilhara.",
+        "sections": [
+          "/pt/secoes/contact"
+        ],
+        "image": "asset:/images/contact-hut.webp",
+        "imageAlt": "Uma casinha de madeira com varanda coberta e duas bicicletas, na saída de uma vila no litoral."
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/contact"
+    },
+    {
+      "url": "/inicio",
+      "type": "Home",
+      "folder": "/pt/paginas",
+      "data": {
+        "title": "Trilhas de costão e de serra",
+        "description": "A Quilhara percorre as trilhas de costão e de serra de um trecho inventado do litoral sul do Brasil: notas de trilha, histórias e pequenas viagens guiadas.",
+        "heading": "Caminhe pelo litoral no ritmo da maré",
+        "intro": "Notas de trilha com distâncias, marés e o que levar, escritas por quem mantém os caminhos abertos.",
+        "image": "asset:/images/home-coast.webp",
+        "imageAlt": "Duas pessoas caminhando por uma trilha estreita de capim na beira de um penhasco, acima de uma baía azul-turquesa, de manhã cedo.",
+        "ctaLabel": "Ver as trilhas",
+        "ctaHref": "/trilhas",
+        "trailsHeading": "Três trilhas para começar",
+        "trails": [
+          "/trilhas/crista-do-vento",
+          "/trilhas/costao-das-pedras-pretas",
+          "/trilhas/cachoeira-das-samambaias"
+        ],
+        "storyHeading": "Da revista",
+        "story": [
+          "/historias/ler-a-mare"
+        ],
+        "tripsHeading": "Próximas viagens guiadas",
+        "trips": [
+          "/viagens/travessia-crista-do-vento"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br",
+      "translationOf": "/"
+    },
+    {
+      "url": "/menu/pt-br/home",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Início",
+        "target": [
+          "/inicio"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/trails",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Trilhas",
+        "target": [
+          "/trilhas"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/stories",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Histórias",
+        "target": [
+          "/historias"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/guides",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Guias",
+        "target": [
+          "/guias"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/trips",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Viagens",
+        "target": [
+          "/viagens"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/about",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Sobre",
+        "target": [
+          "/sobre"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br/contact",
+      "type": "MenuItem",
+      "folder": "/menu/pt-br",
+      "data": {
+        "label": "Contato",
+        "target": [
+          "/contato"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    },
+    {
+      "url": "/menu/pt-br",
+      "type": "Menu",
+      "folder": "/menu/pt-br",
+      "data": {
+        "title": "pt-br",
+        "items": [
+          "/menu/pt-br/home",
+          "/menu/pt-br/trails",
+          "/menu/pt-br/stories",
+          "/menu/pt-br/guides",
+          "/menu/pt-br/trips",
+          "/menu/pt-br/about",
+          "/menu/pt-br/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "pt-br"
+    }
+  ]
+}

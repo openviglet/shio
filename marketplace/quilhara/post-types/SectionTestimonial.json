@@ -1,0 +1,83 @@
+{
+  "name": "SectionTestimonial",
+  "title": "Testimonial Section",
+  "namePlural": "Testimonial Sections",
+  "description": "What customers said, attributed.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "heading",
+      "label": "Heading",
+      "description": null,
+      "widget": "Text",
+      "required": false,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "quotes",
+      "label": "Quotes",
+      "description": null,
+      "widget": "Relator",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": "{\"relator\":{\"title\":\"Quote\"}}",
+      "fields": [
+        {
+          "name": "quote",
+          "label": "Quote",
+          "description": null,
+          "widget": "Text Area",
+          "required": true,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 1,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "author",
+          "label": "Author",
+          "description": null,
+          "widget": "Text",
+          "required": true,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 2,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "role",
+          "label": "Role",
+          "description": null,
+          "widget": "Text",
+          "required": false,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 3,
+          "widgetSettings": null,
+          "fields": []
+        },
+        {
+          "name": "avatar",
+          "label": "Avatar",
+          "description": null,
+          "widget": "File",
+          "required": false,
+          "isTitle": false,
+          "isSummary": false,
+          "ordinal": 4,
+          "widgetSettings": null,
+          "fields": []
+        }
+      ]
+    }
+  ]
+}

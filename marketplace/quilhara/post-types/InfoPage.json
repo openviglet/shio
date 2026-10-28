@@ -1,0 +1,70 @@
+{
+  "name": "InfoPage",
+  "title": "InfoPage",
+  "namePlural": "Info pages",
+  "description": "A plain page: a heading, a photograph and rich-text sections, such as About or Contact.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "title",
+      "label": "Title",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "description",
+      "label": "Description",
+      "description": null,
+      "widget": "Text Area",
+      "required": false,
+      "isTitle": false,
+      "isSummary": true,
+      "ordinal": 2,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "image",
+      "label": "Image",
+      "description": null,
+      "widget": "File",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 3,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "imageAlt",
+      "label": "Image description",
+      "description": "What the picture shows, for someone who cannot see it.",
+      "widget": "Text",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 4,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "sections",
+      "label": "Sections",
+      "description": null,
+      "widget": "Multi Select",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 5,
+      "widgetSettings": "{\"multiselect\":{\"references\":\"post\"}}",
+      "fields": []
+    }
+  ]
+}

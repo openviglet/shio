@@ -1,0 +1,3 @@
+# The full-size originals polyweave bought (about 6 MB each). Their provenance records and the
+# purchase ledger are committed; the package ships the WebP copies under assets/images/.
+assets/source/*.png

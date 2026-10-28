@@ -1,0 +1,99 @@
+{
+  "formatVersion": 1,
+  "name": "quilhara",
+  "title": "Quilhara showcase",
+  "version": "1.0.0",
+  "description": "A finished bilingual sample site for a fictional trail magazine and guided-trip outfitter: home, trail, story, guide and trip pages in English and Brazilian Portuguese, with a designed theme, self-hosted fonts and its own photography. Apply it to a new site to see what Shio renders.",
+  "params": {
+    "type": "object",
+    "properties": {}
+  },
+  "postTypes": [
+    "post-types/Home.json",
+    "post-types/Listing.json",
+    "post-types/Trail.json",
+    "post-types/Story.json",
+    "post-types/Guide.json",
+    "post-types/Trip.json",
+    "post-types/InfoPage.json",
+    "post-types/Menu.json",
+    "post-types/MenuItem.json",
+    "post-types/SectionCta.json",
+    "post-types/SectionFaq.json",
+    "post-types/SectionFeatureGrid.json",
+    "post-types/SectionHero.json",
+    "post-types/SectionLogoWall.json",
+    "post-types/SectionMarkup.json",
+    "post-types/SectionRichText.json",
+    "post-types/SectionTestimonial.json"
+  ],
+  "content": [
+    "content/theme.json",
+    "content/en-us.json",
+    "content/pt-br.json"
+  ],
+  "assets": [
+    {
+      "path": "assets/images/home-coast.webp",
+      "alt": "Two hikers on a narrow grassy path along a cliff above a turquoise bay in early light."
+    },
+    {
+      "path": "assets/images/trail-ridge.webp",
+      "alt": "A rocky ridge trail with a stone cairn above a sea of morning clouds."
+    },
+    {
+      "path": "assets/images/trail-coast.webp",
+      "alt": "A trail across dark coastal rocks with tide pools and a wooden waymark post."
+    },
+    {
+      "path": "assets/images/trail-forest.webp",
+      "alt": "A dirt path through dense green forest with ferns, beside a small waterfall and pool."
+    },
+    {
+      "path": "assets/images/story-tides.webp",
+      "alt": "Hands holding a printed tide table and a pencil over a barnacled rock on a wet beach."
+    },
+    {
+      "path": "assets/images/story-keepers.webp",
+      "alt": "Three volunteers in work gloves rebuilding stone steps on a forest trail."
+    },
+    {
+      "path": "assets/images/guide-portrait.webp",
+      "alt": "A woman in a field shirt and cap standing on a grassy headland above the sea."
+    },
+    {
+      "path": "assets/images/trip-camp.webp",
+      "alt": "Small tents on a grassy saddle between peaks at dusk, hikers eating by headlamp."
+    },
+    {
+      "path": "assets/images/about-map.webp",
+      "alt": "A worn topographic map, a compass, a pencil and a notebook on a wooden table."
+    },
+    {
+      "path": "assets/images/contact-hut.webp",
+      "alt": "A small wooden hut with a covered porch and two bicycles at the edge of a coastal village."
+    },
+    "assets/fonts/fraunces-600.woff2",
+    "assets/fonts/inter-400.woff2",
+    "assets/fonts/inter-600.woff2"
+  ],
+  "verify": {
+    "posts": [
+      "/",
+      "/inicio",
+      "/trails",
+      "/trilhas",
+      "/trails/wind-crest",
+      "/trilhas/crista-do-vento",
+      "/stories/reading-the-tide",
+      "/historias/ler-a-mare",
+      "/guides/marina-alves",
+      "/guias/marina-alves",
+      "/trips/wind-crest-overnight",
+      "/viagens/travessia-crista-do-vento",
+      "/about",
+      "/sobre"
+    ],
+    "checks": "content"
+  }
+}

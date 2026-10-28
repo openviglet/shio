@@ -1,0 +1,34 @@
+{
+  "name": "Menu",
+  "title": "Menu",
+  "namePlural": "Menus",
+  "description": "A curated menu. `items` lists addresses in render order: a MenuItem, a nested Menu, or a page.",
+  "workflowPublishEntity": null,
+  "system": false,
+  "fields": [
+    {
+      "name": "title",
+      "label": "Title",
+      "description": null,
+      "widget": "Text",
+      "required": true,
+      "isTitle": true,
+      "isSummary": false,
+      "ordinal": 1,
+      "widgetSettings": null,
+      "fields": []
+    },
+    {
+      "name": "items",
+      "label": "Items",
+      "description": "Friendly URLs in render order — a MenuItem, a nested Menu, or a page (which uses its own title).",
+      "widget": "Multi Select",
+      "required": false,
+      "isTitle": false,
+      "isSummary": false,
+      "ordinal": 2,
+      "widgetSettings": "{\"multiselect\":{\"references\":\"post\"}}",
+      "fields": []
+    }
+  ]
+}

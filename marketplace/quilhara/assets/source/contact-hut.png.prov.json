@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 6798546,
+    "path": "assets/source/contact-hut.png",
+    "sha256": "9976156fe21e8e317d6a6a6ee333b537a55949fea4f0020c181d263a68a71a3e"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary travel photograph of a small weathered wooden trail office at the edge of a coastal village on an overcast late morning, with two bicycles leaning against the porch rail, a tabby cat on the top step, and whitewashed stone houses receding along the slope toward a grey-blue sea.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"Overcast late-morning coastal scene under a flat pale grey sky with diffused even daylight and neutral cool-toned white balance. Whitewashed stone village houses recede along the slope behind the office, their terracotta tile roofs stepping down the hillside with a few shuttered windows visible. Past the rooftops, a distant grey-blue sea meets the sky in a soft atmospheric band. A narrow cobblestone path runs across the ground from the lower-left foreground up to the porch steps, slightly damp from earlier rain with subtle dark patches between the stones. Mild fine grain consistent with editorial travel photography.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Small weathered wooden trail office anchored right-of-center, occupying roughly half the frame height. Vertical plank siding in faded grey-green, pitched shingle roof in muted brown-grey. Single pane window with a white-painted frame on the front wall. Covered porch at the front supported by two square timber posts with a low handrail running between them. Three short wooden steps lead up to the porch.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Blank unpainted plywood noticeboard mounted flat against the right porch post at chest height. Pale raw plywood surface, empty, with four small dark screws visible at the corners. Rectangular, slightly weathered edges.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Two bicycles leaning against the porch handrail. Left bike is a faded red steel road bike with drop handlebars and thin tires, paint worn at the frame joints. Right bike is a navy commuter with upright handlebars, a wicker front basket holding a folded paper map, and a canvas pannier slung over the rear rack.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"A tabby cat sitting upright on the top porch step, body in three-quarter view facing left toward the path, tail curled around its paws. Brown and black striped fur, green eyes catching the soft daylight, ears pointed forward, gaze directed down the cobblestone path.\"\n      }\n    ]\n  }\n}",
+    "seed": 1627123030,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6798546,
+    "sha256": "9976156fe21e8e317d6a6a6ee333b537a55949fea4f0020c181d263a68a71a3e"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:23:17Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "A small wooden trail office with a covered porch at the edge of a coastal village, a blank noticeboard, bicycles leaning on the rail. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:uQ03lrveSmGFUC4esRAC-Q"
+}

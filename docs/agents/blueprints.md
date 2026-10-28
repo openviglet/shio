@@ -1064,3 +1064,28 @@ The README is rendered now, which closes SH679's recorded shortfall. No library:
 `marketplace.readme.tsx` covers the subset the generator writes (headings, paragraphs, lists, fenced
 code, inline code, bold, links), builds React elements rather than HTML, so a stranger's README cannot
 inject markup, and loads behind `import()` with the setup panel, so the eager budget does not carry it.
+
+## The Quilhara showcase, published and built into no jar (SH1254)
+
+`marketplace/quilhara/` is the package SH1250's spec describes: a fictional trail magazine in
+en-us and pt-br, with home, listing, trail, story, guide, trip and info pages, seven `PageLayout`s
+on one `Theme`, self-hosted Fraunces and Inter (OFL, texts in `licences/`), ten photographs and
+`assets/CREDITS.json`. It is **not on the classpath**: ~2 MB of images and fonts would ride every
+jar for an instance that never installs the demo. `shio-site/scripts/marketplace.mjs` reads
+`marketplace/` beside the classpath set and publishes it as `shio-blueprint-quilhara`, leaving out
+the polyweave project that bought the photographs (`polyweave.*`, `assets/source/`).
+
+**Photography is bought through polyweave**, on the owner's Ideogram budget in
+`marketplace/quilhara/polyweave.toml`, so model, prompt, seed and cost are in its ledger and each
+original's `.prov.json`. The full-size PNGs are git-ignored; the shipped WebP files are crops
+re-encoded under 300 KB by hand until PW658/PW659 let polyweave do it.
+
+**What holds it.** `ShBlueprintAccessibilityTest` sets `shio.blueprint.path=../marketplace`, so the
+showcase is a subject like any package with a layout (90 pages, no finding) and its apply report
+is measured against `blueprint.apply.quilhara` in `token-budgets.properties`. A local check:
+start the jar with `--shio.blueprint.path=<repo>/marketplace`, apply with `createSite` and
+`mergePostTypes`, and walk `/sites/quilhara/default/{en-us,pt-br}/` in a browser.
+
+**What building it found**, each a task rather than a workaround in the package: SH1263, SH1264,
+SH1265 (shipped before it), and SH1266 to SH1275 open in Block J. Three warnings remain on an applied
+site, `asset-unused` for the fonts, which is SH1268.

@@ -93,11 +93,19 @@ import tools.jackson.databind.node.ObjectNode;
  * @author Alexandre Oliveira
  * @since 2026.3
  */
-@SpringBootTest(properties =
-        "spring.datasource.url=jdbc:h2:mem:shio-sh1121;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
-                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true")
+// SH1254 — the showcase is published from `marketplace/`, not the classpath, so the test reads that
+// directory the way an operator's instance would; its layouts are then judged like any other.
+@SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:shio-sh1121;DB_CLOSE_DELAY=-1;MODE=LEGACY;"
+                + "DATABASE_TO_UPPER=false;CASE_INSENSITIVE_IDENTIFIERS=true",
+                "shio.blueprint.path=../marketplace"})
 @TestInstance(Lifecycle.PER_CLASS)
 class ShBlueprintAccessibilityTest {
+
+    /** SH1254 — the showcase package, the one subject read from outside the classpath. */
+    private static final String SHOWCASE = "quilhara";
+
+    /** What applying the showcase answered, in estimated tokens; -1 until the loop applies it. */
+    private int showcaseApplyTokens = -1;
 
     /** The post-type that makes a blueprint's pages Shio's to render, and so this test's to judge. */
     private static final String LAYOUT_TYPE = "PageLayout";
@@ -141,7 +149,11 @@ class ShBlueprintAccessibilityTest {
         Map<String, List<ShAgentReport.Finding>> dirty = new LinkedHashMap<>();
         for (String name : withLayout) {
             String site = freshSite(name);
-            blueprintService.apply(name, site, paramsFor(all.get(name)), "admin");
+            var applied = blueprintService.apply(name, site, paramsFor(all.get(name)), "admin");
+            if (SHOWCASE.equals(name)) {
+                showcaseApplyTokens = com.viglet.shio.api.agent.ShTokenBudget.estimate(
+                        new ObjectMapper().writeValueAsString(applied));
+            }
             ShAgentReport report = verifyService.verify(site, "a11y", 200);
             System.out.printf("SH1121:   %s — %d page(s) checked, %d finding(s)%n",
                     name, report.checked(), report.findings().size());
@@ -160,6 +172,30 @@ class ShBlueprintAccessibilityTest {
                         through the `@first` data frame `getRelation` has published since SH772. \
                         Findings: %s""", describe(dirty))
                 .isEmpty();
+
+        // SH1254 — the showcase is reached outside the classpath (shio.blueprint.path), and what its
+        // apply answers is measured: the report grows with every op, so P3 makes it a number.
+        assertThat(withLayout)
+                .as("SH1254: the showcase is published from marketplace/ and must be judged here too")
+                .contains(SHOWCASE);
+        int ceiling = Integer.parseInt(budgets().getProperty("blueprint.apply.quilhara"));
+        System.out.printf("SH1254: applying %s answered ~%d tokens (ceiling %d)%n",
+                SHOWCASE, showcaseApplyTokens, ceiling);
+        assertThat(showcaseApplyTokens)
+                .as("SH1254: the showcase's apply report is over its recorded ceiling; a package that "
+                        + "grew is a cost every agent that applies it pays, so raise the number with "
+                        + "the reason beside it in token-budgets.properties")
+                .isBetween(1, ceiling);
+    }
+
+    private static java.util.Properties budgets() {
+        java.util.Properties properties = new java.util.Properties();
+        try (var in = ShBlueprintAccessibilityTest.class.getResourceAsStream("/token-budgets.properties")) {
+            properties.load(in);
+        } catch (java.io.IOException unreadable) {
+            throw new IllegalStateException(unreadable);
+        }
+        return properties;
     }
 
     /**

@@ -1,0 +1,44 @@
+{
+  "artefact": {
+    "bytes": 6643315,
+    "path": "assets/source/trip-camp.png",
+    "sha256": "abe1b33df9e0302805b2731af7202971a96443a38f3180bc2a3f1b3957158179"
+  },
+  "balance_after": null,
+  "balance_before": null,
+  "bought": "image",
+  "credits": 0.06,
+  "details": {
+    "aspect_ratio": "3x2",
+    "entity": null,
+    "family": null,
+    "json_prompt": null,
+    "model": "4.0",
+    "rendering_speed": null,
+    "resolution": "2496x1664",
+    "returned_prompt": "{\n  \"high_level_description\": \"A documentary travel photograph of a high alpine saddle at dusk, with four small tents pitched between two granite peaks as the first stars appear overhead and hikers gather around a small enamel pot by headlamp light.\",\n  \"compositional_deconstruction\": {\n    \"background\": \"A deep blue-hour sky transitioning from pale cyan along the horizon to indigo overhead, with the first stars scattered across the upper portion and a faint Milky Way band just beginning to emerge. Slight atmospheric haze softens the distant ridges. The saddle ground is grassy alpine turf with scattered low tufts of moss and a few loose stones across the foreground. Natural ambient light only, cool-neutral throughout with no warm grading.\",\n    \"elements\": [\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Jagged granite peak on the left flanking the saddle, dark silhouette against the fading sky, snow patches catching the last cool light along its upper ridge.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Jagged granite peak on the right flanking the saddle, dark silhouette against the fading sky, snow patches catching the last cool light along its upper ridge.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Four small dome tents clustered on the grassy saddle in the midground, two in muted olive and two in faded blue-grey. Guy lines staked into the turf radiate outward. One tent flap is half-open showing a faint interior glow.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Two hikers in the midground near one of the tents. One kneels adjusting a strap on a pack, head down toward the gear. The other stands beside him looking up toward the peaks, gaze directed at the upper ridges. Both in dark outdoor clothing, small in scale against the mountains.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Three hikers seated on a low rock and a folded foam pad around a small enamel pot in the lower-center foreground, viewed from slightly below. Headlamps clipped to their caps cast tight pools of neutral white light onto their hands and the pot. One stirs with a long spoon, another passes a tin mug, the third leans forward listening. Dark outdoor clothing, faces lit only by their own headlamps.\"\n      },\n      {\n        \"type\": \"obj\",\n        \"desc\": \"Out-of-focus tuft of alpine grass and a single pebble at the lower-left foreground edge, softly blurred against the sharper saddle behind.\"\n      }\n    ]\n  }\n}",
+    "seed": 1224889176,
+    "transparent": false
+  },
+  "elapsed_s": null,
+  "engine": {
+    "model": "4.0",
+    "name": "ideogram"
+  },
+  "expected_credits": 0.06,
+  "inputs": [],
+  "kind": "fetch",
+  "measurements": {
+    "bytes": 6643315,
+    "sha256": "abe1b33df9e0302805b2731af7202971a96443a38f3180bc2a3f1b3957158179"
+  },
+  "params": {},
+  "produced_at": "2026-10-28T17:22:40Z",
+  "producer": {
+    "tool": "polyweave",
+    "version": "0.1.0"
+  },
+  "prompt": "Four small tents pitched on a grassy saddle between two peaks at dusk, hikers sharing a meal by headlamp, first stars, no campfire. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+  "service": "ideogram",
+  "task_id": "ideogram:KYFT1SgMTBOFqjJEWhMzEw"
+}

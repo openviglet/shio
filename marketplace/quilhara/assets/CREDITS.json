@@ -1,0 +1,94 @@
+{
+  "images/about-map.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A worn paper topographic map, a compass, a pencil and a notebook on a wooden table by a window, morning light, hiking planning. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1480134248,
+    "producedAt": "2026-10-28T17:22:59Z",
+    "original": "assets/source/about-map.png (sha256 0f811a8fff655f79225ee103f0ea2ca380405cfe6c5a9911dcb4d2f55113bf5f)"
+  },
+  "images/contact-hut.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A small wooden trail office with a covered porch at the edge of a coastal village, a blank noticeboard, bicycles leaning on the rail. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1627123030,
+    "producedAt": "2026-10-28T17:23:17Z",
+    "original": "assets/source/contact-hut.png (sha256 9976156fe21e8e317d6a6a6ee333b537a55949fea4f0020c181d263a68a71a3e)"
+  },
+  "images/guide-portrait.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Outdoor portrait of a weathered trail guide in her forties wearing a faded field shirt and a cap, standing on a coastal headland, calm expression, shallow depth of field. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 166805719,
+    "producedAt": "2026-10-28T17:22:22Z",
+    "original": "assets/source/guide-portrait.png (sha256 70e01af7623b9cc00273fa4f435105e77a8092769f0cf7c25e222844ceee493d)"
+  },
+  "images/home-coast.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Documentary travel photograph of a narrow coastal footpath along green cliffs above a turquoise Atlantic bay at early morning, two hikers with small backpacks far ahead, low sun, southern Brazilian coastline. Natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1283597158,
+    "producedAt": "2026-10-28T17:20:17Z",
+    "original": "assets/source/home-coast.png (sha256 834d3131a9766373dfc799007e82aeb9c7b34e2d949664c254b725c018759abf)"
+  },
+  "images/story-keepers.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Three trail volunteers in work gloves clearing fallen branches and rebuilding stone steps on a forest trail, tools on the ground, candid. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1827028195,
+    "producedAt": "2026-10-28T17:22:01Z",
+    "original": "assets/source/story-keepers.png (sha256 4786dc0f10af886b5e88d51395d0a3cd4123dbf01d280e9577dfae9771edca48)"
+  },
+  "images/story-tides.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Close view of a hiker's hands holding a printed tide table and a pencil, sitting on a beach rock, wet sand and receding water behind, late afternoon. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1055757978,
+    "producedAt": "2026-10-28T17:21:43Z",
+    "original": "assets/source/story-tides.png (sha256 9bc64c66776fd5692bbd3d7142e1ab4b2430b37fcea2899986dbb3bb6ece50b3)"
+  },
+  "images/trail-coast.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A trail over dark coastal rocks between two small sandy coves, tide pools, a plain wooden waymark post, overcast soft light, Atlantic coast. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1826555718,
+    "producedAt": "2026-10-28T17:21:07Z",
+    "original": "assets/source/trail-coast.png (sha256 3353e0f75e449c1f79f579ce85e1415413af637a0c017853a98c15131af4591e)"
+  },
+  "images/trail-forest.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A shaded path through dense Atlantic rainforest with ferns and bromeliads, a small waterfall and clear pool at the end, dappled light. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 991958571,
+    "producedAt": "2026-10-28T17:21:25Z",
+    "original": "assets/source/trail-forest.png (sha256 85ce1a30c954e01dec8c05b85e00562fa5a4b01d1d2a627930e4555db88f9b85)"
+  },
+  "images/trail-ridge.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "A rocky ridge trail across a high granite crest above a sea of morning clouds, a stone cairn marking the path, wind-bent grass, mountains of southeast Brazil. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 187333233,
+    "producedAt": "2026-10-28T17:20:49Z",
+    "original": "assets/source/trail-ridge.png (sha256 1c09a9863cc059f83e7956ad796ab43d6cd6943afaa7c90be8e6ea9d8833dfc7)"
+  },
+  "images/trip-camp.webp": {
+    "source": "Generated with Ideogram 4.0 through polyweave, for this package",
+    "licence": "Generated output owned by the account holder under Ideogram's terms; redistributed with this package, no attribution required",
+    "prompt": "Four small tents pitched on a grassy saddle between two peaks at dusk, hikers sharing a meal by headlamp, first stars, no campfire. Documentary travel photograph, natural light, true colours, no text, no logos, no watermark.",
+    "seed": 1224889176,
+    "producedAt": "2026-10-28T17:22:40Z",
+    "original": "assets/source/trip-camp.png (sha256 abe1b33df9e0302805b2731af7202971a96443a38f3180bc2a3f1b3957158179)"
+  },
+  "fonts/fraunces-600.woff2": {
+    "source": "Fraunces, latin subset, from the @fontsource/fraunces package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-fraunces.txt"
+  },
+  "fonts/inter-400.woff2": {
+    "source": "Inter, latin subset, from the @fontsource/inter package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-inter.txt"
+  },
+  "fonts/inter-600.woff2": {
+    "source": "Inter, latin subset, from the @fontsource/inter package",
+    "licence": "SIL Open Font License 1.1, text in licences/OFL-inter.txt"
+  }
+}

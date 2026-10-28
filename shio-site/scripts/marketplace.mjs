@@ -32,7 +32,7 @@
 // not guess on their behalf.
 
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 
 import { zip } from "./zip.mjs";
@@ -42,6 +42,20 @@ import { zip } from "./zip.mjs";
 
 /** The packages, as the jar carries them. */
 const SOURCE = resolve(process.cwd(), "..", "shio-app", "src", "main", "resources", "blueprints");
+
+/**
+ * SH1254 — packages published here and built into no jar: the showcase carries ~2 MB of
+ * photography and fonts, which every instance would otherwise pay for whether it installs the
+ * demo or not. Same layout as SOURCE, so an instance can also load it through `shio.blueprint.path`.
+ */
+const EXTRA_SOURCE = resolve(process.cwd(), "..", "marketplace");
+
+/**
+ * What a package directory may hold that is not the package: the polyweave project that bought
+ * its photography (config, ledger, and the full-size originals the shipped WebP files are cut
+ * from). An install has no use for any of it.
+ */
+const NOT_PACKAGED = /^(\.gitignore|polyweave\.[^/]+|assets\/source\/.*)$/;
 
 /** Where the site serves them from. */
 const OUT = resolve(process.cwd(), "public", "marketplace");
@@ -147,9 +161,10 @@ function readme(manifest, id) {
  *   a digest per archive so determinism can be asserted without keeping the bytes
  */
 export function build({ write = true } = {}) {
-  const names = readdirSync(SOURCE)
-    .filter((name) => statSync(join(SOURCE, name)).isDirectory())
-    .sort();
+  const packages = [SOURCE, EXTRA_SOURCE]
+    .flatMap((root) => readdirSync(root).map((name) => ({ name, dir: join(root, name) })))
+    .filter(({ dir }) => statSync(dir).isDirectory() && existsSync(join(dir, "blueprint.json")))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   if (write) {
     rmSync(OUT, { recursive: true, force: true });
@@ -159,8 +174,7 @@ export function build({ write = true } = {}) {
   const items = [];
   const digests = new Map();
 
-  for (const name of names) {
-    const dir = join(SOURCE, name);
+  for (const { name, dir } of packages) {
     const manifest = JSON.parse(readFileSync(join(dir, "blueprint.json"), "utf8"));
     const id = PREFIX + name;
 
@@ -174,7 +188,7 @@ export function build({ write = true } = {}) {
     // has no use for them.
     const screenshots = [];
     for (const file of walk(dir)) {
-      if (file === "blueprint.json") continue;
+      if (file === "blueprint.json" || NOT_PACKAGED.test(file)) continue;
       if (file.startsWith(SCREENSHOTS)) {
         if (SCREENSHOT_TYPES.test(file) && screenshots.length < MAX_SCREENSHOTS) screenshots.push(file);
         continue;

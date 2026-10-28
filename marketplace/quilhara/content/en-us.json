@@ -1,0 +1,473 @@
+{
+  "posts": [
+    {
+      "url": "/stories/reading-the-tide",
+      "type": "Story",
+      "folder": "/en/stories",
+      "data": {
+        "headline": "Reading the tide before the trail",
+        "summary": "A printed tide table, a pencil and ten minutes are what stand between a good day on the Black Rocks and an afternoon waiting on the headland.",
+        "image": "asset:/images/story-tides.webp",
+        "imageAlt": "Hands holding a printed tide table and a pencil over a barnacled rock on a wet beach.",
+        "caption": "Marking the morning low water on the Black Rocks crossing.",
+        "byline": "By Marina Alves",
+        "body": "<p>Every coastal trail on this site has a line about the tide, and every season someone reads it after setting out. The table is not hard to use. It lists two low waters and two high waters a day, about twelve and a half hours apart, and the time moves later by roughly fifty minutes each day.</p><p>For the Black Rocks the useful number is the morning low. Start walking at that time, cross the rock in the first hour, and the water is still well below the path when you reach the south cove. Start two hours later and the last hundred metres are under water.</p><p>Write the times on the back of your hand or on the map. Phones run out of battery on long days; a pencil note does not.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/stories/the-step-keepers",
+      "type": "Story",
+      "folder": "/en/stories",
+      "data": {
+        "headline": "The people who keep the steps",
+        "summary": "A winter of Saturdays rebuilt the stone steps on the Ferns Falls trail. Three of the volunteers explain how.",
+        "image": "asset:/images/story-keepers.webp",
+        "imageAlt": "Three volunteers in work gloves rebuilding stone steps on a forest trail, branches piled to one side.",
+        "caption": "Resetting the lower steps on Ferns Falls in July.",
+        "byline": "By the Quilhara trail office",
+        "body": "<p>Water does most of the damage. A step that sheds rain to the side lasts for years; one that lets it run down the middle of the path loses its footing in a season. So the work starts with drainage: a stone set across the path at an angle, every ten metres on the steep sections.</p><p>The steps themselves are flat stones from the stream bed, set into the slope with their longest side buried. Twelve people worked on Saturdays from June to September and set one hundred and forty steps.</p><p>The trail office keeps a list of work days. Nobody needs experience, only gloves and closed shoes.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/trails/wind-crest",
+      "type": "Trail",
+      "folder": "/en/trails",
+      "data": {
+        "name": "Wind Crest",
+        "summary": "A granite ridge above the cloud line, with the whole coast in view on a clear morning.",
+        "image": "asset:/images/trail-ridge.webp",
+        "imageAlt": "A rocky ridge trail with a stone cairn above a sea of morning clouds.",
+        "facts": [
+          {
+            "label": "Distance",
+            "value": "14 km"
+          },
+          {
+            "label": "Climb",
+            "value": "980 m"
+          },
+          {
+            "label": "Time",
+            "value": "6 to 7 hours"
+          },
+          {
+            "label": "Grade",
+            "value": "Hard"
+          },
+          {
+            "label": "Water",
+            "value": "None after the first hour"
+          }
+        ],
+        "body": "<p>The trail leaves the village road at the chapel and climbs through pasture for the first hour, the last place with water. Above the treeline it follows the crest on bare granite, marked by cairns every hundred metres or so.</p><p>Start before seven: cloud tends to build on the crest after midday, and the cairns are hard to follow in it. Carry two litres of water, a wind layer and a headlamp. Turn back at the second saddle if the wind is strong enough to move you.</p>",
+        "guide": [
+          "/guides/marina-alves"
+        ],
+        "relatedHeading": "Stories from this trail",
+        "stories": []
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/trails/black-rocks",
+      "type": "Trail",
+      "folder": "/en/trails",
+      "data": {
+        "name": "Black Rocks",
+        "summary": "Dark coastal rock between two coves, passable only on a falling tide.",
+        "image": "asset:/images/trail-coast.webp",
+        "imageAlt": "A trail across dark coastal rocks with tide pools and a wooden waymark post, a sandy cove beyond.",
+        "facts": [
+          {
+            "label": "Distance",
+            "value": "9 km"
+          },
+          {
+            "label": "Climb",
+            "value": "220 m"
+          },
+          {
+            "label": "Time",
+            "value": "About 4 hours"
+          },
+          {
+            "label": "Grade",
+            "value": "Moderate"
+          },
+          {
+            "label": "Tide",
+            "value": "Cross the rocks within two hours of low water"
+          }
+        ],
+        "body": "<p>From the north cove the path crosses a kilometre of flat black rock to the south cove, then climbs over the headland on a forest track. Waymark posts stand on the rock where the line is not obvious.</p><p>The rock section floods at high tide. Leave the north cove no later than two hours after low water, and wear shoes that grip on wet rock. The headland path is dry in any weather.</p>",
+        "guide": [
+          "/guides/marina-alves"
+        ],
+        "relatedHeading": "Stories from this trail",
+        "stories": [
+          "/stories/reading-the-tide"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/trails/ferns-falls",
+      "type": "Trail",
+      "folder": "/en/trails",
+      "data": {
+        "name": "Ferns Falls",
+        "summary": "A shaded walk through the Atlantic forest to a small waterfall and a pool you can swim in.",
+        "image": "asset:/images/trail-forest.webp",
+        "imageAlt": "A dirt path through dense green forest with ferns, a small waterfall and pool to one side.",
+        "facts": [
+          {
+            "label": "Distance",
+            "value": "6 km"
+          },
+          {
+            "label": "Climb",
+            "value": "310 m"
+          },
+          {
+            "label": "Time",
+            "value": "About 3 hours"
+          },
+          {
+            "label": "Grade",
+            "value": "Easy"
+          },
+          {
+            "label": "Season",
+            "value": "Best after rain, slippery for a day after it"
+          }
+        ],
+        "body": "<p>The path follows the stream up the valley under a closed canopy, so it stays cool even in January. Stone steps take it over the two steep sections; volunteers rebuilt them last winter.</p><p>The pool below the falls is deep enough to swim from March to May. Keep to the path near the bromeliads, which grow on the rocks at ankle height.</p>",
+        "guide": [
+          "/guides/marina-alves"
+        ],
+        "relatedHeading": "Stories from this trail",
+        "stories": [
+          "/stories/the-step-keepers"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/guides/marina-alves",
+      "type": "Guide",
+      "folder": "/en/guides",
+      "data": {
+        "name": "Marina Alves",
+        "summary": "Leads the ridge and coastal trips and writes most of the trail notes.",
+        "image": "asset:/images/guide-portrait.webp",
+        "imageAlt": "A woman in a field shirt and cap standing on a grassy headland above the sea.",
+        "body": "<p>Marina grew up in the village at the foot of Wind Crest and has walked its ridge in every month of the year. She trained as a wilderness first responder and checks every trail she leads in the week before a trip.</p><p>She writes the tide notes on this site and answers most of the questions that reach the trail office.</p>",
+        "trailsHeading": "Trails Marina leads",
+        "trails": [
+          "/trails/wind-crest",
+          "/trails/black-rocks"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/trips/wind-crest-overnight",
+      "type": "Trip",
+      "folder": "/en/trips",
+      "data": {
+        "name": "Wind Crest overnight",
+        "summary": "Two days on the ridge with a night under the stars on the high saddle, for walkers who are comfortable with a long climb.",
+        "image": "asset:/images/trip-camp.webp",
+        "imageAlt": "Small tents on a grassy saddle between peaks at dusk, hikers eating together by headlamp.",
+        "facts": [
+          {
+            "label": "Dates",
+            "value": "14 and 15 March 2027"
+          },
+          {
+            "label": "Price",
+            "value": "R$ 980 per person"
+          },
+          {
+            "label": "Group",
+            "value": "Up to eight walkers"
+          },
+          {
+            "label": "Includes",
+            "value": "Shuttle, meals, tents and a guide"
+          }
+        ],
+        "body": "<p>Day one climbs Wind Crest from the chapel and camps on the high saddle, about five hours of walking. Day two follows the crest north at sunrise and descends to the village by early afternoon.</p><p>You carry your own clothes and sleeping bag; tents and food go up with the group and are shared out at the start. The trip runs if the forecast wind on the crest is below forty kilometres an hour, and otherwise moves to the next weekend.</p>",
+        "ctaLabel": "Ask about this trip",
+        "ctaHref": "/contact",
+        "trail": [
+          "/trails/wind-crest"
+        ],
+        "guide": [
+          "/guides/marina-alves"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/trails",
+      "type": "Listing",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Trails",
+        "description": "Every Quilhara trail with its distance, climb and what the tide does to it.",
+        "intro": "Distances are one way unless the notes say otherwise. Check the tide table before any coastal section.",
+        "listFolder": "/en/trails",
+        "listType": "Trail"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/stories",
+      "type": "Listing",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Stories",
+        "description": "Long reads from the trails: tides, weather and the people who look after the paths.",
+        "intro": "Long reads from the trails, written slowly and checked on foot.",
+        "listFolder": "/en/stories",
+        "listType": "Story"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/guides",
+      "type": "Listing",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Guides",
+        "description": "The people who lead Quilhara trips and keep its trail notes current.",
+        "intro": "Each guide walks the trails they lead at least once a month.",
+        "listFolder": "/en/guides",
+        "listType": "Guide"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/trips",
+      "type": "Listing",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Trips",
+        "description": "Small guided trips with fixed dates and a price that includes food and transport.",
+        "intro": "Groups of eight at most. The price covers food, the shuttle and a guide.",
+        "listFolder": "/en/trips",
+        "listType": "Trip"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/about",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "A brand made up to show a real product",
+        "body": "<p>Quilhara is invented. The trails, places, guides, trips and stories on this site do not exist, and nothing here can be booked. It is a sample site for <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, the open-source CMS, installed from one marketplace package.</p><p>The photographs were generated for the package and are free to redistribute with it. The fonts are Fraunces and Inter, both under the SIL Open Font Licence and served from the site itself.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/about",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "About Quilhara",
+        "description": "Quilhara is a fictional brand made to show what Viglet Shio can build.",
+        "sections": [
+          "/en/sections/about"
+        ],
+        "image": "asset:/images/about-map.webp",
+        "imageAlt": "A worn topographic map, a compass, a pencil and a notebook on a wooden table."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/en/sections/contact",
+      "type": "SectionRichText",
+      "folder": "/en/sections",
+      "data": {
+        "heading": "The trail office",
+        "body": "<p>The office is a wooden hut at the edge of the village, open from eight to noon on weekdays. Trail conditions are posted on the noticeboard by the door before nine.</p><p>Write to <a href=\"mailto:trails@quilhara.example\">trails@quilhara.example</a> with the trail or trip you are asking about and the dates you have in mind. We answer within two working days.</p>"
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/contact",
+      "type": "InfoPage",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Contact",
+        "description": "How to reach the Quilhara trail office.",
+        "sections": [
+          "/en/sections/contact"
+        ],
+        "image": "asset:/images/contact-hut.webp",
+        "imageAlt": "A small wooden hut with a covered porch and two bicycles, at the edge of a coastal village."
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/",
+      "type": "Home",
+      "folder": "/en/pages",
+      "data": {
+        "title": "Coastal and ridge trails",
+        "description": "Quilhara walks the coastal and ridge trails of an invented stretch of the Brazilian south coast: trail notes, stories and small guided trips.",
+        "heading": "Walk the coast at the pace of the tide",
+        "intro": "Trail notes with distances, tides and what to carry, written by the people who keep the paths open.",
+        "image": "asset:/images/home-coast.webp",
+        "imageAlt": "Two hikers on a narrow grassy path along a cliff above a turquoise bay in early light.",
+        "ctaLabel": "See the trails",
+        "ctaHref": "/trails",
+        "trailsHeading": "Three trails to start with",
+        "trails": [
+          "/trails/wind-crest",
+          "/trails/black-rocks",
+          "/trails/ferns-falls"
+        ],
+        "storyHeading": "From the magazine",
+        "story": [
+          "/stories/reading-the-tide"
+        ],
+        "tripsHeading": "Next guided trips",
+        "trips": [
+          "/trips/wind-crest-overnight"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/home",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Home",
+        "target": [
+          "/"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/trails",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Trails",
+        "target": [
+          "/trails"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/stories",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Stories",
+        "target": [
+          "/stories"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/guides",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Guides",
+        "target": [
+          "/guides"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/trips",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Trips",
+        "target": [
+          "/trips"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/about",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "About",
+        "target": [
+          "/about"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us/contact",
+      "type": "MenuItem",
+      "folder": "/menu/en-us",
+      "data": {
+        "label": "Contact",
+        "target": [
+          "/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    },
+    {
+      "url": "/menu/en-us",
+      "type": "Menu",
+      "folder": "/menu/en-us",
+      "data": {
+        "title": "en-us",
+        "items": [
+          "/menu/en-us/home",
+          "/menu/en-us/trails",
+          "/menu/en-us/stories",
+          "/menu/en-us/guides",
+          "/menu/en-us/trips",
+          "/menu/en-us/about",
+          "/menu/en-us/contact"
+        ]
+      },
+      "publish": true,
+      "locale": "en-us"
+    }
+  ]
+}
