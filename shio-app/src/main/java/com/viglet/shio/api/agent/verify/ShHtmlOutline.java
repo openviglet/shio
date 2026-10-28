@@ -132,6 +132,73 @@ public final class ShHtmlOutline {
         return List.copyOf(images);
     }
 
+    private static final Pattern MEDIA = Pattern.compile("(?is)<(img|source|video)\\b([^>]*?)/?>");
+
+    /**
+     * SH1266 — the media elements whose source attribute is present and empty, one description each.
+     *
+     * <p>An {@code <img src="">} is never what an author meant: the browser requests the page itself
+     * again and draws a broken image. It is the signature of a template field that resolved to
+     * nothing, and {@link #images} drops it (a blank src is not a reference), so nothing downstream
+     * saw it. Present-and-empty only: an {@code <img>} with no {@code src} at all is how lazy loaders
+     * ({@code data-src}) start, and an empty {@code src} beside a usable {@code srcset} still loads.</p>
+     *
+     * @return {@code img "<alt>"}, {@code source} or {@code video poster}, in document order
+     */
+    public static List<String> emptySources(String html) {
+        if (html == null || html.isBlank()) {
+            return List.of();
+        }
+        List<String> empty = new ArrayList<>();
+        Matcher matcher = MEDIA.matcher(STRIPPED_BLOCK.matcher(html).replaceAll(" "));
+        while (matcher.find()) {
+            String element = matcher.group(1).toLowerCase(java.util.Locale.ROOT);
+            String attributes = matcher.group(2);
+            String src = ownAttribute(attributes, "src");
+            String srcset = ownAttribute(attributes, "srcset");
+            boolean usableSrcset = srcset != null && !srcset.isBlank();
+            switch (element) {
+                case "img" -> {
+                    if (src != null && src.isBlank() && !usableSrcset) {
+                        String alt = ownAttribute(attributes, "alt");
+                        empty.add(alt == null || alt.isBlank() ? "img" : "img \"" + alt + "\"");
+                    }
+                }
+                case "source" -> {
+                    if ((src != null || srcset != null) && (src == null || src.isBlank()) && !usableSrcset) {
+                        empty.add("source");
+                    }
+                }
+                default -> {
+                    String poster = ownAttribute(attributes, "poster");
+                    if (poster != null && poster.isBlank()) {
+                        empty.add("video poster");
+                    }
+                }
+            }
+        }
+        return List.copyOf(empty);
+    }
+
+    /**
+     * As {@link #attribute}, but only the attribute itself: {@code \b} matches after a hyphen, so
+     * {@code attribute(.., "src")} reads a lazy loader's {@code data-src}, which here would report a
+     * working image as empty.
+     */
+    private static String ownAttribute(String attributes, String name) {
+        Matcher matcher = Pattern.compile("(?is)(?:^|\\s)" + Pattern.quote(name)
+                + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))").matcher(attributes);
+        if (!matcher.find()) {
+            return null;
+        }
+        for (int group = 1; group <= 3; group++) {
+            if (matcher.group(group) != null) {
+                return decode(matcher.group(group).trim());
+            }
+        }
+        return null;
+    }
+
     /** Landmark element → occurrences, name-sorted so the digest is stable. */
     private static Map<String, Integer> landmarks(String html) {
         Map<String, Integer> counts = new TreeMap<>();

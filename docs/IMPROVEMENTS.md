@@ -283,25 +283,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.37 XI.37 An empty image source is a page finding (SH1266)
-
-Found with SH1265 on the Quilhara package (SH1254): every card on `/trails` rendered
-`<img src="" alt="...">`, a broken image for a visitor, and `verify` with the page and
-a11y checks reported nothing. `ShPreviewLinks.referencesIn` walks the rendered HTML, but
-an empty attribute is not a reference, so the page check has nothing to resolve; the
-a11y check reads `alt`, which was present.
-
-An `<img>`, `<source>` or `<video poster>` whose `src` (or every `srcset` candidate) is
-empty or whitespace is never what an author meant: in HTML it requests the page itself
-again. It is the signature of a template field that resolved to nothing, the same
-symptom whatever the cause (a misspelled field, an unpublished asset, a shadowed name).
-
-So the page check should emit `page-image-empty` per page, as an error, naming the
-element's position or its `alt` so the author can find it, with a fix that names the
-field the template reads there when the scanner can tell. The assertion is a layout
-writing `src="{{missing}}"` that fails verify, beside one writing a real asset that
-passes.
-
 ### XI.40 XI.40 The current menu item (SH1267)
 
 Found building the Quilhara layouts (SH1254). `{{#menu title=}}` yields rows with

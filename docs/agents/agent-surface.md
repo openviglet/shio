@@ -648,6 +648,14 @@ not exist. This is P6 and P2, not a capability gap: nothing was missing except t
   in the **appearance hash** for the reason `inlineStyles` is, 231 references becoming 958 is not
   "six inline styles became seven", it is most of a page's colour and spacing going out, and the
   regression that motivated this moved no hash anywhere.
+  **`page-image-empty` (error) is an image whose source rendered empty (SH1266)**: SH1265 put
+  `src=""` on every card of a site and the group stayed green, because the reference walk skips an
+  empty attribute (it is not a reference) and `a11y` reads `alt`, which was there.
+  `ShHtmlOutline.emptySources` reports an `<img>` whose `src` is present and blank with no usable
+  `srcset`, an empty `<source>` and an empty `video poster`, one finding per page naming the `alt`.
+  Present-and-empty only, and through a stricter attribute read than `attribute`: `\b` matches
+  after a hyphen, so the shared helper reads a lazy loader's `data-src`, and `<img data-src>` is a
+  working image.
   **`checks=delivery` proves a route instead of resolving it (SH141)**: the one group that
   leaves the process. It fetches each published page and each unresolved link from the site's own
   URL through `ShAgentDeliveryProbe`, the single guarded fetch path SH101 built, and turns "the

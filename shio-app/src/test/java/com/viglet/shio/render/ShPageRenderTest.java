@@ -1486,6 +1486,56 @@ class ShPageRenderTest {
     }
 
     @Test
+    @DisplayName("SH1266: an image whose source rendered empty is a page finding, a lazy one is not")
+    void anEmptyImageSourceIsAPageFinding() {
+        String site = "sh1266-" + UUID.randomUUID().toString().substring(0, 8);
+        String type = "Sh1266Page" + UUID.randomUUID().toString().substring(0, 8);
+        String layoutTitle = "SH1266_LAYOUT";
+
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = new ShSite();
+            owner.setName(site);
+            owner.setDate(when);
+            owner.setOwner("admin");
+            owner.setPostTypeLayout("{\"" + type + "\":\"" + layoutTitle + "\"}");
+            entityManager.persist(owner);
+            ShFolder root = folder(owner, null, "root", (byte) 1, when);
+            ShPostType pageType = postType(type, (byte) 0, when);
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+
+            // The layout reads a field the page does not have, which is what SH1265's shadowed name
+            // did on every card: the attribute is there and its value is nothing.
+            published(owner, root, layoutType, layoutTitle, "/l", json("HTML",
+                    "<html><body><h1>Trails</h1>{{{TEXT}}}<img src=\"{{HERO}}\" alt=\"Black Rocks\">"
+                            + "</body></html>"), when);
+            published(owner, root, pageType, "Cards", "/", json("TEXT",
+                    "<p>Prose enough that this page is not the empty one the gate reports for another "
+                            + "reason, so the only finding left is the image.</p>"), when);
+        });
+
+        List<com.viglet.shio.api.agent.verify.dto.ShAgentReport.Finding> findings =
+                verifyService.verify(site, "page", 100).findings();
+        assertThat(findings)
+                .as("SH1266: verify stayed green over a site whose every card drew src=\"\"")
+                .filteredOn(finding -> "page-image-empty".equals(finding.rule()))
+                .singleElement()
+                .satisfies(finding -> {
+                    assertThat(finding.address()).isEqualTo("post:" + site + "/");
+                    assertThat(finding.severity()).isEqualTo("error");
+                    assertThat(finding.message()).contains("Black Rocks");
+                });
+
+        assertThat(com.viglet.shio.api.agent.verify.ShHtmlOutline.emptySources(
+                "<img data-src=\"lazy.png\" alt=\"Lazy\"><img src=\"\" srcset=\"a.png 1x\">"
+                        + "<picture><source srcset=\"\"><img src=\"ok.png\"></picture>"
+                        + "<video poster=\"\"></video>"))
+                .as("SH1266: a lazy loader and a usable srcset are working images; an empty "
+                        + "<source> and an empty poster are not")
+                .containsExactly("source", "video poster");
+    }
+
+    @Test
     @DisplayName("SH521: a page that renders to nothing is a finding, and so is one nothing styles")
     void theGateJudgesTheArtefactRatherThanTheStore() {
         String site = "sh521-" + UUID.randomUUID().toString().substring(0, 8);

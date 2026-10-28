@@ -2788,6 +2788,7 @@ public class ShAgentVerifyService {
         // SH521 — the two reads that already held the finding, joined to a judgement. Both are
         // computed from the bytes just rendered, so this is a threshold rather than an analysis.
         emptyPage(check, address, html, findings);
+        emptyImageSources(check, address, html, findings);
         unstyledPage(check, address, html, findings);
         // SH851 — the same question on the other half of the vocabulary, and the half a modern
         // stylesheet actually uses: 3,005 `var()` calls against 205 class names on the replica
@@ -2876,6 +2877,31 @@ public class ShAgentVerifyService {
                 "Check what composes it: a Page with `sections` the site does not hold, or a "
                         + "layout whose slots resolve to nothing, renders exactly this. "
                         + "GET /api/v2/agent/render?address=" + address + " shows the same counts."));
+    }
+
+    /**
+     * A page drawing an image whose source rendered empty (SH1266).
+     *
+     * <p>SH1265 put {@code src=""} on every card of a site and this service stayed green: the
+     * reference walk skips an empty attribute because it is not a reference, and {@code a11y} reads
+     * {@code alt}, which was present. One finding per page, not per element: a template field that
+     * resolves to nothing does it on every card, and one sentence with the count is the repair.</p>
+     */
+    private static void emptyImageSources(String check, String address, String html,
+                                          List<Finding> findings) {
+        List<String> empty = ShHtmlOutline.emptySources(html);
+        if (empty.isEmpty()) {
+            return;
+        }
+        List<String> named = empty.stream().distinct().limit(4).toList();
+        findings.add(Finding.error(check, "page-image-empty", address, null,
+                "This page renders " + empty.size() + " image source(s) that are empty, so a "
+                        + "visitor sees a broken image and the browser requests the page again: "
+                        + String.join(", ", named) + (empty.size() > named.size() ? ", …" : "") + ".",
+                "The template reads a field that resolved to nothing there: a misspelled or "
+                        + "shadowed field name, an image field left blank, or an asset that is not "
+                        + "published. GET /api/v2/agent/render?address=" + address
+                        + " shows the page as rendered."));
     }
 
     /**
