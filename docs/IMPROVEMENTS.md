@@ -283,26 +283,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.40 XI.40 The current menu item (SH1267)
-
-Found building the Quilhara layouts (SH1254). `{{#menu title=}}` yields rows with
-`name`, `url` and `link`, and nothing comparing them with the page being rendered. A
-template cannot compare either: there is no equality helper, and `post.url` versus a
-row's `url` would miss a translation, a redirect and a child page anyway.
-
-So the primary navigation of every site built on Shio renders with no
-`aria-current="page"` and no current style. That is an accessibility gap (WCAG 2.4.8,
-location) and the most common navigation cue a visitor has.
-
-The renderer knows the page: `menuRow` resolves each item's target post, and the model
-carries the current post's id. Each row should carry `current` (true when the target is
-the page being rendered) and `ancestor` (true when the page lives under the target's
-folder or the target is a parent menu of the current item), so a layout writes `{{#if
-current}} aria-current="page"{{/if}}`. Both are booleans on a row SH382 already builds,
-at no extra query. The packages that ship a layout (landing, marketing-site, quilhara)
-adopt it in the same task, and the assertion renders a menu on two pages and reads which
-item each marks.
-
 ### XI.42 XI.42 What a stylesheet loads is used (SH1268)
 
 Found applying the Quilhara package (SH1254) to a clean instance after SH1263: three

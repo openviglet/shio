@@ -76,8 +76,10 @@ class ShRenderMenuTest {
             {{#menu title="Primary"}}\
             {{#if url}}<a href="{{url}}">{{name}}</a>\
             {{else}}<span class="group">{{name}}</span>\
-            {{#menu title=title}}<a class="sub" href="{{link}}">{{name}}</a>{{/menu}}\
-            {{/if}}\
+            {{#menu title=title}}<a class="sub" href="{{link}}">{{name}}</a>\
+            {{#if current}}<b class="here">{{name}}</b>{{/if}}{{/menu}}\
+            {{/if}}{{#if current}}<b class="here">{{name}}</b>{{/if}}\
+            {{#if ancestor}}<i class="above">{{name}}</i>{{/if}}\
             {{else}}<p class="empty">no menu</p>{{/menu}}
             </nav><aside>
             {{#menu title="Nowhere"}}<a href="{{url}}">{{name}}</a>\
@@ -143,6 +145,8 @@ class ShRenderMenuTest {
             post(site, root, page, "Pricing", "/pricing", "{}", when, ShPostState.DRAFT);
             post(site, root, page, "Our whole story, at length", "/about", "{}", when, ShPostState.DRAFT);
             post(site, root, page, "Enterprise", "/solutions/enterprise", "{}", when, ShPostState.DRAFT);
+            // SH1267 — a page below a menu entry in the URL, which no menu lists itself.
+            post(site, root, page, "Teams", "/pricing/teams", "{}", when, ShPostState.DRAFT);
 
             // A label override: the page's title is long and the menu says "About".
             post(site, root, entry, "About", "/menu/about",
@@ -287,8 +291,37 @@ class ShRenderMenuTest {
         assertThat(render(ShPostState.DRAFT)).isEqualTo(render(ShPostState.DRAFT));
     }
 
+    @Test
+    @DisplayName("SH1267: each page marks the entry that is it, and the entries that lead to it")
+    void theCurrentEntryIsMarked() {
+        assertThat(render("/"))
+                .as("SH1267: the home page is in no entry, so nothing is marked")
+                .doesNotContain("class=\"here\"", "class=\"above\"");
+
+        assertThat(render("/pricing"))
+                .as("SH1267: a page listed directly is current on itself and nothing leads to it")
+                .contains("<b class=\"here\">Pricing</b>")
+                .doesNotContain("class=\"above\"");
+
+        assertThat(render("/pricing/teams"))
+                .as("SH1267: a page below an entry in the URL makes that entry an ancestor, not current")
+                .contains("<i class=\"above\">Pricing</i>")
+                .doesNotContain("class=\"here\"");
+
+        String enterprise = render("/solutions/enterprise");
+        assertThat(enterprise)
+                .as("SH1267: inside a nested menu the entry is current and its group heading leads to it")
+                .contains("<b class=\"here\">Enterprise</b>", "<i class=\"above\">Solutions</i>");
+        assertThat(enterprise).doesNotContain("<b class=\"here\">Solutions</b>",
+                "<i class=\"above\">Pricing</i>");
+    }
+
     private String render(ShPostState state) {
         return shPageRenderService.render(siteName, "/", state).html();
+    }
+
+    private String render(String url) {
+        return shPageRenderService.render(siteName, url, ShPostState.DRAFT).html();
     }
 
     // ── fixture ─────────────────────────────────────────────────────────────────────

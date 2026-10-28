@@ -1447,6 +1447,15 @@ renderer over one body of content at a second address. See the section on it bel
   one of these" and a required field would make the other case impossible. *Neither* is the one that
   hides (a label with no link is indistinguishable from a deliberate heading); *both* is a silent
   precedence, since `target` wins and nothing said so.
+  **A menu row says where it stands relative to the page being rendered (SH1267)**: `current` when
+  its page (the `target`, or the entry itself when a page is listed directly) is this page, and
+  `ancestor` when it leads here without being it, so a layout writes `{{#if current}}
+  aria-current="page"{{/if}}`. Leading here is the URL (`/trails` above `/trails/wind-crest`, never
+  `/`, which is above everything) or a group heading whose entries lead here, searched four deep. A
+  template could not compute either: there is no equality helper, and `post.url` against a row's
+  `url` misses a nested group. Both keys are declared in `MENU_KEYS`, which `rowKeysFor("menu")`
+  answers so SH251's field lint accepts them. `landing`, `marketing-site` and Quilhara mark the
+  current item; Quilhara also styles the ancestor.
   **`{{#query}}` gets a second page, an order and a filter, and the measurement came first (SH384).**
   `folder`/`type`/`limit` meant the helper could render only *the first page* of anything, so an
   insights hub with two hundred articles (the commonest page shape after a homepage) was not

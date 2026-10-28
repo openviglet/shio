@@ -384,6 +384,7 @@
 - **SH1255** — showcase-coverage.test.mjs holds every manifest feature, MCP tool and curator surface to a built bilingual Quilhara page or an exclusion; the rest is a named debt list SH1256 drains (design §XI.34 recorded in `docs/agents/blueprints.md`).
 - **SH1256 (tour and search)** — Quilhara carries /tour, eight topic pages and /search in en and pt, each tour page ending in a BuildNote naming its console route, MCP call, CLI line and CDA request; showcase debt is down to contentAcl.
 - **SH1266** — verify's page check reports page-image-empty, an error naming the alt, when a rendered img, source or video poster has an empty source; a lazy data-src or a usable srcset stays silent (design §XI.37 recorded in `docs/agents/agent-surface.md`).
+- **SH1267** — Menu rows carry current and ancestor, so a layout writes aria-current="page"; landing, marketing-site and Quilhara now mark the page a visitor is on (design §XI.40 recorded in `docs/agents/renderer.md`).
 
 ## Block M — Token economy, measured (SH74)
 

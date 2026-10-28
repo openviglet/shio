@@ -157,6 +157,13 @@ public class ShRenderHelpers {
             Set.of("id", "title", "summary", "url", "link", "type", "name", "locale");
 
     /**
+     * What a {@code {{#menu}}} row carries: a listing row, plus where it stands relative to the page
+     * being rendered (SH1267), so a layout can write {@code aria-current="page"}.
+     */
+    public static final Set<String> MENU_KEYS = java.util.stream.Stream.concat(ROW_KEYS.stream(),
+            java.util.stream.Stream.of("current", "ancestor")).collect(java.util.stream.Collectors.toUnmodifiableSet());
+
+    /**
      * What an {@code {{#image}}} row carries (SH390) — an <b>asset</b>, not a post.
      *
      * <p>Its own set for {@link #FORM_FIELD_KEYS}' reason: a listing's rows are interchangeable
@@ -193,6 +200,7 @@ public class ShRenderHelpers {
     public static Set<String> rowKeysFor(String scope) {
         return switch (scope == null ? "" : scope) {
             case "form" -> FORM_FIELD_KEYS;
+            case "menu" -> MENU_KEYS;
             case "image" -> IMAGE_KEYS;
             default -> ROW_KEYS;
         };
@@ -386,10 +394,12 @@ public class ShRenderHelpers {
             return options.inverse();
         }
         try {
+            Here here = new Here(string(options.context.get("post.id")),
+                    string(options.context.get("post.url")));
             List<Map<String, Object>> rows = new ArrayList<>();
             for (String reference : referencesOf(shRenderModel.fieldsOf(menu).get(ITEMS))) {
                 resolveReference(siteId, reference, state)
-                        .map(post -> menuRow(siteId, post, state))
+                        .map(post -> menuRow(siteId, post, state, here))
                         .ifPresent(rows::add);
             }
             if (rows.isEmpty()) {
@@ -465,7 +475,8 @@ public class ShRenderHelpers {
      * a label and no content. SH154's {@code dangling-reference} is what reports it, and this is the
      * "leave to the lint what the lint reports" half of the same rule.</p>
      */
-    private Map<String, Object> menuRow(String siteId, ShPostUnified post, ShPostState state) {
+    private Map<String, Object> menuRow(String siteId, ShPostUnified post, ShPostState state,
+                                        Here here) {
         Map<String, Object> fields = shRenderModel.fieldsOf(post);
         Map<String, Object> row = new LinkedHashMap<>(row(post));
         String label = string(fields.get("label"));
@@ -487,7 +498,84 @@ public class ShRenderHelpers {
         }
         row.put("url", url);
         row.put("link", url);
+        // SH1267 — whether this entry is the page being rendered, or leads to it.
+        Optional<ShPostUnified> page = targetOf(siteId, post, state);
+        boolean current = page.isPresent() && page.get().getId().equals(here.id());
+        row.put("current", current);
+        row.put("ancestor", !current && leadsTo(siteId, post, state, here, MENU_DEPTH));
         return ShStableMap.copyOf(row);
+    }
+
+    /**
+     * The page being rendered, as a menu row compares against it (SH1267).
+     *
+     * @param id  the current post's id, or {@code null} outside a page render
+     * @param url its friendly URL
+     */
+    private record Here(String id, String url) {
+
+        /** Whether {@code url} is a path above this page: {@code /trails} above {@code /trails/x}. */
+        boolean under(String url) {
+            if (this.url == null || url == null || url.isBlank() || "/".equals(url.trim())) {
+                return false;
+            }
+            String prefix = url.trim().endsWith("/") ? url.trim() : url.trim() + "/";
+            return this.url.startsWith(prefix);
+        }
+    }
+
+    /** How deep a group heading is searched for the current page: the depth a real menu has. */
+    private static final int MENU_DEPTH = 4;
+
+    /**
+     * The page a menu entry points at: its {@code target}, or the entry itself when it is a page
+     * listed directly. An {@code href} leaves the site and a group heading has no page, so neither
+     * has one; the same order {@link #menuRow} resolves the link in.
+     */
+    private Optional<ShPostUnified> targetOf(String siteId, ShPostUnified post, ShPostState state) {
+        Map<String, Object> fields = shRenderModel.fieldsOf(post);
+        List<String> target = referencesOf(fields.get("target"));
+        if (!target.isEmpty()) {
+            return resolveReference(siteId, target.getFirst(), state);
+        }
+        String href = string(fields.get("href"));
+        if ((href == null || href.isBlank()) && referencesOf(fields.get(ITEMS)).isEmpty()) {
+            return Optional.of(post);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * SH1267 — whether this entry leads to the page being rendered without being it.
+     *
+     * <p>Two ways, and the second is why it is not a URL comparison alone. An entry whose page sits
+     * above this one in the URL ({@code Trails} while a trail renders), because that is where a
+     * visitor came from and what a breadcrumb would name; never the home page, which is above
+     * everything and would mark itself on every page. And a group heading (a nested menu, SH381's
+     * row with no url) whose entries lead here, searched {@link #MENU_DEPTH} deep, since a cycle is
+     * content and must not cost a render.</p>
+     */
+    private boolean leadsTo(String siteId, ShPostUnified post, ShPostState state, Here here,
+                            int depth) {
+        if (here.id() == null || depth <= 0) {
+            return false;
+        }
+        Optional<ShPostUnified> page = targetOf(siteId, post, state);
+        if (page.isPresent()) {
+            return here.under(page.get().getFurl());
+        }
+        for (String reference : referencesOf(shRenderModel.fieldsOf(post).get(ITEMS))) {
+            Optional<ShPostUnified> child = resolveReference(siteId, reference, state);
+            if (child.isEmpty()) {
+                continue;
+            }
+            Optional<ShPostUnified> childPage = targetOf(siteId, child.get(), state);
+            if (childPage.isPresent() && here.id().equals(childPage.get().getId())
+                    || leadsTo(siteId, child.get(), state, here, depth - 1)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
