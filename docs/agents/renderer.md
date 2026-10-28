@@ -1536,6 +1536,11 @@ renderer over one body of content at a second address. See the section on it bel
   order, deterministic and meaningless), reading as "the Portuguese page is missing German". It hangs on
   the group's **anchor** now, which SH53's column already identifies for free: a master post carries its
   own id as the group.
+  **"What its posts carry" excludes templates (SH1264).** Every row gets a locale on write, so a
+  layout, a theme or an uploaded file carries `en`, and the Quilhara package (en-us and pt-br) got 16
+  warnings asking each translated page for an `en` version. `untranslated` now skips SH1130's
+  `NOT_WRITTEN_IN_A_LANGUAGE` types when it collects a site's locales, so it and `siteLocales` read
+  one definition of a site's languages.
   **`translation-stale` (SH1058) is the other half: a translation whose source has changed since.**
   `sh_post_unified.source_digest` is stamped by `ShPostUnifiedWriteService.create` whenever the group is
   not the post's own, so both doors that make a translation (the console's `translate` and the agent's

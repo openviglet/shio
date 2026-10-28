@@ -75,12 +75,14 @@ class ShAgentTranslationVerifyTest {
 
     private String multilingual;
     private String monolingual;
+    private String withTemplates;
 
     @BeforeAll
     void setup() {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         multilingual = "sh383v-many-" + suffix;
         monolingual = "sh383v-one-" + suffix;
+        withTemplates = "sh1264-tpl-" + suffix;
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             Instant when = Instant.parse("2026-01-01T00:00:00Z");
@@ -111,7 +113,33 @@ class ShAgentTranslationVerifyTest {
             String pair = UUID.randomUUID().toString();
             post(one, oneRoot, page, "Home", "/", when, "en", pair, pair);
             post(one, oneRoot, page, "Home copy", "/copy", when, "en", pair, null);
+
+            // SH1264 — a site written in en-us and pt-br whose layout carries `en`, as every
+            // template does on write. The layout is not a language the pages lack.
+            ShSite templated = site(withTemplates, when);
+            ShFolder templatedRoot = folder(templated, when);
+            String both = UUID.randomUUID().toString();
+            post(templated, templatedRoot, page, "Home", "/", when, "en-us", both, both);
+            post(templated, templatedRoot, page, "Início", "/inicio", when, "pt-br", both, null);
+            post(templated, templatedRoot, systemType("PageLayout", when), "Layout", "/layout", when,
+                    "en", null, null);
         });
+    }
+
+    @Test
+    @DisplayName("SH1264: a layout's locale is not a language the site's translated pages lack")
+    void templatesAreNotALanguage() {
+        assertThat(findings(withTemplates))
+                .as("SH1264: the only `en` row is a PageLayout, so a group in en-us and pt-br is "
+                        + "complete; counting the layout asked every page for an en version")
+                .isEmpty();
+    }
+
+    /** A system post-type by name, reusing the instance's row when the seed already made it. */
+    private ShPostType systemType(String name, Instant when) {
+        return entityManager.createQuery("select t from ShPostType t where t.name = :name", ShPostType.class)
+                .setParameter("name", name).getResultStream().findFirst()
+                .orElseGet(() -> postType(name, when));
     }
 
     @Test

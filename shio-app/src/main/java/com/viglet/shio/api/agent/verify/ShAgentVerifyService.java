@@ -1347,6 +1347,13 @@ public class ShAgentVerifyService {
             if (site == null) {
                 continue;
             }
+            // SH1264 — a layout, a theme or an uploaded file carries `en` because every row gets a
+            // locale on write, and counting it made `en` a language every translated page lacked.
+            // `siteLocales` already answers this with SH1130's set; the two rules read one set now.
+            if (post.getShPostType() != null
+                    && NOT_WRITTEN_IN_A_LANGUAGE.contains(post.getShPostType().getName())) {
+                continue;
+            }
             String locale = ShPostUnifiedWriteService.localeOf(post);
             localesBySite.computeIfAbsent(site.getId(), ignored -> new java.util.TreeSet<>()).add(locale);
             String group = post.getTranslationGroupId();

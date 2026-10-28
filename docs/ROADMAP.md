@@ -16,7 +16,6 @@
 - 📋 **SH1255** (deps: SH1254) **Nothing fails when Shio ships a capability the showcase does not demonstrate** — A test maps each manifest features key and MCP tool to a showcase page or a stated exclusion, holding the gap as a named list so the demo cannot fall behind. → §XI.34
 - 📋 **SH1256** (deps: SH1255) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — Tour pages, each with a how-it-was-built panel naming the console screen, MCP tool and CDA call behind it, drain SH1255's debt to zero. → §XI.35
 - 📋 **SH1257** (deps: SH1254) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo only sells Shio if a first boot can reach it; decide between enabling the published catalogue by default and a narrower showcase entry, with the trust cost stated. → §XI.36
-- 📋 **SH1264** (deps: —) **translation-missing counts a site's layouts and theme, always in en, as a language its translated pages lack** — A site written in en-us and pt-br gets one warning per translated page asking for an en version nobody meant to write. → §XI.39
 - 📋 **SH1265** (deps: —) **On the public sites route an img whose src is a site path renders empty, while a CSS url() to such a path is rebased** — A page naming its images by site path shows none to a visitor, and verify's page check passes it. → §XI.38
 
 ## Block S — The public site (shio.viglet.org)

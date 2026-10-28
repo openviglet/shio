@@ -377,6 +377,7 @@
 - **SH1252** — A blueprint declares assets under assets/; apply uploads them into the site's folders, planned first, noop for identical bytes and replace keeping the id for changed ones, within a 32 MB bound (design §XI.31 recorded in `docs/agents/blueprints.md`).
 - **SH1253** — Catalogue entries carry up to four screenshots, proxied on the README's allow-list and shown on the card and in the dialog, and the dialog renders the README instead of raw markdown (design §XI.32 recorded in `docs/agents/blueprints.md`).
 - **SH1263** — A package's File fields write asset:/path and get the asset's id, because the apply now uploads assets before content; a manifest asset may carry alt, set as ALT without touching captions.
+- **SH1264** — translation-missing now skips layouts, themes, files and the other template types when it collects a site's locales, so a site in en-us and pt-br no longer asks every page for an en version.
 
 ## Block M — Token economy, measured (SH74)
 
