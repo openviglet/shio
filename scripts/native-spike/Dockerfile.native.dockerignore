@@ -1,0 +1,7 @@
+*
+!pom.xml
+!mvnw
+!.mvn
+!shio-app/pom.xml
+!shio-app/src/main
+!scripts/native-spike/agent-metadata

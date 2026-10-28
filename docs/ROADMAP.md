@@ -21,13 +21,14 @@
 - 📋 **SH1256** (deps: SH1255) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — Tour pages, each with a how-it-was-built panel naming the console screen, MCP tool and CDA call behind it, drain SH1255's debt to zero. → §XI.35
 - 📋 **SH1257** (deps: SH1254) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo only sells Shio if a first boot can reach it; decide between enabling the published catalogue by default and a narrower showcase entry, with the trust cost stated. → §XI.36
 
-## Block BI — The areas this round did not reach
-
-- 🛠 **SH1249** (deps: —) **Nothing measures whether Shio builds and boots as a GraalVM CE native image, or what that would buy** — An ephemeral playground tenant and small containers want fast boot and low memory, and only a spike says whether Artemis, Hazelcast and imageio survive closed-world AOT. → §LXXV.3
-
 ## Block S — The public site (shio.viglet.org)
 
 - 📋 **SH1258** (deps: SH1256, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
+
+## Block BI — The areas this round did not reach
+
+- 📋 **SH1260** (deps: —) **The shipped image boots in 19 s at 1 GB RSS without the JVM levers SH1249 measured** — AppCDS plus SerialGC took the first 200 to 13.7 s and idle RSS to 726 MB at the same p95, for one build step and one flag. → §LXXV.4
+- 📋 **SH1261** (deps: —) **hazelcast-all and JGit ship in viglet-shio.jar though nothing starts or imports either** — About 30 of the jar's 163 MB is dead weight with its own CVE surface, and hazelcast.xml tells a reader a cache is running when none is. → §LXXV.5
 
 ## Priority
 

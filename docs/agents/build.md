@@ -2493,3 +2493,28 @@ One shape worth knowing: `scripts/console-build-info.mjs` stays `.mjs` with a ha
 `.d.mts` beside it, because `node --test` runs the suites with no build step while `vite.config.ts` is
 type-checked by `tsc -b`. Moving it to TypeScript would mean compiling it before a test could import
 it, which is the build-before-you-can-measure problem this task exists to remove.
+
+## A native image is not the shipped image, and the JVM levers are (SH1249)
+
+Measured, not argued: [docs/specs/SH1249-graalvm-native-spike.md](../specs/SH1249-graalvm-native-spike.md).
+A GraalVM CE native image of Shio builds and boots (first 200 in about 4 s against about 19 s, idle
+RSS about 360 MB against about 1 GB, same p95), and it is **not** what the shipped `Dockerfile` builds,
+for one reason: closed-world reflection fails per path, at runtime, as a 500 with nothing logged, and
+metadata traced from a replay covers only the replay. The first route probed outside it,
+`GET /api/v2/staticfile`, was such a 500.
+
+What stays true if anyone picks it up again:
+
+- **GraalVM 25, not 21.** Spring Boot 4 targets it; CE 21 fails in analysis on Spring Data 4.
+- **The build needs about 18 GB.** A 7 GB CI runner cannot produce it.
+- **Hibernate needs build-time enhancement** with lazy initialization and the ByteBuddy provider
+  excluded from ServiceLoader. That changes entity bytecode, so it is a JVM decision too.
+- **Runtime `LOGGING_LEVEL_*` does nothing in the image**: the AOT-processed Logback model is fixed
+  at build time. Diagnose with `-XX:MissingRegistrationReportingMode=Warn`.
+- **The metadata has to come from the test suite**, not a replay, and a conformance run against the
+  binary is the gate. That is the precondition for a go, and nothing less.
+
+The cheaper half is a go on the JVM: AppCDS plus `-XX:+UseSerialGC -Xms64m -Xmx512m` took the
+first 200 from 19.3 s to 13.7 s and idle RSS from 999 MB to 726 MB at the same p95. The opt-in
+`native-spike` Maven profile and everything else that reproduces the table live in
+`scripts/native-spike/`.

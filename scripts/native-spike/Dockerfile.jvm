@@ -1,0 +1,20 @@
+# SH1249 — the JVM side of the native-image spike: the shipped runtime image, built from a local
+# jar, plus a class data sharing (AppCDS) archive trained on one context refresh. The variants
+# differ only in JAVA_OPTS and JAR, which scripts/native-spike/measure.mjs sets.
+#
+# From the repository root, after ./mvnw -pl shio-app -am clean package -DskipTests -Dskip.npm=true:
+#   docker build -f scripts/native-spike/Dockerfile.jvm -t shio-jvm:spike .
+FROM eclipse-temurin:21-jre
+RUN groupadd -r java && useradd -r -g java -u 1001 java
+WORKDIR /app
+COPY shio-app/target/viglet-shio.jar app.jar
+RUN java -Djarmode=tools -jar app.jar extract --destination cds \
+ && java -XX:ArchiveClassesAtExit=cds/app.jsa -Dspring.context.exit=onRefresh \
+         -Dlogging.config=classpath:logback-spring-console.xml -jar cds/app.jar \
+ && rm -rf /app/store && mkdir -p /app/store && chown -R java:java /app
+USER java
+VOLUME ["/app/store"]
+EXPOSE 2710
+ENV JAVA_OPTS="-Xmx512m -Xms512m"
+ENV JAR="/app/app.jar"
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} -Djava.security.egd=file:/dev/./urandom -Dlogging.config=classpath:logback-spring-console.xml -jar ${JAR}"]

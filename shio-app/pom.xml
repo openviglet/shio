@@ -646,6 +646,83 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <!-- SH1249 — the GraalVM CE native-image spike, opt-in and used only by
+             scripts/native-spike/Dockerfile.native. Spring AOT runs before packaging, then
+             native-image compiles target/classes with the reachability metadata repository.
+             The shipped image does not use it; docs/specs/SH1249-graalvm-native-spike.md says why. -->
+        <profile>
+            <id>native-spike</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.hibernate.orm</groupId>
+                        <artifactId>hibernate-maven-plugin</artifactId>
+                        <version>7.4.14.Final</version>
+                        <executions>
+                            <execution>
+                                <id>enhance</id>
+                                <goals>
+                                    <goal>enhance</goal>
+                                </goals>
+                                <configuration>
+                                    <enableLazyInitialization>true</enableLazyInitialization>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <version>${spring-boot.version}</version>
+                        <executions>
+                            <execution>
+                                <id>process-aot</id>
+                                <goals>
+                                    <goal>process-aot</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>1.1.17</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <mainClass>com.viglet.shio.Shio</mainClass>
+                            <imageName>shio</imageName>
+                            <!-- repackage has already turned the jar into a boot jar, whose
+                                 classes sit under BOOT-INF/ where native-image cannot see them -->
+                            <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+                            <!-- What the tracing agent recorded over a boot and the measurement
+                                 replay: Liquibase's changelog binding, among others, is reflective
+                                 and covered by neither Spring AOT nor the metadata repository. -->
+                            <buildArgs>
+                                <buildArg>-H:ConfigurationFileDirectories=${project.basedir}/../scripts/native-spike/agent-metadata</buildArg>
+                                <!-- Hibernate finds its bytecode provider by ServiceLoader alone and
+                                     falls back to "none" when there is no registration. ByteBuddy
+                                     cannot define classes in a native image, so it is left out, and
+                                     the enhancement below stands in for its lazy-loading proxies. -->
+                                <buildArg>-H:ServiceLoaderFeatureExcludeServices=org.hibernate.bytecode.spi.BytecodeProvider</buildArg>
+                            </buildArgs>                            <metadataRepository>
+                                <enabled>true</enabled>
+                            </metadataRepository>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
     <reporting>
         <plugins>
             <plugin>

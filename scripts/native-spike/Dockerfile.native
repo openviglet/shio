@@ -1,0 +1,25 @@
+# SH1249 — Shio as a GraalVM Community Edition native image. A spike, not a shipped image:
+# the result and the go/no-go are in docs/specs/SH1249-graalvm-native-spike.md.
+#
+# GraalVM CE only (GPLv2 with the Classpath Exception). Build from the repository root:
+#   docker build -f scripts/native-spike/Dockerfile.native -t shio-native:spike .
+# 25, not 21: Spring Boot 4's native support targets GraalVM 25. On CE 21 the build fails in
+# analysis, because Spring Data 4 initializes SerializableLambdaReader at build time and drags
+# commons-logging, SLF4J and Logback in with it.
+FROM ghcr.io/graalvm/native-image-community:25 AS build
+WORKDIR /src
+COPY . .
+RUN chmod +x mvnw
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw -B -Pnative-spike -pl shio-app -am clean package -DskipTests -Dskip.npm=true \
+       -Dmaven.gitcommitid.skip=true 2>&1
+
+FROM debian:bookworm-slim
+RUN groupadd -r shio && useradd -r -g shio -u 1001 shio
+WORKDIR /app
+COPY --from=build /src/shio-app/target/shio /app/shio
+RUN mkdir -p /app/store && chown -R shio:shio /app
+USER shio
+VOLUME ["/app/store"]
+EXPOSE 2710
+ENTRYPOINT ["/app/shio", "-Dlogging.config=classpath:logback-spring-console.xml"]

@@ -1318,30 +1318,55 @@ translates, reached through the assistant, and every result lands as a reviewabl
 
 ## LXXV The areas this round did not reach
 
-### LXXV.3 A GraalVM CE native-image spike, measured against the JAR (SH1249)
+### LXXV.4 Ship the AppCDS and SerialGC levers the native spike measured (SH1260)
 
-The question is whether a native image is worth a second build target, and it is
-answered by numbers, not by argument. The spike uses GraalVM Community Edition only:
-GPLv2 with the Classpath Exception, so the binary carries no obligation on Shio's code
-and no update terms can change later, which rules out Oracle GraalVM under the GFTC.
-Images are built and run with freewilly, never Docker Desktop.
+SH1249 measured the shipped image against two cheap JVM levers, three cold runs each on
+a fresh store (docs/specs/SH1249-graalvm-native-spike.md). The shipped `-Xms512m
+-Xmx512m` on G1 reached the first 200 from /mcp in 19.3 s at 999 MB idle RSS.
+`-XX:+UseSerialGC -Xms64m -Xmx512m` gave 17.0 s and 707 MB. Adding an AppCDS archive
+trained on one context refresh (`-Dspring.context.exit=onRefresh`,
+`-XX:ArchiveClassesAtExit`) gave 13.7 s and 726 MB. p95 under the replay was 99 to 119
+ms across all three, so none of it costs latency.
 
-The baseline is today's image: eclipse-temurin:21-jre running viglet-shio.jar with
--Xmx512m. Against it the spike records native build time and peak build RAM, image size,
-time to the first 200 from the CDA and from /mcp, idle RSS, and RSS plus p95 latency
-under a fixed replay of agent and CDA requests. The same table also measures the two
-cheaper JVM levers, class data sharing and a tuned heap with SerialGC, because a native
-image that beats only an untuned JVM proves nothing.
+Build: in the shipped `Dockerfile`, extract the jar with `java -Djarmode=tools -jar
+app.jar extract`, run the training refresh in the image build, delete the store it
+leaves behind, and start from the extracted jar with `-XX:SharedArchiveFile`.
+`scripts/native-spike/Dockerfile.jvm` already does exactly this and is the reference.
+Then change `JAVA_OPTS` to the SerialGC flags. The training run boots against an empty
+H2 store, so it needs no secret and no network.
 
-Known risks, each recorded as works, needs hints, or blocks: embedded Artemis and Netty,
-Hazelcast, JGit, jai-imageio and webp-imageio (ServiceLoader and native code),
-Handlebars helpers resolved by reflection, Liquibase changelogs as resources, and
-Hibernate under Spring AOT. A blocker ends the spike with its name, which is itself the
-answer.
+Two things to settle while there. The `Dockerfile` comment pins Java 21 because embedded
+Artemis crashes on 25, but no Artemis jar is in `viglet-shio.jar` any more, so that
+reason is stale: either restate it with whatever still holds Shio on 21 or drop it. And
+SerialGC is single-threaded, which suits a small container; a large deployment can still
+override `JAVA_OPTS`.
 
-The deliverable is docs/specs/SH1249-graalvm-native-spike.md with the table and a go or
-no-go, the decision summarised in docs/agents/build.md, and no change to the shipped
-Dockerfile.
+Done when: the published image's first 200 and idle RSS, measured with
+`scripts/native-spike/measure.mjs`, match the AppCDS row of the spec's table, and the
+conformance gate is green against it.
+
+### LXXV.5 Remove the Hazelcast and JGit dependencies nothing uses (SH1261)
+
+Found during SH1249. `shio-app/pom.xml` declares `hazelcast-all` 4.2.8 (26.9 MB) and
+`org.eclipse.jgit` (3.3 MB), and both ship in `viglet-shio.jar`, about 30 of its 163 MB.
+
+Nothing uses either. No class under `shio-app/src/main` imports `com.hazelcast` or
+`org.eclipse.jgit`. A `hazelcast.xml` ships in the resources, but no Hazelcast instance
+starts on the JVM image: nothing listens on 5701 after boot. `ShCdaCacheControlFilter`'s
+javadoc already says "Hazelcast is configured but unused", and `ShCdaRateLimiter` names
+a Hazelcast-backed bucket only as something a cluster would need later. JGit is history:
+Shio used Git as version control in 0.3.6 and that code is gone.
+
+Build: remove both dependencies and `hazelcast.xml`, then run `clean test` and the
+conformance gate. Before deleting, grep the test tree and `META-INF` for either name,
+and check that Spring Boot's cache auto-configuration does not change provider once
+Hazelcast leaves the classpath (it should fall back to the simple provider, which is
+what runs today). If a cluster-wide cache or rate limit is wanted later, it comes back
+as its own task, with a test that proves the instance starts.
+
+Why it matters: 4.2.8 is an old Hazelcast line that keeps adding to the image's CVE
+surface on every release, the jar is 18% bigger than it needs to be, and a reader who
+finds `hazelcast.xml` assumes a cache that is not running.
 
 ## XCI Finding, selecting and acting on content
 
