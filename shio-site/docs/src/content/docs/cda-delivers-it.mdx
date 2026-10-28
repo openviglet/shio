@@ -1,0 +1,40 @@
+---
+title: The CDA delivers it
+description: "The read-only Content Delivery API over REST and GraphQL, with a zero-dependency TypeScript client, React hooks and a Next.js starter."
+tableOfContents: false
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Shio is headless: your front end owns the markup, and Shio serves the content. The
+**Content Delivery API** is a versioned, read-only contract at `/api/v2/cda/**`, 
+sites, folder listings, breadcrumbs, a post by id **or by its friendly URL** (the one
+a `[...slug]` route needs), and a filtered query, returning frozen DTOs that never
+leak authoring fields. The same contract is available as **GraphQL**, whose schema is
+built from your own post types, so it is a second *shape* over one contract rather
+than a second contract to keep in sync.
+
+Access is by API key, and the key carries its own limits: a scope (read, preview or
+write), an optional per-site allow-list, and an **environment**: a `PROD` key sees
+published content, a `PREVIEW` key reads drafts, which is what makes live preview work
+without a second deployment. ETags, `Cache-Control` and per-token rate limiting are on
+by default. On top of that sit three packages: `@viglet/shio-client` (zero runtime
+dependencies, works in Node, the browser, edge and SSR), `@viglet/shio-react-sdk`
+(hooks and render components), and `create-shio-app`, which scaffolds a Next.js App
+Router site with SSG, ISR and on-demand revalidation already wired.
+
+Pulling on a schedule is the fallback, not the design. **[Webhooks](/docs/webhooks/)** push
+a small signed JSON body the moment content is published, unpublished or deleted, so a
+static front end rebuilds the route that changed instead of all of them. That page is
+deliberately blunt about what delivery does **not** promise, no ordering, not
+exactly-once, no dead-letter queue, because a consumer that assumes otherwise breaks in
+production rather than in review.
+
+<CardGrid>
+  <LinkCard title="Content Delivery API (CDA)" href="/docs/headless/content-delivery-api/" description="The read-only, headless Content Delivery API for serving published Shio content to any JavaScript front-end." />
+  <LinkCard title="JavaScript Client" href="/docs/headless/javascript-client/" description="@viglet/shio-client, the framework-agnostic TypeScript client for the Shio Content Delivery API." />
+  <LinkCard title="React SDK" href="/docs/headless/react-sdk/" description="@viglet/shio-react-sdk: React hooks and render components for the Shio Content Delivery API." />
+  <LinkCard title="Next.js Starter" href="/docs/headless/nextjs-starter/" description="create-shio-app: scaffold a Next.js App Router site wired to the Shio Content Delivery API." />
+  <LinkCard title="GraphQL" href="/docs/graphql/" description="Query content in Viglet Shio using GraphQL with the built-in GraphiQL console." />
+  <LinkCard title="Webhooks" href="/docs/webhooks/" description="Outbound webhooks in Viglet Shio: subscribing per site and per event, the signed JSON payload, verifying the HMAC-SHA256 signature, and exactly what delivery does and does not guarantee." />
+</CardGrid>

@@ -9,6 +9,7 @@ packages:
   - "claude-plugin"
   - "shio-react"
   - "shio-site"
+  - "shio-site/docs"
   - "shio-examples/*"
 
 # pnpm 11 no longer reads the "pnpm" field in package.json — native build

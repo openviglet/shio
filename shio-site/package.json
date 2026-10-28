@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "vite",
     "preview": "vite preview",
-    "build": "node scripts/token-budgets.mjs && node scripts/marketplace.mjs && tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs && node scripts/og-image.mjs",
+    "build": "node scripts/token-budgets.mjs && node scripts/marketplace.mjs && tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs && node scripts/og-image.mjs && pnpm --dir docs run build",
     "build:client": "vite build",
     "build:ssr": "vite build --ssr src/entry-server.tsx --outDir dist-ssr",
     "prerender": "node scripts/prerender.mjs",

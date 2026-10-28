@@ -1,0 +1,16 @@
+{
+  "name": "shio-docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shio's end-user documentation at shio.viglet.org/docs (SH1262): an Astro Starlight area building into the site's dist/docs.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.9",
+    "astro": "^7.2.9"
+  }
+}

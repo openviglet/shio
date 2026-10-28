@@ -1,0 +1,60 @@
+// SH1262 — Shio's end-user documentation, at https://shio.viglet.org/docs/.
+//
+// It used to be `docs-shio/` in the vigletdocs Docusaurus repository, so every Shio ship that
+// needed a page cost a commit in a second repository. It lives beside the code it describes now,
+// as its own Astro + Starlight project inside the site (the shape roadkeep's site/docs runs).
+//
+// Two joins to the site next door, and both are load-bearing:
+//
+// - BASE. Astro rewrites the links it generates and NOT the ones typed in a page, so every link
+//   the importer wrote is absolute and already carries `/docs/`. Change the base here and those
+//   change with it, or every hand-typed link 404s in production alone.
+// - OUT_DIR. The site builds to `shio-site/dist/` and this area into a subdirectory of it, which
+//   is the one directory the Pages deploy uploads. Astro empties outDir before writing and
+//   `vite build` empties `dist/`, which is why the site's build runs this one LAST.
+import { defineConfig } from "astro/config";
+import starlight from "@astrojs/starlight";
+
+const BASE = "/docs";
+const OUT_DIR = "../dist/docs";
+
+export default defineConfig({
+  site: "https://shio.viglet.org",
+  base: BASE,
+  outDir: OUT_DIR,
+  trailingSlash: "always",
+  integrations: [
+    starlight({
+      title: "Viglet Shio",
+      description: "The documentation of Viglet Shio, the open-source, agent-ready CMS.",
+      social: [{ icon: "github", label: "GitHub", href: "https://github.com/openviglet/shio" }],
+      editLink: { baseUrl: "https://github.com/openviglet/shio/edit/2026.3/shio-site/docs/" },
+      lastUpdated: false,
+      // The four hubs Docusaurus had, in its order: a reader picks by job, not by subsystem.
+      sidebar: [
+        { label: "Getting started", items: ["getting-started/intro", "getting-started/core-concepts", "architecture-overview"] },
+        {
+          label: "The agent builds it",
+          items: ["agent-builds-it", "mcp", "agent-surface", "content-as-files", "cli", "blueprints",
+            "website-development", "design-tokens", "replication", "token-economy"],
+        },
+        {
+          label: "The human curates it",
+          items: ["curator-approves-it", "content-console", "content-lifecycle", "agent-safety",
+            "universal-editor", "content-modeling", "content-i18n", "administration-guide", "import-export"],
+        },
+        {
+          label: "The CDA delivers it",
+          items: ["cda-delivers-it", "headless/content-delivery-api", "headless/javascript-client",
+            "headless/react-sdk", "headless/nextjs-starter", "graphql", "webhooks"],
+        },
+        {
+          label: "Run it",
+          items: ["run-it", "installation-guide", "configuration-reference", "multi-tenancy",
+            "search-caching", "security"],
+        },
+        { label: "Developers", items: ["developer-guide", "rest-api"] },
+      ],
+    }),
+  ],
+});

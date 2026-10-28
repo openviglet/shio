@@ -109,6 +109,8 @@ export const PACKAGES = {
     shipped: [],
   },
   "shio-site": { walk: ["src", "scripts"], root: ["vite.config.ts"], shipped: [] },
+  // SH1262 — the /docs area: Astro and Starlight are reached from its config and content config.
+  "shio-site/docs": { walk: ["src", "scripts"], root: ["astro.config.mjs"], shipped: [] },
   "shio-examples/blog-site": { walk: ["src"], root: ["vite.config.ts"], shipped: [] },
   "shio-examples/corporate-site": { walk: ["src"], root: ["vite.config.ts"], shipped: [] },
 };

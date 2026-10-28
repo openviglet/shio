@@ -150,6 +150,20 @@ Served from the site root, in [`public/`](public/): `robots.txt`, `sitemap.xml`,
 `llms.txt`, `favicon.svg`, `og.svg` and the `CNAME` that points the GitHub Pages
 deploy at the custom domain.
 
+## The documentation, at /docs (SH1262)
+
+[`docs/`](docs/) is Shio's end-user documentation: its own Astro + Starlight project and pnpm
+workspace member, with base `/docs`, building into `dist/docs` as the **last** step of `build`
+(Astro empties its outDir and `vite build` empties `dist/`, so any other order publishes the site
+without it; the Pages workflow checks for `_site/docs/index.html`). The pages came from
+vigletdocs' `docs-shio/` through [`docs/scripts/import-vigletdocs.mjs`](docs/scripts/import-vigletdocs.mjs),
+which says what it rewrote and why; edit them here now. Links between pages are absolute
+(`/docs/<slug>/#anchor`), because Astro does not add the base to a link typed by hand, and
+`scripts/docs-links.test.mjs` fails on one that reaches no page or no heading.
+
+Because the pages now sit in this tree, the repository's own lints read them: the first run
+found the REST reference still documenting the cache-clearing endpoint SH954 removed.
+
 ## Publish
 
 [`.github/workflows/publish-github-pages.yml`](../.github/workflows/publish-github-pages.yml)

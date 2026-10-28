@@ -1,0 +1,79 @@
+---
+title: "Viglet Shio: the Open-Source, Agent-Ready CMS"
+description: "An agent-ready CMS: a coding agent builds the site over MCP, an editor approves it, and Shio renders it or a Content Delivery API serves it. Install, model content and publish with Viglet Shio."
+sidebar:
+  label: Viglet Shio
+  order: 1
+tableOfContents: false
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+**Viglet Shio** is an open-source, agent-ready CMS: a person can run all of it from the
+console, and it is built so that **a coding agent can build the site**: over MCP, a REST
+surface designed for one call instead of a session, or content projected to files on disk.
+**A curator approves it**: approving, correcting and publishing in the console or straight on
+the rendered page. **Shio renders it, or the Content Delivery API serves it**: REST and
+GraphQL, with a TypeScript client, React hooks and a Next.js starter.
+
+Shio hosts **no model and no prompts**. It is the substrate your agent drives, running on your
+own infrastructure, and what it competes on is the quality of that protocol: discoverable,
+deterministic, verifiable, and cheap in tokens.
+
+## What makes it agent-ready
+
+<CardGrid>
+  <Card title="One call, not a session" icon="seti:json">
+    The instance describes itself: a manifest of every capability, plus a context pack of the
+    site as it stands. An agent does not have to explore before it can write.
+  </Card>
+  <Card title="Content is also files" icon="document">
+    Project a site to disk and author it with the cheapest tools an agent has, edit, write,
+    grep, then push it back, with a per-field three-way merge so a curator's own edit is never
+    overwritten.
+  </Card>
+  <Card title="Nothing surprises the curator" icon="approve-check">
+    Agent writes land as drafts, plans can run dry first, destructive operations need a confirm
+    token naming what they remove, and a delete is a trash you can undo.
+  </Card>
+  <Card title="Addressed, not id-shuffled" icon="random">
+    Content is reached by path, `post:mysite/about`, `folder:mysite/blog`, so no UUID has to
+    survive between two calls, and the same write twice is the same result.
+  </Card>
+  <Card title="Proof without a screenshot" icon="check-circle">
+    A content lint, a route check and a render digest give an agent cheap textual evidence that
+    what it built actually works, instead of asking someone to look.
+  </Card>
+  <Card title="Tokens are a budget" icon="rocket">
+    Responses carry measured size budgets and a benchmark runs in CI, so a token regression
+    fails the build the same way a broken test does.
+  </Card>
+</CardGrid>
+
+## Quick start
+
+<CardGrid>
+  <LinkCard title="01 · Run it" description="Docker, standalone JAR or from source" href="/docs/installation-guide/" />
+  <LinkCard title="02 · Point an agent at it" description="MCP, the agent surface, content as files, the CLI" href="/docs/agent-builds-it/" />
+  <LinkCard title="03 · Curate what it built" description="The console, drafts, publishing, the Universal Editor" href="/docs/curator-approves-it/" />
+  <LinkCard title="04 · Serve it" description="The CDA, GraphQL, the TypeScript client and the Next.js starter" href="/docs/cda-delivers-it/" />
+</CardGrid>
+
+## Where to go
+
+<CardGrid>
+  <LinkCard title="The agent builds it" description="MCP, the agent surface, content as files, the CLI, blueprints and the verification loop" href="/docs/agent-builds-it/" />
+  <LinkCard title="The curator approves it" description="The console, drafts and publishing, the Universal Editor, preview and the trash" href="/docs/curator-approves-it/" />
+  <LinkCard title="The CDA delivers it" description="The read contract, GraphQL, the TypeScript client, React hooks and the Next.js starter" href="/docs/cda-delivers-it/" />
+  <LinkCard title="Run it" description="Install, configure, multi-tenancy, search indexing and security on your own infrastructure" href="/docs/run-it/" />
+  <LinkCard title="Core Concepts" description="Sites, Folders, Posts, Post Types and the publishing workflow" href="/docs/getting-started/core-concepts/" />
+  <LinkCard title="Content Modeling" description="Post Types, custom fields, publishing workflow and content relationships" href="/docs/content-modeling/" />
+  <LinkCard title="Pages, Layouts & Regions" description="Handlebars templates, Themes, design tokens, helpers, preview and public delivery" href="/docs/website-development/" />
+  <LinkCard title="Architecture Overview" description="Component diagram, request flow, technology stack and deployment topologies" href="/docs/architecture-overview/" />
+  <LinkCard title="REST API Reference" description="Post, folder, site, search, user, and widget endpoints" href="/docs/rest-api/" />
+  <LinkCard title="GraphQL" description="Query content using GraphQL with the built-in GraphiQL console" href="/docs/graphql/" />
+  <LinkCard title="Administration Guide" description="Users, groups, roles, permissions, site properties and system settings" href="/docs/administration-guide/" />
+  <LinkCard title="Security" description="Authentication, authorization, user and group management" href="/docs/security/" />
+  <LinkCard title="Import & Export" description="Exchange providers and Shio package backup/restore" href="/docs/import-export/" />
+  <LinkCard title="Developer Guide" description="Tech stack, dev environment, build from source and contribution guide" href="/docs/developer-guide/" />
+</CardGrid>

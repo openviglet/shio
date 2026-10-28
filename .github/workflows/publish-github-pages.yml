@@ -70,7 +70,7 @@ jobs:
       - name: Install workspace deps
         run: pnpm install --frozen-lockfile
 
-      # tsc -b → vite build → vite build --ssr → prerender → og-image.
+      # tsc -b → vite build → vite build --ssr → prerender → og-image → the /docs area (SH1262).
       - name: Build the site
         run: pnpm run build:site
 
@@ -88,6 +88,9 @@ jobs:
           # the *.github.io host with every canonical URL pointing somewhere else.
           test -f _site/index.html || { echo "no index.html in the assembled site"; exit 1; }
           test -f _site/CNAME     || { echo "no CNAME — public/CNAME is the source"; exit 1; }
+          # SH1262 — the documentation area builds last, into dist/docs; an earlier step that
+          # empties dist/ would publish the site without it, green.
+          test -f _site/docs/index.html || { echo "no docs/index.html — shio-site/docs builds last"; exit 1; }
 
           find _site -name index.html | sort
 
