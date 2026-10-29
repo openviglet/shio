@@ -1768,6 +1768,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1212** — The GraphQL explorer fills with the console's primary: GraphiQL's thirteen primary rules read var(--primary), a test counts them, and the census fell to two primary fills (design §LV.47 recorded in `docs/agents/console-ui.md`).
 - **SH1213** — The bento header names the product: headerStart carries the Shio mark and wordmark linked home, then the palette trigger, as the shell contract requires (design §LIV.18 recorded in `docs/agents/console-ui.md`).
 - **SH1216** — The bento header's trailing edge carries the design system's ModeToggle for light, dark and system, before the user menu, as the shell contract requires (design §LIV.19 recorded in `docs/agents/console-ui.md`).
+- **SH1291** — docs/design now matches design system 2026.3.23: the bin created vds-site.dc.html and added its frame to canvas.json, so SH942's drift check is green again.
 
 ## Block AV — The live defects, fixed before anything is built on them
 

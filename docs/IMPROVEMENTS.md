@@ -1287,3 +1287,20 @@ Either raise that chunk's ceiling with the reason beside it, or move the import 
 the screen that uses it. Delete the `preload-helper.js` entry. Then do SH937's review
 and move `PINNED`. Close by removing this task's `red-suites.json` exception in the same
 commit that turns `pnpm test` green.
+
+### XCIV.3 The JS gate runs every package even after one fails (SH1292)
+
+Found on 2026-10-29. `GATE_RUNS.js` in `scripts/gates.mjs` runs `pnpm --filter ... run
+test`, and pnpm's recursive run stops at the first package that fails
+(`ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL`). On `2026.3` the `shio-react` package is red for a
+declared reason (SH1289's `red-suites.json` entry), so the `cli` package never ran: its
+two `page-reference-drift` failures were real, undeclared and invisible, and SH1289's
+exception was written against a partial list. A declared red is supposed to license
+exactly the tests it names, and a bail turns it into a licence for everything behind it.
+
+What to build: pass `--no-bail` in `GATE_RUNS.js`'s args, so every package runs and the
+log holds every failure, while the exit code stays non-zero when any one fails. Check
+the comparators that read `shio-js-test.log` (`red-suites.test.mjs`, the gate stamp)
+still parse a log that now carries more than one package's failure block. Assert it at
+the boundary that broke: a test over `GATE_RUNS.js` that requires `--no-bail`, naming
+this id, beside the existing `ci-gates.test.mjs` assertions.
