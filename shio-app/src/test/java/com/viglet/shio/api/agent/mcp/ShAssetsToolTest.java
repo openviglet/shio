@@ -25,6 +25,7 @@ import com.viglet.shio.api.agent.ShAgentReadService;
 import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.agent.mcp.tools.ShAssetsTool;
+import com.viglet.shio.api.staticfile.ShAssetLoadService;
 import com.viglet.shio.api.staticfile.ShUploadPolicy;
 import com.viglet.shio.api.staticfile.ShUploadPolicyProperties;
 import com.viglet.shio.post.type.ShSystemPostType;
@@ -74,11 +75,53 @@ class ShAssetsToolTest {
         // SH1032 — the usage collaborator is a mock rather than a stub with behaviour, because the
         // branches asserted here never reach it: `usage` is off unless asked for, and the no-type
         // branch returns before any row exists. A mock that is never called is the honest fixture.
-        return new ShAssetsTool(reads, new ShUploadPolicy(new ShUploadPolicyProperties()),
-                mock(com.viglet.shio.api.staticfile.ShStaticFileService.class),
+        return tool(reads,
                 // SH1034 — the reference index, mocked for the same reason: the counts are read
                 // only when `usage` is asked for, and neither branch here asks.
-                mock(com.viglet.shio.api.reference.ShObjectReferenceService.class));
+                mock(com.viglet.shio.api.reference.ShObjectReferenceService.class),
+                mock(ShAssetLoadService.class));
+    }
+
+    private static ShAssetsTool tool(ShAgentReadService reads,
+                                     com.viglet.shio.api.reference.ShObjectReferenceService references,
+                                     ShAssetLoadService loads) {
+        return new ShAssetsTool(reads, new ShUploadPolicy(new ShUploadPolicyProperties()),
+                mock(com.viglet.shio.api.staticfile.ShStaticFileService.class), references, loads);
+    }
+
+    /**
+     * SH1280 — a theme's font is referenced by no field and loaded by every page. {@code usage}
+     * answered {@code used 0} for it, the reading a deletion acts on, while {@code verify} (SH1268)
+     * and the media listing's {@code loadedBy} said it was used.
+     */
+    @Test
+    void sh1280UsageSaysHowManyPagesLoadAnAssetNoFieldNames() {
+        ShAgentReadService reads = mock(ShAgentReadService.class);
+        when(reads.hasType(ShSystemPostType.FILE)).thenReturn(true);
+        when(reads.find(any(), eq(ShSystemPostType.FILE), any(), any(), any(), anyBoolean(), any()))
+                .thenReturn(new ShAgentFound(1, false, List.of(
+                        new ShAgentFound.Row("post:Blog/inter.woff2", "File", "PUBLISHED", "inter.woff2", "f1"))));
+        ObjectNode data = objectMapper.createObjectNode();
+        data.put(ShSystemPostTypeAttr.FILE, "inter.woff2");
+        when(reads.read(any(), any(), anyBoolean())).thenReturn(List.of(
+                new ShAgentDoc("post:Blog/inter.woff2", "File", "PUBLISHED", "Blog", List.of(), data,
+                        "f1", null, null, null, null, null)));
+        var references = mock(com.viglet.shio.api.reference.ShObjectReferenceService.class);
+        when(references.referrerCounts(any())).thenReturn(java.util.Map.of());
+        ShAssetLoadService loads = mock(ShAssetLoadService.class);
+        when(loads.loadedByAssets(any())).thenReturn(
+                new ShAssetLoadService.Loads(java.util.Map.of("f1", 48), 48, 48));
+
+        ObjectNode arguments = objectMapper.createObjectNode();
+        arguments.put("usage", true);
+        String answer = tool(reads, references, loads).call(arguments);
+
+        assertThat(answer)
+                .as("SH1280: the font is referenced by nothing and loaded by all 48 pages, and the "
+                        + "line says both, so `used 0` alone no longer reads as deletable")
+                .contains("used 0 loaded=48")
+                .as("SH1280: a complete walk needs no `rendered` caveat")
+                .doesNotContain("rendered=");
     }
 
     @Test

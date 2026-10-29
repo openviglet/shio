@@ -28,6 +28,9 @@ export interface ShStaticFileListing {
   totalFiles: number
   /** Per category, plus `all`, counted ignoring the category filter itself. */
   facets: Record<string, number>
+  /** SH1280 — on `loads`, how many pages were rendered to count `loadedBy`, of how many. */
+  pagesRendered?: number
+  pagesTotal?: number
 }
 
 /**
@@ -52,6 +55,7 @@ export class ShStaticFileService {
     if (filter?.q) params.set("q", filter.q)
     if (filter?.page !== undefined) params.set("page", String(filter.page))
     if (filter?.size !== undefined) params.set("size", String(filter.size))
+    if (filter?.loads) params.set("loads", "true")
     const qs = params.toString()
     const url = qs ? `/v2/staticfile?${qs}` : "/v2/staticfile"
     const response = await axios.get<ShStaticFileListing>(url, { signal: read.signal })

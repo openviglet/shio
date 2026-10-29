@@ -96,6 +96,21 @@ public class ShAssetLoadService {
         }
     }
 
+    /**
+     * The same count, for the sites these assets belong to: for a caller holding asset ids and not
+     * sites, such as {@code shio_assets usage=true}.
+     */
+    @Transactional(readOnly = true)
+    public Loads loadedByAssets(Collection<String> assetIds) {
+        Set<String> siteIds = new TreeSet<>();
+        for (ShPostUnified asset : shPostUnifiedRepository.findByIdIn(assetIds)) {
+            if (asset.getShSite() != null) {
+                siteIds.add(asset.getShSite().getId());
+            }
+        }
+        return loadedBy(siteIds);
+    }
+
     @Transactional(readOnly = true)
     public Loads loadedBy(Collection<String> siteIds) {
         Map<String, Integer> byAsset = new TreeMap<>();

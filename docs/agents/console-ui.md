@@ -2384,6 +2384,14 @@ Three things about it that are easy to get wrong:
   `en` and `pt`. The zero case has its own word ("unused") rather than "used 0": a badge reading
   `used 0` is a sentence the eye has to finish before it means anything.
 
+**Since SH1280 a zero is three answers.** A theme's font is referenced by no field and loaded by
+every page, so "unused" was wrong for exactly the assets a site cannot do without. The *Page loads*
+chip (`loads` in the list's URL state) asks the listing for `loadedBy`; counting renders every page
+of the sites on screen, which is why it is not the default. With a count, a zero-reference asset
+pages load reads *N pages load it*, and one nothing loads reads *unused*. The strings are short
+because the locale files are in the eager bundle, which SH1043's ceiling had 1 KB of room under. Without it the badge says
+*unreferenced* and its hint says page loads were not counted. `asset-loads.test.mjs` holds the three.
+
 ## Replace, and the widget that used to dead-end (SH1035)
 
 Two console gaps behind one API that already worked.

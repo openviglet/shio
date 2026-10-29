@@ -19,6 +19,7 @@ import com.viglet.shio.api.agent.dto.ShAgentDoc;
 import com.viglet.shio.api.agent.dto.ShAgentFound;
 import com.viglet.shio.api.agent.mcp.ShMcpTool;
 import com.viglet.shio.api.reference.ShObjectReferenceService;
+import com.viglet.shio.api.staticfile.ShAssetLoadService;
 import com.viglet.shio.api.staticfile.ShAssetResponseHeaders;
 import com.viglet.shio.api.staticfile.ShStaticFileService;
 import com.viglet.shio.api.staticfile.ShStaticFileUsage;
@@ -54,10 +55,14 @@ public class ShAssetsTool implements ShMcpTool {
     private final ShStaticFileService shStaticFileService;
     /** SH1034 — the reverse index, read once for a whole page rather than once per row. */
     private final ShObjectReferenceService shObjectReferenceService;
+    /** SH1280 — what rendered pages load, the half of "used" the reference index cannot see. */
+    private final ShAssetLoadService shAssetLoadService;
 
     public ShAssetsTool(ShAgentReadService shAgentReadService, ShUploadPolicy shUploadPolicy,
                         ShStaticFileService shStaticFileService,
-                        ShObjectReferenceService shObjectReferenceService) {
+                        ShObjectReferenceService shObjectReferenceService,
+                        ShAssetLoadService shAssetLoadService) {
+        this.shAssetLoadService = shAssetLoadService;
         this.shAgentReadService = shAgentReadService;
         this.shUploadPolicy = shUploadPolicy;
         this.shStaticFileService = shStaticFileService;
@@ -160,6 +165,11 @@ public class ShAssetsTool implements ShMcpTool {
                 ? shObjectReferenceService.referrerCounts(
                         docs.stream().map(ShAgentDoc::id).toList())
                 : Map.of();
+        // SH1280 — and what the sites' rendered pages load, so a theme's font is not `used 0`.
+        // One render per page of the sites involved, paid only on `usage`, the opt-in it rides.
+        ShAssetLoadService.Loads loads = withUsage
+                ? shAssetLoadService.loadedByAssets(docs.stream().map(ShAgentDoc::id).toList())
+                : null;
         for (ShAgentDoc doc : docs) {
             String fileName = fileName(doc);
             boolean sanitized = flagOf(doc, ShSystemPostTypeAttr.SANITIZED);
@@ -173,7 +183,7 @@ public class ShAssetsTool implements ShMcpTool {
                     .flag("unsafe", isUnsafe(fileName, sanitized))
                     .build());
             if (withUsage) {
-                out.append(usageOf(doc.id(), usageCounts.getOrDefault(doc.id(), 0L)));
+                out.append(usageOf(doc.id(), usageCounts.getOrDefault(doc.id(), 0L), loads));
             }
         }
         return out.toString();
@@ -197,8 +207,13 @@ public class ShAssetsTool implements ShMcpTool {
      * flattening it. An asset used only by a draft is not unused: deleting it breaks a page nobody
      * has published yet, which is the page most likely to be mid-edit.</p>
      */
-    private String usageOf(String assetId, long count) {
-        StringBuilder out = new StringBuilder(ShTerse.line("used").word(count).build());
+    private String usageOf(String assetId, long count, ShAssetLoadService.Loads loads) {
+        // SH1280 — `loaded` is how many rendered pages request it, with `of` when the server's cap
+        // cut the walk: an asset loaded only past the cap would otherwise read as unused.
+        StringBuilder out = new StringBuilder(ShTerse.line("used").word(count)
+                .attr("loaded", loads.byAsset().getOrDefault(assetId, 0))
+                .attr("rendered", loads.complete() ? null : loads.rendered() + "/" + loads.pages())
+                .build());
         if (count == 0) {
             // SH1034 — the count came from the page's one batched query, so an unused asset costs
             // nothing further. This is the answer the caller most often wants and it is now free.

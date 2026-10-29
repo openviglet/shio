@@ -28,6 +28,12 @@ export type ShStaticFileItem = {
    * references it, which is what a prune acts on, while null means this listing did not ask.
    */
   usageCount?: number | null
+  /**
+   * SH1280 — how many rendered pages request this asset, present only when the listing was asked
+   * with `loads`. A theme's font is referenced by nothing and loaded by every page, so with
+   * `usageCount` alone it read as unused.
+   */
+  loadedBy?: number | null
 }
 
 /** Editable metadata payload for `PUT /v2/staticfile/{id}/meta` (SH62). */
@@ -59,6 +65,8 @@ export type ShStaticFileFilter = {
   page?: number
   /** SH1030 — assets per page; absent means the server's default. */
   size?: number
+  /** SH1280 — also count the rendered pages that load each asset; renders the site's pages. */
+  loads?: boolean
 }
 
 /**

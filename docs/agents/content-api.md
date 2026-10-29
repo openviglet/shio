@@ -471,8 +471,10 @@ published posts of a layout-bound type, rendered, `ShPreviewLinks.referencesIn`,
 the envelope carries `pagesRendered` of `pagesTotal`, capped at 500 per site, since a zero past the
 cap is a gap. It costs one render per page of the rows' sites, so it is opt-in and `null` otherwise.
 Prune asks for it and calls an asset unused only when both counts are zero.
-`ShBlueprintAccessibilityTest` asserts it on the applied Quilhara package. Still open: the MCP
-`usage` line and the media card's badge read `usageCount` alone.
+`ShBlueprintAccessibilityTest` asserts it on the applied Quilhara package. `shio_assets usage=true`
+writes it on each `used` line (`used 0 loaded=48`, with `rendered=N/M` when the cap cut), through
+`loadedByAssets`, which finds the sites from the asset ids. The media card asks only when the curator
+presses *Count page loads*, so until then a zero is *unreferenced*, never *unused* (console-ui.md).
 
 The instrument is worth knowing about independently: neither `getEntityLoadCount()` nor SH634's
 `getExecutionRowCount()` can see a scan, because both count rows a query **returns** and a scan's

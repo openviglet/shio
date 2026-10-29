@@ -56,7 +56,7 @@ interface UploadEntry {
 }
 
 /** SH1023 — every key the media library owns, and what each means when the URL says nothing. */
-const FILES_LIST = { q: "", category: "all", view: "grid", page: "0", needsAlt: "" }
+const FILES_LIST = { q: "", category: "all", view: "grid", page: "0", needsAlt: "", loads: "" }
 
 /** SH1030 — assets per page, the value the object listing has defaulted to since SH165. */
 const PAGE_SIZE = 50
@@ -113,10 +113,18 @@ export default function StaticFileListPage() {
   /** SH1030 — one page at a time, and what the whole filtered set holds. */
   const [totalFiles, setTotalFiles] = useState(0)
   const [facets, setFacets] = useState<Record<string, number>>({})
+  /** SH1280 — how many pages the server rendered to count page loads, once it was asked. */
+  const [pagesRendered, setPagesRendered] = useState<number | null>(null)
   const page = Number.parseInt(list.value.page || "0", 10) || 0
   /** SH1031 — the images with no alt text, narrowed on the page this reader is looking at. */
   const needsAlt = list.value.needsAlt === "true"
   const needsAltCount = items.filter(undescribed).length
+  /**
+   * SH1280 — also count what rendered pages load. Opt-in because the server renders every page of
+   * the sites on screen to answer; until it is asked, a zero reference count reads "unreferenced"
+   * rather than "unused", since a theme's font is referenced by nothing and loaded everywhere.
+   */
+  const countLoads = list.value.loads === "true"
   const view = list.value.view as "grid" | "list"
   const query = list.value.q
   const category = list.value.category as ShMediaCategory | "all"
@@ -135,7 +143,7 @@ export default function StaticFileListPage() {
    * array. That was correct exactly because it had all of it, and a library big enough to need
    * chips is one where downloading it to draw them is the problem.
    */
-  const requestKey = JSON.stringify([query, category, page])
+  const requestKey = JSON.stringify([query, category, page, countLoads])
   const loading = refreshing || loadedKey !== requestKey
 
   const fetchList = useCallback((signal?: AbortSignal) =>
@@ -144,12 +152,14 @@ export default function StaticFileListPage() {
       category: category === "all" ? undefined : category,
       page,
       size: PAGE_SIZE,
+      loads: countLoads || undefined,
     }, { signal })
       .then((listing) => {
         setItems(listing.items ?? [])
         setTotalFiles(listing.totalFiles ?? 0)
         setFacets(listing.facets ?? {})
-        setLoadedKey(JSON.stringify([query, category, page]))
+        setPagesRendered(typeof listing.pagesRendered === "number" ? listing.pagesRendered : null)
+        setLoadedKey(JSON.stringify([query, category, page, countLoads]))
         setRefreshing(false)
       })
       .catch((reason: unknown) => {
@@ -160,9 +170,10 @@ export default function StaticFileListPage() {
         setItems([])
         setTotalFiles(0)
         setFacets({})
-        setLoadedKey(JSON.stringify([query, category, page]))
+        setPagesRendered(null)
+        setLoadedKey(JSON.stringify([query, category, page, countLoads]))
         setRefreshing(false)
-      }), [category, page, query])
+      }), [category, page, query, countLoads])
 
   /** The curator asked — upload, delete, move — so the spinner is a response to them (SH701). */
   const load = () => {
@@ -411,6 +422,10 @@ export default function StaticFileListPage() {
             <CategoryChip active={needsAlt} label={t("staticFile.needsAlt")}
               count={needsAltCount}
               onClick={() => list.set("needsAlt", needsAlt ? "" : "true")} />
+            {/* SH1280 — the count is the pages the server rendered to answer, once it was asked. */}
+            <CategoryChip active={countLoads} label={t("staticFile.countLoads")}
+              count={pagesRendered ?? 0}
+              onClick={() => list.set("loads", countLoads ? "" : "true")} />
           </div>
         </div>
 
@@ -631,13 +646,30 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
               it is what a prune acts on, so it gets the `outline` treatment rather than being
               hidden as an absence.
             */}
-            {typeof item.usageCount === "number" && (
-              <Badge variant={item.usageCount === 0 ? "outline" : "secondary"}
-                className="px-1 py-0 text-[10px] leading-4"
-                title={item.usageCount === 0
-                  ? t("staticFile.usageNoneHint")
-                  : t("staticFile.usageHint", { count: item.usageCount })}>
+            {/*
+              SH1280 — a zero reference count is three answers, and only one of them is "unused":
+              rendered pages load it (a theme's font), page loads were not counted, or neither.
+            */}
+            {typeof item.usageCount === "number" && item.usageCount > 0 && (
+              <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-4"
+                title={t("staticFile.usageHint", { count: item.usageCount })}>
                 {t("staticFile.usageBadge", { count: item.usageCount })}
+              </Badge>
+            )}
+            {item.usageCount === 0 && typeof item.loadedBy === "number" && item.loadedBy > 0 && (
+              <Badge variant="secondary" className="px-1 py-0 text-[10px] leading-4"
+                title={t("staticFile.loadedHint")}>
+                {t("staticFile.loadedBadge", { count: item.loadedBy })}
+              </Badge>
+            )}
+            {item.usageCount === 0 && !(typeof item.loadedBy === "number" && item.loadedBy > 0) && (
+              <Badge variant="outline" className="px-1 py-0 text-[10px] leading-4"
+                title={typeof item.loadedBy === "number"
+                  ? t("staticFile.usageNoneHint")
+                  : t("staticFile.unreferencedHint")}>
+                {typeof item.loadedBy === "number"
+                  ? t("staticFile.usageBadge", { count: 0 })
+                  : t("staticFile.unreferencedBadge")}
               </Badge>
             )}
           </div>

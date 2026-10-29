@@ -276,30 +276,6 @@ what a curator usually wants there.
 The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
 and reads the site's page type.
 
-### XI.52 XI.52 One meaning of used across verify, prune and the media library (SH1280)
-
-Found shipping SH1268. `verify` now withdraws `asset-unused` for an asset a rendered
-page loads, but the other two surfaces that answer "is this used" still read only the
-reference index (SH1034), which File and Content Select fields feed. `shio assets prune`
-filters the media listing on `usageCount === 0`, and that count is what the console's
-media library and `shio_assets usage` show too. On Quilhara all three self-hosted fonts
-are listed as reclaimable, with the instruction to delete them, while every page fetches
-them. So two surfaces now disagree about one fact, which `cli/src/commands/assets.mjs`
-itself names as the failure to avoid.
-
-Landed: `loads=true` on the listing (`ShAssetLoadService`) and prune. Left: `shio_assets
-usage` and the media card. The cheap, honest form is a second count beside `usageCount`,
-`loadedBy` (pages whose rendered output requests the asset), computed the way SH1268
-computes it, by walking rendered pages through `ShPreviewLinks.referencesIn` and
-resolving each reference with `ShSiteAssets.findInSite`. That is one render per page, so
-it is computed on request (`usage=true` on the listing, the prune command) and never on
-a plain listing. Prune then counts an asset as reclaimable only when both counts are
-zero, and says it rendered N pages to know.
-
-Assert on the Quilhara package: after apply, `shio assets prune --dry-run` lists none of
-the three fonts, and the media listing with usage reports each font as loaded by every
-page.
-
 ### XI.53 XI.53 The locale policy can label a language (SH1281)
 
 Left over from SH1270. A `{{#translations}}` row now carries `language`, the language's
@@ -1329,3 +1305,26 @@ hand-drawn tables moved onto the design system's one table, after a lint names t
 package half is VDS204 to VDS207 in the design system's own backlog.
 
 ## XCII The public site (shio.viglet.org)
+
+## XCIII The console as an application: cost, resilience and access
+
+### XCIII.1 XCIII.1 Load a screen's locale strings with the screen (SH1286)
+
+Found shipping SH1280. Adding six short strings to `staticFile.json` (en and pt, about 1
+KB) turned `console-size-budget.test.mjs` red: the eager raw total was 1922.9 KB against
+a 2002 KB ceiling, and the gate wants 4% of room, so the margin left was about 1 KB. The
+fix that shipped was shortening the strings until the console's hints were terse, which
+is the wrong lever: every namespace of every screen is in the bundle a curator downloads
+before the first row, so the next task that adds a sentence to any screen meets the same
+wall, and the choices on offer will be to cut the copy or raise the ceiling the gate was
+written to stop people raising.
+
+What to build: measure first, as SH1043 did. Report how many of the eager bytes are
+locale JSON, per namespace and per language, from the same Vite analysis the gate reads.
+If that share is material, load a screen's namespaces with the screen (i18next's
+backend, or a dynamic import per route), and keep eager only what the shell itself
+draws: navigation, the header, errors. Only the reader's own language should load, never
+both. The gate then gains the headroom back without a ceiling change.
+
+Assert with the size gate itself: the eager total falls by the measured locale share,
+and a test fails if a screen-only namespace is reachable from the entry chunk.
