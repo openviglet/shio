@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Options;
+import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.agent.ShAddressResolver;
 import com.viglet.shio.api.staticfile.transform.ShImageTransformSigner;
@@ -124,6 +125,8 @@ public class ShRenderHelpers {
     private final ShRenderModel shRenderModel;
     private final ShImageTransformSigner imageTransformSigner;
     private final ShImageTransformProperties imageTransformProperties;
+    /** SH1298 — who may read a members-only page, asked only on the published render. */
+    private final ShContentAclService shContentAclService;
 
     public ShRenderHelpers(ShTemplateEngine engine,
                            ShAddressResolver shAddressResolver,
@@ -133,7 +136,9 @@ public class ShRenderHelpers {
                            ShSiteRepository shSiteRepository,
                            ShRenderModel shRenderModel,
                            ShImageTransformSigner imageTransformSigner,
-                           ShImageTransformProperties imageTransformProperties) {
+                           ShImageTransformProperties imageTransformProperties,
+                           ShContentAclService shContentAclService) {
+        this.shContentAclService = shContentAclService;
         this.engine = engine;
         this.shAddressResolver = shAddressResolver;
         this.shFolderRepository = shFolderRepository;
@@ -1203,7 +1208,10 @@ public class ShRenderHelpers {
         // database collation are not the same function and the difference would move page
         // boundaries per deployment. So `title` keeps the SH419 path, which is correct and scans —
         // declared here rather than left for somebody to discover from the benchmark.
-        if (windowable(sort)) {
+        // SH1298 — a reader who fails a gate takes the key path, where the gated rows can be left
+        // out before they are counted; the windowed query would count them.
+        boolean gated = hidesGated(state);
+        if (windowable(sort) && !gated) {
             List<ShListingKey> rows = "oldest".equals(sort.toLowerCase(java.util.Locale.ROOT))
                     ? shPostUnifiedRepository.findListingWindowOldest(folder, statesFor(state),
                             state, typeId, locale, DATE_FLOOR, PageRequest.of(page - 1, limit))
@@ -1218,6 +1226,7 @@ public class ShRenderHelpers {
                 shPostUnifiedRepository.findListingKeys(folder, statesFor(state), locale), state);
         List<ShListingKey> matching = keys.stream()
                 .filter(key -> typeId == null || typeId.equals(key.postTypeId()))
+                .filter(key -> !gated || shContentAclService.visibility(key.id()).allowed())
                 .sorted(orderKeys(sort))
                 .toList();
 
@@ -1421,12 +1430,16 @@ public class ShRenderHelpers {
         if (parent.isEmpty()) {
             return options.inverse();
         }
-        List<ShFolder> children =
-                new ArrayList<>(shFolderRepository.findByParentFolderOrderByPositionAsc(parent.get()));
+        ShPostState state = state(options);
+        boolean gated = hidesGated(state);
+        List<ShFolder> children = new ArrayList<>(shFolderRepository
+                .findByParentFolderOrderByPositionAsc(parent.get()).stream()
+                // SH1298 — a members-only section is not a menu entry for somebody it turns away.
+                .filter(child -> !gated || shContentAclService.visibility(child.getId()).allowed())
+                .toList());
         if (children.isEmpty()) {
             return options.inverse();
         }
-        ShPostState state = state(options);
         StringBuilder out = new StringBuilder();
         for (ShFolder child : children) {
             String url = indexUrlOf(child, state);
@@ -1928,7 +1941,30 @@ public class ShRenderHelpers {
         // SH278 — and it gained a total order in the move: the fold used to depend on whatever order
         // the database returned, which was invisible here because a listing is sorted afterwards
         // anyway, and very visible in `ShPageRenderService`, where `findFirst` was the answer.
-        return ShRenderState.preferDraft(posts, state);
+        return readableOnly(ShRenderState.preferDraft(posts, state), state);
+    }
+
+    /**
+     * SH1298 — whether this render leaves out what its reader may not read.
+     *
+     * <p>Only the published render does: {@code /preview}, the Universal Editor and the agent's
+     * digest render drafts, and an editor must see a gated page there to edit it. Keyed on the
+     * state rather than the route, because the state is what the helpers already receive. On an
+     * instance with no gate this is one count that loads no entity, which is why
+     * {@code ShRenderListingPageBenchmarkTest} does not move.</p>
+     */
+    private boolean hidesGated(ShPostState state) {
+        return state == ShPostState.PUBLISHED && shContentAclService.deniesAnyGate();
+    }
+
+    /** SH1298 — the rows of a published render this reader may read, in order. */
+    private List<ShPostUnified> readableOnly(List<ShPostUnified> posts, ShPostState state) {
+        if (posts.isEmpty() || !hidesGated(state)) {
+            return posts;
+        }
+        return posts.stream()
+                .filter(post -> shContentAclService.visibility(post.getId()).allowed())
+                .toList();
     }
 
     /**

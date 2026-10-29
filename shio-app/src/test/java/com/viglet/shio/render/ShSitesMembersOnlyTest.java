@@ -110,7 +110,8 @@ class ShSitesMembersOnlyTest {
 
             ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
             ShPostType pageType = postType("Sh1285Page", (byte) 0, when);
-            post(site, root, layoutType, "SH1285_LAYOUT", "/l", "{\"HTML\":\"<html><body>{{TEXT}}</body></html>\"}", when);
+            post(site, root, layoutType, "SH1285_LAYOUT", "/l", "{\"HTML\":\"<html><body>{{TEXT}}<ul>{{#query folder=\\\"members\\\"}}<li>{{title}}</li>{{/query}}</ul>"
+                    + "<nav>{{#navigation}}<a>{{name}}</a>{{/navigation}}</nav></body></html>\"}", when);
             post(site, root, pageType, "Home", "/", "{\"TEXT\":\"welcome\"}", when);
             post(site, members, pageType, "Lounge", "/lounge", "{\"TEXT\":\"members lounge\"}", when);
 
@@ -169,6 +170,40 @@ class ShSitesMembersOnlyTest {
                 .andExpect(status().isOk())
                 .andExpect(result -> assertThat(result.getResponse().getHeader("Cache-Control"))
                         .contains("public").contains("max-age=300"));
+    }
+
+    // --- the published render's own listings ---
+
+    @Test
+    @DisplayName("SH1298: a public page's query and navigation leave the gated section out for a visitor")
+    void aPublicPageDoesNotAdvertiseTheGatedSection() throws Exception {
+        mockMvc.perform(get(page("")))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .as("SH1298: a gate that hides the page and lists it next door hides nothing")
+                        .doesNotContain("<li>Lounge</li>")
+                        .doesNotContain("<a>members</a>"));
+    }
+
+    @Test
+    @DisplayName("SH1298: a member sees the gated section listed on the same public page")
+    void aMemberSeesTheGatedSectionListed() throws Exception {
+        mockMvc.perform(get(page("")).with(user(member)))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .contains("<li>Lounge</li>")
+                        .contains("<a>members</a>"));
+    }
+
+    @Test
+    @DisplayName("SH1298: the preview still lists the gated page for an editor outside the group")
+    void thePreviewListsItForAnEditor() throws Exception {
+        mockMvc.perform(get("/preview/" + siteName + "/").with(user(stranger)))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .as("SH1298: the preview is where an editor works on the gated page, so it is "
+                                + "an authoring read and the gate does not apply")
+                        .contains("<li>Lounge</li>"));
     }
 
     // --- the CDA: a member is the owner of the token ---

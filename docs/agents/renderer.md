@@ -2216,3 +2216,18 @@ is what produced the defect.
 
 The value is escaped in the helper, because it is emitted unescaped, a quote in alt text would
 otherwise close the attribute and everything after it would be markup.
+
+## The published render leaves members-only pages out of its listings (SH1298)
+
+`/sites/**` turns a visitor away from a members-only page (SH1285), and the helpers that list
+content on a public page apply the same rule, so a gate is not advertised next door. `preferDraft`
+is the funnel for `getRelation`, `menu`, `search`, `translations` and `query`'s field-filter path,
+and drops the rows `ShContentAclService.visibility` refuses; `query`'s key path filters its sort
+keys before counting, so the pager's total stays exact, and a reader who fails a gate skips the
+database-windowed branch for that reason; `navigation` drops a gated child folder.
+
+**Only on the published render.** The helpers already receive the state, and only `PUBLISHED`
+filters: `/preview`, the Universal Editor and the agent's render digest are authoring reads, and an
+editor outside the group still sees and edits the gated page there. On an instance with no gate the
+check is one `count()` that loads no entity, which is what `ShRenderListingPageBenchmarkTest`
+measures. `ShSitesMembersOnlyTest` renders one public page for a visitor, a member, and in preview.

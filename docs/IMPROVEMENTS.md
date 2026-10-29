@@ -268,28 +268,6 @@ Assert at the delivery boundary: an anonymous read of a members page gets the si
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
 
-### XI.64 XI.64 The published render's listings leave gated pages out (from SH1285) (SH1298)
-
-Split from SH1285. `/sites/**` turns a visitor away from a members-only page, but a
-public page rendered beside it still lists the gated page's title and link:
-`{{#query}}`, `{{#getRelation}}`, `{{#navigation}}`, `{{#search}}` and `{{#menu}}` in
-`ShRenderHelpers` read every published row.
-
-What to build: the same rule the CDA uses (SH1296), applied in the helpers **only on the
-published render for `/sites/**`**. `/preview`, the Universal Editor and the agent's
-render digest are authoring reads, and an editor must keep seeing gated pages there; the
-render already knows its state, so the filter keys on it rather than on the route. Ask
-`ShContentAclService.visibility(id)` per row only when `anyGates()` is true, and filter
-before windowing in `query` so its total stays exact (SH384/SH419 put the count on rows
-in hand).
-
-Measure first: `ShRenderListingPageBenchmarkTest` must not move on an instance with no
-gate.
-
-Assert at the boundary: a public page listing a gated folder renders without the gated
-post for a visitor and with it for a member, and the preview of the same page lists it
-for an editor outside the group.
-
 ### XI.65 XI.65 A members-only page can send a visitor to sign in (from SH1285) (SH1299)
 
 Split from SH1285. **Decided by the owner (2026-10-29):** when a site asks for it, a
