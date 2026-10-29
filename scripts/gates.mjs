@@ -49,7 +49,10 @@ export const GATE_RUNS = {
     label: "JS suites",
     log: "shio-js-test.log",
     command: "pnpm",
-    args: ["--reporter", "append-only",
+    // SH1292 — `--no-bail`: a recursive run stops at the first red package, so one declared red
+    // (SH1289's shio-react entry) hid the cli package's undeclared one behind it. Every package runs;
+    // the exit code is still non-zero when any of them fails.
+    args: ["--reporter", "append-only", "--no-bail",
       ...PACKAGES.flatMap((name) => ["--filter", name]), "run", "test"],
     why: "SH645 — a red `pnpm test` had twice been read through a `grep` for the summary line, so "
       + "what survived was a count and never the failing test's name. The capture is the point; the "

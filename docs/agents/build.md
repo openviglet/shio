@@ -60,6 +60,10 @@ So the ledger's claim is now compared against what the gates actually said:
   inherit a claim about a run it never made. `pnpm conformance:raw` and a bare `./mvnw` are the
   unwrapped commands if you need them, and they leave no stamp. All four are deliberately the same
   shape: wrappers that differed would be behaviours to remember.
+- **The JS gate runs every package, red or not (SH1292).** Its row passes `--no-bail`, and so does
+  `test:raw`. Without it pnpm stops at the first failing package, so a red that `red-suites.json`
+  declared in `shio-react` hid two undeclared failures in `cli`, and the exception was written against
+  half a list. The exit code still goes non-zero when any package fails.
 - **One run of a gate at a time (SH803).** The runner takes `.gates/<key>.lock` and refuses a second
   run of the same gate, naming the pid and since when, because whoever meets it usually forgot they
   had backgrounded one. Measured, by accident: an overlapping pair of `pnpm java` reported **3 errors

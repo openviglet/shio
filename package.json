@@ -32,7 +32,7 @@
     "typecheck": "pnpm --filter @viglet/shio-client --filter @viglet/shio-react-sdk --filter @viglet/shio-sections --filter shio-site run typecheck",
     "lint": "pnpm -r run lint",
     "test": "node scripts/run-gate.mjs js",
-    "test:raw": "pnpm --filter @viglet/shio-client --filter @viglet/shio-model --filter @viglet/shio-sections --filter @viglet/create-shio-app --filter @viglet/shio --filter @viglet/shio-claude-plugin --filter shio-react --filter shio-site run test",
+    "test:raw": "pnpm --no-bail --filter @viglet/shio-client --filter @viglet/shio-model --filter @viglet/shio-sections --filter @viglet/create-shio-app --filter @viglet/shio --filter @viglet/shio-claude-plugin --filter shio-react --filter shio-site run test",
     "coverage:mirror": "node scripts/coverage-mirror.mjs",
     "deps": "node scripts/dependency-reachability.mjs --all",
     "flake": "node scripts/flake.mjs",

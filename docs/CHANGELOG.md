@@ -1773,6 +1773,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1216** — The bento header's trailing edge carries the design system's ModeToggle for light, dark and system, before the user menu, as the shell contract requires (design §LIV.19 recorded in `docs/agents/console-ui.md`).
 - **SH1291** — docs/design now matches design system 2026.3.23: the bin created vds-site.dc.html and added its frame to canvas.json, so SH942's drift check is green again.
 - **SH1289** — pnpm test is green on design system 2026.3.23: the console budget records PR #1222's measured cost per package and raises index.es.js, preload-helper.js is gone, and SH937's pin moved after its waits were read (design §XCIV.1 superseded: it blamed the design system; built piece by piece, 2026.3.23 left index.es.js byte-identical, and i18next plus the transitive refresh grew it) (design §XCIV.1 recorded in `shio-react/console-size-budget.json`).
+- **SH1292** — pnpm test now runs every package even after one fails, so a declared red can no longer hide an undeclared one behind it; the exit code still fails on any red (design §XCIV.3 recorded in `docs/agents/build.md`).
 
 ## Block AV — The live defects, fixed before anything is built on them
 

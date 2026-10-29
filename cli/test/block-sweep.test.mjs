@@ -162,7 +162,11 @@ const SWEEP = {
       + "system's closed scale and re-closed with SH1212 (SH1199, SH1208-SH1212: 2026.3.17 adopted, "
       + "ignored props gone, the GraphQL explorer and hand-drawn controls on the scale, home's rows "
       + "marking changes): COVERAGE's Block AU row names all six, with the mirror regenerated. README "
-      + "and shio-site are still NOT moved: neither describes the console's look",
+      + "and shio-site are still NOT moved: neither describes the console's look. Reopened for design "
+      + "system 2026.3.23 and re-closed with SH1292 (SH1289 the bump reviewed against the console's "
+      + "budget and waits, SH1291 its new artboard vendored, SH1292 a JS gate that no longer bails): "
+      + "COVERAGE's Block AU row names all three, with the mirror regenerated. README and shio-site's "
+      + "pages are still NOT moved: none of the three changes what a reader of either is told",
   },
   BG: {
     swept: true,

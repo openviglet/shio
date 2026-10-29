@@ -19,10 +19,6 @@
 
 - 📋 **SH1258** (deps: SH1256 ✅, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
 
-## Block AU — The design system's consumer contract, adopted and gated
-
-- 📋 **SH1292** (deps: —) **pnpm test stops at the first red package, so a declared red hides an undeclared one behind it** — The JS gate's recursive run bails, so SH1289's exception was written against a partial list and the cli package's drift went unseen. → §XCIV.3
-
 ## Priority
 
 ## Done when — SH1245

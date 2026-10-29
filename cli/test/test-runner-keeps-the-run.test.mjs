@@ -156,3 +156,15 @@ test("SH645: the runner is what `pnpm test` runs, over the packages the gate has
     "the runner and `test:raw` test the same packages, or the gate and its escape hatch disagree "
       + "about what the gate is");
 });
+
+test("SH1292: the JS gate runs every package, even after one of them is red", async () => {
+  // pnpm's recursive run stops at the first failing package (ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL).
+  // With one declared red in shio-react, the cli package never ran, and its two real failures were
+  // invisible: a red-suites exception licenses the tests it names, and a bail extended that licence
+  // to every package behind it.
+  const pkg = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));
+  assert.ok(PNPM_ARGS.includes("--no-bail"),
+    "SH1292: GATE_RUNS.js must pass --no-bail, or a red package hides every package after it");
+  assert.match(pkg.scripts["test:raw"] ?? "", /--no-bail/,
+    "SH1292: `test:raw` is the gate without its log, and must run the same packages the same way");
+});
