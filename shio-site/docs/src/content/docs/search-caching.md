@@ -165,7 +165,7 @@ Two rules that follow from the table:
 
 Templates resize images by adding `?w=`, `?h=`, `?format=` and `?crop=` to a file's URL:
 that half is on
-[Pages, Layouts & Regions § Static files and images](/docs/website-development/#static-files-and-images).
+[Pages, Layouts & Regions § Static files and images](/shio/docs/website-development/#static-files-and-images).
 This section is the other half: what it costs, what already stops it being abused, and
 what you would change.
 
@@ -257,8 +257,8 @@ shio.image-transform.signing.secret=<a long random string>
 
 | Page | Description |
 |---|---|
-| [Content Modeling](/docs/content-modeling/) | Mapping post-type fields to search fields |
-| [Pages, Layouts & Regions](/docs/website-development/) | The transform parameters a template writes |
-| [Content Delivery API](/docs/headless/content-delivery-api/) | The query endpoint, ETags and cache headers |
-| [Configuration Reference](/docs/configuration-reference/) | Every `shio.turing.*` and `shio.cda.*` property |
-| [The Agent Surface](/docs/agent-surface/) | `find`, and the diagnostics an index failure lands in |
+| [Content Modeling](/shio/docs/content-modeling/) | Mapping post-type fields to search fields |
+| [Pages, Layouts & Regions](/shio/docs/website-development/) | The transform parameters a template writes |
+| [Content Delivery API](/shio/docs/headless/content-delivery-api/) | The query endpoint, ETags and cache headers |
+| [Configuration Reference](/shio/docs/configuration-reference/) | Every `shio.turing.*` and `shio.cda.*` property |
+| [The Agent Surface](/shio/docs/agent-surface/) | `find`, and the diagnostics an index failure lands in |

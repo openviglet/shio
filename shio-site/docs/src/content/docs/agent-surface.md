@@ -332,7 +332,7 @@ are really served, and is therefore opt-in by an operator setting, not by a call
 - **`routes`** also reports `url-orphaned`, an error: an address that was a page here, no
   longer answers, and is still linked from a published page. Its fix is the `post.redirect`
   op that keeps the old address answering (see
-  [Keeping an old address answering](/docs/content-lifecycle/#keeping-an-old-address-answering)).
+  [Keeping an old address answering](/shio/docs/content-lifecycle/#keeping-an-old-address-answering)).
   With search indexing on, `index-unroutable` warns about a site whose published content is
   routed to no search index, so every push it would make is never made.
 
@@ -518,7 +518,7 @@ JSON, so a file goes through the static-file API and is then referenced by addre
 
 | Page | Description |
 |---|---|
-| [Pages, Layouts & Regions](/docs/website-development/) | What `render.provision` creates, and how a page is composed |
-| [Content Modeling](/docs/content-modeling/) | Post types and the fields `post.upsert` is checked against |
-| [Content Delivery API](/docs/headless/content-delivery-api/) | The read contract this surface is a shape over |
-| [Security](/docs/security/) | Token scopes, authentication and CSRF |
+| [Pages, Layouts & Regions](/shio/docs/website-development/) | What `render.provision` creates, and how a page is composed |
+| [Content Modeling](/shio/docs/content-modeling/) | Post types and the fields `post.upsert` is checked against |
+| [Content Delivery API](/shio/docs/headless/content-delivery-api/) | The read contract this surface is a shape over |
+| [Security](/shio/docs/security/) | Token scopes, authentication and CSRF |

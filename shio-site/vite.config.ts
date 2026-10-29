@@ -3,9 +3,10 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig } from "vite";
 
-// Deployed at the root of shio.viglet.org, so assets use absolute paths.
+// Deployed under a path, https://openviglet.github.io/shio/, so every asset and every internal
+// link carries it: links through withBase() (src/lib/base.ts), which reads this as BASE_URL.
 export default defineConfig({
-  base: "/",
+  base: "/shio/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

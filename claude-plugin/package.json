@@ -3,7 +3,7 @@
   "private": true,
   "version": "2026.3.2",
   "description": "The Shio plugin for Claude Code — MCP server config, skills, slash commands and an AGENTS.md fragment. Private: it is distributed as a plugin through the repository's marketplace, not through npm. The package exists so the manifests have a test.",
-  "homepage": "https://shio.viglet.org/",
+  "homepage": "https://openviglet.github.io/shio/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/openviglet/shio.git",

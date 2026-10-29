@@ -422,7 +422,7 @@ not a reason to stop.
 
 | Page | Description |
 |---|---|
-| [The `shio` CLI](/docs/cli/) | Every flag of `clone`, `propose`, `convert` and `snapshot` |
-| [Pages, Layouts & Regions](/docs/website-development/) | What `convert` writes, and the `/sites/**` route |
-| [The Universal Editor](/docs/universal-editor/) | Editing an authorable replica |
-| [Content as Files](/docs/content-as-files/) | The tree a converted site projects to |
+| [The `shio` CLI](/shio/docs/cli/) | Every flag of `clone`, `propose`, `convert` and `snapshot` |
+| [Pages, Layouts & Regions](/shio/docs/website-development/) | What `convert` writes, and the `/sites/**` route |
+| [The Universal Editor](/shio/docs/universal-editor/) | Editing an authorable replica |
+| [Content as Files](/shio/docs/content-as-files/) | The tree a converted site projects to |

@@ -227,7 +227,9 @@ const UNEXERCISED = {
     // the live scenario for it IS the move's — rename a published page, then keep its old address
     // answering — so it will be covered by the run that covers `post.move` and by no other. It is
     // proved in ShRedirectOpTest against the service, the refusal and the lint it clears.
-    "folder.delete", "folder.restore",
+    // SH1277's `folder.acl` arrived the same way: ShAgentBatchTest proves the grant, the noop on a
+    // re-apply, the unknown principal and the WRITE guard through MockMvc, which is the whole contract.
+    "folder.acl", "folder.delete", "folder.restore",
     "note.add", "note.resolve",
     "post.move", "post.redirect", "post.restore", "post.rollback", "post.unpublish",
     "release.add", "release.archive", "release.remove", "release.rollback", "release.run",

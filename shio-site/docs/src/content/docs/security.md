@@ -82,7 +82,7 @@ The `AGENT` scope exists so an agent's credential is not an administrator's:
 
 It is deliberately **not** an alias for `WRITE`: a `WRITE` key can patch published content
 outside the agent protocol's guards, which is exactly what an agent's credential must not be
-able to do. See [Letting an agent in](/docs/agent-safety/).
+able to do. See [Letting an agent in](/shio/docs/agent-safety/).
 
 ### Short-lived preview tokens
 
@@ -227,8 +227,8 @@ Two ways to find out before a visitor does:
 
 | Page | Description |
 |---|---|
-| [Letting an agent in](/docs/agent-safety/) | What the `AGENT` scope, drafts and confirm tokens protect |
-| [Content Delivery API](/docs/headless/content-delivery-api/) | Scopes and environments from a front end's side |
-| [Administration Guide](/docs/administration-guide/) | Users, groups, roles and permissions in the console |
-| [Configuration Reference](/docs/configuration-reference/) | Every security-related property |
-| [Multi-Tenancy](/docs/multi-tenancy/) | How a key scopes delivery to its tenant |
+| [Letting an agent in](/shio/docs/agent-safety/) | What the `AGENT` scope, drafts and confirm tokens protect |
+| [Content Delivery API](/shio/docs/headless/content-delivery-api/) | Scopes and environments from a front end's side |
+| [Administration Guide](/shio/docs/administration-guide/) | Users, groups, roles and permissions in the console |
+| [Configuration Reference](/shio/docs/configuration-reference/) | Every security-related property |
+| [Multi-Tenancy](/shio/docs/multi-tenancy/) | How a key scopes delivery to its tenant |

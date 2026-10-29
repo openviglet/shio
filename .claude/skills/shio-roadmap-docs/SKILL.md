@@ -230,7 +230,7 @@ real maximum block letter** — grep it to confirm before creating a block.
 
 The three `docs/` files above are the **internal** engineering roadmap. The
 **end-user** documentation is the Astro Starlight area served at
-https://shio.viglet.org/docs/, **in this repository** (SH1262; it used to be
+https://openviglet.github.io/shio/docs/, **in this repository** (SH1262; it used to be
 vigletdocs' `docs-shio/`, which is now frozen and marked moved, so never edit it):
 
 ```

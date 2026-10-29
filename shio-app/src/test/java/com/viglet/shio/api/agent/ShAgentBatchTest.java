@@ -33,6 +33,7 @@ import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentBatch.Op;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
+import com.viglet.shio.api.agent.dto.ShAgentDesiredState;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -71,6 +72,11 @@ class ShAgentBatchTest {
     private ShAgentBatchService shAgentBatchService;
     @Autowired
     private ShAddressResolver shAddressResolver;
+    /** SH1277 — the grants a folder.acl op wrote, and the compiler that emits the op. */
+    @Autowired
+    private com.viglet.shio.api.acl.ShContentAclService shContentAclService;
+    @Autowired
+    private ShAgentDesiredStateService shAgentDesiredStateService;
     @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
@@ -400,6 +406,61 @@ class ShAgentBatchTest {
     }
 
     // --- SH168: a write must refuse a field the post-type does not declare ---
+
+    @Test
+    @DisplayName("SH1277: folder.acl replaces a folder's grants, a re-run is a noop, and a grant to nobody is refused")
+    void aFolderSaysWhoMayEditIt() {
+        String base = "/acl-" + UUID.randomUUID().toString().substring(0, 8);
+        String group = "Sh1277Editors-" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            var editors = new com.viglet.shio.persistence.model.auth.ShGroup();
+            editors.setName(group);
+            entityManager.persist(editors);
+        });
+        run(false, folder(base));
+        Op grant = new Op(ShAgentBatchService.FOLDER_ACL, "folder:" + siteName + base, null, null,
+                objectMapper.valueToTree(Map.of("acl",
+                        List.of(Map.of("group", group, "permission", "write")))));
+
+        assertThat(only(run(true, grant)).action())
+                .as("SH1277: a dry run says the grants would change and writes nothing")
+                .isEqualTo(Change.UPDATE);
+        assertThat(only(run(false, grant)).action()).isEqualTo(Change.UPDATE);
+        String folderId = shAddressResolver.resolve("folder:" + siteName + base).id();
+        assertThat(shContentAclService.getAcl(folderId))
+                .as("SH1277: the folder now carries the declared grant, and only it")
+                .singleElement()
+                .satisfies(acl -> {
+                    assertThat(acl.getPrincipalName()).isEqualTo(group);
+                    assertThat(acl.getPermission().name()).isEqualTo("WRITE");
+                });
+        assertThat(only(run(false, grant)).action())
+                .as("SH1277: the same document re-applied changes nothing")
+                .isEqualTo(Change.NOOP);
+
+        Op nobody = new Op(ShAgentBatchService.FOLDER_ACL, "folder:" + siteName + base, null, null,
+                objectMapper.valueToTree(Map.of("acl",
+                        List.of(Map.of("group", "no-such-group-sh1277", "permission", "WRITE")))));
+        assertThatThrownBy(() -> run(true, nobody))
+                .as("SH1277: a grant to nobody would lock the folder against everyone but an admin")
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class)
+                .satisfies(failure -> assertThat(((ShAgentBatchService.BatchOpException) failure)
+                        .problem().toProblemDetail().getTitle()).contains("no-such-group-sh1277"));
+
+        Op twoPrincipals = new Op(ShAgentBatchService.FOLDER_ACL, "folder:" + siteName + base, null,
+                null, objectMapper.valueToTree(Map.of("acl",
+                        List.of(Map.of("group", group, "user", "admin", "permission", "WRITE")))));
+        assertThatThrownBy(() -> run(true, twoPrincipals))
+                .as("SH1277: a grant names exactly one principal")
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class);
+
+        assertThat(shAgentDesiredStateService.compile(new ShAgentDesiredState(siteName,
+                        List.of(new ShAgentDesiredState.Folder(base, null, objectMapper.valueToTree(
+                                List.of(Map.of("group", group, "permission", "WRITE"))))),
+                        List.of(), false)).stream().map(Op::op).toList())
+                .as("SH1277: a desired-state folder with an acl compiles to its grant after the folder")
+                .containsSubsequence(ShAgentBatchService.FOLDER_UPSERT, ShAgentBatchService.FOLDER_ACL);
+    }
 
     @Test
     @DisplayName("a mistyped field name is refused, and the refusal names the field that was meant")

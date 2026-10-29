@@ -118,8 +118,8 @@ GraphQL queries require authentication. Use session-based authentication (same a
 
 | Page | Description |
 |---|---|
-| [REST API Reference](/docs/rest-api/) | Full REST API endpoint documentation |
-| [Content Modeling](/docs/content-modeling/) | Post Types and fields |
-| [Developer Guide](/docs/developer-guide/) | Dev environment and project structure |
+| [REST API Reference](/shio/docs/rest-api/) | Full REST API endpoint documentation |
+| [Content Modeling](/shio/docs/content-modeling/) | Post Types and fields |
+| [Developer Guide](/shio/docs/developer-guide/) | Dev environment and project structure |
 
 ---

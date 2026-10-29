@@ -15,6 +15,7 @@
  */
 
 import { ceiling } from "./token-budgets";
+import { withBase } from "./base";
 
 export interface FeatureBlock {
   title: string;
@@ -94,8 +95,8 @@ const AGENT_GATEWAY: FeatureDetail = {
     },
   ],
   related: [
-    { label: "Drive it from Claude Code", href: "/claude-code/" },
-    { label: "Content as files", href: "/features/content-as-files/" },
+    { label: "Drive it from Claude Code", href: withBase("/claude-code/") },
+    { label: "Content as files", href: withBase("/features/content-as-files/") },
   ],
 };
 
@@ -143,8 +144,8 @@ An open-source, agent-ready CMS with four ways in.`,
     },
   ],
   related: [
-    { label: "The agent gateway", href: "/features/agent-gateway/" },
-    { label: "Blueprints", href: "/features/blueprints/" },
+    { label: "The agent gateway", href: withBase("/features/agent-gateway/") },
+    { label: "Blueprints", href: withBase("/features/blueprints/") },
   ],
 };
 
@@ -186,8 +187,8 @@ shio apply --blueprint corporate \\
     },
   ],
   related: [
-    { label: "Content as files", href: "/features/content-as-files/" },
-    { label: "Rendering and themes", href: "/features/rendering/" },
+    { label: "Content as files", href: withBase("/features/content-as-files/") },
+    { label: "Rendering and themes", href: withBase("/features/rendering/") },
   ],
 };
 
@@ -238,8 +239,8 @@ const RENDERING: FeatureDetail = {
     },
   ],
   related: [
-    { label: "Replicate an existing site", href: "/replicate/" },
-    { label: "Delivery", href: "/features/delivery/" },
+    { label: "Replicate an existing site", href: withBase("/replicate/") },
+    { label: "Delivery", href: withBase("/features/delivery/") },
   ],
 };
 
@@ -290,8 +291,8 @@ shio init --blueprint corporate --site acme`,
     },
   ],
   related: [
-    { label: "Rendering and themes", href: "/features/rendering/" },
-    { label: "The curator’s half", href: "/curator/" },
+    { label: "Rendering and themes", href: withBase("/features/rendering/") },
+    { label: "The curator’s half", href: withBase("/curator/") },
   ],
 };
 

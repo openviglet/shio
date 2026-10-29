@@ -127,21 +127,26 @@ public final class ShAgentOps {
                             + "by `data.limit`/`data.from`. Never replaces a set value."),
             new OpSpec(ShAgentBatchService.SITE_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
-                    "Trash a site and every folder and post in it."),
+                    "Trash a site and all its content."),
             new OpSpec(ShAgentBatchService.FOLDER_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
-                    "Create a folder at that whole name chain, or confirm it."),
+                    "Create a folder at that name chain, or confirm it."),
             new OpSpec(ShAgentBatchService.FOLDER_MOVE,
                     List.of(ADDRESS, TO), List.of(), List.of(), List.of(),
                     "Rename or relocate a section. `to` is the whole new name chain, so its last "
                             + "segment is the new name. No post's URL changes."),
+            // SH1277 — who may edit a section; never who may read a delivered page. Paid for by trimming
+            // site.delete, folder.copy and folder.delete to their decisions (SH346's ceiling).
+            new OpSpec(ShAgentBatchService.FOLDER_ACL,
+                    List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
+                    "Editors: `data.acl` [{group, permission}]."),
             new OpSpec(ShAgentBatchService.FOLDER_COPY,
                     List.of(ADDRESS, TO), List.of(), List.of(), List.of(),
-                    "Duplicate a section and everything under it, as drafts. `to` is the copy's "
-                            + "own name chain; occupied is refused. May cross sites."),
+                    "Duplicate a section, as drafts. `to` is the copy's name chain; occupied "
+                            + "is refused. May cross sites."),
             new OpSpec(ShAgentBatchService.FOLDER_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
-                    "Trash a folder and everything beneath it; use folder.move to rename."),
+                    "Trash a folder and all beneath it; rename with folder.move."),
             new OpSpec(ShAgentBatchService.POST_UPSERT,
                     List.of(ADDRESS), List.of(TYPE, FOLDER), List.of(), List.of(DATA, EXPECT),
                     "Declare a post's whole state at that address. `data` keys the post-type does "
@@ -223,7 +228,7 @@ public final class ShAgentOps {
                     "Publish the release, atomically. `when` schedules it, `cancel` calls that off."),
             new OpSpec(ShAgentBatchService.RELEASE_ARCHIVE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(CANCEL),
-                    "Take it out of the listing; `cancel` puts it back. Not a delete."),
+                    "Hide it from the listing; `cancel` restores. Not a delete."),
             new OpSpec(ShAgentBatchService.RELEASE_ROLLBACK,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Put a published release back: each page to what it replaced, pages it first "

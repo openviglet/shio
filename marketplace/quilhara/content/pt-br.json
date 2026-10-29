@@ -291,7 +291,7 @@
       "folder": "/pt/secoes",
       "data": {
         "heading": "Uma marca inventada para mostrar um produto real",
-        "body": "<p>A Quilhara é inventada. As trilhas, os lugares, os guias, as viagens e as histórias deste site não existem, e nada aqui pode ser reservado. É um site de exemplo do <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, o CMS de código aberto, instalado a partir de um único pacote do marketplace.</p><p>As fotografias foram geradas para o pacote e podem ser redistribuídas com ele. As fontes são Fraunces e Inter, ambas sob a SIL Open Font Licence e servidas pelo próprio site.</p>"
+        "body": "<p>A Quilhara é inventada. As trilhas, os lugares, os guias, as viagens e as histórias deste site não existem, e nada aqui pode ser reservado. É um site de exemplo do <a href=\"https://openviglet.github.io/shio/\">Viglet Shio</a>, o CMS de código aberto, instalado a partir de um único pacote do marketplace.</p><p>As fotografias foram geradas para o pacote e podem ser redistribuídas com ele. As fontes são Fraunces e Inter, ambas sob a SIL Open Font Licence e servidas pelo próprio site.</p>"
       },
       "publish": true,
       "locale": "pt-br",

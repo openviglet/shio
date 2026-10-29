@@ -1,32 +1,33 @@
 import { Container, Logo } from "@/components/brand";
 import { LINKS } from "@/lib/site-content";
 import { reopenConsent } from "@/lib/analytics";
+import { withBase } from "@/lib/base";
 
 const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] = [
   {
     heading: "Ways to use it",
     links: [
-      { label: "In the console, by hand", href: "/console/" },
-      { label: "With a coding agent", href: "/claude-code/" },
-      { label: "As files in your repository", href: "/features/content-as-files/" },
-      { label: "Through the delivery API", href: "/features/delivery/" },
-      { label: "All four, side by side", href: "/#paths" },
-      { label: "Who runs it, and how", href: "/#use-cases" },
+      { label: "In the console, by hand", href: withBase("/console/") },
+      { label: "With a coding agent", href: withBase("/claude-code/") },
+      { label: "As files in your repository", href: withBase("/features/content-as-files/") },
+      { label: "Through the delivery API", href: withBase("/features/delivery/") },
+      { label: "All four, side by side", href: withBase("/#paths") },
+      { label: "Who runs it, and how", href: withBase("/#use-cases") },
     ],
   },
   {
     heading: "The product",
     links: [
-      { label: "What the console does", href: "/console/#capabilities" },
-      { label: "What stops an agent write", href: "/curator/" },
-      { label: "The ten laws", href: "/#laws" },
-      { label: "One call, and its price", href: "/#one-call" },
-      { label: "MCP + CLI surface", href: "/#surface" },
-      { label: "Rendering and design tokens", href: "/features/rendering/" },
-      { label: "Blueprints", href: "/#blueprints" },
-      { label: "Replicate a site", href: "/replicate/" },
-      { label: "Compare", href: "/compare/" },
-      { label: "Self-host", href: "/#self-host" },
+      { label: "What the console does", href: withBase("/console/#capabilities") },
+      { label: "What stops an agent write", href: withBase("/curator/") },
+      { label: "The ten laws", href: withBase("/#laws") },
+      { label: "One call, and its price", href: withBase("/#one-call") },
+      { label: "MCP + CLI surface", href: withBase("/#surface") },
+      { label: "Rendering and design tokens", href: withBase("/features/rendering/") },
+      { label: "Blueprints", href: withBase("/#blueprints") },
+      { label: "Replicate a site", href: withBase("/replicate/") },
+      { label: "Compare", href: withBase("/compare/") },
+      { label: "Self-host", href: withBase("/#self-host") },
     ],
   },
   {
@@ -91,7 +92,7 @@ export function SiteFooter() {
             <a href={LINKS.docs} className="hover:text-[#f6ece8]">
               Docs
             </a>
-            <a href="/llms.txt" className="font-mono hover:text-[#f6ece8]">
+            <a href={withBase("/llms.txt")} className="font-mono hover:text-[#f6ece8]">
               llms.txt
             </a>
             <button type="button" onClick={reopenConsent} className="hover:text-[#f6ece8]">

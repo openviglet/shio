@@ -6,10 +6,10 @@ sidebar:
 ---
 
 A **framework-agnostic**, **zero-dependency** TypeScript client for the
-[Content Delivery API](/docs/headless/content-delivery-api/). It runs anywhere `fetch` is
+[Content Delivery API](/shio/docs/headless/content-delivery-api/). It runs anywhere `fetch` is
 available: Node, the browser, edge runtimes, Next.js server components, Astro,
 Vue, Svelte, or plain scripts. It is the **base** SDK; the
-[React SDK](/docs/headless/react-sdk/) is one consumer of it.
+[React SDK](/shio/docs/headless/react-sdk/) is one consumer of it.
 
 ## Install
 
@@ -48,7 +48,7 @@ console.log(post?.attrs.title);
 
 - **Language and version.** `listChildren`, `query` and `getPostByUrl` take `locale` (only
   posts in that language, paged by the server; see
-  [Content in several languages](/docs/content-i18n/#reading-a-locale-through-the-cda)).
+  [Content in several languages](/shio/docs/content-i18n/#reading-a-locale-through-the-cda)).
   `getPost`, `getPostByUrl`, `listChildren` and `query` take `state`: `published`, or `draft`
   and `rev:<n>` with a preview token, which is how a front end renders a draft preview. A
   refused state throws `ShioHttpError` with status `403`.
@@ -104,5 +104,5 @@ export const shio = new ShioClient({
 
 ## Next steps
 
-- [React SDK](/docs/headless/react-sdk/): hooks and render components built on this client.
-- [Next.js Starter](/docs/headless/nextjs-starter/): a ready-made app using it.
+- [React SDK](/shio/docs/headless/react-sdk/): hooks and render components built on this client.
+- [Next.js Starter](/shio/docs/headless/nextjs-starter/): a ready-made app using it.

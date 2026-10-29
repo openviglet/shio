@@ -2,7 +2,7 @@
 
 ![Viglet Shio, Agent-ready CMS](.github/banner.png)
 
-[![Website](https://img.shields.io/badge/Website-shio.viglet.org-0ea5e9?style=for-the-badge&logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
+[![Website](https://img.shields.io/badge/Website-Viglet_Shio-0ea5e9?style=for-the-badge&logo=googlechrome&logoColor=white)](https://openviglet.github.io/shio/)
 [![Docs](https://img.shields.io/badge/Docs-docs.viglet.org%2Fshio-6366f1?style=for-the-badge&logo=readthedocs&logoColor=white)](https://docs.viglet.org/shio/)
 [![npm](https://img.shields.io/npm/v/@viglet/shio?style=for-the-badge&logo=npm&label=%40viglet%2Fshio)](https://www.npmjs.com/package/@viglet/shio)
 [![License](https://img.shields.io/github/license/openviglet/shio.svg?style=for-the-badge&logo=apache)](LICENSE)
@@ -21,7 +21,7 @@ Shio hosts **no model and no prompts**. It is the substrate an external agent
 drives, so the differentiator is protocol quality (discoverability, determinism,
 verifiability, token economy), not intelligence.
 
-> 🌐 **Product site:** [shio.viglet.org](https://shio.viglet.org/) ·
+> 🌐 **Product site:** [openviglet.github.io/shio](https://openviglet.github.io/shio/) ·
 > 📚 **Documentation:** [docs.viglet.org/shio](https://docs.viglet.org/shio/) ·
 > 🏛 **Viglet open source:** [viglet.org](https://www.viglet.org) ·
 > 🔎 **Search & personalization:** [turing.viglet.org](https://turing.viglet.org)
@@ -87,9 +87,9 @@ default, publishing is explicit, and every agent change lands in a review queue
 with attribution.
 
 Read the full concept:
-[shio.viglet.org](https://shio.viglet.org/) ·
+[openviglet.github.io/shio](https://openviglet.github.io/shio/) ·
 [docs/specs/SH74-agent-native-cms.md](docs/specs/SH74-agent-native-cms.md) ·
-[the comparison against Contentful, Sanity, Strapi and WordPress](https://shio.viglet.org/compare/).
+[the comparison against Contentful, Sanity, Strapi and WordPress](https://openviglet.github.io/shio/compare/).
 
 ## Quick start
 
@@ -150,7 +150,7 @@ claude mcp add shio -- npx -y @viglet/shio mcp
 The plugin also adds **skills** (`shio-site`, `shio-content-model`,
 `shio-verify`) that load only when the work calls for them. Details:
 [claude-plugin/README.md](claude-plugin/README.md) ·
-[shio.viglet.org/claude-code](https://shio.viglet.org/claude-code/).
+[openviglet.github.io/shio/claude-code](https://openviglet.github.io/shio/claude-code/).
 
 ## Build a front end in JavaScript, with zero Java
 
@@ -204,7 +204,7 @@ npx @viglet/shio publish --all   # drafts until you say so
 npx @viglet/shio judge           # ACCEPTED, or what holds it
 ```
 
-See [shio.viglet.org/replicate](https://shio.viglet.org/replicate/).
+See [openviglet.github.io/shio/replicate](https://openviglet.github.io/shio/replicate/).
 
 ## Packages
 
@@ -257,7 +257,7 @@ shio-js-sdk/       @viglet/shio-editor-cors Universal Editor bridge
 create-shio-app/   @viglet/create-shio-app  Next.js starter generator
 cli/               @viglet/shio             the CLI and the MCP stdio bridge
 claude-plugin/     The Shio plugin for Claude Code
-shio-site/         The public site at shio.viglet.org
+shio-site/         The public site at openviglet.github.io/shio
 shio-examples/     Example sites (corporate, blog)
 docs/              Roadmap, changelog, specs and the per-area agent guides
 ```
@@ -305,7 +305,7 @@ verifiable output.
 **Does it work with Claude Code?**
 Yes. There is a first-party [Claude Code](https://claude.com/claude-code)
 plugin and an MCP server. See
-[shio.viglet.org/claude-code](https://shio.viglet.org/claude-code/).
+[openviglet.github.io/shio/claude-code](https://openviglet.github.io/shio/claude-code/).
 
 **Does Shio call an LLM?**
 No. Shio hosts no model and no prompts. It is the substrate an external agent
@@ -319,7 +319,7 @@ browser, edge runtimes, Next.js server components, Astro, Vue, Svelte), and
 **Can it replicate an existing website?**
 Yes: `shio clone` / `propose` / `convert` / `publish` / `judge`, and `judge` is
 the one that tells you when to stop. See
-[shio.viglet.org/replicate](https://shio.viglet.org/replicate/).
+[openviglet.github.io/shio/replicate](https://openviglet.github.io/shio/replicate/).
 
 ## Part of the Viglet suite
 
@@ -350,4 +350,4 @@ and bugs. Please review the
 ---
 
 Built by the [Viglet](https://www.viglet.org) Team ·
-**[shio.viglet.org](https://shio.viglet.org/)**
+**[openviglet.github.io/shio](https://openviglet.github.io/shio/)**

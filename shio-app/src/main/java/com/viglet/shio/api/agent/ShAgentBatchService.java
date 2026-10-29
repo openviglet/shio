@@ -136,6 +136,13 @@ public class ShAgentBatchService {
 
     public static final String FOLDER_UPSERT = "folder.upsert";
     public static final String FOLDER_MOVE = "folder.move";
+    /**
+     * SH1277 — who may edit a folder and what is below it, replaced whole: `data.acl` is a list of
+     * `{group|user|role, permission}`. Governs the console and the agent path, never a delivered
+     * page's visitors (content ACL does not gate an anonymous read).
+     */
+    public static final String FOLDER_ACL = "folder.acl";
+    public static final String ACL_KEY = "acl";
 
     /**
      * SH244 — duplicating a section, which was the one content verb only the console could do.
@@ -399,7 +406,7 @@ public class ShAgentBatchService {
             POST_RESTORE, POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION,
             RELEASE_UPSERT,
             RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE, RELEASE_ROLLBACK,
-            NOTE_ADD, NOTE_RESOLVE, ASSET_META);
+            NOTE_ADD, NOTE_RESOLVE, ASSET_META, FOLDER_ACL);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -932,6 +939,7 @@ public class ShAgentBatchService {
             case SITE_RESTORE -> siteRestore(op, session);
             case FOLDER_UPSERT -> folderUpsert(op, session);
             case FOLDER_MOVE -> folderMove(op, session);
+            case FOLDER_ACL -> folderAcl(op, session);
             case FOLDER_COPY -> folderCopy(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
             case POST_UPSERT -> postUpsert(op, session);
@@ -1190,6 +1198,89 @@ public class ShAgentBatchService {
                 .orElse(false);
         if (!isAsset) {
             throw new NotAnAssetException(address);
+        }
+    }
+
+    /**
+     * SH1277 — {@code folder.acl}: the grants on one folder, replaced whole.
+     *
+     * <p>Idempotent the way a desired-state document has to be: grants equal to what the folder
+     * already carries are a noop, so a blueprint re-applied changes nothing. Guarded by WRITE on the
+     * folder, which is the console's own rule for {@code PUT /object/{id}/acl}, so the agent path
+     * grants nothing a curator could not (the non-goal: no privilege escalation). A grant naming a
+     * user or group the instance does not have is refused before anything is written, in a dry run
+     * too, because a grant to nobody locks the folder against everyone but an administrator.</p>
+     */
+    private Change folderAcl(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.FOLDER);
+        List<ShContentAclService.AclEntry> grants = aclGrants(op);
+        ShContentAclService.AclEntry unknown = shContentAclService.unknownPrincipal(grants);
+        if (unknown != null) {
+            throw new UnknownAclPrincipalException(address, unknown);
+        }
+        ShSite site = requireSite(address.site(), session);
+        String summary = grants.isEmpty() ? "open to everyone" : grants.size() + " grant(s)";
+        Optional<ShFolder> folder = isPending(site) ? Optional.empty() : findFolder(site, address.path());
+        if (folder.isEmpty()) {
+            if (session.dryRun && (isPending(site) || session.isPlannedFolder(site, address.path()))) {
+                return session.change(op, address, Change.UPDATE, summary, null);
+            }
+            throw new UnresolvableParentException(address);
+        }
+        String id = folder.get().getId();
+        if (shContentAclService.hasExactly(id, grants)) {
+            return session.change(op, address, Change.NOOP, summary, id);
+        }
+        if (session.dryRun) {
+            return session.change(op, address, Change.UPDATE, summary, id);
+        }
+        shContentAclService.requireWrite(id);
+        shContentAclService.replaceAcl(id, grants);
+        return session.change(op, address, Change.UPDATE, summary, id);
+    }
+
+    /** {@code data.acl} as grants; the vocabulary is {@link ShContentAclService#parseGrants}'s. */
+    private static List<ShContentAclService.AclEntry> aclGrants(ShAgentBatch.Op op) {
+        JsonNode list = op.data() == null ? null : op.data().get(ACL_KEY);
+        if (list == null || !list.isArray()) {
+            throw new MissingOpFieldException("data.acl", op.op(), null,
+                    "{\"acl\":[{\"group\":\"Administrator\",\"permission\":\"WRITE\"}]}",
+                    "A folder's grants are a list; an empty list opens the folder to everyone again.");
+        }
+        try {
+            return ShContentAclService.parseGrants(list);
+        } catch (ShContentAclService.MalformedGrantException malformed) {
+            throw new MalformedAclGrantException(op, malformed.getMessage());
+        }
+    }
+    /** SH1277 — a grant that does not name exactly one principal and a permission. */
+    public static class MalformedAclGrantException extends ShTeachingException {
+
+        public MalformedAclGrantException(ShAgentBatch.Op op, String grant) {
+            super(ShProblem.badRequest("malformed-acl-grant",
+                            "A grant in " + op.op() + " on " + op.address() + " is not one principal and one permission")
+                    .withDetail("Got " + grant + ". Each grant names exactly one of group, user or role, "
+                            + "and a permission of READ, WRITE or PUBLISH (WRITE includes READ).")
+                    .withAllowed(List.of("group", "user", "role", "permission"))
+                    .withFix("Give each grant one of group, user or role, and a permission: "
+                            + "{\"group\":\"Administrator\",\"permission\":\"WRITE\"}.")
+                    .withExample("{\"op\":\"folder.acl\",\"address\":\"folder:Acme/theme\","
+                            + "\"data\":{\"acl\":[{\"group\":\"Administrator\",\"permission\":\"WRITE\"}]}}"));
+        }
+    }
+
+    /** SH1277 — a grant to a user or group this instance does not have. */
+    public static class UnknownAclPrincipalException extends ShTeachingException {
+
+        public UnknownAclPrincipalException(ShAddress address, ShContentAclService.AclEntry grant) {
+            super(ShProblem.badRequest("unknown-acl-principal",
+                            "No " + grant.principalType().name().toLowerCase(Locale.ROOT) + " named '"
+                                    + grant.principalName() + "' to grant " + address + " to")
+                    .withDetail("A grant to nobody would lock the folder against everyone but an "
+                            + "administrator, and nothing would say why.")
+                    .withFix("Create the " + grant.principalType().name().toLowerCase(Locale.ROOT)
+                            + " first (Administration > Groups, or POST /api/v2/group), or name one that "
+                            + "exists. A fresh instance has the group 'Administrator'."));
         }
     }
 

@@ -36,7 +36,7 @@ shio verify --help          # or: shio help verify
 |---|---|
 | `shio init [name]` | Scaffold a Next.js site wired to the delivery API. `--blueprint <name>` takes the starter from the instance instead; add `--site <site>` to apply its content in the same command |
 | `shio blueprints` | List the appliable starting points; `shio blueprints <name>` prints one package's parameters |
-| `shio marketplace <list\|show\|install\|uninstall>` | The package catalogue: what this instance could install, and installing it. `install` needs an administrator. See [Blueprints § Where more packages come from](/docs/blueprints/#where-more-packages-come-from) |
+| `shio marketplace <list\|show\|install\|uninstall>` | The package catalogue: what this instance could install, and installing it. `install` needs an administrator. See [Blueprints § Where more packages come from](/shio/docs/blueprints/#where-more-packages-come-from) |
 | `shio import <file.zip>` | Clone an exchange package into this instance: how you accept a site somebody hands you. It prints what arrived and a line for each thing it could not bring |
 | `shio export site:<name>` | Download a site as an exchange package (`--out <file.zip>`); the same file the console's **Download** saves |
 
@@ -84,7 +84,7 @@ removes a system type.
 | `shio dev --content` | Watch `shio/content/**` and sync both ways, logging events |
 | `shio post set <address> <field>=<value>…` | Change some fields of one post's draft and leave the rest as they are. `field:=json` sets a number, `true`, a list or an object; `--publish` publishes after the change |
 
-See [Content as Files](/docs/content-as-files/) for the tree, the sidecars and the merge.
+See [Content as Files](/shio/docs/content-as-files/) for the tree, the sidecars and the merge.
 
 **Changing one field.** `shio post set` needs a token of write scope (`--token`, or
 `SHIO_WRITE_TOKEN`) as well as the console user that resolves the address; an agent token
@@ -110,7 +110,7 @@ shio post set post:Blog/hello summary="Shorter" --if-match '"3a22…"'
 | `shio snapshot <page>` | A PNG for a person, plus whether the page looks different |
 | `shio report` | The curator handoff: what changed, a preview link each, and the warnings as open questions, Markdown, for a PR body |
 | `shio diff --against published` | What a publish would change: which **fields** differ between each draft and the live row, per post. `--address` narrows it. **Exits non-zero when anything would change**, so a pipeline can gate on it. It agrees with the console's version dialog on what counts as a change: an object whose keys only moved is not one |
-| `shio redirects` | The site's redirects (where each sends, 301 or 302) and, under them, the addresses it used to serve that no longer answer, each with the `post.redirect` that fixes it. **Exits `1` when there is one.** `--no-check` skips the second half. See [Keeping an old address answering](/docs/content-lifecycle/#keeping-an-old-address-answering) |
+| `shio redirects` | The site's redirects (where each sends, 301 or 302) and, under them, the addresses it used to serve that no longer answer, each with the `post.redirect` that fixes it. **Exits `1` when there is one.** `--no-check` skips the second half. See [Keeping an old address answering](/shio/docs/content-lifecycle/#keeping-an-old-address-answering) |
 
 Two things about `verify` that matter in a pipeline: the report's `notes` are printed,
 because a run that quietly covered less than you think reads exactly like a clean pass;
@@ -171,7 +171,7 @@ read as a clean one.
 | `shio propose` | Which captured blocks could become sections, and what each would lose |
 | `shio convert` | Apply the accepted plan: sections, theme and scripts, as **drafts** |
 
-See [Replication](/docs/replication/).
+See [Replication](/shio/docs/replication/).
 
 ---
 
@@ -199,8 +199,8 @@ Every non-zero exit closes cleanly, so a piped run does not lose its last lines.
 
 | Page | Description |
 |---|---|
-| [Content as Files](/docs/content-as-files/) | The tree `pull --content` writes and the merge that protects it |
-| [Blueprints](/docs/blueprints/) | The packages `init --blueprint` and `apply --blueprint` install |
-| [Replication](/docs/replication/) | `clone`, `propose` and `convert` end to end |
-| [The Agent Surface](/docs/agent-surface/) | The endpoints every command calls |
-| [MCP Server](/docs/mcp/) | `shio mcp`, and connecting a client |
+| [Content as Files](/shio/docs/content-as-files/) | The tree `pull --content` writes and the merge that protects it |
+| [Blueprints](/shio/docs/blueprints/) | The packages `init --blueprint` and `apply --blueprint` install |
+| [Replication](/shio/docs/replication/) | `clone`, `propose` and `convert` end to end |
+| [The Agent Surface](/shio/docs/agent-surface/) | The endpoints every command calls |
+| [MCP Server](/shio/docs/mcp/) | `shio mcp`, and connecting a client |

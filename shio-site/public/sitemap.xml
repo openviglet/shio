@@ -1,57 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://shio.viglet.org/</loc>
+    <loc>https://openviglet.github.io/shio/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/console/</loc>
+    <loc>https://openviglet.github.io/shio/console/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/claude-code/</loc>
+    <loc>https://openviglet.github.io/shio/claude-code/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/compare/</loc>
+    <loc>https://openviglet.github.io/shio/compare/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/replicate/</loc>
+    <loc>https://openviglet.github.io/shio/replicate/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/curator/</loc>
+    <loc>https://openviglet.github.io/shio/curator/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/features/agent-gateway/</loc>
+    <loc>https://openviglet.github.io/shio/features/agent-gateway/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/features/content-as-files/</loc>
+    <loc>https://openviglet.github.io/shio/features/content-as-files/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/features/blueprints/</loc>
+    <loc>https://openviglet.github.io/shio/features/blueprints/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/features/rendering/</loc>
+    <loc>https://openviglet.github.io/shio/features/rendering/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://shio.viglet.org/features/delivery/</loc>
+    <loc>https://openviglet.github.io/shio/features/delivery/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -14,35 +14,35 @@ Every route on this site is also published as Markdown at `<path>.md`: the same 
 converted from the same render, with the navigation and the footer left out. Across the
 eleven routes that is 80 KB of Markdown against 597 KB of HTML.
 
-- `/` → https://shio.viglet.org/index.md
-- any other route → append `.md`, e.g. https://shio.viglet.org/features/rendering.md
-- https://shio.viglet.org/manifest.json: the routes, their twins and their sizes, in the
+- `/` → https://openviglet.github.io/shio/index.md
+- any other route → append `.md`, e.g. https://openviglet.github.io/shio/features/rendering.md
+- https://openviglet.github.io/shio/manifest.json: the routes, their twins and their sizes, in the
   shape `/api/v2/agent/manifest` uses
 
 ## Pages on this site
 
-- [/](https://shio.viglet.org/): the four ways in, six deployment shapes,
+- [/](https://openviglet.github.io/shio/): the four ways in, six deployment shapes,
   then one section per design law
-- [/console](https://shio.viglet.org/console/): the traditional path in full, with everything
+- [/console](https://openviglet.github.io/shio/console/): the traditional path in full, with everything
   the React console does on its own, the four capabilities that live on the CLI instead, and
   what changes if an agent is attached later
-- [/claude-code](https://shio.viglet.org/claude-code/): install the plugin or the bare MCP
+- [/claude-code](https://openviglet.github.io/shio/claude-code/): install the plugin or the bare MCP
   bridge, the three calls a session opens with, and the AGENT token scope
-- [/compare](https://shio.viglet.org/compare/): agent-operability against Contentful,
+- [/compare](https://openviglet.github.io/shio/compare/): agent-operability against Contentful,
   Sanity, Strapi and WordPress, plus where each of them wins
-- [/replicate](https://shio.viglet.org/replicate/): capture an existing site with shio clone,
+- [/replicate](https://openviglet.github.io/shio/replicate/): capture an existing site with shio clone,
   the fidelity-versus-authorable decision, and the bounds the crawl keeps
-- [/curator](https://shio.viglet.org/curator/): the curator's half: the review queue, preview
+- [/curator](https://openviglet.github.io/shio/curator/): the curator's half: the review queue, preview
   links, inline editing, and the six gates that stop an agent write
-- [/features/agent-gateway](https://shio.viglet.org/features/agent-gateway/): the manifest,
+- [/features/agent-gateway](https://openviglet.github.io/shio/features/agent-gateway/): the manifest,
   the context pack, planned batches and teaching errors
-- [/features/content-as-files](https://shio.viglet.org/features/content-as-files/): the
+- [/features/content-as-files](https://openviglet.github.io/shio/features/content-as-files/): the
   Markdown projection, the field table and the three-way merge
-- [/features/blueprints](https://shio.viglet.org/features/blueprints/): the package format
+- [/features/blueprints](https://openviglet.github.io/shio/features/blueprints/): the package format
   and the rules that keep it from becoming a third contract
-- [/features/rendering](https://shio.viglet.org/features/rendering/): layouts, regions, the
+- [/features/rendering](https://openviglet.github.io/shio/features/rendering/): layouts, regions, the
   section vocabulary and design tokens in the W3C DTCG shape
-- [/features/delivery](https://shio.viglet.org/features/delivery/): REST, GraphQL, the
+- [/features/delivery](https://openviglet.github.io/shio/features/delivery/): REST, GraphQL, the
   zero-dependency client, the generated Next.js starter and the token scopes
 
 ## Start here
@@ -127,7 +127,7 @@ A feature that breaks one is wrong even if it was requested.
 
 ## Links
 
-- Documentation: https://shio.viglet.org/docs/
+- Documentation: https://openviglet.github.io/shio/docs/
 - Source: https://github.com/openviglet/shio
 - The design laws: https://github.com/openviglet/shio/blob/HEAD/agents.md
 - The concept spec: https://github.com/openviglet/shio/blob/HEAD/docs/specs/SH74-agent-native-cms.md

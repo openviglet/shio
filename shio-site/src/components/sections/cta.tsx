@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/components/brand";
 import { CopyCommand } from "@/components/copy-command";
 import { LINKS } from "@/lib/site-content";
+import { withBase } from "@/lib/base";
 
 export function CallToAction() {
   return (
@@ -36,7 +37,7 @@ export function CallToAction() {
               variant="outline"
               className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
-              <a href="/console/">Use it without an agent</a>
+              <a href={withBase("/console/")}>Use it without an agent</a>
             </Button>
             <Button
               asChild

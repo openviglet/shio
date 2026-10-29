@@ -16,7 +16,7 @@
 //
 // The archives are **not** committed (they are built by the GitHub Pages workflow and
 // gitignored), so the reason is not diff noise. It is that a package somebody downloads
-// from shio.viglet.org should be reproducible from the commit it was built at: rebuild
+// from openviglet.github.io/shio should be reproducible from the commit it was built at: rebuild
 // the same tree, get the same bytes, and a mismatch means something other than the
 // packages changed. A zip that embedded the build clock cannot make that promise, and it
 // is the promise that makes "verify what you installed" possible at all.

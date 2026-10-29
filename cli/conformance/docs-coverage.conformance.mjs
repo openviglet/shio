@@ -346,7 +346,7 @@ describe("SH747 conformance: a newly shipped id cannot slip past the coverage ma
  * remembered.
  *
  * <p>SH747 counts shipped *ids*, and an id is how a contributor thinks about work. A reader of
- * shio.viglet.org thinks in capabilities, and the manifest's `features` map is the one list of
+ * openviglet.github.io/shio thinks in capabilities, and the manifest's `features` map is the one list of
  * them the product itself publishes. When SH1069 landed the matrix named 1 of 63 keys (`contentAsFiles`), so this
  * opens as SH747 did: a ratchet over a corpus meant to shrink, because a gate opening with 62
  * findings is one nobody reads. What it closes at once is the new case — a key added to the

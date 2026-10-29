@@ -88,7 +88,7 @@ a defect for every tag on every post.
 
 Sections are the ordered-list case: a `Page` names its sections **by friendly URL, in
 order**, and a region's template walks them with `{{#getRelation}}`. See
-[Blueprints](/docs/blueprints/) for the shipped section vocabulary.
+[Blueprints](/shio/docs/blueprints/) for the shipped section vocabulary.
 
 ---
 
@@ -196,7 +196,7 @@ shio types --out types/shio.d.ts
 ```
 
 Produces one interface per post type from the live model, so `post.attrs.TITLE` has
-autocomplete in your front end. See [JavaScript Client](/docs/headless/javascript-client/).
+autocomplete in your front end. See [JavaScript Client](/shio/docs/headless/javascript-client/).
 
 ---
 
@@ -222,13 +222,13 @@ reorganising folders does not rewrite URLs.
 A post has two states, `DRAFT` and `PUBLISHED`, and can be in both at once. Editing a
 published post updates its draft and leaves the live version alone until something publishes
 it. Publishing can be scheduled. Deleting moves the post to the trash. See
-[Core Concepts](/docs/getting-started/core-concepts/#draft-and-published), and
-[Preview, history and scheduling](/docs/content-lifecycle/) for the curator's tools that
+[Core Concepts](/shio/docs/getting-started/core-concepts/#draft-and-published), and
+[Preview, history and scheduling](/shio/docs/content-lifecycle/) for the curator's tools that
 act on those states.
 
 A post also carries a **locale**, and a translation is a linked sibling post rather than a
 field on this one, which decides your URL structure, so read
-[Content in several languages](/docs/content-i18n/) before writing the second language.
+[Content in several languages](/shio/docs/content-i18n/) before writing the second language.
 
 ### Required fields are checked when you publish, not when you save
 
@@ -260,7 +260,7 @@ neither refuses a publish even when the type marks it required.
 A field can be mapped to a Turing Semantic Navigation field, title, description, text,
 date, URL, image, or to a custom field for facets. That mapping only matters if you have
 enabled Turing indexing, which is **off by default**; see
-[Search & Caching](/docs/search-caching/).
+[Search & Caching](/shio/docs/search-caching/).
 
 ---
 
@@ -268,8 +268,8 @@ enabled Turing indexing, which is **off by default**; see
 
 | Page | Description |
 |---|---|
-| [Core Concepts](/docs/getting-started/core-concepts/) | Sites, folders, posts, states |
-| [The `shio` CLI](/docs/cli/) | `pull`, `push`, `build`, `types` |
-| [Content as Files](/docs/content-as-files/) | How posts and code fields project to disk |
-| [The Agent Surface](/docs/agent-surface/) | `post.upsert` and the field validation it applies |
-| [Pages, Layouts & Regions](/docs/website-development/) | The render types in use |
+| [Core Concepts](/shio/docs/getting-started/core-concepts/) | Sites, folders, posts, states |
+| [The `shio` CLI](/shio/docs/cli/) | `pull`, `push`, `build`, `types` |
+| [Content as Files](/shio/docs/content-as-files/) | How posts and code fields project to disk |
+| [The Agent Surface](/shio/docs/agent-surface/) | `post.upsert` and the field validation it applies |
+| [Pages, Layouts & Regions](/shio/docs/website-development/) | The render types in use |

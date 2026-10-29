@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-[What is Viglet Shio?](/docs/getting-started/intro/) explains who operates it. This page is the vocabulary,
+[What is Viglet Shio?](/shio/docs/getting-started/intro/) explains who operates it. This page is the vocabulary,
 one level deeper: the words the API, the CLI, the files on disk and the console all use.
 
 ---
@@ -93,7 +93,7 @@ the value projects to a file: single-line text, rich text (HTML), a code editor
 (HTML/CSS/JavaScript/JSON), a check box, a combo box, a multi-select, a date, a file
 upload, a content reference, and a repeating group.
 
-See [Content Modeling](/docs/content-modeling/).
+See [Content Modeling](/shio/docs/content-modeling/).
 
 ### System post types
 
@@ -160,7 +160,7 @@ Templates read content through a small **closed set of helpers**:
 
 A call to a helper that does not exist fails when the template is **saved**, not when a
 reader hits the page. The full list is in
-[Pages, Layouts & Regions](/docs/website-development/#the-helpers).
+[Pages, Layouts & Regions](/shio/docs/website-development/#the-helpers).
 
 ---
 
@@ -184,7 +184,7 @@ database, and the console's search box and the delivery API's query endpoint bot
 Indexing into **Viglet Turing**: for faceted navigation, autocomplete, semantic search
 and generative AI, is a separate, **opt-in** integration: you configure it, mark which
 post types are searchable, and content reaches the index when it is **published**. It is
-off until you turn it on. See [Search & Caching](/docs/search-caching/).
+off until you turn it on. See [Search & Caching](/shio/docs/search-caching/).
 
 ---
 
@@ -192,8 +192,8 @@ off until you turn it on. See [Search & Caching](/docs/search-caching/).
 
 | Page | Description |
 |---|---|
-| [What is Viglet Shio?](/docs/getting-started/intro/) | Who operates it, and why it is shaped this way |
-| [Content Modeling](/docs/content-modeling/) | Post types and fields in practice |
-| [Pages, Layouts & Regions](/docs/website-development/) | The render model in full |
-| [Architecture Overview](/docs/architecture-overview/) | Components, request flow, deployment |
-| [Installation Guide](/docs/installation-guide/) | Docker, JAR, or build from source |
+| [What is Viglet Shio?](/shio/docs/getting-started/intro/) | Who operates it, and why it is shaped this way |
+| [Content Modeling](/shio/docs/content-modeling/) | Post types and fields in practice |
+| [Pages, Layouts & Regions](/shio/docs/website-development/) | The render model in full |
+| [Architecture Overview](/shio/docs/architecture-overview/) | Components, request flow, deployment |
+| [Installation Guide](/shio/docs/installation-guide/) | Docker, JAR, or build from source |

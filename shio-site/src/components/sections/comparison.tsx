@@ -2,6 +2,7 @@ import { ArrowRight, Check, Minus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container, SectionHeader, TableScroll } from "@/components/brand";
 import { COMPARISON, COMPARISON_COLUMNS } from "@/lib/site-content";
+import { withBase } from "@/lib/base";
 
 function Cell({ value }: { value: string }) {
   if (value === "yes")
@@ -93,7 +94,7 @@ export function Comparison() {
             variant="outline"
             className="h-auto max-w-full whitespace-normal px-5 py-2.5 text-center"
           >
-            <a href="/compare/">
+            <a href={withBase("/compare/")}>
               The full matrix, named products, and where Shio loses
               <ArrowRight className="size-4" />
             </a>

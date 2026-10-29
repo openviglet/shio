@@ -2,7 +2,7 @@
   "name": "shio-react",
   "private": true,
   "version": "2026.3.2",
-  "homepage": "https://shio.viglet.org/",
+  "homepage": "https://openviglet.github.io/shio/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/openviglet/shio.git",

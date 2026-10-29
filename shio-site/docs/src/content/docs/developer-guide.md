@@ -24,12 +24,12 @@ drive:
 
 | Surface | What it is |
 |---|---|
-| **MCP server** (`POST /mcp`) | Model Context Protocol tools: `shio_context`, `shio_find`, `shio_read`, `shio_write`, `shio_apply`, `shio_publish`, `shio_assets`, `shio_changes`, `shio_verify`, `shio_digest`, `shio_remember`. See [MCP](/docs/mcp/). |
-| **Agent gateway** (`/api/v2/agent/**`) | A manifest, a context pack, planned batches, teaching errors, a review queue, diagnostics. See [The agent surface](/docs/agent-surface/). |
-| **Content as files** (`shio/content/**`) | The whole site projected to front-mattered Markdown on disk, with a three-way merge back. See [Content as files](/docs/content-as-files/). |
-| **CLI** (`@viglet/shio`) | `pull`, `push`, `apply`, `publish`, `verify`, `clone`, `convert`, `types`, `dev`, `deploy`, and more. See [The `shio` CLI](/docs/cli/). |
-| **Content Delivery API** (`/api/v2/cda/**`) | Stable REST + GraphQL reads, token-scoped, with TypeScript SDKs. See [Content Delivery API](/docs/headless/content-delivery-api/). |
-| **React console** | The curator's half: content browser, form widgets, Universal Editor, review queue, preview links. See [The content console](/docs/content-console/). |
+| **MCP server** (`POST /mcp`) | Model Context Protocol tools: `shio_context`, `shio_find`, `shio_read`, `shio_write`, `shio_apply`, `shio_publish`, `shio_assets`, `shio_changes`, `shio_verify`, `shio_digest`, `shio_remember`. See [MCP](/shio/docs/mcp/). |
+| **Agent gateway** (`/api/v2/agent/**`) | A manifest, a context pack, planned batches, teaching errors, a review queue, diagnostics. See [The agent surface](/shio/docs/agent-surface/). |
+| **Content as files** (`shio/content/**`) | The whole site projected to front-mattered Markdown on disk, with a three-way merge back. See [Content as files](/shio/docs/content-as-files/). |
+| **CLI** (`@viglet/shio`) | `pull`, `push`, `apply`, `publish`, `verify`, `clone`, `convert`, `types`, `dev`, `deploy`, and more. See [The `shio` CLI](/shio/docs/cli/). |
+| **Content Delivery API** (`/api/v2/cda/**`) | Stable REST + GraphQL reads, token-scoped, with TypeScript SDKs. See [Content Delivery API](/shio/docs/headless/content-delivery-api/). |
+| **React console** | The curator's half: content browser, form widgets, Universal Editor, review queue, preview links. See [The content console](/shio/docs/content-console/). |
 
 If you are adding a feature, the order to land it in is **MCP → files/CLI → REST →
 console**.
@@ -43,7 +43,7 @@ console**.
 | **Backend** | Java 21 · Spring Boot 4.1.1 |
 | **Database** | H2 (dev) · PostgreSQL · MariaDB / MySQL · Oracle; schema owned by Liquibase |
 | **Cache** | Hazelcast |
-| **Search** | In the database by default. Viglet Turing indexing is **optional and off by default**. See [Search & Caching](/docs/search-caching/). |
+| **Search** | In the database by default. Viglet Turing indexing is **optional and off by default**. See [Search & Caching](/shio/docs/search-caching/). |
 | **Template Engine** | Handlebars.java (no server-side script engine) |
 | **Frontend** | React 19 · TypeScript · Radix UI · TailwindCSS · Vite |
 | **CLI / SDKs** | Node · TypeScript, a pnpm workspace |
@@ -218,7 +218,7 @@ shio/
 | `<SHIO_DIR>/` | `viglet-shio.properties` | You (optional) |
 
 The optional properties file overrides database configuration and anything else in the
-[Configuration Reference](/docs/configuration-reference/).
+[Configuration Reference](/shio/docs/configuration-reference/).
 
 :::note[Spring Boot 4]
 JAR files are no longer directly executable. Launch with `java -jar`, and load external
@@ -278,8 +278,8 @@ The [open issues](https://github.com/openviglet/shio/issues) tagged `good first 
 
 | Page | Description |
 |---|---|
-| [Architecture overview](/docs/architecture-overview/) | How the pieces fit together |
-| [The agent surface](/docs/agent-surface/) · [MCP](/docs/mcp/) | The two primary surfaces |
-| [The `shio` CLI](/docs/cli/) · [Content as files](/docs/content-as-files/) | The authoring loop |
-| [REST API Reference](/docs/rest-api/) | Every endpoint under `/api/v2` |
-| [Configuration Reference](/docs/configuration-reference/) | Every property |
+| [Architecture overview](/shio/docs/architecture-overview/) | How the pieces fit together |
+| [The agent surface](/shio/docs/agent-surface/) · [MCP](/shio/docs/mcp/) | The two primary surfaces |
+| [The `shio` CLI](/shio/docs/cli/) · [Content as files](/shio/docs/content-as-files/) | The authoring loop |
+| [REST API Reference](/shio/docs/rest-api/) | Every endpoint under `/api/v2` |
+| [Configuration Reference](/shio/docs/configuration-reference/) | Every property |

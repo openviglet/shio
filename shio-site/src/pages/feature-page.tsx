@@ -8,6 +8,7 @@ import { CodeBlock } from "@/components/code-block";
 import { Button } from "@/components/ui/button";
 import { LINKS } from "@/lib/site-content";
 import type { FeatureDetail } from "@/lib/feature-content";
+import { withBase } from "@/lib/base";
 
 /**
  * SH539: one component, one record per pillar, one prerendered route each.
@@ -43,7 +44,7 @@ export function FeaturePage({ detail }: Readonly<{ detail: FeatureDetail }>) {
               variant="outline"
               className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
-              <a href="/#laws">The ten laws</a>
+              <a href={withBase("/#laws")}>The ten laws</a>
             </Button>
           </div>
         </PageHero>

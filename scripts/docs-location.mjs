@@ -7,7 +7,7 @@
  *
  * It used to be `docs-shio/` in the vigletdocs repository, so each reader carried that checkout's
  * path as its default and CI cloned a second repository to run them. The pages and the coverage
- * matrix now live in this tree, under the Starlight area at shio.viglet.org/docs, and this is the
+ * matrix now live in this tree, under the Starlight area at openviglet.github.io/shio/docs, and this is the
  * one place that says so. `SHIO_DOCS_DIR` still overrides it, which is how a test points a reader
  * at a fixture.
  */

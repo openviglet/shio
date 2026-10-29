@@ -2,7 +2,7 @@
   "name": "@viglet/shio-sections",
   "version": "2026.3.2",
   "description": "The Shio page-section vocabulary (SH95): composable section post-types authored with @viglet/shio-model, plus the matching React components. One shared language for the agent, the console and the front end — a page is an ordered list of known sections instead of an ad-hoc content model per site.",
-  "homepage": "https://shio.viglet.org/",
+  "homepage": "https://openviglet.github.io/shio/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/openviglet/shio.git",

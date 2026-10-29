@@ -3194,7 +3194,7 @@ not a check that passed, a check nobody was running. Both jobs now check out
 an extra step.
 
 **SH1262 removed the second repository.** The pages and `COVERAGE.md` moved into
-`shio-site/docs/src/content/docs`, the Starlight area at shio.viglet.org/docs, and every reader takes
+`shio-site/docs/src/content/docs`, the Starlight area at openviglet.github.io/shio/docs, and every reader takes
 its default from `scripts/docs-location.mjs`. `COVERAGE.md` sits beside the pages so its
 `./page.md#anchor` links and the readers' one-directory walk keep working; `content.config.ts`
 leaves it out of the collection, so it never renders. CI no longer clones vigletdocs, and

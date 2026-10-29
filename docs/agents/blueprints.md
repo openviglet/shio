@@ -1090,6 +1090,13 @@ start the jar with `--shio.blueprint.path=<repo>/marketplace`, apply with `creat
 SH1265 (shipped before it), and SH1266 to SH1275 open in Block J. Three warnings remain on an applied
 site, `asset-unused` for the fonts, which SH1268 withdrew whenever the `page` check runs.
 
+**Who may edit what it installs (SH1277).** A folder entry may carry `acl`, the desired-state grant
+list `folder.acl` applies (agent-surface.md), so Quilhara's `/theme` declares
+`[{"group": "Administrator", "permission": "WRITE"}]` and its layouts and theme are an
+administrator's to change after apply, with no hand-set lock. It names the group a fresh instance
+seeds; an instance that renamed it gets `unknown-acl-principal` naming the group, never an open
+folder. It does not hide anything from a site's visitors.
+
 **What keeps it current (SH1255).** `cli/test/showcase-coverage.test.mjs` reads the subjects from
 the product (manifest `features`, MCP tools) and the curator surfaces from SH1250's matrix, then
 asks the package: each subject's page must be an `en-us` post with a `pt-br` twin (`translationOf`),

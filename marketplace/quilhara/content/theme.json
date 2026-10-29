@@ -1,7 +1,13 @@
 {
   "folders": [
     {
-      "path": "/theme"
+      "path": "/theme",
+      "acl": [
+        {
+          "group": "Administrator",
+          "permission": "WRITE"
+        }
+      ]
     },
     {
       "path": "/menu"

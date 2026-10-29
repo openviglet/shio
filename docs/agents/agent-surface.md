@@ -3909,6 +3909,25 @@ each spelled out "Needs `confirm` from its own dry run", and the grammar header 
 projects as bytes and nothing else, so a sidecar carrying `alt`/`caption`/`tags` under SH1004's
 merge rule is a file-format decision of its own and is the open half of SH1032.
 
+### `folder.acl`: who may edit a section, declared (SH1277)
+
+`data.acl` is a list of grants, each naming exactly one of `group`, `user` or `role` and a
+`permission` of READ, WRITE or PUBLISH, and it **replaces** the folder's grants (an empty list opens
+it again). A desired-state folder entry carries the same list as `acl`, so a blueprint's
+`content/*.json` and a `shio apply` document declare it the same way, and `compile` emits the op
+after every folder op and before the posts it then governs. Grants equal to the folder's current
+ones are a **noop**, which keeps a re-applied package quiet. It is guarded by WRITE on the folder,
+the console's own rule for `PUT /object/{id}/acl`, so the agent path grants nothing a curator could
+not. A grant to a user or group the instance does not have is `unknown-acl-principal`, refused in a
+dry run too, because a grant to nobody locks the folder against everyone but an administrator; a
+role has no name lookup and fails closed the same way.
+
+**What it is not:** a visitor gate. Content ACL decides who edits and publishes; an anonymous read is
+never denied by it, and `/sites/**` and the CDA serve every published page to anyone. A members area
+on a delivered site is SH1285. **Cost:** `folder.acl` in `shio_write`'s enum took `tools/list` over
+its ceiling by 4 and left `shio_write` one token short of an argument's headroom, paid by trimming
+`shio_write`'s description, not by raising either number.
+
 ### `shio_assets` refused every listing that held an asset (SH1098)
 
 Found by SH1032's live upload, and it had been true since SH951 shipped. `ShStaticFileService`

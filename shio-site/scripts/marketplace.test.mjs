@@ -57,7 +57,7 @@ test("SH676: every first-party package becomes a catalogue entry", () => {
   for (const item of items) {
     assert.ok(item.title, `${item.id} has no title`);
     assert.ok(item.description, `${item.id} has no description`);
-    assert.ok(item.downloadUrl.startsWith("https://shio.viglet.org/marketplace/"),
+    assert.ok(item.downloadUrl.startsWith("https://openviglet.github.io/shio/marketplace/"),
       `${item.id} does not download from the host shio.marketplace.url defaults to`);
     assert.ok(item.readmeUrl.endsWith("/README.md"), `${item.id} has no README`);
   }
@@ -133,7 +133,7 @@ for name in zipfile.ZipFile(sys.argv[1]).namelist():
 
 test("SH676: the same packages produce the same bytes (P5)", () => {
   // The archives are built by the Pages workflow rather than committed, so this is not about diff
-  // noise: it is that a package downloaded from shio.viglet.org should be reproducible from the
+  // noise: it is that a package downloaded from openviglet.github.io/shio should be reproducible from the
   // commit it was built at. Rebuild the tree, get the same bytes, and a mismatch then means
   // something other than the packages changed.
   const first = build({ write: false }).digests;

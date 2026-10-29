@@ -31,7 +31,7 @@ if (!SOURCE) {
 }
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEST = join(HERE, "..", "src", "content", "docs");
-const BASE = "/docs";
+const BASE = "/shio/docs";
 
 /** The hubs and their pages, in sidebar order: what each hub's card grid lists. */
 const HUBS = {

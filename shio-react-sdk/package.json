@@ -2,7 +2,7 @@
   "name": "@viglet/shio-react-sdk",
   "version": "2026.3.2",
   "description": "React SDK for consuming Viglet Shio content via the Content Delivery API (CDA). Hooks + render components built on @viglet/shio-client.",
-  "homepage": "https://shio.viglet.org/",
+  "homepage": "https://openviglet.github.io/shio/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/openviglet/shio.git",

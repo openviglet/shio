@@ -68,7 +68,7 @@ const OUT = resolve(process.cwd(), "public", "marketplace");
  * to prove a real instance can install from it. An entry's `downloadUrl` is absolute, so without
  * this the published catalogue can only ever be exercised in production.
  */
-const BASE = process.env.SHIO_MARKETPLACE_BASE ?? "https://shio.viglet.org/marketplace";
+const BASE = process.env.SHIO_MARKETPLACE_BASE ?? "https://openviglet.github.io/shio/marketplace";
 
 /** The prefix SH643 reserved for a distributable package. */
 const PREFIX = "shio-blueprint-";

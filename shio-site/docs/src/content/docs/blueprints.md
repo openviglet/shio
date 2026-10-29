@@ -57,7 +57,7 @@ until an operator turns it on:
 
 ```properties
 shio.marketplace.enabled=true
-shio.marketplace.url=https://shio.viglet.org/marketplace/marketplace.json
+shio.marketplace.url=https://openviglet.github.io/shio/marketplace/marketplace.json
 shio.marketplace.timeout-millis=5000
 ```
 
@@ -284,7 +284,7 @@ the server writes them.
 
 | Page | Description |
 |---|---|
-| [The `shio` CLI](/docs/cli/) | `blueprints`, `apply --blueprint`, `init --blueprint` |
-| [The Agent Surface](/docs/agent-surface/) | The desired-state document a package compiles into |
-| [MCP Server](/docs/mcp/) | `shio_blueprint` and the `shio://blueprints` resources |
-| [Content Modeling](/docs/content-modeling/) | The post types a package provisions |
+| [The `shio` CLI](/shio/docs/cli/) | `blueprints`, `apply --blueprint`, `init --blueprint` |
+| [The Agent Surface](/shio/docs/agent-surface/) | The desired-state document a package compiles into |
+| [MCP Server](/shio/docs/mcp/) | `shio_blueprint` and the `shio://blueprints` resources |
+| [Content Modeling](/shio/docs/content-modeling/) | The post types a package provisions |

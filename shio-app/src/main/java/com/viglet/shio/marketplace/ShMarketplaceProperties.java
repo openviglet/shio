@@ -53,7 +53,7 @@ import lombok.Setter;
 public class ShMarketplaceProperties {
 
     /** The catalogue this project publishes; used only when an operator enables the feature. */
-    public static final String DEFAULT_URL = "https://shio.viglet.org/marketplace/marketplace.json";
+    public static final String DEFAULT_URL = "https://openviglet.github.io/shio/marketplace/marketplace.json";
 
     /**
      * Whether this instance reads a remote catalogue at all.

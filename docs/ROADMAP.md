@@ -12,10 +12,9 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- ⏳ **SH1256** (deps: SH1255 ✅, SH1277) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — The /members page for contentAcl is still owed: a package cannot declare who reads a folder until SH1277 lands. → §XI.35
+- ⏳ **SH1256** (deps: SH1255 ✅, SH1277 ✅) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — contentAcl is still unshown: the matrix row moves from /members to /tour/curator once SH1277 lets Quilhara lock /theme. → §XI.35
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
 - ⏳ **SH1275** (deps: SH1283) **The content browser's create button offers an arbitrary post type, Novo Guide in every Quilhara folder** — An empty folder still offers the first type; offering the site's page type needs a rule naming which layout-bound type is the page. → §XI.47
-- 📋 **SH1277** (deps: —) **A blueprint cannot restrict who reads a folder, so a package's members area ships public** — Quilhara's /members page, the showcase's contentAcl demo, cannot be built without an operator locking it by hand. → §XI.49
 - 📋 **SH1278** (deps: —) **The search helper cannot narrow to the page's language, so a bilingual results page lists both** — Quilhara's English search for Marina returns five Portuguese posts, while the CDA's /search already takes a locale. → §XI.50
 - 📋 **SH1279** (deps: —) **A row in another language links under the current page's locale, and that wrong URL serves the page** — On the en-us search page a pt-br trail links to /en-us/trilhas/..., which answers 200, so one page has two addresses. → §XI.51
 - 📋 **SH1280** (deps: —) **assets prune and the media library count a font every page loads as unused, unlike verify since SH1268** — Quilhara's three fonts are listed reclaimable with an instruction to delete them, while verify now says they are used. → §XI.52
@@ -23,6 +22,7 @@
 - 📋 **SH1282** (deps: —) **The editor's live preview shows an unpublished image or font as broken, since its frame can reach published bytes only** — A curator previewing an upload they have not published sees a broken image, though the page shows it once published. → §XI.54
 - 📋 **SH1283** (deps: —) **A site cannot say which of its layout-bound types is its page, so an empty folder's New button guesses** — Quilhara binds eight types to layouts and names none as the page, so its site root offers Novo How this was built. → §XI.55
 - 📋 **SH1284** (deps: —) **Eight statement-count tests read a global counter the post scheduler also writes, and nothing checks their context** — SH1276 was one of them failing one run in four; the others can fail the same way whenever a sweep lands in their window. → §XI.56
+- 💭 **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — A members area, client portal or intranet section has no expression in Shio, and the showcase's /members page cannot exist. → §XI.57
 
 ## Block S — The public site (shio.viglet.org)
 
@@ -40,8 +40,9 @@
 ## Done when — SH1256
 
 - **The showcase debt list is empty** cli/test/showcase-coverage.test.mjs holds DEBT and
-  PAGES_OWED with no entries, which means /members exists in en and pt, and verify plus
-  the a11y check pass on it.
+  PAGES_OWED with no entries: contentAcl maps to /tour/curator, which shows the /theme
+  folder's edit lock, and /members leaves the page map until SH1285 decides visitor
+  gating.
 
 ## Done when — SH1257
 

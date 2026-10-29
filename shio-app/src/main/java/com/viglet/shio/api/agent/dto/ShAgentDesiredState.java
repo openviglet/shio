@@ -202,12 +202,22 @@ public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> 
      *                  folder no longer exists while {@code path} does is a <b>noop</b>, which is
      *                  what keeps a document re-runnable (SH82) — the second apply of the same
      *                  document does nothing
+     * @param acl       SH1277 — who may edit this folder and what is below it, as
+     *                  {@code [{"group": "Administrator", "permission": "WRITE"}]} ({@code user} or
+     *                  {@code role} in place of {@code group}). Absent leaves the folder's grants
+     *                  alone; present replaces them, so the same document re-applied changes nothing.
+     *                  It governs the console and the agent path, never who may read a delivered page
      */
-    public record Folder(String path, String movedFrom) {
+    public record Folder(String path, String movedFrom, JsonNode acl) {
 
         /** The one-field form: every folder that is only being declared, and every pre-SH211 caller. */
         public Folder(String path) {
-            this(path, null);
+            this(path, null, null);
+        }
+
+        /** The two-field form, before SH1277 let a folder say who may edit it. */
+        public Folder(String path, String movedFrom) {
+            this(path, movedFrom, null);
         }
 
         /** Whether this entry asks for a move rather than only declaring a folder. */

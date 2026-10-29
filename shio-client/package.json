@@ -2,7 +2,7 @@
   "name": "@viglet/shio-client",
   "version": "2026.3.2",
   "description": "Framework-agnostic TypeScript client for the Viglet Shio Content Delivery API (CDA). Zero runtime dependencies — works in Node, the browser, edge runtimes, Next.js server components, Astro, Vue, Svelte and plain scripts.",
-  "homepage": "https://shio.viglet.org/",
+  "homepage": "https://openviglet.github.io/shio/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/openviglet/shio.git",

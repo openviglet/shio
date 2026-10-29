@@ -18,14 +18,14 @@ const md = (main) =>
   pageToMarkdown(wrap(main), {
     title: "T",
     description: "D",
-    canonical: "https://shio.viglet.org/x",
+    canonical: "https://openviglet.github.io/shio/x",
   });
 
 test("the twin carries the route's own metadata", () => {
   const out = md("<p>Body.</p>");
   assert.match(out, /^# T\n/);
   assert.match(out, /^> D$/m);
-  assert.match(out, /^Canonical: https:\/\/shio\.viglet\.org\/x$/m);
+  assert.match(out, /^Canonical: https:\/\/openviglet\.github\.io\/shio\/x$/m);
 });
 
 test("the nav and the footer are dropped: they are chrome on all ten routes", () => {

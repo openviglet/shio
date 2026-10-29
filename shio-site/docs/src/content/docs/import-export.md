@@ -99,8 +99,8 @@ Upload multiple files to a folder at once through the admin console. Files are a
 
 | Page | Description |
 |---|---|
-| [Administration Guide](/docs/administration-guide/) | Site management and configuration |
-| [REST API Reference](/docs/rest-api/) | Import API endpoint |
-| [Content Modeling](/docs/content-modeling/) | Post Types and fields |
+| [Administration Guide](/shio/docs/administration-guide/) | Site management and configuration |
+| [REST API Reference](/shio/docs/rest-api/) | Import API endpoint |
+| [Content Modeling](/shio/docs/content-modeling/) | Post Types and fields |
 
 ---

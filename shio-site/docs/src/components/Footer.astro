@@ -1,28 +1,30 @@
 ---
 /**
- * SH1262 — Starlight's page footer (pagination, last updated), then shio.viglet.org's footer:
- * the same columns and the same dark band as shio-site/src/components/sections/site-footer.tsx.
+ * SH1262 — Starlight's page footer (pagination, last updated), then the site's footer: the
+ * same columns and the same dark band as shio-site/src/components/sections/site-footer.tsx.
  */
 import Default from "@astrojs/starlight/components/Footer.astro";
 import mark from "../assets/shio-mark.svg";
 
+// The site's base (`/shio/`): this area's base without its `docs/`.
+const site = import.meta.env.BASE_URL.replace(/docs\/?$/, "");
 const columns = [
   {
     heading: "Ways to use it",
     links: [
-      { label: "In the console, by hand", href: "/console/" },
-      { label: "With a coding agent", href: "/claude-code/" },
-      { label: "As files in your repository", href: "/features/content-as-files/" },
-      { label: "Through the delivery API", href: "/features/delivery/" },
+      { label: "In the console, by hand", href: `${site}console/` },
+      { label: "With a coding agent", href: `${site}claude-code/` },
+      { label: "As files in your repository", href: `${site}features/content-as-files/` },
+      { label: "Through the delivery API", href: `${site}features/delivery/` },
     ],
   },
   {
     heading: "The product",
     links: [
-      { label: "What stops an agent write", href: "/curator/" },
-      { label: "Rendering and design tokens", href: "/features/rendering/" },
-      { label: "Replicate a site", href: "/replicate/" },
-      { label: "Compare", href: "/compare/" },
+      { label: "What stops an agent write", href: `${site}curator/` },
+      { label: "Rendering and design tokens", href: `${site}features/rendering/` },
+      { label: "Replicate a site", href: `${site}replicate/` },
+      { label: "Compare", href: `${site}compare/` },
     ],
   },
   {

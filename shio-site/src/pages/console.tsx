@@ -6,6 +6,7 @@ import { CallToAction } from "@/components/sections/cta";
 import { ConsoleSession } from "@/components/console-session";
 import { Container, Eyebrow, SectionHeader } from "@/components/brand";
 import { Button } from "@/components/ui/button";
+import { withBase } from "@/lib/base";
 import {
   AGENT_LATER,
   CONSOLE_CAPABILITIES,
@@ -203,7 +204,7 @@ export function ConsolePage() {
 
             <div className="mt-10 flex flex-wrap justify-center gap-3">
               <Button asChild size="lg">
-                <a href="/curator/">
+                <a href={withBase("/curator/")}>
                   What stops an agent write <ArrowRight className="size-4" />
                 </a>
               </Button>
@@ -213,7 +214,7 @@ export function ConsolePage() {
                 variant="outline"
                 className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
               >
-                <a href="/claude-code/">
+                <a href={withBase("/claude-code/")}>
                   <TerminalSquare className="size-4" />
                   Attach one in a command
                 </a>
@@ -240,7 +241,7 @@ export function ConsolePage() {
                 </a>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <a href="/#self-host">The self-host section</a>
+                <a href={withBase("/#self-host")}>The self-host section</a>
               </Button>
             </div>
           </Container>

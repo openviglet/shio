@@ -63,7 +63,7 @@ through the API does not return it. Copy it when you create it.
 
 Two things the payload deliberately does **not** carry: the post's **content**, and the
 post's **locale**. It is a notification, not a delivery mechanism: fetch what you need
-through the [Content Delivery API](/docs/headless/content-delivery-api/) using `postId`, or
+through the [Content Delivery API](/shio/docs/headless/content-delivery-api/) using `postId`, or
 regenerate the route at `url`.
 
 For a `delete` there is nothing left to fetch, which is why `url` is worth acting on
@@ -140,7 +140,7 @@ is a real answer rather than a missing one.
 The practical shape that follows: key your handler on `url` (or `postId`), make
 re-running it harmless, and do not derive state from the order events arrive in. If you
 need a guaranteed, ordered view of what changed, poll
-[`/api/v2/agent/changes`](/docs/agent-surface/) instead: that feed is commit-ordered and
+[`/api/v2/agent/changes`](/shio/docs/agent-surface/) instead: that feed is commit-ordered and
 resumable, which is exactly what a webhook is not.
 
 ### When a delivery fails
@@ -155,7 +155,7 @@ question you can answer.
 ## Tuning
 
 Delivery behaviour is configured instance-wide (see the
-[Configuration Reference](/docs/configuration-reference/)):
+[Configuration Reference](/shio/docs/configuration-reference/)):
 
 ```properties
 shio.webhook.enabled=true
@@ -172,8 +172,8 @@ be deleted to make that true.
 
 ## Related
 
-- [Content Delivery API](/docs/headless/content-delivery-api/): fetching what the event points at
-- [Next.js starter](/docs/headless/nextjs-starter/): the receiver this signing scheme matches
-- [The agent surface](/docs/agent-surface/): `/agent/changes`, the ordered alternative
-- [Administration § Webhooks](/docs/administration-guide/#webhooks): the console screen
-- [Configuration Reference](/docs/configuration-reference/): every `shio.webhook.*` setting
+- [Content Delivery API](/shio/docs/headless/content-delivery-api/): fetching what the event points at
+- [Next.js starter](/shio/docs/headless/nextjs-starter/): the receiver this signing scheme matches
+- [The agent surface](/shio/docs/agent-surface/): `/agent/changes`, the ordered alternative
+- [Administration § Webhooks](/shio/docs/administration-guide/#webhooks): the console screen
+- [Configuration Reference](/shio/docs/configuration-reference/): every `shio.webhook.*` setting

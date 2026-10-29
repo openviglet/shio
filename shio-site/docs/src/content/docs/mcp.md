@@ -18,7 +18,7 @@ JSON-RPC 2.0 over streamable HTTP. It answers `initialize`, `tools/list`, `tools
 
 This is the surface the product is designed around: the agent that builds your site
 talks to Shio here. It is a **shape over the same capabilities** as
-[the REST agent surface](/docs/agent-surface/), not a separate contract: a tool call ends
+[the REST agent surface](/shio/docs/agent-surface/), not a separate contract: a tool call ends
 up in the same service the REST endpoint calls, under the same guards.
 
 :::caution[A bare instance has no MCP server registered for your client]
@@ -73,7 +73,7 @@ curl -s http://localhost:2710/mcp \
 A tool call runs under the credential on the request, normally an **API key of `AGENT`
 scope**. That scope may write here and on `/api/v2/agent/**` and nowhere else, it reads
 drafts by definition, and publishing needs `mayPublish` on the token. See
-[the agent surface](/docs/agent-surface/#authenticating).
+[the agent surface](/shio/docs/agent-surface/#authenticating).
 
 ---
 
@@ -100,7 +100,7 @@ their own.
 | `shio_changes` | What changed since a cursor: what the curator did while you were away. `address` narrows it to one page |
 | `shio_remember` | Write the conventions the next session should inherit, and drop one, with `forget` |
 | `shio_assets` | The files a site holds |
-| `shio_marketplace` | The packages this instance could install. Lists and describes; it does not install. See [Blueprints § Who may install](/docs/blueprints/#who-may-install) |
+| `shio_marketplace` | The packages this instance could install. Lists and describes; it does not install. See [Blueprints § Who may install](/shio/docs/blueprints/#who-may-install) |
 
 Three capabilities you might expect as tools are **parameters** instead, and that is the
 budget above being spent deliberately rather than an omission. Applying a starting point
@@ -205,7 +205,7 @@ Read-only resources, for a client that prefers attaching context to calling a to
 ### Answering a curator's question
 
 A curator can ask the connected agent something from the console's
-[assistant dock](/docs/content-console/#the-assistant-dock), or from a field of the post form.
+[assistant dock](/shio/docs/content-console/#the-assistant-dock), or from a field of the post form.
 Each question is a note of kind `request` on the page it is about, and `shio://requests` lists
 the open ones, newest first, one line each: the note id, the page, who asked, and the question.
 A line with `field=<name>` asks for a value for that field.
@@ -246,6 +246,6 @@ that get the job done, with the safety defaults already in place (everything is 
 
 | Page | Description |
 |---|---|
-| [The Agent Surface](/docs/agent-surface/) | The REST half: every endpoint, the address grammar, the op vocabulary |
-| [Pages, Layouts & Regions](/docs/website-development/) | What `render.provision` creates and how a page is composed |
-| [Content Modeling](/docs/content-modeling/) | The post types `shio_write` is checked against |
+| [The Agent Surface](/shio/docs/agent-surface/) | The REST half: every endpoint, the address grammar, the op vocabulary |
+| [Pages, Layouts & Regions](/shio/docs/website-development/) | What `render.provision` creates and how a page is composed |
+| [Content Modeling](/shio/docs/content-modeling/) | The post types `shio_write` is checked against |

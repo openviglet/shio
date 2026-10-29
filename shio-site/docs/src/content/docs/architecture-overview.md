@@ -62,7 +62,7 @@ Two edges in that picture are the ones worth reading twice:
 | **Schema** | **Liquibase owns it.** `ddl-auto` is `none`; an upgrade is a restart, not a hand-written `ALTER` |
 | **Databases** | PostgreSQL, MariaDB/MySQL, or embedded H2 for development |
 | **Content model** | One unified post row per state (`DRAFT`, `PUBLISHED`), over a JOINED inheritance hierarchy whose root carries the tenant discriminator |
-| **Multi-tenancy** | A discriminator column on the shared schema, applied by a Hibernate filter: see [Multi-Tenancy](/docs/multi-tenancy/) |
+| **Multi-tenancy** | A discriminator column on the shared schema, applied by a Hibernate filter: see [Multi-Tenancy](/shio/docs/multi-tenancy/) |
 | **File bytes** | Under `store/`, addressed by post id and, for a site's own assets, by folder path |
 
 ---
@@ -81,7 +81,7 @@ so a task that would be a dozen round trips is three or four calls.
 ![Curation: a draft, the review queue, the Universal Editor, publishing, the trash](/img/diagrams/shio-curation-flow.svg)
 
 Every arrow into `PUBLISHED` passes through a person. See
-[Letting an agent in](/docs/agent-safety/).
+[Letting an agent in](/shio/docs/agent-safety/).
 
 ### A delivery read
 
@@ -174,8 +174,8 @@ met a write the node it asked did not stamp.
 
 | Page | Description |
 |---|---|
-| [Core Concepts](/docs/getting-started/core-concepts/) | The vocabulary this diagram uses |
-| [The Agent Surface](/docs/agent-surface/) | The protocol the agent edge speaks |
-| [Pages, Layouts & Regions](/docs/website-development/) | The renderer, in full |
-| [Multi-Tenancy](/docs/multi-tenancy/) | One JVM, many isolated tenants |
-| [Installation Guide](/docs/installation-guide/) | Getting the topologies above running |
+| [Core Concepts](/shio/docs/getting-started/core-concepts/) | The vocabulary this diagram uses |
+| [The Agent Surface](/shio/docs/agent-surface/) | The protocol the agent edge speaks |
+| [Pages, Layouts & Regions](/shio/docs/website-development/) | The renderer, in full |
+| [Multi-Tenancy](/shio/docs/multi-tenancy/) | One JVM, many isolated tenants |
+| [Installation Guide](/shio/docs/installation-guide/) | Getting the topologies above running |

@@ -86,7 +86,7 @@ toolbar drawn over it moves it up or down, removes it, or duplicates it.
 
 A type the layout names but this instance has not provisioned is shown, not offered. A page
 that composes a type its layout does not accept still renders; `shio verify` reports it as
-`section-not-accepted` (see [Proving it renders](/docs/website-development/#proving-it-renders)).
+`section-not-accepted` (see [Proving it renders](/shio/docs/website-development/#proving-it-renders)).
 
 ### Patterns: a block that works, placed again
 
@@ -186,7 +186,7 @@ is written. Every successful merge
 answers the post's new `ETag`, so a second change can be pinned to the first. Without
 `If-Match`, a merge is applied unconditionally, as before.
 
-The editor has its own [assistant dock](/docs/content-console/#the-assistant-dock), at the foot
+The editor has its own [assistant dock](/shio/docs/content-console/#the-assistant-dock), at the foot
 of the properties panel so it never covers the page you are editing. While a save is in
 flight it shows the save working. When it lands it names the fields that were saved, and a
 refused save shows the server's explanation there.
@@ -200,6 +200,6 @@ them: the token authenticates, not your session cookie.
 
 | Page | Description |
 |---|---|
-| [Pages, Layouts & Regions](/docs/website-development/) | The templates you annotate, and the preview route |
-| [Letting an agent in](/docs/agent-safety/) | Drafts, publishing and the review queue |
-| [Content Delivery API](/docs/headless/content-delivery-api/) | Token scopes, and the preview environment |
+| [Pages, Layouts & Regions](/shio/docs/website-development/) | The templates you annotate, and the preview route |
+| [Letting an agent in](/shio/docs/agent-safety/) | Drafts, publishing and the review queue |
+| [Content Delivery API](/shio/docs/headless/content-delivery-api/) | Token scopes, and the preview environment |

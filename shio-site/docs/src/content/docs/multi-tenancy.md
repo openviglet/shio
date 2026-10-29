@@ -171,7 +171,7 @@ assumption an operator would otherwise carry, and on a single-tenant install it 
 
 | Page | Description |
 |---|---|
-| [Installation Guide](/docs/installation-guide/) | Getting an instance running first |
-| [Configuration Reference](/docs/configuration-reference/) | `shio.multi-tenant` and the file-source path |
-| [Security](/docs/security/) | Token scopes, authentication and CSRF |
-| [Architecture Overview](/docs/architecture-overview/) | Where tenant resolution sits |
+| [Installation Guide](/shio/docs/installation-guide/) | Getting an instance running first |
+| [Configuration Reference](/shio/docs/configuration-reference/) | `shio.multi-tenant` and the file-source path |
+| [Security](/shio/docs/security/) | Token scopes, authentication and CSRF |
+| [Architecture Overview](/shio/docs/architecture-overview/) | Where tenant resolution sits |

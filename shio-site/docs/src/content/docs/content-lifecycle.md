@@ -31,7 +31,7 @@ on.
 
 Today publishing happens through the **Universal Editor**'s Publish button, or by
 **approving an agent run** in Agent Review. See
-[Letting an agent in](/docs/agent-safety/) for how a run is approved.
+[Letting an agent in](/shio/docs/agent-safety/) for how a run is approved.
 
 ---
 
@@ -61,7 +61,7 @@ The token is **preview-scoped and site-scoped**: it can read that one site's dra
 nothing else. It cannot write, and it cannot reach another site.
 
 An operator can change the lifetime, or turn preview links off entirely, in
-[configuration](/docs/configuration-reference/):
+[configuration](/shio/docs/configuration-reference/):
 
 ```properties
 shio.cda.preview.enabled=true
@@ -281,7 +281,7 @@ For an agent's work specifically, **Agent Review** is the better screen: it grou
 changes together so you can approve or revert the run rather than reading it one row at a
 time.
 
-See [Administration § Activity](/docs/administration-guide/#activity).
+See [Administration § Activity](/shio/docs/administration-guide/#activity).
 
 ---
 
@@ -293,14 +293,14 @@ Nothing expires it on a timer; **purge** is the only permanent act.
 
 The details (what one restore puts back, and why a folder delete is a single row in the
 trash) are on
-[The content console § The trash](/docs/content-console/#the-trash).
+[The content console § The trash](/shio/docs/content-console/#the-trash).
 
 ---
 
 ## Related
 
-- [The content console](/docs/content-console/): the browser, the post form, the trash
-- [Letting an agent in](/docs/agent-safety/): draft-default, the review queue, reverting a run
-- [Universal Editor](/docs/universal-editor/): editing and publishing on the rendered page
-- [Administration](/docs/administration-guide/): activity, agent review, API tokens
-- [Content Modeling](/docs/content-modeling/): the post types the form is generated from
+- [The content console](/shio/docs/content-console/): the browser, the post form, the trash
+- [Letting an agent in](/shio/docs/agent-safety/): draft-default, the review queue, reverting a run
+- [Universal Editor](/shio/docs/universal-editor/): editing and publishing on the rendered page
+- [Administration](/shio/docs/administration-guide/): activity, agent review, API tokens
+- [Content Modeling](/shio/docs/content-modeling/): the post types the form is generated from

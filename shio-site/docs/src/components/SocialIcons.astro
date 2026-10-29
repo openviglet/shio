@@ -1,17 +1,18 @@
 ---
 /**
  * SH1262 — the site's top-level links in the docs header, before Starlight's own icons, so a
- * reader can go back to the product pages from any page here. Root-anchored on
- * shio.viglet.org, as the site's own nav is.
+ * reader can go back to the product pages from any page here. Anchored on the site's base
+ * (`/shio/`, this area's base without its `docs/`), as the site's own nav is.
  */
 import Default from "@astrojs/starlight/components/SocialIcons.astro";
 
+const site = import.meta.env.BASE_URL.replace(/docs\/?$/, "");
 const links = [
-  { label: "Home", href: "/" },
-  { label: "Console", href: "/console/" },
-  { label: "Coding agent", href: "/claude-code/" },
-  { label: "Compare", href: "/compare/" },
-  { label: "Get started", href: "/docs/installation-guide/", highlight: true },
+  { label: "Home", href: site },
+  { label: "Console", href: `${site}console/` },
+  { label: "Coding agent", href: `${site}claude-code/` },
+  { label: "Compare", href: `${site}compare/` },
+  { label: "Get started", href: `${site}docs/installation-guide/`, highlight: true },
 ];
 ---
 

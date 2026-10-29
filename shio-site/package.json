@@ -3,8 +3,8 @@
   "private": true,
   "version": "2026.3.2",
   "type": "module",
-  "description": "Public site of Viglet Shio (shio.viglet.org), the open-source, agent-ready CMS with four ways in: console, coding agent, files and delivery API.",
-  "homepage": "https://shio.viglet.org/",
+  "description": "Public site of Viglet Shio (openviglet.github.io/shio), the open-source, agent-ready CMS with four ways in: console, coding agent, files and delivery API.",
+  "homepage": "https://openviglet.github.io/shio/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/openviglet/shio.git",

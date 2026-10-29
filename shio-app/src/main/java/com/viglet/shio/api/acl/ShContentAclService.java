@@ -358,6 +358,80 @@ public class ShContentAclService {
         return saved;
     }
 
+    /**
+     * SH1277 — a declared grant list ({@code [{"group": "Editors", "permission": "WRITE"}]}) as entries.
+     *
+     * <p>Here rather than in the batch that reads it, because the vocabulary of principals and
+     * permissions is this class's: a caller that spelled {@code ShAclPermission} itself would be a
+     * second place deciding access (SH650's lint counts exactly that).</p>
+     *
+     * @return the entries, in declaration order
+     * @throws MalformedGrantException naming the first grant that is not one principal and one permission
+     */
+    public static List<AclEntry> parseGrants(tools.jackson.databind.JsonNode list) {
+        List<AclEntry> grants = new ArrayList<>();
+        for (tools.jackson.databind.JsonNode grant : list) {
+            List<ShAclPrincipalType> named = new ArrayList<>();
+            for (ShAclPrincipalType type : ShAclPrincipalType.values()) {
+                if (grant.hasNonNull(type.name().toLowerCase(java.util.Locale.ROOT))) {
+                    named.add(type);
+                }
+            }
+            String spelled = grant.path("permission").asString("").trim().toUpperCase(java.util.Locale.ROOT);
+            ShAclPermission permission = java.util.Arrays.stream(ShAclPermission.values())
+                    .filter(each -> each.name().equals(spelled)).findFirst().orElse(null);
+            if (named.size() != 1 || permission == null) {
+                throw new MalformedGrantException(grant.toString());
+            }
+            ShAclPrincipalType type = named.getFirst();
+            grants.add(new AclEntry(type,
+                    grant.path(type.name().toLowerCase(java.util.Locale.ROOT)).asString().trim(), permission));
+        }
+        return grants;
+    }
+
+    /** SH1277 — whether an object's own grants are exactly these, order aside. */
+    @Transactional(readOnly = true)
+    public boolean hasExactly(String objectId, List<AclEntry> wanted) {
+        Set<String> have = shContentAclRepository.findByObjectId(objectId).stream()
+                .map(acl -> acl.getPrincipalType() + "|" + acl.getPrincipalName() + "|" + acl.getPermission())
+                .collect(Collectors.toSet());
+        Set<String> want = wanted.stream()
+                .map(grant -> grant.principalType() + "|" + grant.principalName() + "|" + grant.permission())
+                .collect(Collectors.toSet());
+        return have.equals(want);
+    }
+
+    /** A declared grant that is not one principal and one permission (SH1277). */
+    public static class MalformedGrantException extends IllegalArgumentException {
+        public MalformedGrantException(String grant) {
+            super(grant);
+        }
+    }
+
+    /**
+     * SH1277 — the first grant naming a user or group this instance does not have, or null.
+     *
+     * <p>A grant to nobody is not a harmless no-op: the folder then has an ACL that matches no one,
+     * so it stops being editable by everyone but an administrator, and the declaring package never
+     * hears why. A role has no name lookup here and is not checked; an unknown role fails the same
+     * closed way, which is the safe direction.</p>
+     */
+    @Transactional(readOnly = true)
+    public AclEntry unknownPrincipal(List<AclEntry> entries) {
+        for (AclEntry entry : entries) {
+            boolean known = switch (entry.principalType()) {
+                case USER -> shUserRepository.findByUsername(entry.principalName()) != null;
+                case GROUP -> shGroupRepository.findByName(entry.principalName()) != null;
+                case ROLE -> true;
+            };
+            if (!known) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
     /** The current user's resolved principal identifiers. */
     private record Principals(String username, Set<String> groups, Set<String> roles) {
     }

@@ -1,3 +1,4 @@
+import { withBase } from "@/lib/base";
 /**
  * VigletLogo: product mark.
  *
@@ -33,7 +34,7 @@ export function VigletLogo({ identifier, size = 48, className }: VigletLogoProps
   if (!name) return null;
   return (
     <img
-      src={`/logos/${identifier}${size < 56 ? "-small" : ""}.svg`}
+      src={withBase(`/logos/${identifier}${size < 56 ? "-small" : ""}.svg`)}
       alt={name}
       width={size}
       height={size}

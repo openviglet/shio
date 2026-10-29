@@ -6,6 +6,7 @@ import { CallToAction } from "@/components/sections/cta";
 import { Container, Eyebrow, LawChip, SectionHeader } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { CURATOR_DAY, GATES, LIFECYCLE, ROLES } from "@/lib/site-content";
+import { withBase } from "@/lib/base";
 
 /**
  * SH536: the site showed only the agent, which reads as a CMS with no editor.
@@ -254,7 +255,7 @@ export function CuratorPage() {
             <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
               The first seat is the one that is never empty, and this page is what it
               is holding. The second can stay empty forever:{" "}
-              <a href="/console/" className="font-semibold text-primary underline-offset-4 hover:underline">
+              <a href={withBase("/console/")} className="font-semibold text-primary underline-offset-4 hover:underline">
                 an instance with no agent attached
               </a>{" "}
               is an ordinary CMS, with the same review queue, the same previews and the

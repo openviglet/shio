@@ -6,7 +6,7 @@ sidebar:
 ---
 
 React hooks and render components for consuming Shio content, built on top of
-[`@viglet/shio-client`](/docs/headless/javascript-client/). React is one consumer of the
+[`@viglet/shio-client`](/shio/docs/headless/javascript-client/). React is one consumer of the
 core client, the data fetching, types, and auth all come from the core.
 
 ## Install
@@ -108,4 +108,4 @@ when you need a specific renderer.
 
 ## Next steps
 
-- [Next.js Starter](/docs/headless/nextjs-starter/): scaffold a full site in seconds.
+- [Next.js Starter](/shio/docs/headless/nextjs-starter/): scaffold a full site in seconds.

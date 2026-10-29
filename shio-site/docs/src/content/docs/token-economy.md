@@ -174,7 +174,7 @@ for you.
 
 | Page | Description |
 |---|---|
-| [The Agent Surface](/docs/agent-surface/) | Every endpoint, and the parameters named above |
-| [MCP Server](/docs/mcp/) | Why there are twelve tools and not twenty |
-| [Configuration Reference](/docs/configuration-reference/) | The `shio.agent.*` limits behind these numbers |
-| [The `shio` CLI](/docs/cli/) | `shio context`, and the CI gates |
+| [The Agent Surface](/shio/docs/agent-surface/) | Every endpoint, and the parameters named above |
+| [MCP Server](/shio/docs/mcp/) | Why there are twelve tools and not twenty |
+| [Configuration Reference](/shio/docs/configuration-reference/) | The `shio.agent.*` limits behind these numbers |
+| [The `shio` CLI](/shio/docs/cli/) | `shio context`, and the CI gates |

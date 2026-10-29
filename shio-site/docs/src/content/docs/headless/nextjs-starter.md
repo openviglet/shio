@@ -6,7 +6,7 @@ sidebar:
 ---
 
 Scaffold a **Next.js (App Router)** site wired to the Shio
-[Content Delivery API](/docs/headless/content-delivery-api/) in seconds. This is the
+[Content Delivery API](/shio/docs/headless/content-delivery-api/) in seconds. This is the
 flagship "JS dev, zero Java" path: a JavaScript/TypeScript developer gets a
 working, typed site without touching the Java backend.
 
@@ -68,7 +68,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## How it works
 
-- `lib/shio.ts` creates a shared [`@viglet/shio-client`](/docs/headless/javascript-client/) instance from the environment.
+- `lib/shio.ts` creates a shared [`@viglet/shio-client`](/shio/docs/headless/javascript-client/) instance from the environment.
 - `app/page.tsx` lists the site's published posts (`shio.query`).
 - `app/[...slug]/page.tsx` resolves **any path** to a post via `shio.getPostByUrl(siteId, "/the/path")`: friendly-URL routing straight from the CDA, with `generateStaticParams` (SSG) and `revalidate` (ISR).
 
@@ -98,7 +98,7 @@ export default async function Page({ params }) {
 
 Redirects you write in Viglet Shio, a `Redirect` post or the offer to keep an old address working
 when you rename a page, work on this site too. `middleware.ts` reads the site's
-[redirect table](/docs/headless/content-delivery-api/#redirects-on-a-site-with-its-own-front-end) and answers a
+[redirect table](/shio/docs/headless/content-delivery-api/#redirects-on-a-site-with-its-own-front-end) and answers a
 moved path with its `301` or `302` before any page is looked up.
 
 - The table is fetched once a minute, not on every request. A new redirect takes effect within a
@@ -120,4 +120,4 @@ A post's fields arrive as `post.attrs`, a JSON object keyed by your post-type
 attribute names. The catch-all page renders a `content`/`body`/`text`/`html`
 field if present, and otherwise dumps `attrs` so you can see the shape. Adapt the
 rendering to your own post types, optionally using the
-[React SDK](/docs/headless/react-sdk/) render components.
+[React SDK](/shio/docs/headless/react-sdk/) render components.

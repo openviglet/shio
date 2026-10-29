@@ -11,6 +11,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { Container, Logo } from "@/components/brand";
 import { LINKS } from "@/lib/site-content";
 import { cn } from "@/lib/utils";
+import { withBase } from "@/lib/base";
 
 // Hrefs are root-anchored ("/#…") so they keep working from any future page:
 // the browser navigates home and scrolls to the section.
@@ -27,33 +28,33 @@ const NAV_GROUPS = [
   {
     label: "Ways to use it",
     items: [
-      { label: "In the console, by hand", href: "/console/" },
-      { label: "With a coding agent", href: "/claude-code/" },
-      { label: "As files in your repository", href: "/features/content-as-files/" },
-      { label: "Through the delivery API", href: "/features/delivery/" },
-      { label: "All four, side by side", href: "/#paths" },
+      { label: "In the console, by hand", href: withBase("/console/") },
+      { label: "With a coding agent", href: withBase("/claude-code/") },
+      { label: "As files in your repository", href: withBase("/features/content-as-files/") },
+      { label: "Through the delivery API", href: withBase("/features/delivery/") },
+      { label: "All four, side by side", href: withBase("/#paths") },
     ],
   },
   {
     label: "The product",
     items: [
-      { label: "What the console does", href: "/console/#capabilities" },
-      { label: "What stops an agent write", href: "/curator/" },
-      { label: "One call, and its price", href: "/#one-call" },
-      { label: "MCP + CLI surface", href: "/#surface" },
-      { label: "Errors that instruct", href: "/#errors" },
-      { label: "Proof without a screenshot", href: "/#verify" },
-      { label: "Rendering and design tokens", href: "/features/rendering/" },
-      { label: "Replicate an existing site", href: "/replicate/" },
+      { label: "What the console does", href: withBase("/console/#capabilities") },
+      { label: "What stops an agent write", href: withBase("/curator/") },
+      { label: "One call, and its price", href: withBase("/#one-call") },
+      { label: "MCP + CLI surface", href: withBase("/#surface") },
+      { label: "Errors that instruct", href: withBase("/#errors") },
+      { label: "Proof without a screenshot", href: withBase("/#verify") },
+      { label: "Rendering and design tokens", href: withBase("/features/rendering/") },
+      { label: "Replicate an existing site", href: withBase("/replicate/") },
     ],
   },
   {
     label: "Decide",
     items: [
-      { label: "Who runs it, and how", href: "/#use-cases" },
-      { label: "The ten design laws", href: "/#laws" },
-      { label: "Compare", href: "/compare/" },
-      { label: "Self-host", href: "/#self-host" },
+      { label: "Who runs it, and how", href: withBase("/#use-cases") },
+      { label: "The ten design laws", href: withBase("/#laws") },
+      { label: "Compare", href: withBase("/compare/") },
+      { label: "Self-host", href: withBase("/#self-host") },
     ],
   },
 ];
@@ -88,7 +89,7 @@ export function SiteNav() {
     >
       <Container className="flex h-16 items-center gap-4">
         <div className="flex shrink-0 items-center gap-2.5">
-          <a href="/" className="text-base" aria-label="Viglet Shio home">
+          <a href={withBase("/")} className="text-base" aria-label="Viglet Shio home">
             <Logo className="hidden sm:inline-flex" />
             <Logo showWord={false} className="sm:hidden" />
           </a>
@@ -119,7 +120,7 @@ export function SiteNav() {
             and the console sits above it in the first group.
           */}
           <a
-            href="/claude-code/"
+            href={withBase("/claude-code/")}
             className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-sm font-bold whitespace-nowrap text-primary transition-colors hover:border-primary/50 hover:bg-primary/15"
           >
             <Terminal className="size-3.5" />

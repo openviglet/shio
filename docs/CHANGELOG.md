@@ -393,6 +393,7 @@
 - **SH1274** — A site page whose only child is its root folder opens on that folder, and the File and Content Select widgets and the content picker name the site once, so Quilhara no longer reads quilhara > quilhara (design §XI.46 recorded in `docs/agents/console-ui.md`).
 - **SH1275 (folder-aware default)** — The New button offers the folder's most common type, then the last created in that folder, so Quilhara's trails folder reads Novo Trail; system types are never suggested.
 - **SH1276** — The site listing's cost is measured with the post scheduler paused and the fewest statements over three reads, so a sweep on another thread no longer reads as listing cost; every read is 3 even under a 5 ms sweep (design §XI.48 recorded in `docs/agents/troubleshooting.md`).
+- **SH1277** — folder.acl and a desired-state folder `acl` let a blueprint declare a folder's edit grants; Quilhara's /theme now ships admin-only, re-applies as noop, refuses unknown principals (design §XI.49 recorded in `docs/agents/agent-surface.md`).
 
 ## Block M — Token economy, measured (SH74)
 

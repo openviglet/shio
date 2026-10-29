@@ -104,10 +104,11 @@ public class ShWriteTool implements ShMcpTool {
         // two move verbs are stated together because they are one rule.
         // SH1073 trimmed it again, to fund the four op fields below: the list of verbs went, because
         // the `op` enum states them one line later, and nothing that informs a decision did.
+        // SH1277 trimmed it once more, to fund `folder.acl` in the enum: same three decisions, fewer
+        // words.
         return "N addressed ops, all-or-nothing; no id needed. Rename or relocate with "
-                + "post.move / folder.move, never upsert-then-delete: that orphans the page, or takes "
-                + "the folder's contents. Writes land in DRAFT until published. Send dryRun=true "
-                + "first.";
+                + "post.move / folder.move, never upsert-then-delete, which orphans the page or "
+                + "empties the folder. Writes stay DRAFT until published. dryRun=true first.";
     }
 
     @Override

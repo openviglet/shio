@@ -172,7 +172,7 @@ file costs you the tokens, and neither costs you the page.**
 
 ## Tokens from a site you are replicating
 
-Design tokens are also how [replication](/docs/replication/) carries a captured site's
+Design tokens are also how [replication](/shio/docs/replication/) carries a captured site's
 styling. `shio propose` reads the captured stylesheet and offers a DTCG token set beside
 the block candidates, and `shio convert` writes it into `Theme.TOKENS`.
 
@@ -235,7 +235,7 @@ The test is whether somebody would ask you to change it. If they would, it is a 
 
 | Page | Description |
 |---|---|
-| [Pages, Layouts & Regions](/docs/website-development/#themes-and-design-tokens) | The Theme post type and how its CSS reaches a page |
-| [Replication](/docs/replication/) | Where a captured site's tokens come from |
-| [Content Modeling](/docs/content-modeling/) | The `Theme` post type's fields |
-| [The Agent Surface](/docs/agent-surface/) | `post.upsert`, and the diagnostics a malformed file lands in |
+| [Pages, Layouts & Regions](/shio/docs/website-development/#themes-and-design-tokens) | The Theme post type and how its CSS reaches a page |
+| [Replication](/shio/docs/replication/) | Where a captured site's tokens come from |
+| [Content Modeling](/shio/docs/content-modeling/) | The `Theme` post type's fields |
+| [The Agent Surface](/shio/docs/agent-surface/) | `post.upsert`, and the diagnostics a malformed file lands in |

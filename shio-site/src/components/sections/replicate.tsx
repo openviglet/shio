@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container, Eyebrow } from "@/components/brand";
 import { CLONE_STEPS } from "@/lib/site-content";
+import { withBase } from "@/lib/base";
 
 /**
  * The one capability a visitor can test against a URL they already own. SH535
@@ -67,7 +68,7 @@ export function Replicate() {
             variant="outline"
             className="h-auto max-w-full whitespace-normal px-5 py-2.5 text-center"
           >
-            <a href="/replicate/">
+            <a href={withBase("/replicate/")}>
               The five commands, the three modes, and what the crawl refuses
               <ArrowRight className="size-4" />
             </a>

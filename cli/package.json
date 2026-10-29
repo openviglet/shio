@@ -3,7 +3,7 @@
   "version": "2026.3.2",
   "mcpName": "io.github.openviglet/shio",
   "description": "The Viglet Shio command-line interface — scaffold sites, generate types, and manage your content model as code (post-types pull/push). The 'JS dev, zero Java' workflow.",
-  "homepage": "https://shio.viglet.org/",
+  "homepage": "https://openviglet.github.io/shio/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/openviglet/shio.git",

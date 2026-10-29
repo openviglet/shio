@@ -1,7 +1,7 @@
 # shio-site
 
 The public site for **Viglet Shio**, published to
-[shio.viglet.org](https://shio.viglet.org/).
+[openviglet.github.io/shio](https://openviglet.github.io/shio/).
 
 Stack: **Vite + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui**, the same
 conventions as [`turing-site`](https://turing.viglet.org) in the sibling
@@ -147,8 +147,20 @@ the one this site is discovered by.
 ## Static assets
 
 Served from the site root, in [`public/`](public/): `robots.txt`, `sitemap.xml`,
-`llms.txt`, `favicon.svg`, `og.svg` and the `CNAME` that points the GitHub Pages
-deploy at the custom domain.
+`llms.txt`, `favicon.svg` and `og.svg`. There is no `CNAME`: the site has no custom domain.
+
+## The base path
+
+The site is the repository's GitHub Pages project page, so it is served under **`/shio/`**,
+not at a host's root. `base` in [`vite.config.ts`](vite.config.ts) says so once, and Vite
+hands it to both builds as `BASE_URL`. Two rules follow:
+
+- **Every internal link goes through `withBase()`** ([`src/lib/base.ts`](src/lib/base.ts)):
+  write `withBase("/console/")`, never `"/console/"`. The dev server and a local preview
+  answer the bare form, so only the published site would 404. The prerender checks every
+  `href` and `src` it writes and fails the build on one without the base.
+- **The docs area's base is `/shio/docs`**, and the links typed in its pages carry it
+  (`/shio/docs/<slug>/`); `scripts/docs-links.test.mjs` fails on one written as `/docs/…`.
 
 ## The documentation, at /docs (SH1262)
 
@@ -167,7 +179,7 @@ found the REST reference still documenting the cache-clearing endpoint SH954 rem
 ## Publish
 
 [`.github/workflows/publish-github-pages.yml`](../.github/workflows/publish-github-pages.yml)
-is the whole path to [shio.viglet.org](https://shio.viglet.org/): it installs the
+is the whole path to [openviglet.github.io/shio](https://openviglet.github.io/shio/): it installs the
 workspace, runs `pnpm run build:site`, assembles `_site/` from `dist/` and deploys
 it to this repository's GitHub Pages with `actions/deploy-pages`.
 
@@ -179,7 +191,7 @@ The build *is* the gate: `tsc -b` fails the job on a type error, and the
 prerender throws on a drifted template or on a route declared in only one of the
 two tables. `dist-ssr/` is a build input and never reaches the published tree.
 The job needs no secret, only a one-time repository setting: **Settings → Pages →
-Source = GitHub Actions**, with `shio.viglet.org` as the custom domain.
+Source = GitHub Actions**, with no custom domain.
 
 ## Backlog
 

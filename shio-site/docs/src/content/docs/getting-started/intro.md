@@ -45,7 +45,7 @@ that are genuinely a person's.
 
 The division is enforced, not suggested: **an agent's writes land as drafts**, and
 publishing is a permission an agent may not even have. See
-[Letting an agent in](/docs/agent-safety/).
+[Letting an agent in](/shio/docs/agent-safety/).
 
 ---
 
@@ -142,7 +142,7 @@ If Shio is rendering your pages, three system types do the work:
 
 A page does not name its own layout: the **site** binds a post type to a layout, so every
 `Article` renders through the same one. See
-[Pages, Layouts & Regions](/docs/website-development/).
+[Pages, Layouts & Regions](/shio/docs/website-development/).
 
 ### What "headless" means here
 
@@ -167,10 +167,10 @@ The documentation is organised the way the work is:
 
 | Hub | Start here if you want to |
 |---|---|
-| **[The agent builds it](/docs/agent-builds-it/)** | Connect an agent, drive the API, author content as files, use the CLI |
-| **[The curator approves it](/docs/curator-approves-it/)** | Understand the rails, curate content, edit a rendered page |
-| **[The CDA delivers it](/docs/cda-delivers-it/)** | Build a front end against the delivery API |
-| **[Run it](/docs/run-it/)** | Install, configure, secure and operate an instance |
+| **[The agent builds it](/shio/docs/agent-builds-it/)** | Connect an agent, drive the API, author content as files, use the CLI |
+| **[The curator approves it](/shio/docs/curator-approves-it/)** | Understand the rails, curate content, edit a rendered page |
+| **[The CDA delivers it](/shio/docs/cda-delivers-it/)** | Build a front end against the delivery API |
+| **[Run it](/shio/docs/run-it/)** | Install, configure, secure and operate an instance |
 
-Or read [Core Concepts](/docs/getting-started/core-concepts/) next, which takes the vocabulary above one
+Or read [Core Concepts](/shio/docs/getting-started/core-concepts/) next, which takes the vocabulary above one
 level deeper.

@@ -1,10 +1,11 @@
 // @scans prose reason: the subject is the documentation's Markdown, its links and its headings,
 // read as text (SH740).
 //
-// SH1262 — every link inside /docs reaches a page, and every #anchor a heading on it.
+// SH1262 — every link inside /shio/docs reaches a page, and every #anchor a heading on it.
 //
 // The pages came over from Docusaurus, which resolved `./page.md#anchor` itself; Starlight does
-// not, so the importer rewrote each one to an absolute `/docs/<slug>/#anchor`. A rewrite nobody
+// not, so the importer rewrote each one to an absolute `/shio/docs/<slug>/#anchor` (the site is
+// published under /shio/, on openviglet.github.io). A rewrite nobody
 // checks is a 404 nobody sees until a reader clicks, so this reads the sources, needs no build,
 // and runs in the site's own suite.
 
@@ -67,12 +68,12 @@ test("SH1262: every link inside /docs reaches a page, and its anchor a heading o
   const broken = [];
   for (const [slug, { text }] of pages) {
     const links = [
-      ...prose(text).matchAll(/\]\((\/docs\/[^)\s]*)\)/g),
-      ...text.matchAll(/href="(\/docs\/[^"]*)"/g),
+      ...prose(text).matchAll(/\]\((\/shio\/docs\/[^)\s]*)\)/g),
+      ...text.matchAll(/href="(\/shio\/docs\/[^"]*)"/g),
     ].map(([, href]) => href);
     for (const href of links) {
       const [path, hash] = href.split("#");
-      const target = path.replace(/^\/docs\/?/, "").replace(/\/$/, "");
+      const target = path.replace(/^\/shio\/docs\/?/, "").replace(/\/$/, "");
       const page = pages.get(target);
       if (!page) broken.push(`${slug || "index"}: ${href} (no such page)`);
       else if (hash && !page.anchors.has(hash)) broken.push(`${slug || "index"}: ${href} (no #${hash} there)`);
@@ -80,8 +81,12 @@ test("SH1262: every link inside /docs reaches a page, and its anchor a heading o
     for (const [, href] of prose(text).matchAll(/\]\((\.{1,2}\/[^)\s]+\.mdx?(?:#[^)\s]*)?)\)/g)) {
       broken.push(`${slug || "index"}: ${href} (a Docusaurus file link Starlight does not resolve)`);
     }
-    for (const [, href] of prose(text).matchAll(/\]\((\/shio\/[^)\s]*)\)/g)) {
-      broken.push(`${slug || "index"}: ${href} (the Docusaurus /shio/ path, which this site does not serve)`);
+    for (const [, href] of prose(text).matchAll(/\]\((\/shio\/(?!docs\/)[^)\s]*)\)/g)) {
+      broken.push(`${slug || "index"}: ${href} (the Docusaurus /shio/ path; the pages are under /shio/docs/)`);
+    }
+    // A link missing the base reaches the host's root, which is not this site.
+    for (const [, href] of [...prose(text).matchAll(/\]\((\/docs\/[^)\s]*)\)/g), ...text.matchAll(/href="(\/docs\/[^"]*)"/g)]) {
+      broken.push(`${slug || "index"}: ${href} (missing the /shio base; write /shio${href})`);
     }
   }
   assert.deepEqual(broken, [], `${broken.length} broken link(s) in the documentation`);

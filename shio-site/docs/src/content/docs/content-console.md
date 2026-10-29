@@ -186,7 +186,7 @@ JSON; you are filling in the fields somebody modelled, in the order they modelle
   language menu sit beside it.
 - Each field is its label, its control and a help line. Which widget draws it (text,
   rich text, date, a reference to another post, a repeating group, and so on) is shown
-  when you hover the label. See [Content Modeling](/docs/content-modeling/) for what each
+  when you hover the label. See [Content Modeling](/shio/docs/content-modeling/) for what each
   widget does.
 - A field marked with `*` is required and the form will not save without it.
 - A page's **Sections** are listed by title, in the order the page renders them. Move one
@@ -258,7 +258,7 @@ shown as a message that disappears, so it waits until you have read it. From the
 correction the server proposed.
 
 Saving writes a **draft**. Publishing is a separate act with its own permission: see
-[Letting an agent in](/docs/agent-safety/) for the full draft-and-publish model.
+[Letting an agent in](/shio/docs/agent-safety/) for the full draft-and-publish model.
 
 ---
 
@@ -403,7 +403,7 @@ page you were on rather than jumping back to the top.
 **Move to trash** on each row for the ones dealt with. Above the list is where that site's form
 sends things: the folder, the post types it invites, the browser origins it accepts, and the
 switch that turns it on. How a site renders a form and issues its token is in
-[website-development § Forms](/docs/website-development/#forms).
+[website-development § Forms](/shio/docs/website-development/#forms).
 
 ## The trash
 
@@ -440,7 +440,7 @@ activity history.
 
 ## Related
 
-- [Content Modeling](/docs/content-modeling/): the post types the form is generated from
-- [Letting an agent in](/docs/agent-safety/): drafts, publishing, the review queue
-- [Universal Editor](/docs/universal-editor/): editing on the rendered page itself
-- [Administration](/docs/administration-guide/): the console's admin and configuration screens
+- [Content Modeling](/shio/docs/content-modeling/): the post types the form is generated from
+- [Letting an agent in](/shio/docs/agent-safety/): drafts, publishing, the review queue
+- [Universal Editor](/shio/docs/universal-editor/): editing on the rendered page itself
+- [Administration](/shio/docs/administration-guide/): the console's admin and configuration screens

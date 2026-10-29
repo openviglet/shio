@@ -1,7 +1,7 @@
 // @scans prose reason: the subject is a published JSON file, read whole and parsed; what it
 // checks is the shape www.viglet.org reads, not any code.
 //
-// SH1248: shio.viglet.org/changelog.json is the one list of Shio's releases. www.viglet.org reads
+// SH1248: openviglet.github.io/shio/changelog.json is the one list of Shio's releases. www.viglet.org reads
 // it cross-origin, in the shape Turing's turing.viglet.org/changelog.json already uses, so a
 // field renamed here is a release-notes page that renders empty somewhere else.
 

@@ -8,7 +8,7 @@
     "source": "github",
     "subfolder": "cli"
   },
-  "websiteUrl": "https://shio.viglet.org/claude-code/",
+  "websiteUrl": "https://openviglet.github.io/shio/claude-code/",
   "version": "2026.3.2",
   "packages": [
     {

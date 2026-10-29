@@ -135,10 +135,18 @@ public class ShAgentDesiredStateService {
         List<ShAgentBatch.Op> moves = new ArrayList<>();
         List<ShAgentBatch.Op> upserts = new ArrayList<>();
         List<ShAgentBatch.Op> publishes = new ArrayList<>();
+        List<ShAgentBatch.Op> grants = new ArrayList<>();
 
         for (ShAgentDesiredState.Folder folder : nullSafe(desired.folders())) {
             ShAgentBatch.Op upsert = op(ShAgentBatchService.FOLDER_UPSERT,
                     ShAddress.folder(site, folder.path()).toString(), null, null, null);
+            // SH1277 — who may edit it, once the folder exists: after every folder op, so a grant
+            // never races the folder it names, and before the posts, which it then governs.
+            if (folder.acl() != null && !folder.acl().isNull()) {
+                grants.add(op(ShAgentBatchService.FOLDER_ACL, ShAddress.folder(site, folder.path()).toString(),
+                        null, null, tools.jackson.databind.node.JsonNodeFactory.instance.objectNode()
+                                .set(ShAgentBatchService.ACL_KEY, folder.acl())));
+            }
             if (folder.moves()) {
                 folderMoves.add(folderMoveOp(site, folder));
                 movedFolders.add(upsert);
@@ -250,6 +258,7 @@ public class ShAgentDesiredStateService {
         ops.addAll(folders);
         ops.addAll(folderMoves);
         ops.addAll(movedFolders);
+        ops.addAll(grants);
         ops.addAll(moves);
         ops.addAll(upserts);
         ops.addAll(publishes);

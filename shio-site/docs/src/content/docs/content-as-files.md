@@ -235,7 +235,7 @@ own path, which every later command would reject.
 
 | Page | Description |
 |---|---|
-| [The `shio` CLI](/docs/cli/) | `pull`, `push`, `verify` and the rest of the verbs |
-| [The Agent Surface](/docs/agent-surface/) | The `plan`/`apply` path a push compiles into |
-| [Content Modeling](/docs/content-modeling/) | The post types `post-types/*.json` holds |
-| [Letting an agent in](/docs/agent-safety/) | Why a push cannot surprise a curator |
+| [The `shio` CLI](/shio/docs/cli/) | `pull`, `push`, `verify` and the rest of the verbs |
+| [The Agent Surface](/shio/docs/agent-surface/) | The `plan`/`apply` path a push compiles into |
+| [Content Modeling](/shio/docs/content-modeling/) | The post types `post-types/*.json` holds |
+| [Letting an agent in](/shio/docs/agent-safety/) | Why a push cannot surprise a curator |

@@ -233,7 +233,7 @@ Only published pages count, since those are what a reader is served. Layouts, re
 and files are not counted, because they are not written in a language. A site that has not
 declared a policy never gets either warning, because its languages are the ones its content is in.
 
-See [Pages, Layouts & Regions § Public delivery](/docs/website-development/#public-delivery).
+See [Pages, Layouts & Regions § Public delivery](/shio/docs/website-development/#public-delivery).
 
 ---
 
@@ -267,7 +267,7 @@ have the sibling set on the page rather than fetched.
 
 ## Related
 
-- [Content Modeling](/docs/content-modeling/): post types, fields and the publish states
-- [Pages, Layouts & Regions](/docs/website-development/): templates, helpers and the delivery grammar
-- [Content Delivery API](/docs/headless/content-delivery-api/): `?locale` and `availableLocales`
-- [The content console](/docs/content-console/): where the Translations menu lives
+- [Content Modeling](/shio/docs/content-modeling/): post types, fields and the publish states
+- [Pages, Layouts & Regions](/shio/docs/website-development/): templates, helpers and the delivery grammar
+- [Content Delivery API](/shio/docs/headless/content-delivery-api/): `?locale` and `availableLocales`
+- [The content console](/shio/docs/content-console/): where the Translations menu lives

@@ -8,6 +8,7 @@ import { CodeBlock } from "@/components/code-block";
 import { Button } from "@/components/ui/button";
 import { CLONE_BOUNDS, MIXED_PAGE, MODES, PHASES, PROPOSE_OUTPUT } from "@/lib/site-content";
 import { cn } from "@/lib/utils";
+import { withBase } from "@/lib/base";
 
 /**
  * SH535: the one capability a visitor can test against a URL they already own.
@@ -247,7 +248,7 @@ export function ReplicatePage() {
                     times is the palette by observation and changes nothing until somebody
                     rewires the CSS.{" "}
                     <a
-                      href="/features/rendering/"
+                      href={withBase("/features/rendering/")}
                       className="font-medium text-primary underline underline-offset-4"
                     >
                       How tokens work &rarr;

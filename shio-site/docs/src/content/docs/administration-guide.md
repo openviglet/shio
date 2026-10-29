@@ -9,7 +9,7 @@ Everything an operator configures lives in the Shio console under **Administrati
 at `/bento/admin` on your instance. This page walks those screens in order.
 
 The curator's half (the content browser, the post form, copy and move, the trash) is on
-[The content console](/docs/content-console/).
+[The content console](/shio/docs/content-console/).
 
 ---
 
@@ -125,7 +125,7 @@ action in the content browser.
 
 The same ACL is enforced on every surface. An agent's token reaches exactly what a
 curator's session reaches, and no more: a copy needs read on its sources, a move needs
-write on both ends. See [Letting an agent in](/docs/agent-safety/).
+write on both ends. See [Letting an agent in](/shio/docs/agent-safety/).
 
 ---
 
@@ -157,7 +157,7 @@ The token value is shown once, when it is created. Send it in the `Key` header:
 curl -H 'Key: YOUR_TOKEN' http://localhost:2710/api/v2/site
 ```
 
-See [Content Delivery API](/docs/headless/content-delivery-api/) for what the token then
+See [Content Delivery API](/shio/docs/headless/content-delivery-api/) for what the token then
 reaches.
 
 ---
@@ -174,7 +174,7 @@ copy of the default tenant's post-type model; provisioning is idempotent, so run
 again is safe. A tenant can be **suspended** and later reactivated.
 
 Full detail, including how a request is resolved to a tenant, is on
-[Multi-tenancy](/docs/multi-tenancy/).
+[Multi-tenancy](/shio/docs/multi-tenancy/).
 
 ---
 
@@ -186,7 +186,7 @@ password store described above. The screen exists so an external identity source
 added as a second provider instance.
 
 For the authentication and authorization mechanics (sessions, CSRF, CORS, token auth),
-see [Security](/docs/security/).
+see [Security](/shio/docs/security/).
 
 ---
 
@@ -196,7 +196,7 @@ see [Security](/docs/security/).
 from and exported to. Shio ships one: **Shio Package**, the local exchange archive that
 site import and download use.
 
-See [Import & Export](/docs/import-export/) for the package format and the import flow.
+See [Import & Export](/shio/docs/import-export/) for the package format and the import flow.
 
 ---
 
@@ -205,7 +205,7 @@ See [Import & Export](/docs/import-export/) for the package format and the impor
 **Administration → Email** configures the outgoing SMTP server Shio sends mail through:
 host, port, credentials and whether the connection is secured. The same settings can be
 supplied as properties at startup. See the
-[Configuration Reference](/docs/configuration-reference/).
+[Configuration Reference](/shio/docs/configuration-reference/).
 
 ---
 
@@ -217,7 +217,7 @@ static-site rebuild can be triggered by the one site that changed rather than by
 them.
 
 The subscription form, the payload each event carries, how to verify its signature and
-what delivery does and does not guarantee are on [Webhooks](/docs/webhooks/).
+what delivery does and does not guarantee are on [Webhooks](/shio/docs/webhooks/).
 
 ---
 
@@ -247,7 +247,7 @@ bar that appears decides all of them at once with **Approve and publish**.
 
 This is the moderation step for content that arrives from anywhere you did not type it
 yourself, including visitor form submissions, which land as drafts of a post type you
-already modelled. See [Letting an agent in](/docs/agent-safety/).
+already modelled. See [Letting an agent in](/shio/docs/agent-safety/).
 
 ---
 
@@ -286,7 +286,7 @@ folders and configuration, and is what **Import Site** reads back.
 
 Search is configured with properties rather than on a console screen. Site search is
 served by Shio itself; connecting an external index is an operator setting. See
-[Search & Caching](/docs/search-caching/).
+[Search & Caching](/shio/docs/search-caching/).
 
 ---
 
@@ -294,12 +294,12 @@ served by Shio itself; connecting an external index is an operator setting. See
 
 | Page | Description |
 |---|---|
-| [The content console](/docs/content-console/) | The browser, the post form, copy and move, the trash |
-| [Letting an agent in](/docs/agent-safety/) | Drafts, publishing, the review queue, the trash |
-| [Security](/docs/security/) | Authentication and authorization mechanics |
-| [Multi-tenancy](/docs/multi-tenancy/) | How tenants isolate content |
-| [Configuration Reference](/docs/configuration-reference/) | Every `application.properties` setting |
-| [Import & Export](/docs/import-export/) | Packages and content migration |
-| [Installation Guide](/docs/installation-guide/) | Setup and first-time configuration |
+| [The content console](/shio/docs/content-console/) | The browser, the post form, copy and move, the trash |
+| [Letting an agent in](/shio/docs/agent-safety/) | Drafts, publishing, the review queue, the trash |
+| [Security](/shio/docs/security/) | Authentication and authorization mechanics |
+| [Multi-tenancy](/shio/docs/multi-tenancy/) | How tenants isolate content |
+| [Configuration Reference](/shio/docs/configuration-reference/) | Every `application.properties` setting |
+| [Import & Export](/shio/docs/import-export/) | Packages and content migration |
+| [Installation Guide](/shio/docs/installation-guide/) | Setup and first-time configuration |
 
 ---

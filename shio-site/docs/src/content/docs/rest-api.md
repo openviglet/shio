@@ -7,9 +7,9 @@ Shio has **four** HTTP surfaces, and picking the right one is most of the work:
 
 | Surface | Path | Use it when |
 |---|---|---|
-| **Delivery (CDA)** | `/api/v2/cda/**`, `/graphql` | You are building a front end. Read-only, cacheable, [documented here](/docs/headless/content-delivery-api/) |
-| **Agent** | `/api/v2/agent/**` | You are building an agent. Addressed, atomic, self-describing, [documented here](/docs/agent-surface/) |
-| **MCP** | `POST /mcp` | Your client speaks MCP, [documented here](/docs/mcp/) |
+| **Delivery (CDA)** | `/api/v2/cda/**`, `/graphql` | You are building a front end. Read-only, cacheable, [documented here](/shio/docs/headless/content-delivery-api/) |
+| **Agent** | `/api/v2/agent/**` | You are building an agent. Addressed, atomic, self-describing, [documented here](/shio/docs/agent-surface/) |
+| **MCP** | `POST /mcp` | Your client speaks MCP, [documented here](/shio/docs/mcp/) |
 | **Console** | `/api/v2/**` | **This page.** What the React console calls: id-keyed CRUD, administration |
 
 If you are writing a script or an integration, the agent surface is almost always the
@@ -25,7 +25,7 @@ administrative capabilities live only here.
 |---|---|
 | The console | Session cookie + CSRF token (`POST /api/v2/login`) |
 | A script | HTTP Basic against the same endpoints |
-| A non-browser caller on the **agent** or **delivery** surfaces | A `Key` header, no cookie and no CSRF: see [Security](/docs/security/) |
+| A non-browser caller on the **agent** or **delivery** surfaces | A `Key` header, no cookie and no CSRF: see [Security](/shio/docs/security/) |
 
 The console API is session-shaped: it expects a cookie and a CSRF token on writes. That is
 deliberate, and it is the reason the agent surface exists as a **stateless** alternative
@@ -135,7 +135,7 @@ Both accept transform parameters, `?w=`, `?h=`, `?format=`, `?crop=`.
 | `/api/v2/widget` | The widget catalogue a post type's fields reference |
 | `/api/v2/group` · `/role` | Users, groups and roles |
 | `/api/v2/locale` | The locale axis |
-| `/api/v2/tenant` | Tenants (admin): see [Multi-Tenancy](/docs/multi-tenancy/) |
+| `/api/v2/tenant` | Tenants (admin): see [Multi-Tenancy](/shio/docs/multi-tenancy/) |
 | `/api/v2/provider/auth` · `/provider/exchange` · `/config/email` | Configuration providers |
 | `/api/v2/discovery` · `/system/info` · `/ping` | Instance metadata and health |
 | `/api/v2/setup` | First-run setup |
@@ -173,7 +173,7 @@ is the most common wrong turn:
 
 | Page | Description |
 |---|---|
-| [The Agent Surface](/docs/agent-surface/) | The addressed, transactional alternative |
-| [Content Delivery API](/docs/headless/content-delivery-api/) | The read-only delivery contract |
-| [Security](/docs/security/) | Sessions, tokens, scopes, CSRF and CORS |
-| [Administration Guide](/docs/administration-guide/) | What these endpoints look like in the console |
+| [The Agent Surface](/shio/docs/agent-surface/) | The addressed, transactional alternative |
+| [Content Delivery API](/shio/docs/headless/content-delivery-api/) | The read-only delivery contract |
+| [Security](/shio/docs/security/) | Sessions, tokens, scopes, CSRF and CORS |
+| [Administration Guide](/shio/docs/administration-guide/) | What these endpoints look like in the console |

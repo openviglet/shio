@@ -280,7 +280,7 @@
       "folder": "/en/sections",
       "data": {
         "heading": "A brand made up to show a real product",
-        "body": "<p>Quilhara is invented. The trails, places, guides, trips and stories on this site do not exist, and nothing here can be booked. It is a sample site for <a href=\"https://shio.viglet.org/\">Viglet Shio</a>, the open-source CMS, installed from one marketplace package.</p><p>The photographs were generated for the package and are free to redistribute with it. The fonts are Fraunces and Inter, both under the SIL Open Font Licence and served from the site itself.</p>"
+        "body": "<p>Quilhara is invented. The trails, places, guides, trips and stories on this site do not exist, and nothing here can be booked. It is a sample site for <a href=\"https://openviglet.github.io/shio/\">Viglet Shio</a>, the open-source CMS, installed from one marketplace package.</p><p>The photographs were generated for the package and are free to redistribute with it. The fonts are Fraunces and Inter, both under the SIL Open Font Licence and served from the site itself.</p>"
       },
       "publish": true,
       "locale": "en-us"

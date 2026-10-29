@@ -1,4 +1,4 @@
-// SH1262 — Shio's end-user documentation, at https://shio.viglet.org/docs/.
+// SH1262 — Shio's end-user documentation, at https://openviglet.github.io/shio/docs/.
 //
 // It used to be `docs-shio/` in the vigletdocs Docusaurus repository, so every Shio ship that
 // needed a page cost a commit in a second repository. It lives beside the code it describes now,
@@ -7,19 +7,20 @@
 // Two joins to the site next door, and both are load-bearing:
 //
 // - BASE. Astro rewrites the links it generates and NOT the ones typed in a page, so every link
-//   the importer wrote is absolute and already carries `/docs/`. Change the base here and those
-//   change with it, or every hand-typed link 404s in production alone.
+//   the importer wrote is absolute and already carries `/shio/docs/`. Change the base here and
+//   those change with it, or every hand-typed link 404s in production alone. The site itself is
+//   under `/shio/` (vite.config.ts), and this area sits one level inside it.
 // - OUT_DIR. The site builds to `shio-site/dist/` and this area into a subdirectory of it, which
 //   is the one directory the Pages deploy uploads. Astro empties outDir before writing and
 //   `vite build` empties `dist/`, which is why the site's build runs this one LAST.
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 
-const BASE = "/docs";
+const BASE = "/shio/docs";
 const OUT_DIR = "../dist/docs";
 
 export default defineConfig({
-  site: "https://shio.viglet.org",
+  site: "https://openviglet.github.io",
   base: BASE,
   outDir: OUT_DIR,
   trailingSlash: "always",
@@ -30,7 +31,7 @@ export default defineConfig({
       logo: { src: "./src/assets/shio-mark.svg", alt: "Viglet Shio" },
       favicon: "/favicon.svg",
       social: [{ icon: "github", label: "GitHub", href: "https://github.com/openviglet/shio" }],
-      // shio.viglet.org's look, as Turing's docs carry turing.viglet.org's (T1162): the site's
+      // The site's look, as Turing's docs carry turing.viglet.org's (T1162): the site's
       // fonts, its palette on Starlight's tokens, and its brand, nav and footer.
       customCss: ["./src/styles/docs.css"],
       head: [

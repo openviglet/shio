@@ -2,9 +2,9 @@
 
 [![npm](https://img.shields.io/npm/v/@viglet/shio-react-sdk?logo=npm)](https://www.npmjs.com/package/@viglet/shio-react-sdk)
 [![License](https://img.shields.io/npm/l/@viglet/shio-react-sdk)](https://github.com/openviglet/shio/blob/HEAD/LICENSE)
-[![Website](https://img.shields.io/badge/shio.viglet.org-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
+[![Website](https://img.shields.io/badge/website-0ea5e9?logo=googlechrome&logoColor=white)](https://openviglet.github.io/shio/)
 
-The **React SDK** for **[Viglet Shio](https://shio.viglet.org/)**, the open
+The **React SDK** for **[Viglet Shio](https://openviglet.github.io/shio/)**, the open
 source, **agent-ready CMS**. Hooks and render components for
 consuming Shio content through the **Content Delivery API (CDA)**, built on
 [`@viglet/shio-client`](https://www.npmjs.com/package/@viglet/shio-client).
@@ -121,7 +121,7 @@ npm run typecheck
 
 ## License
 
-Apache-2.0 — [Viglet Shio](https://shio.viglet.org/) ·
+Apache-2.0 — [Viglet Shio](https://openviglet.github.io/shio/) ·
 [github.com/openviglet/shio](https://github.com/openviglet/shio) ·
 [docs.viglet.org/shio](https://docs.viglet.org/shio/) ·
 part of the [Viglet](https://www.viglet.org) open source family.

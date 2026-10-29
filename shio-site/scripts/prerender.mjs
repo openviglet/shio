@@ -18,7 +18,10 @@ import { resolve, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import { pageToMarkdown } from "./markdown.mjs";
 
-const SITE_ORIGIN = "https://shio.viglet.org";
+const SITE_HOST = "https://openviglet.github.io";
+// The path the site is published under: vite.config.ts's `base`, without its trailing slash.
+const BASE = "/shio";
+const SITE_ORIGIN = `${SITE_HOST}${BASE}`;
 const distDir = resolve(process.cwd(), "dist");
 const serverEntry = resolve(process.cwd(), "dist-ssr", "entry-server.js");
 
@@ -51,14 +54,33 @@ function pageUrl(path) {
 const routePaths = new Set(routes.map((r) => r.path).filter((p) => p !== "/"));
 function assertSlashedLinks(text, where) {
   const bad = [];
-  const re = /(?:href="|\]\(|<loc>)(?:https:\/\/shio\.viglet\.org)?(\/[^"#?)<\s]*)/g;
+  const re = /(?:href="|\]\(|<loc>)(?:https:\/\/openviglet\.github\.io)?(\/[^"#?)<\s]*)/g;
   for (const m of text.matchAll(re)) {
-    if (routePaths.has(m[1])) bad.push(m[1]);
+    const path = m[1] === BASE || m[1].startsWith(`${BASE}/`) ? m[1].slice(BASE.length) || "/" : m[1];
+    if (routePaths.has(path)) bad.push(m[1]);
   }
   if (bad.length) {
     throw new Error(
       `prerender: ${where} links to ${[...new Set(bad)].join(", ")} without the trailing slash; ` +
         `that URL answers with a redirect. Write ${pageUrl(bad[0])}.`
+    );
+  }
+}
+
+/**
+ * Every root-anchored link must carry the base. On openviglet.github.io a bare "/console/" is
+ * another site's 404, and nothing else would notice: the dev server and a local preview both
+ * answer it. A link written without `withBase()` (src/lib/base.ts) fails the build here.
+ */
+function assertBasedLinks(text, where) {
+  const bad = [];
+  for (const [, href] of text.matchAll(/(?:href|src)="(\/[^"]*)"/g)) {
+    if (!href.startsWith(`${BASE}/`) && !href.startsWith("//")) bad.push(href);
+  }
+  if (bad.length) {
+    throw new Error(
+      `prerender: ${where} links to ${[...new Set(bad)].join(", ")} without ${BASE}/; ` +
+        `the site is published under it. Route the link through withBase().`
     );
   }
 }
@@ -123,6 +145,7 @@ const index = [];
 for (const route of routes) {
   const html = buildHtml(route);
   assertSlashedLinks(html, route.path);
+  assertBasedLinks(html, route.path);
   const canonical = `${SITE_ORIGIN}${pageUrl(route.path)}`;
 
   const outFile =
@@ -176,7 +199,7 @@ const manifest = {
     "/llms.txt is the whole product in one file.",
   routes: index,
   product: {
-    docs: "https://shio.viglet.org/docs/",
+    docs: `${SITE_ORIGIN}/docs/`,
     source: "https://github.com/openviglet/shio",
     mcp: "claude mcp add shio -- npx @viglet/shio mcp",
     firstCall: "GET /api/v2/agent/manifest?include=features,limits",

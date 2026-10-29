@@ -1,4 +1,4 @@
-# SH538 — shio.viglet.org, built and published by CI.
+# SH538 — the public site, https://openviglet.github.io/shio/, built and published by CI.
 #
 # Until now every build of the public site was a local artefact: `pnpm run build:site`
 # produced a `dist/` on somebody's machine, and the domain resolved to whatever the last
@@ -26,9 +26,9 @@
 # Published from this repository with the native Pages deploy (upload-pages-artifact +
 # deploy-pages), so it needs no secret: the job's own GITHUB_TOKEN carries `pages: write`.
 # It used to push to the github-pages branch of openviglet/shio-ce, which no longer exists.
-# One-time repository setting: Settings → Pages → Source = "GitHub Actions", custom domain
-# shio.viglet.org. With an Actions deploy the domain lives in that setting, not in a branch,
-# so a publish can no longer drop it.
+# One-time repository setting: Settings → Pages → Source = "GitHub Actions", and no custom
+# domain. The site is the repository's project page, so it is served under /shio/, which is
+# why vite.config.ts and docs/astro.config.mjs both carry that base.
 name: Publish GitHub Pages
 
 on:
@@ -45,7 +45,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build and publish shio.viglet.org
+    name: Build and publish openviglet.github.io/shio
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -78,16 +78,16 @@ jobs:
         run: |
           # The prerendered site at the root: index.html per route, hashed assets, and
           # the static files from shio-site/public (robots.txt, sitemap.xml, llms.txt,
-          # the favicon, og.svg and the CNAME). `dist-ssr/` is a build input and stays
-          # out of the published tree.
+          # the favicon and og.svg). `dist-ssr/` is a build input and stays out of the
+          # published tree.
           mkdir -p _site
           cp -r shio-site/dist/* _site/
 
-          # Two files whose absence is silent rather than loud: a missing index.html
-          # publishes a directory listing, and a missing CNAME publishes the site under
-          # the *.github.io host with every canonical URL pointing somewhere else.
+          # A missing index.html is silent rather than loud: it publishes a directory listing.
           test -f _site/index.html || { echo "no index.html in the assembled site"; exit 1; }
-          test -f _site/CNAME     || { echo "no CNAME — public/CNAME is the source"; exit 1; }
+          # A CNAME would move the site to a custom domain and break the /shio/ base every
+          # link carries.
+          test ! -f _site/CNAME    || { echo "a CNAME in the assembled site; the site has no custom domain"; exit 1; }
           # SH1262 — the documentation area builds last, into dist/docs; an earlier step that
           # empties dist/ would publish the site without it, green.
           test -f _site/docs/index.html || { echo "no docs/index.html — shio-site/docs builds last"; exit 1; }

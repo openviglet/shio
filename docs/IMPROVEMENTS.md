@@ -300,30 +300,6 @@ what a curator usually wants there.
 The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
 and reads the site's page type.
 
-### XI.49 XI.49 A package declares who reads a folder (SH1277)
-
-Found building SH1256. The showcase matrix maps `contentAcl` to `/members`, a page only
-a signed-in member sees, and it is the one subject the tour could not build: the
-blueprint content format has `folders` and `posts` and no way to say who may read
-either. `ShBlueprintService` never touches `ShContentAclService`, so a package that
-wants a members area has to ship it public and ask the operator to lock it by hand in
-the console, which is a step P8 says a package exists to remove.
-
-What to build: an optional `acl` on a folder entry in a blueprint content document, the
-same shape the console's ACL editor writes (a list of groups or users with a
-permission), applied through the existing ACL service after the folder exists, and
-reported as an op in the apply plan so a dry run shows it. A folder rather than a post,
-because the ACL already inherits down the folder tree
-(`ShContentAclServiceTest.aclInheritsDownTheFolderTreeToSubfolderAndPost`), and one rule
-per area is what a members section is. The group the rule names has to exist; the
-package either declares it or the apply answers a teaching error naming the missing
-group, never a silent public folder.
-
-Then Quilhara adds `/members` (pt `/membros`) under a restricted folder, and
-`cli/test/showcase-coverage.test.mjs` drops `/members` and `feature:contentAcl` from its
-lists, which empties the showcase debt. The agent path stays bound by the same ACL
-(non-goal: the agent path is not a privilege escalation).
-
 ### XI.50 XI.50 Search and query take the page's locale (SH1278)
 
 Measured on a clean instance with Quilhara applied:
@@ -477,6 +453,28 @@ list. Then fix the classes it names the same way SH1276 did, so a one-in-N red c
 come back through a benchmark nobody is watching. The event stream's poll only runs with
 a subscriber, and the meter's flush only when metering is on, so the sweep is the one
 source today; the lint's message should say to add a new scheduled job to the same rule.
+
+### XI.57 XI.57 Gating a delivered page to members (SH1285)
+
+Found building SH1277. The showcase spec (SH1250) planned `/members`, "a page only
+signed-in members see", as the demo of `contentAcl`. Shio has no such thing on the
+delivery side: content ACL decides who may edit and publish, an anonymous request is
+never denied by it, and `/sites/**` and the CDA serve every published page to anyone. A
+site that wants a members area, a client portal or an intranet section has no way to
+express it, and the showcase cannot demonstrate one.
+
+This is an idea and not yet a design, because the questions are product ones. Who is a
+visitor: a console user, a separate site-member account, or an identity the front end
+brings (OIDC, a signed cookie)? Where is the rule: a folder ACL with a READ permission
+that delivery starts to honour, or a separate visibility flag that leaves the authoring
+ACL alone? What does a denied visitor get: a 404 that hides the page, a 401 that invites
+a login, or the site's own sign-in page? And caching: the five-minute public
+`Cache-Control` on `/sites/**` cannot apply to a gated page.
+
+The narrowest first slice is probably a READ-only folder rule honoured by `/sites/**`
+and the CDA for a token or session that carries the principal, answering 404 otherwise,
+with `private, no-store` on what it serves. That decision belongs to whoever owns the
+product's delivery model.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

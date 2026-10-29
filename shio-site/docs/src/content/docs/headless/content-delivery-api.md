@@ -16,9 +16,9 @@ Shio (Java/Spring)  ──/api/v2/cda/**──▶  @viglet/shio-client  ──�
 
 :::tip[JS dev, zero Java]
 A front-end developer builds an entire site against the CDA without ever touching
-the Java backend. Use the typed [`@viglet/shio-client`](/docs/headless/javascript-client/),
-the [React SDK](/docs/headless/react-sdk/), or scaffold a ready-made Next.js app with
-[`create-shio-app`](/docs/headless/nextjs-starter/).
+the Java backend. Use the typed [`@viglet/shio-client`](/shio/docs/headless/javascript-client/),
+the [React SDK](/shio/docs/headless/react-sdk/), or scaffold a ready-made Next.js app with
+[`create-shio-app`](/shio/docs/headless/nextjs-starter/).
 :::
 
 ---
@@ -187,6 +187,6 @@ The `breadcrumb` array is ordered **root → … → current**.
 
 ## Next steps
 
-- [JavaScript Client](/docs/headless/javascript-client/): the framework-agnostic `@viglet/shio-client`.
-- [React SDK](/docs/headless/react-sdk/): hooks and render components.
-- [Next.js Starter](/docs/headless/nextjs-starter/): `npx create-shio-app`.
+- [JavaScript Client](/shio/docs/headless/javascript-client/): the framework-agnostic `@viglet/shio-client`.
+- [React SDK](/shio/docs/headless/react-sdk/): hooks and render components.
+- [Next.js Starter](/shio/docs/headless/nextjs-starter/): `npx create-shio-app`.

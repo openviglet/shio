@@ -19,12 +19,12 @@ from this page, check the two notes: it may have been removed.
 | Property | Default | Description |
 |---|---|---|
 | `server.port` | `2710` | HTTP listening port. Also accepted on the command line: `java -jar viglet-shio.jar --server.port=8099` |
-| `shio.admin.password` | *(unset)* | Sets the `admin` password on startup, skipping the first-access screen. Environment form `SHIO_ADMIN_PASSWORD`; minimum six characters. Never overwrites a password already configured and never prevents startup. See [Installation § Setting the admin password without the console](/docs/installation-guide/#setting-the-admin-password-without-the-console) |
+| `shio.admin.password` | *(unset)* | Sets the `admin` password on startup, skipping the first-access screen. Environment form `SHIO_ADMIN_PASSWORD`; minimum six characters. Never overwrites a password already configured and never prevents startup. See [Installation § Setting the admin password without the console](/shio/docs/installation-guide/#setting-the-admin-password-without-the-console) |
 | `shio.url` | `http://localhost:2710` | The instance's own base URL, used wherever an absolute URL is composed |
 | `shio.allowedOrigins` | `localhost` | CORS allowed origins |
 | `shio.keycloak` | `false` | Authenticate against a Keycloak realm |
 | `shio.keycloak-admin-id` | *(empty)* | The realm's admin identifier |
-| `shio.multi-tenant` | `false` | Tenant isolation: see [Multi-Tenancy](/docs/multi-tenancy/) |
+| `shio.multi-tenant` | `false` | Tenant isolation: see [Multi-Tenancy](/shio/docs/multi-tenancy/) |
 | `server.compression.enabled` | `true` | Response compression |
 | `server.compression.mime-types` | `application/json,text/css,application/javascript` | What to compress |
 | `server.compression.min-response-size` | `2048` | Minimum size, in bytes |
@@ -35,7 +35,7 @@ from this page, check the two notes: it may have been removed.
 `shio.website.javascript.engine` and `shio.website.nashorn` **no longer exist**. Shio
 renders pages with Handlebars templates, and there is no server-side script engine to
 select or tune (the Nashorn dependency is explicitly excluded from the build). Setting
-either property has no effect. See [Pages, Layouts & Regions](/docs/website-development/).
+either property has no effect. See [Pages, Layouts & Regions](/shio/docs/website-development/).
 :::
 
 ---
@@ -118,7 +118,7 @@ maximum is clamped, and the response says so.
 
 ## Turing indexing (`shio.turing.*`)
 
-**Off by default.** See [Search & Caching](/docs/search-caching/).
+**Off by default.** See [Search & Caching](/shio/docs/search-caching/).
 
 | Property | Default | Description |
 |---|---|---|
@@ -266,8 +266,8 @@ spring.profiles.active=production
 
 | Page | Description |
 |---|---|
-| [Installation Guide](/docs/installation-guide/) | Docker, JAR, or build from source |
-| [Multi-Tenancy](/docs/multi-tenancy/) | `shio.multi-tenant` and what it turns on |
-| [Search & Caching](/docs/search-caching/) | The `shio.turing.*` block in context |
-| [Security](/docs/security/) | Origins, tokens, CSRF |
-| [Architecture Overview](/docs/architecture-overview/) | Deployment topologies |
+| [Installation Guide](/shio/docs/installation-guide/) | Docker, JAR, or build from source |
+| [Multi-Tenancy](/shio/docs/multi-tenancy/) | `shio.multi-tenant` and what it turns on |
+| [Search & Caching](/shio/docs/search-caching/) | The `shio.turing.*` block in context |
+| [Security](/shio/docs/security/) | Origins, tokens, CSRF |
+| [Architecture Overview](/shio/docs/architecture-overview/) | Deployment topologies |
