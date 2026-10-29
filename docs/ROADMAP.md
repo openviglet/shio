@@ -11,7 +11,7 @@
 
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
-- ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
+- ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
 - ⏳ **SH1285** (deps: owner decides the visitor identity model) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — A members area, client portal or intranet section has no expression in Shio, and the showcase's /members page cannot exist. → §XI.57
 - 📋 **SH1287** (deps: —) **A headless front end cannot read a site's language labels: the CDA's site locales omit them** — SH1281 put labels on the policy and the renderer reads them, so a rendered and a headless switcher now name one language two ways. → §XI.58
