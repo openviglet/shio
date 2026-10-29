@@ -1308,7 +1308,7 @@ package half is VDS204 to VDS207 in the design system's own backlog.
 
 ## XCIII The console as an application: cost, resilience and access
 
-### XCIII.1 XCIII.1 Load a screen's locale strings with the screen (SH1286)
+### XCIII.1 Load a screen's locale strings with the screen (SH1286)
 
 Found shipping SH1280. Adding six short strings to `staticFile.json` (en and pt, about 1
 KB) turned `console-size-budget.test.mjs` red: the eager raw total was 1922.9 KB against

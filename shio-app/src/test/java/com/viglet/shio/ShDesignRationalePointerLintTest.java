@@ -103,8 +103,11 @@ class ShDesignRationalePointerLintTest {
      * predates that: it read a third level as <em>no number at all</em> and reported ten perfectly
      * addressable headings as unaddressable. A pointer can name {@code §XV.0.3} exactly as well as
      * {@code §XV.14}, which is the property SH351 is about.</p>
+     *
+     * <p>Every Roman numeral, not only {@code I V X L}: the families reached XCI, and SH1286's
+     * {@code §XCIII.1} was read as a heading with no number at all, the same misreading one digit on.</p>
      */
-    private static final String ANCHOR = "(?:[IVXL]+|\\d+)(?:\\.\\d+)+";
+    private static final String ANCHOR = "(?:[IVXLCDM]+|\\d+)(?:\\.\\d+)+";
 
     private static final Pattern SECTION =
             Pattern.compile("^### (?:(" + ANCHOR + ")\\s+)?(.*)$");
