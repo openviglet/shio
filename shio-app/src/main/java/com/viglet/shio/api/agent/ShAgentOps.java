@@ -120,11 +120,13 @@ public final class ShAgentOps {
     private static final Map<String, OpSpec> SPECS = specs(
             new OpSpec(ShAgentBatchService.SITE_UPSERT,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
-                    "Create a blank site, or fill an empty url/description/furl on one that "
-                            + "exists. `data.postTypeLayout` binds a post-type to a PageLayout "
-                            + "title, per key. `data.scratch:true` marks it DISPOSABLE, on the "
-                            + "CREATE only. `data.reindex:true` back-fills the search index, paged "
-                            + "by `data.limit`/`data.from`. Never replaces a set value."),
+                    // SH1299 added membersLogin and paid for it in this sentence's own words.
+                    "Create a blank site, or fill empty url/description/furl. "
+                            + "`data.postTypeLayout` binds a post-type to a PageLayout title. "
+                            + "`data.scratch:true` marks it DISPOSABLE (CREATE only). "
+                            + "`data.membersLogin:true` sends gated visitors to sign in. "
+                            + "`data.reindex:true` back-fills the search index, paged by "
+                            + "`data.limit`/`data.from`. Never replaces a set value."),
             new OpSpec(ShAgentBatchService.SITE_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Trash a site and all its content."),

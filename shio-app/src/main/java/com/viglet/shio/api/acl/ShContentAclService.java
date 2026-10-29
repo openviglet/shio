@@ -480,7 +480,7 @@ public class ShContentAclService {
             return Visibility.PUBLIC;
         }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+        if (isAnonymous()) {
             return new Visibility(true, false);
         }
         if (isAdmin(auth)) {
@@ -496,6 +496,15 @@ public class ShContentAclService {
         }
         List<String> groups = gate.groups();
         return new Visibility(true, groups.isEmpty() || groups.stream().anyMatch(who.groups()::contains));
+    }
+
+    /**
+     * SH1299 — whether nobody is signed in on this request: the visitor that signing in could
+     * help, as opposed to a signed-in user outside a gate's groups, whom it could not.
+     */
+    public boolean isAnonymous() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken;
     }
 
     /**

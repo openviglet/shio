@@ -887,3 +887,12 @@ what somebody authorised when they scheduled it), `ShReleaseRunner` (the ops ask
 gate the timer) and `ShPostDraftMergeService` (its callers ask). It found nine unguarded methods,
 including the console's own publish, unpublish and schedule routes and the review queue's approve,
 the one act a team most wants held apart from writing.
+
+## The login follows `returnUrl` only to a path on this host (SH1299)
+
+`/login?returnUrl=` was built by the console's own 401 handler and followed whatever it held, so
+`/login?returnUrl=https://elsewhere` sent a freshly signed-in user off the instance. SH1299 made
+`/sites/**` send turned-away visitors to the login with the page as `returnUrl`, which puts the
+parameter in links the console did not build, so `safeReturnUrl` (`shio-react/src/lib/return-url.ts`)
+now accepts a value only when it starts with one `/` (not `//`, not `/\`) and falls back to the
+root otherwise. `shio-react/test/return-url.test.mjs` holds the hostile spellings.

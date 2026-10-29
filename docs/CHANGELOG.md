@@ -413,6 +413,7 @@
 - **SH1294** — Every showcase tour page heads its try-it section "Try it on this instance" (pt-br "Experimente nesta instância"), so no heading echoes a page title, and the published tour screenshot shows it (design §XI.62 recorded in `docs/agents/blueprints.md`).
 - **SH1297** — A CDA site-wide query or search counts only the posts its reader may read: a reader who fails a gate gets the rows filtered before they are counted, everyone else keeps the paged query (design §XI.63 recorded in `docs/agents/agent-surface.md`).
 - **SH1298** — A public page's query, getRelation, menu, search, translations and navigation leave out what its reader may not read, with an exact pager total, while preview and the editor still list it (design §XI.64 recorded in `docs/agents/renderer.md`).
+- **SH1299** — A site with membersLogin on sends an anonymous visitor a gate refuses to the console login and back to the page, a signed-in stranger still gets the 404, and the login follows only paths on this host (design §XI.65 superseded: the column is nullable with null as off, the ShSite.scratch precedent, and the parameter is the console's existing returnUrl, not a new return) (design §XI.65 recorded in `docs/agents/agent-surface.md`).
 
 ## Block M — Token economy, measured (SH74)
 

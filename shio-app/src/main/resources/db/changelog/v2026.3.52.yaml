@@ -1,0 +1,25 @@
+databaseChangeLog:
+  # SH1299 — `ShSite.membersLogin`: send an anonymous visitor turned away from a members-only page
+  # to the console login, with the page as its return address, instead of the missing-page 404.
+  #
+  # NULLABLE, and null is off: every site keeps the 404 SH1285 shipped, so nothing is backfilled.
+  # Spelled like `pageType` and `scratch` on the same table, which Hibernate maps by field name.
+  # Type DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on
+  # PostgreSQL (it does not propagate through `include`).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1299-site-members-login
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShSite
+                columnName: membersLogin
+      changes:
+        - addColumn:
+            tableName: ShSite
+            columns:
+              - column:
+                  name: membersLogin
+                  type: boolean

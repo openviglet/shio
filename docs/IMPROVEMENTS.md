@@ -268,29 +268,6 @@ Assert at the delivery boundary: an anonymous read of a members page gets the si
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
 
-### XI.65 XI.65 A members-only page can send a visitor to sign in (from SH1285) (SH1299)
-
-Split from SH1285. **Decided by the owner (2026-10-29):** when a site asks for it, a
-visitor outside a members-only page's groups is sent to the **console login with a
-return address**, not to a login page of the site's own.
-
-What to build: a per-site switch, `ShSite.membersLogin` (boolean, default false = the
-missing-page 404 SH1285 ships today), as a nullable-free Liquibase column with no
-backfill. When it is on, `/sites/**` answers an **anonymous** visitor with a 302 to
-`/login?return=<the page's /sites path>`; a signed-in user outside the groups still gets
-the 404, since logging in again would not help. After sign-in the console honours
-`return` only when it is a path under `/sites/` on this host, so the parameter cannot
-become an open redirect. The switch is set through `site.upsert`'s data (agent first,
-P1), the site REST API and the console's site settings, in that order. The redirect is
-`Cache-Control: no-store`.
-
-Deliberately not here: a login form in the site's theme, a separate member account,
-self-registration.
-
-Assert at the boundary: with the switch off a visitor gets the 404; on, a 302 whose
-`return` is the page; a signed-in stranger gets the 404 either way;
-`return=https://elsewhere` is ignored after login.
-
 ### XI.66 XI.66 Gating a single post with post.visibility (from SH1285) (SH1300)
 
 Split from SH1285. **Decided by the owner (2026-10-29):** a single post is gated with

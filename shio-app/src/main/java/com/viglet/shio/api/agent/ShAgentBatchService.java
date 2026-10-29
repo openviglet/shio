@@ -2108,6 +2108,8 @@ public class ShAgentBatchService {
         payload.setLocales(locales.orElse(null));
         payload.setPageType(pageType == null || pageType.isBlank() ? null : pageType.trim());
         payload.setScratch(scratch ? Boolean.TRUE : null);
+        String members = membersLogin(op.data());
+        payload.setMembersLogin(members == null ? null : Boolean.valueOf(members));
         ShSite created = shSiteWriteService.createBlank(payload, bindings, session.actor);
         // SH413 — a brand-new site has nothing published, so this is almost always a no-op line.
         // Read anyway, because refusing the key on the create branch would make `data.reindex`
@@ -2246,7 +2248,8 @@ public class ShAgentBatchService {
     private Change siteFill(ShAgentBatch.Op op, Session session, ShAddress address, ShSite site) {
         Map<String, String> requested = new LinkedHashMap<>();
         for (String field : ShSiteWriteService.FILLABLE) {
-            String value = text(op.data(), field);
+            String value = ShSiteWriteService.MEMBERS_LOGIN_FIELD.equals(field)
+                    ? membersLogin(op.data()) : text(op.data(), field);
             if (value != null && !value.isBlank()) {
                 requested.put(field, value);
             }
@@ -2325,6 +2328,15 @@ public class ShAgentBatchService {
             }
         }
         return bindings;
+    }
+
+    /**
+     * SH1299 — {@code data.membersLogin} as "true"/"false", or null when absent or not a boolean, so
+     * it rides {@link ShSiteWriteService#FILLABLE}'s fill-or-keep rule like every other site field.
+     */
+    private static String membersLogin(JsonNode data) {
+        JsonNode value = data == null || !data.isObject() ? null : data.get(ShSiteWriteService.MEMBERS_LOGIN_FIELD);
+        return value == null || !value.isBoolean() ? null : Boolean.toString(value.booleanValue());
     }
 
     /** A single string field of an op's {@code data}, or {@code null}. */

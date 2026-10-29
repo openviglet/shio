@@ -3955,6 +3955,18 @@ gets**, so the denial does not confirm the page exists. A member's response is
 reaches the check because `/sites/**` is `permitAll`, not unauthenticated.
 `ShSitesMembersOnlyTest` asserts all four readers with the security filter chain applied.
 
+**Sending a visitor to sign in (SH1299).** `ShSite.membersLogin` (`v2026.3.52.yaml`, nullable,
+null = off) is the per-site switch the owner chose: when it is on, `/sites/**` answers an
+**anonymous** visitor a gate refuses with a 302 to `/login?returnUrl=<the page>` and
+`Cache-Control: no-store`; a signed-in user outside the groups still gets the 404, because signing
+in again cannot help and a redirect would confirm the page. The console's login already took
+`returnUrl` (the axios 401 handler builds it) and followed **any** value; it now follows only a
+path on this host (`shio-react/src/lib/return-url.ts`), which closes an open redirect that predated
+this task. The switch is `data.membersLogin` on `site.upsert` under the same fill-or-keep rule as
+`url` (`ShSiteWriteService.FILLABLE`), and the console's site update replaces it. On a Keycloak
+instance the login page hands off to the identity provider without `returnUrl`, so the visitor
+lands on the console home after signing in rather than on the page.
+
 **On the CDA, a member is the owner of the token** (SH1295; `ShApiTokenFilter` puts the owner's username in
 the principal). `ShCdaService`'s single reads (`getPost`, `getPostByUrl`, `path`, which GraphQL's
 `post` also uses) answer a gated post the owner may not read as **absent**, the missing-post 404.

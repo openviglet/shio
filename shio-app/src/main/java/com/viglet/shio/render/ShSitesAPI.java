@@ -26,6 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
 
 import com.viglet.shio.api.acl.ShContentAclService;
+import com.viglet.shio.persistence.model.site.ShSite;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -146,11 +148,17 @@ public class ShSitesAPI {
 
     /** SH1285 — who may read a members-only page. */
     private final ShContentAclService shContentAclService;
+    /** SH1299 — whether a site sends a turned-away visitor to sign in. */
+    private final ShSiteRepository shSiteRepository;
+
+    /** SH1299 — the console's login, which follows `returnUrl` back after sign-in. */
+    static final String LOGIN = "/login?returnUrl=";
 
     public ShSitesAPI(ShPageRenderService shPageRenderService, ShPreviewLinks links,
                       ShSiteAssetDelivery assetDelivery, ShDraftAssetGrant draftAssetGrant,
-                      ShContentAclService shContentAclService) {
+                      ShContentAclService shContentAclService, ShSiteRepository shSiteRepository) {
         this.shContentAclService = shContentAclService;
+        this.shSiteRepository = shSiteRepository;
         this.shPageRenderService = shPageRenderService;
         this.links = links;
         this.assetDelivery = assetDelivery;
@@ -189,6 +197,18 @@ public class ShSitesAPI {
         // which would otherwise send a stranger to the gated page's other address.
         ShContentAclService.Visibility visibility = shContentAclService.visibility(rendered.postId());
         if (!visibility.allowed()) {
+            // SH1299 — a site that asks for it sends a visitor nobody signed in to the console login,
+            // with this page as the way back. A signed-in user outside the groups still gets the 404:
+            // signing in again would not help them, and the redirect would say the page exists.
+            if (shContentAclService.isAnonymous() && sendsMembersToLogin(rendered.siteId())) {
+                String back = request.getRequestURI()
+                        + (request.getQueryString() == null ? "" : "?" + request.getQueryString());
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .location(java.net.URI.create(LOGIN + java.net.URLEncoder.encode(back,
+                                java.nio.charset.StandardCharsets.UTF_8)))
+                        .cacheControl(CacheControl.noStore())
+                        .build();
+            }
             throw new ShPageRenderService.UnknownPageException(address.site(), address.path(),
                     ShPostState.PUBLISHED);
         }
@@ -217,6 +237,10 @@ public class ShSitesAPI {
                 // the one form that keeps the reader's trailing slash.
                 .body(links.rewriteInto(rendered.html(), address.prefix(), rendered, address.path(), null,
                         path -> linkPrefix(address, locales, segmentIsALocale, path)));
+    }
+
+    private boolean sendsMembersToLogin(String siteId) {
+        return siteId != null && shSiteRepository.findById(siteId).map(ShSite::sendsMembersToLogin).orElse(false);
     }
 
     /**

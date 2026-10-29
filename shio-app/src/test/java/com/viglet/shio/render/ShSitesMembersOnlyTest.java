@@ -172,6 +172,42 @@ class ShSitesMembersOnlyTest {
                         .contains("public").contains("max-age=300"));
     }
 
+    // --- a site that sends a turned-away visitor to sign in ---
+
+    @Test
+    @DisplayName("SH1299: with the switch on, a visitor goes to the console login and back; a stranger still gets the 404")
+    void aSiteCanSendAVisitorToSignIn() throws Exception {
+        setMembersLogin(true);
+        try {
+            mockMvc.perform(get(page("lounge")))
+                    .andExpect(status().isFound())
+                    .andExpect(result -> {
+                        assertThat(result.getResponse().getHeader("Location"))
+                                .as("SH1299: the login, with this page as the way back")
+                                .isEqualTo("/login?returnUrl=" + java.net.URLEncoder.encode(page("lounge"),
+                                        java.nio.charset.StandardCharsets.UTF_8));
+                        assertThat(result.getResponse().getHeader("Cache-Control")).contains("no-store");
+                    });
+            // SH1299: signing in again would not help a stranger, and a redirect would say the page
+            // exists.
+            mockMvc.perform(get(page("lounge")).with(user(stranger)))
+                    .andExpect(status().isNotFound());
+            mockMvc.perform(get(page("")))
+                    .andExpect(status().isOk());
+        } finally {
+            setMembersLogin(null);
+        }
+        // SH1299: off is the 404 SH1285 shipped.
+        mockMvc.perform(get(page("lounge")))
+                .andExpect(status().isNotFound());
+    }
+
+    private void setMembersLogin(Boolean on) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> entityManager
+                .createQuery("select s from ShSite s where s.name = :name", ShSite.class)
+                .setParameter("name", siteName).getSingleResult().setMembersLogin(on));
+    }
+
     // --- the published render's own listings ---
 
     @Test

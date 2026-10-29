@@ -127,6 +127,29 @@ The same ACL is enforced on every surface. An agent's token reaches exactly what
 curator's session reaches, and no more: a copy needs read on its sources, a move needs
 write on both ends. See [Letting an agent in](/shio/docs/agent-safety/).
 
+### Members-only pages (who may read the published site)
+
+The ACL decides who edits. A separate rule decides who may **read a published page**: a
+folder can be made **members-only**, for any signed-in user or for named groups, and
+everything inside it follows. A member is a Shio user, so a members area needs no
+second account system.
+
+- On the published site (`/sites/...`) a visitor outside the groups gets the same
+  **404** a missing page gets, so the page is not confirmed to exist. A member reads it,
+  and the response is never stored in a shared cache.
+- Listings on public pages (menus, `{{#query}}`, related content, search) leave the
+  gated pages out for that visitor, and the page counts stay exact.
+- The delivery API applies the same rule to the **owner of the token** making the
+  request, in single reads and in every listing.
+- A site can send an anonymous visitor to **sign in** instead of the 404: with
+  `membersLogin` on, the visitor goes to the console login and comes back to the page.
+- Administrators always read everything, and the preview still shows gated pages to
+  editors, because that is where they are edited.
+
+Today a folder is gated through the agent surface: the `folder.visibility` operation,
+with `visibility` set to `members` (and optionally `groups`), or `public` to open it
+again. The site switch is `membersLogin` on `site.upsert`.
+
 ---
 
 ## API tokens

@@ -706,6 +706,26 @@ class ShAgentBatchTest {
     }
 
     @Test
+    @DisplayName("SH1299: site.upsert sets the sign-in switch on a site that has none, and keeps one already set")
+    void siteUpsertFillsTheMembersLoginSwitch() {
+        String name = "sh1299-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, siteOp(name, null));
+        assertThat(siteRepository.findByName(name).getMembersLogin())
+                .as("SH1299: a site created without it keeps the 404")
+                .isNull();
+
+        assertThat(only(run(false, siteOp(name, objectMapper.valueToTree(Map.of("membersLogin", true))))).action())
+                .isEqualTo(Change.UPDATE);
+        assertThat(siteRepository.findByName(name).sendsMembersToLogin()).isTrue();
+
+        ShAgentChangeSet.Change kept = only(run(false, siteOp(name, objectMapper.valueToTree(Map.of("membersLogin", false)))));
+        assertThat(kept.action())
+                .as("SH1299: an upsert fills what is empty and never replaces what somebody set")
+                .isEqualTo(Change.NOOP);
+        assertThat(siteRepository.findByName(name).sendsMembersToLogin()).isTrue();
+    }
+
+    @Test
     @DisplayName("SH184: an empty url is filled — the agent is what knows the URL")
     void siteUpsertFillsAnEmptyUrl() {
         String name = "sh184-" + UUID.randomUUID().toString().substring(0, 8);

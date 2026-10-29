@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { safeReturnUrl } from "@/lib/return-url"
 import { cn } from "@/lib/utils"
 import { ShAuthorizationService } from "@/services/auth/authorization.service"
 import { ShSetupService } from "@/services/auth/setup.service"
@@ -18,7 +19,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
   const [searchParams] = useSearchParams()
   // After login the tenant isn't known yet in the URL; land on "/" so
   // TenantGateway can resolve the tenant and redirect to /{tenant}/console.
-  const returnUrl = searchParams.get("returnUrl") || ROUTES.ROOT
+  const returnUrl = safeReturnUrl(searchParams.get("returnUrl"), ROUTES.ROOT)
   const { t } = useTranslation()
   const form = useForm<LoginData>()
   const [error, setError] = useState("")

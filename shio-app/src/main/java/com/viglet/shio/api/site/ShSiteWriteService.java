@@ -176,6 +176,7 @@ public class ShSiteWriteService {
         // later would make `shio site rm --scratch` a way to bulk-delete a site somebody chose to
         // keep; the guarantee it rests on is that the declaration preceded the content.
         site.setScratch(payload.isScratch() ? Boolean.TRUE : null);
+        site.setMembersLogin(payload.getMembersLogin());
         // SH744 — two writers used to decide this and only one checked. The rule is SH81/SH651's,
         // one level up: a DECLARED address is identity and is refused when taken rather than
         // renumbered, and a DERIVED one has no claim and is numbered until free.
@@ -399,10 +400,18 @@ public class ShSiteWriteService {
      * first because it is the one that makes a site visible.
      */
     public static final List<String> FILLABLE =
-            List.of("url", "description", "furl", ShSiteLocales.FIELD, ShSiteWriteService.PAGE_TYPE_FIELD);
+            List.of("url", "description", "furl", ShSiteLocales.FIELD, ShSiteWriteService.PAGE_TYPE_FIELD,
+                    ShSiteWriteService.MEMBERS_LOGIN_FIELD);
 
     /** SH1283 — the op's key for the type a new page in this site starts as. */
     public static final String PAGE_TYPE_FIELD = "pageType";
+
+    /**
+     * SH1299 — the op's key for the members-only sign-in switch, carried here as "true"/"false" so
+     * it takes the same fill-or-keep rule as every other field: an upsert sets it on a site that has
+     * none and reports a different value as kept, and the console is where it is changed.
+     */
+    public static final String MEMBERS_LOGIN_FIELD = "membersLogin";
 
     /**
      * SH1283 — a site's page type must be one it binds to a layout, or it names a type that cannot
@@ -459,6 +468,7 @@ public class ShSiteWriteService {
             // is told so. Changing a policy somebody set is the console's job, not an upsert's.
             case ShSiteLocales.FIELD -> site.getLocales();
             case PAGE_TYPE_FIELD -> site.getPageType();
+            case MEMBERS_LOGIN_FIELD -> site.getMembersLogin() == null ? null : site.getMembersLogin().toString();
             default -> null;
         };
     }
@@ -470,6 +480,7 @@ public class ShSiteWriteService {
             case "furl" -> site.setFurl(value);
             case ShSiteLocales.FIELD -> site.setLocales(value);
             case PAGE_TYPE_FIELD -> site.setPageType(value);
+            case MEMBERS_LOGIN_FIELD -> site.setMembersLogin(Boolean.valueOf(value));
             default -> throw new IllegalStateException("Unfillable site field " + field);
         }
     }
@@ -516,6 +527,8 @@ public class ShSiteWriteService {
             String pageType = hasText(payload.getPageType()) ? payload.getPageType().trim() : null;
             requirePageTypeBound(pageType, boundTypes(site));
             site.setPageType(pageType);
+            // SH1299 — the console replaces the switch, as it replaces every other setting it shows.
+            site.setMembersLogin(payload.getMembersLogin());
             site.setModifier(modifier);
             site.setModifiedDate(Instant.now());
             return shSiteRepository.save(site);

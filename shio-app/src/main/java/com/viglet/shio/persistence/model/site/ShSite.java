@@ -103,6 +103,15 @@ public class ShSite extends ShObject {
 	 */
 	private Boolean scratch;
 
+	/**
+	 * SH1299 — whether an anonymous visitor turned away from a members-only page is sent to the
+	 * console login, with the page as its return address, rather than given the missing-page 404.
+	 *
+	 * <p>{@code Boolean} for {@link #scratch}'s reason: null is every site created before the
+	 * column, and null is off, the behaviour SH1285 shipped.</p>
+	 */
+	private Boolean membersLogin;
+
 	public ShSite() {
 		this.setObjectType(ShObjectType.SITE);
 	}
@@ -156,6 +165,16 @@ public class ShSite extends ShObject {
 	/** SH1283 — the type a new page starts as; validated against the bindings by the write side. */
 	public void setPageType(String pageType) {
 		this.pageType = pageType;
+	}
+
+	/** SH1299 — the switch; null and false are both off. */
+	public void setMembersLogin(Boolean membersLogin) {
+		this.membersLogin = membersLogin;
+	}
+
+	/** SH1299 — whether the switch is on. */
+	public boolean sendsMembersToLogin() {
+		return Boolean.TRUE.equals(membersLogin);
 	}
 
 	/** SH591 — written by the create that declared it, and by nothing else. */
