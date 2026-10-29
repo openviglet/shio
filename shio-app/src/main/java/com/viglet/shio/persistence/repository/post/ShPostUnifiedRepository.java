@@ -262,9 +262,11 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             select new com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository$ShListingKey(
                 p.id, p.state, p.date, p.title, p.shPostType.id)
             from ShPostUnified p
-            where p.shFolder = :folder and p.state in :states""")
+            where p.shFolder = :folder and p.state in :states
+              and (:locale is null or p.locale = :locale)""")
     List<ShListingKey> findListingKeys(@Param("folder") ShFolder folder,
-                                       @Param("states") Collection<ShPostState> states);
+                                       @Param("states") Collection<ShPostState> states,
+                                       @Param("locale") String locale);
 
     /**
      * Everything the fold, the sort and the type filter read about a post, and nothing else.
@@ -323,6 +325,7 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             from ShPostUnified p
             where p.shFolder = :folder and p.state in :states
               and (:typeId is null or p.shPostType.id = :typeId)
+              and (:locale is null or p.locale = :locale)
               and (p.state = :preferred or not exists (
                     select 1 from ShPostUnified d
                     where d.id = p.id and d.state = :preferred and d.shFolder = :folder))
@@ -331,6 +334,7 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                                @Param("states") Collection<ShPostState> states,
                                                @Param("preferred") ShPostState preferred,
                                                @Param("typeId") String typeId,
+                                               @Param("locale") String locale,
                                                @Param("floor") Instant floor,
                                                Pageable pageable);
 
@@ -348,6 +352,7 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             from ShPostUnified p
             where p.shFolder = :folder and p.state in :states
               and (:typeId is null or p.shPostType.id = :typeId)
+              and (:locale is null or p.locale = :locale)
               and (p.state = :preferred or not exists (
                     select 1 from ShPostUnified d
                     where d.id = p.id and d.state = :preferred and d.shFolder = :folder))
@@ -356,6 +361,7 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
                                                @Param("states") Collection<ShPostState> states,
                                                @Param("preferred") ShPostState preferred,
                                                @Param("typeId") String typeId,
+                                               @Param("locale") String locale,
                                                @Param("floor") Instant floor,
                                                Pageable pageable);
 
@@ -371,13 +377,15 @@ public interface ShPostUnifiedRepository extends JpaRepository<ShPostUnified, Sh
             select count(p) from ShPostUnified p
             where p.shFolder = :folder and p.state in :states
               and (:typeId is null or p.shPostType.id = :typeId)
+              and (:locale is null or p.locale = :locale)
               and (p.state = :preferred or not exists (
                     select 1 from ShPostUnified d
                     where d.id = p.id and d.state = :preferred and d.shFolder = :folder))""")
     long countListingWindow(@Param("folder") ShFolder folder,
                             @Param("states") Collection<ShPostState> states,
                             @Param("preferred") ShPostState preferred,
-                            @Param("typeId") String typeId);
+                            @Param("typeId") String typeId,
+                            @Param("locale") String locale);
 
     /**
      * One page of a folder's posts, one row per logical id, DRAFT preferred — the console

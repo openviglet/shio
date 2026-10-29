@@ -144,15 +144,19 @@ reported in that form.
 
 | Helper | Shape |
 |---|---|
-| `query` | `{{#query folder= type= limit= page= sort= field= value=}}…{{/query}}` |
+| `query` | `{{#query folder= type= limit= page= sort= field= value= locale=}}…{{/query}}` |
 | `navigation` | `{{#navigation folder=}}…{{/navigation}}` |
-| `search` | `{{#search q= type= limit=}}…{{/search}}` |
+| `search` | `{{#search q= type= limit= locale=}}…{{/search}}` |
 | `getRelation` | `{{#getRelation FIELD}}…{{/getRelation}}` |
 | `menu` | `{{#menu title=}}…{{/menu}}` |
 | `translations` | `{{#translations}}…{{/translations}}` |
 | `image` | `{{#image FIELD sizes=}}…{{/image}}` |
 | `form` | `{{#form type=}}…{{/form}}` |
 | `file_url` | `{{file_url FIELD}}` |
+
+On a site in more than one language, pass `locale=post.locale` to `query` or `search`
+to list only the page's own language. Without it they list every language, the same
+as the delivery API's `/search` without `locale`.
 
 A listing row carries `title`, `link`, `summary` and the row's own fields, so the
 old `generatePostLink` is now just `{{link}}`:

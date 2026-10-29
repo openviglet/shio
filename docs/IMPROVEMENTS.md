@@ -276,26 +276,6 @@ what a curator usually wants there.
 The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
 and reads the site's page type.
 
-### XI.50 XI.50 Search and query take the page's locale (SH1278)
-
-Measured on a clean instance with Quilhara applied:
-`/sites/quilhara/default/en-us/search?q=Marina` lists ten rows, five of them Portuguese
-posts. `{{#search}}` takes `q`, `type` and `limit` and calls `searchBySitesAndStateIn`
-or `searchBySiteAndTypesAndStateIn`, neither of which knows a locale, and the template
-has no equality helper to skip a row whose `locale` differs, so a bilingual site cannot
-build a results page in one language. The CDA's `/search` already takes `locale`, so the
-delivery API and the renderer disagree about what a site search is.
-
-What to build: a `locale=` hash argument on `{{#search}}` (and on `{{#query}}`, which
-has the same gap), resolved the way the CDA resolves its `locale` parameter so there is
-one meaning across the two surfaces, and accepting `locale=post.locale` so a layout
-writes it once. Default unchanged (every locale), because an existing template must not
-start returning less. Quilhara's search layout then passes it and the per-row `lang`
-attribute stays as a harmless belt.
-
-Assert with a render test that applies two posts in different locales matching one term
-and expects only the page locale's row.
-
 ### XI.51 XI.51 A delivered link carries its row's own locale (SH1279)
 
 Measured on a clean instance with Quilhara applied: a search row for a pt-br post,

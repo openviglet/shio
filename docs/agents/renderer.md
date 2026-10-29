@@ -1374,6 +1374,12 @@ renderer over one body of content at a second address. See the section on it bel
   `{{#getRelation FIELD}}` and `{{#search q= type= limit=}}`. Every listing is sorted by a
   **total** order (date *plus* an id tiebreak) and the model is built with `ShStableMap`, a
   render that reorders itself moves SH101's digest for a change nobody made.
+  **`locale=` on `{{#query}}` and `{{#search}}` (SH1278)** narrows to one language, and
+  `locale=post.locale` to the page's own: an exact tag, blank or absent is every locale, which is
+  what the CDA's `/search?locale=` means (SH1057), so the renderer and the delivery API agree. The
+  default stayed every locale so no existing template lists less. In `{{#query}}` it is a predicate
+  on all four listing queries (keys, both windows, the count), so the pager's total stays exact.
+  Quilhara's search layout passes it; its per-row `lang` stays.
   **`{{#navigation}}` yields the `url` its own docstring promised from SH183 to SH381**, and the
   two-release gap is the interesting part: the comment said `{name, url, id}` and the body built
   `{id, name, title}`, so the one helper a primary menu exists for rendered labels nobody could

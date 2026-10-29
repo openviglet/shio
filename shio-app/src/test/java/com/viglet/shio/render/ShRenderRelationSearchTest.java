@@ -81,6 +81,8 @@ class ShRenderRelationSearchTest {
             {{{TEXT}}}</section>{{else}}<p id="none">no sections</p>{{/getRelation}}</main>
             <aside>{{#search q="handbook" limit=10}}<a href="{{link}}">{{title}}</a>\
             {{else}}<span id="nohits">nothing</span>{{/search}}</aside>
+            <nav>{{#search q="handbook" limit=10 locale=post.locale}}<i>{{title}}</i>{{/search}}</nav>
+            <footer>{{#query limit=50 locale=post.locale}}<b>{{title}}</b>{{/query}}</footer>
             </body></html>""";
 
     @Autowired
@@ -132,6 +134,9 @@ class ShRenderRelationSearchTest {
             // makes this a test of SH131's predicate rather than of a title match.
             post(site, root, section, "Onboarding", "/onboarding",
                     "{\"TEXT\":\"<p>Read the handbook before you start.</p>\"}", when);
+            // SH1278 — the same term in another language, which a page's `locale=` must leave out.
+            post(site, root, section, "Integracao", "/integracao",
+                    "{\"TEXT\":\"<p>Leia o handbook antes de comecar.</p>\"}", when).setLocale("pt-br");
 
             // The page: two live references, then one that resolves to nothing.
             post(site, root, page, "Home", "/",
@@ -264,6 +269,32 @@ class ShRenderRelationSearchTest {
     }
 
     @Test
+    @DisplayName("SH1278: locale=post.locale narrows search and query to the page's language")
+    void localeNarrowsToThePagesLanguage() {
+        String html = shPageRenderService.render(siteName, "/", ShPostState.DRAFT).html();
+        String aside = between(html, "<aside>", "</aside>");
+        String nav = between(html, "<nav>", "</nav>");
+        String footer = between(html, "<footer>", "</footer>");
+
+        assertThat(aside)
+                .as("SH1278: without locale= a search is every locale, so no existing template "
+                        + "returns less than it did")
+                .contains("Onboarding").contains("Integracao");
+        assertThat(nav)
+                .as("SH1278: the en page's search keeps its own row and drops the pt-br one, the "
+                        + "CDA's /search?locale= meaning (SH1057)")
+                .contains("<i>Onboarding</i>").doesNotContain("Integracao");
+        assertThat(footer)
+                .as("SH1278: {{#query}} takes the same locale=, on its windowed path too")
+                .contains("<b>Onboarding</b>").doesNotContain("Integracao");
+    }
+
+    private static String between(String html, String open, String close) {
+        int start = html.indexOf(open);
+        return html.substring(start, html.indexOf(close, start));
+    }
+
+    @Test
     @DisplayName("rendering the same page twice produces the same bytes")
     void renderingIsStable() {
         // Both new helpers yield listings, and a listing that reorders itself between renders
@@ -306,8 +337,8 @@ class ShRenderRelationSearchTest {
         return type;
     }
 
-    private void post(ShSite site, ShFolder folder, ShPostType type, String title, String furl,
-                      String data, Instant when) {
+    private ShPostUnified post(ShSite site, ShFolder folder, ShPostType type, String title, String furl,
+                               String data, Instant when) {
         ShPostUnified post = new ShPostUnified();
         post.setId(UUID.randomUUID().toString());
         post.setState(ShPostState.DRAFT);
@@ -320,6 +351,7 @@ class ShRenderRelationSearchTest {
         post.setDate(when);
         post.setOwner("admin");
         entityManager.persist(post);
+        return post;
     }
 
     private String quote(String value) {

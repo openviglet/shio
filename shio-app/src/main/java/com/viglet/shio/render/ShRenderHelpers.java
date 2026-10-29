@@ -220,11 +220,11 @@ public class ShRenderHelpers {
         // parameter's name exists only inside the helper's body, so nothing downstream could
         // derive it, and the context pack now answers "what may a template call" from here.
         engine.register("query", ShHelperShape.BLOCK,
-                "{{#query folder= type= limit= page= sort= field= value=}}…{{/query}}", this::query);
+                "{{#query folder= type= limit= page= sort= field= value= locale=}}…{{/query}}", this::query);
         engine.register("navigation", ShHelperShape.BLOCK,
                 "{{#navigation folder=}}…{{/navigation}}", this::navigation);
         engine.register("search", ShHelperShape.BLOCK,
-                "{{#search q= type= limit=}}…{{/search}}", this::search);
+                "{{#search q= type= limit= locale=}}…{{/search}}", this::search);
         engine.register("getRelation", ShHelperShape.BLOCK_PATH_ARG,
                 "{{#getRelation FIELD}}…{{/getRelation}}", this::getRelation);
         engine.register("file_url", ShHelperShape.INLINE_PATH_ARG,
@@ -776,6 +776,10 @@ public class ShRenderHelpers {
      *
      * <p>A blank {@code q} renders {@code {{else}}} rather than the whole site: a search box
      * nobody has typed in yet must not read as "everything matched".</p>
+     *
+     * <p>SH1278 — {@code locale=} narrows to one language, {@code locale=post.locale} to the page's
+     * own. It means what the CDA's {@code /search?locale=} means (SH1057): an exact tag, and blank
+     * is every locale. Absent is every locale too, so an existing template returns no less.</p>
      */
     Object search(Object context, Options options) throws IOException {
         String siteId = string(options.context.get(SITE_ID));
@@ -784,11 +788,12 @@ public class ShRenderHelpers {
             return options.inverse();
         }
         String type = hash(options, "type", null);
+        String locale = hash(options, "locale", null);
         List<ShPostState> states = statesFor(state(options));
 
         List<ShPostUnified> found = type == null
-                ? shPostUnifiedRepository.searchBySitesAndStateIn(List.of(siteId), states, term)
-                : searchByType(siteId, type, states, term);
+                ? shPostUnifiedRepository.searchBySitesAndStateIn(List.of(siteId), states, term, locale)
+                : searchByType(siteId, type, states, term, locale);
 
         List<Map<String, Object>> rows = preferDraft(found, state(options)).stream()
                 .sorted(byDateThenId())
@@ -818,13 +823,13 @@ public class ShRenderHelpers {
      * stopped filtering would be a template quietly rendering the whole site.</p>
      */
     private List<ShPostUnified> searchByType(String siteId, String type, List<ShPostState> states,
-                                             String term) {
+                                             String term, String locale) {
         ShPostType postType = shPostTypeRepository.findByName(type);
         if (postType == null) {
             return List.of();
         }
         return shPostUnifiedRepository.searchBySiteAndTypesAndStateIn(
-                siteId, List.of(postType.getId()), states, term);
+                siteId, List.of(postType.getId()), states, term, locale);
     }
 
     /** The reference values a field holds, whatever shape it holds them in. */
@@ -975,13 +980,15 @@ public class ShRenderHelpers {
         String sort = hash(options, "sort", "newest");
         String field = hash(options, "field", null);
         String value = hash(options, "value", null);
+        // SH1278 — the same `locale=` as `{{#search}}`, and absent is every locale.
+        String locale = hash(options, "locale", null);
         int page = page(options);
         // SH419 — the window is decided before the rows are loaded. `listing` folds, filters and
         // sorts *sort keys* and then reads only the ≤limit posts it will actually draw, so the
         // entity count stops growing with the folder. The total below is still exact, and every
         // comparator and predicate is the one that was here before — see `listing`'s note for why
         // the ORDER BY itself deliberately did not move into the query.
-        Listing listing = listing(folder.get(), type, field, value, sort, page, limit, options);
+        Listing listing = listing(folder.get(), type, field, value, locale, sort, page, limit, options);
         int pages = Math.max((listing.total() + limit - 1) / limit, 1);
         List<Map<String, Object>> rows = listing.rows().stream().map(this::row).toList();
 
@@ -1132,12 +1139,13 @@ public class ShRenderHelpers {
      * else typed makes the filter almost never fire.
      */
     private List<ShPostUnified> matching(ShFolder folder, String type, String field, String value,
-                                        String sort, Options options) {
+                                        String locale, String sort, Options options) {
         return preferDraft(
                 shPostUnifiedRepository.findByShFolderAndStateIn(folder, statesFor(state(options))),
                 state(options))
                 .stream()
                 .filter(post -> type == null || type.equals(typeNameOf(post)))
+                .filter(post -> locale == null || locale.equals(post.getLocale()))
                 .filter(post -> field == null || value == null || carries(post, field, value))
                 .sorted(order(sort))
                 .toList();
@@ -1166,12 +1174,12 @@ public class ShRenderHelpers {
      * the post's JSON, so the JSON is what it needs. Declared here rather than quietly handled, and
      * the benchmark records both paths so the exception has a number instead of a footnote.</p>
      */
-    private Listing listing(ShFolder folder, String type, String field, String value, String sort,
-                            int page, int limit, Options options) {
+    private Listing listing(ShFolder folder, String type, String field, String value, String locale,
+                            String sort, int page, int limit, Options options) {
         ShPostState state = state(options);
         if (field != null && value != null) {
             // The predicate reads `data`, so there is nothing to save by not loading it.
-            List<ShPostUnified> all = matching(folder, type, field, value, sort, options);
+            List<ShPostUnified> all = matching(folder, type, field, value, locale, sort, options);
             return new Listing(window(all, page, limit), all.size());
         }
 
@@ -1191,16 +1199,16 @@ public class ShRenderHelpers {
         if (windowable(sort)) {
             List<ShListingKey> rows = "oldest".equals(sort.toLowerCase(java.util.Locale.ROOT))
                     ? shPostUnifiedRepository.findListingWindowOldest(folder, statesFor(state),
-                            state, typeId, DATE_FLOOR, PageRequest.of(page - 1, limit))
+                            state, typeId, locale, DATE_FLOOR, PageRequest.of(page - 1, limit))
                     : shPostUnifiedRepository.findListingWindowNewest(folder, statesFor(state),
-                            state, typeId, DATE_FLOOR, PageRequest.of(page - 1, limit));
+                            state, typeId, locale, DATE_FLOOR, PageRequest.of(page - 1, limit));
             long total = shPostUnifiedRepository.countListingWindow(folder, statesFor(state),
-                    state, typeId);
+                    state, typeId, locale);
             return new Listing(load(rows), (int) total);
         }
 
         List<ShListingKey> keys = ShRenderState.preferDraftKeys(
-                shPostUnifiedRepository.findListingKeys(folder, statesFor(state)), state);
+                shPostUnifiedRepository.findListingKeys(folder, statesFor(state), locale), state);
         List<ShListingKey> matching = keys.stream()
                 .filter(key -> typeId == null || typeId.equals(key.postTypeId()))
                 .sorted(orderKeys(sort))

@@ -1111,8 +1111,8 @@ last section is a `BuildNote`: the console route, MCP call, CLI line and CDA req
 rendered as a `<dl class="q-built">` by the `Quilhara page` layout's section loop. Its labels
 (Console, MCP, CLI, CDA) are product names and read the same in both languages, which is why the
 layout can hard-code them. `/search` (pt `/busca`) is a `SearchPage` on its own layout, three
-`{{#search q=param.q type=...}}` blocks over Trail, Story and Guide; each result carries `lang`,
-because the helper does not narrow to the page's locale (SH1278). Content ACL is shown on
+`{{#search q=param.q type=... locale=post.locale}}` blocks over Trail, Story and Guide, so each
+language lists only its own posts (SH1278); each result still carries `lang`. Content ACL is shown on
 `/tour/curator`, by the `/theme` lock above, and a test asserts the page names a folder the package
 really locks. `/members` left the matrix: an ACL gates editors, never a visitor (SH1285), so the
 coverage test's debt and `PAGES_OWED` lists are both empty.
