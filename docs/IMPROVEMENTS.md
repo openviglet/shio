@@ -276,27 +276,6 @@ what a curator usually wants there.
 The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
 and reads the site's page type.
 
-### XI.51 XI.51 A delivered link carries its row's own locale (SH1279)
-
-Measured on a clean instance with Quilhara applied: a search row for a pt-br post,
-rendered on the en-us search page, links to
-`/sites/quilhara/default/en-us/trilhas/crista-do-vento`, and that URL answers 200 with
-the Portuguese page. So the delivered-link rewrite prefixes every row with the locale of
-the page being rendered rather than the row's own, and the `/sites/**` resolver accepts
-a post under a locale segment that is not its locale.
-
-Two consequences a visitor and a crawler both meet: the same page is reachable at two
-addresses (one with the wrong language in its path, against a canonical that names the
-right one), and a link from one language's listing silently moves the visitor's locale
-context to the other.
-
-What to build: the rewrite reads the row's `locale` (every row has carried it since
-SH383) when it builds a delivered link; and the resolver, given a locale segment, either
-refuses a post whose locale differs or redirects to the post's own locale prefix. A
-redirect is the kinder choice for a link already in the wild, and it matches how a moved
-page is handled. Assert both at the delivery boundary: the rendered href carries the
-row's locale, and the mismatched URL does not answer 200 with content.
-
 ### XI.52 XI.52 One meaning of used across verify, prune and the media library (SH1280)
 
 Found shipping SH1268. `verify` now withdraws `asset-unused` for an asset a rendered

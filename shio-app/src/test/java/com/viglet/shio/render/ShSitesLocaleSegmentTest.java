@@ -10,6 +10,7 @@ package com.viglet.shio.render;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
@@ -59,6 +60,14 @@ import jakarta.persistence.PersistenceContext;
  * route-lenience fix is not entitled to make. So the rule is a fact about the site: the locale is
  * accepted when the site has content in it, or when it is the default this route writes.</p>
  *
+ * <h2>And on a site that does publish en-us (SH1279)</h2>
+ *
+ * <p>Measured on Quilhara: a pt-br trail listed on the en-us search page linked to
+ * {@code /en-us/trilhas/crista-do-vento}, and that URL answered 200 with the Portuguese page. A
+ * second site here has that shape: an en-us page linking to a pt-br page, an en-us page and a path
+ * nothing publishes. The Portuguese-only site above is the other side: its {@code en-us} links keep
+ * working, because there the label is not a language.</p>
+ *
  * @author Alexandre Oliveira
  */
 @SpringBootTest(properties = {
@@ -76,13 +85,21 @@ class ShSitesLocaleSegmentTest {
     @PersistenceContext
     private EntityManager entityManager;
 
+    private static final String BILINGUAL_LAYOUT = "<html><body><p>{{TEXT}}</p>"
+            + "<a id=\"pt\" href=\"/trilhas/crista\">pt</a>"
+            + "<a id=\"en\" href=\"/trails/crest?x=1\">en</a>"
+            + "<a id=\"gone\" href=\"/nowhere\">gone</a></body></html>";
+
     private MockMvc mockMvc;
     private String siteName;
+    private String bilingualName;
 
     @BeforeAll
     void seedAPublishedHomePageInPtBr() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
         siteName = "sh459-" + UUID.randomUUID().toString().substring(0, 8);
+        bilingualName = "sh1279-" + UUID.randomUUID().toString().substring(0, 8);
+        seedABilingualSite();
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             Instant when = Instant.parse("2026-01-01T00:00:00Z");
@@ -152,6 +169,64 @@ class ShSitesLocaleSegmentTest {
         // root-relative asset reference is still SH457's 404 and never reaches the locale query.
         mockMvc.perform(get("/sites/" + siteName + "/viglet-logo.png"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("SH1279: a link carries its target's locale when the target is not in the reader's")
+    void aLinkCarriesItsTargetsLocale() throws Exception {
+        String base = "/sites/" + bilingualName + "/default/";
+        mockMvc.perform(get(base + "en-us/"))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .as("SH1279: the pt-br page is linked in its own locale's space, not the page's")
+                        .contains("href=\"" + base + "pt-br/trilhas/crista\"")
+                        .as("SH1279: a target in the reader's locale keeps the reader's prefix, query too")
+                        .contains("href=\"" + base + "en-us/trails/crest?x=1\"")
+                        .as("SH1279: a path nothing publishes is rebased as SH466 rebases it")
+                        .contains("href=\"" + base + "en-us/nowhere\""));
+    }
+
+    @Test
+    @DisplayName("SH1279: a page under a language it is not in is redirected to its own, not served")
+    void aMismatchedLocaleRedirects() throws Exception {
+        String base = "/sites/" + bilingualName + "/default/";
+        mockMvc.perform(get(base + "en-us/trilhas/crista"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", base + "pt-br/trilhas/crista"));
+        mockMvc.perform(get(base + "pt-br/trilhas/crista"))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .contains("crista"));
+    }
+
+    private void seedABilingualSite() {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite site = new ShSite();
+            site.setName(bilingualName);
+            site.setFurl(bilingualName);
+            site.setDate(when);
+            site.setOwner("admin");
+            site.setPostTypeLayout("{\"Sh1279Page\":\"SH1279_LAYOUT\"}");
+            entityManager.persist(site);
+
+            ShFolder root = new ShFolder();
+            root.setName(bilingualName);
+            root.setRootFolder((byte) 1);
+            root.setShSite(site);
+            root.setDate(when);
+            root.setOwner("admin");
+            entityManager.persist(root);
+
+            ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
+            ShPostType pageType = postType("Sh1279Page", (byte) 0, when);
+
+            post(site, root, layoutType, "SH1279_LAYOUT", "/l", null,
+                    "{\"HTML\":\"" + BILINGUAL_LAYOUT.replace("\"", "\\\"") + "\"}", when);
+            post(site, root, pageType, "Home", "/", "en-us", "{\"TEXT\":\"hello\"}", when);
+            post(site, root, pageType, "Crest", "/trails/crest", "en-us", "{\"TEXT\":\"crest\"}", when);
+            post(site, root, pageType, "Crista", "/trilhas/crista", "pt-br", "{\"TEXT\":\"crista\"}", when);
+        });
     }
 
     private ShPostType postType(String name, byte system, Instant when) {

@@ -395,6 +395,7 @@
 - **SH1276** — The site listing's cost is measured with the post scheduler paused and the fewest statements over three reads, so a sweep on another thread no longer reads as listing cost; every read is 3 even under a 5 ms sweep (design §XI.48 recorded in `docs/agents/troubleshooting.md`).
 - **SH1277** — folder.acl and a desired-state folder `acl` let a blueprint declare a folder's edit grants; Quilhara's /theme now ships admin-only, re-applies as noop, refuses unknown principals (design §XI.49 recorded in `docs/agents/agent-surface.md`).
 - **SH1278** — {{#search}} and {{#query}} take locale=, meaning what the CDA's /search?locale= means, so locale=post.locale lists only the page's language; Quilhara's search layout now passes it (design §XI.50 recorded in `docs/agents/renderer.md`).
+- **SH1279** — A /sites link takes its target's own locale when the target is not in the reader's, and on a site publishing en-us a page under the wrong en-us label 302s to its own locale (design §XI.51 recorded in `docs/agents/renderer.md`).
 
 ## Block M — Token economy, measured (SH74)
 

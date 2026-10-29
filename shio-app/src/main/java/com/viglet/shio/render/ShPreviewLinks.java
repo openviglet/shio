@@ -296,6 +296,20 @@ public class ShPreviewLinks {
      */
     public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page,
                               String basePath, String carry) {
+        return rewriteInto(html, prefix, page, basePath, carry, path -> prefix);
+    }
+
+    /**
+     * The same pass, with the prefix a navigation gets chosen per target (SH1279).
+     *
+     * <p>A link names a path and nothing else, so a search row for a pt-br post on an en-us page was
+     * prefixed with the page's {@code en-us} and the reader landed on the Portuguese page under the
+     * English address. {@code prefixFor} is given the link's path in the site's space and answers the
+     * prefix for it, which is where the public route puts the target's own locale. Assets keep the
+     * page's prefix: bytes have no language.</p>
+     */
+    public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page,
+                              String basePath, String carry, UnaryOperator<String> prefixFor) {
         if (html == null || html.isBlank() || page == null || page.siteId() == null) {
             return html;
         }
@@ -308,8 +322,30 @@ public class ShPreviewLinks {
         Map<String, Boolean> assets = new HashMap<>();
         walk(document, (reference, asset) -> asset
                 ? rewriteAsset(reference, prefix, page, assets, base)
-                : rewriteOne(reference, prefix, base), carry);
+                : rewriteOne(reference, prefix, base, prefixFor), carry);
         return document.html();
+    }
+
+    /**
+     * SH1279 — the locales each published URL of a site is in, keyed by normalized path.
+     *
+     * <p>One projection read ({@code findUrlIndexBySiteId}, the same index {@code verify} walks), so
+     * the public route can name a link's own locale without a query per link. A path held by two
+     * translations sharing a URL carries both.</p>
+     */
+    public Map<String, Set<String>> publishedLocalesByUrl(String siteId) {
+        Map<String, Set<String>> byUrl = new HashMap<>();
+        for (Object[] row : shPostUnifiedRepository.findUrlIndexBySiteId(siteId,
+                List.of(ShPostState.PUBLISHED))) {
+            String furl = (String) row[1];
+            String locale = (String) row[3];
+            if (furl == null || furl.isBlank() || locale == null || locale.isBlank()) {
+                continue;
+            }
+            byUrl.computeIfAbsent(ShAddress.normalizePath(furl),
+                    key -> new java.util.TreeSet<>(String.CASE_INSENSITIVE_ORDER)).add(locale.trim());
+        }
+        return byUrl;
     }
 
     /**
@@ -554,7 +590,8 @@ public class ShPreviewLinks {
      * <p>SH512 moved the "document-relative already resolves" clause out of the exclusions and into
      * {@link #toSitePath}, which turns it into the path the source meant before this decides.</p>
      */
-    private String rewriteOne(String value, String prefix, String basePath) {
+    private String rewriteOne(String value, String prefix, String basePath,
+                              UnaryOperator<String> prefixFor) {
         String site = toSitePath(value, basePath);
         if (site == null) {
             return null;
@@ -568,7 +605,7 @@ public class ShPreviewLinks {
         if (isInstanceRoute(site)) {
             return null;
         }
-        return prefix + site;
+        return prefixFor.apply(site) + site;
     }
 
     /**

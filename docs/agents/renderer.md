@@ -775,6 +775,17 @@ renderer over one body of content at a second address. See the section on it bel
   form carries no locale and is left alone, as is a site whose declared default is `en-us` itself.
   The tag rides out on `ShRenderedPage.siteLocale` because the render already holds the site, so it
   costs no query, only the render before the 302, once per reader on a legacy URL.
+- **A link carries its target's own locale (SH1279)**: a link names a path, so the rewrite used to
+  give every one the page's prefix, and a pt-br row on Quilhara's en-us search page linked to
+  `/en-us/trilhas/…`, which answered 200 with the Portuguese page. The route now reads the site's
+  URL index once per request (`ShPreviewLinks.publishedLocalesByUrl`, the `findUrlIndexBySiteId`
+  projection `verify` walks), and a navigation whose target has no row in the reader's locale gets
+  the target's own (`rewriteInto`'s `prefixFor`); assets and unpublished paths keep the page's. The
+  `en-us` label counts as a language only where the site publishes `en-us` content, so a
+  Portuguese-only site's legacy links are untouched (SH459's test). On such a site a page asked for
+  under `en-us` that is in another locale is a **302** to its own locale's space, never a change of
+  language; an explicit segment stays SH1057's to resolve. `ShSitesLocaleSegmentTest` holds both
+  sides: its Portuguese-only site and a bilingual one.
 - **What the fallback hides, verify says (SH1130)**: the chain above means a declared locale with
   nothing written in it answers every URL in it with 200 and another language's page, so no route
   check can see it. `verify`'s `content` group reports it as `locale-declared-unwritten` against

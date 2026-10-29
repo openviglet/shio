@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
 
+import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
@@ -177,6 +179,13 @@ public class ShSitesAPI {
         if (declared != null) {
             return declared;
         }
+        Map<String, Set<String>> locales = address.isHeaderForm() ? Map.of()
+                : links.publishedLocalesByUrl(rendered.siteId());
+        boolean segmentIsALocale = segmentIsALocale(address, locales);
+        ResponseEntity<?> own = toPagesOwnLocale(address, rendered, locales, segmentIsALocale, request);
+        if (own != null) {
+            return own;
+        }
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
                 // Cacheable and indexable — the two guards that are inverted rather than dropped.
@@ -186,7 +195,79 @@ public class ShSitesAPI {
                 // SH512 — `address.path()` is the base a document-relative reference resolves
                 // against: the segments after the prefix, which is the source's own URL space and
                 // the one form that keeps the reader's trailing slash.
-                .body(links.rewriteInto(rendered.html(), address.prefix(), rendered, address.path()));
+                .body(links.rewriteInto(rendered.html(), address.prefix(), rendered, address.path(), null,
+                        path -> linkPrefix(address, locales, segmentIsALocale, path)));
+    }
+
+    /**
+     * SH1279 — whether this URL's locale segment names a language this site really has.
+     *
+     * <p>A segment other than {@link #DEFAULT_LOCALE} does, since {@link #requireKnownLocale} let it
+     * through. {@code en-us} is the route's "nothing asked" label (SH1057), and stays only that on a
+     * site with no {@code en-us} content: a Portuguese site's legacy links keep working exactly as
+     * SH459 pins. On a site that does publish {@code en-us} the label is ambiguous, and the content
+     * at the path decides.</p>
+     */
+    private static boolean segmentIsALocale(Address address, Map<String, Set<String>> locales) {
+        if (address.isHeaderForm()) {
+            return false;
+        }
+        return address.selectedLocale() != null || locales.values().stream()
+                .anyMatch(set -> set.contains(DEFAULT_LOCALE));
+    }
+
+    /**
+     * SH1279 — a page asked for under the {@code en-us} label, on a site where that is a real
+     * language and the page is in another, is sent to its own locale's address.
+     *
+     * <p>Measured on Quilhara: {@code /en-us/trilhas/crista-do-vento} answered 200 with the
+     * Portuguese page, so one page had two addresses and a canonical that disagreed with the path. A
+     * 302 to the same path in the page's own space rather than a 404, because a link to the wrong
+     * space may already be in the wild, and it never changes the language the reader gets. A segment
+     * that names a locale explicitly is SH1057's to resolve, through the translation group.</p>
+     */
+    private ResponseEntity<?> toPagesOwnLocale(Address address, ShRenderedPage rendered,
+                                               Map<String, Set<String>> locales, boolean segmentIsALocale,
+                                               HttpServletRequest request) {
+        if (!segmentIsALocale || address.selectedLocale() != null) {
+            return null;
+        }
+        Set<String> own = locales.get(ShAddress.normalizePath(rendered.url()));
+        if (own == null || own.isEmpty() || own.contains(DEFAULT_LOCALE)) {
+            return null;
+        }
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(java.net.URI.create(withQueryOf(request,
+                        address.inLocale(own.iterator().next()).prefix() + address.path())))
+                .cacheControl(CacheControl.maxAge(MAX_AGE).cachePublic())
+                .build();
+    }
+
+    /**
+     * SH1279 — the prefix one link gets: its target's own locale when the target has no row in the
+     * reader's, so a pt-br row on an en-us page links to {@code /pt-br/…}. A path nothing publishes
+     * (a front-end route, a missing page) keeps the page's prefix, as SH466 rebases it.
+     */
+    private static String linkPrefix(Address address, Map<String, Set<String>> locales,
+                                     boolean segmentIsALocale, String path) {
+        if (!segmentIsALocale) {
+            return address.prefix();
+        }
+        int cut = indexOfAny(path, "?#");
+        Set<String> target = locales.get(ShAddress.normalizePath(cut < 0 ? path : path.substring(0, cut)));
+        if (target == null || target.isEmpty() || target.contains(address.locale())) {
+            return address.prefix();
+        }
+        return address.inLocale(target.iterator().next()).prefix();
+    }
+
+    private static int indexOfAny(String value, String characters) {
+        for (int i = 0; i < value.length(); i++) {
+            if (characters.indexOf(value.charAt(i)) >= 0) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**
