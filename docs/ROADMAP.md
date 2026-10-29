@@ -13,6 +13,14 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 
+## Block BG — The console as an application: cost, resilience and access
+
+- 📋 **SH1305** (deps: —) **GET /api/v2/site takes ~10-20 s on a 16-site instance, so the sites list looks frozen on first open** — The list is the console's front door, and measuring showed the thumbnails are not the cause: the listing read alone is. → §XI.71
+
+## Block P — The visible site (what the human actually looks at, SH74)
+
+- 📋 **SH1304** (deps: —) **The console has no button that opens a site's published pages; every "View Site" opens the draft preview** — A curator cannot see what a visitor sees without typing /sites/<furl>/ by hand. → §XI.70
+
 ## Priority
 
 ## Done when — SH1245

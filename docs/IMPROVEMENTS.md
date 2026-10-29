@@ -241,6 +241,53 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
+### XI.70 The published site, one click from the console (SH1304)
+
+Three console surfaces offer a way to look at a site: the site list's row menu
+("Preview"), the object browser's "View Site" button and the site edit page's "View
+Site" action. All three call `siteDestination()` in
+`shio-react/src/lib/site-front-end.ts`, which answers `site.url` when a front end is
+configured and otherwise `/preview/<site>/`. That route is the authenticated, `noindex`,
+bannered preview renderer. It is not what a visitor receives. Published delivery is
+`/sites/<furl>/`: public, no banner, and the only route that enforces the members-only
+gate (SH1285). Only the thumbnail capture (`site-thumbnail-capture.ts`, `homeUrl`) ever
+opens it, so a curator has no one-click way to check the live result of a publish, or to
+confirm that a members-only page really turns a visitor away.
+
+The fix is a second destination beside `siteDestination`, one function and not three
+inline URLs, mirroring a server-side resolution so the console and the API cannot
+disagree. It returns `site.url` when a front end is deployed (that is where the
+published site lives) and `/sites/<furl>/` otherwise. Each of the three surfaces gets a
+"View published site" action next to the existing one. The existing one is renamed
+"Preview" everywhere, so each label names what it opens. By P1, the published URL also
+belongs on the agent surface (manifest or site read), not only in the console. Done when
+all three surfaces open `/sites/<furl>/` for a site with no front end, and an e2e check
+asserts the opened URL.
+
+### XI.71 The sites listing read, measured before it is fixed (SH1305)
+
+Reported as "the sites list hangs on first open, probably the screenshots". Measured on
+2026-10-29 against the dev instance (16 sites, 14 with stored thumbnails), with a clean
+Playwright context on `/bento/content`. `GET /api/v2/site` answered at 20.9 s, the rows
+appeared at 21.4 s, and only then did any `/thumbnail/status` read start. With
+`/thumbnail/status` aborted, so that no capture could run, the listing still took 10.1
+s. The main thread recorded no long task over 100 ms in either run. Timed directly over
+the API, three consecutive calls took 122 ms, 10307 ms and 9970 ms, with an identical
+14106-byte body. The capture (SH1218) is already off the render path and is not the
+cost.
+
+`ShSiteListingService.list` makes three reads. The prime suspect is
+`ShHistoryRepository.findNewestPerSite`, a correlated `max(h2.date)` subquery over the
+whole audit table. The changelog declares no index on `ShHistory(shSite, date)`, and the
+table grows with every write. The other two are the grouped post count and the thumbnail
+directory listing. The 122 ms outlier still needs explaining.
+
+Per the measure-first rule, the first deliverable is a benchmark of `list()` against a
+history table of realistic size, with per-statement timing. `ShSiteListingCostTest`
+counts statements, not time. Only then does the fix follow, whatever the number argues
+for: an index, a maintained per-site last-change column, or a rewritten query. Run the
+schema ITs with Docker, since this touches Liquibase.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
