@@ -1039,6 +1039,13 @@ projection would write four of the marker's five keys and call it a round trip. 
 `ShSiteLocales.toNode()`, which `toJson` now delegates to, so there is **one** spelling of that
 document rather than two that agree until a key moves.
 
+**The tree's copy follows the same spelling, labels included (SH1288).** `siteLocalePolicy` in
+`content-files.mjs` is the CLI's half of that one spelling: `default`, `enabled`, `fallback` and, since
+SH1281 gave the policy a fourth key, `labels`, with both maps' keys sorted as `toNode` sorts them. It
+had stopped at three, so a pull wrote a `_site.md` that was no longer the exact policy and a label
+typed into it was dropped before the push. `labels` is written only when one is set, so every marker
+written before labels existed keeps its bytes.
+
 **Measured, twice, and the second measurement is the point.** `response.context.json` did not move by a
 single token: all three additions are `NON_NULL` and the benchmark's site has none of them. That is a
 true number that says nothing about the fields, so `measureConfiguredSiteRow` takes the other one, a

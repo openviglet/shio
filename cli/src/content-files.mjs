@@ -651,8 +651,8 @@ export function siteLocationOf(relPath) {
 /**
  * The locale policy as the tree holds it, or `undefined` when the site declares none.
  *
- * <p>Three keys in the order the server's own `toJson` writes them, and a `fallback` map with its
- * keys sorted: the stored document is byte-stable on the server because `ShStableMap` makes it so,
+ * <p>Four keys in the order the server's own `toJson` writes them, and `fallback` and `labels` maps
+ * with their keys sorted: the stored document is byte-stable on the server because `ShStableMap` makes it so,
  * and a projection that re-encoded it in hash order would show a diff after a restart with nothing
  * changed. `enabled` keeps its order, which is the author's — it is a list, not a set.</p>
  *
@@ -675,6 +675,13 @@ export function siteLocalePolicy(locales) {
     const fallback = {};
     for (const key of Object.keys(policy.fallback).sort()) fallback[key] = String(policy.fallback[key]);
     if (Object.keys(fallback).length) out.fallback = fallback;
+  }
+  // SH1288 — the switcher's labels (SH1281), last and sorted like `fallback`, which is where and how
+  // the server's `toNode` writes them; only when one is set, so a marker without labels keeps its bytes.
+  if (policy.labels && typeof policy.labels === "object" && !Array.isArray(policy.labels)) {
+    const labels = {};
+    for (const key of Object.keys(policy.labels).sort()) labels[key] = String(policy.labels[key]);
+    if (Object.keys(labels).length) out.labels = labels;
   }
   return Object.keys(out).length ? out : undefined;
 }

@@ -611,6 +611,23 @@ test("SH1283: a site's page type is projected, read back and in its fixed place"
     "SH1283: a push sends what a pull wrote, or the tree carries a key nothing reads");
 });
 
+test("SH1288: a site's language labels survive a pull and a push, and their absence costs no bytes", () => {
+  const stored = '{"default":"pt-br","enabled":["pt-br","pt"],'
+    + '"labels":{"pt-br":"Português (Brasil)","pt":"Português (Portugal)"}}';
+  const text = serializeSite({ site: "Quilhara", locales: stored });
+  assert.equal(text, "---\nsite: Quilhara\n"
+    + 'locales: {"default":"pt-br","enabled":["pt-br","pt"],'
+    + '"labels":{"pt":"Português (Portugal)","pt-br":"Português (Brasil)"}}\n---\n',
+    "SH1288: the labels are dropped from _site.md, or not last and sorted the way the server's "
+    + "toNode writes them");
+  assert.equal(serializeSite(parseSiteMarker("Quilhara/_site.md", text)), text,
+    "SH1288: a label typed into the marker must reach the push, byte-identically");
+  assert.equal(
+    JSON.stringify(siteLocalePolicy('{"default":"en","enabled":["en"],"labels":{}}')),
+    '{"default":"en","enabled":["en"]}',
+    "SH1288: a policy without labels serializes exactly as it did before labels existed");
+});
+
 test("SH1122: a site with nothing but a name projects two lines, and gains one per field", () => {
   assert.equal(serializeSite({ site: "Blog" }), "---\nsite: Blog\n---\n",
     "SH1122: a key is written only when the site has a value for it, so an unconfigured site is not "

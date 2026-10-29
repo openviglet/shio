@@ -14,7 +14,6 @@
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
 - ⏳ **SH1285** (deps: owner decides the visitor identity model) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — A members area, client portal or intranet section has no expression in Shio, and the showcase's /members page cannot exist. → §XI.57
-- 📋 **SH1288** (deps: —) **shio pull drops a site's language labels from _site.md, so the marker is not the exact policy** — The CLI's siteLocalePolicy copies default, enabled and fallback only, so a label typed into the file never reaches a push. → §XI.59
 - 📋 **SH1290** (deps: —) **The tenant join hazard tests fail after Boot 4.1.2: the queries they pin as failing no longer throw** — Dependabot's #1220 changed Hibernate; nobody knows yet whether the hazard is fixed or fails later, which decides agents.md's first invariant. → §XI.60
 
 ## Block S — The public site (shio.viglet.org)

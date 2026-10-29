@@ -281,26 +281,6 @@ and the CDA for a token or session that carries the principal, answering 404 oth
 with `private, no-store` on what it serves. That decision belongs to whoever owns the
 product's delivery model.
 
-### XI.59 A site marker carries the language labels (SH1288)
-
-Found shipping SH1283. SH1281 gave a site's locale policy a `labels` map, and the
-context pack's site row carries the stored policy whole (`localePolicy`, SH1122), but
-the CLI's projection drops it: `siteLocalePolicy` in `cli/src/content-files.mjs` copies
-`default`, `enabled` and `fallback` and nothing else. So `shio pull` writes a `_site.md`
-whose `locales` has no labels, the marker is no longer the exact projection SH1122
-promised, and a label an agent types into the file is silently dropped before a push.
-The push itself is safe, because `site.upsert` fills and keeps a declared policy, which
-is also why nothing failed.
-
-What to build: carry `labels` in `siteLocalePolicy`, keys sorted like `fallback` (the
-server's `toNode` sorts them too, so the bytes match), and only when non-empty so every
-marker written before labels existed keeps its bytes. `reconcileSiteSettings` already
-compares `locales` as one canonical value, so a label edit on either side reconciles
-like any other policy change.
-
-Assert in `content-files.test.mjs`: a policy with labels round-trips through serialize
-and parse byte-identically, and a policy without them serializes exactly as before.
-
 ### XI.60 What Boot 4.1.2's Hibernate does with the tenant join hazard (SH1290)
 
 Found fixing the npm release workflow on 2026-10-29. Dependabot's java group (PR #1220)
