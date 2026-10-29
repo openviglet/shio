@@ -4,6 +4,7 @@ import { SiteNav } from "@/components/sections/site-nav";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { PageHero } from "@/components/sections/page-hero";
 import { CallToAction } from "@/components/sections/cta";
+import { ShowcaseGallery } from "@/components/sections/showcase";
 import { Container, SectionHeader } from "@/components/brand";
 import { CodeBlock } from "@/components/code-block";
 import { CopyCommand } from "@/components/copy-command";
@@ -64,6 +65,7 @@ export function ShowcasePage() {
 
         <section id="install" className="py-20">
           <Container>
+            <ShowcaseGallery className="mb-16" />
             <SectionHeader
               eyebrow="Install"
               title={

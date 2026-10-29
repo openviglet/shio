@@ -109,6 +109,23 @@ Four rules for editing any of it:
   code sample included. The one exception it names out loud is
   `public/marketplace/**`, which republishes another module's bytes (SH930).
 
+## The showcase (SH1258)
+
+`/showcase` and the landing section of the same name present Quilhara, the finished sample
+site published in the marketplace. Nothing about it is typed here:
+
+- **The pages and what each demonstrates** come from
+  [`docs/specs/SH1250-showcase-matrix.json`](../docs/specs/SH1250-showcase-matrix.json), the matrix
+  `cli/test/showcase-matrix.test.mjs` holds to the product. Each depth page names a manifest
+  feature key (`showcase` in `feature-content.ts`) and links to the page the matrix maps it to;
+  `showcasePageFor()` throws at build time on a key the matrix does not map.
+- **The screenshots** are captured from an applied showcase by
+  [`scripts/showcase-screenshots.mjs`](scripts/showcase-screenshots.mjs) (run by hand against an
+  instance, output committed under `marketplace/quilhara/screenshots/`), published beside the
+  package by `scripts/marketplace.mjs`, and listed in `src/lib/marketplace-screenshots.generated.json`,
+  so the site shows the same files the console shows before an install. Re-run the capture when
+  the package's look changes.
+
 ## The Markdown twins
 
 Every route also emits `<path>.md`: `/` → `/index.md`, everything else appends

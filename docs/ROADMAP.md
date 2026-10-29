@@ -13,10 +13,8 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — A members area, client portal or intranet section has no expression in Shio, and the showcase's /members page cannot exist. → §XI.57
-
-## Block S — The public site (shio.viglet.org)
-
-- ⏳ **SH1258** (deps: SH1256 ✅, SH1257 ✅) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — No screenshots yet: generate the showcase's brand and tour page images into marketplace/quilhara/screenshots/ and show them on /showcase and the landing section. → §XIX.15
+- 📋 **SH1293** (deps: —) **The showcase home's three featured trails leave an empty fourth column at desktop width** — An auto-fill card grid keeps an empty track, so the showcase's first screen reads as a missing card in the screenshot the marketplace publishes. → §XI.61
+- 📋 **SH1294** (deps: —) **The showcase tour pages head their try-it section "How this was built", echoing the /tour title** — On /tour the section heading nearly repeats the page title, and it names a story where the section holds calls a reader can copy and run. → §XI.62
 
 ## Priority
 
@@ -33,12 +31,6 @@
   chosen the visitor identity model, a page under a members rule is served by /sites/**
   and the CDA to a request carrying that principal, private and no-store, and is a 404
   to anyone else.
-
-## Done when — SH1258
-
-- **The showcase's screenshots appear on /showcase** marketplace/quilhara/screenshots/
-  holds images generated from an applied showcase, the published catalogue entry lists
-  them, and the built /showcase page renders them.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -61,6 +61,13 @@ const NOT_PACKAGED = /^(\.gitignore|polyweave\.[^/]+|assets\/source\/.*)$/;
 const OUT = resolve(process.cwd(), "public", "marketplace");
 
 /**
+ * SH1258 — which screenshots each package published, by file name, so the site's own pages show
+ * the files the catalogue lists instead of a second copy. Committed like
+ * `token-budgets.generated.json`, so `tsc -b` on a fresh clone has it before any build.
+ */
+const SCREENSHOT_INDEX = resolve(process.cwd(), "src", "lib", "marketplace-screenshots.generated.json");
+
+/**
  * The host `ShMarketplaceProperties.DEFAULT_URL` points at.
  *
  * Overridable because a catalogue is only useful where it is actually served: a staging deploy on
@@ -173,6 +180,7 @@ export function build({ write = true } = {}) {
 
   const items = [];
   const digests = new Map();
+  const shots = {};
 
   for (const { name, dir } of packages) {
     const manifest = JSON.parse(readFileSync(join(dir, "blueprint.json"), "utf8"));
@@ -216,6 +224,7 @@ export function build({ write = true } = {}) {
     // Only when there are some, so the six plain packages publish exactly the bytes they did.
     if (screenshots.length) {
       item.screenshots = screenshots.map((file) => `${BASE}/${id}/${file.slice(SCREENSHOTS.length)}`);
+      shots[id] = screenshots.map((file) => file.slice(SCREENSHOTS.length));
     }
     items.push(item);
 
@@ -231,8 +240,9 @@ export function build({ write = true } = {}) {
 
   if (write) {
     writeFileSync(join(OUT, "marketplace.json"), `${JSON.stringify(items, null, 2)}\n`, "utf8");
+    writeFileSync(SCREENSHOT_INDEX, `${JSON.stringify(shots, null, 2)}\n`, "utf8");
   }
-  return { items, digests };
+  return { items, digests, shots };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`.replace(/\\/g, "/")

@@ -131,6 +131,22 @@ for name in zipfile.ZipFile(sys.argv[1]).namelist():
   assert.ok(size < 8 * 1024 * 1024, `SH1254: the showcase archive is ${size} bytes, over the 8 MB the spec plans`);
 });
 
+test("SH1258: the showcase publishes its screenshots, indexed for the site, and outside its archive", () => {
+  const { items, shots } = build();
+  const showcase = items.find((item) => item.id === "shio-blueprint-quilhara");
+  const files = shots["shio-blueprint-quilhara"] ?? [];
+
+  assert.ok(files.length > 0, "SH1258: marketplace/quilhara/screenshots/ published nothing");
+  assert.deepEqual(showcase.screenshots.map((url) => url.slice(url.lastIndexOf("/") + 1)), files,
+    "SH1258: the site's index and the catalogue entry name the same files");
+  for (const file of files) {
+    assert.ok(existsSync(join(OUT, showcase.id, file)), `SH1258: ${file} is listed and not served`);
+  }
+  const index = JSON.parse(readFileSync(resolve(process.cwd(), "src", "lib",
+    "marketplace-screenshots.generated.json"), "utf8"));
+  assert.deepEqual(index, shots, "SH1258: the committed index is what this build publishes");
+});
+
 test("SH676: the same packages produce the same bytes (P5)", () => {
   // The archives are built by the Pages workflow rather than committed, so this is not about diff
   // noise: it is that a package downloaded from openviglet.github.io/shio should be reproducible from the

@@ -1,4 +1,6 @@
 import MATRIX from "../../../docs/specs/SH1250-showcase-matrix.json";
+import PUBLISHED from "./marketplace-screenshots.generated.json";
+import { withBase } from "./base";
 
 /**
  * SH1258: the showcase's pages and what each one demonstrates, read from the matrix SH1250
@@ -12,6 +14,19 @@ export const SHOWCASE_ID = `shio-blueprint-${MATRIX.site}`;
 
 /** The site name the install commands apply it to. */
 export const SHOWCASE_SITE = MATRIX.site;
+
+/**
+ * The screenshots the catalogue entry publishes, as this site serves them. Captured by
+ * `scripts/showcase-screenshots.mjs` from an applied showcase and listed by
+ * `scripts/marketplace.mjs`, so these are the files the console shows before an install.
+ * The name says the page: `2-trail.jpg` is the trail detail.
+ */
+export const SHOWCASE_SCREENSHOTS: { src: string; name: string }[] = (
+  (PUBLISHED as Record<string, string[]>)[SHOWCASE_ID] ?? []
+).map((file) => ({
+  src: withBase(`/marketplace/${SHOWCASE_ID}/${file}`),
+  name: file.replace(/^\d+-/, "").replace(/\.[a-z]+$/, ""),
+}));
 
 /** The languages every showcase page exists in. */
 export const SHOWCASE_LOCALES: readonly string[] = MATRIX.locales;

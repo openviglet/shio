@@ -307,7 +307,9 @@ const SWEEP = {
     swept: true,
     why: "the visibility round, closed by SH1243: shio-site/src itself is the sweep, since every id "
       + "in it changed the site (the home and niche titles, the consent banner) or GitHub's repo page, "
-      + "which no matrix describes. Earlier closure: SH930, on how far the em-dash rule reaches",
+      + "which no matrix describes. Earlier closure: SH930, on how far the em-dash rule reaches. "
+      + "Reopened for SH1258 and re-closed with it: shio-site/src gained the /showcase page and "
+      + "landing section, so the site is again its own sweep",
   },
   Q: {
     swept: true,

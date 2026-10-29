@@ -267,6 +267,45 @@ Assert at the delivery boundary: an anonymous read of a members page gets the si
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
 
+### XI.61 XI.61 The showcase's card rows stop short (SH1258 finding) (SH1293)
+
+Seen in the SH1258 screenshot of the showcase home at 1280px: "Three trails to start
+with" renders three cards and an empty fourth column, so the row stops short of the
+content width and reads as a missing card.
+
+Cause, from `marketplace/quilhara/content/theme.json`: the card grid is
+`grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr))`. `auto-fill` keeps every
+track that fits, filled or not, so a 70rem container holds four 16rem tracks and three
+cards leave one empty. `auto-fit` collapses the empty tracks and lets the three stretch.
+
+What to build: switch the card grid to `auto-fit` (or cap the columns at the item count
+for the featured row), then re-run `shio-site/scripts/showcase-screenshots.mjs` so the
+published home screenshot shows the fixed row. Check the trails, stories and guides
+listings at the same width, since they share the rule and can end on a partial row too;
+a listing that ends on a partial row is fine left-aligned, so the fix should not stretch
+a last row of one card across the page.
+
+Done when the home's featured row fills the content width at 1280px and 1440px.
+
+### XI.62 XI.62 The tour's try-it section is misnamed (SH1258 finding) (SH1294)
+
+Seen in the SH1258 screenshot of the showcase `/tour` page: the page title is "How this
+site was built" and, a screen later, a section heading reads "How this was built". Every
+tour page ends with that section (the console screen, the MCP call, the CLI line and the
+delivery request behind it), and on `/tour` it lands right under a title that says
+nearly the same thing, so it reads as a duplicated heading.
+
+The section heading comes from the package's content (`content/en-us.json`, repeated per
+tour page, and its pt-br twin). It names the wrong thing: the section is the set of
+calls a reader can copy and run against this instance, not the story of the build.
+
+What to build: rename that section heading on every tour page, in both languages, to
+what it holds (for example "Try it on this instance"), keeping it distinct from the page
+titles. Then re-run `shio-site/scripts/showcase-screenshots.mjs`, since `4-tour.jpg`
+shows it.
+
+Done when no tour page carries a heading that repeats its own title, in either language.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
@@ -585,25 +624,6 @@ token count, a teaching 4xx, a file tree, a draft that did not publish itself.
 The site is also written for the reader it is about. An agent evaluating a CMS reads the
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
-
-### XIX.15 XIX.15 The showcase on the public site (SH1258)
-
-The showcase exists to sell Shio, and the place a stranger meets Shio first is
-shio.viglet.org. The site's copy describes surfaces, which is right (every claim is
-about a real surface), but it shows no finished site built with them. WKND works for AEM
-because it is linked from everywhere a prospect looks.
-
-What the site gains:
-
-- a showcase section on the landing page, and a `/showcase` route (two rows, `ROUTES` in `src/App.tsx` and the `routes` entry in `src/entry-server.tsx`, which `routesAreDeclared()` enforces);
-- screenshots of the brand pages and a few tour pages, the same images the marketplace entry publishes, generated rather than hand-cropped so they stay current with the package;
-- the two install paths, side by side: the admin marketplace (console) and `shio marketplace install <id> --apply --site <name>` (CLI), plus the one line from the quick start that gets a fresh instance there;
-- a link from each feature already described on the site to the tour page that demonstrates it, read from the showcase's coverage matrix rather than retyped.
-
-All copy goes in `src/lib/site-content.ts`, under the site's own rules: no measured
-number typed by hand, and the `ai-writing` lint. The docs-shio half (a "Tour the
-showcase" page and its COVERAGE row) is the ordinary per-task end-user docs decision for
-the showcase tasks, so it is not filed separately here.
 
 ## XX End-user documentation, round two (Block T)
 
