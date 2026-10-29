@@ -1225,29 +1225,6 @@ package half is VDS204 to VDS207 in the design system's own backlog.
 
 ## XCIV The design system's consumer contract, adopted and gated
 
-### XCIV.1 Review design system 2026.3.23 against the console's budgets and waits (SH1289)
-
-Found fixing the npm release workflow on 2026-10-29. Dependabot's frontend group (PR
-#1222) moved `@viglet/viglet-design-system` from 2026.3.19 to 2026.3.23, and `pnpm test`
-has been red on `2026.3` since that merge, in two places that both belong to the
-console's contract with the design system.
-
-`console-size-budget.test.mjs` (SH1043): the package's `index.es.js` chunk grew from
-under its 473.6 KB raw / 150.4 KB gzip ceiling to 518.4 KB / 164.0 KB, and
-`preload-helper.js` stopped being eager, so its ceiling outlives its chunk. The eager
-total is 1878.0 KB raw / 513.7 KB gzip, still under the overall ceiling.
-
-`design-system` wait check (SH937): the installed version is no longer the one the
-roadmap's waits were measured against. Its rule is to read every waiting entry against
-2026.3.23, ship the ones the release ends, and only then move `PINNED`.
-
-What to build: measure what 2026.3.23 added to `index.es.js` (a new component, or a
-dependency it now bundles) and decide whether the console loads it eagerly on purpose.
-Either raise that chunk's ceiling with the reason beside it, or move the import behind
-the screen that uses it. Delete the `preload-helper.js` entry. Then do SH937's review
-and move `PINNED`. Close by removing this task's `red-suites.json` exception in the same
-commit that turns `pnpm test` green.
-
 ### XCIV.3 The JS gate runs every package even after one fails (SH1292)
 
 Found on 2026-10-29. `GATE_RUNS.js` in `scripts/gates.mjs` runs `pnpm --filter ... run

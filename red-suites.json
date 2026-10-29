@@ -4,14 +4,6 @@
   "emptied": "SH789 — the `fixture-traits` entry was deleted here rather than by SH780, which is what its own text expected. The grounds are different and that is the point: an exception is a licence to commit over a red, and there was no red. Roughly fifty consecutive green `pnpm test` runs, and the two comparators that should have said so were blind to this gate in exactly this direction (that hole is what SH789 fixed). SH778 and SH780 stay open: they are about diagnosing the flake, not about licensing it, and SH778's third instrument now prints the process exit code — so a third sighting arrives with a diagnosis instead of a mystery, and the correct response to it is SH579's rule from the top, not a licence that was already sitting here.",
   "exceptions": [
     {
-      "suite": "js",
-      "test": "SH1043: the console's eager load stays inside its budget; SH937: the installed design system is the version these waits were measured against",
-      "task": "SH1289",
-      "declared": "2026-10-29",
-      "expires": "2026-11-12",
-      "why": "Dependabot's PR #1222 moved @viglet/viglet-design-system from 2026.3.19 to 2026.3.23 on 2026.3: its index.es.js chunk is now 518.4 KB raw against a 473.6 KB ceiling, preload-helper.js left the eager set, and SH937 wants the roadmap's waits reviewed before PINNED moves. Nothing Shio wrote changed the bytes, and the eager total is still under its ceiling. Declared so the npm release workflow fix (trusted publishing) can land while SH1289 does the review."
-    },
-    {
       "suite": "java",
       "test": "ShTenantJoinHazardTest: navigatingASubclassFieldInAProjectionFails, navigatingASubclassFieldInAPredicateAlsoFails, anExplicitJoinDoesNotRescueTheProjection, navigatingASubclassFieldInAGroupByFails",
       "task": "SH1290",

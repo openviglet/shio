@@ -101,6 +101,12 @@ import { fileURLToPath } from "node:url"
  * this pin, and it took a Shio change as well: the panel around the browser's table was
  * `overflow-hidden`, which unsticks anything inside it.
  *
+ * 2026.3.23 arrived unreviewed, in Dependabot's frontend group (PR #1222), four releases past the
+ * pin. SH1289 read it: no roadmap line carried a `DS VDS` dep and WAITS was empty, so no wait could
+ * end. What the release brought was a `site` subpath, a `vds-site` page artboard (SH1291 vendored
+ * it), its stylesheet's growth and `xlsx` moved from a dependency to a peer, none of which a line here
+ * was waiting for. The pin moved in the same commit as the console's budget review.
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -127,7 +133,7 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.19"
+const PINNED = "2026.3.23"
 
 function manifest() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))
@@ -190,7 +196,9 @@ test("SH937: the installed design system is the version these waits were measure
       + " does not always arrive under the name the probe expects.\n\n"
       + WAITS.map((w) => `  ${w.id} — ${w.waitingFor}\n      ${w.instruction}`).join("\n")
       + `\n\nRead every entry against ${INSTALLED}, ship whichever are over, and only then move`
-      + " PINNED. Moving it first is how a release that ended a wait passes through unnoticed.")
+      + " PINNED. Moving it first is how a release that ended a wait passes through unnoticed."
+      + " A Dependabot group bump moves it too (SH1289: PR #1222 took it four releases at once), and"
+      + " then the console's size budget usually wants the same read.")
 })
 
 for (const wait of PROBED) {

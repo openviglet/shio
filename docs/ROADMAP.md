@@ -22,7 +22,6 @@
 
 ## Block AU — The design system's consumer contract, adopted and gated
 
-- 📋 **SH1289** (deps: —) **Design system 2026.3.23 turned pnpm test red: its chunk is over the console's ceiling and the wait pin is stale** — Dependabot's #1222 merged the bump unreviewed; index.es.js grew 45 KB past its ceiling and SH937 wants the waits read first. → §XCIV.1
 - 📋 **SH1292** (deps: —) **pnpm test stops at the first red package, so a declared red hides an undeclared one behind it** — The JS gate's recursive run bails, so SH1289's exception was written against a partial list and the cli package's drift went unseen. → §XCIV.3
 
 ## Priority
