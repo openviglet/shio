@@ -536,6 +536,22 @@ public class ShContentAclService {
                 .anyMatch(gate -> !visibility(gate.getObjectId()).allowed());
     }
 
+    /**
+     * SH1301 — every object's own gate, by object id, in one read. For a walk that reports each
+     * folder's gate: a {@link #ownGate} per row would be a query per row, and the gates are few.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, List<String>> allGates() {
+        if (!anyGates()) {
+            return Map.of();
+        }
+        Map<String, List<String>> gates = new HashMap<>();
+        for (ShContentVisibility gate : shContentVisibilityRepository.findAll()) {
+            gates.put(gate.getObjectId(), gate.groups());
+        }
+        return gates;
+    }
+
     /** SH1285 — the gate on this object itself, as {@code (members, groups)}; empty when it is public. */
     @Transactional(readOnly = true)
     public Optional<List<String>> ownGate(String objectId) {

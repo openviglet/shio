@@ -1057,3 +1057,25 @@ has a ceiling of its own.
 replaces a session and the tree reads `format=json`; three more attributes per site there would be paid
 by every caller for one caller's benefit. Asserted in both directions, because a guard over the terse
 row would be a guard over a row the change never touched.
+
+## A folder's members-only gate, in `_folder.md` (SH1301)
+
+`_folder.md` carries `visibility: members` (and `groups: ["Members"]`) for a folder gated with
+`folder.visibility`, or `visibility: public` to open it again. The keys are written **only when the
+server has a gate**, so a tree that never mentions visibility serializes exactly as before, and a
+marker **without** the key leaves the gate alone on push: a repository cannot open a gated section by
+forgetting a line. `parseFolderMarker` refuses any other word, and `groups` without a `visibility`.
+
+**Where the gate comes from.** The context pack's sitemap row for a gated folder carries
+`visibility` and `groups` (absent on a public folder, so an ungated site pays nothing per row; the
+walk reads every gate once through `ShContentAclService.allGates`). `readRemoteFolders` puts them on
+the marker, and a gated folder gets a marker even when a post already implies the folder, because the
+gate has nowhere else to live.
+
+**The merge.** `reconcileFolders` compares the gate with the base: the server changed it and the file
+did not, so the file is rewritten; the file changed it, so it stays for the next push and the base
+keeps the **old** value (recording the unpushed one would make the next pull undo it). On push,
+`documentsFor` puts the marker's gate on its desired-state folder entry, and
+`ShAgentDesiredStateService` compiles it to `folder.visibility` after the folder ops, beside
+`folder.acl`. SH1301's remainder carries a post's own gate (`post.visibility`) into its
+frontmatter the same way.

@@ -355,12 +355,23 @@ public record ShAgentContext(
     // JSON expensive for an agent in the first place.
     @JsonInclude(Include.NON_DEFAULT)
     public record Node(String kind, String path, String id, String type, String state,
-                       String url, String title, long folders, long posts, Boolean published) {
+                       String url, String title, long folders, long posts, Boolean published,
+                       String visibility, List<String> groups) {
 
         /** The nine-field form, before SH553 gave the sitemap the word SH545 replaced. */
         public Node(String kind, String path, String id, String type, String state,
                     String url, String title, long folders, long posts) {
             this(kind, path, id, type, state, url, title, folders, posts, null);
+        }
+
+        /**
+         * The ten-field form, before SH1301 put a folder's own members-only gate on its row:
+         * {@code visibility: "members"} and the groups, both absent on a public folder, so a site
+         * with no gate pays nothing per row and the files projection can round-trip one.
+         */
+        public Node(String kind, String path, String id, String type, String state,
+                    String url, String title, long folders, long posts, Boolean published) {
+            this(kind, path, id, type, state, url, title, folders, posts, published, null, null);
         }
     }
 

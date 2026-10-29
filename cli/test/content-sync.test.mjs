@@ -908,3 +908,34 @@ test("SH1122: a marker cannot smuggle a key the projection refuses", () => {
     "SH1122: `scratch` is settable on a create and never afterwards, `bindings` have a field of "
     + "their own, and the other two have no write op — none of them reaches the op through here");
 });
+
+test("SH1301: pull carries a server gate into the marker, and a gate edited in the file survives until it is pushed", () => {
+  const plain = { site: "Blog", folder: "/members" };
+  const gated = { ...plain, visibility: "members", groups: ["Members"] };
+
+  const serverGated = reconcileFolders({ base: [plain], remote: [gated], local: [plain] });
+  assert.deepEqual(serverGated.write, [gated], "SH1301: the server gated it and the file did not move, so the file follows");
+  assert.deepEqual(serverGated.agreed, [gated]);
+
+  const fileGated = reconcileFolders({ base: [plain], remote: [plain], local: [gated] });
+  assert.deepEqual(fileGated.write, [], "SH1301: the file gated it, so it stays for the next push");
+  assert.deepEqual(fileGated.agreed, [plain],
+    "SH1301: and the unpushed gate is not recorded as agreed, or the next pull would undo it");
+
+  const implied = reconcileFolders({ base: [], remote: [gated], local: [], implied: new Set(["Blog|/members"]) });
+  assert.deepEqual(implied.write, [gated],
+    "SH1301: a gated folder gets a marker even when a post already implies the folder");
+});
+
+test("SH1301: push declares a marker's gate on its folder entry, and nothing for a marker without one", () => {
+  const [doc] = documentsFor([], {
+    sites: ["Blog"],
+    markers: [
+      { site: "Blog", folder: "/members", visibility: "members", groups: ["Members"] },
+      { site: "Blog", folder: "/news" },
+    ],
+  });
+  const byPath = Object.fromEntries(doc.folders.map((folder) => [folder.path, folder]));
+  assert.deepEqual(byPath["/members"], { path: "/members", visibility: "members", groups: ["Members"] });
+  assert.deepEqual(byPath["/news"], { path: "/news" });
+});

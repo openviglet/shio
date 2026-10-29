@@ -147,6 +147,18 @@ public class ShAgentDesiredStateService {
                         null, null, tools.jackson.databind.node.JsonNodeFactory.instance.objectNode()
                                 .set(ShAgentBatchService.ACL_KEY, folder.acl())));
             }
+            // SH1301 — who may read it, beside who may edit it and for the same ordering reason.
+            if (folder.visibility() != null && !folder.visibility().isBlank()) {
+                tools.jackson.databind.node.ObjectNode gate = tools.jackson.databind.node.JsonNodeFactory.instance
+                        .objectNode().put(ShAgentBatchService.VISIBILITY_KEY, folder.visibility());
+                if (folder.groups() != null && !folder.groups().isEmpty()) {
+                    gate.set(ShAgentBatchService.GROUPS_KEY, tools.jackson.databind.node.JsonNodeFactory.instance
+                            .arrayNode().addAll(folder.groups().stream()
+                                    .map(tools.jackson.databind.node.JsonNodeFactory.instance::textNode).toList()));
+                }
+                grants.add(op(ShAgentBatchService.FOLDER_VISIBILITY, ShAddress.folder(site, folder.path()).toString(),
+                        null, null, gate));
+            }
             if (folder.moves()) {
                 folderMoves.add(folderMoveOp(site, folder));
                 movedFolders.add(upsert);

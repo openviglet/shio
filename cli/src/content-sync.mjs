@@ -454,10 +454,13 @@ export function documentsFor(posts, {
     if (!bySite.has(site)) bySite.set(site, []);
   }
   const markersBySite = new Map();
+  // SH1301 — a marker's gate, keyed like a folder move, so the folder entry carries it.
+  const gatesBySite = new Map();
   for (const marker of markers) {
     if (!marker?.site) continue;
     if (!markersBySite.has(marker.site)) markersBySite.set(marker.site, []);
     markersBySite.get(marker.site).push(marker.folder ?? "/");
+    if (marker.visibility) gatesBySite.set(`${marker.site}|${normalizeFolder(marker.folder ?? "/")}`, gateOf(marker));
   }
   // SH211 — a folder rename, keyed by `site|<destination>` so the folder entry that declares the
   // destination is the one that carries it. A folder move has no second axis: its whole name
@@ -497,7 +500,10 @@ export function documentsFor(posts, {
       // everywhere else, so a document without one serializes exactly as it did before.
       folders: [...folders].sort().map((path) => {
         const movedFrom = folderMovesBySite.get(`${site}|${normalizeFolder(path)}`);
-        return movedFrom ? { path, movedFrom } : { path };
+        // SH1301 — and the gate only on a folder whose marker declares one, so a document from a
+        // tree that never mentions visibility serializes exactly as it did before.
+        const gate = gatesBySite.get(`${site}|${normalizeFolder(path)}`) ?? {};
+        return movedFrom ? { path, movedFrom, ...gate } : { path, ...gate };
       }),
       // SH150 — sorted, and omitted entirely when there are none, so a document without
       // renames serializes exactly as it did before this existed.
@@ -775,6 +781,18 @@ export function opsOf(document) {
  * @returns {{ write: object[], delete: object[], keep: object[], unchanged: object[],
  *             agreed: object[] }}
  */
+/** SH1301 — a marker's gate as one comparable string; a marker with none is the empty string. */
+function gateKey(marker) {
+  if (!marker?.visibility) return "";
+  return `${marker.visibility}|${(marker.groups ?? []).join(",")}`;
+}
+
+/** SH1301 — only the gate keys of a marker, for carrying a gate onto another marker. */
+function gateOf(marker) {
+  if (!marker?.visibility) return {};
+  return marker.groups?.length ? { visibility: marker.visibility, groups: marker.groups } : { visibility: marker.visibility };
+}
+
 export function reconcileFolders({ base = [], remote = [], local = [], implied = new Set() }) {
   const key = (marker) => `${marker.site}|${marker.folder}`;
   const index = (list) => new Map((list ?? []).map((marker) => [key(marker), marker]));
@@ -789,17 +807,37 @@ export function reconcileFolders({ base = [], remote = [], local = [], implied =
     const marker = remoteIndex.get(id) ?? localIndex.get(id) ?? baseIndex.get(id);
 
     if (onServer && onDisk) {
-      // Both sides have it and there is nothing to compare — leave the file byte-identical
-      // rather than rewriting it, so a pull cannot report a change nobody made.
-      out.unchanged.push(marker);
-      out.agreed.push(marker);
+      // SH1301 — the gate is the one thing in a marker the two sides can disagree about. The base
+      // says who moved: the server changed it and the file did not, so the file follows; the file
+      // changed it, so it stays and the next push applies it. Anything else leaves the file
+      // byte-identical, so a pull cannot report a change nobody made.
+      const remoteMarker = remoteIndex.get(id);
+      const localMarker = localIndex.get(id);
+      if (gateKey(remoteMarker) !== gateKey(localMarker)
+          && gateKey(localMarker) === gateKey(baseIndex.get(id))) {
+        out.write.push({
+          site: localMarker.site,
+          folder: localMarker.folder,
+          ...(localMarker.movedFrom ? { movedFrom: localMarker.movedFrom } : {}),
+          ...gateOf(remoteMarker),
+        });
+        out.agreed.push(remoteMarker);
+        continue;
+      }
+      out.unchanged.push(localMarker);
+      // A gate edited in the file and not pushed yet is not agreed: recording it as the base would
+      // make the next pull read the server's older value as the newer one and overwrite the edit.
+      out.agreed.push(gateKey(remoteMarker) === gateKey(localMarker)
+        ? localMarker
+        : (baseIndex.get(id) ?? remoteMarker));
       continue;
     }
     if (onServer) {
       // The server has a folder the tree does not declare. A post that already names it has
-      // declared it, so only the rest need a file.
+      // declared it, so only the rest need a file, unless it is gated (SH1301): the gate has
+      // nowhere else to live.
       out.agreed.push(marker);
-      if (!implied.has(id)) out.write.push(marker);
+      if (!implied.has(id) || marker.visibility) out.write.push(marker);
       continue;
     }
     if (baseIndex.has(id)) {

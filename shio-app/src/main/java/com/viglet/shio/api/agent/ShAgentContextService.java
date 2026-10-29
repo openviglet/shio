@@ -26,6 +26,7 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.agent.dto.ShAgentContext;
 import com.viglet.shio.api.release.ShReleaseService;
 import com.viglet.shio.persistence.model.release.ShRelease;
@@ -100,6 +101,8 @@ public class ShAgentContextService {
     private final ShNoteRepository shNoteRepository;
     /** SH1056 — the site's declared locale policy, or the one its content implies. */
     private final ShSiteLocaleService shSiteLocaleService;
+    /** SH1301 — the members-only gate a folder row reports. */
+    private final ShContentAclService shContentAclService;
 
     public ShAgentContextService(ShFolderRepository shFolderRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -114,7 +117,9 @@ public class ShAgentContextService {
                                 ShReleaseService shReleaseService,
                                 ShReviewService shReviewService,
                                 ShNoteRepository shNoteRepository,
-                                ShSiteLocaleService shSiteLocaleService) {
+                                ShSiteLocaleService shSiteLocaleService,
+                                ShContentAclService shContentAclService) {
+        this.shContentAclService = shContentAclService;
         this.shAgentUsageService = shAgentUsageService;
         this.shReleaseService = shReleaseService;
         this.shReviewService = shReviewService;
@@ -410,12 +415,14 @@ public class ShAgentContextService {
         List<ShAgentContext.Node> nodes = new ArrayList<>();
         Cursor cursor = new Cursor(from == null || from.isBlank() ? null : from.trim());
         int maxNodes = properties.getContext().getMaxNodes();
+        // SH1301 — read once per walk; empty, and one count, on an instance with no gate.
+        Map<String, List<String>> gates = shContentAclService.allGates();
         for (ShSite site : sites) {
             Optional<ShFolder> root = rootFolder(site);
             if (root.isEmpty()) {
                 continue;
             }
-            walkFolder(root.get(), ROOT_PATH, depth, nodes, tokens, cursor, maxNodes, ids);
+            walkFolder(root.get(), ROOT_PATH, depth, nodes, tokens, cursor, maxNodes, ids, gates);
             if (cursor.stopped()) {
                 break;
             }
@@ -425,7 +432,8 @@ public class ShAgentContextService {
 
     private void walkFolder(ShFolder folder, String path, int remainingDepth,
                             List<ShAgentContext.Node> nodes, ShTokenBudget tokens,
-                            Cursor cursor, int maxNodes, boolean ids) {
+                            Cursor cursor, int maxNodes, boolean ids,
+                            Map<String, List<String>> gates) {
         if (cursor.stopped()) {
             return;
         }
@@ -433,9 +441,11 @@ public class ShAgentContextService {
         FolderRows rows = folderRows(folder);
         List<ShPostUnified> posts = rows.posts();
 
+        List<String> gate = gates.get(folder.getId());
         ShAgentContext.Node folderNode = new ShAgentContext.Node(KIND_FOLDER, path,
                 ids ? folder.getId() : null,
-                null, null, null, null, children.size(), posts.size());
+                null, null, null, null, children.size(), posts.size(), null,
+                gate == null ? null : "members", gate == null || gate.isEmpty() ? null : gate);
         if (!offer(folderNode, folder.getId(), nodes, tokens, cursor, maxNodes)) {
             return;
         }
@@ -458,7 +468,7 @@ public class ShAgentContextService {
         }
         for (ShFolder child : children) {
             walkFolder(child, childPath(path, child.getName()), remainingDepth - 1,
-                    nodes, tokens, cursor, maxNodes, ids);
+                    nodes, tokens, cursor, maxNodes, ids, gates);
             if (cursor.stopped()) {
                 return;
             }

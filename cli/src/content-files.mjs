@@ -522,9 +522,14 @@ export function folderLocationOf(relPath) {
  * @param {{ site: string, folder: string, movedFrom?: string }} marker
  * @returns {string}
  */
-export function serializeFolder({ site, folder, movedFrom }) {
+export function serializeFolder({ site, folder, movedFrom, visibility, groups }) {
   const moved = movedFrom ? `movedFrom: ${encodeScalar(normalizeUrl(movedFrom))}\n` : "";
-  return `${FENCE}\nsite: ${encodeScalar(site)}\nfolder: ${encodeScalar(normalizeUrl(folder))}\n${moved}${FENCE}\n`;
+  // SH1301 — who may read the folder's delivered pages, only when somebody said: a marker with no
+  // `visibility` leaves the gate as it is, so it serializes exactly as it did before.
+  const gate = visibility
+    ? `visibility: ${encodeScalar(visibility)}\n${groups?.length ? `groups: ${encodeScalar(groups)}\n` : ""}`
+    : "";
+  return `${FENCE}\nsite: ${encodeScalar(site)}\nfolder: ${encodeScalar(normalizeUrl(folder))}\n${moved}${gate}${FENCE}\n`;
 }
 
 /**
@@ -566,6 +571,7 @@ export function parseFolderMarker(relPath, text) {
     );
   }
   const movedFrom = meta.movedFrom == null ? undefined : normalizeUrl(meta.movedFrom);
+  const gate = folderGateOf(relPath, meta);
   if (movedFrom != null && movedFrom === folder) {
     // The same refusal a post's `movedFrom` makes, for the same reason: the likeliest way to get
     // here is renaming the directory and then setting `movedFrom` to the *new* path, which asks
@@ -576,7 +582,33 @@ export function parseFolderMarker(relPath, text) {
         "folder has on the server, the one that is no longer in this tree",
     );
   }
-  return movedFrom == null ? { site, folder } : { site, folder, movedFrom };
+  return { site, folder, ...(movedFrom == null ? {} : { movedFrom }), ...gate };
+}
+
+/**
+ * SH1301 — a marker's `visibility` (`public` or `members`) and `groups`, or nothing.
+ *
+ * <p>Refused rather than dropped when it is neither word: a gate that silently did not apply is a
+ * members area that is public, and the author would find out from a stranger.</p>
+ */
+function folderGateOf(relPath, meta) {
+  if (meta.visibility == null) {
+    if (meta.groups != null) {
+      throw fault(relPath, "it has `groups:` and no `visibility:`; groups narrow a members-only " +
+        "folder, so say `visibility: members`");
+    }
+    return {};
+  }
+  const visibility = String(meta.visibility).trim().toLowerCase();
+  if (visibility !== "public" && visibility !== "members") {
+    throw fault(relPath, `its \`visibility: ${meta.visibility}\` is not \`public\` or \`members\``);
+  }
+  if (meta.groups != null
+      && !(Array.isArray(meta.groups) && meta.groups.every((group) => typeof group === "string"))) {
+    throw fault(relPath, 'its `groups:` is not a list of group names, e.g. `groups: ["Members"]`');
+  }
+  const groups = (meta.groups ?? []).map((group) => group.trim()).filter(Boolean).sort();
+  return visibility === "members" && groups.length ? { visibility, groups } : { visibility };
 }
 
 /* --- site markers (SH1122) --- */

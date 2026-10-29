@@ -207,17 +207,28 @@ public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> 
      *                  {@code role} in place of {@code group}). Absent leaves the folder's grants
      *                  alone; present replaces them, so the same document re-applied changes nothing.
      *                  It governs the console and the agent path, never who may read a delivered page
+     * @param visibility SH1301 — {@code public} or {@code members}: who may read the folder's
+     *                  delivered pages, as {@code folder.visibility} declares it. Absent leaves the
+     *                  gate as it is, so a tree that never mentions visibility cannot open a gated
+     *                  section by accident
+     * @param groups    SH1301 — the groups a members-only folder is for; absent or empty is any
+     *                  signed-in user
      */
-    public record Folder(String path, String movedFrom, JsonNode acl) {
+    public record Folder(String path, String movedFrom, JsonNode acl, String visibility, List<String> groups) {
 
         /** The one-field form: every folder that is only being declared, and every pre-SH211 caller. */
         public Folder(String path) {
-            this(path, null, null);
+            this(path, null, null, null, null);
         }
 
         /** The two-field form, before SH1277 let a folder say who may edit it. */
         public Folder(String path, String movedFrom) {
-            this(path, movedFrom, null);
+            this(path, movedFrom, null, null, null);
+        }
+
+        /** The three-field form, before SH1301 let a folder say who may read it. */
+        public Folder(String path, String movedFrom, JsonNode acl) {
+            this(path, movedFrom, acl, null, null);
         }
 
         /** Whether this entry asks for a move rather than only declaring a folder. */

@@ -705,3 +705,22 @@ test("SH1122: the marker lives beside the site root's _folder.md, never under co
     "SH1122: the only value in the path is the site name, and `siteDir` is what stops a "
     + "server-reported `..` leaving the root");
 });
+
+test("SH1301: a folder marker carries its members-only gate, and only when it has one", () => {
+  const gated = { site: "Blog", folder: "/members", visibility: "members", groups: ["Members"] };
+  const text = serializeFolder(gated);
+  assert.match(text, /\nvisibility: members\ngroups: \["Members"\]\n/);
+  assert.deepEqual(parseFolderMarker("Blog/members/_folder.md", text), gated,
+    "SH1301: the gate round-trips through the file");
+
+  const plain = serializeFolder({ site: "Blog", folder: "/news" });
+  assert.doesNotMatch(plain, /visibility/, "SH1301: a public folder's marker is what it was before");
+  assert.deepEqual(parseFolderMarker("Blog/news/_folder.md", plain), { site: "Blog", folder: "/news" });
+
+  assert.deepEqual(parseFolderMarker("Blog/open/_folder.md", "---\nsite: Blog\nfolder: /open\nvisibility: public\n---\n"),
+    { site: "Blog", folder: "/open", visibility: "public" }, "SH1301: `public` is how a file removes a gate");
+  assert.throws(() => parseFolderMarker("Blog/x/_folder.md", "---\nsite: Blog\nfolder: /x\nvisibility: private\n---\n"),
+    /visibility: private/, "SH1301: a word that is not a visibility is refused, not dropped");
+  assert.throws(() => parseFolderMarker("Blog/x/_folder.md", "---\nsite: Blog\nfolder: /x\ngroups: [\"A\"]\n---\n"),
+    /no `visibility:`/, "SH1301: groups without a visibility is refused");
+});

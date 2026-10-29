@@ -80,6 +80,9 @@ class ShAgentBatchTest {
     private com.viglet.shio.api.acl.ShContentAclService shContentAclService;
     @Autowired
     private ShAgentDesiredStateService shAgentDesiredStateService;
+    /** SH1301 — the sitemap row the files projection reads a folder's gate from. */
+    @Autowired
+    private ShAgentContextService shAgentContextService;
     @Autowired
     private PlatformTransactionManager transactionManager;
     @Autowired
@@ -503,6 +506,24 @@ class ShAgentBatchTest {
         assertThatThrownBy(() -> run(true, misspelled))
                 .as("SH1285: only public and members are visibilities")
                 .isInstanceOf(ShAgentBatchService.BatchOpException.class);
+
+        // SH1301 — the files projection reads the gate off the sitemap and writes it back through a
+        // desired-state folder, so both ends are asserted here, beside the op they both reach.
+        assertThat(shAgentContextService.context(siteName, null, 0, "sitemap", null).sitemap())
+                .as("SH1301: a gated folder's sitemap row carries its gate, which `shio pull` projects")
+                .anySatisfy(node -> {
+                    assertThat(node.path()).isEqualTo(base);
+                    assertThat(node.visibility()).isEqualTo("members");
+                    assertThat(node.groups()).containsExactly(group);
+                });
+        assertThat(shAgentDesiredStateService.compile(new ShAgentDesiredState(siteName,
+                        List.of(new ShAgentDesiredState.Folder(base, null, null, "public", null)),
+                        List.of(), false)))
+                .as("SH1301: a desired-state folder with a visibility compiles to folder.visibility after it")
+                .anySatisfy(compiled -> {
+                    assertThat(compiled.op()).isEqualTo(ShAgentBatchService.FOLDER_VISIBILITY);
+                    assertThat(compiled.data().path("visibility").asString()).isEqualTo("public");
+                });
 
         run(false, new Op(ShAgentBatchService.FOLDER_VISIBILITY, address, null, null,
                 objectMapper.valueToTree(Map.of("visibility", "public"))));

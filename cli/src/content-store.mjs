@@ -709,7 +709,11 @@ export async function readRemoteFolders(client, {
       for (const node of pack?.sitemap ?? []) {
         if (node?.kind === "folder" && node.path != null) {
           const chain = normalizeUrl(node.path);
-          folders.push({ site, folder: chain });
+          // SH1301 — a gated folder's row carries its gate, and the marker carries it on.
+          const gate = node.visibility
+            ? { visibility: node.visibility, ...(node.groups?.length ? { groups: [...node.groups].sort() } : {}) }
+            : {};
+          folders.push({ site, folder: chain, ...gate });
           if (node.id) folderIds.set(`${site}|${chain}`, node.id);
         }
       }
