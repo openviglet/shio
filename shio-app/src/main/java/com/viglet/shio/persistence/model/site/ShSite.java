@@ -68,6 +68,15 @@ public class ShSite extends ShObject {
 	@Column(name = "locales", length = 4096)
 	private String locales;
 
+	/**
+	 * The post type a new page in this site starts as, or null while the site names none (SH1283).
+	 *
+	 * <p>A site binds several types to layouts and none of them is "the page" by itself: Quilhara
+	 * binds eight, so an empty folder's New button guessed the catalogue's first. Always one of the
+	 * types {@code postTypeLayout} binds, which the write side checks.</p>
+	 */
+	private String pageType;
+
 	@OneToMany(mappedBy = "shSite", cascade = CascadeType.ALL)
 	@Fetch(org.hibernate.annotations.FetchMode.SUBSELECT)
 	private Set<ShFolder> shFolders = new HashSet<>();
@@ -142,6 +151,11 @@ public class ShSite extends ShObject {
 	/** SH1056 — the declared policy, or null to go back to reading it off the content. */
 	public void setLocales(String locales) {
 		this.locales = locales;
+	}
+
+	/** SH1283 — the type a new page starts as; validated against the bindings by the write side. */
+	public void setPageType(String pageType) {
+		this.pageType = pageType;
 	}
 
 	/** SH591 — written by the create that declared it, and by nothing else. */

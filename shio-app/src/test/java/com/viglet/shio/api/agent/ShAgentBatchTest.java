@@ -70,6 +70,9 @@ class ShAgentBatchTest {
 
     @Autowired
     private ShAgentBatchService shAgentBatchService;
+    /** SH1283 — to read back the page type a site.upsert stored. */
+    @Autowired
+    private com.viglet.shio.persistence.repository.site.ShSiteRepository siteRepository;
     @Autowired
     private ShAddressResolver shAddressResolver;
     /** SH1277 — the grants a folder.acl op wrote, and the compiler that emits the op. */
@@ -631,6 +634,30 @@ class ShAgentBatchTest {
     }
 
     // --- SH184: fill what is empty, never replace what somebody chose ---
+
+    @Test
+    @DisplayName("SH1283: a site names its page type with site.upsert, and only a bound type")
+    void siteUpsertNamesABoundPageType() {
+        String name = "sh1283-" + UUID.randomUUID().toString().substring(0, 8);
+        JsonNode bound = objectMapper.valueToTree(Map.of(
+                "postTypeLayout", Map.of("InfoPage", "Page", "Trail", "Detail"), "pageType", "InfoPage"));
+
+        assertThat(only(run(false, siteOp(name, bound))).action())
+                .as("SH1283: binding and naming in one op is not refused for its own order")
+                .isEqualTo(Change.CREATE);
+        assertThat(siteRepository.findByName(name).getPageType())
+                .as("SH1283: the type a new page in this site starts as")
+                .isEqualTo("InfoPage");
+
+        String other = "sh1283-" + UUID.randomUUID().toString().substring(0, 8);
+        assertThatThrownBy(() -> run(true, siteOp(other, objectMapper.valueToTree(Map.of(
+                "postTypeLayout", Map.of("Trail", "Detail"), "pageType", "Guide")))))
+                .as("SH1283: a type with no layout cannot render as a page, refused at plan time too")
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class).hasMessageContaining("no layout binding");
+        assertThatThrownBy(() -> run(false, siteOp(name, objectMapper.valueToTree(Map.of("pageType", "Guide")))))
+                .as("SH1283: an existing site is checked against the bindings it already has")
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class).hasMessageContaining("no layout binding");
+    }
 
     @Test
     @DisplayName("SH184: an empty url is filled — the agent is what knows the URL")

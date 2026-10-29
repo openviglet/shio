@@ -171,6 +171,7 @@ public class ShSiteWriteService {
         // SH1056 — validated by whoever built the payload, because this method takes an entity and
         // an entity cannot refuse. `ShSiteLocaleService.declare` is the one door.
         site.setLocales(payload.getLocales());
+        site.setPageType(payload.getPageType());
         // SH591 — carried from the create and settable nowhere else. A flag anybody could raise
         // later would make `shio site rm --scratch` a way to bulk-delete a site somebody chose to
         // keep; the guarantee it rests on is that the declaration preceded the content.
@@ -398,7 +399,44 @@ public class ShSiteWriteService {
      * first because it is the one that makes a site visible.
      */
     public static final List<String> FILLABLE =
-            List.of("url", "description", "furl", ShSiteLocales.FIELD);
+            List.of("url", "description", "furl", ShSiteLocales.FIELD, ShSiteWriteService.PAGE_TYPE_FIELD);
+
+    /** SH1283 — the op's key for the type a new page in this site starts as. */
+    public static final String PAGE_TYPE_FIELD = "pageType";
+
+    /**
+     * SH1283 — a site's page type must be one it binds to a layout, or it names a type that cannot
+     * render as a page. Checked against the bindings the site has plus those the same op adds, so a
+     * package that binds and names in one {@code site.upsert} is not refused for its own order.
+     *
+     * @throws PageTypeNotBoundException naming the bound types (P6)
+     */
+    public static void requirePageTypeBound(String pageType, java.util.Collection<String> bound) {
+        if (pageType != null && !pageType.isBlank() && !bound.contains(pageType.trim())) {
+            throw new PageTypeNotBoundException(pageType.trim(), bound);
+        }
+    }
+
+    /** SH1283 — the post types this site binds to a layout, which is what a page type may name. */
+    public java.util.Set<String> boundTypes(ShSite site) {
+        return new java.util.TreeSet<>(layoutBindings(site).keySet());
+    }
+
+    /** A 400 for a page type the site does not bind to a layout (SH1283). */
+    public static class PageTypeNotBoundException extends com.viglet.shio.api.error.ShTeachingException {
+
+        public PageTypeNotBoundException(String sent, java.util.Collection<String> bound) {
+            super(com.viglet.shio.api.error.ShProblem.badRequest("page-type-not-bound",
+                            "The page type '" + sent + "' is not bound to a layout on this site")
+                    .withDetail("A site's page type is what a new page starts as, and a type with no "
+                            + "layout binding has nothing to render through, so it cannot be a page.")
+                    .withAllowed(new ArrayList<>(new java.util.TreeSet<>(bound)))
+                    .withDidYouMeanFrom(sent)
+                    .withFix("Name one of the bound types, or bind '" + sent + "' with "
+                            + "`postTypeLayout` in the same site.upsert.")
+                    .withExample("{\"pageType\":\"InfoPage\",\"postTypeLayout\":{\"InfoPage\":\"Page\"}}"));
+        }
+    }
 
     /**
      * @param filled fields that were empty and now hold the requested value
@@ -420,6 +458,7 @@ public class ShSiteWriteService {
             // gets: a site that has no policy takes this one, and a site that has one keeps it and
             // is told so. Changing a policy somebody set is the console's job, not an upsert's.
             case ShSiteLocales.FIELD -> site.getLocales();
+            case PAGE_TYPE_FIELD -> site.getPageType();
             default -> null;
         };
     }
@@ -430,6 +469,7 @@ public class ShSiteWriteService {
             case "description" -> site.setDescription(value);
             case "furl" -> site.setFurl(value);
             case ShSiteLocales.FIELD -> site.setLocales(value);
+            case PAGE_TYPE_FIELD -> site.setPageType(value);
             default -> throw new IllegalStateException("Unfillable site field " + field);
         }
     }

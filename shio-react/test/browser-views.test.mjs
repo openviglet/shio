@@ -95,6 +95,17 @@ test("SH1275: a folder's New button offers what the folder holds, not the first 
   assert.equal(pick({ posts: [] }), "Guide", "SH1275: and with nothing to go on, the first authorable type")
   assert.equal(suggestedPostType([], { posts: [] }, null, null), null)
 })
+test("SH1283: an empty folder offers the site's declared page type before guessing", () => {
+  const types = [{ name: "Guide" }, { name: "InfoPage" }, { name: "Trail" }]
+  assert.equal(suggestedPostType(types, { posts: [] }, null, "Guide", "InfoPage")?.name, "InfoPage",
+    "SH1283: Quilhara's site root offered the catalogue's first type, 'How this was built'")
+  assert.equal(suggestedPostType(types, { posts: [] }, "Trail", null, "InfoPage")?.name, "Trail",
+    "SH1283: the type last made in this folder still wins, since it says more about the folder")
+  assert.equal(suggestedPostType(types, { posts: [{ postType: "Guide" }] }, null, null, "InfoPage")?.name,
+    "Guide", "SH1283: and what the folder already holds wins over both")
+  assert.equal(suggestedPostType(types, { posts: [] }, null, null, "Gone")?.name, "Guide",
+    "SH1283: a page type the catalogue no longer has is skipped, never offered")
+})
 test("SH1187: \"search in this folder\" opens the console's search route, not a bare /search", () => {
   const crumbs = [{ name: "favicons", type: "FOLDER" }]
   assert.ok(searchHereFor("VigR3", crumbs, "/bento/content/search").startsWith("/bento/content/search?"))

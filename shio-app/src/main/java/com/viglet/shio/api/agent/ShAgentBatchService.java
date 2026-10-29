@@ -1992,6 +1992,9 @@ public class ShAgentBatchService {
         // A policy naming a locale this instance does not know is a 400 at plan time too.
         Optional<String> locales = shSiteLocaleService.declare(
                 op.data() == null ? null : op.data().get(ShSiteLocales.FIELD));
+        // SH1283 — a new site has only the bindings this op brings, so its page type names one.
+        String pageType = text(op.data(), ShSiteWriteService.PAGE_TYPE_FIELD);
+        ShSiteWriteService.requirePageTypeBound(pageType, bindings.keySet());
         String detail = createDetail(bindings) + (scratch ? ", declared SCRATCH — disposable, and "
                 + "`shio site rm --scratch` may remove it in one confirmation" : "")
                 + (locales.isPresent() ? ", with a declared locale policy" : "");
@@ -2005,6 +2008,7 @@ public class ShAgentBatchService {
         payload.setUrl(text(op.data(), "url"));
         payload.setFurl(text(op.data(), "furl"));
         payload.setLocales(locales.orElse(null));
+        payload.setPageType(pageType == null || pageType.isBlank() ? null : pageType.trim());
         payload.setScratch(scratch ? Boolean.TRUE : null);
         ShSite created = shSiteWriteService.createBlank(payload, bindings, session.actor);
         // SH413 — a brand-new site has nothing published, so this is almost always a no-op line.
@@ -2156,6 +2160,12 @@ public class ShAgentBatchService {
                 .ifPresent(json -> requested.put(ShSiteLocales.FIELD, json));
         // SH328 — the one edge that makes a site render, and the only op that can write it.
         Map<String, String> bindings = bindingsOf(op.data());
+        // SH1283 — against what the site binds now plus what this op binds, before any write.
+        if (requested.containsKey(ShSiteWriteService.PAGE_TYPE_FIELD)) {
+            java.util.Set<String> bound = shSiteWriteService.boundTypes(site);
+            bound.addAll(bindings.keySet());
+            ShSiteWriteService.requirePageTypeBound(requested.get(ShSiteWriteService.PAGE_TYPE_FIELD), bound);
+        }
         ShSiteWriteService.ShSiteFill fill = session.dryRun
                 ? shSiteWriteService.planFill(site, requested, bindings)
                 : shSiteWriteService.fillEmpty(site, requested, bindings, session.actor);

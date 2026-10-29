@@ -285,12 +285,13 @@ page type" there, and nothing names one: `postTypeLayout` binds eight Quilhara t
 layouts (Home, Listing, Trail, Story, Guide, Trip, InfoPage, SearchPage), and none of
 them is the generic page a curator adds to an empty folder.
 
-What to build: an optional `pageType` on the site, the post type a new page in this site
-starts as, validated against the site's layout bindings (a type with no layout cannot be
-a page, so naming one is a teaching error listing the bound types). It travels where
-site settings already travel: the `site.upsert` op on the agent batch, the blueprint
-manifest (Quilhara would declare `InfoPage`), the console's site settings, and the
-context pack's sitemap, so an agent creating a page reads the same answer (P1). The
+Landed: `pageType` on `site.upsert` and the New button. Left: the blueprint key, console
+field, context pack. Built: an optional `pageType` on the site, the post type a new page
+in this site starts as, validated against the site's layout bindings (a type with no
+layout cannot be a page, so naming one is a teaching error listing the bound types). It
+travels where site settings already travel: the `site.upsert` op on the agent batch, the
+blueprint manifest (Quilhara would declare `InfoPage`), the console's site settings, and
+the context pack's sitemap, so an agent creating a page reads the same answer (P1). The
 console's `suggestedPostType` takes it as the step after "last created in this folder".
 Unset keeps today's behaviour.
 

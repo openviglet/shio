@@ -40,7 +40,7 @@ import { deleteEach, refusalSummary, type DeleteTarget } from "@/lib/batch-delet
 // SH1023 — the view lives in the URL, so the address a curator sends reproduces what they saw.
 import { useListState } from "@/hooks/use-list-state"
 import { BrowserTree } from "./content-browser/browser-tree"
-import { usePostTypes } from "@/hooks/use-catalogue"
+import { usePostTypes, useSites } from "@/hooks/use-catalogue"
 import { SavedViews } from "@/components/saved-views"
 
 
@@ -111,11 +111,15 @@ export default function ObjectChildrenPage() {
   } = useBrowserListing({ objectId, listKey: list.key, sortBy, t })
 
   useSoleRootRedirect(objectId, siteId, listData)
+  // SH1283 — the site's own page type, from the cached site list, for a folder with nothing in it.
+  const { data: sites } = useSites()
+  const sitePageType = sites?.find((site) => site.id === siteId)?.pageType ?? null
   // SH1275 — what this folder holds decides the "New …" button, not the last type made anywhere.
   const lastPostType = useMemo(() => suggestedPostType(postTypes,
     { counts: listData.facets?.type, posts: listData.posts },
-    localStorage.getItem(lastPostTypeKey(objectId)), localStorage.getItem("sh-last-post-type")),
-  [postTypes, listData.facets, listData.posts, objectId])  /**
+    localStorage.getItem(lastPostTypeKey(objectId)), localStorage.getItem("sh-last-post-type"),
+    sitePageType),
+  [postTypes, listData.facets, listData.posts, objectId, sitePageType])  /**
    * SH1024 — the bar's value and handler, stable across renders. The bar debounces typing in an
    * effect that depends on both, so a fresh object each render restarts its timer and the query is
    * never sent; measured in a browser, where the page re-renders faster than the 300 ms pause.

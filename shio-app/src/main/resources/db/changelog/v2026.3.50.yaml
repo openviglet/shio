@@ -1,0 +1,31 @@
+databaseChangeLog:
+  # SH1283 — `ShSite.pageType`: the post type a new page in this site starts as.
+  #
+  # A site binds several post types to layouts and none of them is "the page" on its own: Quilhara
+  # binds eight, so the console's New button in an empty folder offered the catalogue's first type.
+  # The write side keeps it one of the bound types; this column only holds the name.
+  #
+  # NULLABLE FOREVER, and that is the migration: null is today's behaviour (the button keeps
+  # guessing from what the folder holds), so no site changes on upgrade and nothing is backfilled.
+  #
+  # Spelled `pageType` like `formSuccess`, the other plain field on this baseline table, which
+  # Hibernate maps by its field name. Not a tenant discriminator, so no ShTenantBackfillRunner
+  # entry. Type DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on
+  # PostgreSQL (it does not propagate through `include`).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1283-site-page-type
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: ShSite
+                columnName: pageType
+      changes:
+        - addColumn:
+            tableName: ShSite
+            columns:
+              - column:
+                  name: pageType
+                  type: VARCHAR(255)

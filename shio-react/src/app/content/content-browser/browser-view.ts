@@ -249,9 +249,9 @@ export function breadcrumbFrom(data: {
  * Quilhara folder said "Novo Guide", including one holding three Trails and nothing else. The folder
  * says what belongs in it: the type most of its posts already have (the server's facet counts when
  * the listing carries them, since those cover every page of it, else the rows on screen), then the
- * type last created in this folder, then the last one created anywhere, then the first non-system
- * type. System types (File, layouts, themes) are never the suggestion: a folder of images is filled
- * by uploading, not by a post form.</p>
+ * type last created in this folder, then the site's declared page type (SH1283), then the last one
+ * created anywhere, then the first non-system type. System types (File, layouts, themes) are never
+ * the suggestion: a folder of images is filled by uploading, not by a post form.</p>
  */
 export function suggestedPostType<T extends { name: string; system?: number | boolean | null }>(
   postTypes: readonly T[],
@@ -261,6 +261,7 @@ export function suggestedPostType<T extends { name: string; system?: number | bo
   },
   lastHere: string | null,
   lastAnywhere: string | null,
+  sitePageType: string | null = null,
 ): T | null {
   const authorable = postTypes.filter((type) => !type.system)
   const byName = (name: string | null | undefined) => authorable.find((type) => type.name === name)
@@ -273,7 +274,8 @@ export function suggestedPostType<T extends { name: string; system?: number | bo
   const common = Object.entries(counts)
     .filter(([name, count]) => count > 0 && byName(name))
     .sort(([a, x], [b, y]) => y - x || a.localeCompare(b))[0]?.[0]
-  return byName(common) ?? byName(lastHere) ?? byName(lastAnywhere) ?? authorable[0] ?? postTypes[0] ?? null
+  return byName(common) ?? byName(lastHere) ?? byName(sitePageType) ?? byName(lastAnywhere)
+    ?? authorable[0] ?? postTypes[0] ?? null
 }
 
 /** The key the type last created in one folder is kept under (SH1275). */

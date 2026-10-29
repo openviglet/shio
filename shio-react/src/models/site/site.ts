@@ -6,6 +6,8 @@ export type ShSite = {
   furl: string;
   postTypeLayout: string;
   searchablePostTypes: string;
+  /** SH1283 — the type a new page in this site starts as; null while the site names none. */
+  pageType?: string | null;
   owner: string;
   date: string;
   /** SH1227 — present only on a site in the trash: when it went in. */
