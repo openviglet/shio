@@ -12,7 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- 🛠 **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — Gate the sitemap and agent public reads; per-site login redirect; post-level gates; the flag in _folder.md and frontmatter; console folder and post settings. → §XI.57
+- ⏳ **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — Gate the published render's query, getRelation, navigation, search and menu helpers; per-site login redirect; post gates; the _folder.md and frontmatter flag; console settings. → §XI.57
 
 ## Priority
 
