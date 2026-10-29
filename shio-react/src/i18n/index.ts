@@ -28,30 +28,6 @@ import enBlocks from "./locales/en/blocks.json";
 import enReview from "./locales/en/review.json";
 import enMarketplace from "./locales/en/marketplace.json";
 
-import ptCommon from "./locales/pt/common.json";
-import ptLogin from "./locales/pt/login.json";
-import ptSidebar from "./locales/pt/sidebar.json";
-import ptNav from "./locales/pt/nav.json";
-import ptDialog from "./locales/pt/dialog.json";
-import ptContent from "./locales/pt/content.json";
-import ptAdmin from "./locales/pt/admin.json";
-import ptGraphql from "./locales/pt/graphql.json";
-import ptUniversalEditor from "./locales/pt/universal-editor.json";
-import ptApiToken from "./locales/pt/apiToken.json";
-import ptTenantAdmin from "./locales/pt/tenantAdmin.json";
-import ptAuthProvider from "./locales/pt/authProvider.json";
-import ptExchangeProvider from "./locales/pt/exchangeProvider.json";
-import ptEmailConfig from "./locales/pt/emailConfig.json";
-import ptActivity from "./locales/pt/activity.json";
-import ptAcl from "./locales/pt/acl.json";
-import ptSiteWebhook from "./locales/pt/siteWebhook.json";
-import ptHome from "./locales/pt/home.json";
-import ptStaticFile from "./locales/pt/staticFile.json";
-import ptNote from "./locales/pt/note.json";
-import ptInsights from "./locales/pt/insights.json";
-import ptBlocks from "./locales/pt/blocks.json";
-import ptReview from "./locales/pt/review.json";
-import ptMarketplace from "./locales/pt/marketplace.json";
 
 const en = {
   ...enCommon, ...enLogin, ...enSidebar, ...enNav, ...enDialog,
@@ -61,24 +37,20 @@ const en = {
   ...enInsights, ...enBlocks,
 };
 
-const pt = {
-  ...ptCommon, ...ptLogin, ...ptSidebar, ...ptNav, ...ptDialog,
-  ...ptContent, ...ptAdmin, ...ptGraphql, ...ptUniversalEditor, ...ptApiToken,
-  ...ptTenantAdmin, ...ptAuthProvider, ...ptExchangeProvider, ...ptEmailConfig,
-  ...ptActivity, ...ptAcl, ...ptSiteWebhook, ...ptHome, ...ptStaticFile, ...ptReview, ...ptNote, ...ptMarketplace,
-  ...ptInsights, ...ptBlocks,
-};
-
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
+    // SH1286 — English only, because it is the fallback; Portuguese arrives with `ensureLanguage`.
     resources: {
       en: { translation: en },
-      pt: { translation: pt },
     },
+    partialBundledLanguages: true,
     fallbackLng: "en",
     interpolation: { escapeValue: false },
+    // A bundle added after the first render re-renders what read it, so a mid-session switch to
+    // Portuguese replaces the English fallback on screen rather than waiting for a navigation.
+    react: { bindI18nStore: "added" },
     detection: {
       order: ["navigator", "htmlTag", "localStorage", "cookie"],
       caches: ["localStorage"],
@@ -86,6 +58,28 @@ i18n
   });
 
 registerVigTranslations(i18n);
+
+/**
+ * SH1286 — the reader's own language, loaded only when it is not English.
+ *
+ * Portuguese is a chunk of its own (`./pt`), so an English reader no longer downloads it. Merged
+ * with overwrite, so Shio's strings win over the design system's for the same key, which is the
+ * precedence the eager bundle had when Shio's resources were initialised first.
+ */
+let portuguese: Promise<void> | null = null;
+export function ensureLanguage(lng: string | undefined): Promise<void> {
+  if (!lng?.toLowerCase().startsWith("pt")) return Promise.resolve();
+  portuguese ??= import("./pt").then((module) => {
+    i18n.addResourceBundle("pt", "translation", module.default, true, true);
+  });
+  return portuguese;
+}
+
+/** Resolves once the detected language's strings are in, so the first paint is in that language. */
+export const i18nReady: Promise<void> = ensureLanguage(i18n.language);
+i18n.on("languageChanged", (lng) => {
+  void ensureLanguage(lng);
+});
 
 /**
  * SH1054 — the document says which language it is in.

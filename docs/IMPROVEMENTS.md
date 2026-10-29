@@ -1241,24 +1241,3 @@ package half is VDS204 to VDS207 in the design system's own backlog.
 ## XCII The public site (shio.viglet.org)
 
 ## XCIII The console as an application: cost, resilience and access
-
-### XCIII.1 Load a screen's locale strings with the screen (SH1286)
-
-Found shipping SH1280. Adding six short strings to `staticFile.json` (en and pt, about 1
-KB) turned `console-size-budget.test.mjs` red: the eager raw total was 1922.9 KB against
-a 2002 KB ceiling, and the gate wants 4% of room, so the margin left was about 1 KB. The
-fix that shipped was shortening the strings until the console's hints were terse, which
-is the wrong lever: every namespace of every screen is in the bundle a curator downloads
-before the first row, so the next task that adds a sentence to any screen meets the same
-wall, and the choices on offer will be to cut the copy or raise the ceiling the gate was
-written to stop people raising.
-
-What to build: measure first, as SH1043 did. Report how many of the eager bytes are
-locale JSON, per namespace and per language, from the same Vite analysis the gate reads.
-If that share is material, load a screen's namespaces with the screen (i18next's
-backend, or a dynamic import per route), and keep eager only what the shell itself
-draws: navigation, the header, errors. Only the reader's own language should load, never
-both. The gate then gains the headroom back without a ceiling change.
-
-Assert with the size gate itself: the eager total falls by the measured locale share,
-and a test fails if a screen-only namespace is reachable from the entry chunk.

@@ -243,9 +243,10 @@ test("SH1235: the eager ceilings keep 4% of room over the last measured totals, 
   // last measurement would pass every run that has none. SH1235 measured 1905.0 KB raw / 521.0 KB
   // gzip after SH1214, SH1216 and design system 2026.3.18 had used the room up; SH1253 measured
   // 1919.8 KB raw / 527.3 KB gzip after the marketplace dialog's strings and screenshots; SH1280
-  // measured 1922.4 KB raw / 528.1 KB gzip after the media card's page-load badge.
+  // measured 1922.4 KB raw / 528.1 KB gzip after the media card's page-load badge, and SH1286
+  // 1855.8 KB raw / 508.0 KB gzip once the Portuguese strings left the eager bundle.
   for (const [name, ceiling, measured] of [
-    ["raw", budget.eager.raw, 1922.4 * 1024], ["gzip", budget.eager.gzip, 528.1 * 1024],
+    ["raw", budget.eager.raw, 1855.8 * 1024], ["gzip", budget.eager.gzip, 508.0 * 1024],
   ]) {
     assert.ok(ceiling - measured >= Math.round(ceiling * 0.04),
       `SH1235: the eager ${name} ceiling ${kb(ceiling)} leaves under 4% over the ${kb(measured)} last `

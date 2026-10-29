@@ -197,9 +197,19 @@ test("SH891: the console still registers the package's bundle, or this reader mo
       + " the bento chrome renders come from that bundle, so without it the console falls back to"
       + " each call's defaultValue — English, everywhere, in every locale. This reader builds its"
       + " own instance the same way, so it would keep passing while the console did not.")
-  for (const locale of LOCALES) {
-    assert.ok(index.includes(`${locale}: { translation:`),
-      `SH891: src/i18n/index.ts no longer declares a ${locale} resource bundle in the shape this`
-        + " reader reproduces")
+  assert.ok(index.includes("en: { translation:"),
+    "SH891: src/i18n/index.ts no longer declares the en resource bundle in the shape this reader"
+      + " reproduces")
+  // SH1286 — Portuguese is no longer in the eager bundle: index.ts loads ./pt on demand, and that
+  // module merges the same files this reader merges, so the model above still matches.
+  assert.match(index, /import\("\.\/pt"\)/u,
+    "SH1286: index.ts no longer loads the Portuguese bundle on demand")
+  assert.ok(!/from "\.\/locales\/pt\//u.test(index),
+    "SH1286: a static import of a Portuguese locale file puts it back in the eager bundle every"
+      + " English reader downloads")
+  const pt = readFileSync(join(SRC, "i18n", "pt.ts"), "utf8")
+  for (const file of readdirSync(join(SRC, "i18n", "locales", "pt"))) {
+    assert.ok(pt.includes(`./locales/pt/${file}`),
+      `SH1286: src/i18n/pt.ts does not merge ${file}, so a Portuguese reader would miss its strings`)
   }
 })

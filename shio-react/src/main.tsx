@@ -1,4 +1,4 @@
-import '@/i18n';
+import { i18nReady } from '@/i18n';
 import '@/lib/axios';
 import { BackendStatusProvider, ErrorBoundary } from '@viglet/viglet-design-system';
 import axios from 'axios';
@@ -39,7 +39,10 @@ if (!(globalThis as Record<string, unknown>).__SHIO_LOADING_TEST__) {
    */
   document.body.classList.remove(SHIO_LIGHT_BOOT_CLASS)
 
-  createRoot(document.getElementById('root')!).render(
+  // SH1286 — a Portuguese reader's strings are a chunk of their own now, so the first render waits
+  // for them rather than painting English and swapping. An English reader waits for nothing. A
+  // chunk that fails to load still mounts, in the English fallback, rather than leaving the splash.
+  void i18nReady.catch(() => undefined).then(() => createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
       {/* SH1090 — no BrowserRouter here: App renders a data router, which is what lets a page
           block an in-app navigation (useBlocker) rather than only a tab close. */}
@@ -49,5 +52,5 @@ if (!(globalThis as Record<string, unknown>).__SHIO_LOADING_TEST__) {
         </BackendStatusProvider>
       </ErrorBoundary>
     </React.StrictMode>
-  )
+  ))
 }

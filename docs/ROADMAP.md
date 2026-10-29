@@ -21,10 +21,6 @@
 
 - 📋 **SH1258** (deps: SH1256 ✅, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
 
-## Block BG — The console as an application: cost, resilience and access
-
-- 📋 **SH1286** (deps: —) **Every console screen's strings, in both languages, ship in the eager bundle, which has about 1 KB of room left** — SH1280's six short media-card strings turned the size gate red; the next screen copy must be cut or the ceiling raised. → §XCIII.1
-
 ## Priority
 
 ## Done when — SH1245

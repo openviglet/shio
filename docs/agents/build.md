@@ -2144,6 +2144,16 @@ and it now has a number to argue against rather than an impression.
   the cheapest way to pass then is to delete somebody else's feature, the degrade-the-measurement
   non-goal by name.
 
+**A reader downloads one language, not two (SH1286).** Every locale file of both languages was in the
+eager bundle (147.7 KB of JSON), so SH1280's six short strings left 1 KB of headroom and the next
+screen's copy would have had to be cut or the ceiling raised. English stays eager because it is the
+fallback; Portuguese is `src/i18n/pt.ts`, behind `import()`, added with `ensureLanguage` (overwrite,
+so Shio's strings still beat the design system's) and awaited before the first render, so a
+Portuguese reader sees no English flash. Measured on the built console: 1922.4 → 1855.8 KB raw and
+528.1 → 508.0 KB gzip, with a 70.2 KB `pt` chunk, and the raw ceiling went back to 2050000.
+`bento-i18n.test.mjs` fails a static import of a pt file. Splitting English per screen was not
+taken: it is the fallback for every key, so most of it would load anyway.
+
 ## A budget per route, and the two things measuring it refuted (SH1113)
 
 SH1043 above measures **one** number for the whole console: what every route pays before the first
