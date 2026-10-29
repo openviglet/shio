@@ -14,7 +14,7 @@
 - ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
 - ⏳ **SH1275** (deps: SH1283) **The content browser's create button offers an arbitrary post type, Novo Guide in every Quilhara folder** — An empty folder still offers the first type; offering the site's page type needs a rule naming which layout-bound type is the page. → §XI.47
-- 📋 **SH1280** (deps: —) **assets prune and the media library count a font every page loads as unused, unlike verify since SH1268** — Quilhara's three fonts are listed reclaimable with an instruction to delete them, while verify now says they are used. → §XI.52
+- ⏳ **SH1280** (deps: —) **assets prune and the media library count a font every page loads as unused, unlike verify since SH1268** — shio_assets usage=true and the console media card still read usageCount alone, so both still call a theme's font unused. → §XI.52
 - 📋 **SH1281** (deps: —) **A site cannot relabel a language in its switcher, so pt-br and pt-pt both read Português** — SH1270 names each language from a fixed table, which has no regional or brand wording a site could set. → §XI.53
 - 📋 **SH1282** (deps: —) **The editor's live preview shows an unpublished image or font as broken, since its frame can reach published bytes only** — A curator previewing an upload they have not published sees a broken image, though the page shows it once published. → §XI.54
 - 📋 **SH1283** (deps: —) **A site cannot say which of its layout-bound types is its page, so an empty folder's New button guesses** — Quilhara binds eight types to layouts and names none as the page, so its site root offers Novo How this was built. → §XI.55
@@ -46,6 +46,13 @@
 - **An empty folder offers the site's page type** Opening a folder with no posts on a
   site that binds layouts reads New with the type the site names as its page, not the
   catalogue's first type, in the console's content browser.
+
+## Done when — SH1280
+
+- **shio_assets usage and the media card count what pages load** On applied Quilhara,
+  shio_assets with usage=true and the console media card both report each font as loaded
+  by every page, agreeing with the listing's loadedBy and with verify, rather than
+  calling it unused.
 
 ## Non-goals (do NOT add as tasks)
 

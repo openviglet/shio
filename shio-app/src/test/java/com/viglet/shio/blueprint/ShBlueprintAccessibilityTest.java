@@ -29,6 +29,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
 import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
+import com.viglet.shio.api.staticfile.ShStaticFileAPI;
+import com.viglet.shio.api.staticfile.ShStaticFileItem;
+import com.viglet.shio.api.staticfile.ShStaticFileListing;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.blueprint.dto.ShBlueprint;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
@@ -116,6 +120,10 @@ class ShBlueprintAccessibilityTest {
     private ShBlueprintService blueprintService;
     @Autowired
     private ShAgentVerifyService verifyService;
+    @Autowired
+    private ShStaticFileAPI staticFileAPI;
+    @Autowired
+    private ShSiteRepository siteRepository;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -212,6 +220,29 @@ class ShBlueprintAccessibilityTest {
         assertThat(contentOnly.notes())
                 .as("SH1268: a content-only run says the page check did not count loaded assets")
                 .anyMatch(note -> note.contains("checks=page"));
+
+        // SH1280 — the media listing and `shio assets prune` mean the same thing by "used": with
+        // `loads=true` each font is counted as loaded by every page rendered, so prune keeps it.
+        ShStaticFileListing listing = staticFileAPI.list(null, siteRepository.findByName(site).getId(),
+                null, null, 0, 500, true);
+        List<ShStaticFileItem> fonts = listing.items().stream()
+                .filter(item -> item.fileName() != null && item.fileName().endsWith(".woff2"))
+                .toList();
+        System.out.printf("SH1280: %d font(s); rendered %s of %s page(s); loadedBy %s%n", fonts.size(),
+                listing.pagesRendered(), listing.pagesTotal(),
+                fonts.stream().map(ShStaticFileItem::loadedBy).toList());
+        assertThat(fonts).as("SH1280: the showcase ships three self-hosted fonts").hasSize(3);
+        assertThat(listing.pagesRendered())
+                .as("SH1280: loads=true rendered every page, so a zero would be a fact")
+                .isPositive().isEqualTo(listing.pagesTotal());
+        assertThat(fonts)
+                .as("SH1280: a font no field names and every page fetches was listed reclaimable by "
+                        + "prune while verify said it was used; loadedBy is the count both now read")
+                .allMatch(font -> Integer.valueOf(listing.pagesRendered()).equals(font.loadedBy()));
+        assertThat(staticFileAPI.list(null, siteRepository.findByName(site).getId(), null, null, 0, 500,
+                false).items())
+                .as("SH1280: and a plain listing renders nothing, so loadedBy stays unasked")
+                .allMatch(item -> item.loadedBy() == null);
     }
 
     private static java.util.Properties budgets() {

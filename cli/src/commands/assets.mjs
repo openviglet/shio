@@ -25,6 +25,14 @@
  * listing that already exists (SH1034 stamps `usageCount` on every row of a page, in one indexed
  * query), so this command is a walk over that listing and a filter. A second server contract for
  * the same fact is how two surfaces come to disagree about what "unused" means.
+ *
+ * ## Unused means nothing references it AND no page loads it (SH1280)
+ *
+ * `usageCount` is the reference index, which a theme's `@font-face` never feeds, so Quilhara's
+ * three fonts were listed as reclaimable while every page fetched them, and `verify` (SH1268) said
+ * the opposite. The listing's `loads=true` adds `loadedBy`, counted the way verify's page check
+ * reads a page, and an asset is unused here only when both are zero. That renders every page of
+ * the sites involved, which is why the line says how many it rendered.
  */
 import { ShioAdminClient } from "../admin-client.mjs";
 import { resolveAdmin } from "../context.mjs";
@@ -56,9 +64,10 @@ export async function run(flags, positionals, ctx) {
 
   const { baseUrl, user, password } = resolveAdmin(flags, ctx.env);
   const client = new ShioAdminClient({ baseUrl, user, password, fetch: ctx.fetch });
-  const items = await client.listStaticFiles({
+  const { items, pagesRendered, pagesTotal } = await client.listStaticFilesWithLoads({
     siteId: flags.site ?? undefined,
     folderId: flags.folder ?? undefined,
+    loads: true,
   });
 
   // `usageCount` absent means this instance predates SH1034 and cannot answer. Saying so beats
@@ -73,7 +82,11 @@ export async function run(flags, positionals, ctx) {
     );
   }
 
-  const unused = items.filter((item) => item.usageCount === 0);
+  // SH1280 — a row with no `loadedBy` comes from an instance that does not count page loads; it is
+  // judged on references alone, as before, and the run says so rather than passing it off as both.
+  const unused = items.filter((item) => item.usageCount === 0 && !(item.loadedBy > 0));
+  const loadsUnknown = unused.some((item) => typeof item.loadedBy !== "number");
+  const loadsCut = pagesRendered !== null && pagesTotal !== null && pagesRendered < pagesTotal;
   const freed = unused.reduce(
     (total, item) => total + (Number.isFinite(item.size) && item.size > 0 ? item.size : 0),
     0,
@@ -84,6 +97,8 @@ export async function run(flags, positionals, ctx) {
       scanned: items.length,
       unused: unused.length,
       bytes: freed,
+      pagesRendered,
+      pagesTotal,
       deleted: false,
       items: unused.map((item) => ({
         id: item.id,
@@ -98,8 +113,22 @@ export async function run(flags, positionals, ctx) {
   }
 
   ctx.stdout.write(
-    `assets ${items.length} scanned, ${unused.length} unused, ${formatBytes(freed)} reclaimable\n`,
+    `assets ${items.length} scanned, ${unused.length} unused, ${formatBytes(freed)} reclaimable` +
+      `${pagesRendered === null ? "" : ` (rendered ${pagesRendered} page(s) to know)`}\n`,
   );
+  if (loadsUnknown) {
+    ctx.stdout.write(
+      "note: this instance does not count what rendered pages load (it needs SH1280), so an asset " +
+        "a theme or layout loads, such as a font, may be listed. `shio verify --checks content,page` " +
+        "withdraws those.\n",
+    );
+  }
+  if (loadsCut) {
+    ctx.stdout.write(
+      `note: only ${pagesRendered} of ${pagesTotal} page(s) were rendered, so an asset only the ` +
+        "rest load may be listed here.\n",
+    );
+  }
   for (const item of unused) {
     const where = [item.siteName, item.folderName].filter(Boolean).join("/");
     ctx.stdout.write(
@@ -115,5 +144,7 @@ export async function run(flags, positionals, ctx) {
         "(POST /api/v2/agent/batch), or from the media library.\n",
     );
   }
-  return { scanned: items.length, unused: unused.length, bytes: freed, deleted: false };
+  return {
+    scanned: items.length, unused: unused.length, bytes: freed, pagesRendered, pagesTotal, deleted: false,
+  };
 }

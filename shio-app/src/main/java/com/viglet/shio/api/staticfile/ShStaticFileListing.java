@@ -11,6 +11,9 @@ package com.viglet.shio.api.staticfile;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 /**
  * One page of the media library (SH1030).
  *
@@ -41,12 +44,32 @@ import java.util.Map;
  * @param totalFiles how many assets match the filters in total — not how many are in this page,
  *                   which is what makes a cut visible (SH138's rule)
  * @param facets     how many assets each category holds, ignoring the category filter itself
+ * @param pagesRendered SH1280 — on {@code loads=true}, how many pages were rendered to count
+ *                   {@code loadedBy}; null when nobody asked
+ * @param pagesTotal SH1280 — how many pages the rows' sites publish; above {@code pagesRendered}
+ *                   when the cap cut, which makes a zero {@code loadedBy} a gap rather than a fact
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 public record ShStaticFileListing(List<ShStaticFileItem> items, int page, int size,
-                                  long totalFiles, Map<String, Long> facets) {
+                                  long totalFiles, Map<String, Long> facets,
+                                  // Omitted when unasked, so a plain listing is the bytes it was.
+                                  @JsonInclude(Include.NON_NULL) Integer pagesRendered,
+                                  @JsonInclude(Include.NON_NULL) Integer pagesTotal) {
+
+    /** The pre-SH1280 shape: no page loads were counted. */
+    public ShStaticFileListing(List<ShStaticFileItem> items, int page, int size, long totalFiles,
+                               Map<String, Long> facets) {
+        this(items, page, size, totalFiles, facets, null, null);
+    }
+
+    /** The same page, with each row's {@code loadedBy} and what was rendered to know it (SH1280). */
+    public ShStaticFileListing withLoads(ShAssetLoadService.Loads loads) {
+        return new ShStaticFileListing(items.stream()
+                .map(item -> item.withLoadedBy(loads.byAsset().getOrDefault(item.id(), 0)))
+                .toList(), page, size, totalFiles, facets, loads.rendered(), loads.pages());
+    }
 
     public ShStaticFileListing {
         items = items == null ? List.of() : List.copyOf(items);

@@ -68,13 +68,16 @@ public class ShStaticFileAPI {
     private final ShImageTransformPipeline imageTransformPipeline;
     private final ShImageTransformGuard imageTransformGuard;
     private final ShImageTransformSigner imageTransformSigner;
+    private final ShAssetLoadService shAssetLoadService;
 
     public ShStaticFileAPI(ShStaticFileService shStaticFileService,
                            ShFileStorageService storage,
                            ShPostUnifiedRepository shPostUnifiedRepository,
                            ShImageTransformPipeline imageTransformPipeline,
                            ShImageTransformGuard imageTransformGuard,
-                           ShImageTransformSigner imageTransformSigner) {
+                           ShImageTransformSigner imageTransformSigner,
+                           ShAssetLoadService shAssetLoadService) {
+        this.shAssetLoadService = shAssetLoadService;
         this.shStaticFileService = shStaticFileService;
         this.storage = storage;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -102,8 +105,16 @@ public class ShStaticFileAPI {
             // SH1030 — the one content read nobody had paged. `page`/`size` are the object
             // listing's own words (SH165), so a reader who knows one listing knows this one.
             @RequestParam(name = "page", required = false) Integer page,
-            @RequestParam(name = "size", required = false) Integer size) {
-        return shStaticFileService.page(folderId, siteId, category, q, page, size);
+            @RequestParam(name = "size", required = false) Integer size,
+            // SH1280 — opt-in, because it renders every page of the rows' sites: the count of
+            // pages that load each asset, which the reference index cannot see (a theme's font).
+            @RequestParam(name = "loads", defaultValue = "false") boolean loads) {
+        ShStaticFileListing listing = shStaticFileService.page(folderId, siteId, category, q, page, size);
+        if (!loads || listing.items().isEmpty()) {
+            return listing;
+        }
+        return listing.withLoads(shAssetLoadService.loadedBy(listing.items().stream()
+                .map(ShStaticFileItem::siteId).filter(java.util.Objects::nonNull).distinct().toList()));
     }
 
     /**

@@ -287,14 +287,14 @@ are listed as reclaimable, with the instruction to delete them, while every page
 them. So two surfaces now disagree about one fact, which `cli/src/commands/assets.mjs`
 itself names as the failure to avoid.
 
-What to build: one meaning of "used" across the three. The cheap, honest form is a
-second count beside `usageCount`, `loadedBy` (pages whose rendered output requests the
-asset), computed the way SH1268 computes it, by walking rendered pages through
-`ShPreviewLinks.referencesIn` and resolving each reference with
-`ShSiteAssets.findInSite`. That is one render per page, so it is computed on request
-(`usage=true` on the listing, the prune command) and never on a plain listing. Prune
-then counts an asset as reclaimable only when both counts are zero, and says it rendered
-N pages to know.
+Landed: `loads=true` on the listing (`ShAssetLoadService`) and prune. Left: `shio_assets
+usage` and the media card. The cheap, honest form is a second count beside `usageCount`,
+`loadedBy` (pages whose rendered output requests the asset), computed the way SH1268
+computes it, by walking rendered pages through `ShPreviewLinks.referencesIn` and
+resolving each reference with `ShSiteAssets.findInSite`. That is one render per page, so
+it is computed on request (`usage=true` on the listing, the prune command) and never on
+a plain listing. Prune then counts an asset as reclaimable only when both counts are
+zero, and says it rendered N pages to know.
 
 Assert on the Quilhara package: after apply, `shio assets prune --dry-run` lists none of
 the three fonts, and the media listing with usage reports each font as loaded by every

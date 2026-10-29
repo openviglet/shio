@@ -116,7 +116,50 @@ test("SH1034: an empty library is zero unused rather than a refusal", async () =
   // An empty media library is a legitimate answer and must not look like an old instance.
   const ctx = ctxWith(scriptedFetch(listing([])));
   const result = await assets.run({}, ["prune"], ctx);
-  assert.deepEqual(result, { scanned: 0, unused: 0, bytes: 0, deleted: false });
+  assert.deepEqual(result, {
+    scanned: 0, unused: 0, bytes: 0, pagesRendered: null, pagesTotal: null, deleted: false,
+  });
+});
+
+const WITH_LOADS = {
+  ...listing([
+    { id: "f1", fileName: "inter-400.woff2", size: 2048, usageCount: 0, loadedBy: 5 },
+    { id: "a2", fileName: "old.png", size: 1024, usageCount: 0, loadedBy: 0 },
+    { id: "a1", fileName: "hero.png", size: 4096, usageCount: 1, loadedBy: 2 },
+  ]),
+  pagesRendered: 5,
+  pagesTotal: 5,
+};
+
+test("SH1280: a font every page loads is not unused, though no field references it", async () => {
+  const fetchImpl = scriptedFetch(WITH_LOADS);
+  const ctx = ctxWith(fetchImpl);
+
+  const result = await assets.run({}, ["prune"], ctx);
+
+  assert.match(fetchImpl.calls[0].url, /[?&]loads=true/, "SH1280: prune asks the listing for page loads");
+  assert.equal(result.unused, 1, "SH1280: only the asset nothing references AND no page loads");
+  assert.ok(!ctx.stdout.text.includes("inter-400.woff2"),
+    "SH1280: Quilhara's fonts were listed reclaimable while every page fetched them");
+  assert.match(ctx.stdout.text, /1 unused, 1\.0 KB reclaimable \(rendered 5 page\(s\) to know\)/);
+  assert.ok(!ctx.stdout.text.includes("note:"), "SH1280: a complete count needs no caveat");
+});
+
+test("SH1280: a count the server cut short says so, since a zero past the cap is a gap", async () => {
+  const ctx = ctxWith(scriptedFetch({ ...WITH_LOADS, pagesRendered: 500, pagesTotal: 812 }));
+  const result = await assets.run({ json: true }, ["prune"], ctx);
+  assert.equal(result.pagesRendered, 500);
+  assert.equal(result.pagesTotal, 812);
+
+  const text = ctxWith(scriptedFetch({ ...WITH_LOADS, pagesRendered: 500, pagesTotal: 812 }));
+  await assets.run({}, ["prune"], text);
+  assert.match(text.stdout.text, /only 500 of 812 page\(s\) were rendered/);
+});
+
+test("SH1280: an instance that does not count page loads is judged on references, and says so", async () => {
+  const ctx = ctxWith(scriptedFetch(LIBRARY));
+  await assets.run({}, ["prune"], ctx);
+  assert.match(ctx.stdout.text, /does not count what rendered pages load/);
 });
 
 test("SH1034: an unknown sub-command names the only one there is", async () => {

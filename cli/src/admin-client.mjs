@@ -112,24 +112,45 @@ export class ShioAdminClient {
    * It reads a bare array too, which is what an instance older than SH1030 answers with — the
    * conformance suite drives this CLI against instances it did not build.
    */
-  async listStaticFiles({ siteId, folderId, size = 200, maxPages = 500 } = {}) {
+  async listStaticFiles(options = {}) {
+    return (await this.listStaticFilesWithLoads(options)).items;
+  }
+
+  /**
+   * The same walk, with `loads=true` when asked (SH1280): each row gains `loadedBy`, the pages
+   * whose rendered output requests it, and the answer says how many pages the server rendered to
+   * know (`pagesRendered` of `pagesTotal`). Both are null from an instance that predates it.
+   */
+  async listStaticFilesWithLoads({ siteId, folderId, size = 200, maxPages = 500, loads = false } = {}) {
     // SH213 — `folderId` is the server's own filter (SH62), and it is what turns "read the whole
     // media library to resolve one reference" into "read the folder the reference names".
     const items = [];
+    let pagesRendered = null;
+    let pagesTotal = null;
     for (let page = 0; page < maxPages; page += 1) {
       const params = new URLSearchParams();
       if (folderId) params.set("folderId", folderId);
       else if (siteId) params.set("siteId", siteId);
       params.set("page", String(page));
       params.set("size", String(size));
+      if (loads) params.set("loads", "true");
       const answer = await this.#at(`/api/v2/staticfile?${params}`, "GET");
       if (Array.isArray(answer)) {
         // An instance with no paging answered everything it has; asking for page 1 would return
         // the same rows again, so this is the whole answer and the walk is over.
-        return answer;
+        return { items: answer, pagesRendered, pagesTotal };
       }
       const batch = answer?.items ?? [];
       items.push(...batch);
+      // Each page of the listing renders the sites its own rows belong to, so the least complete
+      // answer is the one that bounds what a zero means.
+      if (typeof answer?.pagesRendered === "number" && typeof answer?.pagesTotal === "number") {
+        const short = answer.pagesTotal - answer.pagesRendered;
+        if (pagesRendered === null || short > pagesTotal - pagesRendered) {
+          pagesRendered = answer.pagesRendered;
+          pagesTotal = answer.pagesTotal;
+        }
+      }
       // The total is what says whether there is more, rather than a short page: a page shorter
       // than `size` is also what the LAST page looks like, and stopping on that alone would
       // stop one page early whenever the library divides evenly.
@@ -137,7 +158,7 @@ export class ShioAdminClient {
         break;
       }
     }
-    return items;
+    return { items, pagesRendered, pagesTotal };
   }
 
   /**

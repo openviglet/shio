@@ -236,7 +236,10 @@ class ShSilentCatchInventoryTest {
             // list, or a delete that cannot finish leaves the card on the site's initials, which is
             // what "no picture" looks like; the last two log at WARN with the SH1218 tag. A home that
             // will not render is answered as "no published home" in `status`, the field a caller reads.
-            Map.entry("api", 87),
+            // SH1280 — 88: ShAssetLoadService counts a page that redirects or does not render as
+            // loading nothing. A redirect has no page to read, and a page that will not compose is
+            // verify's `page-unrendered`, reported by the check whose subject it is, as at 81.
+            Map.entry("api", 88),
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

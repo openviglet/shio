@@ -4222,6 +4222,12 @@ that already exists (SH1034 stamps `usageCount` on the rows of every page, in on
 this is `listStaticFiles` plus a filter. A second server contract for the same fact is how two
 surfaces come to disagree about what "unused" means (P10).
 
+**Unused is both counts at zero (SH1280).** Prune walks the listing with `loads=true`
+(`listStaticFilesWithLoads`), so a row carries `loadedBy`, the rendered pages that request it, and
+an asset is listed only when nothing references it and no page loads it: a theme's font is the case.
+The line says how many pages were rendered to know; a server-side cap that cut the count, or an
+instance that does not send `loadedBy`, is said in a `note:` rather than passed off as complete.
+
 **`--dry-run` is the whole command, not the default of two.** Deleting content because a report
 called it unreferenced is exactly the act P7 says must be typed out in full, so the safe reading is
 what you get and `--dry-run` is accepted as a no-op for a caller who writes it anyway. The number is

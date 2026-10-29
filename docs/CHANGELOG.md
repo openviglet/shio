@@ -396,6 +396,7 @@
 - **SH1277** — folder.acl and a desired-state folder `acl` let a blueprint declare a folder's edit grants; Quilhara's /theme now ships admin-only, re-applies as noop, refuses unknown principals (design §XI.49 recorded in `docs/agents/agent-surface.md`).
 - **SH1278** — {{#search}} and {{#query}} take locale=, meaning what the CDA's /search?locale= means, so locale=post.locale lists only the page's language; Quilhara's search layout now passes it (design §XI.50 recorded in `docs/agents/renderer.md`).
 - **SH1279** — A /sites link takes its target's own locale when the target is not in the reader's, and on a site publishing en-us a page under the wrong en-us label 302s to its own locale (design §XI.51 recorded in `docs/agents/renderer.md`).
+- **SH1280 (REST loadedBy and assets prune)** — The media listing's loads=true counts the rendered pages loading each asset, the way verify's page check reads them, and shio assets prune no longer lists Quilhara's fonts.
 
 ## Block M — Token economy, measured (SH74)
 

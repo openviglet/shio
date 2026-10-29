@@ -463,6 +463,17 @@ is the value a deletion acts on. Four surfaces read it: the media card's badge, 
 query. A CLI meeting an instance that sends no `usageCount` **refuses** rather than reporting every
 asset as unused, the reading that would otherwise invite a mass deletion.
 
+**`loads=true` adds what pages load (SH1280).** The reference index cannot see CSS, so a theme's
+`@font-face` font counted zero and prune listed Quilhara's fonts as reclaimable while `verify`
+(SH1268) said they were used. `ShAssetLoadService` reads pages the way verify's page check does:
+published posts of a layout-bound type, rendered, `ShPreviewLinks.referencesIn`, resolved with
+`ShSiteAssets.findInSite`. Each row of the page then carries `loadedBy` (pages that request it), and
+the envelope carries `pagesRendered` of `pagesTotal`, capped at 500 per site, since a zero past the
+cap is a gap. It costs one render per page of the rows' sites, so it is opt-in and `null` otherwise.
+Prune asks for it and calls an asset unused only when both counts are zero.
+`ShBlueprintAccessibilityTest` asserts it on the applied Quilhara package. Still open: the MCP
+`usage` line and the media card's badge read `usageCount` alone.
+
 The instrument is worth knowing about independently: neither `getEntityLoadCount()` nor SH634's
 `getExecutionRowCount()` can see a scan, because both count rows a query **returns** and a scan's
 whole defect is that its answer is small. The benchmark reads H2's own `EXPLAIN ANALYZE`

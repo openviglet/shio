@@ -11,6 +11,9 @@ package com.viglet.shio.api.staticfile;
 import java.time.Instant;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 /**
  * A single static file (a {@code File}-post-type {@link com.viglet.shio.persistence.model.post.unified.ShPostUnified})
  * as listed by the Media Library (SH61/SH62) console page. The bytes are served
@@ -54,7 +57,24 @@ public record ShStaticFileItem(
          * page: counting every row of the library to draw ten of them is the cost SH1033 measured
          * and SH1034 exists to remove.
          */
-        Long usageCount) {
+        Long usageCount,
+        /*
+         * How many rendered pages request this asset, or null when nobody asked (SH1280).
+         *
+         * The count `usageCount` cannot see: a theme's @font-face or a layout's CSS background is
+         * in no field. Null for the same reason `usageCount` is, and stamped only on `loads=true`,
+         * because it costs one render per page of the site.
+         */
+        @JsonInclude(Include.NON_NULL) Integer loadedBy) {
+
+    /** The pre-SH1280 shape: a reference count, and no answer about what pages load. */
+    public ShStaticFileItem(String id, String fileName, String contentType, long size, String owner,
+                            Instant date, String folderId, String folderName, String siteId,
+                            String siteName, Integer width, Integer height, String alt,
+                            String caption, List<String> tags, String sha256, Long usageCount) {
+        this(id, fileName, contentType, size, owner, date, folderId, folderName, siteId, siteName,
+                width, height, alt, caption, tags, sha256, usageCount, null);
+    }
 
     /** The pre-SH398 shape, for a caller that has no digest to report. */
     public ShStaticFileItem(String id, String fileName, String contentType, long size, String owner,
@@ -77,6 +97,12 @@ public record ShStaticFileItem(
     /** The same row, with the usage count a listing stamped on it. */
     public ShStaticFileItem withUsageCount(Long count) {
         return new ShStaticFileItem(id, fileName, contentType, size, owner, date, folderId,
-                folderName, siteId, siteName, width, height, alt, caption, tags, sha256, count);
+                folderName, siteId, siteName, width, height, alt, caption, tags, sha256, count, loadedBy);
+    }
+
+    /** The same row, with how many rendered pages load it (SH1280). */
+    public ShStaticFileItem withLoadedBy(Integer pages) {
+        return new ShStaticFileItem(id, fileName, contentType, size, owner, date, folderId,
+                folderName, siteId, siteName, width, height, alt, caption, tags, sha256, usageCount, pages);
     }
 }
