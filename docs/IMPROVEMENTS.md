@@ -241,33 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.57 XI.57 Gating a delivered page to members (SH1285)
-
-Found building SH1277. `/sites/**` and the CDA serve every published page to anyone;
-content ACL only governs authoring, so a members area has no expression and the
-showcase's `/members` cannot exist.
-
-**Decided by the owner (2026-10-29).** A member is a **console user**: an existing Shio
-user or group, carried by the console session on `/sites/**` and by the owner of the
-token on the CDA. The rule is a **visibility flag**, separate from the authoring ACL: a
-folder or a post carries `visibility: public | members` plus the groups that may read
-it, inherited down the folder chain. A denied visitor's answer is **configurable per
-site**: a 404 (the default) or the console login and back (SH1299).
-
-What to build, in P1 order: the flag as the `folder.visibility` op (shipped,
-agent-surface.md; a post gate is open) and in `_folder.md` and post frontmatter, then
-REST, then the console's folder and post settings. `/sites/**` and the CDA resolve the
-effective visibility once per read and answer the site's denial for a visitor outside
-the groups; listings, search, sitemap and the agent's public reads leave gated pages out
-the same way. A gated response is `Cache-Control: private, no-store`, never the
-five-minute public header. Deliberately not here: a separate site-member account,
-self-registration, OIDC. The legacy `pageAllowGuestUser`/`pageAllowRegisterUser` columns
-stay unread.
-
-Assert at the delivery boundary: an anonymous read of a members page gets the site's
-denial, a user in the group reads it, and a public sibling keeps its public cache
-header.
-
 ### XI.69 XI.69 The site request drops pageType (SH1302 finding) (SH1303)
 
 Found by SH1302's browser check. `PUT /api/v2/site/{id}` binds `ShSiteRequest`, and
