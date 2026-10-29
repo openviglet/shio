@@ -13,7 +13,6 @@
 
 - ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
-- ⏳ **SH1275** (deps: SH1283 ✅) **The content browser's create button offers an arbitrary post type, Novo Guide in every Quilhara folder** — An empty folder still offers the first type; offering the site's page type needs a rule naming which layout-bound type is the page. → §XI.47
 - 📋 **SH1284** (deps: —) **Eight statement-count tests read a global counter the post scheduler also writes, and nothing checks their context** — SH1276 was one of them failing one run in four; the others can fail the same way whenever a sweep lands in their window. → §XI.56
 - 💭 **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — A members area, client portal or intranet section has no expression in Shio, and the showcase's /members page cannot exist. → §XI.57
 - 📋 **SH1287** (deps: —) **A headless front end cannot read a site's language labels: the CDA's site locales omit them** — SH1281 put labels on the policy and the renderer reads them, so a rendered and a headless switcher now name one language two ways. → §XI.58
@@ -42,12 +41,6 @@
   marketplace properties set, the admin marketplace, shio marketplace list and
   shio_marketplace all name quilhara, and the chosen trust cost is stated in
   docs/agents/blueprints.md.
-
-## Done when — SH1275
-
-- **An empty folder offers the site's page type** Opening a folder with no posts on a
-  site that binds layouts reads New with the type the site names as its page, not the
-  catalogue's first type, in the console's content browser.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -259,23 +259,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.47 XI.47 The create button suggests what the folder holds (SH1275)
-
-Found in the console on the Quilhara site (SH1254), with Playwright. The content
-browser's primary button reads "Novo Guide" in the site root, in `/en`, and in
-`/en/trails`, a folder holding three Trails and nothing else. The split button beside it
-lists the other types, so the capability is there; the default is the problem, and it
-looks like the first type the instance knows, in some order unrelated to the folder.
-
-A default is a guess, and the folder supplies a better one at no cost: the type most of
-its posts already have, then the type the curator last created in this folder (kept per
-folder in local storage), then the site's page type from `postTypeLayout`, and only then
-the first type. An empty folder at the site root would offer the page type, which is
-what a curator usually wants there.
-
-The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
-and reads the site's page type.
-
 ### XI.56 XI.56 Statement counts are measured with the scheduler paused (SH1284)
 
 Found fixing SH1276. Hibernate's `Statistics` counter belongs to the `SessionFactory`,
