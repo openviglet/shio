@@ -268,25 +268,6 @@ Assert at the delivery boundary: an anonymous read of a members page gets the si
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
 
-### XI.62 XI.62 The tour's try-it section is misnamed (SH1258 finding) (SH1294)
-
-Seen in the SH1258 screenshot of the showcase `/tour` page: the page title is "How this
-site was built" and, a screen later, a section heading reads "How this was built". Every
-tour page ends with that section (the console screen, the MCP call, the CLI line and the
-delivery request behind it), and on `/tour` it lands right under a title that says
-nearly the same thing, so it reads as a duplicated heading.
-
-The section heading comes from the package's content (`content/en-us.json`, repeated per
-tour page, and its pt-br twin). It names the wrong thing: the section is the set of
-calls a reader can copy and run against this instance, not the story of the build.
-
-What to build: rename that section heading on every tour page, in both languages, to
-what it holds (for example "Try it on this instance"), keeping it distinct from the page
-titles. Then re-run `shio-site/scripts/showcase-screenshots.mjs`, since `4-tour.jpg`
-shows it.
-
-Done when no tour page carries a heading that repeats its own title, in either language.
-
 ### XI.63 XI.63 A site-wide listing's total counts gated posts (SH1296 finding) (SH1297)
 
 Found shipping SH1296. A CDA listing now drops the members-only posts a token's owner

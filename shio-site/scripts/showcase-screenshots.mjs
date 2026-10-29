@@ -24,13 +24,14 @@
 // request or an image with no pixels stops the run naming the page, because a screenshot of a
 // broken page published as the product's showcase is worse than no screenshot.
 
-import { mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 
 const ROOT = resolve(import.meta.dirname, "..", "..");
 const MATRIX = JSON.parse(readFileSync(join(ROOT, "docs", "specs", "SH1250-showcase-matrix.json"), "utf8"));
 const OUT = join(ROOT, "marketplace", MATRIX.site, "screenshots");
+const STAGING = `${OUT}.capturing`;
 const BASE = (process.env.SHIO_URL ?? "http://localhost:2711").replace(/\/+$/, "");
 const LOCALE = MATRIX.locales[0];
 
@@ -63,8 +64,10 @@ try {
     if (response.status() >= 400) problems.push(`${response.status()}: ${response.url()}`);
   });
 
-  rmSync(OUT, { recursive: true, force: true });
-  mkdirSync(OUT, { recursive: true });
+  // Captured into a staging folder and swapped in only when every page rendered: a run against an
+  // instance that is down used to empty the committed screenshots before its first request.
+  rmSync(STAGING, { recursive: true, force: true });
+  mkdirSync(STAGING, { recursive: true });
 
   for (const [index, [name, path]] of SHOTS.entries()) {
     problems.length = 0;
@@ -78,11 +81,14 @@ try {
       throw new Error(`showcase-screenshots: ${url} did not render cleanly:\n  ${problems.join("\n  ")}`);
     }
     const file = `${index + 1}-${name}.jpg`;
-    await page.screenshot({ path: join(OUT, file), type: "jpeg", quality: 80 });
+    await page.screenshot({ path: join(STAGING, file), type: "jpeg", quality: 80 });
     process.stdout.write(`[SH1258] ${url} -> ${file}\n`);
   }
+  rmSync(OUT, { recursive: true, force: true });
+  renameSync(STAGING, OUT);
 } finally {
   await browser.close();
+  rmSync(STAGING, { recursive: true, force: true });
 }
 
 process.stdout.write(`[SH1258] ${readdirSync(OUT).length} screenshot(s) in ${OUT}\n`);

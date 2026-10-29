@@ -1098,7 +1098,13 @@ row (or a one-card listing) stays card-width and left-aligned. The home's two cu
 `q-cards-row` (`auto-fit`), which collapses the empty track three cards left at desktop width. A
 curated row of a fixed few takes the modifier; anything a query or a relation can shrink to one
 card does not. `cli/test/showcase-matrix.test.mjs` holds both halves. After a change to the look,
-re-run `shio-site/scripts/showcase-screenshots.mjs` so the published screenshots follow.
+re-run `shio-site/scripts/showcase-screenshots.mjs` so the published screenshots follow; it captures
+into a staging folder and replaces the committed set only when every page rendered cleanly.
+
+**The try-it section (SH1294).** Every tour page ends with a `BuildNote` (console screen, MCP call,
+CLI line, delivery request) headed "Try it on this instance" / "Experimente nesta instância": it is
+named for what a reader can do with it, and `showcase-matrix.test.mjs` refuses a heading that echoes
+any page title once "this site" / "este site" is read out of the title.
 
 **What building it found**, each a task rather than a workaround in the package: SH1263, SH1264,
 SH1265 (shipped before it), and SH1266 to SH1275 open in Block J. Three warnings remain on an applied

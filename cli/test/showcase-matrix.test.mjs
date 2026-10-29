@@ -73,3 +73,24 @@ test("SH1293: the home's curated card rows fill the width, and the listings keep
   assert.match(theme, /\.q-cards \{[^}]*repeat\(auto-fill,/,
     "SH1293: and the shared listing rule keeps auto-fill");
 });
+
+test("SH1294: no tour section heading echoes a page title, in either language", () => {
+  // The try-it section under every tour page was headed "How this was built", a screen below a
+  // /tour title reading "How this site was built" (pt-br: "Como foi feito" under "Como este site
+  // foi feito"). It holds calls a reader can copy and run, so it is named for that. A title echoes
+  // a heading when they match once the title's "this site" is read as "this" (pt-br: drops "este
+  // site"); both of the old headings fail this, which is checked against the strings above.
+  const echo = (title) => title.toLowerCase().replace(/\bthis site\b/g, "this").replace(/\beste site /g, "");
+  for (const locale of ["en-us", "pt-br"]) {
+    const content = JSON.parse(readFileSync(join(ROOT, "marketplace", "quilhara", "content", `${locale}.json`), "utf8"));
+    const titles = content.posts.map((post) => post.data?.title).filter(Boolean);
+    const headings = new Set(content.posts.filter((post) => post.type === "BuildNote").map((post) => post.data.heading));
+    assert.ok(titles.length > 10, `SH1294: ${locale}'s page titles were read`);
+    for (const heading of headings) {
+      for (const title of titles) {
+        assert.notEqual(echo(title), heading.toLowerCase(),
+          `SH1294: ${locale}'s "${heading}" echoes the page title "${title}"`);
+      }
+    }
+  }
+});

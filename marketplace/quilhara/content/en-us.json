@@ -499,7 +499,7 @@
       "type": "BuildNote",
       "folder": "/en/sections",
       "data": {
-        "heading": "How this was built",
+        "heading": "Try it on this instance",
         "consoleRoute": "/bento/admin/marketplace",
         "mcpCall": "shio_marketplace {\"id\": \"quilhara\"}, then shio_apply {\"site\": \"quilhara\", \"blueprint\": \"quilhara\"}",
         "cliLine": "shio apply --blueprint quilhara --site quilhara --create-site",
@@ -539,7 +539,7 @@
       "type": "BuildNote",
       "folder": "/en/sections",
       "data": {
-        "heading": "How this was built",
+        "heading": "Try it on this instance",
         "consoleRoute": "/bento/admin/tokens",
         "mcpCall": "shio_context {\"site\": \"quilhara\"}; shio_find {\"site\": \"quilhara\", \"type\": \"Trail\"}; shio_read {\"address\": \"post:quilhara/trails/wind-crest\", \"fields\": \"name,facts\"}; shio_remember {\"site\": \"quilhara\", \"key\": \"voice\", \"note\": \"Field guide, not brochure\"}",
         "cliLine": "shio context --site quilhara --as agents-md --out AGENTS.md",
@@ -579,7 +579,7 @@
       "type": "BuildNote",
       "folder": "/en/sections",
       "data": {
-        "heading": "How this was built",
+        "heading": "Try it on this instance",
         "consoleRoute": "/bento/content",
         "mcpCall": "shio_apply {\"site\": \"quilhara\", \"blueprint\": \"quilhara\", \"dryRun\": true}; shio_write {\"address\": \"post:quilhara/trails/wind-crest\", \"data\": {\"summary\": \"A granite ridge above the clouds.\"}}; shio_publish {\"address\": \"post:quilhara/trails/wind-crest\"}",
         "cliLine": "shio apply --blueprint quilhara --site quilhara --dry-run",
@@ -619,7 +619,7 @@
       "type": "BuildNote",
       "folder": "/en/sections",
       "data": {
-        "heading": "How this was built",
+        "heading": "Try it on this instance",
         "consoleRoute": "/bento/admin/activity",
         "mcpCall": "shio_verify {\"site\": \"quilhara\", \"checks\": \"content,routes\"}; shio_digest {\"address\": \"post:quilhara/trails/wind-crest\"}; shio_changes {\"site\": \"quilhara\", \"limit\": 20}",
         "cliLine": "shio verify --site quilhara --checks content,routes,a11y",
@@ -659,7 +659,7 @@
       "type": "BuildNote",
       "folder": "/en/sections",
       "data": {
-        "heading": "How this was built",
+        "heading": "Try it on this instance",
         "consoleRoute": "/bento/universal-editor",
         "mcpCall": "shio_publish {\"address\": \"post:quilhara/trails/wind-crest\", \"when\": \"2026-12-01T09:00:00Z\"}; shio_read {\"address\": \"post:quilhara/trails/wind-crest\", \"revisions\": true}",
         "cliLine": "shio share post:quilhara/trails/wind-crest",
@@ -699,7 +699,7 @@
       "type": "BuildNote",
       "folder": "/en/sections",
       "data": {
-        "heading": "How this was built",
+        "heading": "Try it on this instance",
         "consoleRoute": "/bento/content/post-type",
         "mcpCall": "shio_read {\"address\": \"post:quilhara/trails/wind-crest\"}",
         "cliLine": "shio pull --content --site quilhara",
@@ -739,7 +739,7 @@
       "type": "BuildNote",
       "folder": "/en/sections",
       "data": {
-        "heading": "How this was built",
+        "heading": "Try it on this instance",
         "consoleRoute": "/bento/admin/webhooks",
         "mcpCall": "shio_find {\"site\": \"quilhara\", \"type\": \"Trail\", \"locale\": \"pt-br\"}",
         "cliLine": "shio types --out shio.d.ts",
@@ -779,7 +779,7 @@
       "type": "BuildNote",
       "folder": "/en/sections",
       "data": {
-        "heading": "How this was built",
+        "heading": "Try it on this instance",
         "consoleRoute": "/bento/content/files",
         "mcpCall": "shio_assets {\"site\": \"quilhara\", \"usage\": true}",
         "cliLine": "shio assets prune --site quilhara --dry-run",
@@ -819,7 +819,7 @@
       "type": "BuildNote",
       "folder": "/en/sections",
       "data": {
-        "heading": "How this was built",
+        "heading": "Try it on this instance",
         "consoleRoute": "/bento/admin/review",
         "mcpCall": "shio_changes {\"site\": \"quilhara\", \"by\": \"agent\"}",
         "cliLine": "shio clone https://example.org --depth 2",

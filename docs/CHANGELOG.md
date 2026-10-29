@@ -410,6 +410,7 @@
 - **SH1295** — A gated post on the CDA reaches only a token whose owner is a member or an administrator, answers others the missing-post 404, and is served private, no-store.
 - **SH1296** — Every CDA listing drops the posts a token's owner may not read, a gated folder lists as absent and leaves its parent's children, and an instance with no gate pays one count per listing.
 - **SH1293** — The showcase home's featured trails and trips rows fill the content width at 1280px and 1440px, listings keep left-aligned tracks, and the published home screenshot shows the fixed row (design §XI.61 recorded in `shio-site/README.md`).
+- **SH1294** — Every showcase tour page heads its try-it section "Try it on this instance" (pt-br "Experimente nesta instância"), so no heading echoes a page title, and the published tour screenshot shows it (design §XI.62 recorded in `docs/agents/blueprints.md`).
 
 ## Block M — Token economy, measured (SH74)
 
