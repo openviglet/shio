@@ -288,6 +288,259 @@ counts statements, not time. Only then does the fix follow, whatever the number 
 for: an index, a maintained per-site last-change column, or a rewritten query. Run the
 schema ITs with Docker, since this touches Liquibase.
 
+### XI.73 The content browser is all toolbar (SH1307)
+
+Measured at 1920px on `/bento/content/object/{site}` (ShowCase root, six folders):
+before the first row there is a framed counts strip ("6 pastas · 0 post"), an action row
+(New, New folder, Import, More filters, Order, Select), a framed strip holding only the
+four view toggles, a filter input with Changed and Views, and the table's own bar
+holding only Columns. Five bands, three of them framed, about 330px, for six rows that
+need about 260.
+
+This is the "aglutinado" the curator reported: every control has its own box, so nothing
+is more important than anything else and the content is the smallest thing on the page.
+
+Direction: one toolbar. The filter on the left, then the view toggles and Columns as
+icon buttons, then the primary New as the one filled button; Order, Select, More filters
+and Views move into a single overflow or into the table header where they act. The
+counts become a line of muted text under the title rather than a card. The tree on the
+left keeps its place. The gate is a screenshot at 1920px showing the first row within
+120px of the hero, and the surface digest moving for this page only.
+
+### XI.74 A form is boxes inside boxes (SH1308)
+
+Measured at 1920px on `/bento/content/post/{id}` (a Quilhara page, en-US): the Fields
+panel is a frosted card; inside it each field is a second card with a 4px left border in
+its widget colour (blue, indigo, pink…), and inside that the input has its own border.
+Five fields take about 680px, so Image starts at the fold, and the eye reads the stripes
+before the labels.
+
+The widget colours (`widget-colors.ts`) were meant to say what kind of field a row is in
+the post-type editor, where fields are a list of definitions. In the post editor the
+curator is filling values, and the type of a field is already said by its control: a
+textarea looks like a textarea.
+
+Direction: fields sit directly in the panel as label plus control, separated by space
+(24px) rather than frames; the widget colour stays in the post-type editor and leaves
+the post editor. Required stays the asterisk. Groups (tabs, sections) remain the only
+framing. The live preview pane keeps its card. The gate: the same post at 1920px shows
+all five fields above the fold, and `countFields` in `console-check.mjs` reads the
+inputs rather than `border-l-4` cards, since that selector is the old frame.
+
+### XI.75 The site list says the same thing three times a row (SH1309)
+
+Measured at 1920px on `/bento/content` with sixteen sites. Each row has a coloured
+initials square, a name with a second line, a bar filled in `bg-primary` (Shio's orange)
+with "130 publicadas · 117 rascunhos" beside it, a two-line change cell, and the row
+menu. Three columns of strong marks repeat down the list, and the curator reported the
+page as suffocating.
+
+Three Shio-owned causes, each small:
+
+- `PagesBar` fills the published share with the accent. The accent is the primary action's colour; on a meter it reads as alert, and two sites with different totals draw near-identical bars because the bar is a ratio with no stated whole. Neutral fills (foreground for published, muted for draft), or the numbers alone.
+- The identity cell's detail falls back to `site:<name>`. The address is for agents, the curator does not read it, and it doubles every row's height of text. Description when there is one; otherwise nothing.
+- The subtitle "Selecione seu site" says nothing a list does not; a count ("16 sites") does.
+
+Also worth asking: the review queue is the curator's main job (P7), and a site with
+agent changes waiting is the one fact this list could lead with. Not in scope here,
+named so it is not lost.
+
+### XI.76 A detail line that repeats the name (SH1310)
+
+Measured at 1920px on `/bento/content/post-type`: of the visible rows, all but two show
+the API name under a title that is the same word ("File / File", "Guide / Guide",
+"InfoPage / InfoPage"). Only types with a distinct display title ("How this was built /
+BuildNote", "Menu Item / MenuItem") gain anything from the second line.
+
+The same shape exists on any list built with `BentoIdentityCell` and a key as detail:
+users show the email, which is useful, but the post types show a copy.
+
+Direction: pass the API name as detail only when it differs from the title, and render
+it in the mono face so it reads as a key rather than as prose. The "Sistema" chip column
+is mostly empty; it can become a small muted mark after the name and give its width
+back. The gate is a unit test on the column definition: a type whose title equals its
+name renders no detail.
+
+### XI.77 The dashboard is three big tiles and a lot of white (SH1311)
+
+Measured at 1920px on `/bento`: "Visão geral" is two 390×140 tiles (16 sites, 28 post
+types), "Esperando por você" is one tile of the same size (2 open notes), and "Ações
+rápidas" six more tiles with an eyebrow and a title each. Every tile is the same frame
+and weight; a number sits in the lower left of a mostly empty box; the coloured icon
+squares are the loudest thing on screen.
+
+"Waiting for you" is the one section that asks a person to act, and the product's
+orientation says the curator's job is to approve (P7). It should lead, and it should say
+what is waiting (two notes, on which posts) rather than a count in a tile.
+
+Direction: the overview becomes one compact row of figures (number plus label, no
+frame); the waiting section comes first, as a short list of the items with their post
+and age, with the review queue's pending count beside it; quick actions become a single
+row of buttons or links. Keep the accent for the one action that matters on the page.
+The gate is a screenshot at 1920px with everything above the fold.
+
+### XI.78 The media library's controls and its empty tiles (SH1312)
+
+Measured at 1920px on `/bento/content/files` (VigR3): the hero's description wraps to
+two lines, then a row holding only the site picker and Upload aligned right, then the
+search and view toggles, then the chips (All 182, Images 67, …), and only then the grid.
+The first row of the grid is three `.woff2` fonts drawn as 290×290 grey squares with a
+document glyph, beside a photo.
+
+Two directions. Upload is the page's primary action and belongs in the hero's action
+slot, where every other page puts it; the site picker belongs with the search, since it
+is a filter. That removes a row. Files with no visual preview (fonts, documents,
+archives) should draw a compact tile, the extension as a label and the name, at a
+fraction of the height, or the grid should sort images first in the "All" chip; a font
+is not a picture and should not be given a picture's space.
+
+The alt-text inline input on an image tile is useful, but it shows on every tile at
+rest; showing it on hover or focus, with a muted mark when alt is missing, quiets the
+grid.
+
+### XI.79 Four primary buttons on one screen (SH1313)
+
+Measured at 1920px on `/bento/content/post-type/BuildNote`: the hero has Salvar (filled
+accent), Salvar e Fechar (accent outline) and Cancelar (accent text); the Fields panel
+has "+ Campo Texto" as a filled accent button. Each field row adds coloured chips
+(Obrigatório in pink, Text in teal). The accent is the product's signal for "the one
+thing to do here", and here it is spent four times.
+
+Direction: one filled button per screen. Save keeps the fill; Save and close becomes a
+neutral outline; Cancel a ghost in the foreground colour; Add field a neutral outline
+with its plus. The chips on field rows move to muted text, with the widget colour kept
+only as the small square that already marks the type. This is the post-type editor's
+half of the same rule SH1308 applies to the post editor: colour where it carries a
+decision, nowhere else.
+
+There is also a lint this suggests and that would hold the rule console-wide: count the
+filled accent buttons a page renders in `console-check.mjs` and fail above one. Filed
+here rather than separately, because it is how this task proves itself.
+
+### XI.80 Taking the design system's density release (SH1314)
+
+The 2026-10-29 walk through eighteen console surfaces found that most of what reads as
+crowded is not Shio's code: the table's toolbar band, the hashed initials, the ringed
+row menu, the 44px two-line rows, the boxed inline title and the accented theme toggle
+are all in `@viglet/viglet-design-system`, filed there as VDS229 to VDS234.
+
+This task is Shio's half once they ship: bump the package, start Vite with `--force` (a
+stale pre-bundle has blanked the console after a bump before), and walk the same
+surfaces at 1920px in both themes, comparing with the screenshots of this walk. Every
+list that passed a detail purely to fill the second line (see SH1309 and SH1310) is
+checked again, since a neutral square and more air change what that line is worth.
+`console-check.mjs` and the a11y pass run, because the row menu change touches the focus
+path.
+
+Before the release, `pnpm use:local` in the design system pushes a build into
+`shio-react`, which is how each VDS task can be judged in this console before it is
+published.
+
+### XI.81 Measure the curator's tasks before changing the interface (SH1315)
+
+The console has been redone three times (console, bento, the bento sweep), and each
+round closed on a structural criterion: a surface composes the bento seams, its panels
+are frosted, the digest moved. None asked whether a person finishes a job faster. The
+project measures tokens (P3), route cost (SH1113), contrast and accessibility; it does
+not measure the curator.
+
+Instrument first, as SH322 and SH338 ask of any law found broken. Six scripted tasks in
+`shio-react/e2e/`, each driven through the UI the way a curator would, counting clicks,
+screens visited, keystrokes outside text fields and wall-clock, written to a committed
+baseline like `console-route-budget.json`:
+
+1. change a page's headline and publish it;
+2. approve one agent run waiting in review;
+3. replace a page's image with one from the library;
+4. find a page by its title and open it;
+5. create a page under an existing section and publish it;
+6. preview a draft as the visitor will see it.
+
+Each script starts at `/bento` with no deep link, because finding the place is part of
+the task. The first run is the deliverable: the numbers for today's console. Every later
+change to navigation or editing filed beside this one must improve at least one figure
+and regress none, the same rule the token budget holds.
+
+### XI.82 Navigate a site by its pages, not its folders (SH1316)
+
+Measured at 1920px: the ShowCase root lists six folders (`en`, `fonts`, `images`,
+`menu`, `pt`, `theme`) and the counts strip says "6 pastas · 0 post", for a site the
+site list reports as 130 published pages. The structure is how Shio stores a site, and
+the content browser shows storage directly. Finding the Trails page means knowing it
+lives under `en/pages`.
+
+Direction: a site opens on its page tree, built from what the visitor navigates (the
+home page, its sections, their children) per language, with the language as a switch
+rather than a folder. Each node shows title, state (published, draft, pending review)
+and when it changed; selecting one opens it. What is not a page moves out of the tree
+into named places: Theme and Menu under the site's settings, images and fonts under
+Media. The folder browser stays, one level down, as the builder's view.
+
+Open questions to settle with the measurement: how a page tree is derived where the
+folder layout and the menu disagree (the renderer already resolves routes, so
+`/agent/routes` is the likely source), and where a curator creates a page (in the tree,
+as a child of the selected node). Judged by tasks 1, 4 and 5 of SH1315.
+
+### XI.83 One console, a view per role (SH1317)
+
+Today every signed-in user meets the same rail and the same palette: Content holds
+sites, post types, media, search, trash and scheduled; Administration holds users,
+groups, roles, tokens, auth and exchange providers, webhooks, tenants, email, review,
+activity and marketplace; GraphQL sits beside them. Review, the curator's main job under
+P7, is filed under Administration.
+
+Direction: three views of the same console, chosen by what the user may do rather than
+by a setting. A curator sees Review, Pages, Media and Publishing (scheduled, releases).
+A builder adds Post types, Blueprints, Theme and the GraphQL explorer. An administrator
+adds People (users, groups, roles), Access (tokens, providers) and Integrations
+(webhooks, Turing, email). Nothing is removed and every route keeps working; the rail
+and the command palette show what belongs to the role, and the rest is reached by search
+or a "More" entry.
+
+The roles exist already (ACL, SH1302's read gates), so this is navigation, not
+permissions. A user with every role sees today's console grouped in three sections.
+Judged by SH1315's tasks for a curator account, plus a count of rail and palette entries
+a curator meets.
+
+### XI.84 The home page as the curator's inbox (SH1318)
+
+The dashboard leads with an overview (16 sites, 28 post types), then "Waiting for you"
+as one tile with a count, then quick actions. SH1311 makes that layout lighter; this
+task changes what the page is for.
+
+Direction: the home page is an inbox, ordered by what needs a person: agent runs waiting
+for review (with the intent, the site and how many pages each touched), open notes on
+posts (with the post and who left it), drafts the curator started and did not publish,
+scheduled publishes in the next days, and pages with a failed check (verify findings,
+missing alt text). Each item opens where it is resolved. When nothing waits, the page
+says so in one line and offers the sites, which is today's content.
+
+Everything listed already has an endpoint (review, notes, scheduled, verify, the media
+alt counts), so this composes reads, P10, and needs no new service. Shared with the
+rail: the badge on Review and the inbox count are the same number (SH953). Judged by
+SH1315's task 2, and by a curator reaching a waiting item in one click from the first
+screen.
+
+### XI.85 One way to edit a page (SH1319)
+
+The post editor is a form with a live preview pane beside it; the Universal Editor is
+the rendered page with editable regions, a composer since Block BF, reached from its own
+route and its own site list. Both save the same post. A curator opening a page from the
+content browser lands in the form; one opening the site in the editor lands in the page.
+The two have different save models (SH335), different language switching and different
+review affordances.
+
+Direction: pick one primary and make the other an explicit mode of it. The likely
+primary for a curator is the page itself (what the visitor sees, click to edit), with
+the form available as a side panel for fields the page does not render (SEO, dates,
+references); the form-first editor stays the builder's default for types with no
+rendered page (menus, strings). One entry point: opening a page from anywhere goes to
+the same place, and the mode switch keeps the selection.
+
+This is a decision before it is code. The deliverable is the decision recorded in
+`docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
+editors, and then the merge, filed as its own tasks.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

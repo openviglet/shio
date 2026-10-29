@@ -16,6 +16,19 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - 📋 **SH1305** (deps: —) **GET /api/v2/site takes ~10-20 s on a 16-site instance, so the sites list looks frozen on first open** — The list is the console's front door, and measuring showed the thumbnails are not the cause: the listing read alone is. → §XI.71
+- 📋 **SH1307** (deps: —) **The content browser stacks five bands of chrome before the first row of a folder** — Counts, actions, view toggles, filter and a Columns-only bar each take a framed row, so a folder of six reads as a toolbar. → §XI.73
+- 📋 **SH1308** (deps: —) **The post editor frames every field in its own card with a coloured stripe, inside a card, inside the page** — Three nested frames per field and a rainbow of stripes make a five-field form look busy and push the fourth field below the fold. → §XI.74
+- 📋 **SH1309** (deps: —) **The site list paints usage in the accent and fills every row's second line with an address** — An orange bar reads as a warning and `site:Name` under every name is noise, so sixteen rows carry forty-eight loud marks and say little. → §XI.75
+- 📋 **SH1310** (deps: —) **The post-type list repeats each name as its second line, "InfoPage" under "InfoPage"** — Most types' title equals their API name, so half the list's text is a duplicate and every row is twice as tall as its content. → §XI.76
+- 📋 **SH1311** (deps: —) **The home page spends a 390px tile on each single number, and the one that asks for action looks like the rest** — Sites, types and open notes are three identical tiles of mostly white, so what waits for the curator has no more weight than a count. → §XI.77
+- 📋 **SH1312** (deps: —) **The media library floats the site picker and Upload on a row of their own, and a font file is a 290px blank tile** — Three control rows sit between the title and the grid, and files without a preview draw large empty squares that read as broken images. → §XI.78
+- 📋 **SH1313** (deps: —) **The post-type editor draws Save, Save and close, Cancel and Add field all in the accent** — Four orange controls on one screen leave no primary action, and Add field's solid fill outshouts Save. → §XI.79
+- 📋 **SH1314** (deps: VDS229 to VDS234 in viglet-design-system) **Shio's lists keep the 48px Columns bar, rainbow initials, ringed row menus and airless rows until it takes the DS fix** — Most of the crowding is drawn by the design system, so Shio gets it back only by bumping and rechecking every list. → §XI.80
+- 📋 **SH1315** (deps: —) **Nothing measures whether a curator can do a task in the console, so three redesigns were judged by form alone** — Tokens, route cost and chrome conformity are measured and human effort is not, so "migrated" stood in for "easy". → §XI.81
+- 📋 **SH1316** (deps: SH1315) **Opening a site shows its storage folders (fonts, theme, menu, en, pt) and "0 post", not its pages** — A curator thinks in pages as the visitor sees them; a file manager makes a site of 130 pages look empty and technical. → §XI.82
+- 📋 **SH1317** (deps: SH1315) **The curator, the builder and the administrator see one console, with tokens and post types beside page editing** — The product says the agent builds and the curator approves, yet half of what a curator sees is for someone else. → §XI.83
+- 📋 **SH1318** (deps: SH1315, SH1311) **The home page opens on counts of sites and post types instead of what is waiting for the curator** — A curator's day is approving and fixing, so the first screen should be that queue, not an inventory. → §XI.84
+- 📋 **SH1319** (deps: SH1315) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
 
 ## Block P — The visible site (what the human actually looks at, SH74)
 
