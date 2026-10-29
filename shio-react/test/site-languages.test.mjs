@@ -12,7 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import {
-  declarationOf, draftOf, offeredLocales, prune, setFallback, toggleLocale,
+  declarationOf, draftOf, offeredLocales, prune, setFallback, setLabel, toggleLocale,
 } from "../src/lib/site-languages.ts"
 
 /**
@@ -58,6 +58,17 @@ test("SH1056: the draft never composes a policy the server would refuse", () => 
     "SH1056: a rule from the default is dropped — every chain already ends there")
   assert.deepEqual(setFallback(added, "fr", "").fallback, { en: "pt-br" },
     "SH1056: clearing a rule sends that locale's missing pages back to the default")
+})
+
+test("SH1281: a site's switcher labels survive a console save, and leave with their locale", () => {
+  const draft = draftOf({ ...DECLARED, labels: { "pt-br": "Português (Brasil)" } })
+  assert.deepEqual(declarationOf(draft).labels, { "pt-br": "Português (Brasil)" },
+    "SH1281: the policy is replaced whole, so a save that left labels out would erase them")
+  assert.deepEqual(setLabel(draft, "en", "EN").labels, { "pt-br": "Português (Brasil)", en: "EN" })
+  assert.deepEqual(setLabel(draft, "pt-br", " ").labels, {},
+    "SH1281: a blank label clears it, so the language's own name comes back")
+  assert.deepEqual(toggleLocale(draft, "pt-br", false).labels, {},
+    "SH1281: a label for a locale the site no longer offers is one the server refuses")
 })
 
 test("SH1056: what the card sends is the document site.upsert takes", () => {

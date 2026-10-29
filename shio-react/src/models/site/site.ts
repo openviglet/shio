@@ -34,6 +34,8 @@ export type ShSiteLocalePolicy = {
   fallback: Record<string, string>;
   /** False while nobody has chosen: `enabled` is then the languages the content is already in. */
   declared: boolean;
+  /** SH1281 — what the site's switcher calls each locale; absent or empty when it never said. */
+  labels?: Record<string, string>;
 };
 
 /**
@@ -89,6 +91,8 @@ export type ShSiteLocaleDeclaration = {
   default: string;
   enabled: string[];
   fallback: Record<string, string>;
+  /** SH1281 — sent only when set, keyed by enabled locales. */
+  labels?: Record<string, string>;
 };
 
 /** SH1135 — one note the instance remembers, as `GET /v2/agent/memory` answers it. */

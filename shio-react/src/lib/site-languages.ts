@@ -22,6 +22,8 @@ export type LanguagesDraft = {
   enabled: string[]
   defaultLocale: string
   fallback: Record<string, string>
+  /** SH1281 — what the site's switcher calls a locale; an absent key keeps the language's name. */
+  labels: Record<string, string>
 }
 
 /** The draft a form starts from: the policy the site reports, declared or not. */
@@ -31,7 +33,16 @@ export function draftOf(policy: ShSiteLocalePolicy): LanguagesDraft {
     enabled: [...policy.enabled],
     defaultLocale: policy.defaultLocale,
     fallback: { ...policy.fallback },
+    labels: { ...(policy.labels ?? {}) },
   }
+}
+
+/** SH1281 — sets what the switcher calls one locale, or clears it with a blank label. */
+export function setLabel(draft: LanguagesDraft, tag: string, label: string): LanguagesDraft {
+  const labels = { ...draft.labels }
+  if (label.trim()) labels[tag] = label
+  else delete labels[tag]
+  return prune({ ...draft, labels })
 }
 
 /**
@@ -69,12 +80,24 @@ export function prune(draft: LanguagesDraft): LanguagesDraft {
       fallback[from] = to
     }
   }
-  return { ...draft, defaultLocale, fallback }
+  // SH1281 — a label for a locale the site no longer offers is refused by the server.
+  const labels: Record<string, string> = {}
+  for (const [tag, label] of Object.entries(draft.labels ?? {})) {
+    if (draft.enabled.includes(tag) && label.trim()) labels[tag] = label
+  }
+  return { ...draft, defaultLocale, fallback, labels }
 }
 
-/** The body `PUT /v2/site/{id}/locales` takes — the document `site.upsert` takes too. */
+/**
+ * The body `PUT /v2/site/{id}/locales` takes — the document `site.upsert` takes too. `labels` only
+ * when there are any (SH1281): the policy is replaced whole, so leaving them out would erase them.
+ */
 export function declarationOf(draft: LanguagesDraft): ShSiteLocaleDeclaration {
-  return { default: draft.defaultLocale, enabled: [...draft.enabled], fallback: { ...draft.fallback } }
+  const declaration: ShSiteLocaleDeclaration = {
+    default: draft.defaultLocale, enabled: [...draft.enabled], fallback: { ...draft.fallback },
+  }
+  if (Object.keys(draft.labels ?? {}).length) declaration.labels = { ...draft.labels }
+  return declaration
 }
 
 /**

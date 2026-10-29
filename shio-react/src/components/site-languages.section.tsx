@@ -12,11 +12,12 @@ import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ShSiteLocalePolicy } from "@/models/site/site"
 import type { ShLocale } from "@/services/locale/locale.service"
-import { prune, setFallback, toggleLocale, type LanguagesDraft } from "@/lib/site-languages"
+import { prune, setFallback, setLabel, toggleLocale, type LanguagesDraft } from "@/lib/site-languages"
 
 /** Radix refuses an empty item value, so "falls back to the default" needs a spelling of its own. */
 const TO_DEFAULT = "__default__"
@@ -145,6 +146,24 @@ export function SiteLanguagesSection({ catalogue, policy, draft, onChange, siteI
                         ))}
                     </SelectContent>
                   </Select>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* SH1281 — what the site's switcher calls each language. Blank keeps the language's own
+              name, which cannot tell pt-br from pt-pt. */}
+          {draft.enabled.length > 0 && (
+            <div className="space-y-2">
+              <Label>{t("content.siteLanguagesLabels")}</Label>
+              {draft.enabled.map((tag) => (
+                <div key={tag} className="flex items-center gap-2">
+                  <Label htmlFor={`site-label-${tag}`} className="w-40 font-normal">
+                    {nameOf(tag)} ({tag})
+                  </Label>
+                  <Input id={`site-label-${tag}`} className="w-64"
+                    value={draft.labels[tag] ?? ""}
+                    onChange={(event) => onChange(setLabel(draft, tag, event.target.value))} />
                 </div>
               ))}
             </div>

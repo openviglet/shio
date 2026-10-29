@@ -235,6 +235,35 @@ class ShSiteLocalesTest {
     }
 
     @Test
+    @DisplayName("SH1281: labels round-trip, and only a policy that has one writes the key")
+    void labelsRoundTripAndCostNothingUnset() {
+        ShSiteLocales written = ShSiteLocales.of("en", List.of("en", "pt-br"), Map.of(),
+                Map.of("pt-br", " Português (Brasil) "), KNOWN);
+
+        ShSiteLocales read = ShSiteLocales.parse(written.toJson(objectMapper), objectMapper)
+                .orElseThrow();
+        assertThat(read.labelOf("pt-br"))
+                .as("SH1281: the switcher's label survives the store, trimmed")
+                .isEqualTo("Português (Brasil)");
+        assertThat(read.labelOf("en")).isNull();
+        assertThat(ShSiteLocales.of("en", List.of("en"), Map.of(), KNOWN).toJson(objectMapper))
+                .as("SH1281: a policy without labels keeps the bytes it had before they existed (P5)")
+                .doesNotContain("labels");
+    }
+
+    @Test
+    @DisplayName("SH1281: a label for a locale the site does not offer is refused by name")
+    void aLabelOutsideEnabledIsRefused() {
+        assertThatThrownBy(() -> ShSiteLocales.of("en", List.of("en", "pt-br"), Map.of(),
+                Map.of("pt-pt", "Português (Portugal)"), KNOWN))
+                .isInstanceOf(ShSiteLocales.LabelNotEnabledException.class)
+                .satisfies(refused -> assertThat(((ShSiteLocales.LabelNotEnabledException) refused)
+                        .toProblemDetail().getTitle())
+                        .as("SH1281: the refusal names the locale it could not label (P6)")
+                        .contains("pt-pt"));
+    }
+
+    @Test
     @DisplayName("offers() is what a switcher and a route check ask")
     void offersIsTheMembershipQuestion() {
         ShSiteLocales locales = ShSiteLocales.of("en", List.of("en", "pt-br"), Map.of(), KNOWN);

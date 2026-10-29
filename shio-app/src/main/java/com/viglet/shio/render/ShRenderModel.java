@@ -417,6 +417,10 @@ public class ShRenderModel {
         frame.put("defaultLocale", policy.map(ShSiteLocales::defaultLocale)
                 .orElse(ShPostUnifiedWriteService.DEFAULT_LOCALE));
         policy.ifPresent(locales -> frame.put("locales", locales.enabled()));
+        // SH1281 — the switcher's own words for a language, when the site set any. Read here because
+        // the declared policy is already in hand; `{{#translations}}` reads it before its table.
+        policy.filter(locales -> !locales.labels().isEmpty())
+                .ifPresent(locales -> frame.put("localeLabels", locales.labels()));
         return ShStableMap.copyOf(frame);
     }
 

@@ -1557,6 +1557,12 @@ renderer over one body of content at a second address. See the section on it bel
   comes back upper-cased, visibly a code. The sibling's title stays on the row, but a headline is
   not a language: Quilhara's switcher read "Trilhas de costão e de serra". `language` is on this
   row shape only (`TRANSLATION_KEYS`), since only a switcher asks for it.
+  **A site can relabel a language (SH1281)**: the declared policy takes an optional `labels` map
+  keyed by enabled locales (a key outside `enabled` is `label-not-enabled`), and `language` reads it
+  before the table, so `pt-br` and `pt-pt` need not both read "Português". It reaches the helper as
+  `site.localeLabels`, set by `ShRenderModel` from the declared policy it already holds, so it costs
+  no query. `toNode` writes the key only when non-empty, so every older policy keeps its bytes, and
+  the console's draft carries it through a save, since `PUT` replaces the policy whole.
   **The helper takes no arguments**, the only one here with an empty signature, a translation set is a
   property of *this* page, not something a template selects, and **excludes the current page**, which a
   switcher would otherwise undo with `{{#unless}}` on every template (marking the current language is a

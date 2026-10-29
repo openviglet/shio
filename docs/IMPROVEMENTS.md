@@ -276,29 +276,6 @@ what a curator usually wants there.
 The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
 and reads the site's page type.
 
-### XI.53 XI.53 The locale policy can label a language (SH1281)
-
-Left over from SH1270. A `{{#translations}}` row now carries `language`, the language's
-name in itself from `ShLanguageNames`, a fixed table keyed by the primary subtag. Two
-things that table cannot say, and a real site needs both: a regional label ("Português
-(Brasil)" beside "Português (Portugal)" on a site that publishes both `pt-br` and
-`pt-pt`, which today render the same word twice), and a brand's own wording ("PT" in a
-compact header, or a flag the brand insists on).
-
-What to build: an optional `labels` map in SH1056's site locale policy
-(`ShSiteLocales`), keyed by the locale tag as the policy already spells `enabled` and
-`fallback`, read by the translations helper before the table. It is policy, so it
-travels the policy's existing paths: the site upsert op on the agent batch, `shio site`
-and the console's locale settings, which keeps P1 (no console-only setting). Validation
-names a key that is not in `enabled` as a teaching error, like `fallback` does.
-
-The same map is the natural source for the CDA's `availableLocales`, so a headless front
-end's switcher and a rendered one say the same word; that reuse is in scope if it is one
-line, and a separate task otherwise.
-
-Assert on a site enabling `pt-br` and `pt-pt` with labels: the switcher on the English
-page reads both labels, and with the map removed it falls back to the table.
-
 ### XI.54 XI.54 The preview frame reads draft assets (SH1282)
 
 Left by SH1273. The editor's live preview renders into a sandboxed `srcdoc` frame whose
@@ -386,6 +363,26 @@ The narrowest first slice is probably a READ-only folder rule honoured by `/site
 and the CDA for a token or session that carries the principal, answering 404 otherwise,
 with `private, no-store` on what it serves. That decision belongs to whoever owns the
 product's delivery model.
+
+### XI.58 The CDA reports a site's language labels (SH1287)
+
+Left over from SH1281. A site's locale policy now carries `labels`, what its language
+switcher calls each enabled locale, and `{{#translations}}` reads them, so a page Shio
+renders says "Português (Brasil)" and "Português (Portugal)" where the fixed table says
+"Português" twice. The delivery API does not: `ShCdaSiteLocales` (SH1123) is built by
+`ShCdaMapper` from the policy's four other fields, so a headless front end building its
+switcher from `/api/v2/cda/site/{id}/locales`, or from the SDK's `ShioSiteLocales`,
+still has only the tag and must hard-code the label the site already declared. Two front
+ends of one site then name one language two ways.
+
+What to build: carry `labels` on `ShCdaSiteLocales`, omitted when empty so an undeclared
+or unlabelled site's response keeps its bytes, map it in `ShCdaMapper.toSiteLocales`,
+add it to the JS SDK's `ShioSiteLocales` type and to the GraphQL site locales type if
+that one mirrors the record. P10 holds: it is the same policy read through the CDA, not
+a new contract.
+
+Assert at the delivery boundary: a site declaring a label answers it on the CDA locales
+read and in the SDK's typed result, and a site without labels answers no `labels` key.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

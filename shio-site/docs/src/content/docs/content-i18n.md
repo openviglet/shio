@@ -105,7 +105,9 @@ or *somebody translated two pages*.
   ```
 
   Tags are lower-case (`pt-br`, not `pt-BR`); a mis-cased tag is refused with the spelling
-  it expects.
+  it expects. An optional `labels` map sets what the site's language switcher calls each
+  enabled language, for example `{ "pt-br": "Português (Brasil)", "pt-pt": "Português (Portugal)" }`;
+  a language without a label keeps its own name. The console edits it as **Switcher label**.
 - **An agent** passes the same document as `data.locales` on `site.upsert`. It fills a site
   that has no policy and never replaces one that has, so an agent cannot quietly change a
   decision a curator made; changing it is done in the console.

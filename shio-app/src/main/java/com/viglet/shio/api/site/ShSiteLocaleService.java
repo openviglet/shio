@@ -159,10 +159,20 @@ public class ShSiteLocaleService {
                         : String.valueOf(to));
             }
         }
+        // SH1281 — what the switcher calls each locale, validated like the fallback map.
+        Map<String, String> labels = new LinkedHashMap<>();
+        JsonNode named = requested.get(ShSiteLocales.LABELS_KEY);
+        if (named != null && named.isObject()) {
+            for (String tag : named.propertyNames()) {
+                JsonNode label = named.get(tag);
+                labels.put(tag, label != null && label.isString() ? label.stringValue()
+                        : String.valueOf(label));
+            }
+        }
         JsonNode chosen = requested.get(ShSiteLocales.DEFAULT_KEY);
         ShSiteLocales policy = ShSiteLocales.of(
                 chosen != null && chosen.isString() ? chosen.stringValue() : null,
-                enabled, fallback, known());
+                enabled, fallback, labels, known());
         return Optional.of(policy.toJson(objectMapper));
     }
 

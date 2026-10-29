@@ -230,6 +230,34 @@ class ShRenderLocaleTest {
     }
 
     @Test
+    @DisplayName("SH1281: a site's own label for a language wins over the table, and only where it set one")
+    void theSiteCanLabelALanguage() {
+        // pt-br and pt-pt are both "Português" in the table; only the site can tell them apart.
+        setLocales("{\"default\":\"en\",\"enabled\":[\"en\",\"pt-br\",\"de\"],\"fallback\":{},"
+                + "\"labels\":{\"pt-br\":\"Português (Brasil)\"}}");
+        try {
+            assertThat(render("/"))
+                    .as("SH1281: the switcher reads the site's label for pt-br")
+                    .contains("<b>Português (Brasil)</b>")
+                    .as("SH1281: and a language it gave no label keeps the table's name")
+                    .contains("<b>Deutsch</b>");
+        } finally {
+            setLocales(null);
+        }
+        assertThat(render("/"))
+                .as("SH1281: with the policy gone the table answers again")
+                .contains("<b>Português</b>");
+    }
+
+    private void setLocales(String policy) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                entityManager.createQuery("update ShSite s set s.locales = :policy where s.name = :name")
+                        .setParameter("policy", policy)
+                        .setParameter("name", siteName)
+                        .executeUpdate());
+    }
+
+    @Test
     @DisplayName("the current page is not in its own switcher, so no template has to undo it")
     void selfIsExcluded() {
         assertThat(render("/")).doesNotContain("hreflang=\"en\"");

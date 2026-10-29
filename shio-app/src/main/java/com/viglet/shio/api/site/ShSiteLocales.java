@@ -61,17 +61,22 @@ import tools.jackson.databind.node.ObjectNode;
  * @param fallback      locale to show instead when a page is missing in it; keys and values are
  *                      members of {@code enabled}, and the chains never loop
  * @param declared      whether somebody set this, or it was read off the content
+ * @param labels        SH1281 — what a language switcher calls a locale, keyed by enabled locales;
+ *                      empty means every locale keeps its name from {@code ShLanguageNames}
  *
  * @author Alexandre Oliveira
  * @since 2026.3
  */
 public record ShSiteLocales(String defaultLocale, List<String> enabled,
-                            Map<String, String> fallback, boolean declared) {
+                            Map<String, String> fallback, boolean declared,
+                            Map<String, String> labels) {
 
     /** The keys of the stored document, in the order {@link #toJson} writes them. */
     public static final String DEFAULT_KEY = "default";
     public static final String ENABLED_KEY = "enabled";
     public static final String FALLBACK_KEY = "fallback";
+    /** SH1281 — written only when a label is set, so a policy without one keeps its bytes. */
+    public static final String LABELS_KEY = "labels";
 
     /** The op's own key, on {@code site.upsert}'s {@code data}. */
     public static final String FIELD = "locales";
@@ -82,6 +87,13 @@ public record ShSiteLocales(String defaultLocale, List<String> enabled,
         // so this document would serialize to different bytes after a restart — invisible in one
         // process, which is the whole reason ShByteStabilityLintTest exists to find it.
         fallback = ShStableMap.copyOf(fallback);
+        labels = ShStableMap.copyOf(labels == null ? Map.of() : labels);
+    }
+
+    /** A policy with no labels: every caller before SH1281. */
+    public ShSiteLocales(String defaultLocale, List<String> enabled, Map<String, String> fallback,
+                         boolean declared) {
+        this(defaultLocale, enabled, fallback, declared, Map.of());
     }
 
     /**
@@ -121,6 +133,17 @@ public record ShSiteLocales(String defaultLocale, List<String> enabled,
      */
     public static ShSiteLocales of(String defaultLocale, List<String> enabled,
                                    Map<String, String> fallback, Collection<String> known) {
+        return of(defaultLocale, enabled, fallback, Map.of(), known);
+    }
+
+    /**
+     * As above, with the switcher's labels (SH1281): each key an enabled locale, each value a
+     * non-blank label. A key outside {@code enabled} is refused the way a fallback's is, since a
+     * label for a language the site does not offer is one no switcher can ever show.
+     */
+    public static ShSiteLocales of(String defaultLocale, List<String> enabled,
+                                   Map<String, String> fallback, Map<String, String> labels,
+                                   Collection<String> known) {
         List<String> offered = new ArrayList<>();
         Set<String> seen = new LinkedHashSet<>();
         for (String locale : enabled == null ? List.<String>of() : enabled) {
@@ -152,7 +175,19 @@ public record ShSiteLocales(String defaultLocale, List<String> enabled,
             chains.put(from, to);
         }
         requireNoLoop(chains);
-        return new ShSiteLocales(chosen, offered, chains, true);
+        Map<String, String> named = new TreeMap<>();
+        for (Map.Entry<String, String> entry
+                : (labels == null ? Map.<String, String>of() : labels).entrySet()) {
+            String tag = entry.getKey() == null ? "" : entry.getKey().trim();
+            String label = entry.getValue() == null ? "" : entry.getValue().trim();
+            if (!offered.contains(tag)) {
+                throw new LabelNotEnabledException(tag, offered);
+            }
+            if (!label.isEmpty()) {
+                named.put(tag, label);
+            }
+        }
+        return new ShSiteLocales(chosen, offered, chains, true, named);
     }
 
     /**
@@ -202,7 +237,18 @@ public record ShSiteLocales(String defaultLocale, List<String> enabled,
                 }
             }
         }
-        return java.util.Optional.of(new ShSiteLocales(defaultLocale, offered, chains, true));
+        Map<String, String> named = new TreeMap<>();
+        JsonNode labels = node.get(LABELS_KEY);
+        if (labels != null && labels.isObject()) {
+            for (String tag : labels.propertyNames()) {
+                JsonNode label = labels.get(tag);
+                if (label != null && label.isString() && offered.contains(tag)
+                        && !label.stringValue().isBlank()) {
+                    named.put(tag, label.stringValue().trim());
+                }
+            }
+        }
+        return java.util.Optional.of(new ShSiteLocales(defaultLocale, offered, chains, true, named));
     }
 
     /** The stored form: three keys, fixed order, map sorted (P5). */
@@ -231,7 +277,20 @@ public record ShSiteLocales(String defaultLocale, List<String> enabled,
         for (Map.Entry<String, String> entry : new TreeMap<>(fallback).entrySet()) {
             chains.put(entry.getKey(), entry.getValue());
         }
+        // SH1281 — a fourth key only when there is something in it, sorted like the fallback map,
+        // so every policy written before labels existed serializes to the bytes it always did.
+        if (!labels.isEmpty()) {
+            ObjectNode named = document.putObject(LABELS_KEY);
+            for (Map.Entry<String, String> entry : new TreeMap<>(labels).entrySet()) {
+                named.put(entry.getKey(), entry.getValue());
+            }
+        }
         return document;
+    }
+
+    /** SH1281 — what a switcher calls this locale, or null when the site has not said. */
+    public String labelOf(String locale) {
+        return locale == null ? null : labels.get(locale.trim());
     }
 
     /**
@@ -355,6 +414,22 @@ public record ShSiteLocales(String defaultLocale, List<String> enabled,
                     .withAllowed(offered)
                     .withDidYouMeanFrom(sent)
                     .withFix("Enable '" + sent + "' or drop the rule that names it."));
+        }
+    }
+
+    /** A 400 for a label on a locale the site does not offer (SH1281). */
+    public static class LabelNotEnabledException extends ShTeachingException {
+
+        public LabelNotEnabledException(String sent, List<String> offered) {
+            super(ShProblem.badRequest("label-not-enabled",
+                            "The label for '" + sent + "' names a locale this site does not offer")
+                    .withDetail("A switcher only lists the locales in `" + FIELD + "." + ENABLED_KEY
+                            + "`, so a label for any other is one no reader can ever see.")
+                    .withAllowed(offered)
+                    .withDidYouMeanFrom(sent)
+                    .withFix("Key `" + FIELD + "." + LABELS_KEY + "` by an enabled locale, or "
+                            + "enable '" + sent + "' first.")
+                    .withExample("{\"labels\":{\"pt-br\":\"Português (Brasil)\",\"pt-pt\":\"Português (Portugal)\"}}"));
         }
     }
 

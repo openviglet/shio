@@ -389,7 +389,7 @@ public class ShRenderHelpers {
                 .filter(post -> !self.equals(post.getId()))
                 .sorted(Comparator.comparing(ShRenderModel::locale)
                         .thenComparing(ShPostUnified::getId))
-                .map(this::translationRow)
+                .map(post -> translationRow(post, options.context.get("site.localeLabels")))
                 .toList();
         if (siblings.isEmpty()) {
             return options.inverse();
@@ -401,10 +401,17 @@ public class ShRenderHelpers {
         return out;
     }
 
-    /** A listing row plus {@code language}, the sibling's language named in itself (SH1270). */
-    private Map<String, Object> translationRow(ShPostUnified post) {
+    /**
+     * A listing row plus {@code language}, the sibling's language named in itself (SH1270), or the
+     * site's own label for it when its locale policy sets one (SH1281): {@code pt-br} and
+     * {@code pt-pt} are both "Português" in the table, and only the site can tell them apart.
+     */
+    private Map<String, Object> translationRow(ShPostUnified post, Object labels) {
         Map<String, Object> row = new LinkedHashMap<>(row(post));
-        row.put("language", ShLanguageNames.of(ShRenderModel.locale(post)));
+        String locale = ShRenderModel.locale(post);
+        Object label = labels instanceof Map<?, ?> named ? named.get(locale) : null;
+        row.put("language", label instanceof String text && !text.isBlank()
+                ? text : ShLanguageNames.of(locale));
         return ShStableMap.copyOf(row);
     }
 
