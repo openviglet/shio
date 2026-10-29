@@ -84,7 +84,8 @@ from becoming a third contract (P10).
   drift detection: it makes "is this site still what the blueprint says" *askable*, and the
   answer is still a `dryRun` away.
 - **Packages load from the classpath, plus one directory an operator names (SH96).**
-  `shio.blueprint.path`, off by default. That *is* the trust model: whoever can set it could
+  `shio.blueprint.path`, `store/blueprints` by default since SH1257 (absent reads as empty, so a
+  first install has somewhere to write; empty means the classpath alone). That *is* the trust model: whoever can set it could
   already put a jar on the classpath, so it grants no new authority, and the person who set it
   is the one vouching for what is in it. Three rules, a **name collision refuses** at load
   naming both origins (shadowing would change what every existing `blog` apply does; ignoring
@@ -605,7 +606,9 @@ first package somebody outside the project asks to publish.
 ## The catalogue is a marketplace, on the shape Turing already runs (SH646)
 
 `GET /api/v2/marketplace` answers what this instance could install. Two properties:
-`shio.marketplace.enabled` (**false**) and `shio.marketplace.url`, plus a timeout. The item shape is
+`shio.marketplace.enabled` (**true** since SH1257) and `shio.marketplace.url` (the published
+catalogue), plus a timeout. An air-gapped or multi-tenant operator sets
+`shio.marketplace.enabled=false`; test contexts do the same in `src/test/resources`. The item shape is
 Turing's, a format with a working console behind it is worth more than a marginally better one,
 with two fields a recipe does not need. **`params`** rides in the *listing*, so a console draws the
 install form without downloading the package (P2 at catalogue level), and **`requires`** names the
@@ -614,8 +617,12 @@ the install rather than a surprise after it (P7).
 
 **This does not overturn SH96, and the reason is where the operator stands.** `ShBlueprintProperties`
 refused URL fetching because it *"moves the decision from an operator to a network"*. It still does:
-the catalogue is off until somebody turns it on and names the URL, which is the same act as naming
-a directory. Nothing changes about what an installed package may do (SH643's bounds) or how it is
+the URL is the operator's to name or to turn off, which is the same act as naming a directory.
+**SH1257 (the owner's decision) turned the published catalogue on by default**, so a first boot
+reaches the showcase; the rejected alternative, off with only the showcase listed as a known entry,
+was the narrower widening and more code. The cost, an outbound request to a Viglet host and a
+downloaded package on disk after an install, is written where an operator reads it (README, the
+docs' blueprints page, the Docker notes). Nothing changes about what an installed package may do (SH643's bounds) or how it is
 validated (the registry, identically for first-party and stranger). The marketplace distributes what
 the trust model already accepts.
 

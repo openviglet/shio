@@ -253,8 +253,8 @@ function filtered(items, flags) {
 function sourceLine(source) {
   if (!source) return "source: unknown";
   if (source.state === "builtin-only") {
-    return "source: the packages that ship with this instance. No catalogue is configured "
-      + "(shio.marketplace.enabled).";
+    return "source: the packages that ship with this instance. The catalogue is turned off "
+      + "(shio.marketplace.enabled=false).";
   }
   if (source.state === "unreachable") {
     return `source: ${source.url} could not be read — ${source.reason}\n`

@@ -7,21 +7,30 @@ package com.viglet.shio.marketplace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.sun.net.httpserver.HttpServer;
+import com.viglet.shio.blueprint.ShBlueprintCodec;
+import com.viglet.shio.blueprint.ShBlueprintProperties;
 import com.viglet.shio.blueprint.ShBlueprintRegistry;
 import com.viglet.shio.marketplace.dto.ShMarketplaceItem;
 
@@ -97,8 +106,8 @@ class ShMarketplaceCatalogTest {
     @DisplayName("SH678: the manifest flag follows the property, so `false` is not a guess")
     void theManifestFlagFollowsTheProperty() {
         assertThat(properties.hasRemote())
-                .as("off by default — an agent that assumed a marketplace would be choosing from "
-                        + "a list nobody enabled")
+                .as("off in this context (the test properties turn it off) — an agent that assumed "
+                        + "a marketplace would be choosing from a list nobody enabled")
                 .isFalse();
 
         properties.setEnabled(true);
@@ -110,6 +119,53 @@ class ShMarketplaceCatalogTest {
                 .as("SH678: `enabled` alone decides, so turning it off cannot leave the manifest "
                         + "claiming a catalogue this instance no longer reads")
                 .isFalse();
+    }
+
+    @Test
+    @DisplayName("SH1257: an instance that sets nothing reads the published catalogue and can install")
+    void aFreshInstanceReadsThePublishedCatalogue() {
+        Binder nothing = new Binder(new MapConfigurationPropertySource(Map.of()));
+        ShMarketplaceProperties fresh = nothing
+                .bindOrCreate("shio.marketplace", ShMarketplaceProperties.class);
+        ShBlueprintProperties store = nothing
+                .bindOrCreate("shio.blueprint", ShBlueprintProperties.class);
+
+        assertThat(fresh.hasRemote())
+                .as("SH1257: the showcase sells Shio only if a first boot reaches it, so a fresh "
+                        + "instance reads the catalogue with no property set")
+                .isTrue();
+        assertThat(fresh.getUrl()).isEqualTo(ShMarketplaceProperties.DEFAULT_URL);
+        assertThat(store.hasPath())
+                .as("SH1257: and an install has somewhere to write, or the installer still refuses "
+                        + "on a fresh boot")
+                .isTrue();
+        assertThat(store.getPath()).isEqualTo(ShBlueprintProperties.DEFAULT_PATH);
+
+        ShMarketplaceProperties off = new Binder(new MapConfigurationPropertySource(
+                Map.of("shio.marketplace.enabled", "false")))
+                .bindOrCreate("shio.marketplace", ShMarketplaceProperties.class);
+        assertThat(off.hasRemote())
+                .as("SH1257: one property is how an air-gapped operator keeps nothing leaving the JVM")
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("SH1257: the default directory may be absent, a named one may not")
+    void theDefaultDirectoryMayBeAbsent(@TempDir Path scratch) {
+        ShBlueprintProperties named = new ShBlueprintProperties();
+        named.setPath(scratch.resolve("typo").toString());
+        assertThatThrownBy(() -> new ShBlueprintRegistry(new ShBlueprintCodec(), named).all())
+                .as("an operator who named a path meant it")
+                .isInstanceOf(ShBlueprintRegistry.UnreadablePathException.class);
+
+        ShBlueprintProperties shipped = new ShBlueprintProperties();
+        assertThat(shipped.isDefaultPath()).isTrue();
+        assumeFalse(Files.exists(Path.of(ShBlueprintProperties.DEFAULT_PATH)),
+                "this working directory already holds an install, so it is not a fresh boot");
+        assertThat(new ShBlueprintRegistry(new ShBlueprintCodec(), shipped).all().keySet())
+                .as("SH1257: a fresh boot has installed nothing, so the default reads as empty "
+                        + "rather than failing startup, and the built-in packages are the answer")
+                .isEqualTo(registry.all().keySet());
     }
 
     @Test

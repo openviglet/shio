@@ -52,14 +52,19 @@ dependency they never import.
 
 ## Where more packages come from
 
-Those six ship with the instance. A **marketplace** catalogue adds more, and it is off
-until an operator turns it on:
+Those six ship with the instance. A **marketplace** catalogue adds more, and a fresh
+instance reads the published one with nothing configured. These are the defaults:
 
 ```properties
 shio.marketplace.enabled=true
 shio.marketplace.url=https://openviglet.github.io/shio/marketplace/marketplace.json
 shio.marketplace.timeout-millis=5000
+shio.blueprint.path=store/blueprints
 ```
+
+Reading the marketplace makes an outbound request to that URL, and an install writes the
+downloaded package into `shio.blueprint.path`. An air-gapped or multi-tenant instance turns
+it off with `shio.marketplace.enabled=false`.
 
 With it off, listing the marketplace still answers, with the six built-ins and a
 `source` of `builtin-only`. That is deliberate: "the feature is off" and "this build has

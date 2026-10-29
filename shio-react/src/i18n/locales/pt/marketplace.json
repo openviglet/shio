@@ -21,7 +21,7 @@
     "uninstalled": "{{id}} removido.",
     "installFailed": "O pacote não pôde ser instalado.",
     "uninstallFailed": "O pacote não pôde ser removido.",
-    "sourceBuiltIn": "Mostrando os pacotes que vieram com esta instância. Nenhum catálogo está configurado.",
+    "sourceBuiltIn": "Mostrando os pacotes que vieram com esta instância. O catálogo está desligado (shio.marketplace.enabled=false).",
     "sourceRemote": "Catálogo: {{url}}",
     "sourceUnreachable": "{{url}} não pôde ser lido",
     "sourceFallback": "Os pacotes listados são os que vieram com esta instância.",

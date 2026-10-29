@@ -112,7 +112,10 @@ maximum is clamped, and the response says so.
 |---|---|---|
 | `shio.schedule.enabled` | `true` | The sweep that fires scheduled publishes and unpublishes |
 | `shio.schedule.sweep-interval-millis` | `60000` | How often it looks |
-| `shio.blueprint.path` | *(unset)* | An extra directory of blueprint packages, beside the built-in ones |
+| `shio.blueprint.path` | `store/blueprints` | An extra directory of blueprint packages, beside the built-in ones; marketplace installs land here. Empty means the built-in ones alone |
+| `shio.marketplace.enabled` | `true` | Read the package catalogue below. Set `false` on an air-gapped or multi-tenant instance: nothing then leaves the JVM |
+| `shio.marketplace.url` | `https://openviglet.github.io/shio/marketplace/marketplace.json` | The catalogue the marketplace lists |
+| `shio.marketplace.timeout-millis` | `5000` | How long to wait before listing the built-in packages alone |
 
 ---
 

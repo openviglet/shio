@@ -190,6 +190,11 @@ first start, instead of waiting for someone to open the console and set one. Lea
 console asks on first access instead. See
 [Setting the admin password without the console](#setting-the-admin-password-without-the-console).
 
+The admin **Marketplace** reads the published package catalogue by default, so a fresh container
+lists the showcase site. That is an outbound request to `openviglet.github.io`, and an install
+writes the package under `store/blueprints`. On an air-gapped or multi-tenant instance add
+`-e SHIO_MARKETPLACE_ENABLED=false` (see the [configuration reference](/shio/docs/configuration-reference/)).
+
 :::tip[Image tags]
 Besides `latest`, every run also publishes the project version and a commit tag (`sha-<short>`). Pin a specific tag in production instead of tracking `latest`.
 :::

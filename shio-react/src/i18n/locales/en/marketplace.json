@@ -21,7 +21,7 @@
     "uninstalled": "Removed {{id}}.",
     "installFailed": "The package could not be installed.",
     "uninstallFailed": "The package could not be removed.",
-    "sourceBuiltIn": "Showing the packages that shipped with this instance. No catalogue is configured.",
+    "sourceBuiltIn": "Showing the packages that shipped with this instance. The catalogue is turned off (shio.marketplace.enabled=false).",
     "sourceRemote": "Catalogue: {{url}}",
     "sourceUnreachable": "{{url}} could not be read",
     "sourceFallback": "The packages listed are the ones that shipped with this instance.",

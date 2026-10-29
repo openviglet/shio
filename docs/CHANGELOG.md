@@ -404,6 +404,8 @@
 - **SH1287** — The CDA site read now carries the policy's labels on ShCdaSiteLocales and the SDK's ShioSiteLocales, so a headless switcher names each language as the rendered one does; an unlabelled site keeps its bytes (design §XI.58 recorded in `docs/agents/content-api.md`).
 - **SH1288** — shio pull now writes a site's language labels into _site.md, sorted as the server stores them, and a push sends a label typed there; a policy without labels keeps its bytes (design §XI.59 recorded in `docs/agents/content-files.md`).
 - **SH1290** — Hibernate 7.4.13 fixed the tenant join hazard: each form now joins the ShObject root and filters by tenant on H2, PostgreSQL and MariaDB, and ShTenantJoinHazardTest asserts that with two tenants (design §XI.60 recorded in `docs/agents/database.md`).
+- **SH1257** — A fresh instance reads the published catalogue (shio.marketplace.enabled defaults to true) and installs into store/blueprints, so the showcase is one click from first boot; enabled=false turns it off (design §XI.36 recorded in `docs/agents/blueprints.md`).
+  checked **A fresh instance lists the showcase in its marketplace** On a new store with no marketplace properties set, the admin marketplace, shio marketplace list and shio_marketplace all name quilhara, and the chosen trust cost is stated in docs/agents/blueprints.md.
 
 ## Block M — Token economy, measured (SH74)
 

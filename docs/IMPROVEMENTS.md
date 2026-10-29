@@ -241,32 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.36 XI.36 A fresh instance can reach the showcase (SH1257)
-
-`shio.marketplace.enabled` defaults to false and `shio.marketplace.url` to nothing
-(SH646), so someone evaluating Shio opens the admin marketplace and finds the six
-built-in packages and no showcase, which is the opposite of what the showcase is for.
-
-**Decided by the owner (2026-10-29): the published catalogue is on by default.** The
-rejected alternative, keeping the catalogue off and listing only the showcase as a known
-entry, was the narrower trust widening and more code; the owner chose reach over it.
-
-What to build: default `shio.marketplace.enabled` to true and `shio.marketplace.url` to
-`ShMarketplaceProperties.DEFAULT_URL` (`shio.viglet.org/marketplace/marketplace.json`).
-Give `shio.blueprint.path` a writable default under the instance's own store (beside
-`store/file_source`), or the installer still refuses on a fresh boot. The cost is
-written down where an operator reads it: a fresh instance now makes an outbound request
-to a Viglet host when the marketplace is read, and an install writes a downloaded
-package, which SH96 had kept behind an operator's decision. So the README, the docs
-quick start, the Docker image's notes and `docs/agents` say in one line how an
-air-gapped or multi-tenant operator turns it off (`shio.marketplace.enabled=false`), and
-the console keeps naming the catalogue's source before a download. A catalogue that
-cannot be reached must degrade to the built-in packages with the reason, never fail the
-screen.
-
-Assert at the boundary: a context with no marketplace properties lists the published
-catalogue's source, and one with `enabled=false` lists only the built-ins, as today.
-
 ### XI.57 XI.57 Gating a delivered page to members (SH1285)
 
 Found building SH1277. `/sites/**` and the CDA serve every published page to anyone;

@@ -152,7 +152,14 @@ public class ShBlueprintRegistry {
 
     /** The classpath-only registry — the shape {@code ShBlueprintRegistryTest} constructs. */
     public ShBlueprintRegistry(ShBlueprintCodec codec) {
-        this(codec, new ShBlueprintProperties(), null);
+        this(codec, classpathOnly(), null);
+    }
+
+    /** No directory at all, not even the SH1257 default: the classpath is the whole answer. */
+    private static ShBlueprintProperties classpathOnly() {
+        ShBlueprintProperties properties = new ShBlueprintProperties();
+        properties.setPath(null);
+        return properties;
     }
 
     /** Every blueprint this instance carries, by name, in name order. */
@@ -389,6 +396,10 @@ public class ShBlueprintRegistry {
             return List.of();
         }
         Path root = Path.of(properties.getPath().trim());
+        if (!Files.exists(root) && properties.isDefaultPath()) {
+            // SH1257: the shipped default is created by the first install, not by the operator.
+            return List.of();
+        }
         if (!Files.isDirectory(root)) {
             throw new UnreadablePathException(properties.getPath(),
                     Files.exists(root) ? "is not a directory" : "does not exist");

@@ -22,17 +22,24 @@ import lombok.Setter;
  * <p>{@link com.viglet.shio.blueprint.ShBlueprintProperties} refused URL fetching in as many
  * words, because it *"moves the decision from an operator to a network"*. That objection is
  * still correct and this does not answer it by disagreeing — it answers it by keeping the
- * operator in the loop at exactly the same point. <b>The catalogue is off until somebody
- * turns it on, and the URL is theirs to name.</b> Turning it on and naming a URL is the same
- * act as naming a directory: whoever can do it can already put a jar on the classpath, so it
- * grants no authority that did not exist.</p>
+ * operator in the loop at exactly the same point. <b>The URL is theirs to name, and turning
+ * the catalogue off is one property.</b> Naming a URL is the same act as naming a directory:
+ * whoever can do it can already put a jar on the classpath, so it grants no authority that
+ * did not exist.</p>
+ *
+ * <p><b>On by default since SH1257, by the owner's decision.</b> A fresh instance reads this
+ * project's published catalogue, so someone evaluating Shio finds the showcase in the
+ * marketplace on first boot. The cost is an outbound request to a Viglet host whenever the
+ * marketplace is read, and an air-gapped or multi-tenant operator sets
+ * {@code shio.marketplace.enabled=false}. The rejected alternative (off, with only the showcase
+ * listed as a known entry) was the narrower widening and more code.</p>
  *
  * <p>And what a catalogue produces is not trust, it is a <em>list</em>. Nothing here changes
  * what an installed package may do — that is SH643's bounds — nor how it is validated, which
  * is the registry's job and identical for a first-party package and a stranger's. The
  * catalogue is a distribution channel for something the trust model already accepts.</p>
  *
- * <h2>Off by default, and the failure modes chosen deliberately</h2>
+ * <h2>The failure modes, chosen deliberately</h2>
  *
  * <p><b>Disabled is a teaching 404</b>, not a bare one: a caller who asks for a feature an
  * operator has not enabled should be told which property turns it on (P6), because the
@@ -52,17 +59,17 @@ import lombok.Setter;
 @ConfigurationProperties(prefix = "shio.marketplace")
 public class ShMarketplaceProperties {
 
-    /** The catalogue this project publishes; used only when an operator enables the feature. */
+    /** The catalogue this project publishes, read unless an operator names another or turns it off. */
     public static final String DEFAULT_URL = "https://openviglet.github.io/shio/marketplace/marketplace.json";
 
     /**
      * Whether this instance reads a remote catalogue at all.
      *
-     * <p>False by default. With it off, the listing still answers — with the packages that
-     * shipped with the instance — so the console has something true to show rather than an
-     * error, and nothing leaves the JVM.</p>
+     * <p>True by default (SH1257). With it off, the listing still answers — with the packages
+     * that shipped with the instance — so the console has something true to show rather than
+     * an error, and nothing leaves the JVM.</p>
      */
-    private boolean enabled = false;
+    private boolean enabled = true;
 
     /** The catalogue JSON. Only read when {@link #enabled}. */
     private String url = DEFAULT_URL;

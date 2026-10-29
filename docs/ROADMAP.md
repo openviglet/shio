@@ -12,12 +12,11 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- ⏳ **SH1257** (deps: SH1254 ✅) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it; the owner chose to enable the published catalogue by default. → §XI.36
 - ⏳ **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — A members area, client portal or intranet section has no expression in Shio, and the showcase's /members page cannot exist. → §XI.57
 
 ## Block S — The public site (shio.viglet.org)
 
-- 📋 **SH1258** (deps: SH1256 ✅, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
+- 📋 **SH1258** (deps: SH1256 ✅, SH1257 ✅) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
 
 ## Priority
 
@@ -27,13 +26,6 @@
   io.github.openviglet/shio, the Claude Code lists the visibility repo tracks name Shio,
   the More tools section carries a Shio line, and each link is in that repo's
   actions.json.
-
-## Done when — SH1257
-
-- **A fresh instance lists the showcase in its marketplace** On a new store with no
-  marketplace properties set, the admin marketplace, shio marketplace list and
-  shio_marketplace all name quilhara, and the chosen trust cost is stated in
-  docs/agents/blueprints.md.
 
 ## Done when — SH1285
 

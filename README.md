@@ -105,6 +105,11 @@ API surface answers 401 until a password exists. Leave it out and the console as
 one on first access instead. It is **never** applied over a password that is already
 configured, so it is safe to leave in a compose file: a restart is a no-op.
 
+The admin **Marketplace** lists the published package catalogue, including the Quilhara showcase
+site, with nothing configured. Reading it calls `openviglet.github.io`, and an install writes the
+package under `store/blueprints`; on an air-gapped or multi-tenant instance add
+`-e SHIO_MARKETPLACE_ENABLED=false`.
+
 ### Or run from source
 
 ```bash

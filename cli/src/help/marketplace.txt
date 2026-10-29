@@ -1,7 +1,7 @@
 shio marketplace <list|show|install|uninstall> [id] — the package catalogue, from a terminal
 
 Bare, it lists what this instance could install: the packages that ship here, plus a catalogue
-once one is enabled (shio.marketplace.enabled, shio.marketplace.url).
+unless it is disabled (shio.marketplace.enabled, shio.marketplace.url).
 
 Installing puts a package where the registry can see it; applying it is shio apply
 --blueprint <id>, or install --apply. Install and uninstall need an admin credential.

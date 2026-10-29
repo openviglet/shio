@@ -39,10 +39,13 @@ import lombok.Setter;
  * convention, a curated index, a signature — is exactly the part that is missing. This is
  * the local half; the community half is still open (SH217).</p>
  *
- * <p><b>Off by default</b>, and a configured directory that is absent is a startup failure
- * rather than an empty registry: an operator who pointed at a path meant it, and a
- * misspelling that silently degraded to "the first-party set" is how somebody ships a site
- * built from the wrong packages.</p>
+ * <p><b>{@value #DEFAULT_PATH} by default (SH1257)</b>, under the instance's own store beside
+ * {@code store/file_source}, so a marketplace install on a fresh boot has somewhere to write.
+ * That default may be absent (nothing has been installed yet) and reads as empty. A directory
+ * an operator <em>named</em> that is absent is still a startup failure rather than an empty
+ * registry: an operator who pointed at a path meant it, and a misspelling that silently
+ * degraded to "the first-party set" is how somebody ships a site built from the wrong
+ * packages. Setting it empty means the classpath alone.</p>
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -53,17 +56,25 @@ import lombok.Setter;
 @ConfigurationProperties(prefix = "shio.blueprint")
 public class ShBlueprintProperties {
 
+    /** Where installed packages live when nobody named a directory (SH1257). */
+    public static final String DEFAULT_PATH = "store/blueprints";
+
     /**
      * A directory holding one subdirectory per package, each with a {@code blueprint.json}
      * — the same layout the classpath uses, so a package can be developed in a folder and
      * shipped in a jar without changing.
      *
-     * <p>Empty (the default) means the classpath alone.</p>
+     * <p>Empty means the classpath alone.</p>
      */
-    private String path;
+    private String path = DEFAULT_PATH;
 
-    /** True when an operator has named a directory to load from. */
+    /** True when there is a directory to load from and install into. */
     public boolean hasPath() {
         return path != null && !path.isBlank();
+    }
+
+    /** True when the directory is the shipped default, which may not exist yet. */
+    public boolean isDefaultPath() {
+        return hasPath() && DEFAULT_PATH.equals(path.trim());
     }
 }
