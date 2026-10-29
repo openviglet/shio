@@ -136,6 +136,7 @@ public class ShAgentDesiredStateService {
         List<ShAgentBatch.Op> upserts = new ArrayList<>();
         List<ShAgentBatch.Op> publishes = new ArrayList<>();
         List<ShAgentBatch.Op> grants = new ArrayList<>();
+        List<ShAgentBatch.Op> postGates = new ArrayList<>();
 
         for (ShAgentDesiredState.Folder folder : nullSafe(desired.folders())) {
             ShAgentBatch.Op upsert = op(ShAgentBatchService.FOLDER_UPSERT,
@@ -149,15 +150,8 @@ public class ShAgentDesiredStateService {
             }
             // SH1301 — who may read it, beside who may edit it and for the same ordering reason.
             if (folder.visibility() != null && !folder.visibility().isBlank()) {
-                tools.jackson.databind.node.ObjectNode gate = tools.jackson.databind.node.JsonNodeFactory.instance
-                        .objectNode().put(ShAgentBatchService.VISIBILITY_KEY, folder.visibility());
-                if (folder.groups() != null && !folder.groups().isEmpty()) {
-                    gate.set(ShAgentBatchService.GROUPS_KEY, tools.jackson.databind.node.JsonNodeFactory.instance
-                            .arrayNode().addAll(folder.groups().stream()
-                                    .map(tools.jackson.databind.node.JsonNodeFactory.instance::textNode).toList()));
-                }
                 grants.add(op(ShAgentBatchService.FOLDER_VISIBILITY, ShAddress.folder(site, folder.path()).toString(),
-                        null, null, gate));
+                        null, null, gateData(folder.visibility(), folder.groups())));
             }
             if (folder.moves()) {
                 folderMoves.add(folderMoveOp(site, folder));
@@ -188,6 +182,11 @@ public class ShAgentDesiredStateService {
             upserts.add(new ShAgentBatch.Op(ShAgentBatchService.POST_UPSERT, address,
                     post.type(), post.folder(), null, post.data(), null, post.locale(),
                     post.translationOf(), post.url()));
+            // SH1301 — the post's own gate, once the post exists; absent leaves it as it is.
+            if (post.visibility() != null && !post.visibility().isBlank()) {
+                postGates.add(op(ShAgentBatchService.POST_VISIBILITY, address, null, null,
+                        gateData(post.visibility(), post.groups())));
+            }
             // Absent `publish` means "leave it alone", so only an explicit true or false
             // produces an op. Treating absence as false would unpublish live pages the
             // moment someone trimmed a field from the document (P7).
@@ -273,6 +272,7 @@ public class ShAgentDesiredStateService {
         ops.addAll(grants);
         ops.addAll(moves);
         ops.addAll(upserts);
+        ops.addAll(postGates);
         ops.addAll(publishes);
         ops.addAll(pruneOps(desired, site));
         return List.copyOf(ops);
@@ -715,5 +715,15 @@ public class ShAgentDesiredStateService {
                     .withFix("List the folders this document owns in `folders`, or drop `prune`.")
                     .withExample("{\"site\":\"Blog\",\"folders\":[{\"path\":\"/blog\"}],\"prune\":true}"));
         }
+    }
+
+    /** SH1301 — {@code {"visibility": …, "groups": [...]}} for a visibility op, groups only when named. */
+    private static tools.jackson.databind.node.ObjectNode gateData(String visibility, List<String> groups) {
+        tools.jackson.databind.node.JsonNodeFactory json = tools.jackson.databind.node.JsonNodeFactory.instance;
+        tools.jackson.databind.node.ObjectNode gate = json.objectNode().put(ShAgentBatchService.VISIBILITY_KEY, visibility);
+        if (groups != null && !groups.isEmpty()) {
+            gate.set(ShAgentBatchService.GROUPS_KEY, json.arrayNode().addAll(groups.stream().map(json::textNode).toList()));
+        }
+        return gate;
     }
 }

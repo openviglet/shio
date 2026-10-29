@@ -119,6 +119,12 @@ public class ShAgentReadService {
     private final com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog incidentLog;
     /** SH1024 — whether an agent run wrote a trashed row, which the `agent` predicate cannot see. */
     private final com.viglet.shio.persistence.repository.history.ShHistoryRepository shHistoryRepository;
+    /**
+     * SH1301 — a post's own members-only gate, on its read. The repository and not the ACL
+     * service: this read reports a fact and decides nothing, and ShConsoleReadAclLintTest reads a
+     * reference to the ACL service as a read that asks it.
+     */
+    private final com.viglet.shio.persistence.repository.acl.ShContentVisibilityRepository shContentVisibilityRepository;
 
     /**
      * How far back an {@code include=index} read looks for a failure.
@@ -147,7 +153,9 @@ public class ShAgentReadService {
                               com.viglet.shio.post.ShTranslationStaleness shTranslationStaleness,
                               com.viglet.shio.turing.ShTuringIndexService shTuringIndexService,
                               com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog incidentLog,
-                              com.viglet.shio.persistence.repository.history.ShHistoryRepository shHistoryRepository) {
+                              com.viglet.shio.persistence.repository.history.ShHistoryRepository shHistoryRepository,
+                              com.viglet.shio.persistence.repository.acl.ShContentVisibilityRepository shContentVisibilityRepository) {
+        this.shContentVisibilityRepository = shContentVisibilityRepository;
         this.shHistoryRepository = shHistoryRepository;
         this.shTuringIndexService = shTuringIndexService;
         this.incidentLog = incidentLog;
@@ -796,7 +804,12 @@ public class ShAgentReadService {
                 // SH1058 — and whether the source has moved on since this translation was written.
                 // Never asked of a post that carries no stamp, so a monolingual instance pays no
                 // query and every row of it is byte-identical to what it was.
-                .withTranslationStale(shTranslationStaleness.isStale(post) ? Boolean.TRUE : null);
+                .withTranslationStale(shTranslationStaleness.isStale(post) ? Boolean.TRUE : null)
+                // SH1301 — the post's own members-only gate, for the files projection. One count on
+                // an instance with no gate, and absent from every row that has none of its own.
+                .withGate(shContentVisibilityRepository.count() == 0 ? null
+                        : shContentVisibilityRepository.findFirstByObjectId(post.getId())
+                                .map(com.viglet.shio.persistence.model.acl.ShContentVisibility::groups).orElse(null));
     }
 
     /**

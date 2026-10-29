@@ -49,7 +49,7 @@ const FENCE = "---";
 // and `movedFrom` after it, which are instructions the author writes. The order is observable in
 // every file, so it is a decision rather than an accident (P5).
 const META_ORDER = ["site", "url", "type", "folder", "locale", "translationOf", "translationStale",
-  "publish", "movedFrom", "body", BLOCK_KEYS];
+  "publish", "visibility", "groups", "movedFrom", "body", BLOCK_KEYS];
 
 /**
  * The widgets whose value is **code**, and the extension each one's sidecar takes (SH191).
@@ -411,6 +411,10 @@ export function serializePost(doc, bodyField = null, sidecarFields = []) {
     // Derived, never an instruction: a push ignores it, the way a server-owned fact has to be.
     translationStale: doc.translationStale === true ? true : undefined,
     publish: typeof doc.publish === "boolean" ? doc.publish : undefined,
+    // SH1301 — the post's own members-only gate, as `_folder.md` carries a folder's, and only
+    // when it has one, so every other file is byte-identical.
+    visibility: doc.visibility ?? undefined,
+    groups: doc.visibility && doc.groups?.length ? doc.groups : undefined,
     // SH150 — an instruction, like `publish`: it says where this post came from, so a push
     // can move it instead of re-creating it. A pull never writes one (the server has no such
     // thing to report), but it is preserved when a merge rewrites the file, because losing
@@ -586,7 +590,7 @@ export function parseFolderMarker(relPath, text) {
 }
 
 /**
- * SH1301 — a marker's `visibility` (`public` or `members`) and `groups`, or nothing.
+ * SH1301 — a marker's or a post's `visibility` (`public` or `members`) and `groups`, or nothing.
  *
  * <p>Refused rather than dropped when it is neither word: a gate that silently did not apply is a
  * members area that is public, and the author would find out from a stranger.</p>
@@ -938,6 +942,7 @@ export function parsePost(relPath, text) {
     // SH1058 — read back so a merge that rewrites the file keeps it; nothing pushes it.
     translationStale: meta.translationStale === true ? true : undefined,
     publish: typeof meta.publish === "boolean" ? meta.publish : undefined,
+    ...folderGateOf(relPath, meta),
     movedFrom: meta.movedFrom ? normalizeUrl(meta.movedFrom) : undefined,
     bodyField,
     sidecarFiles,

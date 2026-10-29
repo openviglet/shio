@@ -263,9 +263,18 @@ public record ShAgentDesiredState(String site, List<Folder> folders, List<Post> 
      *                alone", which is not the same as {@code false}: an apply that
      *                silently unpublished live pages because a field was omitted would
      *                be exactly the surprise P7 forbids
+     * @param visibility SH1301 — {@code public} or {@code members}: the post's own members-only
+     *                gate, as {@code post.visibility} declares it. Absent leaves the gate as it is
+     * @param groups  SH1301 — the groups a members-only post is for; absent is any signed-in user
      */
     public record Post(String url, String type, String folder, JsonNode data, Boolean publish,
-                       String locale, String translationOf) {
+                       String locale, String translationOf, String visibility, List<String> groups) {
+
+        /** The seven-field form, before SH1301 let a post say who may read it. */
+        public Post(String url, String type, String folder, JsonNode data, Boolean publish,
+                    String locale, String translationOf) {
+            this(url, type, folder, data, publish, locale, translationOf, null, null);
+        }
 
         /** The six-field form, before SH348 made the sibling link declarable. */
         public Post(String url, String type, String folder, JsonNode data, Boolean publish,

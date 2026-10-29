@@ -550,6 +550,17 @@ class ShAgentBatchTest {
                 .isEmpty();
         assertThat(only(run(false, gate)).action()).isEqualTo(Change.NOOP);
 
+        // SH1301 — the read a `shio pull` projects carries the post's own gate, and the desired-state
+        // post a `shio push` sends compiles back to this op.
+        assertThat(shAgentReadService.read(List.of(address), List.of(), false).getFirst().visibility())
+                .as("SH1301: the post's own gate is on its read")
+                .isEqualTo("members");
+        assertThat(shAgentDesiredStateService.compile(new ShAgentDesiredState(siteName, List.of(),
+                        List.of(new ShAgentDesiredState.Post(base + "/vip", null, null, null, null, null, null,
+                                "public", null)), false)))
+                .as("SH1301: a desired-state post with a visibility compiles to post.visibility")
+                .anySatisfy(compiled -> assertThat(compiled.op()).isEqualTo(ShAgentBatchService.POST_VISIBILITY));
+
         assertThat(only(run(true, new Op(ShAgentBatchService.POST_VISIBILITY, "post:" + siteName + base + "/planned",
                 null, null, objectMapper.valueToTree(Map.of("visibility", "members"))))).action())
                 .as("SH1300: a dry run plans a post the batch has not written yet, as a planned folder")

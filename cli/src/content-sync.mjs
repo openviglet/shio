@@ -46,7 +46,9 @@ import { createHash } from "node:crypto";
  * pull writes back; treating it as state would mean a pull deleted the instruction the
  * moment the server reported nothing about it.
  */
-const META_KEYS = ["type", "folder"];
+// SH1301 — a post's own members-only gate merges like `folder`: state the server reports and the
+// file can change, absent (and so unhashed) on every post with no gate, so no existing base moves.
+const META_KEYS = ["type", "folder", "visibility", "groups"];
 
 /**
  * The address a post is keyed by in the base snapshot and every report.
@@ -519,6 +521,9 @@ export function documentsFor(posts, {
         url: post.url,
         type: post.type ?? undefined,
         folder: post.folder ?? "/",
+        // SH1301 — the post's own gate, only when the file declares one: absent leaves it alone.
+        visibility: post.visibility ?? undefined,
+        groups: post.visibility && post.groups?.length ? post.groups : undefined,
         // SH348 — honoured on *create* only (see ShAgentBatch.Op#locale): an upsert that
         // relocalized an existing post would make a routine push change what language a live page
         // claims to be in. Create is where the loss was, since that is when a tree describes a

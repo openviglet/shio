@@ -724,3 +724,14 @@ test("SH1301: a folder marker carries its members-only gate, and only when it ha
   assert.throws(() => parseFolderMarker("Blog/x/_folder.md", "---\nsite: Blog\nfolder: /x\ngroups: [\"A\"]\n---\n"),
     /no `visibility:`/, "SH1301: groups without a visibility is refused");
 });
+
+test("SH1301: a post's own members-only gate round-trips through its frontmatter", () => {
+  const doc = { site: "Blog", url: "/vip", type: "Page", folder: "/", visibility: "members", groups: ["Members"], data: { title: "Vip" } };
+  const text = serializePost(doc);
+  assert.match(text, /\nvisibility: members\ngroups: \["Members"\]\n/);
+  const back = parsePost("Blog/vip.md", text);
+  assert.equal(back.visibility, "members");
+  assert.deepEqual(back.groups, ["Members"]);
+  assert.doesNotMatch(serializePost({ ...doc, visibility: undefined, groups: undefined }), /visibility/,
+    "SH1301: a post with no gate of its own writes exactly what it did before");
+});

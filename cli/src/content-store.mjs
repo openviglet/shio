@@ -1140,6 +1140,9 @@ export function fromAgentDoc(doc) {
     // SH1058 — the read reports it only when true, so a page whose source has not moved, and every
     // page of a monolingual site, carries nothing and its file is byte-identical to before.
     translationStale: doc.translationStale === true ? true : undefined,
+    // SH1301 — the post's own members-only gate, reported only when it has one.
+    visibility: doc.visibility ?? undefined,
+    groups: doc.visibility && doc.groups?.length ? [...doc.groups].sort() : undefined,
     data: doc.data && typeof doc.data === "object" ? doc.data : {},
   };
 }

@@ -1077,5 +1077,11 @@ did not, so the file is rewritten; the file changed it, so it stays for the next
 keeps the **old** value (recording the unpushed one would make the next pull undo it). On push,
 `documentsFor` puts the marker's gate on its desired-state folder entry, and
 `ShAgentDesiredStateService` compiles it to `folder.visibility` after the folder ops, beside
-`folder.acl`. SH1301's remainder carries a post's own gate (`post.visibility`) into its
-frontmatter the same way.
+`folder.acl`.
+
+**A post's own gate** (`post.visibility`) rides its frontmatter as `visibility:` and `groups:`, after
+`publish`. `/agent/read` reports it only on a post that has one (`ShAgentDoc.withGate`, applied last
+in the read's chain, one count on an instance with no gate). In the merge the two keys are
+`META_KEYS`, so they take the same per-field three-way rule as `type` and `folder`, and are absent
+from every existing base. Push puts them on the desired-state post, compiled to `post.visibility`
+right after the upserts.

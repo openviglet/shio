@@ -939,3 +939,17 @@ test("SH1301: push declares a marker's gate on its folder entry, and nothing for
   assert.deepEqual(byPath["/members"], { path: "/members", visibility: "members", groups: ["Members"] });
   assert.deepEqual(byPath["/news"], { path: "/news" });
 });
+
+test("SH1301: a post's gate merges like its folder: the server's gate reaches the file, and push declares it", () => {
+  const plain = { site: "Blog", url: "/vip", type: "Page", folder: "/", data: { title: "Vip" } };
+  const gated = { ...plain, visibility: "members", groups: ["Members"] };
+  const merged = reconcile({ base: plain, remote: gated, local: plain });
+  assert.equal(merged.kind, "remote-changed", "SH1301: the server gated it and the file did not move");
+  assert.equal(merged.doc.visibility, "members");
+
+  const [document] = documentsFor([gated], { sites: ["Blog"] });
+  assert.equal(document.posts[0].visibility, "members");
+  assert.deepEqual(document.posts[0].groups, ["Members"]);
+  const [ungated] = documentsFor([plain], { sites: ["Blog"] });
+  assert.equal(ungated.posts[0].visibility, undefined, "SH1301: no key, no gate op");
+});

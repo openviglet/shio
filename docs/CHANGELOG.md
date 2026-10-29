@@ -415,7 +415,7 @@
 - **SH1298** — A public page's query, getRelation, menu, search, translations and navigation leave out what its reader may not read, with an exact pager total, while preview and the editor still list it (design §XI.64 recorded in `docs/agents/renderer.md`).
 - **SH1299** — A site with membersLogin on sends an anonymous visitor a gate refuses to the console login and back to the page, a signed-in stranger still gets the 404, and the login follows only paths on this host (design §XI.65 superseded: the column is nullable with null as off, the ShSite.scratch precedent, and the parameter is the console's existing returnUrl, not a new return) (design §XI.65 recorded in `docs/agents/agent-surface.md`).
 - **SH1300** — post.visibility makes one post members-only where it stands, and /sites/** and the CDA answer it as they answer a gated folder: a 404 for a visitor, the page for a member (design §XI.66 recorded in `docs/agents/agent-surface.md`).
-- **SH1301 (folder markers)** — _folder.md round-trips a folder's members-only gate: pull writes visibility and groups from the sitemap, a three-way merge keeps unpushed edits, and push compiles them to folder.visibility.
+- **SH1301** — A post's own members-only gate rides its frontmatter like a folder's rides _folder.md: the read reports it, the merge treats it as a field, and push compiles it to post.visibility (design §XI.67 recorded in `docs/agents/content-files.md`).
 
 ## Block M — Token economy, measured (SH74)
 

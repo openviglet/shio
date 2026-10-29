@@ -72,7 +72,35 @@ public record ShAgentDoc(String address, String type, String state, String folde
                          java.util.List<Note> notes,
                          Working working,
                          Boolean translationStale,
-                         Index index) {
+                         Index index,
+                         String visibility,
+                         java.util.List<String> groups) {
+
+    /**
+     * The twenty-two-field form, before SH1301 put a post's own members-only gate on its read:
+     * {@code visibility: "members"} and the groups, both absent on a post with no gate of its own,
+     * so the files projection can round-trip one and every other row reads as it did.
+     */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published, String url, String digest, String curatorUrl,
+                      String previewUrl, java.util.List<ShRevisionRow> revisions,
+                      Schedule schedule, java.util.List<Note> notes, Working working,
+                      Boolean translationStale, Index index) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, url, digest, curatorUrl, previewUrl, revisions, schedule, notes, working,
+                translationStale, index, null, null);
+    }
+
+    /** SH1301 — the same row, with the post's own gate; applied last, like {@code translationStale}. */
+    public ShAgentDoc withGate(java.util.List<String> gate) {
+        return gate == null ? this
+                : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                        locale, translationOf, published, url, digest, curatorUrl, previewUrl,
+                        revisions, schedule, notes, working, translationStale, index, "members",
+                        gate.isEmpty() ? null : gate);
+    }
 
     /** The twenty-field form, before SH1058 said a translation had fallen behind its source. */
     public ShAgentDoc(String address, String type, String state, String folder,
@@ -111,7 +139,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return status == null ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
                         locale, translationOf, published, url, digest, curatorUrl, previewUrl,
-                        revisions, schedule, notes, working, translationStale, status);
+                        revisions, schedule, notes, working, translationStale, status, visibility, groups);
     }
 
     /**
@@ -127,7 +155,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return !Boolean.TRUE.equals(stale) ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
                         locale, translationOf, published, url, digest, curatorUrl, previewUrl,
-                        revisions, schedule, notes, working, Boolean.TRUE, index);
+                        revisions, schedule, notes, working, Boolean.TRUE, index, visibility, groups);
     }
 
     /** The nineteen-field form, before SH1008 said who else is on this page. */

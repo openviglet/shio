@@ -268,22 +268,6 @@ Assert at the delivery boundary: an anonymous read of a members page gets the si
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
 
-### XI.67 XI.67 The visibility flag in _folder.md and frontmatter (from SH1285) (SH1301)
-
-Split from SH1285. A members-only gate set with `folder.visibility` (or
-`post.visibility`) does not round-trip through `shio/content/**`: `shio pull` writes no
-trace of it and `shio push` cannot declare one, so a repository workflow silently drops
-it (P4: files beat APIs for authoring).
-
-What to build: a `visibility` key in `_folder.md` and in a post's frontmatter, with an
-optional `groups` list, projected on pull and compiled on push into the visibility ops,
-under the same three-way merge rule every other key follows (content-files.md). A file
-without the key leaves the gate as it is, so a repository that never mentions visibility
-cannot open a gated section by accident; `visibility: public` is how a file removes one.
-
-Assert: pull then push of a gated folder is a noop, and a pushed `visibility: members`
-gates it.
-
 ### XI.68 XI.68 Who can read this, in the console (from SH1285) (SH1302)
 
 Split from SH1285. A curator cannot see or change whether a folder or a post is
