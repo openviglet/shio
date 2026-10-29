@@ -253,3 +253,28 @@ test("SH537: every prerendered route also gets its Markdown twin", () => {
     "and every other route's twin sits beside it at `<path>.md`",
   );
 });
+
+test("SH1258: the showcase's pages and features are read from the SH1250 matrix, never retyped", () => {
+  // The matrix is what `cli/test/showcase-matrix.test.mjs` holds to the product, so a page this
+  // site lists is one the package carries. A copy typed here would be a second list with nothing
+  // failing when the two part.
+  const showcase = read("../src/lib/showcase.ts");
+  assert.match(showcase, /from "\.\.\/\.\.\/\.\.\/docs\/specs\/SH1250-showcase-matrix\.json"/,
+    "SH1258: showcase.ts imports the matrix itself");
+  assert.doesNotMatch(showcase, /"\/tour\/[a-z]/,
+    "SH1258: and names no tour page by hand: every path comes from the matrix");
+
+  // Both install paths are on the page, and the CLI one spells the package id from the matrix.
+  const install = blockBetween(SITE_CONTENT, "/* ── The showcase", "/* ── Replication");
+  assert.match(install, /SHOWCASE_CONSOLE_STEPS/, "SH1258: the console path is on the page");
+  assert.match(install, /shio marketplace install \$\{SHOWCASE_ID\} --apply/,
+    "SH1258: and the CLI path installs and applies the id the matrix names");
+
+  // Every depth page links to the showcase page that demonstrates it, by feature key; the
+  // lookup throws at build time on a key the matrix does not map.
+  const features = read("../src/lib/feature-content.ts");
+  const slugs = [...features.matchAll(/^ {2}slug: "([^"]+)",$/gm)].length;
+  const keys = [...features.matchAll(/^ {2}showcase: "([^"]+)",$/gm)].length;
+  assert.equal(keys, slugs, "SH1258: every depth page names the matrix feature its showcase link reads");
+  assert.ok(APP.includes('"/showcase"'), "SH1258: /showcase is a route");
+});

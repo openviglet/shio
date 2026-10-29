@@ -36,10 +36,17 @@ export interface FeatureDetail {
   lead: string;
   blocks: FeatureBlock[];
   related: { label: string; href: string }[];
+  /**
+   * SH1258: the manifest `features` key whose showcase page demonstrates this pillar. A key,
+   * not a path: the page comes from docs/specs/SH1250-showcase-matrix.json, so the link moves
+   * when the matrix does and the build fails on a key it does not map.
+   */
+  showcase: string;
 }
 
 const AGENT_GATEWAY: FeatureDetail = {
   slug: "agent-gateway",
+  showcase: "agentContext",
   metaTitle: "Agent gateway of an agent-ready CMS: manifest, context pack | Viglet Shio",
   metaDescription:
     "The namespace behind the MCP server of an agent-ready CMS, shaped for a coding agent such as Claude Code rather than a browser: a manifest that reports unshipped capabilities as false and says where a capability lives when it lives elsewhere, a context pack that replaces the discovery session, a write vocabulary you can read before writing, and 4xx bodies that carry the fix.",
@@ -102,6 +109,7 @@ const AGENT_GATEWAY: FeatureDetail = {
 
 const CONTENT_AS_FILES: FeatureDetail = {
   slug: "content-as-files",
+  showcase: "contentAsFiles",
   metaTitle: "Content as files: the projection and the three-way merge | Viglet Shio",
   metaDescription:
     "The whole site projected to one Markdown file per post, with a three-way merge back. The path is the URL, only the draft projects, losslessness beats prettiness, and the field set is a table with a test, so a key the format drops is declared with a reason rather than discovered later.",
@@ -151,6 +159,7 @@ An open-source, agent-ready CMS with four ways in.`,
 
 const BLUEPRINTS: FeatureDetail = {
   slug: "blueprints",
+  showcase: "blueprints",
   metaTitle: "Blueprints: appliable units instead of prose recipes | Viglet Shio",
   metaDescription:
     "A section of a site the instance can apply: a content model, a folder tree, sample pages, the parameters that make it somebody's, and the promise it keeps about what exists afterwards. A package may not name its own site and may not prune, substitution is one form and nothing else, and everything is validated at load.",
@@ -194,6 +203,7 @@ shio apply --blueprint corporate \\
 
 const RENDERING: FeatureDetail = {
   slug: "rendering",
+  showcase: "serverRender",
   metaTitle: "Rendering, themes and design tokens | Viglet Shio",
   metaDescription:
     "Pages resolve through layouts and regions to a shared section vocabulary, and a theme carries its design tokens in the W3C DTCG shape that Style Dictionary, Figma and Tokens Studio already export, so the commonest change to a site is a reviewable field edit rather than a stylesheet rewrite.",
@@ -246,6 +256,7 @@ const RENDERING: FeatureDetail = {
 
 const DELIVERY: FeatureDetail = {
   slug: "delivery",
+  showcase: "graphql",
   metaTitle: "Delivery: REST, GraphQL and the TypeScript SDKs | Viglet Shio",
   metaDescription:
     "Headless where it counts: a framework-agnostic delivery client with zero runtime dependencies, a React SDK over the same core, the shared section vocabulary, a generated Next.js starter and a bridge that makes any front end inline-editable.",

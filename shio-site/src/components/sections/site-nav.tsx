@@ -46,6 +46,7 @@ const NAV_GROUPS = [
       { label: "Proof without a screenshot", href: withBase("/#verify") },
       { label: "Rendering and design tokens", href: withBase("/features/rendering/") },
       { label: "Replicate an existing site", href: withBase("/replicate/") },
+      { label: "A finished site: the showcase", href: withBase("/showcase/") },
     ],
   },
   {

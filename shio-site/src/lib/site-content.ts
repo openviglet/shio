@@ -28,6 +28,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ceiling } from "./token-budgets";
+import { SHOWCASE_ID, SHOWCASE_LOCALES, SHOWCASE_SITE } from "./showcase";
 import { withBase } from "./base";
 
 /*
@@ -765,6 +766,30 @@ export const BLUEPRINT_STEPS = [
     gloss: "the front end and the content half in the same command",
   },
 ];
+
+/* ── The showcase (SH1258) ───────────────────────────────────────────────── */
+
+/** The one line from the quick start that gets a fresh instance to the marketplace. */
+export const SHOWCASE_RUN =
+  "docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=change-me ghcr.io/openviglet/shio-ce:latest";
+
+/** The console path: the admin marketplace, which reads the published catalogue by default. */
+export const SHOWCASE_CONSOLE_STEPS = [
+  "Open the console at localhost:2710 and sign in as admin.",
+  "Go to Admin, then Marketplace, and open Quilhara showcase.",
+  `Under "Build a site from this package", name the site ${SHOWCASE_SITE}, tick "Create the site if it does not exist" and "Add missing fields to existing post-types".`,
+  "Press Plan to see every post type, page and image it would write, then Install and apply.",
+];
+
+/** The CLI path: the same install and apply, from a terminal. */
+export const SHOWCASE_CLI = `shio marketplace install ${SHOWCASE_ID} --apply \\
+  --site ${SHOWCASE_SITE} --create-site --merge-post-types --dry-run
+# the plan looked right: run it again without --dry-run
+shio marketplace install ${SHOWCASE_ID} --apply \\
+  --site ${SHOWCASE_SITE} --create-site --merge-post-types`;
+
+/** Where the applied site answers, per language. */
+export const SHOWCASE_URL = `localhost:2710/sites/${SHOWCASE_SITE}/default/${SHOWCASE_LOCALES[0]}/`;
 
 /* ── Replication ─────────────────────────────────────────────────────────── */
 

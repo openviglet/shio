@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { LINKS } from "@/lib/site-content";
 import type { FeatureDetail } from "@/lib/feature-content";
 import { withBase } from "@/lib/base";
+import { showcasePageFor } from "@/lib/showcase";
 
 /**
  * SH539: one component, one record per pillar, one prerendered route each.
@@ -17,6 +18,23 @@ import { withBase } from "@/lib/base";
  * one column: these pages are read top to bottom by somebody deciding, and a
  * column of identical cards is the shape people scroll past.
  */
+/** SH1258: the showcase page that demonstrates this feature, resolved through the SH1250 matrix. */
+function ShowcaseLink({ feature }: Readonly<{ feature: string }>) {
+  const page = showcasePageFor(feature);
+  return (
+    <p className="mt-16 max-w-3xl leading-relaxed text-muted-foreground">
+      See it running: the showcase site shows this on{" "}
+      <a
+        href={withBase(`/showcase/#${page.anchor}`)}
+        className="font-mono font-semibold text-primary underline-offset-4 hover:underline"
+      >
+        {page.path === "/" ? "its home page" : page.path}
+      </a>
+      , one install away on your own instance.
+    </p>
+  );
+}
+
 export function FeaturePage({ detail }: Readonly<{ detail: FeatureDetail }>) {
   return (
     <div className="flex min-h-screen flex-col">
@@ -79,6 +97,8 @@ export function FeaturePage({ detail }: Readonly<{ detail: FeatureDetail }>) {
                 </article>
               ))}
             </div>
+
+            <ShowcaseLink feature={detail.showcase} />
 
             <nav className="mt-16 border-t border-border pt-8">
               <h2 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">

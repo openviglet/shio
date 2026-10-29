@@ -157,7 +157,11 @@ const MANNERISMS = [
   /\b(it'?s|it is) (important to note|worth noting)\b/i,
   /\bkeep in mind that\b/i,
   /\bin the heart of\b/i,
-  /\b(boasts|nestled|vibrant|unwavering|meticulous|garner|bolster|showcase)\b/i,
+  /\b(boasts|nestled|vibrant|unwavering|meticulous|garner|bolster)\b/i,
+  // SH1258: "the showcase" is a name here (the Quilhara package's catalogue title, the
+  // /showcase route, the SH1250 matrix), so the noun is the right word. The verb is the
+  // tell, and it stays caught.
+  /\b(to showcase|showcases|showcased)\b/i,
   /\b(pivotal|crucial|intricate|interplay|realm of|tapestry)\b/i,
   /\b(seamless|seamlessly|foster|leverage|robust|holistic)\b/i,
   /\b(cutting-edge|state-of-the-art|game-chang|revolutioniz|empower|unleash|supercharge)/i,

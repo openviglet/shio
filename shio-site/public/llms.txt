@@ -34,6 +34,8 @@ eleven routes that is 80 KB of Markdown against 597 KB of HTML.
   the fidelity-versus-authorable decision, and the bounds the crawl keeps
 - [/curator](https://openviglet.github.io/shio/curator/): the curator's half: the review queue, preview
   links, inline editing, and the six gates that stop an agent write
+- [/showcase](https://openviglet.github.io/shio/showcase/): Quilhara, a finished bilingual site, how to
+  install it from the console or the CLI, and which feature each of its pages demonstrates
 - [/features/agent-gateway](https://openviglet.github.io/shio/features/agent-gateway/): the manifest,
   the context pack, planned batches and teaching errors
 - [/features/content-as-files](https://openviglet.github.io/shio/features/content-as-files/): the

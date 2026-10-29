@@ -16,7 +16,7 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- 📋 **SH1258** (deps: SH1256 ✅, SH1257 ✅) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
+- ⏳ **SH1258** (deps: SH1256 ✅, SH1257 ✅) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — No screenshots yet: generate the showcase's brand and tour page images into marketplace/quilhara/screenshots/ and show them on /showcase and the landing section. → §XIX.15
 
 ## Priority
 
@@ -33,6 +33,12 @@
   chosen the visitor identity model, a page under a members rule is served by /sites/**
   and the CDA to a request carrying that principal, private and no-store, and is a 404
   to anyone else.
+
+## Done when — SH1258
+
+- **The showcase's screenshots appear on /showcase** marketplace/quilhara/screenshots/
+  holds images generated from an applied showcase, the published catalogue entry lists
+  them, and the built /showcase page renders them.
 
 ## Non-goals (do NOT add as tasks)
 

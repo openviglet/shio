@@ -55,6 +55,12 @@ export const routes: PrerenderRoute[] = [
     description:
       "An agent wrote nine pages last night and nobody has seen them yet. The curator half of Viglet Shio: the review queue an agent token cannot reach, expiring preview links, inline editing on the rendered page, draft-published diff and restore, reversible deletes, and the six gates that are on by default rather than configurable.",
   },
+  {
+    path: "/showcase",
+    title: "The showcase: a finished site built with Shio | Viglet Shio",
+    description:
+      "Quilhara, a fictional bilingual trail magazine built with Viglet Shio, installs on your own instance from the console marketplace or with one shio CLI command. Every page it carries, and the features each one demonstrates, from the agent's discovery call to the curator's review queue.",
+  },
   // The depth pages carry their own metadata, so the record is the single
   // source for the route, the title and the description alike.
   ...FEATURE_SLUGS.map((slug) => ({

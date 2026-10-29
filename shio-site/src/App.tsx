@@ -5,6 +5,7 @@ import { ConsolePage } from "@/pages/console";
 import { ComparePage } from "@/pages/compare";
 import { ReplicatePage } from "@/pages/replicate";
 import { CuratorPage } from "@/pages/curator";
+import { ShowcasePage } from "@/pages/showcase";
 import { FeaturePage } from "@/pages/feature-page";
 import { FEATURE_DETAILS, FEATURE_SLUGS } from "@/lib/feature-content";
 import { ConsentBanner } from "@/components/consent-banner";
@@ -26,6 +27,7 @@ export const ROUTES: Record<string, () => React.JSX.Element> = {
   "/compare": ComparePage,
   "/replicate": ReplicatePage,
   "/curator": CuratorPage,
+  "/showcase": ShowcasePage,
   // One depth page per pillar, from one record each, so a new pillar is an
   // entry in feature-content.ts and a row in entry-server.tsx, and the build
   // refuses if you write only one of the two.

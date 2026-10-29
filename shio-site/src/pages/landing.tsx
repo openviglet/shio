@@ -3,6 +3,7 @@ import { Hero } from "@/components/sections/hero";
 import { Paths } from "@/components/sections/paths";
 import { UseCases } from "@/components/sections/use-cases";
 import { Roles } from "@/components/sections/roles";
+import { Showcase } from "@/components/sections/showcase";
 import { Laws } from "@/components/sections/laws";
 import { Pillars } from "@/components/sections/pillars";
 import { OneCall } from "@/components/sections/one-call";
@@ -38,7 +39,10 @@ import { SiteFooter } from "@/components/sections/site-footer";
  * because once a reader knows which door is theirs, the argument about protocol
  * quality is the interesting part rather than the disqualifying one.
  *
- * hook (two sessions) → the four ways in → who runs it → the three seats → the
+ * SH1258 put a finished site (the showcase) straight after the deployments, so the proof that
+ * the surfaces add up to something comes before the argument about each one.
+ *
+ * hook (two sessions) → the four ways in → who runs it → a finished site → the three seats → the
  * contract → the map → then one section per law, in the order an agent meets
  * them: discover (P2/P3) → author (P4/P5) → the surface (P1/P10) → fail (P6) →
  * prove (P9) → what stops it (P7) → skip steps (P8) → replicate → deliver → why
@@ -52,6 +56,7 @@ export function LandingPage() {
         <Hero />
         <Paths />
         <UseCases />
+        <Showcase />
         <Roles />
         <Laws />
         <Pillars />
