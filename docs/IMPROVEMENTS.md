@@ -241,26 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.69 XI.69 The site request drops pageType (SH1302 finding) (SH1303)
-
-Found by SH1302's browser check. `PUT /api/v2/site/{id}` binds `ShSiteRequest`, and
-`ShSiteAPI.toEntity` copies only the fields that record declares. `pageType` (SH1283) is
-not one of them, so the site form's Page type select saves nothing: the server answers
-200 and the next read shows "None". Worse, `ShSiteWriteService.update` replaces
-`pageType` from that payload, so every console save of a site clears a page type an
-agent set through `site.upsert`.
-
-SH1302 fixed the same hole for `membersLogin`, the switch beside it, by adding the field
-to the record and to `toEntity`; this is that line for `pageType`, plus the instrument
-that would have caught both: a test that every field the console's site form sends (the
-`ShSite` keys the edit page writes in `onSubmit`) is a component of `ShSiteRequest`, so
-the next setting added to the form and not to the request fails the build instead of a
-browser run.
-
-Assert at the boundary: a console-shaped `PUT` carrying `pageType` stores it and the
-next read returns it, and the field-coverage test names `pageType` until the record
-carries it.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

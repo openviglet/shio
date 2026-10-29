@@ -417,6 +417,7 @@
 - **SH1300** — post.visibility makes one post members-only where it stands, and /sites/** and the CDA answer it as they answer a gated folder: a 404 for a visitor, the page for a member (design §XI.66 recorded in `docs/agents/agent-surface.md`).
 - **SH1301** — A post's own members-only gate rides its frontmatter like a folder's rides _folder.md: the read reports it, the merge treats it as a field, and push compiles it to post.visibility (design §XI.67 recorded in `docs/agents/content-files.md`).
 - **SH1302** — The content browser locks a members-only row and the site form saves its sign-in switch, both checked in a browser, which also found and fixed the site request dropping that switch (design §XI.68 recorded in `docs/agents/console-ui.md`).
+- **SH1303** — The console's site save stores the page type it sends, and a test now fails the build when the site form writes a key ShSiteRequest does not declare (design §XI.69 recorded in `docs/agents/console-ui.md`).
 
 ## Block M — Token economy, measured (SH74)
 

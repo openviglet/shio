@@ -24,6 +24,8 @@ package com.viglet.shio.api.site.dto;
  *   <li>{@code postTypeLayout} — {@code site.setPostTypeLayout(payload.getPostTypeLayout())}.</li>
  *   <li>{@code searchablePostTypes} — {@code site.setSearchablePostTypes(payload.getSearchablePostTypes())}.</li>
  *   <li>{@code formSuccess} — {@code site.setFormSuccess(payload.getFormSuccess())}.</li>
+ *   <li>{@code pageType} — SH1303: the SH1283 page type, missing here for the same reason and with
+ *       the same effect: the console's select saved nothing and every console save cleared it.</li>
  *   <li>{@code membersLogin} — SH1302: the SH1299 switch. Missing here, the console could not set
  *       it, and every console save of a site cleared the one an agent had set, because the update
  *       replaces it from this payload.</li>
@@ -39,11 +41,18 @@ public record ShSiteRequest(
         String postTypeLayout,
         String searchablePostTypes,
         String formSuccess,
-        Boolean membersLogin) {
+        Boolean membersLogin,
+        String pageType) {
+
+    /** The eight-field form, before SH1303 carried the page type. */
+    public ShSiteRequest(String name, String description, String url, String furl, String postTypeLayout,
+                         String searchablePostTypes, String formSuccess, Boolean membersLogin) {
+        this(name, description, url, furl, postTypeLayout, searchablePostTypes, formSuccess, membersLogin, null);
+    }
 
     /** The seven-field form, before SH1302 carried the members sign-in switch. */
     public ShSiteRequest(String name, String description, String url, String furl, String postTypeLayout,
                          String searchablePostTypes, String formSuccess) {
-        this(name, description, url, furl, postTypeLayout, searchablePostTypes, formSuccess, null);
+        this(name, description, url, furl, postTypeLayout, searchablePostTypes, formSuccess, null, null);
     }
 }

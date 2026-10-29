@@ -12,7 +12,6 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- 📋 **SH1303** (deps: —) **The console's site Page type never saves, and every console site save clears one an agent set** — ShSiteRequest omits pageType, so toEntity drops it and the update replaces the stored value with null. → §XI.69
 
 ## Priority
 

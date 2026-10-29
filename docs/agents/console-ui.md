@@ -4215,4 +4215,7 @@ nothing: `PUT /api/v2/site/{id}` binds `ShSiteRequest`, `toEntity` copies only w
 `membersLogin` was not declared, so the save answered 200 and the next read said `null`. Worse,
 SH1299's `update` replaces the switch from the payload, so every console save cleared one an agent
 set. `ShSiteRequest` now carries it, and `ShSitesMembersOnlyTest` saves it the way the console does.
-`pageType` has the same hole (SH1303).
+`pageType` had the same hole and the same effect on SH1283's select (SH1303, fixed). The instrument
+is `shio-react/test/site-request-fields.test.mjs`: every key the site form writes in `onSubmit`
+must be a component of `ShSiteRequest`, so the next setting added to the form and not to the
+request fails the build rather than a browser run.

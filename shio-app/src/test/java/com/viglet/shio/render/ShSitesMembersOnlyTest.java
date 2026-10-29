@@ -250,6 +250,23 @@ class ShSitesMembersOnlyTest {
         }
     }
 
+    @Test
+    @DisplayName("SH1303: the console's site save stores the page type it sends")
+    void theConsoleSavesThePageType() throws Exception {
+        var editor = user(admin).roles("ADMIN");
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/api/v2/site/" + siteId).with(editor)
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                        .contentType("application/json")
+                        .content("{\"name\":\"" + siteName + "\",\"furl\":\"" + siteName
+                                + "\",\"postTypeLayout\":\"{\\\"Sh1285Page\\\":\\\"SH1285_LAYOUT\\\"}\","
+                                + "\"pageType\":\"Sh1285Page\"}"))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .as("SH1303: the request used to drop it, so the save answered 200 and stored null")
+                        .contains("\"pageType\":\"Sh1285Page\""));
+    }
+
     // --- a site that sends a turned-away visitor to sign in ---
 
     @Test
