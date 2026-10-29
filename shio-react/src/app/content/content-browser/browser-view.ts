@@ -116,6 +116,11 @@ export interface BrowserRow {
   isDefaultLocale?: boolean
   /** SH1026 — the byte path of the image a card shows, from the listing; absent when there is none. */
   thumbnail?: string
+  /**
+   * SH1302 — the row carries a members-only gate of its own, so a curator sees it before publishing
+   * into it. Inherited gates are their folder's to show.
+   */
+  membersOnly?: boolean
 }
 
 /**

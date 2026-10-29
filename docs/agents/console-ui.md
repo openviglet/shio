@@ -4206,4 +4206,13 @@ a comma-separated group list (empty: anyone signed in). It reads and writes
 READ to see it, WRITE to change it, `unknown-member-group` and `invalid-visibility` as 400s. It
 shows the object's **own** gate; one inherited from a folder above is that folder's to change. Saved
 with the grants, in the same click, after them. The gated-icon in the browser rows and the site
-settings' `membersLogin` switch are SH1302's remainder.
+settings' `membersLogin` switch shipped with it: a lock beside the state of a row whose listing
+carries `membersOnly` (`ShConsoleFolderRow` / `ShConsolePostRow`, true or absent, from one read of
+the gates per listing), and a "Send visitors to sign in" checkbox on the site form.
+
+**Checked in a browser, and that found a defect a test had not.** The site form's checkbox saved
+nothing: `PUT /api/v2/site/{id}` binds `ShSiteRequest`, `toEntity` copies only what it declares, and
+`membersLogin` was not declared, so the save answered 200 and the next read said `null`. Worse,
+SH1299's `update` replaces the switch from the payload, so every console save cleared one an agent
+set. `ShSiteRequest` now carries it, and `ShSitesMembersOnlyTest` saves it the way the console does.
+`pageType` has the same hole (SH1303).

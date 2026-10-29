@@ -31,5 +31,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @since 2026.3
  */
 @JsonInclude(Include.NON_NULL)
-public record ShConsoleFolderRow(String id, String name, boolean root, Instant date, int position) {
+public record ShConsoleFolderRow(String id, String name, boolean root, Instant date, int position,
+                                 Boolean membersOnly) {
+
+    /** The five-field form, before SH1302 marked a members-only folder: true or absent, never false. */
+    public ShConsoleFolderRow(String id, String name, boolean root, Instant date, int position) {
+        this(id, name, root, date, position, null);
+    }
 }

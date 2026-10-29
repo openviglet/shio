@@ -268,21 +268,25 @@ Assert at the delivery boundary: an anonymous read of a members page gets the si
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
 
-### XI.68 XI.68 Who can read this, in the console (from SH1285) (SH1302)
+### XI.69 XI.69 The site request drops pageType (SH1302 finding) (SH1303)
 
-Split from SH1285. A curator cannot see or change whether a folder or a post is
-members-only without an agent or the CLI: the console shows no trace of
-`sh_content_visibility`.
+Found by SH1302's browser check. `PUT /api/v2/site/{id}` binds `ShSiteRequest`, and
+`ShSiteAPI.toEntity` copies only the fields that record declares. `pageType` (SH1283) is
+not one of them, so the site form's Page type select saves nothing: the server answers
+200 and the next read shows "None". Worse, `ShSiteWriteService.update` replaces
+`pageType` from that payload, so every console save of a site clears a page type an
+agent set through `site.upsert`.
 
-What to build: a "Who can read this" control in the folder and post settings: public, or
-members (any signed-in user, or chosen groups), backed by a REST read and write that
-call the same `ShContentAclService` methods the ops do, guarded by WRITE. The content
-browser marks a gated folder or post with an icon so a curator sees the gate before
-publishing into it. When the site's `membersLogin` switch exists, the site settings show
-it beside the gate. P1 order puts this last; it adds no rule of its own.
+SH1302 fixed the same hole for `membersLogin`, the switch beside it, by adding the field
+to the record and to `toEntity`; this is that line for `pageType`, plus the instrument
+that would have caught both: a test that every field the console's site form sends (the
+`ShSite` keys the edit page writes in `onSubmit`) is a component of `ShSiteRequest`, so
+the next setting added to the form and not to the request fails the build instead of a
+browser run.
 
-Assert at the console boundary (e2e check): setting members on a folder writes the gate
-the delivery tests read, and the browser shows the mark.
+Assert at the boundary: a console-shaped `PUT` carrying `pageType` stores it and the
+next read returns it, and the field-coverage test names `pageType` until the record
+carries it.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

@@ -43,5 +43,14 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 public record ShConsolePostRow(String id, String title, String summary, String furl,
                                String postType, String locale, Instant date, Instant modifiedDate,
                                String postTypeTitle, boolean published, String publishStatus,
-                               String state, String thumbnail) {
+                               String state, String thumbnail, Boolean membersOnly) {
+
+    /** The thirteen-field form, before SH1302 marked a members-only post: true or absent. */
+    public ShConsolePostRow(String id, String title, String summary, String furl,
+                            String postType, String locale, Instant date, Instant modifiedDate,
+                            String postTypeTitle, boolean published, String publishStatus,
+                            String state, String thumbnail) {
+        this(id, title, summary, furl, postType, locale, date, modifiedDate, postTypeTitle, published,
+                publishStatus, state, thumbnail, null);
+    }
 }

@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Lock } from "lucide-react"
 import {
   BentoDataTable, type BentoActionsMenuItem, type BentoDataTableAction, type BentoDataTableColumn,
   type BentoDataTableLayout,
@@ -117,7 +118,16 @@ export function BrowserTable({
     {
       id: "state", header: t("content.filterState"), width: "8rem",
       sortValue: (row) => row.publishStatus ?? "",
-      cell: (row) => <StateMark status={row.publishStatus} t={t} />,
+      cell: (row) => (
+        <span className="flex items-center gap-1.5">
+          <StateMark status={row.publishStatus} t={t} />
+          {row.membersOnly && (
+            <Lock className="h-3.5 w-3.5 text-muted-foreground" aria-label={t("acl.readers.members")}>
+              <title>{t("acl.readers.members")}</title>
+            </Lock>
+          )}
+        </span>
+      ),
     },
     {
       id: "locale", header: t("content.filterLocale"), width: "6rem",

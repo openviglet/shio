@@ -24,6 +24,9 @@ package com.viglet.shio.api.site.dto;
  *   <li>{@code postTypeLayout} — {@code site.setPostTypeLayout(payload.getPostTypeLayout())}.</li>
  *   <li>{@code searchablePostTypes} — {@code site.setSearchablePostTypes(payload.getSearchablePostTypes())}.</li>
  *   <li>{@code formSuccess} — {@code site.setFormSuccess(payload.getFormSuccess())}.</li>
+ *   <li>{@code membersLogin} — SH1302: the SH1299 switch. Missing here, the console could not set
+ *       it, and every console save of a site cleared the one an agent had set, because the update
+ *       replaces it from this payload.</li>
  * </ul>
  *
  * @author Alexandre Oliveira
@@ -35,5 +38,12 @@ public record ShSiteRequest(
         String furl,
         String postTypeLayout,
         String searchablePostTypes,
-        String formSuccess) {
+        String formSuccess,
+        Boolean membersLogin) {
+
+    /** The seven-field form, before SH1302 carried the members sign-in switch. */
+    public ShSiteRequest(String name, String description, String url, String furl, String postTypeLayout,
+                         String searchablePostTypes, String formSuccess) {
+        this(name, description, url, furl, postTypeLayout, searchablePostTypes, formSuccess, null);
+    }
 }

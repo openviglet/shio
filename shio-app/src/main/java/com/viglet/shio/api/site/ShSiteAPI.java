@@ -227,6 +227,7 @@ public class ShSiteAPI {
         site.setPostTypeLayout(payload.postTypeLayout());
         site.setSearchablePostTypes(payload.searchablePostTypes());
         site.setFormSuccess(payload.formSuccess());
+        site.setMembersLogin(payload.membersLogin());
         return site;
     }
 

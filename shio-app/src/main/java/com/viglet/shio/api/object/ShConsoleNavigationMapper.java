@@ -54,9 +54,13 @@ public class ShConsoleNavigationMapper {
     private final ShConsoleThumbnails thumbnails;
     /** SH1272 — the live rows behind a page of drafts, read for the page at once. */
     private final ShPostUnifiedRepository posts;
+    /** SH1302 — which rows on the page carry a members-only gate of their own. */
+    private final com.viglet.shio.persistence.repository.acl.ShContentVisibilityRepository gates;
 
     public ShConsoleNavigationMapper(ShCdaMapper cdaMapper, ShConsoleThumbnails thumbnails,
-                                     ShPostUnifiedRepository posts) {
+                                     ShPostUnifiedRepository posts,
+                                     com.viglet.shio.persistence.repository.acl.ShContentVisibilityRepository gates) {
+        this.gates = gates;
         this.cdaMapper = cdaMapper;
         this.thumbnails = thumbnails;
         this.posts = posts;
@@ -83,9 +87,13 @@ public class ShConsoleNavigationMapper {
                                     long totalPosts, long totalFolders) {
         Map<String, String> images = posts.isEmpty() ? Map.of() : thumbnails.of(posts);
         Map<String, ShPostUnified> live = liveRows(posts);
-        return new ShConsoleListing(folderId, folders.stream().map(this::folderRow).toList(),
+        // SH1302 — one read for the page, and one count on an instance with no gate.
+        java.util.Set<String> gated = gates.count() == 0 ? java.util.Set.of()
+                : gates.findAll().stream().map(com.viglet.shio.persistence.model.acl.ShContentVisibility::getObjectId)
+                        .collect(Collectors.toSet());
+        return new ShConsoleListing(folderId, folders.stream().map(folder -> folderRow(folder, gated)).toList(),
                 posts.stream().map(post -> postRow(post, images.get(post.getId()),
-                        live.get(post.getId()))).toList(), page, size,
+                        live.get(post.getId()), gated)).toList(), page, size,
                 totalPosts, totalFolders);
     }
 
@@ -97,10 +105,10 @@ public class ShConsoleNavigationMapper {
                 cdaMapper.toFolder(currentFolder));
     }
 
-    private ShConsoleFolderRow folderRow(ShFolder folder) {
+    private ShConsoleFolderRow folderRow(ShFolder folder, java.util.Set<String> gated) {
         ShCdaFolder shared = cdaMapper.toFolder(folder);
         return new ShConsoleFolderRow(shared.id(), shared.name(), shared.root(),
-                folder.getDate(), folder.getPosition());
+                folder.getDate(), folder.getPosition(), gated.contains(folder.getId()) ? Boolean.TRUE : null);
     }
 
     /**
@@ -135,7 +143,8 @@ public class ShConsoleNavigationMapper {
         return Objects.equals(post.getData(), live.getData()) ? LIVE : CHANGED;
     }
 
-    private ShConsolePostRow postRow(ShPostUnified post, String thumbnail, ShPostUnified live) {
+    private ShConsolePostRow postRow(ShPostUnified post, String thumbnail, ShPostUnified live,
+                                     java.util.Set<String> gated) {
         var shared = cdaMapper.toSummary(post);
         String status = statusOf(post, live);
         return new ShConsolePostRow(shared.id(), shared.title(), shared.summary(), shared.furl(),
@@ -144,7 +153,7 @@ public class ShConsoleNavigationMapper {
                 !UNPUBLISHED.equals(status),
                 status,
                 post.getState() != null ? post.getState().name() : null,
-                thumbnail);
+                thumbnail, gated.contains(post.getId()) ? Boolean.TRUE : null);
     }
 
     /**

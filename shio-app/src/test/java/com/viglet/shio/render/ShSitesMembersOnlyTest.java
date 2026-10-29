@@ -228,6 +228,28 @@ class ShSitesMembersOnlyTest {
         mockMvc.perform(get(page("backstage"))).andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("SH1302: the console's site save sets the sign-in switch, and delivery follows it")
+    void theConsoleSetsTheSignInSwitch() throws Exception {
+        String siteId = this.siteId;
+        var editor = user(admin).roles("ADMIN");
+        try {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                            .put("/api/v2/site/" + siteId).with(editor)
+                            .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                            .contentType("application/json")
+                            .content("{\"name\":\"" + siteName + "\",\"furl\":\"" + siteName
+                                    + "\",\"postTypeLayout\":\"{\\\"Sh1285Page\\\":\\\"SH1285_LAYOUT\\\"}\","
+                                    + "\"membersLogin\":true}"))
+                    .andExpect(status().isOk());
+            // SH1302: a browser run found the request DTO dropped the field, so the console's
+            // checkbox saved nothing and every console save cleared a switch an agent had set.
+            mockMvc.perform(get(page("lounge"))).andExpect(status().isFound());
+        } finally {
+            setMembersLogin(null);
+        }
+    }
+
     // --- a site that sends a turned-away visitor to sign in ---
 
     @Test

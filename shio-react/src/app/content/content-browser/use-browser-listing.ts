@@ -228,6 +228,7 @@ export function useBrowserListing({ objectId, listKey, sortBy, t }: BrowserListi
     date: folder.date ?? "",
     objectType: "FOLDER" as const,
     position: folder.position,
+    membersOnly: folder.membersOnly === true,
   }))
 
   const postItems: ObjectChild[] = listData.posts.map((post) => ({
@@ -244,6 +245,7 @@ export function useBrowserListing({ objectId, listKey, sortBy, t }: BrowserListi
     // default, and a chip saying "default" about that would be the confusion SH1056 removes.
     isDefaultLocale: Boolean(post.locale && defaultLocale && post.locale === defaultLocale),
     thumbnail: post.thumbnail,
+    membersOnly: post.membersOnly === true,
   }))
 
   const combinedItems: ObjectChild[] = [...folderItems, ...postItems]

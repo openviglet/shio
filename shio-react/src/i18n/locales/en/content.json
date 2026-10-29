@@ -490,5 +490,7 @@
   "content.sectionMissing": "Section not found",
   "content.sectionMoveUp": "Move {{name}} up",
   "content.sectionMoveDown": "Move {{name}} down",
-  "content.sectionSearch": "Add a section: search by title, or paste its friendly URL"
+  "content.sectionSearch": "Add a section: search by title, or paste its friendly URL",
+  "content.siteMembersLogin": "Send visitors to sign in",
+  "content.siteMembersLoginHint": "A visitor nobody signed in, turned away from a members-only page, goes to the login and back to the page instead of a 404."
 }

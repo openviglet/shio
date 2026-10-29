@@ -8,6 +8,11 @@ export type ShSite = {
   searchablePostTypes: string;
   /** SH1283 — the type a new page in this site starts as; null while the site names none. */
   pageType?: string | null;
+  /**
+   * SH1299 — send a visitor turned away from a members-only page to sign in, rather than the 404.
+   * Null and false are both off.
+   */
+  membersLogin?: boolean | null;
   owner: string;
   date: string;
   /** SH1227 — present only on a site in the trash: when it went in. */

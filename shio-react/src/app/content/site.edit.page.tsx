@@ -127,12 +127,15 @@ export default function BentoSiteEditPage() {
   const [seeded, setSeeded] = useState<string | null>(null)
   /** SH1283 — the type a new page in this site starts as; "" while the site names none. */
   const [pageType, setPageType] = useState("")
+  /** SH1302 — the SH1299 switch, beside the pages it applies to. */
+  const [membersLogin, setMembersLogin] = useState(false)
   if (loaded.data && seeded !== siteId) {
     setSeeded(siteId)
     setSite(loaded.data)
     setUrl(loaded.data.url ?? "")
     setSearchableTypes(searchableOf(loaded.data.searchablePostTypes))
     setPageType(loaded.data.pageType ?? "")
+    setMembersLogin(loaded.data.membersLogin === true)
   }
 
   const [seededPolicy, setSeededPolicy] = useState<string | null>(null)
@@ -169,6 +172,7 @@ export default function BentoSiteEditPage() {
       url,
       searchablePostTypes: searchableTypes.length ? JSON.stringify(searchableTypes) : "",
       pageType: pageType || null,
+      membersLogin,
     }
     await service.update(merged)
     setSite(merged)
@@ -284,6 +288,19 @@ export default function BentoSiteEditPage() {
                 <option key={name} value={name}>{name}</option>
               ))}
             </select>
+          </div>
+
+          {/* SH1302 — what a visitor a members-only page turns away is sent to (SH1299). */}
+          <div className="flex items-start gap-2">
+            <Checkbox id="site-members-login" checked={membersLogin}
+              onCheckedChange={(checked) => {
+                setMembersLogin(checked === true)
+                onStateChange({ isDirty: true, isSubmitting: false })
+              }} />
+            <div className="space-y-1">
+              <Label htmlFor="site-members-login">{t("content.siteMembersLogin")}</Label>
+              <p className="text-muted-foreground text-xs">{t("content.siteMembersLoginHint")}</p>
+            </div>
           </div>
 
           <div className="space-y-3 pt-2">

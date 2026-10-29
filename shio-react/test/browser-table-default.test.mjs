@@ -39,7 +39,9 @@ test("SH1203: a relative date is in the console's language", () => {
 
 test("SH1203: the table's state is a word in the console's language, not the server's DRAFT", () => {
   const table = read("app", "content", "content-browser", "browser-table.tsx")
-  assert.match(table, /cell: \(row\) => <StateMark status=\{row\.publishStatus\} t=\{t\} \/>/)
+  // SH1302 put a lock beside the mark, so the cell wraps it; the word is still StateMark's.
+  assert.match(table, /<StateMark status=\{row\.publishStatus\} t=\{t\} \/>/)
+  assert.match(table, /row\.membersOnly && \(/, "SH1302: a members-only row shows its lock beside the state")
   assert.match(table, /t\("content\.filterDraft"\)/)
 })
 

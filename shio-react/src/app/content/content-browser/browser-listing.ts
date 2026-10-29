@@ -48,6 +48,8 @@ export interface ConsoleFolderRow {
   root?: boolean
   date?: string
   position?: number
+  /** SH1302 — true when this folder carries a members-only gate of its own; absent otherwise. */
+  membersOnly?: boolean
 }
 
 /** A post row: the CDA post summary plus the draft axis a delivery API cannot express. */
@@ -66,6 +68,8 @@ export interface ConsolePostRow {
   state?: string
   /** SH1026 — the byte path of the image its card shows. */
   thumbnail?: string
+  /** SH1302 — true when this post carries a members-only gate of its own; absent otherwise. */
+  membersOnly?: boolean
 }
 
 /** SH1184 — declared beside `breadcrumbFrom`, which builds it. */
