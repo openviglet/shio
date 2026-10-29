@@ -281,27 +281,6 @@ and the CDA for a token or session that carries the principal, answering 404 oth
 with `private, no-store` on what it serves. That decision belongs to whoever owns the
 product's delivery model.
 
-### XI.60 What Boot 4.1.2's Hibernate does with the tenant join hazard (SH1290)
-
-Found fixing the npm release workflow on 2026-10-29. Dependabot's java group (PR #1220)
-moved Spring Boot from 4.1.1 to 4.1.2, and with it the Hibernate it manages. Since that
-merge the four tests in `ShTenantJoinHazardTest` that assert a query fails now fail
-themselves with "Expecting code to raise a throwable". Those tests pin the hazard
-`agents.md` lists first among the invariants with no lint: navigating past `.id` of an
-association whose target is an `ShObject` subclass emits the `@TenantId` predicate
-against a subclass alias with no such column, so the query dies at query-prepare time.
-The projection, the predicate, the explicit join and the group-by forms no longer raise.
-
-That may be good news, a Hibernate fix, or a different failure that now arrives later,
-at execution or as a wrong row set. Nobody has checked which.
-
-What to build: run each hazard query against H2 and, with Docker up, against the
-PostgreSQL and MariaDB ITs, and record what each now returns, the SQL Hibernate emits
-and whether the tenant predicate is on the right alias. If it is fixed everywhere,
-invert the four tests to assert the fix with the Hibernate version named, and update the
-`agents.md` invariant and `database.md`. If it fails differently, re-point the tests at
-the new failure. Close by removing this task's `red-suites.json` exception.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

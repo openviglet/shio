@@ -403,6 +403,7 @@
 - **SH1284** — A lint fails any statement-count test whose context leaves the post scheduler running unpaused; of nine, the one exposed class now pauses the sweep like SH1276 (design §XI.56 superseded: eight classes were not exposed: seven already ran with the scheduler off, and only ShWorkflowTaskFetchCostTest needed the pause) (design §XI.56 recorded in `docs/agents/troubleshooting.md`).
 - **SH1287** — The CDA site read now carries the policy's labels on ShCdaSiteLocales and the SDK's ShioSiteLocales, so a headless switcher names each language as the rendered one does; an unlabelled site keeps its bytes (design §XI.58 recorded in `docs/agents/content-api.md`).
 - **SH1288** — shio pull now writes a site's language labels into _site.md, sorted as the server stores them, and a push sends a label typed there; a policy without labels keeps its bytes (design §XI.59 recorded in `docs/agents/content-files.md`).
+- **SH1290** — Hibernate 7.4.13 fixed the tenant join hazard: each form now joins the ShObject root and filters by tenant on H2, PostgreSQL and MariaDB, and ShTenantJoinHazardTest asserts that with two tenants (design §XI.60 recorded in `docs/agents/database.md`).
 
 ## Block M — Token economy, measured (SH74)
 

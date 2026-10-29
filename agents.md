@@ -117,7 +117,6 @@ one of these is always in scope (SH338: the instrument is the deliverable).
 
 | Rule | Failure if broken |
 |---|---|
-| **Never navigate past `.id` of an association whose target is an `ShObject` subclass** (`ShSite`/`ShFolder`/`ShPostType`) in JPQL. Use `p.shPostType.id`, resolve the name in the service. | `Column "spt1_1.tenant_id" not found` at query-prepare time. `@TenantId` lives on the JOINED root, so an implicit join emits the predicate against a subclass alias that has no such column. Valid JPQL, invisible until runtime. |
 | **Resolve a site with `ShFolderSite.of(folder)`, never `folder.getShSite()`.** | Only a site's **root** folder carries `shSite`; every child is nulled. Yields a site-less post, `folder:null/...`, or an allow-list check that denies everything. *(This one does have `ShFolderSiteInvariantTest`; the exemption comment is `ShFolderSite-exempt: <reason>`.)* |
 | **Guard every `widgetSettings` parse:** `const p = JSON.parse(raw); return p && typeof p === "object" ? p : {}`. | The backend sends the literal string `"null"`. `JSON.parse("null")` returns `null`, which passes a truthy check and crashes on property access. |
 | **Call the `search*` **default** methods on `ShPostUnifiedRepository`, never the raw `…Like` `@Query`.** Do not normalize a term twice. | `FULLTEXT_PREDICATE` needs a pre-lowercased `%`-wrapped term; normalizing twice searches `%%term%%` and matches nothing; reads as an empty index, not a bug (SH131). |

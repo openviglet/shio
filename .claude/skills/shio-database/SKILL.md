@@ -8,19 +8,21 @@ description: Read before touching Shio's schema, migrations or multi-tenancy. Tr
 **Read [docs/agents/database.md](../../../docs/agents/database.md)** before writing a
 changeset or touching a tenant-scoped entity.
 
-## The four rules that cause runtime-only failures
+## The four rules, three of which fail only at runtime
 
 1. **The schema is Liquibase's, not Hibernate's.** `ddl-auto=none` — never set it
    back to `update`/`create` for the app. Schema drift on `@TenantId` columns is why
    we moved off it, and SH2/SH5 adding columns via `ddl-auto=update` with no
    changeset meant a clean Liquibase DB could not authenticate a CDA token.
-2. **Never navigate past `.id` of an association whose target is an `ShObject`
-   subclass** (`ShSite`/`ShFolder`/`ShPostType`) in JPQL. `@TenantId` lives on the
-   JOINED root, so an implicit join emits the tenant predicate against a subclass
-   alias with no `tenant_id` column and the query dies at prepare time. Valid JPQL —
-   a code-review item, not a compile error.
+2. **Don't navigate past `.id` of an association whose target is an `ShObject`
+   subclass** (`ShSite`/`ShFolder`/`ShPostType`) in a repository query;
+   `ShTenantJoinLintTest` refuses it. Up to Hibernate 7.4.5 the implicit join put the
+   tenant predicate on a subclass alias with no `tenant_id` and the query died at
+   prepare time; 7.4.13 (Boot 4.1.2) joins the `ShObject` root and filters correctly on
+   H2, PostgreSQL and MariaDB (SH1290, `ShTenantJoinHazardTest`). The rule stays
+   because the `.id` form needs no join at all.
    ```java
-   // ✗ joins ShPostType; tenant predicate hits the subclass table alias
+   // ✗ joins ShPostType and ShObject to read a name
    select p.shPostType.name, count(distinct p.id) from ShPostUnified p group by p.shPostType.name
    // ✓ uses the FK column already on sh_post_unified — no join at all
    select p.shPostType.id,   count(distinct p.id) from ShPostUnified p group by p.shPostType.id

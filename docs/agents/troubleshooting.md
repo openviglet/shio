@@ -113,14 +113,15 @@ endpoint touches it to force a LAZY proxy), add a `ShFolderSite-exempt: <reason>
 on or directly above the line.
 
 ### `Column "spt1_1.tenant_id" not found` in a JPQL query (SH22 join hazard)
-**Never navigate past the `id` of an association whose target is an `ShObject`
-subclass** (`ShSite`, `ShFolder`, `ShPostType`). `@TenantId` lives on the JOINED
-`ShObject` **root**, so an implicit association join makes Hibernate emit the tenant
-predicate against the *subclass* table's alias, which has no `tenant_id` column,
-and the query dies at prepare time. Cheap and reliable rule:
+Seen only on Hibernate 7.4.5 and older. **Navigating past the `id` of an association whose
+target is an `ShObject` subclass** (`ShSite`, `ShFolder`, `ShPostType`) made Hibernate join
+the subclass table alone and emit the tenant predicate against a root alias it never declared,
+so the query died at prepare time. Hibernate 7.4.13 (Spring Boot 4.1.2) joins the root and
+filters correctly (SH1290); if this error comes back, the Hibernate version moved backwards.
+`ShTenantJoinLintTest` still asks for the `.id` form, which needs no join:
 
 ```java
-// ✗ breaks: joins ShPostType, tenant predicate hits the subclass table alias
+// ✗ refused by the lint: joins ShPostType and ShObject to read a name
 @Query("select p.shPostType.name, count(distinct p.id) from ShPostUnified p group by p.shPostType.name")
 // ✓ works: uses the FK column already on sh_post_unified — no join at all
 @Query("select p.shPostType.id, count(distinct p.id) from ShPostUnified p group by p.shPostType.id")

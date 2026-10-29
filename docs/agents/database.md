@@ -31,6 +31,16 @@ queries with green tests. Running each form settled it in minutes and produced a
 and simpler than either guess. Where a lint's scope depends on where a runtime failure actually
 falls, the cheapest way to find the line is to cross it on purpose.
 
+**And the same method found it fixed (SH1290).** Spring Boot 4.1.2 brought Hibernate 7.4.13, and
+the four tests that pinned the hazard as a prepare-time failure stopped seeing one. Running each form
+again, under two tenants and on H2, PostgreSQL 16 and MariaDB 11.4, gave one answer: Hibernate now
+emits `join ("ShPostType" spt1_0 join "ShObject" spt1_1 on ...) on ... and spt1_1.tenant_id = ?`, so
+the predicate lands on the alias that has the column, and a name predicate naming another tenant's
+post type returns nothing. `ShTenantJoinHazardTest` asserts that, with two tenants, because the
+failure that matters for a discriminator is a leaked row, not an exception. The `agents.md` invariant
+went with it. `ShTenantJoinLintTest` stays: the `.id` form reads the FK column already on the owning
+table and needs no join, so the rule is now about cost and one spelling, not correctness.
+
 ### Adding a migration
 1. Hand-write a `vX.Y.Z.yaml` changeset (preferred for incremental changes, see
    Turing's `turing-app/.../db/changelog/vX.Y.Z.yaml` for the `addColumn` /
