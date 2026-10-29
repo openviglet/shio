@@ -13,7 +13,7 @@
 
 - ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
-- 💭 **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — A members area, client portal or intranet section has no expression in Shio, and the showcase's /members page cannot exist. → §XI.57
+- ⏳ **SH1285** (deps: owner decides the visitor identity model) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — A members area, client portal or intranet section has no expression in Shio, and the showcase's /members page cannot exist. → §XI.57
 - 📋 **SH1287** (deps: —) **A headless front end cannot read a site's language labels: the CDA's site locales omit them** — SH1281 put labels on the policy and the renderer reads them, so a rendered and a headless switcher now name one language two ways. → §XI.58
 - 📋 **SH1288** (deps: —) **shio pull drops a site's language labels from _site.md, so the marker is not the exact policy** — The CLI's siteLocalePolicy copies default, enabled and fallback only, so a label typed into the file never reaches a push. → §XI.59
 
@@ -40,6 +40,13 @@
   marketplace properties set, the admin marketplace, shio marketplace list and
   shio_marketplace all name quilhara, and the chosen trust cost is stated in
   docs/agents/blueprints.md.
+
+## Done when — SH1285
+
+- **A gated page answers its member and hides from everyone else** Once the owner has
+  chosen the visitor identity model, a page under a members rule is served by /sites/**
+  and the CDA to a request carrying that principal, private and no-store, and is a 404
+  to anyone else.
 
 ## Non-goals (do NOT add as tasks)
 
