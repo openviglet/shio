@@ -232,7 +232,8 @@ const UNEXERCISED = {
     // SH1285's `folder.visibility` likewise: ShAgentBatchTest proves the gate, the noop and the
     // refusals, and ShSitesMembersOnlyTest proves what a visitor, a stranger and a member each get
     // from /sites/** with the security filter chain in place.
-    "folder.acl", "folder.delete", "folder.restore", "folder.visibility",
+    // SH1300's `post.visibility` is that op on one post, proved by the same two classes.
+    "folder.acl", "folder.delete", "folder.restore", "folder.visibility", "post.visibility",
     "note.add", "note.resolve",
     "post.move", "post.redirect", "post.restore", "post.rollback", "post.unpublish",
     "release.add", "release.archive", "release.remove", "release.rollback", "release.run",

@@ -512,6 +512,39 @@ class ShAgentBatchTest {
     }
 
     @Test
+    @DisplayName("SH1300: post.visibility gates one post, a re-run is a noop, and public opens it")
+    void aPostSaysWhoMayReadIt() {
+        String base = "/pv-" + UUID.randomUUID().toString().substring(0, 8);
+        run(false, folder(base), post(base + "/vip", base, "Vip"));
+        String address = "post:" + siteName + base + "/vip";
+        Op gate = new Op(ShAgentBatchService.POST_VISIBILITY, address, null, null,
+                objectMapper.valueToTree(Map.of("visibility", "members")));
+
+        assertThat(only(run(false, gate)).action()).isEqualTo(Change.UPDATE);
+        String postId = shAddressResolver.resolve(address).id();
+        assertThat(shContentAclService.ownGate(postId))
+                .as("SH1300: the post itself carries the gate, not its folder")
+                .contains(List.of());
+        assertThat(shContentAclService.ownGate(shAddressResolver.resolve("folder:" + siteName + base).id()))
+                .isEmpty();
+        assertThat(only(run(false, gate)).action()).isEqualTo(Change.NOOP);
+
+        assertThat(only(run(true, new Op(ShAgentBatchService.POST_VISIBILITY, "post:" + siteName + base + "/planned",
+                null, null, objectMapper.valueToTree(Map.of("visibility", "members"))))).action())
+                .as("SH1300: a dry run plans a post the batch has not written yet, as a planned folder")
+                .isEqualTo(Change.UPDATE);
+        assertThatThrownBy(() -> run(false, new Op(ShAgentBatchService.POST_VISIBILITY,
+                "post:" + siteName + base + "/missing", null, null,
+                objectMapper.valueToTree(Map.of("visibility", "members")))))
+                .as("SH1300: and a real run refuses a post that does not exist")
+                .isInstanceOf(RuntimeException.class);
+
+        run(false, new Op(ShAgentBatchService.POST_VISIBILITY, address, null, null,
+                objectMapper.valueToTree(Map.of("visibility", "public"))));
+        assertThat(shContentAclService.ownGate(postId)).isEmpty();
+    }
+
+    @Test
     @DisplayName("a mistyped field name is refused, and the refusal names the field that was meant")
     void anUndeclaredFieldIsRefused() {
         String base = "/uf-" + UUID.randomUUID().toString().substring(0, 8);

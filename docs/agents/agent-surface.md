@@ -3955,6 +3955,15 @@ gets**, so the denial does not confirm the page exists. A member's response is
 reaches the check because `/sites/**` is `permitAll`, not unauthenticated.
 `ShSitesMembersOnlyTest` asserts all four readers with the security filter chain applied.
 
+**One post (SH1300).** `post.visibility` is the same gate on one post, with the same `data`,
+noop, WRITE guard and refusals; both ops share `gateOf` and `replaceGate` in the batch service. The
+owner chose an op of its own over a reserved key in `post.upsert`'s data (access is not a field
+value) and over widening `folder.visibility` (its name would stop saying what it does). Storage and
+every delivery check needed nothing: the walk starts at the object, so a post's own gate wins over
+its folder's. A post the batch has not written yet plans as an update in a dry run and is the
+resolver's 404 in a real one. Paid for under SH346 by tightening `post.upsert`, `post.move` and
+`folder.copy` to their decisions, and under `tools/list` by four more words off `shio_write`.
+
 **Sending a visitor to sign in (SH1299).** `ShSite.membersLogin` (`v2026.3.52.yaml`, nullable,
 null = off) is the per-site switch the owner chose: when it is on, `/sites/**` answers an
 **anonymous** visitor a gate refuses with a 302 to `/login?returnUrl=<the page>` and

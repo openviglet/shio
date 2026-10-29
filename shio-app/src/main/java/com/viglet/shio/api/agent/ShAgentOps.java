@@ -146,22 +146,26 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.FOLDER_VISIBILITY,
                     List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
                     "Readers: `data.visibility` public|members, `data.groups`."),
+            // SH1300 — the same gate on one post.
+            new OpSpec(ShAgentBatchService.POST_VISIBILITY,
+                    List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
+                    "As folder.visibility, one post."),
             new OpSpec(ShAgentBatchService.FOLDER_COPY,
                     List.of(ADDRESS, TO), List.of(), List.of(), List.of(),
-                    "Duplicate a section, as drafts. `to` is the copy's name chain; occupied "
-                            + "is refused. May cross sites."),
+                    // SH1300 trimmed this and post.upsert/post.move to fund post.visibility (SH346).
+                    "Duplicate a section as drafts at `to`; occupied is refused. May cross sites."),
             new OpSpec(ShAgentBatchService.FOLDER_DELETE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(DATA),
                     "Trash a folder and all beneath it; rename with folder.move."),
             new OpSpec(ShAgentBatchService.POST_UPSERT,
                     List.of(ADDRESS), List.of(TYPE, FOLDER), List.of(), List.of(DATA, EXPECT),
-                    "Declare a post's whole state at that address. `data` keys the post-type does "
-                            + "not declare are refused; use post.move to change the address. "
-                            + "`expect`: a digest from read?include=digest, refused if stale."),
+                    "Declare a post's whole state at that address; undeclared `data` keys are "
+                            + "refused; post.move changes the address. `expect`: a "
+                            + "read?include=digest digest, refused if stale."),
             new OpSpec(ShAgentBatchService.POST_MOVE,
                     List.of(ADDRESS), List.of(), List.of(TO, FOLDER), List.of(EXPECT),
-                    "Change a post's URL, its folder, or both, keeping its id and history. A "
-                            + "published post's live URL changes immediately."),
+                    "Change a post's URL, folder, or both, keeping id and history; a published "
+                            + "post's live URL changes at once."),
             // SH1064 — the op the move's own report points at. The one thing a caller would
             // otherwise get backwards is which end `address` is: a Redirect has no `from` field
             // (SH385), so the post answers AT the address that has to keep working.

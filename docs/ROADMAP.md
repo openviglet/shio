@@ -12,8 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- ⏳ **SH1285** (deps: SH1298 ✅, SH1299 ✅, SH1300, SH1301, SH1302) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — Closes when its five split-off parts ship: render listings, sign-in redirect, post gate, files, console. → §XI.57
-- 📋 **SH1300** (deps: —) **A single post cannot be members-only unless it moves into a gated folder** — The owner chose a post.visibility op, the twin of folder.visibility; storage and every delivery check already handle a post id. → §XI.66
+- ⏳ **SH1285** (deps: SH1298 ✅, SH1299 ✅, SH1300 ✅, SH1301, SH1302) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — Closes when its five split-off parts ship: render listings, sign-in redirect, post gate, files, console. → §XI.57
 - 📋 **SH1301** (deps: —) **A members-only gate does not round-trip through shio/content: pull drops it and push cannot set it** — A repository workflow silently loses who may read a section, which P4 says is the cheapest place to declare it. → §XI.67
 - 📋 **SH1302** (deps: —) **The console neither shows nor sets whether a folder or post is members-only** — A curator without an agent or the CLI cannot see a gate before publishing into it or change one. → §XI.68
 

@@ -148,7 +148,8 @@ second account system.
 
 Today a folder is gated through the agent surface: the `folder.visibility` operation,
 with `visibility` set to `members` (and optionally `groups`), or `public` to open it
-again. The site switch is `membersLogin` on `site.upsert`.
+again. A single post is gated the same way with `post.visibility`, without moving it
+into a gated folder. The site switch is `membersLogin` on `site.upsert`.
 
 ---
 

@@ -268,28 +268,6 @@ Assert at the delivery boundary: an anonymous read of a members page gets the si
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
 
-### XI.66 XI.66 Gating a single post with post.visibility (from SH1285) (SH1300)
-
-Split from SH1285. **Decided by the owner (2026-10-29):** a single post is gated with
-its own op, `post.visibility`, the twin of `folder.visibility`: same `data`
-(`visibility` public|members, optional `groups`), same idempotence, WRITE guard,
-`unknown-member-group` and `invalid-visibility` refusals. Chosen over a reserved key in
-`post.upsert`'s data (it would mix access with field values) and over widening
-`folder.visibility` (its name would stop saying what it does).
-
-Storage needs nothing new: `sh_content_visibility.object_id` already takes a post id,
-and `ShContentAclService.visibility` starts its walk at the object itself, so the
-nearest gate (the post's own, else its folders') decides. Every delivery check SH1285,
-SH1295, SH1296 and SH1297 shipped then covers a gated post with no further change.
-
-Cost: the ops vocabulary sits a few tokens under SH346's ceiling and `tools/list` under
-its 2975, so the op is paid for by trimming another op's prose to its decision, as
-SH1285 did, and the measured figure goes in agent-surface.md. `live-coverage.test.mjs`
-declares it beside `folder.visibility`.
-
-Assert: a gated post in a public folder is a 404 for a visitor on `/sites/**` and the
-CDA and reads for a member; `public` removes the gate.
-
 ### XI.67 XI.67 The visibility flag in _folder.md and frontmatter (from SH1285) (SH1301)
 
 Split from SH1285. A members-only gate set with `folder.visibility` (or

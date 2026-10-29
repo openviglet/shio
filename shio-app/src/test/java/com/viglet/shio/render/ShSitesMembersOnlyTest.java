@@ -90,6 +90,7 @@ class ShSitesMembersOnlyTest {
         admin = "sh1285-admin-" + suffix;
         String group = "Sh1285Members-" + suffix;
         String[] gated = new String[1];
+        String[] gatedPost = new String[1];
 
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             Instant when = Instant.parse("2026-01-01T00:00:00Z");
@@ -114,6 +115,7 @@ class ShSitesMembersOnlyTest {
                     + "<nav>{{#navigation}}<a>{{name}}</a>{{/navigation}}</nav></body></html>\"}", when);
             post(site, root, pageType, "Home", "/", "{\"TEXT\":\"welcome\"}", when);
             post(site, members, pageType, "Lounge", "/lounge", "{\"TEXT\":\"members lounge\"}", when);
+            gatedPost[0] = post(site, root, pageType, "Backstage", "/backstage", "{\"TEXT\":\"backstage notes\"}", when);
 
             ShGroup memberGroup = new ShGroup();
             memberGroup.setName(group);
@@ -131,6 +133,8 @@ class ShSitesMembersOnlyTest {
             account(admin, administrators);
         });
         shContentAclService.replaceGate(gated[0], true, List.of(group));
+        // SH1300 — one post gated where it stands, in the public root folder.
+        shContentAclService.replaceGate(gatedPost[0], true, List.of(group));
     }
 
     @Test
@@ -170,6 +174,22 @@ class ShSitesMembersOnlyTest {
                 .andExpect(status().isOk())
                 .andExpect(result -> assertThat(result.getResponse().getHeader("Cache-Control"))
                         .contains("public").contains("max-age=300"));
+    }
+
+    // --- one post, gated in a public folder ---
+
+    @Test
+    @DisplayName("SH1300: a gated post in a public folder is a 404 for a visitor and reads for a member")
+    void aSinglePostCanBeMembersOnly() throws Exception {
+        mockMvc.perform(get(page("backstage")))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get(page("backstage")).with(user(member)))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString()).contains("backstage notes"));
+        mockMvc.perform(cda("/backstage").with(token(stranger)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get(page("")))
+                .andExpect(status().isOk());
     }
 
     // --- a site that sends a turned-away visitor to sign in ---
@@ -316,7 +336,8 @@ class ShSitesMembersOnlyTest {
     @Test
     @DisplayName("SH1297: a site-wide total counts only what the reader can see")
     void aSiteWideTotalCountsWhatTheReaderSees() throws Exception {
-        // The site publishes a layout, the home and the gated lounge: three rows, one behind the gate.
+        // The site publishes a layout, the home, the gated lounge and the gated backstage post (SH1300):
+        // four rows, two behind a gate.
         long stranger = totalPosts(get("/api/v2/cda/query").param("siteId", siteId).param("size", "1"),
                 this.stranger);
         long member = totalPosts(get("/api/v2/cda/query").param("siteId", siteId).param("size", "1"),
@@ -324,7 +345,7 @@ class ShSitesMembersOnlyTest {
         assertThat(stranger)
                 .as("SH1297: a page of one would otherwise say 3 to a stranger, and the difference is "
                         + "the number of gated posts the site holds")
-                .isEqualTo(member - 1);
+                .isEqualTo(member - 2);
         assertThat(totalPosts(get("/api/v2/cda/search").param("q", "Lounge").param("siteId", siteId),
                 this.stranger))
                 .as("SH1297: and a search that matches only the gated post counts nothing for a stranger")
@@ -398,8 +419,8 @@ class ShSitesMembersOnlyTest {
         return type;
     }
 
-    private void post(ShSite site, ShFolder folder, ShPostType type, String title, String furl,
-                      String data, Instant when) {
+    private String post(ShSite site, ShFolder folder, ShPostType type, String title, String furl,
+                        String data, Instant when) {
         ShPostUnified row = new ShPostUnified();
         row.setId(UUID.randomUUID().toString());
         row.setState(ShPostState.PUBLISHED);
@@ -412,5 +433,6 @@ class ShSitesMembersOnlyTest {
         row.setDate(when);
         row.setData(data);
         entityManager.persist(row);
+        return row.getId();
     }
 }

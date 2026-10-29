@@ -461,7 +461,7 @@
                   "type" : "string"
                 },
                 "op" : {
-                  "enum" : [ "site.upsert", "site.delete", "folder.upsert", "folder.move", "folder.copy", "folder.delete", "post.upsert", "post.move", "post.redirect", "post.publish", "post.unpublish", "post.delete", "post.restore", "post.rollback", "folder.restore", "site.restore", "render.provision", "release.upsert", "release.add", "release.remove", "release.run", "release.archive", "release.rollback", "note.add", "note.resolve", "asset.meta", "folder.acl", "folder.visibility" ],
+                  "enum" : [ "site.upsert", "site.delete", "folder.upsert", "folder.move", "folder.copy", "folder.delete", "post.upsert", "post.move", "post.redirect", "post.publish", "post.unpublish", "post.delete", "post.restore", "post.rollback", "folder.restore", "site.restore", "render.provision", "release.upsert", "release.add", "release.remove", "release.run", "release.archive", "release.rollback", "note.add", "note.resolve", "asset.meta", "folder.acl", "folder.visibility", "post.visibility" ],
                   "type" : "string"
                 },
                 "revision" : {

@@ -51,6 +51,7 @@ import com.viglet.shio.api.post.unified.ShHtmlSanitizer;
 import com.viglet.shio.widget.ShSystemWidget;
 import com.viglet.shio.api.agent.dto.ShAgentBatch;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet;
+import com.viglet.shio.api.agent.dto.ShAgentResolved;
 import com.viglet.shio.api.agent.dto.ShAgentChangeSet.Change;
 import com.viglet.shio.api.agent.verify.ShPostLinks;
 import com.viglet.shio.api.agent.verify.ShPostReferenceFields;
@@ -150,6 +151,8 @@ public class ShAgentBatchService {
      * owner kept it a separate rule.
      */
     public static final String FOLDER_VISIBILITY = "folder.visibility";
+    /** SH1300 — the same gate on one post: `data` as {@link #FOLDER_VISIBILITY}. */
+    public static final String POST_VISIBILITY = "post.visibility";
     public static final String VISIBILITY_KEY = "visibility";
     public static final String GROUPS_KEY = "groups";
 
@@ -415,7 +418,7 @@ public class ShAgentBatchService {
             POST_RESTORE, POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION,
             RELEASE_UPSERT,
             RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE, RELEASE_ROLLBACK,
-            NOTE_ADD, NOTE_RESOLVE, ASSET_META, FOLDER_ACL, FOLDER_VISIBILITY);
+            NOTE_ADD, NOTE_RESOLVE, ASSET_META, FOLDER_ACL, FOLDER_VISIBILITY, POST_VISIBILITY);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -950,6 +953,7 @@ public class ShAgentBatchService {
             case FOLDER_MOVE -> folderMove(op, session);
             case FOLDER_ACL -> folderAcl(op, session);
             case FOLDER_VISIBILITY -> folderVisibility(op, session);
+            case POST_VISIBILITY -> postVisibility(op, session);
             case FOLDER_COPY -> folderCopy(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
             case POST_UPSERT -> postUpsert(op, session);
@@ -1260,6 +1264,59 @@ public class ShAgentBatchService {
      */
     private Change folderVisibility(ShAgentBatch.Op op, Session session) {
         ShAddress address = writeAddress(op, ShAddress.Kind.FOLDER);
+        Gate wanted = gateOf(op, address);
+        ShSite site = requireSite(address.site(), session);
+        Optional<ShFolder> folder = isPending(site) ? Optional.empty() : findFolder(site, address.path());
+        if (folder.isEmpty()) {
+            if (session.dryRun && (isPending(site) || session.isPlannedFolder(site, address.path()))) {
+                return session.change(op, address, Change.UPDATE, wanted.summary(), null);
+            }
+            throw new UnresolvableParentException(address);
+        }
+        String id = folder.get().getId();
+        if (!session.dryRun) {
+            // In the handler, where ShAgentOpAclLintTest reads it: a guard one call down is one it
+            // cannot attribute to the op, and a missing one is invisible to review.
+            shContentAclService.requireWrite(id);
+        }
+        return replaceGate(op, session, address, id, wanted);
+    }
+
+    /**
+     * SH1300 — {@code post.visibility}: one post members-only, or public again, in a folder that
+     * stays as it is. The owner chose an op of its own over a reserved key in {@code post.upsert}
+     * (access is not a field value) and over widening {@code folder.visibility} (its name would stop
+     * saying what it does). Everything after the address is {@code folder.visibility}'s.
+     *
+     * <p>A post this batch has not written yet plans as an update in a dry run, as a planned folder
+     * does; a real run refuses it with the resolver's own teaching 404.</p>
+     */
+    private Change postVisibility(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.POST);
+        Gate wanted = gateOf(op, address);
+        Optional<ShAgentResolved> post = shAddressResolver.find(address);
+        if (post.isEmpty()) {
+            if (session.dryRun) {
+                return session.change(op, address, Change.UPDATE, wanted.summary(), null);
+            }
+            shAddressResolver.resolve(address);
+        }
+        String id = post.orElseThrow().id();
+        if (!session.dryRun) {
+            shContentAclService.requireWrite(id);
+        }
+        return replaceGate(op, session, address, id, wanted);
+    }
+
+    /** SH1285 — what a visibility op declares: members-only for these groups (none: anyone signed in), or public. */
+    private record Gate(boolean members, List<String> groups) {
+        String summary() {
+            return members ? (groups.isEmpty() ? "members only" : "members of " + String.join(", ", groups)) : "public";
+        }
+    }
+
+    /** SH1285 — {@code data.visibility} and {@code data.groups}, refused before anything is read or written. */
+    private Gate gateOf(ShAgentBatch.Op op, ShAddress address) {
         JsonNode data = op.data();
         if (data == null || !data.hasNonNull(VISIBILITY_KEY)) {
             throw new MissingOpFieldException("data.visibility", op.op(), null,
@@ -1283,30 +1340,23 @@ public class ShAgentBatchService {
         if (unknown != null) {
             throw new UnknownMemberGroupException(address, unknown);
         }
-        ShSite site = requireSite(address.site(), session);
-        String summary = members
-                ? (groups.isEmpty() ? "members only" : "members of " + String.join(", ", groups))
-                : "public";
-        Optional<ShFolder> folder = isPending(site) ? Optional.empty() : findFolder(site, address.path());
-        if (folder.isEmpty()) {
-            if (session.dryRun && (isPending(site) || session.isPlannedFolder(site, address.path()))) {
-                return session.change(op, address, Change.UPDATE, summary, null);
-            }
-            throw new UnresolvableParentException(address);
-        }
-        String id = folder.get().getId();
+        return new Gate(members, List.copyOf(groups));
+    }
+
+    /** SH1285 — the gate on one object, replaced whole: a noop when it already reads so. The caller guards WRITE. */
+    private Change replaceGate(ShAgentBatch.Op op, Session session, ShAddress address, String id, Gate wanted) {
         Optional<List<String>> own = shContentAclService.ownGate(id);
-        boolean same = members ? own.isPresent() && own.get().equals(groups.stream().sorted().toList())
+        boolean same = wanted.members()
+                ? own.isPresent() && own.get().equals(wanted.groups().stream().sorted().toList())
                 : own.isEmpty();
         if (same) {
-            return session.change(op, address, Change.NOOP, summary, id);
+            return session.change(op, address, Change.NOOP, wanted.summary(), id);
         }
         if (session.dryRun) {
-            return session.change(op, address, Change.UPDATE, summary, id);
+            return session.change(op, address, Change.UPDATE, wanted.summary(), id);
         }
-        shContentAclService.requireWrite(id);
-        shContentAclService.replaceGate(id, members, groups);
-        return session.change(op, address, Change.UPDATE, summary, id);
+        shContentAclService.replaceGate(id, wanted.members(), wanted.groups());
+        return session.change(op, address, Change.UPDATE, wanted.summary(), id);
     }
 
     /** SH1285 — a {@code folder.visibility} that is not {@code public} or {@code members} plus groups. */
