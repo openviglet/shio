@@ -9,13 +9,13 @@
     "subfolder": "cli"
   },
   "websiteUrl": "https://openviglet.github.io/shio/claude-code/",
-  "version": "2026.3.2",
+  "version": "2026.3.3",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@viglet/shio",
-      "version": "2026.3.2",
+      "version": "2026.3.3",
       "transport": {
         "type": "stdio"
       },

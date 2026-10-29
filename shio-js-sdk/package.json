@@ -1,6 +1,6 @@
 {
   "name": "@viglet/shio-editor-cors",
-  "version": "2026.3.2",
+  "version": "2026.3.3",
   "description": "Viglet Shio Universal Editor bridge - enables inline visual editing for any page",
   "homepage": "https://openviglet.github.io/shio/",
   "type": "module",

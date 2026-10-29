@@ -1,6 +1,6 @@
 {
   "name": "@viglet/shio-model",
-  "version": "2026.3.2",
+  "version": "2026.3.3",
   "description": "Typed TypeScript DSL for the Viglet Shio content model. Author post-types as code — `postType()`, `text()`, `comboBox()`, `relator()`, … — and compile to the canonical Shio post-type JSON that the `shio` CLI pushes. The authoring inverse of @viglet/shio-client's type generation. Zero runtime dependencies. (SH62)",
   "homepage": "https://openviglet.github.io/shio/",
   "repository": {

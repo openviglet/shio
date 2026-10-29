@@ -1,7 +1,7 @@
 {
   "name": "shio-docs",
   "private": true,
-  "version": "0.0.0",
+  "version": "2026.3.3",
   "type": "module",
   "description": "Shio's end-user documentation at openviglet.github.io/shio/docs (SH1262): an Astro Starlight area building into the site's dist/docs.",
   "scripts": {
