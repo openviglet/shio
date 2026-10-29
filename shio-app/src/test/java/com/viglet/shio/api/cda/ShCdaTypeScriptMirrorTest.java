@@ -198,6 +198,8 @@ class ShCdaTypeScriptMirrorTest {
                 .containsExactly("id", "name", "description", "url", "rootFolderId", "locales");
         // SH1123 — `declared` is a primitive, so the SDK must not make a consumer narrow it.
         assertThat(interfaces.get("ShioSiteLocales")).containsEntry("declared", false);
+        // SH1287 — `labels` is omitted when the site set none, so the SDK must declare it optional.
+        assertThat(interfaces.get("ShioSiteLocales")).containsEntry("labels", true);
         assertThat(recordComponents("ShCdaPost")).isNotEmpty();
 
         // ...and it must notice a field that is gone.

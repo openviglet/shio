@@ -99,6 +99,12 @@ export interface ShioSiteLocales {
    * than what the site promises.
    */
   declared: boolean;
+  /**
+   * What the site's language switcher calls each locale (SH1287), e.g.
+   * `{ "pt-br": "Português (Brasil)" }`. Absent when the site set no labels; a locale
+   * with no entry keeps its usual name.
+   */
+  labels?: Record<string, string>;
 }
 
 /**

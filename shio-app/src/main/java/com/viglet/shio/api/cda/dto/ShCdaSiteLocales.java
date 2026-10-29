@@ -29,11 +29,15 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
  * @param declared      whether somebody chose this policy, or it was read off the published
  *                      content — a switcher built from a derived one lists what has been
  *                      translated so far, not what the site promises
+ * @param labels        SH1287 — what the site's switcher calls each locale (SH1281), keyed by
+ *                      enabled locales; null, and so absent from the wire, when the site set none,
+ *                      which keeps an unlabelled site's response byte-identical
  */
 @JsonInclude(Include.NON_NULL)
 public record ShCdaSiteLocales(
         String defaultLocale,
         List<String> enabled,
         Map<String, String> fallback,
-        boolean declared) {
+        boolean declared,
+        Map<String, String> labels) {
 }

@@ -73,7 +73,8 @@ public record ShCdaSiteLocales(
     String defaultLocale,
     List<String> enabled,
     Map<String, String> fallback,
-    boolean declared) {}
+    boolean declared,
+    Map<String, String> labels) {}   // SH1287 — the switcher's names (SH1281); absent when none
 
 // ShCdaFolder (lightweight, used in listings + path)
 public record ShCdaFolder(

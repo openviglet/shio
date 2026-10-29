@@ -65,6 +65,9 @@ const post = await shio.getPostByUrl(siteId, url, locale) ?? await shio.getPostB
 const offered = site?.locales?.enabled ?? [];
 const links = offered.map((tag) => ({
   tag,
+  // what the site calls it, when it set a label: one language, named the same way as on
+  // the pages Shio renders
+  label: site?.locales?.labels?.[tag] ?? tag,
   // a language this page is missing in shows the site's fallback for it, else its default
   target: post?.availableLocales.includes(tag)
     ? tag

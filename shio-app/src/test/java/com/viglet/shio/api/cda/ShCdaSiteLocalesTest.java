@@ -62,7 +62,8 @@ import tools.jackson.databind.ObjectMapper;
 class ShCdaSiteLocalesTest {
 
     private static final String DECLARED =
-            "{\"default\":\"pt-br\",\"enabled\":[\"pt-br\",\"pt\",\"en\"],\"fallback\":{\"pt-br\":\"pt\"}}";
+            "{\"default\":\"pt-br\",\"enabled\":[\"pt-br\",\"pt\",\"en\"],\"fallback\":{\"pt-br\":\"pt\"},"
+                    + "\"labels\":{\"pt-br\":\"Português (Brasil)\",\"pt\":\"Português (Portugal)\"}}";
 
     @Autowired
     private ShCdaService shCdaService;
@@ -130,6 +131,19 @@ class ShCdaSiteLocalesTest {
                 .as("SH1123: a switcher's order is a decision, and the read must keep it")
                 .containsExactly("pt-br", "pt", "en");
         assertThat(locales.fallback()).isEqualTo(Map.of("pt-br", "pt"));
+        assertThat(locales.labels())
+                .as("SH1287: the site's labels reach the renderer but not a headless switcher")
+                .isEqualTo(Map.of("pt-br", "Português (Brasil)", "pt", "Português (Portugal)"));
+    }
+
+    @Test
+    void aSiteWithNoLabelsAnswersNoLabelsKey() {
+        String site = objectMapper.writeValueAsString(shCdaService.getSite(derivedSiteId).orElseThrow());
+
+        assertThat(shCdaService.getSite(derivedSiteId).orElseThrow().locales().labels()).isNull();
+        assertThat(site)
+                .as("SH1287: an unlabelled site's response must keep its bytes, so no `labels` key")
+                .doesNotContain("labels");
     }
 
     @Test
@@ -182,6 +196,9 @@ class ShCdaSiteLocalesTest {
         assertThat(locales.get("enabled").size()).isEqualTo(3);
         assertThat(locales.get("fallback").get("pt-br").stringValue()).isEqualTo("pt");
         assertThat(locales.get("declared").booleanValue()).isTrue();
+        assertThat(locales.get("labels").get("pt-br").stringValue())
+                .as("SH1287: the wire carries the label under the SDK's name")
+                .isEqualTo("Português (Brasil)");
         assertThat(path)
                 .as("SH1123: a breadcrumb is read per page, and resolving the policy there is a "
                         + "content query per navigation")

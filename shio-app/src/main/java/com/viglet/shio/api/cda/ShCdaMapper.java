@@ -109,7 +109,7 @@ public class ShCdaMapper {
             return null;
         }
         return new ShCdaSiteLocales(locales.defaultLocale(), locales.enabled(), locales.fallback(),
-                locales.declared());
+                locales.declared(), locales.labels().isEmpty() ? null : locales.labels());
     }
 
     public ShCdaFolder toFolder(ShFolder folder) {

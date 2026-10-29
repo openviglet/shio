@@ -1604,6 +1604,13 @@ a front end needs once. The five-argument constructor is that shape, and the con
 (`ShConsoleNavigationMapper`) uses it too. `ShCdaSiteLocalesTest` asserts the declared read, the
 production/preview split, the batched listing and the silent breadcrumb.
 
+**The labels travel too (SH1287).** SH1281 gave the policy `labels`, what a switcher calls each
+enabled locale, and `{{#translations}}` reads them; `ShCdaSiteLocales.labels` carries the same map,
+so a headless switcher and a rendered one name a language the same way. `ShCdaMapper.toLocales`
+turns an empty map into `null`, which `NON_NULL` omits, so a site with no labels answers the bytes
+it answered before; the SDK declares it `labels?`, and the mirror test pins that optionality.
+GraphQL carries no locale type, so there was nothing to mirror there.
+
 ## A front end that owns its URLs can read which ones moved (SH1133)
 
 A `Redirect` post is honoured by `ShPageRenderService`, which answers `/sites/**`. A headless site

@@ -281,26 +281,6 @@ and the CDA for a token or session that carries the principal, answering 404 oth
 with `private, no-store` on what it serves. That decision belongs to whoever owns the
 product's delivery model.
 
-### XI.58 The CDA reports a site's language labels (SH1287)
-
-Left over from SH1281. A site's locale policy now carries `labels`, what its language
-switcher calls each enabled locale, and `{{#translations}}` reads them, so a page Shio
-renders says "Português (Brasil)" and "Português (Portugal)" where the fixed table says
-"Português" twice. The delivery API does not: `ShCdaSiteLocales` (SH1123) is built by
-`ShCdaMapper` from the policy's four other fields, so a headless front end building its
-switcher from `/api/v2/cda/site/{id}/locales`, or from the SDK's `ShioSiteLocales`,
-still has only the tag and must hard-code the label the site already declared. Two front
-ends of one site then name one language two ways.
-
-What to build: carry `labels` on `ShCdaSiteLocales`, omitted when empty so an undeclared
-or unlabelled site's response keeps its bytes, map it in `ShCdaMapper.toSiteLocales`,
-add it to the JS SDK's `ShioSiteLocales` type and to the GraphQL site locales type if
-that one mirrors the record. P10 holds: it is the same policy read through the CDA, not
-a new contract.
-
-Assert at the delivery boundary: a site declaring a label answers it on the CDA locales
-read and in the SDK's typed result, and a site without labels answers no `labels` key.
-
 ### XI.59 A site marker carries the language labels (SH1288)
 
 Found shipping SH1283. SH1281 gave a site's locale policy a `labels` map, and the
