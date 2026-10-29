@@ -252,7 +252,7 @@ user or group, carried by the console session on `/sites/**` and by the owner of
 token on the CDA. The rule is a **visibility flag**, separate from the authoring ACL: a
 folder or a post carries `visibility: public | members` plus the groups that may read
 it, inherited down the folder chain. A denied visitor's answer is **configurable per
-site**: a 404 (the default) or a redirect to a login page the site names.
+site**: a 404 (the default) or the console login and back (SH1299).
 
 What to build, in P1 order: the flag as the `folder.visibility` op (shipped,
 agent-surface.md; a post gate is open) and in `_folder.md` and post frontmatter, then
@@ -267,6 +267,105 @@ stay unread.
 Assert at the delivery boundary: an anonymous read of a members page gets the site's
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
+
+### XI.64 XI.64 The published render's listings leave gated pages out (from SH1285) (SH1298)
+
+Split from SH1285. `/sites/**` turns a visitor away from a members-only page, but a
+public page rendered beside it still lists the gated page's title and link:
+`{{#query}}`, `{{#getRelation}}`, `{{#navigation}}`, `{{#search}}` and `{{#menu}}` in
+`ShRenderHelpers` read every published row.
+
+What to build: the same rule the CDA uses (SH1296), applied in the helpers **only on the
+published render for `/sites/**`**. `/preview`, the Universal Editor and the agent's
+render digest are authoring reads, and an editor must keep seeing gated pages there; the
+render already knows its state, so the filter keys on it rather than on the route. Ask
+`ShContentAclService.visibility(id)` per row only when `anyGates()` is true, and filter
+before windowing in `query` so its total stays exact (SH384/SH419 put the count on rows
+in hand).
+
+Measure first: `ShRenderListingPageBenchmarkTest` must not move on an instance with no
+gate.
+
+Assert at the boundary: a public page listing a gated folder renders without the gated
+post for a visitor and with it for a member, and the preview of the same page lists it
+for an editor outside the group.
+
+### XI.65 XI.65 A members-only page can send a visitor to sign in (from SH1285) (SH1299)
+
+Split from SH1285. **Decided by the owner (2026-10-29):** when a site asks for it, a
+visitor outside a members-only page's groups is sent to the **console login with a
+return address**, not to a login page of the site's own.
+
+What to build: a per-site switch, `ShSite.membersLogin` (boolean, default false = the
+missing-page 404 SH1285 ships today), as a nullable-free Liquibase column with no
+backfill. When it is on, `/sites/**` answers an **anonymous** visitor with a 302 to
+`/login?return=<the page's /sites path>`; a signed-in user outside the groups still gets
+the 404, since logging in again would not help. After sign-in the console honours
+`return` only when it is a path under `/sites/` on this host, so the parameter cannot
+become an open redirect. The switch is set through `site.upsert`'s data (agent first,
+P1), the site REST API and the console's site settings, in that order. The redirect is
+`Cache-Control: no-store`.
+
+Deliberately not here: a login form in the site's theme, a separate member account,
+self-registration.
+
+Assert at the boundary: with the switch off a visitor gets the 404; on, a 302 whose
+`return` is the page; a signed-in stranger gets the 404 either way;
+`return=https://elsewhere` is ignored after login.
+
+### XI.66 XI.66 Gating a single post with post.visibility (from SH1285) (SH1300)
+
+Split from SH1285. **Decided by the owner (2026-10-29):** a single post is gated with
+its own op, `post.visibility`, the twin of `folder.visibility`: same `data`
+(`visibility` public|members, optional `groups`), same idempotence, WRITE guard,
+`unknown-member-group` and `invalid-visibility` refusals. Chosen over a reserved key in
+`post.upsert`'s data (it would mix access with field values) and over widening
+`folder.visibility` (its name would stop saying what it does).
+
+Storage needs nothing new: `sh_content_visibility.object_id` already takes a post id,
+and `ShContentAclService.visibility` starts its walk at the object itself, so the
+nearest gate (the post's own, else its folders') decides. Every delivery check SH1285,
+SH1295, SH1296 and SH1297 shipped then covers a gated post with no further change.
+
+Cost: the ops vocabulary sits a few tokens under SH346's ceiling and `tools/list` under
+its 2975, so the op is paid for by trimming another op's prose to its decision, as
+SH1285 did, and the measured figure goes in agent-surface.md. `live-coverage.test.mjs`
+declares it beside `folder.visibility`.
+
+Assert: a gated post in a public folder is a 404 for a visitor on `/sites/**` and the
+CDA and reads for a member; `public` removes the gate.
+
+### XI.67 XI.67 The visibility flag in _folder.md and frontmatter (from SH1285) (SH1301)
+
+Split from SH1285. A members-only gate set with `folder.visibility` (or
+`post.visibility`) does not round-trip through `shio/content/**`: `shio pull` writes no
+trace of it and `shio push` cannot declare one, so a repository workflow silently drops
+it (P4: files beat APIs for authoring).
+
+What to build: a `visibility` key in `_folder.md` and in a post's frontmatter, with an
+optional `groups` list, projected on pull and compiled on push into the visibility ops,
+under the same three-way merge rule every other key follows (content-files.md). A file
+without the key leaves the gate as it is, so a repository that never mentions visibility
+cannot open a gated section by accident; `visibility: public` is how a file removes one.
+
+Assert: pull then push of a gated folder is a noop, and a pushed `visibility: members`
+gates it.
+
+### XI.68 XI.68 Who can read this, in the console (from SH1285) (SH1302)
+
+Split from SH1285. A curator cannot see or change whether a folder or a post is
+members-only without an agent or the CLI: the console shows no trace of
+`sh_content_visibility`.
+
+What to build: a "Who can read this" control in the folder and post settings: public, or
+members (any signed-in user, or chosen groups), backed by a REST read and write that
+call the same `ShContentAclService` methods the ops do, guarded by WRITE. The content
+browser marks a gated folder or post with an icon so a curator sees the gate before
+publishing into it. When the site's `membersLogin` switch exists, the site settings show
+it beside the gate. P1 order puts this last; it adds no rule of its own.
+
+Assert at the console boundary (e2e check): setting members on a folder writes the gate
+the delivery tests read, and the browser shows the mark.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
