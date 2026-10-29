@@ -369,7 +369,9 @@ public class ShAgentContextService {
                             // for every site that has declared nothing, which is most of them.
                             // Only when somebody declared it: a derived policy is an observation, and
                             // a marker carrying it would turn that into a declaration on the next push.
-                            locales.declared() ? locales.toNode() : null);
+                            locales.declared() ? locales.toNode() : null,
+                            // SH1283 — what a new page in this site starts as, when it names one.
+                            blankToNull(site.getPageType()));
                 })
                 .toList();
     }

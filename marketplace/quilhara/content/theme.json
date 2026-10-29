@@ -176,5 +176,6 @@
     "Trip": "Quilhara trip",
     "InfoPage": "Quilhara page",
     "SearchPage": "Quilhara search"
-  }
+  },
+  "pageType": "InfoPage"
 }

@@ -560,12 +560,14 @@ function settingsFor(marker) {
 }
 
 /**
- * The four site settings a marker carries, and the order they are compared in.
+ * The site settings a marker carries, and the order they are compared in.
  *
  * <p>Shared with the document builder above rather than spelled twice: what a marker projects and
- * what a push may send have to be the same list, or the tree writes a key nothing reads.</p>
+ * what a push may send have to be the same list, or the tree writes a key nothing reads. SH1283
+ * added `pageType`, the type a new page in the site starts as, which the server's settings op takes
+ * after the bindings so the type it names is bound when it is checked.</p>
  */
-export const SITE_SETTING_KEYS = ["url", "furl", "description", "locales"];
+export const SITE_SETTING_KEYS = ["url", "furl", "description", "pageType", "locales"];
 
 /**
  * Reconciles a site's settings three ways, per key (SH1122).

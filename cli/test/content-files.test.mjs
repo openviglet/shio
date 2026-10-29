@@ -602,6 +602,15 @@ test("SH1122: a site marker round-trips, and every key is one a push can send", 
     "SH1122: and it is byte-stable over a round trip");
 });
 
+test("SH1283: a site's page type is projected, read back and in its fixed place", () => {
+  const marker = { site: "Quilhara", description: "Trails", pageType: "InfoPage" };
+  const text = serializeSite(marker);
+  assert.equal(text, "---\nsite: Quilhara\ndescription: Trails\npageType: InfoPage\n---\n",
+    "SH1283: after the plain settings and before the policy, so a diff never reorders (P5)");
+  assert.deepEqual(parseSiteMarker("Quilhara/_site.md", text), marker,
+    "SH1283: a push sends what a pull wrote, or the tree carries a key nothing reads");
+});
+
 test("SH1122: a site with nothing but a name projects two lines, and gains one per field", () => {
   assert.equal(serializeSite({ site: "Blog" }), "---\nsite: Blog\n---\n",
     "SH1122: a key is written only when the site has a value for it, so an unconfigured site is not "

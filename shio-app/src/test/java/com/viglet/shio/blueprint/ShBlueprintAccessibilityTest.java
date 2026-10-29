@@ -243,6 +243,12 @@ class ShBlueprintAccessibilityTest {
                 false).items())
                 .as("SH1280: and a plain listing renders nothing, so loadedBy stays unasked")
                 .allMatch(item -> item.loadedBy() == null);
+
+        // SH1283 — the package names its page type, so an empty folder offers InfoPage rather than
+        // the catalogue's first type ("Novo How this was built" at the site root).
+        assertThat(siteRepository.findByName(site).getPageType())
+                .as("SH1283: applying Quilhara leaves its site with the page type the package declares")
+                .isEqualTo("InfoPage");
     }
 
     private static java.util.Properties budgets() {

@@ -105,9 +105,13 @@ public class ShBlueprintRegistry {
      * <p>Still not `site` (it comes from the request) and still not `prune` (never a package's
      * decision). The two that were added are the two a package can answer for itself: which render
      * types its templates need, and which layout its own post-types bind to.</p>
+     *
+     * <p>SH1283 added `pageType`, the third thing a package can answer for itself: which of the types
+     * it binds is the page a curator adds to an empty folder. It travels as the site settings'
+     * `pageType`, after the binding, so the type it names is bound by the time it is checked.</p>
      */
     static final List<String> CONTENT_KEYS =
-            List.of("folders", "posts", "postTypes", "postTypeLayout");
+            List.of("folders", "posts", "postTypes", "postTypeLayout", "pageType");
 
     private final ShBlueprintCodec codec;
     private final ShBlueprintProperties properties;
@@ -570,7 +574,7 @@ public class ShBlueprintRegistry {
             if (!CONTENT_KEYS.contains(key)) {
                 throw new BlueprintFormatException(blueprint + "/" + path,
                         "unknown key '" + key + "'. A blueprint's content document declares "
-                                + "`folders`, `posts`, `postTypes` and `postTypeLayout` only: "
+                                + "`folders`, `posts`, `postTypes`, `postTypeLayout` and `pageType` only: "
                                 + "`site` comes from the request, and `prune` is never a package's "
                                 + "decision to make");
             }

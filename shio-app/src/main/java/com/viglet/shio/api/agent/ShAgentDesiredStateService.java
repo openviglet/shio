@@ -605,9 +605,14 @@ public class ShAgentDesiredStateService {
      * is what the op will fill, and this is what a <em>document</em> may ask it to. A field added to
      * the first should be a decision about the projection before it is a key in a file, and deriving
      * one from the other would make it neither.</p>
+     *
+     * <p>SH1283 added {@code pageType}: a document that binds a site's layouts may say which bound
+     * type its pages start as. This op runs after the binding op above, so a document that binds and
+     * names in one go is checked against the binding it just wrote.</p>
      */
     private static final List<String> SITE_SETTING_KEYS =
-            List.of("url", "furl", "description", ShSiteLocales.FIELD);
+            List.of("url", "furl", "description", ShSiteLocales.FIELD,
+                    com.viglet.shio.api.site.ShSiteWriteService.PAGE_TYPE_FIELD);
 
     private static tools.jackson.databind.JsonNode scratchData() {
         tools.jackson.databind.node.ObjectNode data = tools.jackson.databind.node.JsonNodeFactory

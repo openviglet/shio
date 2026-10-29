@@ -511,6 +511,11 @@ public class ShSiteWriteService {
             site.setPostTypeLayout(payload.getPostTypeLayout());
             site.setSearchablePostTypes(payload.getSearchablePostTypes());
             site.setFormSuccess(payload.getFormSuccess());
+            // SH1283 — the console's door, which replaces: checked against the bindings this same
+            // save leaves, and blank clears it back to the New button's own guess.
+            String pageType = hasText(payload.getPageType()) ? payload.getPageType().trim() : null;
+            requirePageTypeBound(pageType, boundTypes(site));
+            site.setPageType(pageType);
             site.setModifier(modifier);
             site.setModifiedDate(Instant.now());
             return shSiteRepository.save(site);

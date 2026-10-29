@@ -639,7 +639,7 @@ export function siteMarkersFrom(rows, { sites = [] } = {}) {
     if (wanted.size && !wanted.has(row.name)) continue;
     const marker = { site: row.name };
     for (const [key, value] of [["url", row.url], ["furl", row.furl],
-      ["description", row.description]]) {
+      ["description", row.description], ["pageType", row.pageType]]) {
       if (typeof value === "string" && value.trim() !== "") marker[key] = value;
     }
     const policy = siteLocalePolicy(row.localePolicy);

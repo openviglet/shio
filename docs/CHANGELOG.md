@@ -399,7 +399,7 @@
 - **SH1280** — shio_assets usage=true says how many pages load each asset, and the media card shows loaded-by or unreferenced instead of unused, so every surface agrees with verify (design §XI.52 recorded in `docs/agents/content-api.md`).
 - **SH1281** — A site's locale policy takes a labels map, set over REST, site.upsert or the console, and the language switcher shows it before the fixed table, so pt-br and pt-pt can differ (design §XI.53 recorded in `docs/agents/renderer.md`).
 - **SH1282** — The editor's preview frame loads an unpublished image or font: its URL carries a ten-minute grant for that site and path, and /sites/** serves the draft bytes, no-store, only on that grant (design §XI.54 recorded in `docs/agents/console-ui.md`).
-- **SH1283 (site.upsert and the New button)** — A site names its page type with site.upsert, refused unless bound to a layout, and an empty folder's New button offers it after the type last made there.
+- **SH1283** — Quilhara declares InfoPage in its package, and a site's page type now travels blueprint settings, _site.md, the context pack and the console's site settings (design §XI.55 recorded in `docs/agents/content-api.md`).
 
 ## Block M — Token economy, measured (SH74)
 

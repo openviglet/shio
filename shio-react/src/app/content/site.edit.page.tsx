@@ -72,6 +72,20 @@ function searchableOf(raw: string | null | undefined): string[] {
   }
 }
 
+/**
+ * SH1283 — the post types this site binds to a layout, the only ones a page type may name. The
+ * column is a JSON object keyed by type (a value may be SH193's array form), and an unreadable one
+ * offers nothing rather than crashing the page a curator would fix it from.
+ */
+function boundTypesOf(raw: string | null | undefined): string[] {
+  try {
+    const parsed: unknown = JSON.parse(raw || "{}")
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? Object.keys(parsed).sort() : []
+  } catch {
+    return []
+  }
+}
+
 export default function BentoSiteEditPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -111,11 +125,14 @@ export default function BentoSiteEditPage() {
    * "none selected" and never a crash on the page that would let a curator fix it.
    */
   const [seeded, setSeeded] = useState<string | null>(null)
+  /** SH1283 — the type a new page in this site starts as; "" while the site names none. */
+  const [pageType, setPageType] = useState("")
   if (loaded.data && seeded !== siteId) {
     setSeeded(siteId)
     setSite(loaded.data)
     setUrl(loaded.data.url ?? "")
     setSearchableTypes(searchableOf(loaded.data.searchablePostTypes))
+    setPageType(loaded.data.pageType ?? "")
   }
 
   const [seededPolicy, setSeededPolicy] = useState<string | null>(null)
@@ -151,6 +168,7 @@ export default function BentoSiteEditPage() {
       ...site,
       url,
       searchablePostTypes: searchableTypes.length ? JSON.stringify(searchableTypes) : "",
+      pageType: pageType || null,
     }
     await service.update(merged)
     setSite(merged)
@@ -250,6 +268,22 @@ export default function BentoSiteEditPage() {
                 onStateChange({ isDirty: true, isSubmitting: false })
               }}
             />
+          </div>
+
+          {/* SH1283 — only a type the site binds to a layout can be a page; the server refuses others. */}
+          <div className="space-y-2">
+            <Label htmlFor="site-page-type">{t("content.sitePageType")}</Label>
+            <select id="site-page-type" className="border-input h-9 w-64 rounded-md border bg-transparent px-2 text-sm"
+              value={pageType}
+              onChange={(e) => {
+                setPageType(e.target.value)
+                onStateChange({ isDirty: true, isSubmitting: false })
+              }}>
+              <option value="">{t("content.sitePageTypeNone")}</option>
+              {boundTypesOf(site.postTypeLayout).map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-3 pt-2">

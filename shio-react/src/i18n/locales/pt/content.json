@@ -292,6 +292,8 @@
   "content.siteLanguagesFallback": "Quando falta uma página",
   "content.siteLanguagesFallbackHint": "Qual idioma mostrar no lugar. Sem escolha, uma página ausente mostra o padrão.",
   "content.siteLanguagesLabels": "Rótulo no seletor",
+  "content.sitePageType": "Tipo de página",
+  "content.sitePageTypeNone": "Nenhum",
   "content.siteLanguagesFallbackDefault": "O padrão ({{locale}})",
   "content.translationsUndeclared": "Todos os idiomas que esta instância conhece. Declare os idiomas do site para reduzir esta lista.",
   "content.defaultLocale": "padrão",

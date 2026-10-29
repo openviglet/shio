@@ -276,28 +276,6 @@ what a curator usually wants there.
 The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
 and reads the site's page type.
 
-### XI.55 XI.55 A site names its page type (SH1283)
-
-Left by SH1275. The content browser's "New …" button now offers what a folder holds, and
-falls back to the catalogue's first non-system type in a folder with no posts, which on
-Quilhara reads "Novo How this was built" at the site root. The design wanted "the site's
-page type" there, and nothing names one: `postTypeLayout` binds eight Quilhara types to
-layouts (Home, Listing, Trail, Story, Guide, Trip, InfoPage, SearchPage), and none of
-them is the generic page a curator adds to an empty folder.
-
-Landed: `pageType` on `site.upsert` and the New button. Left: the blueprint key, console
-field, context pack. Built: an optional `pageType` on the site, the post type a new page
-in this site starts as, validated against the site's layout bindings (a type with no
-layout cannot be a page, so naming one is a teaching error listing the bound types). It
-travels where site settings already travel: the `site.upsert` op on the agent batch, the
-blueprint manifest (Quilhara would declare `InfoPage`), the console's site settings, and
-the context pack's sitemap, so an agent creating a page reads the same answer (P1). The
-console's `suggestedPostType` takes it as the step after "last created in this folder".
-Unset keeps today's behaviour.
-
-Assert that a site declaring `pageType: InfoPage` shows "New InfoPage" in an empty
-folder, and that naming an unbound type is refused with the bound list.
-
 ### XI.56 XI.56 Statement counts are measured with the scheduler paused (SH1284)
 
 Found fixing SH1276. Hibernate's `Statistics` counter belongs to the `SessionFactory`,
@@ -362,6 +340,26 @@ a new contract.
 
 Assert at the delivery boundary: a site declaring a label answers it on the CDA locales
 read and in the SDK's typed result, and a site without labels answers no `labels` key.
+
+### XI.59 A site marker carries the language labels (SH1288)
+
+Found shipping SH1283. SH1281 gave a site's locale policy a `labels` map, and the
+context pack's site row carries the stored policy whole (`localePolicy`, SH1122), but
+the CLI's projection drops it: `siteLocalePolicy` in `cli/src/content-files.mjs` copies
+`default`, `enabled` and `fallback` and nothing else. So `shio pull` writes a `_site.md`
+whose `locales` has no labels, the marker is no longer the exact projection SH1122
+promised, and a label an agent types into the file is silently dropped before a push.
+The push itself is safe, because `site.upsert` fills and keeps a declared policy, which
+is also why nothing failed.
+
+What to build: carry `labels` in `siteLocalePolicy`, keys sorted like `fallback` (the
+server's `toNode` sorts them too, so the bytes match), and only when non-empty so every
+marker written before labels existed keeps its bytes. `reconcileSiteSettings` already
+compares `locales` as one canonical value, so a label edit on either side reconciles
+like any other policy change.
+
+Assert in `content-files.test.mjs`: a policy with labels round-trips through serialize
+and parse byte-identically, and a policy without them serializes exactly as before.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

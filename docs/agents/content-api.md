@@ -1530,8 +1530,12 @@ post type a new page in the site starts as, stored in the nullable `ShSite.pageT
 (`v2026.3.50.yaml`; null is today's behaviour). It must be a type the site binds to a layout, the
 bindings it has plus the ones the same op brings, or the op is `page-type-not-bound` listing them, on
 a plan too. The site listing carries it (the entity is unwrapped there), and the console's New button
-offers it in a folder with nothing to go on, after the type last made in that folder. Still to come:
-the blueprint key that lets Quilhara declare `InfoPage`, a console field, and the context pack.
+offers it in a folder with nothing to go on, after the type last made in that folder. It travels
+every settings path: a blueprint content file's top-level `pageType` (Quilhara's `theme.json` names
+`InfoPage`) compiles to the desired state's `settings`, whose `site.upsert` runs after the binding op;
+`_site.md` projects and pushes it; the context pack's site row carries it (absent when unset); and
+the console's site settings edit it through the whole-object `PUT`, which validates it against the
+bindings that same save leaves.
 
 **Where it costs a query, and where it does not.** `of(List<ShSite>)` is batched, because the two
 callers are listings and a query per row is not what P2 promises. The **render** path uses

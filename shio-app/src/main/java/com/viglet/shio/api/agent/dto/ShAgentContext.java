@@ -259,12 +259,24 @@ public record ShAgentContext(
      *                     instance's. A projection that wrote four of the marker's five keys would
      *                     be lying by omission, and one more field that is absent for every
      *                     undeclared site is the cheaper half of that trade
+     * @param pageType     SH1283 — the type a new page in this site starts as, so an agent creating
+     *                     a page reads the answer the console's New button gives. Absent while the
+     *                     site names none, which keeps every such pack byte-identical (P3)
      */
     @JsonInclude(Include.NON_NULL)
     public record Site(String id, String name, String url, String rootFolderId, long posts,
                        Boolean scratch, String defaultLocale, List<String> locales,
                        Boolean localesDeclared, String furl, String description,
-                       JsonNode localePolicy) {
+                       JsonNode localePolicy, String pageType) {
+
+        /** The twelve-field form: every caller before SH1283 named no page type. */
+        public Site(String id, String name, String url, String rootFolderId, long posts,
+                    Boolean scratch, String defaultLocale, List<String> locales,
+                    Boolean localesDeclared, String furl, String description,
+                    JsonNode localePolicy) {
+            this(id, name, url, rootFolderId, posts, scratch, defaultLocale, locales,
+                    localesDeclared, furl, description, localePolicy, null);
+        }
 
         /** The nine-field form: every caller before SH1122 had no file to project a site into. */
         public Site(String id, String name, String url, String rootFolderId, long posts,

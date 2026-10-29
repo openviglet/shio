@@ -602,7 +602,7 @@ export const SITE_MARKER = "_site.md";
  * half-done rename be caught rather than guessed at. Then the three plain settings, then the
  * policy, which is the only structured value here.
  */
-const SITE_META_ORDER = ["site", "url", "furl", "description", "locales"];
+const SITE_META_ORDER = ["site", "url", "furl", "description", "pageType", "locales"];
 
 /**
  * What a site marker deliberately does **not** carry, and why each one is absent.
@@ -706,6 +706,8 @@ export function serializeSite(marker) {
     url: blankToUndefined(marker.url),
     furl: blankToUndefined(marker.furl),
     description: blankToUndefined(marker.description),
+    // SH1283 — the type a new page in this site starts as.
+    pageType: blankToUndefined(marker.pageType),
     locales: siteLocalePolicy(marker.locales),
   };
   const lines = [FENCE];
@@ -765,7 +767,7 @@ export function parseSiteMarker(relPath, text) {
     );
   }
   const marker = { site };
-  for (const key of ["url", "furl", "description"]) {
+  for (const key of ["url", "furl", "description", "pageType"]) {
     const value = blankToUndefined(meta[key]);
     if (value !== undefined) marker[key] = value;
   }

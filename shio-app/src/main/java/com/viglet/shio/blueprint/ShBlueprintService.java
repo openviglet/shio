@@ -255,6 +255,7 @@ public class ShBlueprintService {
         // it, which is the order the traps are about.
         ArrayNode postTypes = codec.array();
         ObjectNode binding = codec.object();
+        String pageType = null;
         for (JsonNode raw : blueprint.content()) {
             JsonNode tree = ShBlueprintParams.substitute(raw, values, blueprint.name());
             append(folders, tree.get("folders"));
@@ -265,6 +266,16 @@ public class ShBlueprintService {
                 declaredBinding.propertyNames()
                         .forEach(name -> binding.set(name, declaredBinding.get(name)));
             }
+            // SH1283 — the type a new page in the site starts as; the last file to name one wins.
+            JsonNode declaredPage = tree.get("pageType");
+            if (declaredPage != null && declaredPage.isString() && !declaredPage.stringValue().isBlank()) {
+                pageType = declaredPage.stringValue().trim();
+            }
+        }
+        if (pageType != null) {
+            // The settings op runs after the binding op, so the type is bound when it is checked,
+            // and it fills: a site whose curator already chose a page type keeps it (P7).
+            document.putObject("settings").put("pageType", pageType);
         }
         // Absent rather than empty, both of them: the desired-state service branches on
         // `!isEmpty()`, and an empty array here would be an op that provisions nothing.

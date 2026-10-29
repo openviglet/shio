@@ -292,6 +292,8 @@
   "content.siteLanguagesFallback": "When a page is missing",
   "content.siteLanguagesFallbackHint": "Which language to show instead. Left unset, a missing page shows the default.",
   "content.siteLanguagesLabels": "Switcher label",
+  "content.sitePageType": "Page type",
+  "content.sitePageTypeNone": "None",
   "content.siteLanguagesFallbackDefault": "The default ({{locale}})",
   "content.translationsUndeclared": "Every language this instance knows. Declare the site's languages to narrow this list.",
   "content.defaultLocale": "default",

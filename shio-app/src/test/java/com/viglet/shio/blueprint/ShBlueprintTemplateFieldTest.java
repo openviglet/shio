@@ -104,9 +104,11 @@ class ShBlueprintTemplateFieldTest {
         // `postTypeLayout` to the site binding, both of which the desired-state service already
         // emits before any folder or post — the model exists before anything is written against
         // it, which is the order the traps are about.
+        // SH1283 added `pageType`, a third thing a package answers for itself: which of the types it
+        // binds is the page a curator adds to an empty folder.
         assertThat(ShBlueprintRegistry.CONTENT_KEYS)
                 .as("`site` still comes from the request and `prune` is still never a package's "
-                        + "decision; the two added are the two a package can answer for itself")
-                .containsExactly("folders", "posts", "postTypes", "postTypeLayout");
+                        + "decision; the keys added are ones a package can answer for itself")
+                .containsExactly("folders", "posts", "postTypes", "postTypeLayout", "pageType");
     }
 }
