@@ -213,3 +213,21 @@ test("SH891: the console still registers the package's bundle, or this reader mo
       `SH1286: src/i18n/pt.ts does not merge ${file}, so a Portuguese reader would miss its strings`)
   }
 })
+
+test("SH1306: a Portuguese reader resolves to Portuguese once the lazy bundle is in", async () => {
+  // The premise, measured on i18next itself: a bundle added after init leaves the resolved
+  // language where init put it. If this ever stops holding, the call below is merely redundant.
+  const instance = i18next.createInstance()
+  await instance.init({ lng: "pt-BR", fallbackLng: "en", partialBundledLanguages: true,
+    resources: { en: { translation: { hi: "hi" } } } })
+  instance.addResourceBundle("pt", "translation", { hi: "oi" }, true, true)
+  assert.equal(instance.resolvedLanguage, "en", "SH1306: the premise moved; re-read the fix")
+  await instance.changeLanguage(instance.language)
+  assert.equal(instance.resolvedLanguage, "pt",
+    "SH1306: re-resolving after the bundle lands is what makes `resolvedLanguage` Portuguese")
+
+  const index = readFileSync(join(SRC, "i18n", "index.ts"), "utf8")
+  assert.match(index, /addResourceBundle\("pt"[^;]*;\s*(?:\/\/[^\n]*\n\s*)*await i18n\.changeLanguage\(i18n\.language\)/u,
+    "SH1306: ensureLanguage adds the pt bundle without re-resolving, so <html lang> stays `en` and"
+      + " every relative time (BentoChangeCell) is formatted in English for a Portuguese reader")
+})

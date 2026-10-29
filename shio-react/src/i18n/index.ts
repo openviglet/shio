@@ -69,8 +69,12 @@ registerVigTranslations(i18n);
 let portuguese: Promise<void> | null = null;
 export function ensureLanguage(lng: string | undefined): Promise<void> {
   if (!lng?.toLowerCase().startsWith("pt")) return Promise.resolve();
-  portuguese ??= import("./pt").then((module) => {
+  portuguese ??= import("./pt").then(async (module) => {
     i18n.addResourceBundle("pt", "translation", module.default, true, true);
+    // SH1306 — `init` resolved against a store holding only English, so `resolvedLanguage` is still
+    // `en`, and adding a bundle never recomputes it. Changing to the language already detected does,
+    // and fires the `languageChanged` that `<html lang>` and every Intl formatter downstream read.
+    await i18n.changeLanguage(i18n.language);
   });
   return portuguese;
 }
