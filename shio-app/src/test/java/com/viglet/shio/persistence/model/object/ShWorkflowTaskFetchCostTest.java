@@ -62,6 +62,9 @@ class ShWorkflowTaskFetchCostTest {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private EntityManagerFactory entityManagerFactory;
+    /** SH1284 — the sweep that would otherwise prepare statements inside the counted window. */
+    @Autowired
+    private com.viglet.shio.schedule.ShScheduleProperties schedule;
     @Autowired
     private ShFolderRepository folders;
     @Autowired
@@ -141,7 +144,11 @@ class ShWorkflowTaskFetchCostTest {
     private long statements(Supplier<List<?>> read) {
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         boolean wasOn = statistics.isStatisticsEnabled();
+        boolean sweeping = schedule.isEnabled();
         statistics.setStatisticsEnabled(true);
+        // SH1284 — the counter is the SessionFactory's, and the post scheduler's sweep prepares its
+        // own statements on another thread; this context leaves it on, so it is paused for the window.
+        schedule.setEnabled(false);
         try {
             return new TransactionTemplate(transactionManager).execute(status -> {
                 long before = statistics.getPrepareStatementCount();
@@ -149,6 +156,7 @@ class ShWorkflowTaskFetchCostTest {
                 return statistics.getPrepareStatementCount() - before;
             });
         } finally {
+            schedule.setEnabled(sweeping);
             statistics.setStatisticsEnabled(wasOn);
         }
     }

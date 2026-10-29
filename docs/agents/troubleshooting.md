@@ -263,3 +263,9 @@ measured window and takes the fewest statements over three reads per size (anoth
 add, and a per-row cost raises every read), and under the same 5 ms sweep every read is 3. **Any
 test that counts statements in a shared context has this exposure**: pause the sweep the same way,
 or measure in a context with `shio.schedule.enabled=false`.
+
+**And a lint holds it (SH1284).** `ShStatementCountContextLintTest` finds every test class calling
+`getPrepareStatementCount(` (read as code, so a comment naming the guard does not count) and requires
+one of the two guards; it prints the population. Measured when it landed: nine classes, seven already
+in a scheduler-off context, `ShSiteListingCostTest` pausing, and `ShWorkflowTaskFetchCostTest` exposed,
+now pausing like SH1276. A new scheduled job belongs to the same rule; its pause goes beside the sweep's.

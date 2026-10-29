@@ -259,29 +259,6 @@ Either way `shio.blueprint.path` needs a usable default for the install to work 
 gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
 CLI quick start are part of the same check.
 
-### XI.56 XI.56 Statement counts are measured with the scheduler paused (SH1284)
-
-Found fixing SH1276. Hibernate's `Statistics` counter belongs to the `SessionFactory`,
-so a test that reads `getPrepareStatementCount()` before and after a call also counts
-whatever another thread prepared in between. `ShPostScheduler` sweeps every sixty
-seconds in any context that leaves `shio.schedule.enabled` on, and measured with a 5 ms
-sweep it added three to six statements to the site listing's reads.
-`ShSiteListingCostTest` now pauses the sweep for its window. Eight other classes count
-statements the same way (`ShWorkflowTaskFetchCostTest`, `ShAssetUsageBenchmarkTest`,
-`ShCdaAvailableLocalesBenchmarkTest`, `ShRenderHelperSweepBenchmarkTest`,
-`ShEventStreamCostBenchmarkTest`, `ShTemplateGraphScaleBenchmarkTest`,
-`ShTemplateGraphMemoBenchmarkTest`, `ShRenderSweepBenchmarkTest`), and whether each is
-exposed depends on the context it runs in, which nothing checks.
-
-What to build, instrument first (SH338): a lint test that finds every test class calling
-`getPrepareStatementCount` and requires one of two things, either its `@SpringBootTest`
-properties set `shio.schedule.enabled=false`, or the class pauses `ShScheduleProperties`
-around its measurement. It prints the population and holds any exception as a named
-list. Then fix the classes it names the same way SH1276 did, so a one-in-N red cannot
-come back through a benchmark nobody is watching. The event stream's poll only runs with
-a subscriber, and the meter's flush only when metering is on, so the sweep is the one
-source today; the lint's message should say to add a new scheduled job to the same rule.
-
 ### XI.57 XI.57 Gating a delivered page to members (SH1285)
 
 Found building SH1277. The showcase spec (SH1250) planned `/members`, "a page only
