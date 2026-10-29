@@ -140,12 +140,15 @@ public class ShSitesAPI {
     private final ShPageRenderService shPageRenderService;
     private final ShPreviewLinks links;
     private final ShSiteAssetDelivery assetDelivery;
+    /** SH1282 — admits a preview frame's read of one draft asset. */
+    private final ShDraftAssetGrant draftAssetGrant;
 
     public ShSitesAPI(ShPageRenderService shPageRenderService, ShPreviewLinks links,
-                      ShSiteAssetDelivery assetDelivery) {
+                      ShSiteAssetDelivery assetDelivery, ShDraftAssetGrant draftAssetGrant) {
         this.shPageRenderService = shPageRenderService;
         this.links = links;
         this.assetDelivery = assetDelivery;
+        this.draftAssetGrant = draftAssetGrant;
     }
 
     /**
@@ -171,7 +174,7 @@ public class ShSitesAPI {
         } catch (ShPageRenderService.UnknownPageException noPage) {
             // SH437's fallback, on this route too: a site's own images are served at the source's
             // paths, and a public page whose images 404 is not a published site.
-            return asset(noPage, address);
+            return asset(noPage, address, request.getParameter(ShDraftAssetGrant.PARAM));
         } catch (ShPageRenderService.ShPageRedirectException redirect) {
             return redirectTo(address, redirect, request);
         }
@@ -345,12 +348,29 @@ public class ShSitesAPI {
                 .build();
     }
 
-    private ResponseEntity<?> asset(RuntimeException pageProblem, Address address) {
+    /**
+     * The asset at this path, PUBLISHED, or its draft when the request carries a grant (SH1282).
+     *
+     * <p>The grant is what the console's preview render writes on a draft-only asset, bound to this
+     * site key and path for minutes. A missing or wrong one is the same 404 as before, never a
+     * different answer, so the route says nothing about which drafts exist. A granted response is
+     * {@code no-store}: draft bytes must not land in a shared cache under a public URL.</p>
+     */
+    private ResponseEntity<?> asset(RuntimeException pageProblem, Address address, String grant) {
+        boolean draft = grant != null && draftAssetGrant.admits(address.site(), address.path(), grant);
         ResponseEntity<org.springframework.core.io.Resource> served;
         try {
-            served = assetDelivery.serve(address.site(), address.path(), ShPostState.PUBLISHED);
+            served = assetDelivery.serve(address.site(), address.path(),
+                    draft ? ShPostState.DRAFT : ShPostState.PUBLISHED);
         } catch (ShSiteAssetDelivery.UnknownAssetException ignored) {
             throw pageProblem;
+        }
+        if (draft) {
+            ResponseEntity<org.springframework.core.io.Resource> granted = served;
+            served = ResponseEntity.status(granted.getStatusCode()).headers(headers -> {
+                headers.putAll(granted.getHeaders());
+                headers.setCacheControl(CacheControl.noStore());
+            }).body(granted.getBody());
         }
         return fontsCrossOrigin(served);
     }

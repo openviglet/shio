@@ -115,6 +115,9 @@ public class ShAgentRenderService {
     private final ShPostTypeAdminService shPostTypeAdminService;
     /** SH1273 — rebases a console frame's markup the way `/sites/**` does. */
     private final com.viglet.shio.render.ShPreviewLinks previewLinks;
+    /** SH1282 — which rebased assets exist only as drafts, and the grant that lets the frame read them. */
+    private final com.viglet.shio.render.ShSiteAssets siteAssets;
+    private final com.viglet.shio.render.ShDraftAssetGrant draftAssetGrant;
 
     public ShAgentRenderService(ShAddressResolver shAddressResolver,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
@@ -124,7 +127,11 @@ public class ShAgentRenderService {
                                 ShPostRevisionService shPostRevisionService,
                                 ShContentAclService shContentAclService,
                                 ShPostTypeAdminService shPostTypeAdminService,
-                                com.viglet.shio.render.ShPreviewLinks previewLinks) {
+                                com.viglet.shio.render.ShPreviewLinks previewLinks,
+                                com.viglet.shio.render.ShSiteAssets siteAssets,
+                                com.viglet.shio.render.ShDraftAssetGrant draftAssetGrant) {
+        this.siteAssets = siteAssets;
+        this.draftAssetGrant = draftAssetGrant;
         this.previewLinks = previewLinks;
         this.shPostTypeAdminService = shPostTypeAdminService;
         this.shContentAclService = shContentAclService;
@@ -346,8 +353,16 @@ public class ShAgentRenderService {
                 "/" + site + "/default/"
                         + com.viglet.shio.migration.unified.ShPostUnifiedWriteService.localeOf(post),
                 null, null).prefix();
+        // SH1282 — an asset that exists only as a draft is what the curator is previewing, and the
+        // public route serves published bytes only. Its URL carries a short-lived grant for exactly
+        // that site and path; a published asset keeps the plain, cacheable URL.
         return previewLinks.rewriteInto(markup, prefix, rendered,
-                com.viglet.shio.api.agent.ShAddress.normalizePath(post.getFurl()));
+                com.viglet.shio.api.agent.ShAddress.normalizePath(post.getFurl()), null,
+                path -> prefix,
+                (siteId, path) -> siteAssets.findInSite(siteId, path, ShPostState.PUBLISHED).isPresent()
+                        ? null
+                        : com.viglet.shio.render.ShDraftAssetGrant.PARAM + "="
+                                + draftAssetGrant.mint(site, path));
     }
 
     /** The digest of the proposed page, and its markup where the caller asked for it. */

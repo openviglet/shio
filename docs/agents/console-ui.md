@@ -2047,8 +2047,16 @@ fallback serif while its images loaded. `ShAgentRenderService.proposed` now rewr
 returns as HTML with `ShPreviewLinks.rewriteInto` into the site's public `/sites/**` space (the
 digest is still computed from the page's own references), and `ShSitesAPI` adds
 `Access-Control-Allow-Origin: *` to font responses only. The public route and not `/preview/**`,
-because a sandboxed frame sends no session cookie; so an asset that exists only as a draft still
-does not load in the frame, which is the remaining gap.
+because a sandboxed frame sends no session cookie.
+
+**A draft-only asset reaches the frame through a grant (SH1282).** That route serves PUBLISHED bytes,
+so an upload the curator had not published, exactly what they were previewing, rendered broken.
+`proposed` now passes `ShPreviewLinks.rewriteInto` an asset hook: a rebased asset with no published
+row gets `?sh-draft=<grant>`, minted by `ShDraftAssetGrant` (HMAC over site key, path and an expiry
+ten minutes out, keyed by a random per-process secret, so nothing needs configuring and a restart
+only expires preview links). `ShSitesAPI` serves the DRAFT bytes only on a grant that verifies, with
+`Cache-Control: no-store`; a missing or forged grant is the same 404 as before. Published assets keep
+the plain, cacheable URL. `ShSiteAssetsTest` and `ShDraftAssetGrantTest` hold it.
 
 **A type that is not a page is not asked for (SH1167).** A menu, a section or a theme has no layout
 binding on its site, and the server refuses to render it with `render-no-layout-binding`. That 400 is

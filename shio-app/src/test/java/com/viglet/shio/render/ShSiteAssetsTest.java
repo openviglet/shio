@@ -97,13 +97,15 @@ class ShSiteAssetsTest {
     private String siteName;
     private ShSite site;
     private String assetId;
+    /** The {@code img} folder, kept so SH1282 can upload a second asset beside the first. */
+    private String imgFolderId;
 
     @BeforeAll
     void setup() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
         siteName = "sh437-" + UUID.randomUUID().toString().substring(0, 8);
 
-        String imgFolderId = new TransactionTemplate(transactionManager).execute(status -> {
+        imgFolderId = new TransactionTemplate(transactionManager).execute(status -> {
             Instant when = Instant.parse("2026-01-01T00:00:00Z");
             ShSite created = new ShSite();
             created.setName(siteName);
@@ -359,6 +361,58 @@ class ShSiteAssetsTest {
                         + "not serve the site's bytes; the site's own space does")
                 .contains("/sites/" + siteName + "/default/")
                 .doesNotContain("url('/img/hero.png')");
+    }
+
+    @Test
+    @DisplayName("SH1282: the preview frame reads a draft-only asset through a grant, and nothing else does")
+    void theProposedFrameReadsADraftAssetThroughAGrant() throws Exception {
+        String draftId = shStaticFileService.upload(new MockMultipartFile(
+                "file", "draft.png", "image/png",
+                "DRAFT-BYTES".getBytes(StandardCharsets.UTF_8)), imgFolderId, "admin").getId();
+        String type = "Sh1282Page" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            // Uploaded and not yet published: the one asset the curator is previewing.
+            entityManager.createQuery("update ShPostUnified p set p.state = :draft where p.id = :id")
+                    .setParameter("draft", ShPostState.DRAFT).setParameter("id", draftId).executeUpdate();
+            Instant when = Instant.parse("2026-01-01T00:00:00Z");
+            ShSite owner = entityManager.find(ShSite.class, site.getId());
+            owner.setPostTypeLayout("{\"" + type + "\":\"SH1282_LAYOUT\"}");
+            ShFolder root = entityManager.createQuery(
+                    "select f from ShFolder f where f.shSite.id = :id and f.rootFolder = 1", ShFolder.class)
+                    .setParameter("id", site.getId()).getSingleResult();
+            draft(owner, root, typeNamed(com.viglet.shio.post.type.ShSystemPostType.PAGE_LAYOUT, (byte) 1, when),
+                    "SH1282_LAYOUT", "/sh1282-layout", "{\"HTML\":\"<html><body><main>"
+                            + "<img id=d src='/img/draft.png'><img id=p src='/img/hero.png'>"
+                            + "</main></body></html>\"}", when);
+            draft(owner, root, typeNamed(type, (byte) 0, when), "Draft image", "/sh1282", "{}", when);
+        });
+
+        String html = shAgentRenderService.proposed("post:" + siteName + "/sh1282", "draft",
+                tools.jackson.databind.node.JsonNodeFactory.instance.objectNode(), true).html();
+        java.util.regex.Matcher granted = java.util.regex.Pattern
+                .compile("src=\"(/sites/[^\"]*/img/draft\\.png\\?" + ShDraftAssetGrant.PARAM + "=[^\"]+)\"")
+                .matcher(html);
+        assertThat(granted.find())
+                .as("SH1282: the draft-only image is rebased with a grant, or the frame shows it broken: %s",
+                        html)
+                .isTrue();
+        assertThat(html)
+                .as("SH1282: a published asset keeps the plain, cacheable URL")
+                .containsPattern("src=\"/sites/[^\"]*/img/hero\\.png\"");
+
+        String url = granted.group(1);
+        mockMvc.perform(get(url))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .isEqualTo("DRAFT-BYTES"))
+                .andExpect(result -> assertThat(result.getResponse().getHeader("Cache-Control"))
+                        .as("SH1282: draft bytes must not land in a shared cache under a public URL")
+                        .contains("no-store"));
+        mockMvc.perform(get(url.substring(0, url.indexOf('?'))))
+                .andExpect(status().isNotFound());
+        // SH1282: a forged grant is the same 404, saying nothing about which drafts exist.
+        mockMvc.perform(get(url.substring(0, url.indexOf('?')) + "?" + ShDraftAssetGrant.PARAM + "=1.forged"))
+                .andExpect(status().isNotFound());
     }
 
     private com.viglet.shio.persistence.model.post.type.ShPostType typeNamed(String name, byte system,

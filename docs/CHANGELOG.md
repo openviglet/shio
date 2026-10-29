@@ -398,6 +398,7 @@
 - **SH1279** — A /sites link takes its target's own locale when the target is not in the reader's, and on a site publishing en-us a page under the wrong en-us label 302s to its own locale (design §XI.51 recorded in `docs/agents/renderer.md`).
 - **SH1280** — shio_assets usage=true says how many pages load each asset, and the media card shows loaded-by or unreferenced instead of unused, so every surface agrees with verify (design §XI.52 recorded in `docs/agents/content-api.md`).
 - **SH1281** — A site's locale policy takes a labels map, set over REST, site.upsert or the console, and the language switcher shows it before the fixed table, so pt-br and pt-pt can differ (design §XI.53 recorded in `docs/agents/renderer.md`).
+- **SH1282** — The editor's preview frame loads an unpublished image or font: its URL carries a ten-minute grant for that site and path, and /sites/** serves the draft bytes, no-store, only on that grant (design §XI.54 recorded in `docs/agents/console-ui.md`).
 
 ## Block M — Token economy, measured (SH74)
 

@@ -276,28 +276,6 @@ what a curator usually wants there.
 The assertion opens a folder of Trails and reads "Novo Trail", and opens an empty folder
 and reads the site's page type.
 
-### XI.54 XI.54 The preview frame reads draft assets (SH1282)
-
-Left by SH1273. The editor's live preview renders into a sandboxed `srcdoc` frame whose
-origin is `null`, and SH1273 rebased its references into the site's public `/sites/**`
-space, which serves fonts to that origin. That route serves PUBLISHED bytes only, and
-the frame sends no session cookie, so the authenticated `/preview/**` route cannot serve
-it either. An image or font a curator has uploaded and not yet published, which is
-exactly what they are previewing, renders broken in the frame while the saved page would
-show it after a publish.
-
-What to build: a short-lived capability rather than a cookie. When
-`/agent/render?format=html` rebases a reference to an asset that exists only as a draft,
-it writes the URL with a signed, expiring token the asset route accepts in place of a
-session, the way SH1048's signed image URLs and the preview tokens already authorise one
-read without an account. Scope the token to the site and the draft state, a few minutes
-long, and keep published assets on the plain `/sites/**` URL so nothing cacheable
-changes.
-
-Assert by uploading an unpublished image, referencing it from a page, and reading the
-proposed HTML: the image's URL carries a token, and fetching it anonymously answers 200
-with the bytes, while the same URL with the token removed answers 404.
-
 ### XI.55 XI.55 A site names its page type (SH1283)
 
 Left by SH1275. The content browser's "New …" button now offers what a folder holds, and

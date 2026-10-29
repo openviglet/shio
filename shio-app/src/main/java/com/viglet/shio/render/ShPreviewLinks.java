@@ -310,6 +310,20 @@ public class ShPreviewLinks {
      */
     public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page,
                               String basePath, String carry, UnaryOperator<String> prefixFor) {
+        return rewriteInto(html, prefix, page, basePath, carry, prefixFor, null);
+    }
+
+    /**
+     * The same pass, letting the caller add a query to an asset reference (SH1282).
+     *
+     * <p>{@code assetQuery} is given the site id and an asset's path, only for a path this site
+     * serves in the page's state, and answers a {@code name=value} pair or {@code null}. The console's
+     * preview frame uses it to grant a read of an asset that exists only as a draft; everything else
+     * passes {@code null} and is unchanged.</p>
+     */
+    public String rewriteInto(String html, String prefix, ShPageRenderService.ShRenderedPage page,
+                              String basePath, String carry, UnaryOperator<String> prefixFor,
+                              java.util.function.BinaryOperator<String> assetQuery) {
         if (html == null || html.isBlank() || page == null || page.siteId() == null) {
             return html;
         }
@@ -320,9 +334,21 @@ public class ShPreviewLinks {
         // source document, so forty `<img>` tags sharing one sprite is the ordinary case and a query
         // per attribute would make the rewrite cost the page rather than the assets.
         Map<String, Boolean> assets = new HashMap<>();
-        walk(document, (reference, asset) -> asset
-                ? rewriteAsset(reference, prefix, page, assets, base)
-                : rewriteOne(reference, prefix, base, prefixFor), carry);
+        Map<String, String> queries = new HashMap<>();
+        walk(document, (reference, asset) -> {
+            if (!asset) {
+                return rewriteOne(reference, prefix, base, prefixFor);
+            }
+            String rebased = rewriteAsset(reference, prefix, page, assets, base);
+            if (rebased == null || assetQuery == null) {
+                return rebased;
+            }
+            String path = toSitePath(reference, base);
+            int cut = firstOf(path, '?', '#');
+            String query = queries.computeIfAbsent(cut < 0 ? path : path.substring(0, cut),
+                    each -> java.util.Objects.requireNonNullElse(assetQuery.apply(page.siteId(), each), ""));
+            return query.isEmpty() ? rebased : withCarried(rebased, query);
+        }, carry);
         return document.html();
     }
 
