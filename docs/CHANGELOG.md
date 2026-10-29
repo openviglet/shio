@@ -408,6 +408,7 @@
   checked **A fresh instance lists the showcase in its marketplace** On a new store with no marketplace properties set, the admin marketplace, shio marketplace list and shio_marketplace all name quilhara, and the chosen trust cost is stated in docs/agents/blueprints.md.
 - **SH1285 (folder gate on /sites)** — folder.visibility makes a section members-only for named groups or any signed-in user, and /sites/** answers outsiders the missing-page 404 and members a private, no-store page.
 - **SH1295** — A gated post on the CDA reaches only a token whose owner is a member or an administrator, answers others the missing-post 404, and is served private, no-store.
+- **SH1296** — Every CDA listing drops the posts a token's owner may not read, a gated folder lists as absent and leaves its parent's children, and an instance with no gate pays one count per listing.
 
 ## Block M — Token economy, measured (SH74)
 

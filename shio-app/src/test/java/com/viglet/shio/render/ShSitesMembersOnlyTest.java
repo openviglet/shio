@@ -76,6 +76,8 @@ class ShSitesMembersOnlyTest {
     private String stranger;
     private String admin;
     private String siteId;
+    private String rootId;
+    private String membersId;
 
     @BeforeAll
     void seedAGatedSection() {
@@ -103,6 +105,8 @@ class ShSitesMembersOnlyTest {
             ShFolder root = folder(site, null, siteName, when);
             ShFolder members = folder(null, root, "members", when);
             gated[0] = members.getId();
+            rootId = root.getId();
+            membersId = members.getId();
 
             ShPostType layoutType = postType(ShSystemPostType.PAGE_LAYOUT, (byte) 1, when);
             ShPostType pageType = postType("Sh1285Page", (byte) 0, when);
@@ -204,6 +208,38 @@ class ShSitesMembersOnlyTest {
                 // of its own here; what matters is that the controller did not mark it private.
                 .andExpect(result -> assertThat(String.valueOf(result.getResponse().getHeader("Cache-Control")))
                         .doesNotContain("no-store"));
+    }
+
+    // --- the CDA's listings ---
+
+    @Test
+    @DisplayName("SH1296: a folder listing hides a gated subfolder, and the gated folder lists as absent")
+    void aListingHidesTheGatedSection() throws Exception {
+        mockMvc.perform(get("/api/v2/cda/object/" + rootId + "/list").with(token(stranger)))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .as("SH1296: the members folder is not a child a stranger is shown")
+                        .doesNotContain(membersId));
+        mockMvc.perform(get("/api/v2/cda/object/" + membersId + "/list").with(token(stranger)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v2/cda/object/" + membersId + "/list").with(token(member)))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString()).contains("Lounge"));
+    }
+
+    @Test
+    @DisplayName("SH1296: a search finds a gated post for its member and never for a stranger")
+    void aSearchHidesTheGatedPost() throws Exception {
+        mockMvc.perform(get("/api/v2/cda/search").param("q", "Lounge").param("siteId", siteId)
+                        .with(token(stranger)))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .as("SH1296: a search is a listing, and a listing is where a gate leaks first")
+                        .doesNotContain("\"Lounge\""));
+        mockMvc.perform(get("/api/v2/cda/search").param("q", "Lounge").param("siteId", siteId)
+                        .with(token(member)))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString()).contains("\"Lounge\""));
     }
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder cda(String url) {

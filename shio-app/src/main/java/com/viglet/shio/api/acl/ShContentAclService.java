@@ -498,6 +498,18 @@ public class ShContentAclService {
         return new Visibility(true, groups.isEmpty() || groups.stream().anyMatch(who.groups()::contains));
     }
 
+    /**
+     * SH1296 — whether this instance has any members-only gate at all.
+     *
+     * <p>One count, so a listing can skip the per-row walk on the instances that never gate
+     * anything, which is most of them: the walk is a few queries per row, and a page of fifty
+     * paying it for nothing is the regression the CDA's statement benchmarks exist to catch.</p>
+     */
+    @Transactional(readOnly = true)
+    public boolean anyGates() {
+        return shContentVisibilityRepository.count() > 0;
+    }
+
     /** SH1285 — the gate on this object itself, as {@code (members, groups)}; empty when it is public. */
     @Transactional(readOnly = true)
     public Optional<List<String>> ownGate(String objectId) {

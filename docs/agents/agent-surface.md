@@ -3964,8 +3964,14 @@ the cache filter's `public`. A token's authorities are its scope's and never `RO
 role), as `ShAuthorityResolver` does at sign-in: otherwise a page an admin reads on `/sites/**`
 would be missing from that admin's token.
 
-**Not yet:** CDA listings (`/object/{id}/list`, `/query`, `/search`, GraphQL `posts`), the sitemap and
-the agent's public reads still include gated pages; a per-site redirect to a login page instead of the 404; a gate on a single
+**CDA listings (SH1296).** Every listing row passes `ShCdaService.readableOnly`, so a folder list, a
+query, a search and GraphQL's `posts` drop the posts the owner may not read; a gated folder lists as
+absent (404) and is left out of its parent's `folders`. On an instance with **no gate at all** this
+is one `count()` and no per-row walk (`ShContentAclService.anyGates`), which is what keeps
+`ShCdaAvailableLocalesBenchmarkTest` where it was. Known imprecision: a site-wide page's `total` is
+still the query's count, so a reader can infer how many gated posts a site holds, never read one.
+
+**Not yet:** the sitemap and the agent's public reads still include gated pages; a per-site redirect to a login page instead of the 404; a gate on a single
 post; the flag in `_folder.md` and post frontmatter; and the console's folder settings. Those are
 SH1285's remainder. **Cost:** `folder.visibility` took the ops vocabulary from under 1000 to 1014
 (SH346's ceiling) and `tools/list` past its 2975; paid by trimming `render.provision`,

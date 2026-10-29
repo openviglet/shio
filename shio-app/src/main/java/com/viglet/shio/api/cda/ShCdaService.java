@@ -220,8 +220,10 @@ public class ShCdaService {
         List<ShPostState> states = listingStates(state);
         return shFolderRepository.findById(folderId)
                 .filter(folder -> siteAllowed(siteIdOf(folder)))
+                .filter(this::folderReadable)
                 .map(folder -> {
             List<ShCdaFolder> folders = shFolderRepository.findByParentFolderOrderByPositionAsc(folder).stream()
+                    .filter(this::folderReadable)
                     .map(mapper::toFolder)
                     .toList();
             Page<ShPostUnified> posts = pageByFolder(folder, states, localeOf(locale), pageable(page, size));
@@ -386,8 +388,8 @@ public class ShCdaService {
      */
     public List<ShCdaPost> queryPosts(String siteId, String folderId, String postType, int page, int size,
                                       String state, String locale) {
-        List<ShPostUnified> rows = queryPage(siteId, folderId, postType, listingStates(state),
-                localeOf(locale), pageable(page, size)).getContent();
+        List<ShPostUnified> rows = readableOnly(queryPage(siteId, folderId, postType, listingStates(state),
+                localeOf(locale), pageable(page, size)).getContent());
         Map<String, List<String>> byGroup = availableLocales(rows);
         return rows.stream()
                 .map(post -> mapper.toPost(post, byGroup.getOrDefault(groupOf(post), List.of())))
@@ -565,6 +567,7 @@ public class ShCdaService {
         if (folderId != null && !folderId.isBlank()) {
             return shFolderRepository.findById(folderId)
                     .filter(folder -> siteAllowed(siteIdOf(folder)))
+                    .filter(this::folderReadable)
                     .map(folder -> pageByFolder(folder, states, locale, pageable))
                     .orElse(Page.empty(pageable));
         }
@@ -759,7 +762,27 @@ public class ShCdaService {
     }
 
     private List<ShCdaPostSummary> summaries(Page<ShPostUnified> posts) {
-        return posts.getContent().stream().map(mapper::toSummary).toList();
+        return readableOnly(posts.getContent()).stream().map(mapper::toSummary).toList();
+    }
+
+    /**
+     * SH1296 — the rows of a listing this token's owner may read, in order.
+     *
+     * <p>Every listing passes through here, so a members-only post never reaches a reader outside
+     * its groups through a folder, a query, a search or GraphQL's {@code posts}. On an instance with
+     * no gate this is one count and no per-row walk. A site-wide page's {@code total} is still the
+     * query's count, so a reader can infer how many gated posts a site holds but never read one.</p>
+     */
+    private List<ShPostUnified> readableOnly(List<ShPostUnified> rows) {
+        if (rows.isEmpty() || !shContentAclService.anyGates()) {
+            return rows;
+        }
+        return rows.stream().filter(this::readable).toList();
+    }
+
+    /** SH1296 — whether this token's owner may read what is in this folder. */
+    private boolean folderReadable(ShFolder folder) {
+        return !shContentAclService.anyGates() || shContentAclService.visibility(folder.getId()).allowed();
     }
 
     private ShCdaPath buildPath(ShFolder currentFolder) {
