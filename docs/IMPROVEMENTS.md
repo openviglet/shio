@@ -244,42 +244,54 @@ Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/
 ### XI.36 XI.36 A fresh instance can reach the showcase (SH1257)
 
 `shio.marketplace.enabled` defaults to false and `shio.marketplace.url` to nothing
-(SH646). That default was the trust model: the catalogue is off until an operator names
-a URL, the same act as naming a blueprint directory. A side effect is that someone who
-downloads Shio to evaluate it opens the admin marketplace and finds the six built-in
-packages and no showcase, which is the opposite of what the showcase is for.
+(SH646), so someone evaluating Shio opens the admin marketplace and finds the six
+built-in packages and no showcase, which is the opposite of what the showcase is for.
 
-Two candidate answers, and the task is to pick one with its cost written down:
+**Decided by the owner (2026-10-29): the published catalogue is on by default.** The
+rejected alternative, keeping the catalogue off and listing only the showcase as a known
+entry, was the narrower trust widening and more code; the owner chose reach over it.
 
-- **Enable the published catalogue by default**, pointing at `shio.viglet.org/marketplace/marketplace.json`. One property flip: `ShMarketplaceProperties.DEFAULT_URL` already names it. Cost: a fresh instance makes an outbound request to a Viglet host on the marketplace read, and an install writes a downloaded package, which SH96 refused to do without an operator's decision. Air-gapped and multi-tenant operators then have to turn it off.
-- **Keep the catalogue off, and list the showcase as a known entry** the instance can install from a fixed, versioned URL, with the console saying where it comes from before the download. Narrower trust widening, more code.
+What to build: default `shio.marketplace.enabled` to true and `shio.marketplace.url` to
+`ShMarketplaceProperties.DEFAULT_URL` (`shio.viglet.org/marketplace/marketplace.json`).
+Give `shio.blueprint.path` a writable default under the instance's own store (beside
+`store/file_source`), or the installer still refuses on a fresh boot. The cost is
+written down where an operator reads it: a fresh instance now makes an outbound request
+to a Viglet host when the marketplace is read, and an install writes a downloaded
+package, which SH96 had kept behind an operator's decision. So the README, the docs
+quick start, the Docker image's notes and `docs/agents` say in one line how an
+air-gapped or multi-tenant operator turns it off (`shio.marketplace.enabled=false`), and
+the console keeps naming the catalogue's source before a download. A catalogue that
+cannot be reached must degrade to the built-in packages with the reason, never fail the
+screen.
 
-Either way `shio.blueprint.path` needs a usable default for the install to work at all
-(the installer refuses without one), and the quick start in the README and docs-shio
-gains the one line that gets an evaluator to the showcase. The Docker image and `shio`
-CLI quick start are part of the same check.
+Assert at the boundary: a context with no marketplace properties lists the published
+catalogue's source, and one with `enabled=false` lists only the built-ins, as today.
 
 ### XI.57 XI.57 Gating a delivered page to members (SH1285)
 
-Found building SH1277. The showcase spec (SH1250) planned `/members`, "a page only
-signed-in members see", as the demo of `contentAcl`. Shio has no such thing on the
-delivery side: content ACL decides who may edit and publish, an anonymous request is
-never denied by it, and `/sites/**` and the CDA serve every published page to anyone. A
-site that wants a members area, a client portal or an intranet section has no way to
-express it, and the showcase cannot demonstrate one.
+Found building SH1277. `/sites/**` and the CDA serve every published page to anyone;
+content ACL only governs authoring, so a members area has no expression and the
+showcase's `/members` cannot exist.
 
-This is an idea and not yet a design, because the questions are product ones. Who is a
-visitor: a console user, a separate site-member account, or an identity the front end
-brings (OIDC, a signed cookie)? Where is the rule: a folder ACL with a READ permission
-that delivery starts to honour, or a separate visibility flag that leaves the authoring
-ACL alone? What does a denied visitor get: a 404 that hides the page, a 401 that invites
-a login, or the site's own sign-in page? And caching: the five-minute public
-`Cache-Control` on `/sites/**` cannot apply to a gated page.
+**Decided by the owner (2026-10-29).** A member is a **console user**: an existing Shio
+user or group, carried by the console session on `/sites/**` and by the owner of the
+token on the CDA. The rule is a **visibility flag**, separate from the authoring ACL: a
+folder or a post carries `visibility: public | members` plus the groups that may read
+it, inherited down the folder chain. A denied visitor's answer is **configurable per
+site**: a 404 (the default) or a redirect to a login page the site names.
 
-The narrowest first slice is probably a READ-only folder rule honoured by `/sites/**`
-and the CDA for a token or session that carries the principal, answering 404 otherwise,
-with `private, no-store` on what it serves. That decision belongs to whoever owns the
-product's delivery model.
+What to build, in P1 order: the flag on `post.upsert`/`folder.upsert` and in
+`_folder.md` and post frontmatter, then REST, then the console's folder and post
+settings. `/sites/**` and the CDA resolve the effective visibility once per read and
+answer the site's denial for a visitor outside the groups; listings, search, sitemap and
+the agent's public reads leave gated pages out the same way. A gated response is
+`Cache-Control: private, no-store`, never the five-minute public header. Deliberately
+not here: a separate site-member account, self-registration, OIDC. The legacy
+`pageAllowGuestUser`/`pageAllowRegisterUser` columns stay unread.
+
+Assert at the delivery boundary: an anonymous read of a members page gets the site's
+denial, a user in the group reads it, and a public sibling keeps its public cache
+header.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
