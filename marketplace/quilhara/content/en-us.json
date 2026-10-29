@@ -649,7 +649,7 @@
       "folder": "/en/sections",
       "data": {
         "heading": "The agent proposes, a person approves",
-        "body": "<p>A curator opened these pages in the Universal Editor and changed text where it sits on the page. What the agent wrote waited in the review queue, and the curator's verdict on each item is recorded. The publish gate lists the checks a page passes before it goes live.</p><p>Publishing can be scheduled, and a release brings several pages live together. Every save keeps a revision, so an earlier version can be compared and restored, and a deleted page goes to the trash rather than away. A preview link shows a draft to someone without an account, for as long as the link lives.</p>"
+        "body": "<p>A curator opened these pages in the Universal Editor and changed text where it sits on the page. What the agent wrote waited in the review queue, and the curator's verdict on each item is recorded. The publish gate lists the checks a page passes before it goes live.</p><p>Publishing can be scheduled, and a release brings several pages live together. Every save keeps a revision, so an earlier version can be compared and restored, and a deleted page goes to the trash rather than away. A preview link shows a draft to someone without an account, for as long as the link lives.</p><p>What a curator may change is set per folder. This site's layouts and theme live in /theme, which the package locked to administrators when it was applied, so an editor can rewrite every page here and still cannot restyle the site by accident.</p>"
       },
       "publish": true,
       "locale": "en-us"

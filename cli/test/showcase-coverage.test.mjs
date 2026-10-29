@@ -31,17 +31,14 @@ const posts = blueprint.content.flatMap((file) =>
   JSON.parse(readFileSync(join(PACKAGE, file), "utf8")).posts ?? []);
 
 /**
- * Matrix pages the package does not hold yet. `/members` needs a content ACL, which a package
- * cannot declare (SH1277).
+ * Matrix pages the package does not hold yet. SH1256 paid the last one: `/members` left the matrix,
+ * because a content ACL gates editors and never a visitor (SH1285), and contentAcl is shown on
+ * `/tour/curator` by the `/theme` lock the package declares (SH1277).
  */
-const PAGES_OWED = [
-  "/members",
-];
+const PAGES_OWED = [];
 
 /** Subjects whose page is in PAGES_OWED, as `<kind>:<key>`. */
-const DEBT = [
-  "feature:contentAcl",
-];
+const DEBT = [];
 
 const [primary, ...others] = matrix.locales;
 const built = new Set(posts.filter((post) => post.locale === primary).map((post) => post.url));
@@ -82,6 +79,20 @@ test("SH1255: every subject has a built showcase page or an exclusion, except th
   process.stdout.write(`SH1255 showcase coverage: ${all.length} subjects, ${debt.length} in debt\n`);
   assert.deepEqual(debt, [...DEBT].sort(),
     "SH1255: build the page or write its exclusion in the matrix; a paid entry leaves DEBT");
+});
+
+test("SH1256: the page contentAcl names shows a folder lock the package actually declares", () => {
+  const locked = blueprint.content.flatMap((file) =>
+    JSON.parse(readFileSync(join(PACKAGE, file), "utf8")).folders ?? [])
+    .filter((folder) => folder.acl?.length).map((folder) => folder.path);
+  assert.ok(locked.length > 0, "SH1256: no folder in the package declares an acl");
+  const byUrl = new Map(posts.map((post) => [post.url, post]));
+  const page = matrix.features.contentAcl.page;
+  for (const post of posts.filter((p) => p.url === page || p.translationOf === page)) {
+    const prose = post.data.sections.map((url) => JSON.stringify(byUrl.get(url)?.data ?? {})).join(" ");
+    assert.ok(locked.some((path) => prose.includes(path)),
+      `SH1256: ${post.url} does not name the locked folder (${locked.join(", ")})`);
+  }
 });
 
 test("SH1256: every tour page, in every language, ends with a complete how-it-was-built note", () => {

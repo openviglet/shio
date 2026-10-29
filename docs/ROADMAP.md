@@ -12,7 +12,6 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner republishes npm with mcpName, owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- ⏳ **SH1256** (deps: SH1255 ✅, SH1277 ✅) **A showcase visitor cannot see which Shio feature a page demonstrates or how it was built** — contentAcl is still unshown: the matrix row moves from /members to /tour/curator once SH1277 lets Quilhara lock /theme. → §XI.35
 - ⏳ **SH1257** (deps: SH1254 ✅, owner picks the trust posture) **The marketplace is off by default, so a fresh instance never lists the showcase** — The demo sells Shio only if a first boot reaches it: enable the catalogue by default, or list only the showcase. → §XI.36
 - ⏳ **SH1275** (deps: SH1283) **The content browser's create button offers an arbitrary post type, Novo Guide in every Quilhara folder** — An empty folder still offers the first type; offering the site's page type needs a rule naming which layout-bound type is the page. → §XI.47
 - 📋 **SH1278** (deps: —) **The search helper cannot narrow to the page's language, so a bilingual results page lists both** — Quilhara's English search for Marina returns five Portuguese posts, while the CDA's /search already takes a locale. → §XI.50
@@ -26,7 +25,7 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- 📋 **SH1258** (deps: SH1256 ⏳, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
+- 📋 **SH1258** (deps: SH1256 ✅, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
 
 ## Priority
 
@@ -36,13 +35,6 @@
   io.github.openviglet/shio, the Claude Code lists the visibility repo tracks name Shio,
   the More tools section carries a Shio line, and each link is in that repo's
   actions.json.
-
-## Done when — SH1256
-
-- **The showcase debt list is empty** cli/test/showcase-coverage.test.mjs holds DEBT and
-  PAGES_OWED with no entries: contentAcl maps to /tour/curator, which shows the /theme
-  folder's edit lock, and /members leaves the page map until SH1285 decides visitor
-  gating.
 
 ## Done when — SH1257
 

@@ -241,30 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.35 XI.35 The feature tour (SH1256)
-
-The brand pages make the showcase look like a real site. The tour is what makes it a
-demo: a visitor, or a prospect sitting with a salesperson, should be able to land on any
-page and learn which capability it shows and how they would do the same.
-
-Each tour page demonstrates one capability on live content, grouped by SH74's three
-jobs:
-
-- **the agent builds it**: blueprints, content as files, the MCP tools, verify and the render digest, replication (a page rebuilt from a captured one);
-- **the curator approves it**: the Universal Editor and section composer, releases and scheduling, revisions and restore, the review queue, preview links, the publish gate, localization;
-- **the CDA delivers it**: REST and GraphQL reads, the TS SDK, a Next.js page, Turing search when it is enabled, redirects and menus.
-
-Every page carries one reusable "How this was built" section (a vocabulary section, so
-it is itself editable) listing the console route, the MCP tool and arguments, the CLI
-line and the CDA request that produce what the page shows. These are real calls against
-the visitor's own instance, which is the point: the visitor can copy one and run it.
-
-A capability that needs something the instance may not have (Turing, an OIDC provider)
-says so on its page rather than hiding, the way `features` reports a disabled flag.
-
-Done means SH1255's debt list is empty and every tour page passes `verify` and the a11y
-gate in both languages.
-
 ### XI.36 XI.36 A fresh instance can reach the showcase (SH1257)
 
 `shio.marketplace.enabled` defaults to false and `shio.marketplace.url` to nothing

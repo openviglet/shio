@@ -50,7 +50,6 @@ matrix's `pages` object; in summary:
 | Stories | `/stories`, two details | The magazine: long-form, captioned photography. |
 | Guides | `/guides`, one profile | People, linked to the trails and trips they lead. |
 | Trips | `/trips`, one detail | Dates, price, an enquiry form. |
-| Members | `/members` | Visible only to a signed-in member. |
 | Utility | `/search`, `/about`, `/contact` | Search, the fictional-brand notice, a site form. |
 | Tour | `/tour` and eight topic pages | How the site was built, one capability family per page. |
 

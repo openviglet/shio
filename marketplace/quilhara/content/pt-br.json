@@ -678,7 +678,7 @@
       "folder": "/pt/secoes",
       "data": {
         "heading": "O agente propõe, uma pessoa aprova",
-        "body": "<p>Uma pessoa curadora abriu estas páginas no Universal Editor e mudou o texto onde ele aparece na página. O que o agente escreveu esperou na fila de revisão, e o veredito sobre cada item fica registrado. O portão de publicação lista as checagens que uma página passa antes de ir ao ar.</p><p>A publicação pode ser agendada, e um release põe várias páginas no ar juntas. Cada gravação guarda uma revisão, então uma versão anterior pode ser comparada e restaurada, e uma página apagada vai para a lixeira em vez de sumir. Um link de prévia mostra um rascunho para quem não tem conta, enquanto o link durar.</p>"
+        "body": "<p>Uma pessoa curadora abriu estas páginas no Universal Editor e mudou o texto onde ele aparece na página. O que o agente escreveu esperou na fila de revisão, e o veredito sobre cada item fica registrado. O portão de publicação lista as checagens que uma página passa antes de ir ao ar.</p><p>A publicação pode ser agendada, e um release põe várias páginas no ar juntas. Cada gravação guarda uma revisão, então uma versão anterior pode ser comparada e restaurada, e uma página apagada vai para a lixeira em vez de sumir. Um link de prévia mostra um rascunho para quem não tem conta, enquanto o link durar.</p><p>O que uma pessoa curadora pode mudar é definido por pasta. Os layouts e o tema deste site ficam em /theme, que o pacote restringiu a administradores ao ser aplicado, então quem edita pode reescrever todas as páginas daqui e ainda assim não muda o visual do site por engano.</p>"
       },
       "publish": true,
       "locale": "pt-br",
