@@ -4195,3 +4195,15 @@ installed GraphiQL and fails when it is no longer thirteen, so a release that ad
 The census read primary fills 4 to 2. Its mono figure went 1 to 2 in the same reading, and it is
 not a second face: home's compact change mark draws the token's stack, while Monaco appends its own
 fallbacks to the same family. That one is VDS203's, in the census.
+
+## Who can read the published page, in the Permissions dialog (SH1302)
+
+The content browser's **Permissions** dialog (`components/permissions.dialog.tsx`) has a second
+section under the grants: **Who can read the published page**, *Everyone* or *Members only*, with
+a comma-separated group list (empty: anyone signed in). It reads and writes
+`GET/PUT /api/v2/object/{id}/visibility` (`ShObjectAPI`), which calls the same
+`ShContentAclService.ownGate` / `replaceGate` the `folder.visibility` and `post.visibility` ops do:
+READ to see it, WRITE to change it, `unknown-member-group` and `invalid-visibility` as 400s. It
+shows the object's **own** gate; one inherited from a folder above is that folder's to change. Saved
+with the grants, in the same click, after them. The gated-icon in the browser rows and the site
+settings' `membersLogin` switch are SH1302's remainder.

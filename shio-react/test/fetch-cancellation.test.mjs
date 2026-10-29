@@ -754,9 +754,12 @@ test("SH1154: the two dialogs read on open, and one of them paid off a suppressi
   assert.doesNotMatch(permissions, /catch\(\(\) => setEntries\(\[\]\)\)/u,
     "SH1154: on a permissions dialog \"the server did not answer\" and \"this object has no rules of "
       + "its own\" are opposite facts — the second says it inherits, which is what a curator acts on");
-  assert.match(permissions, /if \(read\.isSuccess && seeded !== objectId\)/u,
+  // SH1302 added the readers' gate beside the grants, seeded in the same once-per-object step.
+  assert.match(permissions, /if \(read\.isSuccess && (readers\.isSuccess && )?seeded !== objectId\)/u,
     "SH1154: the rows are edited before they are saved, so they are seeded once per object rather "
       + "than derived");
+  assert.match(permissions, /queryFn: \(\{ signal \}\) => service\.visibility\(objectId, \{ signal \}\)/u,
+    "SH1302: the readers' gate is read with the dialog's signal, like the grants");
 
   /*
    * And the suppressions this actually retired, asserted rather than remembered: `eslint --prune-

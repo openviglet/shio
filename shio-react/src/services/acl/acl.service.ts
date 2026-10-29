@@ -1,6 +1,6 @@
 import axios from "@/lib/axios"
 import type { ShRead } from "@/lib/read-options"
-import type { ShAllowed, ShContentAcl } from "@/models/acl/acl.model"
+import type { ShAllowed, ShContentAcl, ShVisibility } from "@/models/acl/acl.model"
 
 /** Client for the SH54 content-ACL endpoints (`/api/v2/object/{id}/acl`). */
 export class ShAclService {
@@ -22,6 +22,18 @@ export class ShAclService {
   async allowed(objectId: string, read: ShRead = {}): Promise<ShAllowed> {
     const response = await axios.get<ShAllowed>(`/v2/object/${objectId}/allowed`,
       { signal: read.signal })
+    return response.data
+  }
+
+  /** SH1302 — the object's own members-only gate (`/api/v2/object/{id}/visibility`). */
+  async visibility(objectId: string, read: ShRead = {}): Promise<ShVisibility> {
+    const response = await axios.get<ShVisibility>(`/v2/object/${objectId}/visibility`, { signal: read.signal })
+    return response.data
+  }
+
+  /** SH1302 — replace it; the server refuses a group it does not have, with the reason. */
+  async setVisibility(objectId: string, visibility: ShVisibility): Promise<ShVisibility> {
+    const response = await axios.put<ShVisibility>(`/v2/object/${objectId}/visibility`, visibility)
     return response.data
   }
 }

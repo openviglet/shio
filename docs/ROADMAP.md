@@ -12,8 +12,8 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- ⏳ **SH1285** (deps: SH1298 ✅, SH1299 ✅, SH1300 ✅, SH1301 ✅, SH1302) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — Closes when its five split-off parts ship: render listings, sign-in redirect, post gate, files, console. → §XI.57
-- 📋 **SH1302** (deps: —) **The console neither shows nor sets whether a folder or post is members-only** — A curator without an agent or the CLI cannot see a gate before publishing into it or change one. → §XI.68
+- ⏳ **SH1285** (deps: SH1298 ✅, SH1299 ✅, SH1300 ✅, SH1301 ✅, SH1302 ⏳) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — Closes when its five split-off parts ship: render listings, sign-in redirect, post gate, files, console. → §XI.57
+- ⏳ **SH1302** (deps: —) **The console neither shows nor sets whether a folder or post is members-only** — Mark a gated folder or post in the content browser, add the site's membersLogin switch to its settings, and check the dialog in a browser end to end. → §XI.68
 
 ## Priority
 
@@ -30,6 +30,12 @@
   chosen the visitor identity model, a page under a members rule is served by /sites/**
   and the CDA to a request carrying that principal, private and no-store, and is a 404
   to anyone else.
+
+## Done when — SH1302
+
+- **A curator sees and sets a gate in the console, checked in a browser** The content
+  browser marks a gated row, the site settings carry membersLogin, and a Playwright
+  check sets members in the dialog and finds the page answering 404 to a visitor.
 
 ## Non-goals (do NOT add as tasks)
 

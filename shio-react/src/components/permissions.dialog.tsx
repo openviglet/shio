@@ -2,14 +2,14 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, ShieldCheck } from "lucide-react"
+import { Plus, Trash2, ShieldCheck, Lock } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "@viglet/viglet-design-system"
 import { ShAclService } from "@/services/acl/acl.service"
-import type { ShAclPermission, ShAclPrincipalType, ShContentAcl } from "@/models/acl/acl.model"
+import type { ShAclPermission, ShAclPrincipalType, ShContentAcl, ShVisibility } from "@/models/acl/acl.model"
 import { reportProblem } from "@/lib/problem"
 
 const service = new ShAclService()
@@ -72,7 +72,16 @@ function PermissionsBody({
     queryFn: ({ signal }) => service.get(objectId, { signal }),
     enabled: Boolean(objectId),
   })
-  const loading = read.isPending
+  /*
+   * SH1302 — who may read the published page, beside who may edit it. A separate rule on the server
+   * (the owner kept it apart from the ACL), read and saved with the same object.
+   */
+  const readers = useQuery<ShVisibility>({
+    queryKey: addressKey(`summary:visibility|${objectId}`),
+    queryFn: ({ signal }) => service.visibility(objectId, { signal }),
+    enabled: Boolean(objectId),
+  })
+  const loading = read.isPending || readers.isPending
 
   /*
    * The rows are edited before they are saved, so they are local state seeded from the server rather
@@ -80,9 +89,13 @@ function PermissionsBody({
    */
   const [entries, setEntries] = useState<ShContentAcl[]>([])
   const [seeded, setSeeded] = useState<string | null>(null)
-  if (read.isSuccess && seeded !== objectId) {
+  const [visibility, setVisibility] = useState<ShVisibility>({ visibility: "public", groups: [] })
+  const [groupsText, setGroupsText] = useState("")
+  if (read.isSuccess && readers.isSuccess && seeded !== objectId) {
     setSeeded(objectId)
     setEntries(read.data)
+    setVisibility(readers.data)
+    setGroupsText(readers.data.groups.join(", "))
   }
 
   const addRow = () =>
@@ -98,6 +111,12 @@ function PermissionsBody({
     try {
       const clean = entries.filter((e) => e.principalName.trim())
       await service.replace(objectId, clean)
+      await service.setVisibility(objectId, {
+        visibility: visibility.visibility,
+        groups: visibility.visibility === "members"
+          ? groupsText.split(",").map((group) => group.trim()).filter(Boolean)
+          : [],
+      })
       toast.success(t("acl.saved"))
       setOpen(false)
     } catch (error) {
@@ -159,6 +178,31 @@ function PermissionsBody({
             <Button variant="outline" size="sm" onClick={addRow}>
               <Plus className="mr-2 h-4 w-4" /> {t("acl.addGrant")}
             </Button>
+
+            <div className="space-y-2 border-t pt-4">
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <Lock className="h-4 w-4" /> {t("acl.readers")}
+              </p>
+              <Select
+                value={visibility.visibility}
+                onValueChange={(v) => setVisibility((prev) => ({ ...prev, visibility: v as ShVisibility["visibility"] }))}
+              >
+                <SelectTrigger className="w-48" aria-label={t("acl.readers")}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">{t("acl.readers.public")}</SelectItem>
+                  <SelectItem value="members">{t("acl.readers.members")}</SelectItem>
+                </SelectContent>
+              </Select>
+              {visibility.visibility === "members" && (
+                <Input
+                  value={groupsText}
+                  aria-label={t("acl.readers.groups")}
+                  placeholder={t("acl.readers.groups")}
+                  onChange={(ev) => setGroupsText(ev.target.value)}
+                />
+              )}
+              <p className="text-xs text-muted-foreground">{t("acl.readers.hint")}</p>
+            </div>
           </div>
         )}
 

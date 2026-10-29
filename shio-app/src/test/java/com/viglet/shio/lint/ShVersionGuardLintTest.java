@@ -127,6 +127,9 @@ class ShVersionGuardLintTest {
             Map.entry("ShObjectAPI#putAcl", "it writes who may read, not what is there, and the two "
                     + "are different documents — a curator editing a post and an administrator "
                     + "granting access are not overwriting each other"),
+            // SH1302 — putAcl's reason, for the visitor-side twin of the same setting.
+            Map.entry("ShObjectAPI#putVisibility", "it writes who may read the published page, not "
+                    + "what the page says, so a version of the content would guard the wrong document"),
 
             Map.entry("ShStaticFileAPI#upload", CREATES),
             Map.entry("ShStaticFileAPI#replace", "the bytes carry their own sha256 and a replace is "

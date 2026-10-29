@@ -14,5 +14,10 @@
   "acl.principal.ROLE": "Papel",
   "acl.permission.READ": "Leitura",
   "acl.permission.WRITE": "Escrita",
-  "acl.permission.PUBLISH": "Publicar"
+  "acl.permission.PUBLISH": "Publicar",
+  "acl.readers": "Quem pode ler a página publicada",
+  "acl.readers.public": "Todos",
+  "acl.readers.members": "Somente membros",
+  "acl.readers.hint": "Somente membros esconde isto dos visitantes no site publicado e na API de entrega. Vale para tudo dentro de uma pasta.",
+  "acl.readers.groups": "Grupos (separados por vírgula; vazio: qualquer pessoa autenticada)"
 }

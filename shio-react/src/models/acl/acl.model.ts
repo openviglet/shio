@@ -23,3 +23,12 @@ export interface ShContentAcl {
   principalName: string
   permission: ShAclPermission
 }
+
+/**
+ * SH1302 — who may read an object's delivered pages, as `folder.visibility` / `post.visibility` set
+ * it: `public`, or `members` for these groups (none: any signed-in user). The object's own gate.
+ */
+export interface ShVisibility {
+  visibility: "public" | "members"
+  groups: string[]
+}

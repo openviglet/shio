@@ -78,6 +78,9 @@ class ShSitesMembersOnlyTest {
     private String siteId;
     private String rootId;
     private String membersId;
+    /** SH1300/SH1302 — the post gated where it stands, and the group its gate names. */
+    private String gatedPostId;
+    private String memberGroupName;
 
     @BeforeAll
     void seedAGatedSection() {
@@ -89,6 +92,7 @@ class ShSitesMembersOnlyTest {
         stranger = "sh1285-stranger-" + suffix;
         admin = "sh1285-admin-" + suffix;
         String group = "Sh1285Members-" + suffix;
+        memberGroupName = group;
         String[] gated = new String[1];
         String[] gatedPost = new String[1];
 
@@ -135,6 +139,7 @@ class ShSitesMembersOnlyTest {
         shContentAclService.replaceGate(gated[0], true, List.of(group));
         // SH1300 — one post gated where it stands, in the public root folder.
         shContentAclService.replaceGate(gatedPost[0], true, List.of(group));
+        gatedPostId = gatedPost[0];
     }
 
     @Test
@@ -190,6 +195,37 @@ class ShSitesMembersOnlyTest {
                 .andExpect(status().isNotFound());
         mockMvc.perform(get(page("")))
                 .andExpect(status().isOk());
+    }
+
+    // --- the console's door to the same gate ---
+
+    @Test
+    @DisplayName("SH1302: the console reads and replaces a gate over REST, and delivery follows it")
+    void theConsoleSetsTheGate() throws Exception {
+        String visibility = "/api/v2/object/" + gatedPostId + "/visibility";
+        var editor = user(admin).roles("ADMIN");
+        mockMvc.perform(get(visibility).with(editor))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .contains("\"visibility\":\"members\""));
+        try {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(visibility)
+                            .with(editor).with(org.springframework.security.test.web.servlet.request
+                                    .SecurityMockMvcRequestPostProcessors.csrf())
+                            .contentType("application/json").content("{\"visibility\":\"public\"}"))
+                    .andExpect(status().isOk());
+            // SH1302: opened from the console, the page reads for a visitor.
+            mockMvc.perform(get(page("backstage"))).andExpect(status().isOk());
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(visibility)
+                            .with(editor).with(org.springframework.security.test.web.servlet.request
+                                    .SecurityMockMvcRequestPostProcessors.csrf())
+                            .contentType("application/json")
+                            .content("{\"visibility\":\"members\",\"groups\":[\"no-such-group-sh1302\"]}"))
+                    .andExpect(status().isBadRequest());
+        } finally {
+            shContentAclService.replaceGate(gatedPostId, true, List.of(memberGroupName));
+        }
+        mockMvc.perform(get(page("backstage"))).andExpect(status().isNotFound());
     }
 
     // --- a site that sends a turned-away visitor to sign in ---

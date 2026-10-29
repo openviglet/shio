@@ -202,6 +202,68 @@ public class ShObjectAPI {
         return ResponseEntity.ok(shContentAclService.allowed(id));
     }
 
+    /**
+     * SH1302 — who may read an object's delivered pages: {@code public}, or {@code members} with the
+     * groups (none: any signed-in user). The object's own gate; one inherited from a folder above is
+     * that folder's to show.
+     */
+    public record Visibility(String visibility, List<String> groups) {
+    }
+
+    /** SH1302 — the console's read of {@code folder.visibility} / {@code post.visibility}. */
+    @GetMapping("/{id}/visibility")
+    public ResponseEntity<Visibility> getVisibility(@PathVariable String id) {
+        shContentAclService.requireRead(id);
+        return ResponseEntity.ok(shContentAclService.ownGate(id)
+                .map(groups -> new Visibility("members", groups))
+                .orElse(new Visibility("public", List.of())));
+    }
+
+    /**
+     * SH1302 — the console's write of the same gate the ops write, through the same service and under
+     * the same WRITE guard, so the agent path and the console grant exactly the same thing.
+     */
+    @PutMapping("/{id}/visibility")
+    public ResponseEntity<Visibility> putVisibility(@PathVariable String id, @RequestBody Visibility body) {
+        shContentAclService.requireWrite(id);
+        String spelled = body == null || body.visibility() == null ? ""
+                : body.visibility().trim().toLowerCase(java.util.Locale.ROOT);
+        if (!spelled.equals("public") && !spelled.equals("members")) {
+            throw new InvalidVisibilityException(body == null ? null : body.visibility());
+        }
+        List<String> groups = body.groups() == null ? List.of()
+                : body.groups().stream().filter(java.util.Objects::nonNull).map(String::trim)
+                        .filter(group -> !group.isEmpty()).toList();
+        boolean members = spelled.equals("members");
+        String unknown = members ? shContentAclService.unknownGroup(groups) : null;
+        if (unknown != null) {
+            throw new UnknownGroupException(unknown);
+        }
+        shContentAclService.replaceGate(id, members, groups);
+        return getVisibility(id);
+    }
+
+    /** SH1302 — a visibility that is not {@code public} or {@code members}. */
+    public static class InvalidVisibilityException extends com.viglet.shio.api.error.ShTeachingException {
+        public InvalidVisibilityException(String sent) {
+            super(com.viglet.shio.api.error.ShProblem.badRequest("invalid-visibility",
+                            "'" + sent + "' is not a visibility")
+                    .withAllowed(List.of("public", "members"))
+                    .withFix("Send {\"visibility\":\"members\",\"groups\":[\"Members\"]}, or \"public\"."));
+        }
+    }
+
+    /** SH1302 — a members-only gate for a group the instance does not have. */
+    public static class UnknownGroupException extends com.viglet.shio.api.error.ShTeachingException {
+        public UnknownGroupException(String group) {
+            super(com.viglet.shio.api.error.ShProblem.badRequest("unknown-member-group",
+                            "No group named '" + group + "'")
+                    .withDetail("A gate for nobody would hide the content from everyone but an administrator.")
+                    .withFix("Create the group first (Administration > Groups), or leave groups empty to "
+                            + "open it to any signed-in user."));
+        }
+    }
+
     /** Replace an object's ACL grants (SH54). Editing requires WRITE on the object (admins always pass). */
     @PutMapping("/{id}/acl")
     public ResponseEntity<List<ShContentAcl>> putAcl(@PathVariable String id, @RequestBody List<AclEntry> entries) {

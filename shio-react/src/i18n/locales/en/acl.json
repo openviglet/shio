@@ -14,5 +14,10 @@
   "acl.principal.ROLE": "Role",
   "acl.permission.READ": "Read",
   "acl.permission.WRITE": "Write",
-  "acl.permission.PUBLISH": "Publish"
+  "acl.permission.PUBLISH": "Publish",
+  "acl.readers": "Who can read the published page",
+  "acl.readers.public": "Everyone",
+  "acl.readers.members": "Members only",
+  "acl.readers.hint": "Members only hides this from visitors on the published site and the delivery API. Inherited by everything inside a folder.",
+  "acl.readers.groups": "Groups (comma separated; empty: anyone signed in)"
 }
