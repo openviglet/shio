@@ -60,3 +60,16 @@ test("SH1250: the showcase is bilingual and every curator surface has a page", (
     assert.ok(row.page in matrix.pages, `SH1250: ${surface} points at a page the map lacks`);
   }
 });
+
+test("SH1293: the home's curated card rows fill the width, and the listings keep their tracks", () => {
+  // `auto-fill` keeps an empty track, so three featured trails at desktop width left a gap that read
+  // as a missing card. The home's two curated rows collapse empty tracks; a listing does not, because
+  // a listing of one card stretched across the page is worse than a short row.
+  const theme = readFileSync(join(ROOT, "marketplace", "quilhara", "content", "theme.json"), "utf8");
+  assert.match(theme, /\.q-cards-row \{ grid-template-columns:repeat\(auto-fit,/,
+    "SH1293: the row modifier collapses empty tracks");
+  assert.equal((theme.match(/q-cards q-cards-row/g) ?? []).length, 2,
+    "SH1293: on exactly the home's trails and trips rows");
+  assert.match(theme, /\.q-cards \{[^}]*repeat\(auto-fill,/,
+    "SH1293: and the shared listing rule keeps auto-fill");
+});

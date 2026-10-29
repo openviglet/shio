@@ -268,26 +268,6 @@ Assert at the delivery boundary: an anonymous read of a members page gets the si
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
 
-### XI.61 XI.61 The showcase's card rows stop short (SH1258 finding) (SH1293)
-
-Seen in the SH1258 screenshot of the showcase home at 1280px: "Three trails to start
-with" renders three cards and an empty fourth column, so the row stops short of the
-content width and reads as a missing card.
-
-Cause, from `marketplace/quilhara/content/theme.json`: the card grid is
-`grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr))`. `auto-fill` keeps every
-track that fits, filled or not, so a 70rem container holds four 16rem tracks and three
-cards leave one empty. `auto-fit` collapses the empty tracks and lets the three stretch.
-
-What to build: switch the card grid to `auto-fit` (or cap the columns at the item count
-for the featured row), then re-run `shio-site/scripts/showcase-screenshots.mjs` so the
-published home screenshot shows the fixed row. Check the trails, stories and guides
-listings at the same width, since they share the rule and can end on a partial row too;
-a listing that ends on a partial row is fine left-aligned, so the fix should not stretch
-a last row of one card across the page.
-
-Done when the home's featured row fills the content width at 1280px and 1440px.
-
 ### XI.62 XI.62 The tour's try-it section is misnamed (SH1258 finding) (SH1294)
 
 Seen in the SH1258 screenshot of the showcase `/tour` page: the page title is "How this

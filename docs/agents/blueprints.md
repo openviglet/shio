@@ -1093,6 +1093,13 @@ is measured against `blueprint.apply.quilhara` in `token-budgets.properties`. A 
 start the jar with `--shio.blueprint.path=<repo>/marketplace`, apply with `createSite` and
 `mergePostTypes`, and walk `/sites/quilhara/default/{en-us,pt-br}/` in a browser.
 
+**Card rows (SH1293).** `.q-cards` is `auto-fill`, so a listing keeps its tracks and a short last
+row (or a one-card listing) stays card-width and left-aligned. The home's two curated rows add
+`q-cards-row` (`auto-fit`), which collapses the empty track three cards left at desktop width. A
+curated row of a fixed few takes the modifier; anything a query or a relation can shrink to one
+card does not. `cli/test/showcase-matrix.test.mjs` holds both halves. After a change to the look,
+re-run `shio-site/scripts/showcase-screenshots.mjs` so the published screenshots follow.
+
 **What building it found**, each a task rather than a workaround in the package: SH1263, SH1264,
 SH1265 (shipped before it), and SH1266 to SH1275 open in Block J. Three warnings remain on an applied
 site, `asset-unused` for the fonts, which SH1268 withdrew whenever the `page` check runs.
