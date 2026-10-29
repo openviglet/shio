@@ -3955,8 +3955,17 @@ gets**, so the denial does not confirm the page exists. A member's response is
 reaches the check because `/sites/**` is `permitAll`, not unauthenticated.
 `ShSitesMembersOnlyTest` asserts all four readers with the security filter chain applied.
 
-**Not yet:** the CDA (REST and GraphQL), listings, search, the sitemap and the agent's public reads
-still include gated pages; a per-site redirect to a login page instead of the 404; a gate on a single
+**On the CDA, a member is the owner of the token** (SH1295; `ShApiTokenFilter` puts the owner's username in
+the principal). `ShCdaService`'s single reads (`getPost`, `getPostByUrl`, `path`, which GraphQL's
+`post` also uses) answer a gated post the owner may not read as **absent**, the missing-post 404.
+`/post/{id}` and `/post/by-url` send `Cache-Control: private, no-store` for a gated post, overriding
+the cache filter's `public`. A token's authorities are its scope's and never `ROLE_ADMIN`, so
+`visibility()` also recognises an administrator by the **Administrator group** (or a `ROLE_ADMIN`
+role), as `ShAuthorityResolver` does at sign-in: otherwise a page an admin reads on `/sites/**`
+would be missing from that admin's token.
+
+**Not yet:** CDA listings (`/object/{id}/list`, `/query`, `/search`, GraphQL `posts`), the sitemap and
+the agent's public reads still include gated pages; a per-site redirect to a login page instead of the 404; a gate on a single
 post; the flag in `_folder.md` and post frontmatter; and the console's folder settings. Those are
 SH1285's remainder. **Cost:** `folder.visibility` took the ops vocabulary from under 1000 to 1014
 (SH346's ceiling) and `tools/list` past its 2975; paid by trimming `render.provision`,

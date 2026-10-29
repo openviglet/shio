@@ -69,6 +69,8 @@ import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 public class ShContentAclService {
 
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
+    /** The group {@code ShAuthorityResolver} turns into {@link #ROLE_ADMIN} at sign-in. */
+    private static final String ADMINISTRATOR_GROUP = "Administrator";
 
     private final ShContentAclRepository shContentAclRepository;
     private final ShObjectRepository shObjectRepository;
@@ -484,9 +486,16 @@ public class ShContentAclService {
         if (isAdmin(auth)) {
             return new Visibility(true, true);
         }
+        // An API token's authorities are its scope's, never ROLE_ADMIN, so on the CDA an
+        // administrator who owns the token is recognised the way ShAuthorityResolver grants the
+        // role: by the Administrator group. Otherwise a page an admin reads on /sites/** would be
+        // missing from the same admin's token.
+        Principals who = currentPrincipals(auth.getName());
+        if (who.groups().contains(ADMINISTRATOR_GROUP) || who.roles().contains(ROLE_ADMIN)) {
+            return new Visibility(true, true);
+        }
         List<String> groups = gate.groups();
-        return new Visibility(true, groups.isEmpty()
-                || groups.stream().anyMatch(currentPrincipals(auth.getName()).groups()::contains));
+        return new Visibility(true, groups.isEmpty() || groups.stream().anyMatch(who.groups()::contains));
     }
 
     /** SH1285 — the gate on this object itself, as {@code (members, groups)}; empty when it is public. */

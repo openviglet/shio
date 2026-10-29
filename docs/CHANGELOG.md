@@ -407,6 +407,7 @@
 - **SH1257** — A fresh instance reads the published catalogue (shio.marketplace.enabled defaults to true) and installs into store/blueprints, so the showcase is one click from first boot; enabled=false turns it off (design §XI.36 recorded in `docs/agents/blueprints.md`).
   checked **A fresh instance lists the showcase in its marketplace** On a new store with no marketplace properties set, the admin marketplace, shio marketplace list and shio_marketplace all name quilhara, and the chosen trust cost is stated in docs/agents/blueprints.md.
 - **SH1285 (folder gate on /sites)** — folder.visibility makes a section members-only for named groups or any signed-in user, and /sites/** answers outsiders the missing-page 404 and members a private, no-store page.
+- **SH1295** — A gated post on the CDA reaches only a token whose owner is a member or an administrator, answers others the missing-post 404, and is served private, no-store.
 
 ## Block M — Token economy, measured (SH74)
 

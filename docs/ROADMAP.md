@@ -12,7 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- ⏳ **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — Gate the CDA, listings, search, sitemap and agent reads; per-site login redirect; post-level gates; the flag in _folder.md and frontmatter; console folder settings. → §XI.57
+- 🛠 **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — Gate CDA listings, query, search and GraphQL posts, the sitemap and agent reads; per-site login redirect; post gates; the flag in _folder.md and frontmatter; console settings. → §XI.57
 - 📋 **SH1293** (deps: —) **The showcase home's three featured trails leave an empty fourth column at desktop width** — An auto-fill card grid keeps an empty track, so the showcase's first screen reads as a missing card in the screenshot the marketplace publishes. → §XI.61
 - 📋 **SH1294** (deps: —) **The showcase tour pages head their try-it section "How this was built", echoing the /tour title** — On /tour the section heading nearly repeats the page title, and it names a story where the section holds calls a reader can copy and run. → §XI.62
 

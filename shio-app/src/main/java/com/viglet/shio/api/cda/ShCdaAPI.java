@@ -90,7 +90,21 @@ public class ShCdaAPI {
     @Operation(summary = "Get one published post with expanded attributes")
     public ResponseEntity<ShCdaPost> post(@PathVariable String id,
                                           @RequestParam(name = "state", required = false) String state) {
-        return ResponseEntity.of(shCdaService.getPost(id, state));
+        return privateWhenGated(shCdaService.getPost(id, state));
+    }
+
+    /**
+     * SH1285 — a members-only post is its reader's alone. The cache filter has already said
+     * {@code public} for every CDA response, keyed by token through {@code Vary: Key}; a gated
+     * post gets {@code private, no-store} instead, so no shared cache keeps a member's copy.
+     */
+    private ResponseEntity<ShCdaPost> privateWhenGated(java.util.Optional<ShCdaPost> post) {
+        if (post.isPresent() && shCdaService.isGated(post.get().id())) {
+            return ResponseEntity.ok()
+                    .cacheControl(org.springframework.http.CacheControl.noStore().cachePrivate())
+                    .body(post.get());
+        }
+        return ResponseEntity.of(post);
     }
 
     @GetMapping("/post/by-url")
@@ -99,7 +113,7 @@ public class ShCdaAPI {
                                                @RequestParam String url,
                                                @RequestParam(name = "locale", required = false) String locale,
                                                @RequestParam(name = "state", required = false) String state) {
-        return ResponseEntity.of(shCdaService.getPostByUrl(siteId, url, locale, state));
+        return privateWhenGated(shCdaService.getPostByUrl(siteId, url, locale, state));
     }
 
     @GetMapping("/post-type")

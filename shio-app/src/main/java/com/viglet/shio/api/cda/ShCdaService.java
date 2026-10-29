@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.http.HttpStatus;
 
+import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.cda.dto.ShCdaFolder;
 import com.viglet.shio.api.cda.dto.ShCdaListing;
 import com.viglet.shio.api.cda.dto.ShCdaPath;
@@ -91,6 +92,8 @@ public class ShCdaService {
     private final ShPostRevisionService shPostRevisionService;
     /** SH1056 — which languages a site is in, the one resolver every surface reads. */
     private final ShSiteLocaleService shSiteLocaleService;
+    /** SH1285 — whether the token's owner may read a members-only post. */
+    private final ShContentAclService shContentAclService;
 
     public ShCdaService(ShSiteRepository shSiteRepository,
                         ShFolderRepository shFolderRepository,
@@ -98,7 +101,9 @@ public class ShCdaService {
                         ShPostTypeRepository shPostTypeRepository,
                         ShCdaMapper mapper,
                         ShPostRevisionService shPostRevisionService,
-                        ShSiteLocaleService shSiteLocaleService) {
+                        ShSiteLocaleService shSiteLocaleService,
+                        ShContentAclService shContentAclService) {
+        this.shContentAclService = shContentAclService;
         this.shPostRevisionService = shPostRevisionService;
         this.shSiteLocaleService = shSiteLocaleService;
         this.shSiteRepository = shSiteRepository;
@@ -234,6 +239,7 @@ public class ShCdaService {
         }
         return resolvePost(objectId, readStates())
                 .filter(post -> siteAllowed(siteIdOf(post)))
+                .filter(this::readable)
                 .map(ShPostUnified::getShFolder)
                 .map(this::buildPath);
     }
@@ -255,12 +261,29 @@ public class ShCdaService {
         if (perspective.isRevision()) {
             return resolvePost(id, PREVIEW_STATES)
                     .filter(post -> siteAllowed(siteIdOf(post)))
+                    .filter(this::readable)
                     .map(post -> mapper.toPost(asRevision(post, perspective.revision()),
                             availableLocales(post)));
         }
         return resolvePost(id, statesFor(perspective))
                 .filter(post -> siteAllowed(siteIdOf(post)))
+                .filter(this::readable)
                 .map(post -> mapper.toPost(post, availableLocales(post)));
+    }
+
+    /**
+     * SH1285 — whether this token's owner may read the post, under a members-only gate on it or
+     * up its folder chain. A post they may not read is answered as absent, the 404 a missing post
+     * gets, so the refusal does not confirm the post exists. The single reads ask this; the
+     * listings, search and GraphQL's {@code posts} do not yet.
+     */
+    private boolean readable(ShPostUnified post) {
+        return shContentAclService.visibility(post.getId()).allowed();
+    }
+
+    /** SH1285 — whether a members-only gate applies to this post, so its response is private. */
+    public boolean isGated(String postId) {
+        return shContentAclService.visibility(postId).gated();
     }
 
     public Optional<ShCdaPost> getPostByUrl(String siteId, String url) {
@@ -290,7 +313,7 @@ public class ShCdaService {
                         ? shPostUnifiedRepository.findByShSite_IdAndFurlAndStateAndLocale(siteId, candidate, rowState, locale)
                         : shPostUnifiedRepository.findByShSite_IdAndFurlAndState(siteId, candidate, rowState);
                 if (found.isPresent()) {
-                    return found.map(post -> mapper.toPost(perspective.isRevision()
+                    return found.filter(this::readable).map(post -> mapper.toPost(perspective.isRevision()
                             ? asRevision(post, perspective.revision()) : post, availableLocales(post)));
                 }
             }

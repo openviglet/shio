@@ -74,6 +74,8 @@ class ShSitesMembersOnlyTest {
     private String siteName;
     private String member;
     private String stranger;
+    private String admin;
+    private String siteId;
 
     @BeforeAll
     void seedAGatedSection() {
@@ -83,6 +85,7 @@ class ShSitesMembersOnlyTest {
         siteName = "sh1285-" + suffix;
         member = "sh1285-member-" + suffix;
         stranger = "sh1285-stranger-" + suffix;
+        admin = "sh1285-admin-" + suffix;
         String group = "Sh1285Members-" + suffix;
         String[] gated = new String[1];
 
@@ -95,6 +98,7 @@ class ShSitesMembersOnlyTest {
             site.setOwner("admin");
             site.setPostTypeLayout("{\"Sh1285Page\":\"SH1285_LAYOUT\"}");
             entityManager.persist(site);
+            siteId = site.getId();
 
             ShFolder root = folder(site, null, siteName, when);
             ShFolder members = folder(null, root, "members", when);
@@ -111,6 +115,15 @@ class ShSitesMembersOnlyTest {
             entityManager.persist(memberGroup);
             account(member, memberGroup);
             account(stranger, null);
+            ShGroup administrators = entityManager
+                    .createQuery("select g from ShGroup g where g.name = 'Administrator'", ShGroup.class)
+                    .getResultStream().findFirst().orElseGet(() -> {
+                        ShGroup created = new ShGroup();
+                        created.setName("Administrator");
+                        entityManager.persist(created);
+                        return created;
+                    });
+            account(admin, administrators);
         });
         shContentAclService.replaceGate(gated[0], true, List.of(group));
     }
@@ -152,6 +165,58 @@ class ShSitesMembersOnlyTest {
                 .andExpect(status().isOk())
                 .andExpect(result -> assertThat(result.getResponse().getHeader("Cache-Control"))
                         .contains("public").contains("max-age=300"));
+    }
+
+    // --- the CDA: a member is the owner of the token ---
+
+    @Test
+    @DisplayName("SH1295: on the CDA a token whose owner is outside the group gets the missing-post 404")
+    void aStrangersTokenIsTurnedAway() throws Exception {
+        mockMvc.perform(cda("/lounge").with(token(stranger)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("SH1295: a member's token reads the post, privately")
+    void aMembersTokenReadsIt() throws Exception {
+        mockMvc.perform(cda("/lounge").with(token(member)))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    assertThat(result.getResponse().getContentAsString()).contains("Lounge");
+                    assertThat(result.getResponse().getHeader("Cache-Control"))
+                            .contains("no-store").contains("private").doesNotContain("public");
+                });
+    }
+
+    @Test
+    @DisplayName("SH1295: an administrator's token reads it, as the same administrator does on /sites")
+    void anAdministratorsTokenReadsIt() throws Exception {
+        mockMvc.perform(cda("/lounge").with(token(admin)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("SH1295: a public post on the CDA keeps the shared cache header")
+    void aPublicPostIsUnchangedOnTheCda() throws Exception {
+        mockMvc.perform(cda("/").with(token(stranger)))
+                .andExpect(status().isOk())
+                // MockMvc does not run the CDA's servlet filters, so a public post carries no header
+                // of its own here; what matters is that the controller did not mark it private.
+                .andExpect(result -> assertThat(String.valueOf(result.getResponse().getHeader("Cache-Control")))
+                        .doesNotContain("no-store"));
+    }
+
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder cda(String url) {
+        return get("/api/v2/cda/post/by-url").param("siteId", siteId).param("url", url);
+    }
+
+    /** What ShApiTokenFilter builds for a PROD READ token: the owner, with the CDA's authorities. */
+    private static org.springframework.test.web.servlet.request.RequestPostProcessor token(String owner) {
+        return org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
+                .authentication(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        owner, null, List.of(
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CDA"),
+                                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER"))));
     }
 
     private String page(String path) {
