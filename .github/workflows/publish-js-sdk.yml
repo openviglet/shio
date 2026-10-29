@@ -36,8 +36,10 @@ name: Publish JS packages (npm)
 # while its five siblings sat in the org. `npm create @viglet/shio-app` is the
 # scoped invocation of the same shorthand.
 #
-# Requires repo secret: NPM_TOKEN (npm automation token with publish rights to
-# the @viglet scope).
+# Authenticates with npm trusted publishing (OIDC): each package lists this repository and
+# this workflow file as its trusted publisher on npmjs.com, and the job's `id-token: write`
+# lets pnpm exchange the run's identity for a short-lived publish credential. No NPM_TOKEN
+# secret: a long-lived token is what expired and turned every publish into a 404 (SH1245).
 
 on:
   workflow_dispatch:
@@ -50,12 +52,16 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # Trusted publishing: without it pnpm skips OIDC with
+      # ERR_PNPM_ID_TOKEN_GITHUB_WORKFLOW_INCORRECT_PERMISSIONS.
+      id-token: write
 
     steps:
       - uses: actions/checkout@v7
@@ -208,43 +214,29 @@ jobs:
       # ── Publish in dependency order (pnpm resolves workspace:* → version) ──
       - name: Publish @viglet/shio-model
         run: pnpm --filter @viglet/shio-model publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # After the DSL: its `workspace:*` dependency resolves to the version just published,
       # so publishing these two out of order would ship a package pointing at a version
       # that does not exist yet.
       - name: Publish @viglet/shio-sections
         run: pnpm --filter @viglet/shio-sections publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @viglet/shio-client
         run: pnpm --filter @viglet/shio-client publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @viglet/shio-react-sdk
         run: pnpm --filter @viglet/shio-react-sdk publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Standalone: no workspace dependency in either direction, so its position is
       # only about failing early — before the two packages a consumer installs by name.
       - name: Publish @viglet/shio-editor-cors
         run: pnpm --filter @viglet/shio-editor-cors publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @viglet/create-shio-app
         run: pnpm --filter @viglet/create-shio-app publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @viglet/shio (CLI)
         run: pnpm --filter @viglet/shio publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # ── Commit the version bumps ──
       - name: Commit version bump

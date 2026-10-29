@@ -16,10 +16,15 @@
 - ⏳ **SH1285** (deps: owner decides the visitor identity model) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — A members area, client portal or intranet section has no expression in Shio, and the showcase's /members page cannot exist. → §XI.57
 - 📋 **SH1287** (deps: —) **A headless front end cannot read a site's language labels: the CDA's site locales omit them** — SH1281 put labels on the policy and the renderer reads them, so a rendered and a headless switcher now name one language two ways. → §XI.58
 - 📋 **SH1288** (deps: —) **shio pull drops a site's language labels from _site.md, so the marker is not the exact policy** — The CLI's siteLocalePolicy copies default, enabled and fallback only, so a label typed into the file never reaches a push. → §XI.59
+- 📋 **SH1290** (deps: —) **The tenant join hazard tests fail after Boot 4.1.2: the queries they pin as failing no longer throw** — Dependabot's #1220 changed Hibernate; nobody knows yet whether the hazard is fixed or fails later, which decides agents.md's first invariant. → §XI.60
 
 ## Block S — The public site (shio.viglet.org)
 
 - 📋 **SH1258** (deps: SH1256 ✅, SH1257) **shio.viglet.org does not show the showcase or tell a visitor how to install it** — A showcase section with screenshots and both install paths, console marketplace and shio CLI, makes the demo the site's main proof of what Shio does. → §XIX.15
+
+## Block AU — The design system's consumer contract, adopted and gated
+
+- 📋 **SH1289** (deps: —) **Design system 2026.3.23 turned pnpm test red: its chunk is over the console's ceiling and the wait pin is stale** — Dependabot's #1222 merged the bump unreviewed; index.es.js grew 45 KB past its ceiling and SH937 wants the waits read first. → §XCIV.1
 
 ## Priority
 

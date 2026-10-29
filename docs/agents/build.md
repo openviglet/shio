@@ -1455,7 +1455,11 @@ publishable packages, builds, and runs `pnpm publish` in dependency order
 (`shio-model` → `shio-sections` → `shio-client` → `shio-react-sdk` → `create-shio-app` →
 `@viglet/shio`). `pnpm publish` rewrites `workspace:*` to the published version
 automatically, which is why the order is load-bearing, since `shio-sections` depends on
-`shio-model` that way. Needs the `NPM_TOKEN` secret.
+`shio-model` that way. Authenticates by npm trusted publishing (OIDC), not a secret: each
+package names `openviglet/shio` and `publish-js-sdk.yml` as its trusted publisher on npmjs.com,
+and the job grants `id-token: write`. Without that permission pnpm skips OIDC
+(`ERR_PNPM_ID_TOKEN_GITHUB_WORKFLOW_INCORRECT_PERMISSIONS`) and the publish answers a bare 404,
+which is how the expired `NPM_TOKEN` showed itself.
 
 ### Vite Config
 - Output: `../shio-app/src/main/resources/public/`

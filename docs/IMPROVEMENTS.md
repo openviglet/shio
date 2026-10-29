@@ -321,6 +321,27 @@ like any other policy change.
 Assert in `content-files.test.mjs`: a policy with labels round-trips through serialize
 and parse byte-identically, and a policy without them serializes exactly as before.
 
+### XI.60 What Boot 4.1.2's Hibernate does with the tenant join hazard (SH1290)
+
+Found fixing the npm release workflow on 2026-10-29. Dependabot's java group (PR #1220)
+moved Spring Boot from 4.1.1 to 4.1.2, and with it the Hibernate it manages. Since that
+merge the four tests in `ShTenantJoinHazardTest` that assert a query fails now fail
+themselves with "Expecting code to raise a throwable". Those tests pin the hazard
+`agents.md` lists first among the invariants with no lint: navigating past `.id` of an
+association whose target is an `ShObject` subclass emits the `@TenantId` predicate
+against a subclass alias with no such column, so the query dies at query-prepare time.
+The projection, the predicate, the explicit join and the group-by forms no longer raise.
+
+That may be good news, a Hibernate fix, or a different failure that now arrives later,
+at execution or as a wrong row set. Nobody has checked which.
+
+What to build: run each hazard query against H2 and, with Docker up, against the
+PostgreSQL and MariaDB ITs, and record what each now returns, the SQL Hibernate emits
+and whether the tenant predicate is on the right alias. If it is fixed everywhere,
+invert the four tests to assert the fix with the Hibernate version named, and update the
+`agents.md` invariant and `database.md`. If it fails differently, re-point the tests at
+the new failure. Close by removing this task's `red-suites.json` exception.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
@@ -1241,3 +1262,28 @@ package half is VDS204 to VDS207 in the design system's own backlog.
 ## XCII The public site (shio.viglet.org)
 
 ## XCIII The console as an application: cost, resilience and access
+
+## XCIV The design system's consumer contract, adopted and gated
+
+### XCIV.1 Review design system 2026.3.23 against the console's budgets and waits (SH1289)
+
+Found fixing the npm release workflow on 2026-10-29. Dependabot's frontend group (PR
+#1222) moved `@viglet/viglet-design-system` from 2026.3.19 to 2026.3.23, and `pnpm test`
+has been red on `2026.3` since that merge, in two places that both belong to the
+console's contract with the design system.
+
+`console-size-budget.test.mjs` (SH1043): the package's `index.es.js` chunk grew from
+under its 473.6 KB raw / 150.4 KB gzip ceiling to 518.4 KB / 164.0 KB, and
+`preload-helper.js` stopped being eager, so its ceiling outlives its chunk. The eager
+total is 1878.0 KB raw / 513.7 KB gzip, still under the overall ceiling.
+
+`design-system` wait check (SH937): the installed version is no longer the one the
+roadmap's waits were measured against. Its rule is to read every waiting entry against
+2026.3.23, ship the ones the release ends, and only then move `PINNED`.
+
+What to build: measure what 2026.3.23 added to `index.es.js` (a new component, or a
+dependency it now bundles) and decide whether the console loads it eagerly on purpose.
+Either raise that chunk's ceiling with the reason beside it, or move the import behind
+the screen that uses it. Delete the `preload-helper.js` entry. Then do SH937's review
+and move `PINNED`. Close by removing this task's `red-suites.json` exception in the same
+commit that turns `pnpm test` green.
