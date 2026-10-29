@@ -510,6 +510,23 @@ public class ShContentAclService {
         return shContentVisibilityRepository.count() > 0;
     }
 
+    /**
+     * SH1297 — whether the current reader fails at least one members-only gate on this instance.
+     *
+     * <p>The question a listing asks before choosing how to count: a reader who fails no gate sees
+     * every row the query does, so its total is exact as the database states it; one who fails a gate
+     * needs the rows filtered before they are counted. Gates are few (one per gated folder), so this
+     * reads them all.</p>
+     */
+    @Transactional(readOnly = true)
+    public boolean deniesAnyGate() {
+        if (!anyGates()) {
+            return false;
+        }
+        return shContentVisibilityRepository.findAll().stream()
+                .anyMatch(gate -> !visibility(gate.getObjectId()).allowed());
+    }
+
     /** SH1285 — the gate on this object itself, as {@code (members, groups)}; empty when it is public. */
     @Transactional(readOnly = true)
     public Optional<List<String>> ownGate(String objectId) {

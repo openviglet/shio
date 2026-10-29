@@ -268,27 +268,6 @@ Assert at the delivery boundary: an anonymous read of a members page gets the si
 denial, a user in the group reads it, and a public sibling keeps its public cache
 header.
 
-### XI.63 XI.63 A site-wide listing's total counts gated posts (SH1296 finding) (SH1297)
-
-Found shipping SH1296. A CDA listing now drops the members-only posts a token's owner
-may not read, but on the site-wide reads (`/query` without a folder, `/search`, GraphQL
-`posts`) the page's `total` is still the repository's count. A stranger's token sees
-`total: 12` over a page of 9 rows and can infer that three gated posts exist, though
-never read one. Folder listings are exact already, because a gate is a folder and a
-denied folder lists as absent.
-
-What to build: exclude gated rows in the query rather than after it. The gates are few
-(one row per gated folder in `sh_content_visibility`), so per request: read every gate,
-keep the ones this reader fails, expand each to its folder subtree by id
-(`ShFolderRepository.findParentIdOf`'s inverse, walked once), and pass that folder-id
-set to the site-wide finders as a `NOT IN` predicate. Skip all of it when
-`ShContentAclService.anyGates()` is false, which keeps
-`ShCdaAvailableLocalesBenchmarkTest` unchanged; measure the gated case with a statement
-count before choosing between the predicate and a count correction.
-
-Assert at the boundary: a stranger's site-wide `total` equals the rows a member-less
-reader can page through, and a member's includes the gated posts.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

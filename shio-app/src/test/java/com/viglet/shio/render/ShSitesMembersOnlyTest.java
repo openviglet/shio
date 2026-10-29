@@ -242,6 +242,33 @@ class ShSitesMembersOnlyTest {
                 .andExpect(result -> assertThat(result.getResponse().getContentAsString()).contains("\"Lounge\""));
     }
 
+    @Test
+    @DisplayName("SH1297: a site-wide total counts only what the reader can see")
+    void aSiteWideTotalCountsWhatTheReaderSees() throws Exception {
+        // The site publishes a layout, the home and the gated lounge: three rows, one behind the gate.
+        long stranger = totalPosts(get("/api/v2/cda/query").param("siteId", siteId).param("size", "1"),
+                this.stranger);
+        long member = totalPosts(get("/api/v2/cda/query").param("siteId", siteId).param("size", "1"),
+                this.member);
+        assertThat(stranger)
+                .as("SH1297: a page of one would otherwise say 3 to a stranger, and the difference is "
+                        + "the number of gated posts the site holds")
+                .isEqualTo(member - 1);
+        assertThat(totalPosts(get("/api/v2/cda/search").param("q", "Lounge").param("siteId", siteId),
+                this.stranger))
+                .as("SH1297: and a search that matches only the gated post counts nothing for a stranger")
+                .isZero();
+    }
+
+    private long totalPosts(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request,
+                            String owner) throws Exception {
+        String body = mockMvc.perform(request.with(token(owner))).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        java.util.regex.Matcher total = java.util.regex.Pattern.compile("\"totalPosts\":(\\d+)").matcher(body);
+        assertThat(total.find()).as("the listing carries totalPosts: " + body).isTrue();
+        return Long.parseLong(total.group(1));
+    }
+
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder cda(String url) {
         return get("/api/v2/cda/post/by-url").param("siteId", siteId).param("url", url);
     }

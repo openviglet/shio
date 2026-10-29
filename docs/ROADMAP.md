@@ -13,7 +13,6 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - 🛠 **SH1285** (deps: —) **A delivered site cannot show a page only to signed-in members: content ACL never gates a visitor** — Gate the sitemap and agent public reads; per-site login redirect; post-level gates; the flag in _folder.md and frontmatter; console folder and post settings. → §XI.57
-- 📋 **SH1297** (deps: —) **A CDA site-wide listing's total counts members-only posts the reader cannot see** — The rows are filtered after the query, so a stranger's total over a page reveals how many gated posts a site holds. → §XI.63
 
 ## Priority
 

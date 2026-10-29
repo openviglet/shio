@@ -466,7 +466,7 @@ public class ShCdaService {
             }
             List<String> types = searchablePostTypeIds(siteId);
             if (!types.isEmpty()) {
-                return states.size() > 1
+                return inMemory(states)
                         ? draftPreferred(shPostUnifiedRepository
                                 .searchBySiteAndTypesAndStateIn(siteId, types, states, term, locale), pageable)
                         : shPostUnifiedRepository.searchBySiteAndTypesAndState(siteId, types, states.get(0),
@@ -480,14 +480,14 @@ public class ShCdaService {
             return allowed.isEmpty() ? Page.empty(pageable)
                     : searchBySites(allowed, term, states, locale, pageable);
         }
-        return states.size() > 1
+        return inMemory(states)
                 ? draftPreferred(shPostUnifiedRepository.searchByStateIn(states, term, locale), pageable)
                 : shPostUnifiedRepository.searchByState(states.get(0), term, locale, pageable);
     }
 
     private Page<ShPostUnified> searchBySites(Collection<String> siteIds, String term,
                                               List<ShPostState> states, String locale, Pageable pageable) {
-        return states.size() > 1
+        return inMemory(states)
                 ? draftPreferred(shPostUnifiedRepository.searchBySitesAndStateIn(siteIds, states, term, locale),
                         pageable)
                 : shPostUnifiedRepository.searchBySitesAndState(siteIds, states.get(0), term, locale, pageable);
@@ -610,7 +610,7 @@ public class ShCdaService {
         if (type == null) {
             return Page.empty(pageable);
         }
-        if (states.size() > 1) {
+        if (inMemory(states)) {
             return draftPreferred(inLocale(shPostUnifiedRepository
                     .findByShSite_IdAndShPostType_IdAndStateIn(siteId, type.getId(), states), locale), pageable);
         }
@@ -623,7 +623,7 @@ public class ShCdaService {
 
     private Page<ShPostUnified> pageBySite(String siteId, List<ShPostState> states, String locale,
                                            Pageable pageable) {
-        if (states.size() > 1) {
+        if (inMemory(states)) {
             return draftPreferred(inLocale(shPostUnifiedRepository
                     .findByShSite_IdAndStateIn(siteId, states), locale), pageable);
         }
@@ -707,7 +707,8 @@ public class ShCdaService {
      */
     private Page<ShPostUnified> draftPreferred(List<ShPostUnified> rows, Pageable pageable) {
         Map<String, ShPostUnified> byId = new LinkedHashMap<>();
-        for (ShPostUnified row : rows) {
+        // SH1297 — filtered before it is counted, so the page's total is what this reader can see.
+        for (ShPostUnified row : readableOnly(rows)) {
             byId.merge(row.getId(), row, (existing, candidate) ->
                     existing.getState() == ShPostState.DRAFT ? existing : candidate);
         }
@@ -778,6 +779,18 @@ public class ShCdaService {
             return rows;
         }
         return rows.stream().filter(this::readable).toList();
+    }
+
+    /**
+     * SH1297 — whether a site-wide read loads its rows and pages them here instead of in the query.
+     *
+     * <p>A preview read always did (draft-preferred needs the whole set). A reader who fails some
+     * members-only gate does too, because only rows filtered before counting give a total that does
+     * not reveal how many gated posts exist. Everyone else keeps the paged query, so the instances
+     * with no gate, and the readers a gate admits, pay nothing for this.</p>
+     */
+    private boolean inMemory(List<ShPostState> states) {
+        return states.size() > 1 || shContentAclService.deniesAnyGate();
     }
 
     /** SH1296 — whether this token's owner may read what is in this folder. */
