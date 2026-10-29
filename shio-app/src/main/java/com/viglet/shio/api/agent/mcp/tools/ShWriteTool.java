@@ -105,10 +105,11 @@ public class ShWriteTool implements ShMcpTool {
         // SH1073 trimmed it again, to fund the four op fields below: the list of verbs went, because
         // the `op` enum states them one line later, and nothing that informs a decision did.
         // SH1277 trimmed it once more, to fund `folder.acl` in the enum: same three decisions, fewer
-        // words.
-        return "N addressed ops, all-or-nothing; no id needed. Rename or relocate with "
+        // words. SH1285 dropped "no id needed" to fund `folder.visibility`: `address` already says
+        // what an op is addressed by.
+        return "N addressed ops, all-or-nothing. Rename or move with "
                 + "post.move / folder.move, never upsert-then-delete, which orphans the page or "
-                + "empties the folder. Writes stay DRAFT until published. dryRun=true first.";
+                + "empties the folder. Writes stay DRAFT until published; dryRun=true first.";
     }
 
     @Override

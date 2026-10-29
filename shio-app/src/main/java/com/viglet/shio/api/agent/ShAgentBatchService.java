@@ -143,6 +143,15 @@ public class ShAgentBatchService {
      */
     public static final String FOLDER_ACL = "folder.acl";
     public static final String ACL_KEY = "acl";
+    /**
+     * SH1285 — who may READ a section's delivered pages: `data.visibility` is `public` or `members`,
+     * and `data.groups` the groups a members-only section is for (none: any signed-in user). The
+     * visitor's half that {@link #FOLDER_ACL} deliberately is not, kept a separate op because the
+     * owner kept it a separate rule.
+     */
+    public static final String FOLDER_VISIBILITY = "folder.visibility";
+    public static final String VISIBILITY_KEY = "visibility";
+    public static final String GROUPS_KEY = "groups";
 
     /**
      * SH244 — duplicating a section, which was the one content verb only the console could do.
@@ -406,7 +415,7 @@ public class ShAgentBatchService {
             POST_RESTORE, POST_ROLLBACK, FOLDER_RESTORE, SITE_RESTORE, RENDER_PROVISION,
             RELEASE_UPSERT,
             RELEASE_ADD, RELEASE_REMOVE, RELEASE_RUN, RELEASE_ARCHIVE, RELEASE_ROLLBACK,
-            NOTE_ADD, NOTE_RESOLVE, ASSET_META, FOLDER_ACL);
+            NOTE_ADD, NOTE_RESOLVE, ASSET_META, FOLDER_ACL, FOLDER_VISIBILITY);
 
     /**
      * The ops that destroy something and therefore need confirming (SH108). Everything else
@@ -940,6 +949,7 @@ public class ShAgentBatchService {
             case FOLDER_UPSERT -> folderUpsert(op, session);
             case FOLDER_MOVE -> folderMove(op, session);
             case FOLDER_ACL -> folderAcl(op, session);
+            case FOLDER_VISIBILITY -> folderVisibility(op, session);
             case FOLDER_COPY -> folderCopy(op, session);
             case FOLDER_DELETE -> folderDelete(op, session);
             case POST_UPSERT -> postUpsert(op, session);
@@ -1237,6 +1247,94 @@ public class ShAgentBatchService {
         shContentAclService.requireWrite(id);
         shContentAclService.replaceAcl(id, grants);
         return session.change(op, address, Change.UPDATE, summary, id);
+    }
+
+    /**
+     * SH1285 — {@code folder.visibility}: whether a section's delivered pages are public or for
+     * members, replaced whole.
+     *
+     * <p>{@code folder.acl}'s shape on purpose: idempotent (the same declaration is a noop, so a
+     * re-applied blueprint changes nothing), guarded by WRITE on the folder so the agent path grants
+     * nothing a curator could not, and a group the instance does not have is refused before anything
+     * is written, because a gate for nobody hides the section from everyone but an administrator.</p>
+     */
+    private Change folderVisibility(ShAgentBatch.Op op, Session session) {
+        ShAddress address = writeAddress(op, ShAddress.Kind.FOLDER);
+        JsonNode data = op.data();
+        if (data == null || !data.hasNonNull(VISIBILITY_KEY)) {
+            throw new MissingOpFieldException("data.visibility", op.op(), null,
+                    "{\"visibility\":\"members\",\"groups\":[\"Members\"]}",
+                    "A section is public or for members; groups narrow members to those groups.");
+        }
+        String spelled = data.path(VISIBILITY_KEY).asString("").trim().toLowerCase(Locale.ROOT);
+        if (!spelled.equals("public") && !spelled.equals("members")) {
+            throw new InvalidVisibilityException(op);
+        }
+        boolean members = spelled.equals("members");
+        List<String> groups = new ArrayList<>();
+        if (data.has(GROUPS_KEY)) {
+            if (!data.get(GROUPS_KEY).isArray()) {
+                throw new InvalidVisibilityException(op);
+            }
+            data.get(GROUPS_KEY).forEach(group -> groups.add(group.asString("").trim()));
+            groups.removeIf(String::isEmpty);
+        }
+        String unknown = members ? shContentAclService.unknownGroup(groups) : null;
+        if (unknown != null) {
+            throw new UnknownMemberGroupException(address, unknown);
+        }
+        ShSite site = requireSite(address.site(), session);
+        String summary = members
+                ? (groups.isEmpty() ? "members only" : "members of " + String.join(", ", groups))
+                : "public";
+        Optional<ShFolder> folder = isPending(site) ? Optional.empty() : findFolder(site, address.path());
+        if (folder.isEmpty()) {
+            if (session.dryRun && (isPending(site) || session.isPlannedFolder(site, address.path()))) {
+                return session.change(op, address, Change.UPDATE, summary, null);
+            }
+            throw new UnresolvableParentException(address);
+        }
+        String id = folder.get().getId();
+        Optional<List<String>> own = shContentAclService.ownGate(id);
+        boolean same = members ? own.isPresent() && own.get().equals(groups.stream().sorted().toList())
+                : own.isEmpty();
+        if (same) {
+            return session.change(op, address, Change.NOOP, summary, id);
+        }
+        if (session.dryRun) {
+            return session.change(op, address, Change.UPDATE, summary, id);
+        }
+        shContentAclService.requireWrite(id);
+        shContentAclService.replaceGate(id, members, groups);
+        return session.change(op, address, Change.UPDATE, summary, id);
+    }
+
+    /** SH1285 — a {@code folder.visibility} that is not {@code public} or {@code members} plus groups. */
+    public static class InvalidVisibilityException extends ShTeachingException {
+
+        public InvalidVisibilityException(ShAgentBatch.Op op) {
+            super(ShProblem.badRequest("invalid-visibility",
+                            "folder.visibility on " + op.address() + " needs data.visibility public or members")
+                    .withDetail("A members-only section answers its delivered pages only to signed-in users, "
+                            + "or to the groups data.groups names. public opens it again.")
+                    .withAllowed(List.of("public", "members"))
+                    .withFix("Send data.visibility \"members\" and, optionally, data.groups as a list of group names.")
+                    .withExample("{\"op\":\"folder.visibility\",\"address\":\"folder:Acme/members\","
+                            + "\"data\":{\"visibility\":\"members\",\"groups\":[\"Members\"]}}"));
+        }
+    }
+
+    /** SH1285 — a members-only section for a group the instance does not have. */
+    public static class UnknownMemberGroupException extends ShTeachingException {
+
+        public UnknownMemberGroupException(ShAddress address, String group) {
+            super(ShProblem.badRequest("unknown-member-group",
+                            "No group named '" + group + "' to open " + address + " to")
+                    .withDetail("A gate for nobody would hide the section from everyone but an "
+                            + "administrator, and nothing would say why.")
+                    .withFix("Create the group first (Administration > Groups, or POST /api/v2/group), "
+                            + "or leave data.groups out to open it to any signed-in user."));
+        }
     }
 
     /** {@code data.acl} as grants; the vocabulary is {@link ShContentAclService#parseGrants}'s. */

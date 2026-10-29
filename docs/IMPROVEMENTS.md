@@ -254,14 +254,15 @@ folder or a post carries `visibility: public | members` plus the groups that may
 it, inherited down the folder chain. A denied visitor's answer is **configurable per
 site**: a 404 (the default) or a redirect to a login page the site names.
 
-What to build, in P1 order: the flag on `post.upsert`/`folder.upsert` and in
-`_folder.md` and post frontmatter, then REST, then the console's folder and post
-settings. `/sites/**` and the CDA resolve the effective visibility once per read and
-answer the site's denial for a visitor outside the groups; listings, search, sitemap and
-the agent's public reads leave gated pages out the same way. A gated response is
-`Cache-Control: private, no-store`, never the five-minute public header. Deliberately
-not here: a separate site-member account, self-registration, OIDC. The legacy
-`pageAllowGuestUser`/`pageAllowRegisterUser` columns stay unread.
+What to build, in P1 order: the flag as the `folder.visibility` op (shipped,
+agent-surface.md; a post gate is open) and in `_folder.md` and post frontmatter, then
+REST, then the console's folder and post settings. `/sites/**` and the CDA resolve the
+effective visibility once per read and answer the site's denial for a visitor outside
+the groups; listings, search, sitemap and the agent's public reads leave gated pages out
+the same way. A gated response is `Cache-Control: private, no-store`, never the
+five-minute public header. Deliberately not here: a separate site-member account,
+self-registration, OIDC. The legacy `pageAllowGuestUser`/`pageAllowRegisterUser` columns
+stay unread.
 
 Assert at the delivery boundary: an anonymous read of a members page gets the site's
 denial, a user in the group reads it, and a public sibling keeps its public cache

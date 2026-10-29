@@ -140,6 +140,10 @@ public final class ShAgentOps {
             new OpSpec(ShAgentBatchService.FOLDER_ACL,
                     List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
                     "Editors: `data.acl` [{group, permission}]."),
+            // SH1285 — who may read a section's delivered pages; folder.acl's visitor-side twin.
+            new OpSpec(ShAgentBatchService.FOLDER_VISIBILITY,
+                    List.of(ADDRESS, DATA), List.of(), List.of(), List.of(),
+                    "Readers: `data.visibility` public|members, `data.groups`."),
             new OpSpec(ShAgentBatchService.FOLDER_COPY,
                     List.of(ADDRESS, TO), List.of(), List.of(), List.of(),
                     "Duplicate a section, as drafts. `to` is the copy's name chain; occupied "
@@ -192,8 +196,7 @@ public final class ShAgentOps {
             // `revision` comes from a read — include=revisions, or state=rev:<n> to see one first.
             new OpSpec(ShAgentBatchService.POST_ROLLBACK,
                     List.of(ADDRESS, REVISION), List.of(), List.of(), List.of(EXPECT),
-                    "Put a captured revision back into the draft. `revision` from a read's "
-                            + "include=revisions."),
+                    "Put a captured revision back into the draft; `revision` from include=revisions."),
             new OpSpec(ShAgentBatchService.FOLDER_RESTORE,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
                     "Undo a folder trash, with its posts. `id:` address."),
@@ -206,12 +209,12 @@ public final class ShAgentOps {
             // folder or a site, and `address` is optional only so a row can echo the site being built.
             new OpSpec(ShAgentBatchService.RENDER_PROVISION,
                     List.of(), List.of(), List.of(), List.of(ADDRESS, DATA),
-                    "Create the PageLayout/Region/Theme post-types this instance renders with, "
-                            + "idempotently, once before writing a layout. "
-                            + "`data.reconcile:true` also adds the fields an older instance's "
-                            + "render types are missing. `data.types` installs SH95 vocabulary "
-                            + "types by name (Page, SectionHero). `data.fields` {Type:[name]} "
-                            + "appends missing Text fields to a type that exists."),
+                    // SH1285 trimmed this to fund folder.visibility under SH346's ceiling: the same
+                    // four decisions, without the sentences around them.
+                    "Create the PageLayout/Region/Theme post-types, idempotently, before a layout. "
+                            + "`data.reconcile:true` adds fields older render types lack; "
+                            + "`data.types` installs vocabulary types by name (Page, SectionHero); "
+                            + "`data.fields` {Type:[name]} appends Text fields to an existing type."),
             // SH993 — a release: a named set of posts in one site that goes live as one unit. Read one
             // back with find?site=<site>&release=<name>.
             new OpSpec(ShAgentBatchService.RELEASE_UPSERT,
@@ -231,8 +234,7 @@ public final class ShAgentOps {
                     "Hide it from the listing; `cancel` restores. Not a delete."),
             new OpSpec(ShAgentBatchService.RELEASE_ROLLBACK,
                     List.of(ADDRESS), List.of(), List.of(), List.of(),
-                    "Put a published release back: each page to what it replaced, pages it first "
-                            + "published come down."),
+                    "Undo a published release: each page reverts; pages it first published come down."),
             // SH1003 — the channel back. `data.body` is the correction itself; `field` narrows it to
             // one field and `revision` to one version, and `kind` is comment, request, reply or
             // reviewed (SH1061's per-field mark, which a work list must not read as a request).

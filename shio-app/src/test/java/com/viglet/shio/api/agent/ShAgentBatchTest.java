@@ -466,6 +466,52 @@ class ShAgentBatchTest {
     }
 
     @Test
+    @DisplayName("SH1285: folder.visibility gates a section's readers, a re-run is a noop, and public opens it")
+    void aFolderSaysWhoMayReadIt() {
+        String base = "/members-" + UUID.randomUUID().toString().substring(0, 8);
+        String group = "Sh1285Members-" + UUID.randomUUID().toString().substring(0, 8);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            var members = new com.viglet.shio.persistence.model.auth.ShGroup();
+            members.setName(group);
+            entityManager.persist(members);
+        });
+        run(false, folder(base));
+        String address = "folder:" + siteName + base;
+        Op gate = new Op(ShAgentBatchService.FOLDER_VISIBILITY, address, null, null,
+                objectMapper.valueToTree(Map.of("visibility", "members", "groups", List.of(group))));
+
+        assertThat(only(run(true, gate)).action()).isEqualTo(Change.UPDATE);
+        String folderId = shAddressResolver.resolve(address).id();
+        assertThat(shContentAclService.ownGate(folderId))
+                .as("SH1285: a dry run writes nothing")
+                .isEmpty();
+        assertThat(only(run(false, gate)).action()).isEqualTo(Change.UPDATE);
+        assertThat(shContentAclService.ownGate(folderId))
+                .as("SH1285: the folder is now for that group's members")
+                .contains(List.of(group));
+        assertThat(only(run(false, gate)).action())
+                .as("SH1285: the same declaration re-applied changes nothing")
+                .isEqualTo(Change.NOOP);
+
+        Op nobody = new Op(ShAgentBatchService.FOLDER_VISIBILITY, address, null, null,
+                objectMapper.valueToTree(Map.of("visibility", "members", "groups", List.of("no-such-group-sh1285"))));
+        assertThatThrownBy(() -> run(true, nobody))
+                .as("SH1285: a gate for nobody would hide the section from everyone but an admin")
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class);
+        Op misspelled = new Op(ShAgentBatchService.FOLDER_VISIBILITY, address, null, null,
+                objectMapper.valueToTree(Map.of("visibility", "private")));
+        assertThatThrownBy(() -> run(true, misspelled))
+                .as("SH1285: only public and members are visibilities")
+                .isInstanceOf(ShAgentBatchService.BatchOpException.class);
+
+        run(false, new Op(ShAgentBatchService.FOLDER_VISIBILITY, address, null, null,
+                objectMapper.valueToTree(Map.of("visibility", "public"))));
+        assertThat(shContentAclService.ownGate(folderId))
+                .as("SH1285: public removes the gate")
+                .isEmpty();
+    }
+
+    @Test
     @DisplayName("a mistyped field name is refused, and the refusal names the field that was meant")
     void anUndeclaredFieldIsRefused() {
         String base = "/uf-" + UUID.randomUUID().toString().substring(0, 8);

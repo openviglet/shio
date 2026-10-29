@@ -406,6 +406,7 @@
 - **SH1290** — Hibernate 7.4.13 fixed the tenant join hazard: each form now joins the ShObject root and filters by tenant on H2, PostgreSQL and MariaDB, and ShTenantJoinHazardTest asserts that with two tenants (design §XI.60 recorded in `docs/agents/database.md`).
 - **SH1257** — A fresh instance reads the published catalogue (shio.marketplace.enabled defaults to true) and installs into store/blueprints, so the showcase is one click from first boot; enabled=false turns it off (design §XI.36 recorded in `docs/agents/blueprints.md`).
   checked **A fresh instance lists the showcase in its marketplace** On a new store with no marketplace properties set, the admin marketplace, shio marketplace list and shio_marketplace all name quilhara, and the chosen trust cost is stated in docs/agents/blueprints.md.
+- **SH1285 (folder gate on /sites)** — folder.visibility makes a section members-only for named groups or any signed-in user, and /sites/** answers outsiders the missing-page 404 and members a private, no-store page.
 
 ## Block M — Token economy, measured (SH74)
 

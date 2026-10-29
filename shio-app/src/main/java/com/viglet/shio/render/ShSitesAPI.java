@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
 
+import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -143,8 +144,13 @@ public class ShSitesAPI {
     /** SH1282 — admits a preview frame's read of one draft asset. */
     private final ShDraftAssetGrant draftAssetGrant;
 
+    /** SH1285 — who may read a members-only page. */
+    private final ShContentAclService shContentAclService;
+
     public ShSitesAPI(ShPageRenderService shPageRenderService, ShPreviewLinks links,
-                      ShSiteAssetDelivery assetDelivery, ShDraftAssetGrant draftAssetGrant) {
+                      ShSiteAssetDelivery assetDelivery, ShDraftAssetGrant draftAssetGrant,
+                      ShContentAclService shContentAclService) {
+        this.shContentAclService = shContentAclService;
         this.shPageRenderService = shPageRenderService;
         this.links = links;
         this.assetDelivery = assetDelivery;
@@ -178,6 +184,14 @@ public class ShSitesAPI {
         } catch (ShPageRenderService.ShPageRedirectException redirect) {
             return redirectTo(address, redirect, request);
         }
+        // SH1285 — a members-only page answers a visitor outside its groups exactly as a missing
+        // page does, so the denial does not say the page exists. Asked before the locale redirects,
+        // which would otherwise send a stranger to the gated page's other address.
+        ShContentAclService.Visibility visibility = shContentAclService.visibility(rendered.postId());
+        if (!visibility.allowed()) {
+            throw new ShPageRenderService.UnknownPageException(address.site(), address.path(),
+                    ShPostState.PUBLISHED);
+        }
         ResponseEntity<?> declared = toDeclaredLocale(address, rendered, request);
         if (declared != null) {
             return declared;
@@ -194,7 +208,10 @@ public class ShSitesAPI {
                 // Cacheable and indexable — the two guards that are inverted rather than dropped.
                 // A preview is `no-store` + `noindex` so it cannot quietly become infrastructure;
                 // this route *is* the infrastructure, so saying so is the correct answer.
-                .cacheControl(CacheControl.maxAge(MAX_AGE).cachePublic())
+                // SH1285 — except a members-only page, which is its reader's alone: a shared cache
+                // holding it would hand it to the next visitor.
+                .cacheControl(visibility.gated() ? CacheControl.noStore().cachePrivate()
+                        : CacheControl.maxAge(MAX_AGE).cachePublic())
                 // SH512 — `address.path()` is the base a document-relative reference resolves
                 // against: the segments after the prefix, which is the source's own URL space and
                 // the one form that keeps the reader's trailing slash.

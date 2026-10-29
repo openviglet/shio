@@ -229,7 +229,10 @@ const UNEXERCISED = {
     // proved in ShRedirectOpTest against the service, the refusal and the lint it clears.
     // SH1277's `folder.acl` arrived the same way: ShAgentBatchTest proves the grant, the noop on a
     // re-apply, the unknown principal and the WRITE guard through MockMvc, which is the whole contract.
-    "folder.acl", "folder.delete", "folder.restore",
+    // SH1285's `folder.visibility` likewise: ShAgentBatchTest proves the gate, the noop and the
+    // refusals, and ShSitesMembersOnlyTest proves what a visitor, a stranger and a member each get
+    // from /sites/** with the security filter chain in place.
+    "folder.acl", "folder.delete", "folder.restore", "folder.visibility",
     "note.add", "note.resolve",
     "post.move", "post.redirect", "post.restore", "post.rollback", "post.unpublish",
     "release.add", "release.archive", "release.remove", "release.rollback", "release.run",

@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,12 +28,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.viglet.shio.persistence.model.acl.ShAclPermission;
 import com.viglet.shio.persistence.model.acl.ShAclPrincipalType;
 import com.viglet.shio.persistence.model.acl.ShContentAcl;
+import com.viglet.shio.persistence.model.acl.ShContentVisibility;
 import com.viglet.shio.persistence.model.auth.ShGroup;
 import com.viglet.shio.persistence.model.auth.ShUser;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.object.ShObject;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
 import com.viglet.shio.persistence.repository.acl.ShContentAclRepository;
+import com.viglet.shio.persistence.repository.acl.ShContentVisibilityRepository;
 import com.viglet.shio.persistence.repository.auth.ShGroupRepository;
 import com.viglet.shio.persistence.repository.auth.ShRoleRepository;
 import com.viglet.shio.persistence.repository.auth.ShUserRepository;
@@ -74,6 +77,7 @@ public class ShContentAclService {
     private final ShUserRepository shUserRepository;
     private final ShGroupRepository shGroupRepository;
     private final ShRoleRepository shRoleRepository;
+    private final ShContentVisibilityRepository shContentVisibilityRepository;
 
     public ShContentAclService(ShContentAclRepository shContentAclRepository,
                                ShObjectRepository shObjectRepository,
@@ -81,7 +85,9 @@ public class ShContentAclService {
                                ShPostUnifiedRepository shPostUnifiedRepository,
                                ShUserRepository shUserRepository,
                                ShGroupRepository shGroupRepository,
-                               ShRoleRepository shRoleRepository) {
+                               ShRoleRepository shRoleRepository,
+                               ShContentVisibilityRepository shContentVisibilityRepository) {
+        this.shContentVisibilityRepository = shContentVisibilityRepository;
         this.shContentAclRepository = shContentAclRepository;
         this.shObjectRepository = shObjectRepository;
         this.shFolderRepository = shFolderRepository;
@@ -430,6 +436,86 @@ public class ShContentAclService {
             }
         }
         return null;
+    }
+
+    // --- SH1285: who may read a delivered page ---
+
+    /**
+     * SH1285 — what a delivered read of this object answers to.
+     *
+     * @param gated   whether a members-only gate applies, on the object or up its folder chain; a
+     *                gated response is private to its reader and is never put in a shared cache
+     * @param allowed whether the current request may read it
+     */
+    public record Visibility(boolean gated, boolean allowed) {
+        public static final Visibility PUBLIC = new Visibility(false, true);
+    }
+
+    /**
+     * SH1285 — the members-only gate a visitor's read of this object meets, and whether this
+     * request passes it.
+     *
+     * <p>The nearest gate up the folder chain decides, walked by id as {@link #aclChain} walks it,
+     * so authoring access and reading access share one notion of "below". Unlike
+     * {@link #canRead}, <b>no user is a visitor</b> rather than a trusted internal call: this is
+     * asked on the anonymous delivery route, where that is what nobody signed in means. An
+     * administrator passes; otherwise a signed-in console user passes when the gate names no group
+     * or names one of theirs.</p>
+     */
+    @Transactional(readOnly = true)
+    public Visibility visibility(String objectId) {
+        if (objectId == null) {
+            return Visibility.PUBLIC;
+        }
+        ShContentVisibility gate = null;
+        for (String level : aclChain(objectId, null)) {
+            gate = shContentVisibilityRepository.findFirstByObjectId(level).orElse(null);
+            if (gate != null) {
+                break;
+            }
+        }
+        if (gate == null) {
+            return Visibility.PUBLIC;
+        }
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return new Visibility(true, false);
+        }
+        if (isAdmin(auth)) {
+            return new Visibility(true, true);
+        }
+        List<String> groups = gate.groups();
+        return new Visibility(true, groups.isEmpty()
+                || groups.stream().anyMatch(currentPrincipals(auth.getName()).groups()::contains));
+    }
+
+    /** SH1285 — the gate on this object itself, as {@code (members, groups)}; empty when it is public. */
+    @Transactional(readOnly = true)
+    public Optional<List<String>> ownGate(String objectId) {
+        return shContentVisibilityRepository.findFirstByObjectId(objectId).map(ShContentVisibility::groups);
+    }
+
+    /**
+     * SH1285 — make this object members-only for {@code groups} (any signed-in user when empty), or
+     * public again when {@code membersOnly} is false. Replaced whole, like {@link #replaceAcl}.
+     */
+    @Transactional
+    public void replaceGate(String objectId, boolean membersOnly, List<String> groups) {
+        shContentVisibilityRepository.deleteByObjectId(objectId);
+        if (!membersOnly) {
+            return;
+        }
+        ShContentVisibility gate = new ShContentVisibility();
+        gate.setObjectId(objectId);
+        gate.setMemberGroups(String.join("\n", groups.stream().map(String::trim).sorted().toList()));
+        shContentVisibilityRepository.save(gate);
+    }
+
+    /** SH1285 — the first of these group names this instance does not have, or null. */
+    @Transactional(readOnly = true)
+    public String unknownGroup(List<String> groups) {
+        return groups.stream().filter(name -> shGroupRepository.findByName(name) == null)
+                .findFirst().orElse(null);
     }
 
     /** The current user's resolved principal identifiers. */

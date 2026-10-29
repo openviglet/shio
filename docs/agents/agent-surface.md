@@ -3923,10 +3923,45 @@ dry run too, because a grant to nobody locks the folder against everyone but an 
 role has no name lookup and fails closed the same way.
 
 **What it is not:** a visitor gate. Content ACL decides who edits and publishes; an anonymous read is
-never denied by it, and `/sites/**` and the CDA serve every published page to anyone. A members area
-on a delivered site is SH1285. **Cost:** `folder.acl` in `shio_write`'s enum took `tools/list` over
+never denied by it. A members area on a delivered site is `folder.visibility` (SH1285, below). **Cost:** `folder.acl` in `shio_write`'s enum took `tools/list` over
 its ceiling by 4 and left `shio_write` one token short of an argument's headroom, paid by trimming
 `shio_write`'s description, not by raising either number.
+
+### `folder.visibility`: who may read a section's delivered pages (SH1285)
+
+`data.visibility` is `public` or `members`; `data.groups` (optional) names the groups a members-only
+section is for, and none means **any signed-in console user**. A member is a console user (the
+owner's decision, 2026-10-29): no separate site-member account, no self-registration. It **replaces**
+the folder's gate, a declaration equal to the current one is a **noop**, it is guarded by WRITE on the
+folder like `folder.acl`, and a group the instance does not have is `unknown-member-group`, refused
+in a dry run too. A missing `data.visibility` is `missing-op-field`; any other value is
+`invalid-visibility`.
+
+**A separate op, not a key on `folder.upsert`/`post.upsert`.** The design said the flag rides the
+upserts; `folder.acl` had already set the precedent of one op per rule, and a reserved `visibility`
+key in `post.upsert`'s `data` would collide with a field of that name. The owner kept visibility a
+separate rule from the authoring ACL, so it is a separate op too.
+
+**Where it lives.** `sh_content_visibility` (`v2026.3.51.yaml`), one row per gated folder or post:
+`object_id` and `member_groups` (newline-separated). `ShContentAclService.visibility(id)` decides,
+walking the folder chain **by id** exactly as the ACL does (SH650), nearest gate wins. Unlike
+`canRead`, **no user is a visitor**, not a trusted internal call, because the question is asked on the
+anonymous delivery route. An administrator always passes.
+
+**Enforced on `/sites/**`** (`ShSitesAPI.serve`), right after the render and before the locale
+redirects: a visitor outside the groups gets the **same `render-page-unknown` 404 a missing page
+gets**, so the denial does not confirm the page exists. A member's response is
+`Cache-Control: private, no-store`; a public page keeps `public, max-age=300`. A console session
+reaches the check because `/sites/**` is `permitAll`, not unauthenticated.
+`ShSitesMembersOnlyTest` asserts all four readers with the security filter chain applied.
+
+**Not yet:** the CDA (REST and GraphQL), listings, search, the sitemap and the agent's public reads
+still include gated pages; a per-site redirect to a login page instead of the 404; a gate on a single
+post; the flag in `_folder.md` and post frontmatter; and the console's folder settings. Those are
+SH1285's remainder. **Cost:** `folder.visibility` took the ops vocabulary from under 1000 to 1014
+(SH346's ceiling) and `tools/list` past its 2975; paid by trimming `render.provision`,
+`post.rollback` and `release.rollback` to their decisions and `shio_write`'s description by four
+words, not by raising either number.
 
 ### `shio_assets` refused every listing that held an asset (SH1098)
 

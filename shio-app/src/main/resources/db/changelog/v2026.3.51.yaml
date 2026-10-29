@@ -1,0 +1,50 @@
+databaseChangeLog:
+  # SH1285 — who may READ a delivered page: `sh_content_visibility`, one row per gated folder or post.
+  #
+  # Separate from `sh_content_acl` on purpose (the owner's decision, 2026-10-29): that table governs
+  # authoring, and a visitor's access is a different question with a different default. A row here
+  # makes the object and everything below it members-only; `member_groups` names the groups that may
+  # read it, newline-separated, and empty means any signed-in user. No row anywhere up the folder
+  # chain is today's behaviour, so nothing changes on upgrade and nothing is backfilled.
+  #
+  # object_id is a folder or post id, no FK, for sh_content_acl's reason (two backing tables).
+  # Carries @TenantId (tenant_id). Types DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26:
+  # preserve identifier case on PostgreSQL (QUOTE_ALL_OBJECTS, re-declared per file).
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1285-content-visibility
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_content_visibility
+      changes:
+        - createTable:
+            tableName: sh_content_visibility
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: object_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: member_groups
+                  type: VARCHAR(4000)
+        - createIndex:
+            tableName: sh_content_visibility
+            indexName: idx_content_visibility_object
+            columns:
+              - column:
+                  name: object_id
