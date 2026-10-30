@@ -10,6 +10,8 @@ import { useQueries, useQuery } from "@tanstack/react-query"
 import { ArrowDown, ArrowUp, Plus, X } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Link } from "react-router-dom"
+import { ROUTES } from "@/app/routes.const"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { addressKey } from "@/lib/query-keys"
@@ -30,6 +32,9 @@ const search = new ShSearchService()
  * and type, resolved from its address through `/agent/resolve`, the address in mono beside it, and
  * up, down and remove. A section is added by searching its title in the page's site. The stored value
  * is unchanged, a list of friendly URLs, so the renderer and the agent surface see no difference.</p>
+ *
+ * <p>SH1323 — a resolved section's title opens its editor. A page's headline lives in its hero
+ * section, and the list named that section without a way into it, so the curator searched for it.</p>
  */
 export function SectionList({ postId, values, onChange, fieldId, describedBy }: Readonly<{
   postId: string
@@ -72,9 +77,16 @@ export function SectionList({ postId, values, onChange, fieldId, describedBy }: 
               <li key={value} className="flex items-center gap-3 px-3 py-2 text-sm">
                 <span className="w-5 shrink-0 text-right font-mono text-xs text-muted-foreground">{index + 1}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">
-                    {hit?.title ?? (resolved[index]?.isError ? t("content.sectionMissing") : value)}
-                  </span>
+                  {hit ? (
+                    <Link to={`${ROUTES.CONSOLE}/content/post/${hit.id}`}
+                      className="block truncate font-medium underline-offset-4 hover:underline">
+                      {hit.title ?? value}
+                    </Link>
+                  ) : (
+                    <span className="block truncate font-medium">
+                      {resolved[index]?.isError ? t("content.sectionMissing") : value}
+                    </span>
+                  )}
                   <span className="block truncate font-mono text-xs text-muted-foreground">
                     {hit ? `${hit.type ?? ""} · ${value}` : value}
                   </span>

@@ -6,7 +6,7 @@
       "keys": 1,
       "screens": 1,
       "ms": 2550,
-      "why": "The headline is the hero section's, and a page's section list does not open its sections (SH1323), so the path is search → section → field → Actions → Publish → confirm."
+      "why": "The headline is the hero section's, so the path is search → section → field → Actions → Publish → confirm. Since SH1323 the page's section list opens the section too, at the same cost, and the section's editor still previews no page."
     },
     "approve-run": {
       "clicks": 2,

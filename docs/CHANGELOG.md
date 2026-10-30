@@ -2057,6 +2057,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1320** — Every working route (browser, editors, search, trash, scheduled, media, review, activity) draws the work grammar through PageHero, checked live in both themes, while home and the site list stay showcase (design §XI.86 recorded in `docs/agents/console-ui.md`).
 - **SH1322** — Preview and share links render the page asked for on a site whose name needs encoding; the renderer reads the page path past the site segment (design §XI.87 superseded: it blamed never-published drafts, but every page of a spaced site 404'd: pathWithin matched the decoded site name against an encoded path) (design §XI.87 recorded in `docs/agents/renderer.md`).
 - **SH1337** — approve-run clicks the home row named after its own run's intent, and all six curator tasks pass at their recorded budget again (design §XI.102 recorded in `docs/agents/console-ui.md`).
+- **SH1323 (sections open from the page)** — A page's section list opens each resolved section's editor from its title, verified live from Pricing to its hero section.
 
 ## Block BH — One content model, many languages
 

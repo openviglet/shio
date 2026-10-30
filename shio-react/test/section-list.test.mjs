@@ -41,3 +41,9 @@ test("SH1205: the Sections field is drawn by the list, and other multi-selects a
   assert.match(widget, /if \(attr\.shPostTypeAttr\?\.name === "sections" && postId\) \{[\s\S]*?<SectionList/,
     "SH1205: the Sections field is chips of URLs again")
 })
+
+test("SH1323: a listed section opens its editor, by the id its address resolved to", () => {
+  const list = stripComments(readFileSync(join(SRC, "components", "widgets", "section-list.tsx"), "utf8"))
+  assert.match(list, /<Link to=\{`\$\{ROUTES\.CONSOLE\}\/content\/post\/\$\{hit\.id\}`\}/u,
+    "SH1323: a page's section is named in its list with no way into it, so its headline is reached by search")
+})

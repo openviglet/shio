@@ -4089,7 +4089,10 @@ label's `title` hint for whoever builds the post type, not two or three pills on
 `/agent/resolve` from the page's own address and the stored friendly URL, with up, down and remove,
 and an add box that searches the page's site by title or takes a pasted URL. The stored value is the
 same list of friendly URLs, so the renderer and the agent see nothing new; the pure address
-arithmetic is `lib/section-urls.ts`, and `section-list.test.mjs` holds it.
+arithmetic is `lib/section-urls.ts`, and `section-list.test.mjs` holds it. Since SH1323 a resolved
+row's title is a link to that section's editor, by the id `/agent/resolve` already returned: a
+page's headline lives in its hero section, and the list named the section with no way into it. An
+unresolved row stays plain text. The section's editor still previews no page; that half is open.
 
 ## A group's page shows who is in it (SH1200)
 
