@@ -4335,6 +4335,13 @@ gate runs the script, so nothing said so. The task now gives its run an intent o
 that row, which is what a curator reads. Any change to a surface a task walks through owes one
 `node e2e/curator-tasks.mjs` on a clean instance before it ships.
 
+**Save on a new post opens its editor (SH1326, first half).** `post.new.page.tsx` returned to the
+folder after `create`, so publishing the page just written meant finding it again; Save now
+navigates to `/content/post/<the new id>`, where Publish is, and the header reads "New Page" (the
+type, `content.newPostOfType`) without the internal "unified" badge. `create-page` went from nine
+clicks over seven screens to eight over six (recorded). Publishing from the unsaved form, with the
+editor's action menu, is the open half; `new-post.test.mjs` holds this one.
+
 **Three things the first draft got wrong.** Waiting for "Publicado" on screen: the editor says
 "Publicado (no ar)" before anything happens, so the harness waits for the write's response instead.
 Publish is three clicks by design: Actions, Publish, then the confirmation (P7). And `/agent/read`

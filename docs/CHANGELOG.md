@@ -2060,6 +2060,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1323** — A section's editor names the pages that use it and previews its unsaved values drawn on the first, through POST /agent/render's new `on`, also on shio_digest (design §XI.89 superseded: no reverse index was needed: /agent/find's q already reads field data, so a quoted friendly URL lists a section's pages) (design §XI.89 recorded in `docs/agents/renderer.md`).
 - **SH1324** — The palette and the editor header name a live post with unpublished changes as such, through a new `changed` flag on find rows computed from rows already in hand (design §XI.90 recorded in `docs/agents/console-ui.md`).
 - **SH1325** — The file picker holds still under a double-click, opens folders on one click in file mode, makes opening a named control, and starts beside the edited post (design §XI.88 recorded in `docs/agents/console-ui.md`).
+- **SH1326 (save opens the editor)** — Saving a new post opens its editor where Publish is, and the header names its type; create-page drops to eight clicks over six screens.
 
 ## Block BH — One content model, many languages
 

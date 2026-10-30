@@ -5,7 +5,7 @@ import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Save, Sparkles } from "lucide-react"
+import { Save } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
@@ -70,14 +70,16 @@ export default function PostUnifiedNewPage() {
     if (!postType) return
     setIsLoading(true)
     try {
-      await unifiedService.create({
+      const created = await unifiedService.create({
         folderId,
         postType: postType.name,
         data,
         state: "DRAFT",
       })
       toast.success(t("common.saved"))
-      navigateBack()
+      // SH1326 — on into the editor of the post just made, where Publish is: returning to the
+      // folder left the curator to find the page again before they could put it live.
+      navigate(created?.id ? `${ROUTES.CONTENT_ROOT}/post/${created.id}` : backUrl)
     } catch (error) {
       reportProblem(error, t("common.error"))
     } finally {
@@ -102,20 +104,16 @@ export default function PostUnifiedNewPage() {
   return (
     <>
       {/* SH901 — one call, for the same 1:2 reason as the editor next door. */}
+      {/* SH1326 — the header names the type ("New Page"), and no internal word ("unified"). */}
       <PageHero grammar="work"
         eyebrow={t("content.postLabel")}
-        title={t("content.newPost")}
+        title={t("content.newPostOfType", { type: postTypeLabel })}
         urlBase={backUrl}
         onCancel={navigateBack}
         loading={isLoading}
         saveBadges={
             <>
               <BadgeColorful text={postTypeLabel || ""} className="text-xs" />
-              <BadgeColorful
-                text="unified"
-                className="text-xs"
-                prefix={<Sparkles className="h-3 w-3" />}
-              />
               <Badge variant="secondary" className="text-xs">
                 {visibleFieldCount} {t("content.fields").toLowerCase()}
               </Badge>

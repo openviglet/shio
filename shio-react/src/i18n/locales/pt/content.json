@@ -10,6 +10,7 @@
   "content.importProblems": "Importado, com {{count}} problema(s). Primeiro: {{first}}",
   "content.newFolder": "Nova Pasta",
   "content.newPost": "Novo Post",
+  "content.newPostOfType": "Novo: {{type}}",
   "content.editSite": "Editar Site",
   "content.siteSettings": "Configurações do site",
   "content.editFolder": "Editar Pasta",

@@ -10,6 +10,7 @@
   "content.importProblems": "Imported, with {{count}} problem(s). First: {{first}}",
   "content.newFolder": "New Folder",
   "content.newPost": "New Post",
+  "content.newPostOfType": "New {{type}}",
   "content.editSite": "Edit Site",
   "content.siteSettings": "Site settings",
   "content.editFolder": "Edit Folder",
