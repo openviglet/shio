@@ -284,14 +284,17 @@ const TASKS = [
       await page.getByRole("navigation").getByRole("link", { name: /^(conteúdo|content)$/i }).click()
       await page.getByRole("link", { name: /^sites\b/i }).first().click()
       await page.getByRole("link", { name: SITE }).first().click()
-      await page.getByRole("button", { name: /^(novo|new) page$/i }).first().click()
+      // SH1316 — a link at a site's root (the Pages view's New), a button in a folder's toolbar.
+      const newPage = /^(novo|new) page$/i
+      await page.getByRole("link", { name: newPage }).or(page.getByRole("button", { name: newPage })).first().click()
       await page.getByRole("textbox", { name: /^title/i }).fill(ctx.title)
       // The new-post form offers Save and Cancel only, and Save returns to the folder: publishing
       // means finding the page just made in the listing and opening it again.
       await clickAndWrite(page, page.getByRole("button", { name: /^(salvar|save)$/i }).first())
       await page.waitForURL(/\/content\/object\//, { timeout: 15_000 })
-      // In the default table view a title is text, not a link: a row opens on double-click or Enter.
-      await page.getByRole("row", { name: new RegExp(ctx.title) }).first().dblclick()
+      // SH1316 — the folder Save returns to is the site's root, which opens on its pages, where a
+      // page is a link. It was a table row there, which opened only on double-click or Enter.
+      await page.getByRole("link", { name: ctx.title, exact: true }).first().click()
       await page.waitForURL(/\/content\/post\/[0-9a-f-]{36}/, { timeout: 15_000 })
       await page.getByRole("button", { name: /^(ações|actions)$/i }).first().waitFor({ timeout: 15_000 })
       await publish(page)

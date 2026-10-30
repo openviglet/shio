@@ -999,7 +999,8 @@ async function checkTableSelectAll(context, site) {
   }
   const page = await context.newPage()
   try {
-    await page.goto(`${BASE}/console/content/object/${folder.id}`, { waitUntil: "networkidle" })
+    // SH1316 — `as=folders`: the folder with three items can be a site's root, which opens on its pages.
+    await page.goto(`${BASE}/console/content/object/${folder.id}?as=folders`, { waitUntil: "networkidle" })
     await page.getByRole("button", { name: /^(table view|ver como tabela)$/i }).click()
     await page.locator("[role=row][aria-selected]").first().waitFor({ timeout: 10_000 })
     const choose = async (item) => {

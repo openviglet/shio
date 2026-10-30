@@ -41,6 +41,8 @@ import { deleteEach, refusalSummary, type DeleteTarget } from "@/lib/batch-delet
 import { useListState } from "@/hooks/use-list-state"
 import { BrowserTree } from "./content-browser/browser-tree"
 import { SiteViewButtons } from "./content-browser/site-view-buttons"
+import { SitePages, SiteRootSwitch } from "./content-browser/site-pages"
+import { useSiteRootMode } from "./content-browser/use-site-root-mode"
 import { usePostTypes, useSites } from "@/hooks/use-catalogue"
 import { SavedViews } from "@/components/saved-views"
 
@@ -114,7 +116,11 @@ export default function ObjectChildrenPage() {
   useSoleRootRedirect(objectId, siteId, listData)
   // SH1283 — the site's own page type, from the cached site list, for a folder with nothing in it.
   const { data: sites } = useSites()
-  const sitePageType = sites?.find((site) => site.id === siteId)?.pageType ?? null
+  const rootSite = sites?.find((site) => site.id === siteId)
+  const sitePageType = rootSite?.pageType ?? null
+  // SH1316 — the site's root folder, where the page tree replaces the storage folders by default.
+  const atSiteRoot = Boolean(rootSite) && (breadcrumbPath.at(-1)?.type === "SITE" || breadcrumbPath.at(-1)?.root === true)
+  const [rootMode, setRootMode] = useSiteRootMode(atSiteRoot)
   // SH1275 — what this folder holds decides the "New …" button, not the last type made anywhere.
   const lastPostType = useMemo(() => suggestedPostType(postTypes,
     { counts: listData.facets?.type, posts: listData.posts },
@@ -319,7 +325,9 @@ export default function ObjectChildrenPage() {
       />
       <div className="flex gap-6"><BrowserTree path={breadcrumbPath} folders={listData.folders} />
       <div className="min-w-0 flex-1 space-y-4">
-
+        {/* SH1316 — a site's root opens on its pages; its folders are the builder's view, one click away. */}
+        {atSiteRoot && <SiteRootSwitch mode={rootMode} onChange={setRootMode} />}
+        {rootMode === "pages" && rootSite ? <SitePages site={rootSite} folderId={objectId} /> : (<>
         {/*
           SH1307 — one row: the filter bar, then `BrowserToolbar` (markup with no state of its own,
           SH1145). SH1024 — the bar is the design system's, over the words this list already puts in
@@ -495,6 +503,7 @@ export default function ObjectChildrenPage() {
             </Button>
           </div>
         )}
+        </>)}
       </div></div>
 
       {/*

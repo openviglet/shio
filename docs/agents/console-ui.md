@@ -4356,3 +4356,17 @@ Leave a note are outlines; the field rows' hash-coloured chips are muted text. `
 empty: the full run's only repeat was the post editor's Actions beside Leave a note, on all fourteen
 post-edit routes, and the post editor, the post-type editor and the new-token form were each re-read
 at one after the fix (the full run was not repeated).
+
+## A site opens on its pages (SH1316, first slice)
+
+At a site's root folder (the breadcrumb's last crumb is the site, or a folder marked `root`) the
+content browser shows **Pages** by default and **Folders** one switch away, in the URL as `as=folders`.
+A page is a post whose type the site binds in `postTypeLayout` or names as its `pageType`
+(`pageTypesOf` in `src/lib/site-pages.ts`), so sections, menus and themes stay in the folders. The tree
+is the pages' URLs split on `/`, with a language switch when the pages are in more than one locale,
+and each row links to the post editor. The rows are `/agent/find`'s, paged by cursor as the scheduled
+agenda reads them (P10: no new endpoint), read with `staleTime: 0`, because nothing on the write path
+drops `post:` keys and a page just saved would otherwise be hidden for 30 s. The view's New page
+link (the site's page type) is the screen's one filled button. The create-page curator task went from
+10 clicks to 9. `table-select-all` in `console-check.mjs` opens its folder with `as=folders`, since
+that folder can be the root.

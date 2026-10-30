@@ -30,11 +30,11 @@
       "why": "Ctrl+K, the title, and the result: the floor every other task's first step is measured against."
     },
     "create-page": {
-      "clicks": 10,
+      "clicks": 9,
       "keys": 0,
       "screens": 7,
-      "ms": 5347,
-      "why": "Content opens a hub, the site list is a card on it, the new-post form only saves, saving returns to the folder, and a table row opens on double-click, so publishing a new page crosses seven screens (SH1326)."
+      "ms": 5255,
+      "why": "Content opens a hub, the site list is a card on it, the new-post form only saves, and saving returns to the site, so publishing a new page crosses seven screens (SH1326). SH1316 took one click off: the site opens on its pages, where the page just made is a link rather than a row to double-click."
     },
     "preview-draft": {
       "blocked": "SH1322 — the preview of a never-published page is Spring's Whitelabel 404",
