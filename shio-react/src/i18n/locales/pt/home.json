@@ -4,6 +4,7 @@
     "welcomeTitle": "Bem-vindo ao Viglet Shio",
     "welcomeSubtitle": "Seu CMS num relance: conteúdo, atividade e ações rápidas.",
     "draftNotLive": "Um rascunho seu, ainda não publicado · {{address}}",
+    "pageFailsCheck": "Falha numa verificação · {{address}}",
     "nothingWaits": "Nada está esperando por você.",
     "openSites": "Abrir seus sites",
     "overview": "Visão geral",

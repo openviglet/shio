@@ -43,6 +43,20 @@ export interface ShDiagnostics {
   unpersisted: number;
 }
 
+/** SH1336 — a page that fails verify's content or routes check, and the first reason why. */
+export interface ShFailing {
+  address: string;
+  id: string | null;
+  rule: string;
+  message: string;
+}
+
+/** SH1336 — error findings across every readable site, and the first few pages they are on. */
+export interface ShChecks {
+  errors: number;
+  pages: ShFailing[];
+}
+
 /** The dashboard's whole answer. */
 export interface ShConsoleSummary {
   sites: number;
@@ -52,6 +66,7 @@ export interface ShConsoleSummary {
   runs: ShRun[];
   diagnostics: ShDiagnostics;
   activity: ShHistory[];
+  checks?: ShChecks;
 }
 
 export class ShConsoleSummaryService {

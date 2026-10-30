@@ -147,8 +147,34 @@ class ShVerifyInboxCostTest {
         });
     }
 
+    /** One shape's cost at the current size: the fewest statements and milliseconds of three reads. */
+    private record Cost(int checked, long statements, long millis) {
+    }
+
+    private Cost costOf(Statistics statistics, String listed) {
+        verifyService.verify(siteName, "content,routes", null, null, listed, null); // warm the plan, not the rows
+        long statements = Long.MAX_VALUE;
+        long millis = Long.MAX_VALUE;
+        int checked = 0;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            long before = statistics.getPrepareStatementCount();
+            ShAgentReport[] answer = new ShAgentReport[1];
+            millis = Math.min(millis, ShH2ResultCache.millis(dataSource, () -> answer[0] =
+                    verifyService.verify(siteName, "content,routes", null, null, listed, null)));
+            statements = Math.min(statements, statistics.getPrepareStatementCount() - before);
+            checked = answer[0].checked();
+        }
+        return new Cost(checked, statements, millis);
+    }
+
+    /**
+     * Two shapes at each size. The whole site is what a per-visit verify would read, and it grows
+     * with every readable site's pages; the pages home already lists, by address, are bounded by the
+     * list, if the cross-page indexes are not built site-wide anyway. Both are on one growing site,
+     * in one loop, so each pair is measured at the same size.
+     */
     @Test
-    @DisplayName("SH1336: verify's non-rendering checks over a showcase-sized site, timed and counted")
+    @DisplayName("SH1336: verify's non-rendering checks, whole site and the ten listed pages, at two sizes")
     void theNonRenderingChecksAreMeasured() {
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         boolean wasOn = statistics.isStatisticsEnabled();
@@ -156,25 +182,20 @@ class ShVerifyInboxCostTest {
         statistics.setStatisticsEnabled(true);
         schedule.setEnabled(false);
         List<String> report = new ArrayList<>();
-        List<Long> counts = new ArrayList<>();
+        List<Long> whole = new ArrayList<>();
+        List<Long> scoped = new ArrayList<>();
+        String listed = String.join(",", java.util.stream.IntStream.range(0, 10)
+                .mapToObj(index -> "post:" + siteName + "/page-" + index).toList());
         try {
             for (int size : SIZES) {
                 growTo(size);
-                verifyService.verify(siteName, "content,routes", null); // warm the plan, not the rows
-                long statements = Long.MAX_VALUE;
-                long millis = Long.MAX_VALUE;
-                int checked = 0;
-                for (int attempt = 0; attempt < 3; attempt++) {
-                    long before = statistics.getPrepareStatementCount();
-                    ShAgentReport[] answer = new ShAgentReport[1];
-                    millis = Math.min(millis, ShH2ResultCache.millis(dataSource,
-                            () -> answer[0] = verifyService.verify(siteName, "content,routes", null)));
-                    statements = Math.min(statements, statistics.getPrepareStatementCount() - before);
-                    checked = answer[0].checked();
-                }
-                counts.add(statements);
-                report.add(String.format("  %4d pages: %d checked, %d statement(s), %d ms",
-                        size, checked, statements, millis));
+                Cost site = costOf(statistics, null);
+                Cost list = costOf(statistics, listed);
+                whole.add(site.statements());
+                scoped.add(list.statements());
+                report.add(String.format("  %4d pages: whole site %d checked, %d statement(s), %d ms"
+                        + "  |  10 listed %d checked, %d statement(s), %d ms", size, site.checked(),
+                        site.statements(), site.millis(), list.checked(), list.statements(), list.millis()));
             }
         } finally {
             schedule.setEnabled(sweeping);
@@ -183,10 +204,13 @@ class ShVerifyInboxCostTest {
         System.out.println("\nSH1336 — /agent/verify?checks=content,routes over one site:\n"
                 + String.join("\n", report));
 
-        assertThat(counts)
-                .as("""
-                        SH1336: the inbox can only afford a per-visit verify if its statements do \
-                        not grow with the site. Measured %s at %s pages.""", counts, List.of(SIZES[0], SIZES[1]))
-                .containsOnly(counts.get(0));
+        assertThat(whole)
+                .as("SH1336: the whole-site read's statements do not grow with the site. Measured %s at %s pages.",
+                        whole, List.of(SIZES[0], SIZES[1]))
+                .containsOnly(whole.get(0));
+        assertThat(scoped)
+                .as("SH1336: nor do the listed pages', which is what bounds a per-visit read by the list. "
+                        + "Measured %s at %s pages.", scoped, List.of(SIZES[0], SIZES[1]))
+                .containsOnly(scoped.get(0));
     }
 }

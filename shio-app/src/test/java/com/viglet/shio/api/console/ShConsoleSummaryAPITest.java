@@ -112,7 +112,34 @@ class ShConsoleSummaryAPITest {
             // In the window and in the trash, which is not a thing that happens this week.
             entityManager.persist(scheduled(site, root, type, "trashed",
                     now.plusSeconds(3600), null, now));
+            // SH1336 — live with no friendly URL: verify's `routes` calls that an error.
+            ShPostUnified unreachable = scheduled(site, root, type, "unreachable", null, null, null);
+            unreachable.setState(ShPostState.PUBLISHED);
+            unreachable.setFurl(null);
+            entityManager.persist(unreachable);
+            unreachableId = unreachable.getId();
         });
+    }
+
+    private String unreachableId;
+
+    @Test
+    void aPageThatFailsACheckIsNamedForTheInbox() {
+        ShConsoleSummary.Checks checks = api.summary().checks();
+
+        assertThat(checks.errors())
+                .as("SH1336: a published page with no URL is an error-level finding, counted")
+                .isPositive();
+        assertThat(checks.pages())
+                .as("""
+                        SH1336: and it is named, with the id the console's editor route takes, so \
+                        home lists it as a link. Before, a curator learned of a failing page only by \
+                        opening it.""")
+                .anySatisfy(page -> {
+                    assertThat(page.id()).isEqualTo(unreachableId);
+                    assertThat(page.rule()).isEqualTo("url-missing");
+                })
+                .hasSizeLessThanOrEqualTo(5);
     }
 
     private ShPostUnified scheduled(ShSite site, ShFolder folder, ShPostType type, String name,

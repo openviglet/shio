@@ -232,6 +232,16 @@ export default function BentoHomePage() {
       label: row.title || row.address,
       detail: t("home.draftNotLive", { address: row.address }),
     })),
+    // SH1336 — a page that fails a check, from the summary's one verify of the checks that do not
+    // render. It opens the page's insights, where the finding and its fix are; an address that no
+    // longer resolves to one post opens search on it instead.
+    ...(summary?.checks?.pages ?? []).map((page) => ({
+      key: `check:${page.address}`, icon: IconAlertTriangle,
+      url: page.id ? `${ROUTES.CONSOLE}/content/post/${page.id}?tab=insights`
+        : `${ROUTES.SEARCH}?q=${encodeURIComponent(page.address)}`,
+      label: t("home.pageFailsCheck", { address: page.address }),
+      detail: `${page.rule} · ${page.message}`,
+    })),
   ]
   // A count row stays only for what the items above do not already list in full.
   const counts = waiting.filter((tile) => !(tile.url === ROUTES.ADMIN_REVIEW && pendingRuns.length > 0)

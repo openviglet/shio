@@ -9,13 +9,20 @@
 package com.viglet.shio.api.console;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog;
+import com.viglet.shio.api.agent.ShAddressResolver;
+import com.viglet.shio.api.agent.verify.ShAgentVerifyService;
+import com.viglet.shio.api.agent.verify.dto.ShAgentReport;
+import com.viglet.shio.api.agent.ShAddress;
+import com.viglet.shio.api.agent.dto.ShAgentResolved;
 import com.viglet.shio.api.history.ShHistoryAPI;
 import com.viglet.shio.api.review.ShReviewService;
 import com.viglet.shio.persistence.repository.note.ShNoteRepository;
@@ -66,6 +73,12 @@ public class ShConsoleSummaryAPI {
     /** The incident window this counts. Bounded, for the reason the log itself is bounded. */
     private static final int INCIDENT_WINDOW = 50;
 
+    /** SH1336 — the checks home runs: the two that read content and never render a page. */
+    private static final String CHECKS = "content,routes";
+
+    /** SH1336 — failing pages named in the inbox; the count beside them is the whole. */
+    private static final int FAILING_ROWS = 5;
+
     private final ShSiteRepository shSiteRepository;
     private final ShPostTypeRepository shPostTypeRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
@@ -73,6 +86,8 @@ public class ShConsoleSummaryAPI {
     private final ShReviewService shReviewService;
     private final ShAgentIncidentLog shAgentIncidentLog;
     private final ShHistoryAPI shHistoryAPI;
+    private final ShAgentVerifyService shAgentVerifyService;
+    private final ShAddressResolver shAddressResolver;
 
     public ShConsoleSummaryAPI(ShSiteRepository shSiteRepository,
                                ShPostTypeRepository shPostTypeRepository,
@@ -80,7 +95,11 @@ public class ShConsoleSummaryAPI {
                                ShNoteRepository shNoteRepository,
                                ShReviewService shReviewService,
                                ShAgentIncidentLog shAgentIncidentLog,
-                               ShHistoryAPI shHistoryAPI) {
+                               ShHistoryAPI shHistoryAPI,
+                               ShAgentVerifyService shAgentVerifyService,
+                               ShAddressResolver shAddressResolver) {
+        this.shAgentVerifyService = shAgentVerifyService;
+        this.shAddressResolver = shAddressResolver;
         this.shSiteRepository = shSiteRepository;
         this.shPostTypeRepository = shPostTypeRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -109,7 +128,38 @@ public class ShConsoleSummaryAPI {
                 new ShConsoleSummary.Diagnostics(
                         shAgentIncidentLog.recent(INCIDENT_WINDOW).size(),
                         shAgentIncidentLog.unpersisted()),
-                shHistoryAPI.recent(ACTIVITY_ROWS, null, null, null, null, null, null, null).rows());
+                shHistoryAPI.recent(ACTIVITY_ROWS, null, null, null, null, null, null, null).rows(),
+                checks());
+    }
+
+    /**
+     * SH1336 — verify's two checks that do not render, over every site this caller reads.
+     *
+     * <p>One pass per visit, which is what was measured to be affordable; scoping it to the pages
+     * home lists cost more, because each address resolves separately. The findings come back
+     * errors first (verify's own order), so the first rows per page are the errors.</p>
+     */
+    private ShConsoleSummary.Checks checks() {
+        ShAgentReport report = shAgentVerifyService.verify(null, CHECKS, null);
+        Map<String, ShConsoleSummary.Failing> byPage = new LinkedHashMap<>();
+        for (ShAgentReport.Finding finding : report.findings()) {
+            if (ShAgentReport.ERROR.equals(finding.severity()) && finding.address() != null
+                    && byPage.size() < FAILING_ROWS) {
+                byPage.computeIfAbsent(finding.address(), address -> new ShConsoleSummary.Failing(
+                        address, idOf(address), finding.rule(), finding.message()));
+            }
+        }
+        return new ShConsoleSummary.Checks(report.errors(), List.copyOf(byPage.values()));
+    }
+
+    /** The post an address names, for the editor link; at most {@link #FAILING_ROWS} lookups. */
+    private String idOf(String address) {
+        if (!address.startsWith("post:") && !address.startsWith("id:")) {
+            return null;
+        }
+        // A finding about an address that no longer resolves (a duplicate URL is one) still belongs
+        // in the inbox; it links to the search instead of to an editor.
+        return shAddressResolver.find(ShAddress.parse(address)).map(ShAgentResolved::id).orElse(null);
     }
 
     /**

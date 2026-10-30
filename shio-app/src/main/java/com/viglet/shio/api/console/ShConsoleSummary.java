@@ -42,6 +42,7 @@ import com.viglet.shio.api.history.ShHistoryAPI.ShHistoryResponse;
  * @param runs what the agent did recently, and what it said it was doing
  * @param diagnostics whether this instance is failing at anything
  * @param activity the most recent trail rows, so home needs no second request
+ * @param checks pages failing verify's content or routes checks (SH1336)
  *
  * @author Alexandre Oliveira
  * @since 2026.3
@@ -52,7 +53,8 @@ public record ShConsoleSummary(long sites,
                                Attention attention,
                                List<Run> runs,
                                Diagnostics diagnostics,
-                               List<ShHistoryResponse> activity) {
+                               List<ShHistoryResponse> activity,
+                               Checks checks) {
 
     /**
      * How far ahead "soon" looks — a week, the horizon somebody plans a publish inside.
@@ -105,5 +107,30 @@ public record ShConsoleSummary(long sites,
      * database was the thing failing, the record of the failure is what could not be written.</p>
      */
     public record Diagnostics(int incidents, long unpersisted) {
+    }
+
+    /**
+     * SH1336 — pages that fail a check, so a curator learns of one without opening it.
+     *
+     * <p>From verify's {@code content} and {@code routes} checks, which do not render: measured flat
+     * at 14 statements and about 35 ms for a 150-page site ({@code ShVerifyInboxCostTest}), against 92
+     * statements for the same checks scoped to ten addresses. The rendering checks ({@code page},
+     * {@code a11y}) stay out of the front door.</p>
+     *
+     * @param errors error-level findings across every readable site
+     * @param pages the first few pages they are on, one row per page
+     */
+    public record Checks(int errors, List<Failing> pages) {
+    }
+
+    /**
+     * One page that fails a check, and the first reason why.
+     *
+     * @param address the page, as an SH79 address
+     * @param id the post's id, which the console's editor route takes; null when it did not resolve
+     * @param rule the rule that failed, as verify names it
+     * @param message what is wrong, in verify's words
+     */
+    public record Failing(String address, String id, String rule, String message) {
     }
 }

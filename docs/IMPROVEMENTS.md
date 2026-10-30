@@ -261,28 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.101 Failed checks in the home inbox, measured first (SH1336)
-
-Split from SH1318, whose design listed "pages with a failed check (verify findings,
-missing alt text)" among what the home inbox shows. Home now names pending agent runs,
-open notes and the curator's own unpublished drafts, each linking to where it is
-resolved. A page that fails a check is not there.
-
-The obstacle is cost, not data. `/agent/verify` renders pages to answer `page` and
-`a11y`, so calling it from the home page on every visit would put a render pass on the
-console's front door. P3 makes that a measured question before it is a design one. The
-cheap half is already counted elsewhere: the media library's needs-alt chip (SH1031)
-reads `asset-no-alt` per page of the library, and verify's `content` and `routes` checks
-do not render.
-
-Direction: measure `/agent/verify?checks=content,routes` against a site of the
-showcase's size and decide from the number. If it is cheap, the summary read
-(`/v2/console/summary`) carries a count of error findings with the first few addresses,
-and the inbox lists them as items linking to the page's insights. If it is not cheap,
-the summary carries the last verify run's result, which the publish gate already
-produces, rather than running one. Done when a page with an error-level finding appears
-in "Waiting for you" as a link to it, checked live, with the cost measured and recorded.
-
 ### XI.103 The way to a new page (SH1338)
 
 Measured by SH1315's `create-page` after SH1326 (form publishes): six clicks over six

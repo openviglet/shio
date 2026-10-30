@@ -861,7 +861,8 @@ export default function PostUnifiedEditPage() {
           {/* SH902 — a section card with no header renders a console card in both eras. */}
           <AdaptiveSectionCard.StaticHeader icon={IconMessage} title={t("content.reviewSection")} />
           <AdaptiveSectionCard.Content>
-            <Tabs defaultValue="notes">
+            {/* SH1336 — `?tab=insights` opens on the findings, which is where home's failing-check row leads. */}
+            <Tabs defaultValue={searchParams.get("tab") === "insights" ? "insights" : "notes"}>
               <TabsList className="mb-4">
                 <TabsTrigger value="notes" className="gap-1.5">
                   <IconMessage className="size-3.5" />
