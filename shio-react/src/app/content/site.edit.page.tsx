@@ -21,7 +21,7 @@ import { ROUTES } from "@/app/routes.const"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { siteDestination } from "@/lib/site-front-end"
+import { publishedDestination, siteDestination } from "@/lib/site-front-end"
 import type { ShSite, ShSiteLocalePolicy } from "@/models/site/site"
 import { ShSiteService } from "@/services/site/site.service"
 import { SiteIndexSection } from "@/components/site-index.section"
@@ -245,9 +245,15 @@ export default function BentoSiteEditPage() {
           },
         },
         {
-          label: t("content.viewSite"),
+          label: t("content.preview"),
           icon: IconExternalLink,
           onSelect: () => window.open(siteDestination(site).url, "_blank", "noopener"),
+        },
+        {
+          // SH1304 — what a visitor sees, beside the curator's preview.
+          label: t("content.viewPublishedSite"),
+          icon: IconWorld,
+          onSelect: () => window.open(publishedDestination(site).url, "_blank", "noopener"),
         },
       ]}
     >

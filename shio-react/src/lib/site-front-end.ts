@@ -26,6 +26,17 @@ export type SiteDestination = {
   external: boolean
 }
 
+/**
+ * SH1304 — where a *visitor* sees a site, which `siteDestination` does not answer: that one falls
+ * back to the authenticated, bannered, draft-preferred preview. A deployed front end is where the
+ * published site lives; without one it is `/sites/<furl>/`, the only route that serves PUBLISHED
+ * alone and enforces the members-only gate. Mirrors `ShSiteFrontEnd.publishedUrl` on the server.
+ */
+export function publishedDestination(site: ShSite): SiteDestination {
+  if (site.url?.trim()) return siteDestination(site)
+  return { url: `/sites/${encodeURIComponent(site.furl || previewKey(site))}/`, external: false }
+}
+
 /** The `/preview/{siteKey}` route accepts an id, a furl or a name (SH181). */
 function previewKey(site: ShSite): string {
   return site.name || site.id || ""

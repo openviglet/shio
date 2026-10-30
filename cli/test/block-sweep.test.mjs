@@ -81,6 +81,14 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  P: {
+    swept: true,
+    why: "the visible site, closed by SH1304: the console's View published site beside Preview on the "
+      + "site list, the object browser and the site edit page, and liveUrl on an agent read with links. "
+      + "docs-shio moved: COVERAGE's Block P row names SH1304 and the administration guide says what each "
+      + "button opens, with the mirror regenerated. README and shio-site's pages are NOT moved: neither "
+      + "lists console buttons, and no claim either makes changed",
+  },
   U: {
     swept: true,
     why: "documentation the matrix still names, closed by SH1190: the console round's ids "

@@ -146,6 +146,12 @@ class ShAgentPublishedStateTest {
                         + "answer, grounded in the pack's own first convention (writes land in DRAFT)")
                 .isNull();
         assertThat(findOne().published()).isNull();
+        assertThat(readWithLinks().liveUrl())
+                .as("SH1304: no published address for a page nobody can see — it would only be a 404")
+                .isNull();
+        assertThat(readWithLinks().previewUrl())
+                .as("while the curator's preview answers for the draft, which is what it is for")
+                .isEqualTo("/preview/" + SITE + URL);
     }
 
     @Test
@@ -175,6 +181,16 @@ class ShAgentPublishedStateTest {
                 .as("/agent/find agrees, and pays no query for it — the walk already fetched both "
                         + "state rows and dedupe was discarding the published one")
                 .isTrue();
+        assertThat(readWithLinks().liveUrl())
+                .as("SH1304: once live, `links` carries where a visitor sees it — /sites/**, the route "
+                        + "that serves PUBLISHED alone, and not the banner-wrapped preview")
+                .isEqualTo("/sites/" + SITE + "/default/en-us" + URL);
+        assertThat(doc.liveUrl())
+                .as("and only when asked: a read without `links` is byte-identical to the one before")
+                .isNull();
+        assertThat(ShAgentReadTerse.docs(List.of(readWithLinks())))
+                .as("SH1304: the terse line carries it too, beside the preview it is the other half of")
+                .contains("live=/sites/" + SITE + "/default/en-us" + URL);
     }
 
     @Test
@@ -230,6 +246,11 @@ class ShAgentPublishedStateTest {
 
     private ShAgentDoc readOne() {
         return shAgentReadService.read(List.of(ADDRESS), List.of(), false).getFirst();
+    }
+
+    private ShAgentDoc readWithLinks() {
+        return shAgentReadService.read(List.of(ADDRESS), List.of(), false, false, null, false, true)
+                .getFirst();
     }
 
     private ShAgentFound.Row findOne() {

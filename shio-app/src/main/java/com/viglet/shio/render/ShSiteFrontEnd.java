@@ -151,6 +151,42 @@ public final class ShSiteFrontEnd {
     }
 
     /**
+     * SH1304 — where a <b>visitor</b> sees this page, which {@link #of(ShSite)} does not answer.
+     *
+     * <p>{@code of} falls back to {@code /preview/<site>}: authenticated, banner-wrapped and
+     * draft-preferred, the right place for a curator checking work and the wrong one for checking a
+     * publish. This is the other question. A deployed front end is where the published site lives, so
+     * it answers the same as {@code of}; without one it is {@code /sites/**}, the only route that
+     * serves PUBLISHED alone and enforces the members-only gate. The console's
+     * {@code publishedDestination} mirrors this, so the two cannot disagree.</p>
+     *
+     * <p>A page other than the home is addressed in the {@code en-us} space: {@code /sites/**}
+     * redirects a page written in another locale to its own (SH1279), so one spelling reaches every
+     * page and this does not have to know the site's languages.</p>
+     *
+     * @param site any site
+     * @param furl the page's friendly URL, or {@code null} for the home
+     */
+    public static String publishedUrl(ShSite site, String furl) {
+        Destination destination = of(site);
+        if (destination.isExternal()) {
+            return pageUrl(destination, furl);
+        }
+        String base = ShSitesAPI.BASE + "/" + pathSegment(sitesKey(site));
+        if (furl == null || furl.isBlank() || "/".equals(furl)) {
+            return base + "/";
+        }
+        return base + "/" + ShSitesAPI.DEFAULT_FORMAT + "/" + ShSitesAPI.DEFAULT_LOCALE
+                + (furl.startsWith("/") ? furl : "/" + furl);
+    }
+
+    /** {@code /sites/**} resolves a site by its furl first, which is the spelling a visitor reads. */
+    private static String sitesKey(ShSite site) {
+        String furl = site == null ? null : site.getFurl();
+        return furl != null && !furl.isBlank() ? furl : previewKey(site);
+    }
+
+    /**
      * Trailing slashes are stripped so composing a base with a path cannot produce
      * {@code //page} — which some front ends serve, some redirect, and one or two 404.
      */

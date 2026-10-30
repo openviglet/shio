@@ -17,7 +17,7 @@
 import axios from "axios"
 import { toast } from "@viglet/viglet-design-system"
 
-import { siteDestination } from "@/lib/site-front-end"
+import { publishedDestination, siteDestination } from "@/lib/site-front-end"
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
 import { ShSiteService } from "@/services/site/site.service"
 
@@ -59,6 +59,16 @@ export function useBrowserOpen({ objectId, siteId, refreshList, t }: BrowserOpen
     }
   }
 
+  /** SH1304 — and what a visitor sees: `/sites/<furl>/`, or the deployed front end. */
+  const handleViewPublishedSite = async () => {
+    if (!siteId) return
+    try {
+      window.open(publishedDestination(await siteService.get(siteId)).url, "_blank", "noopener")
+    } catch {
+      toast.error(t("content.previewError"))
+    }
+  }
+
   /** SH179 — "View Page" opens the post's draft through an SH13 preview token. */
   const handleViewPage = async (postId: string) => {
     try {
@@ -72,5 +82,5 @@ export function useBrowserOpen({ objectId, siteId, refreshList, t }: BrowserOpen
   }
 
 
-  return { handleClone, handleViewSite, handleViewPage }
+  return { handleClone, handleViewSite, handleViewPublishedSite, handleViewPage }
 }

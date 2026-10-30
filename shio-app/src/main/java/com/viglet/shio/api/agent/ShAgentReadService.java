@@ -47,6 +47,7 @@ import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.render.ShSiteFrontEnd;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.post.type.ShSystemPostType;
@@ -809,7 +810,19 @@ public class ShAgentReadService {
                 // an instance with no gate, and absent from every row that has none of its own.
                 .withGate(shContentVisibilityRepository.count() == 0 ? null
                         : shContentVisibilityRepository.findFirstByObjectId(post.getId())
-                                .map(com.viglet.shio.persistence.model.acl.ShContentVisibility::groups).orElse(null));
+                                .map(com.viglet.shio.persistence.model.acl.ShContentVisibility::groups).orElse(null))
+                // SH1304 — where a visitor sees it, beside where a curator previews it. Only with
+                // `links`, and only on a live page: the address of a page nobody can see is a 404.
+                .withLive(links ? liveUrl(post) : null);
+    }
+
+    /** SH1304 — the page's published address, or {@code null} when it has no site, no URL or no published row. */
+    private String liveUrl(ShPostUnified post) {
+        ShSite site = post.getShSite();
+        if (site == null || post.getFurl() == null || post.getFurl().isBlank() || !isPublished(post)) {
+            return null;
+        }
+        return ShSiteFrontEnd.publishedUrl(site, post.getFurl());
     }
 
     /**

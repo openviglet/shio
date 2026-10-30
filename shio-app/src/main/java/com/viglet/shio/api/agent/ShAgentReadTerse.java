@@ -117,6 +117,8 @@ public final class ShAgentReadTerse {
                     // SH981 — where a person opens it, and where they look at it.
                     .attr("curator", doc.curatorUrl())
                     .attr("preview", doc.previewUrl())
+                    // SH1304 — and where a visitor sees it, on a live page only.
+                    .attr("live", doc.liveUrl())
                     .attr("fields", doc.fields() == null ? null : String.join(",", doc.fields()))
                     .build());
             if (doc.error() != null) {

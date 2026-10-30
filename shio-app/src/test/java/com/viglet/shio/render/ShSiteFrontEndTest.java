@@ -99,6 +99,30 @@ class ShSiteFrontEndTest {
                 .isEqualTo("/preview/Blog/hello");
     }
 
+    @Test
+    @DisplayName("SH1304: with no front end, the published site is /sites/<furl>/, not the preview")
+    void thePublishedSiteIsTheSitesRoute() {
+        ShSite site = site("My Site", null);
+        site.setFurl("my-site");
+
+        assertThat(ShSiteFrontEnd.publishedUrl(site, null))
+                .as("the home: what a visitor receives, with no banner and the members-only gate")
+                .isEqualTo("/sites/my-site/");
+        assertThat(ShSiteFrontEnd.publishedUrl(site, "/blog/hello"))
+                .as("a page names the default format and locale; /sites/** redirects one in another locale")
+                .isEqualTo("/sites/my-site/default/en-us/blog/hello");
+        assertThat(ShSiteFrontEnd.publishedUrl(site("My Site", null), "/"))
+                .as("a site with no furl is addressed by its name, encoded as a path segment")
+                .isEqualTo("/sites/My%20Site/");
+    }
+
+    @Test
+    @DisplayName("SH1304: a deployed front end is where the published site lives")
+    void aFrontEndIsThePublishedSite() {
+        assertThat(ShSiteFrontEnd.publishedUrl(site("Blog", "https://blog.example.com/"), "/hello"))
+                .isEqualTo("https://blog.example.com/hello");
+    }
+
     private ShSite site(String name, String url) {
         ShSite site = new ShSite();
         site.setName(name);

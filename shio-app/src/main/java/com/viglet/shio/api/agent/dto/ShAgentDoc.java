@@ -74,7 +74,39 @@ public record ShAgentDoc(String address, String type, String state, String folde
                          Boolean translationStale,
                          Index index,
                          String visibility,
-                         java.util.List<String> groups) {
+                         java.util.List<String> groups,
+                         String liveUrl) {
+
+    /**
+     * The twenty-four-field form, before SH1304 put where a visitor sees the page beside where a
+     * curator previews it: {@code liveUrl}, only with {@code links} and only on a published post.
+     */
+    public ShAgentDoc(String address, String type, String state, String folder,
+                      java.util.List<String> fields, JsonNode data, String id,
+                      Problem error, Impact impact, String locale, String translationOf,
+                      Boolean published, String url, String digest, String curatorUrl,
+                      String previewUrl, java.util.List<ShRevisionRow> revisions,
+                      Schedule schedule, java.util.List<Note> notes, Working working,
+                      Boolean translationStale, Index index, String visibility,
+                      java.util.List<String> groups) {
+        this(address, type, state, folder, fields, data, id, error, impact, locale, translationOf,
+                published, url, digest, curatorUrl, previewUrl, revisions, schedule, notes, working,
+                translationStale, index, visibility, groups, null);
+    }
+
+    /**
+     * SH1304 — the same row, with the page's published address; applied last, like {@code withGate}.
+     *
+     * <p>{@code previewUrl} answers for a draft and is the curator's; this is the visitor's, so it is
+     * absent on a page that is not live, where it would only lead to a 404.</p>
+     */
+    public ShAgentDoc withLive(String live) {
+        return live == null ? this
+                : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
+                        locale, translationOf, published, url, digest, curatorUrl, previewUrl,
+                        revisions, schedule, notes, working, translationStale, index, visibility,
+                        groups, live);
+    }
 
     /**
      * The twenty-two-field form, before SH1301 put a post's own members-only gate on its read:
@@ -99,7 +131,7 @@ public record ShAgentDoc(String address, String type, String state, String folde
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
                         locale, translationOf, published, url, digest, curatorUrl, previewUrl,
                         revisions, schedule, notes, working, translationStale, index, "members",
-                        gate.isEmpty() ? null : gate);
+                        gate.isEmpty() ? null : gate, liveUrl);
     }
 
     /** The twenty-field form, before SH1058 said a translation had fallen behind its source. */
@@ -139,7 +171,8 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return status == null ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
                         locale, translationOf, published, url, digest, curatorUrl, previewUrl,
-                        revisions, schedule, notes, working, translationStale, status, visibility, groups);
+                        revisions, schedule, notes, working, translationStale, status, visibility, groups,
+                        liveUrl);
     }
 
     /**
@@ -155,7 +188,8 @@ public record ShAgentDoc(String address, String type, String state, String folde
         return !Boolean.TRUE.equals(stale) ? this
                 : new ShAgentDoc(address, type, state, folder, fields, data, id, error, impact,
                         locale, translationOf, published, url, digest, curatorUrl, previewUrl,
-                        revisions, schedule, notes, working, Boolean.TRUE, index, visibility, groups);
+                        revisions, schedule, notes, working, Boolean.TRUE, index, visibility, groups,
+                        liveUrl);
     }
 
     /** The nineteen-field form, before SH1008 said who else is on this page. */

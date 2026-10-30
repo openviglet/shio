@@ -302,7 +302,7 @@ folders and configuration, and is what **Import Site** reads back.
 |---|---|
 | **Name** | The site's display name, and the name it is addressed by (`site:<name>`). |
 | **Description** | Free text. |
-| **URL** | The base URL of the site's front end. The Universal Editor frames this, and "View Site" opens it. |
+| **URL** | The base URL of the site's front end. The Universal Editor frames this, and "Preview" and "View published site" open it. Left empty, "Preview" opens Shio's draft preview at `/preview/<site>/` and "View published site" opens the published pages at `/sites/<furl>/`, exactly as a visitor receives them. |
 
 ---
 

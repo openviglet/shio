@@ -44,8 +44,9 @@ test("SH1219: three columns, the facts the listing carries, and no Description",
 })
 
 test("SH1219: the row's verbs are a focusable menu, and the default order is newest change first", () => {
-  assert.deepEqual(idsBetween("const rowActions", "]\n"), ["preview", "open", "export", "delete"],
-    "SH1219: Preview, Open, Export and Delete are the row's menu, never hover-only buttons")
+  assert.deepEqual(idsBetween("const rowActions", "]\n"), ["preview", "published", "open", "export", "delete"],
+    "SH1219: Preview, Open, Export and Delete are the row's menu, never hover-only buttons; SH1304: "
+    + "View published site sits beside Preview, so the draft and the visitor's page are both one click")
   assert.match(PAGE, /rowActions=\{rowActions\}/)
   assert.match(PAGE, /\.sort\(\(a, b\) => changedAt\(b\) - changedAt\(a\)\)/,
     "SH1219: the list opens on the site that changed last")

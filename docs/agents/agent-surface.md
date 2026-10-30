@@ -2988,7 +2988,9 @@ router's own routes, so a template that points at no page fails the build on the
 
 A read asks for them with **`include=links`** (`links` on `shio_read`), and gets **`curatorUrl`**
 and, for a post with a site and a URL, **`previewUrl`**, `/preview/<site>/<url>`, SH99's route,
-which answers for a draft too, and a draft is exactly what has just been written. A batch asks with
+which answers for a draft too, and a draft is exactly what has just been written. A **live** post also
+gets **`liveUrl`** (`live=` on the terse line, SH1304), `ShSiteFrontEnd.publishedUrl`: the front end or
+`/sites/**`, which is what a visitor receives. Absent on a draft, where it would only be a 404. A batch asks with
 **`links: true`** and every change row carries `curatorUrl` whatever `ids` says: that flag is about
 whether a caller wants UUIDs, and this is a link a person opens. A delete gets none, the page it
 named is gone. `shio publish` asks, and prints the link under each row the way a deploy tool prints

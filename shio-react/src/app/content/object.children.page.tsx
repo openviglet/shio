@@ -40,6 +40,7 @@ import { deleteEach, refusalSummary, type DeleteTarget } from "@/lib/batch-delet
 // SH1023 — the view lives in the URL, so the address a curator sends reproduces what they saw.
 import { useListState } from "@/hooks/use-list-state"
 import { BrowserTree } from "./content-browser/browser-tree"
+import { SiteViewButtons } from "./content-browser/site-view-buttons"
 import { usePostTypes, useSites } from "@/hooks/use-catalogue"
 import { SavedViews } from "@/components/saved-views"
 
@@ -282,7 +283,7 @@ export default function ObjectChildrenPage() {
   /*
    * SH1145 — the three verbs that leave this list: duplicate a row, open the site, open a page.
    */
-  const { handleClone, handleViewSite, handleViewPage } = useBrowserOpen({
+  const { handleClone, handleViewSite, handleViewPublishedSite, handleViewPage } = useBrowserOpen({
     objectId, siteId, refreshList, t,
   })
 
@@ -294,7 +295,7 @@ export default function ObjectChildrenPage() {
     <>
       {/*
         SH900 — the site-level actions ride in the hero. SH1195 — none of them is the page's primary:
-        Ver Site is a secondary, and Properties and Download Site share the overflow menu.
+        Preview and View published site (SH1304) are secondaries; Properties and Download share the menu.
       */}
       <PageHero
         title={breadcrumbPath.at(-1)?.name || siteName || t("content.browsing")}
@@ -304,9 +305,7 @@ export default function ObjectChildrenPage() {
         backLabel={t("content.sites")}
         actions={siteId ? (
           <>
-            <Button variant="outline" size="sm" onClick={handleViewSite}>
-              <Eye className="mr-2 h-4 w-4" /> {t("content.viewSite")}
-            </Button>
+            <SiteViewButtons onPreview={handleViewSite} onPublished={handleViewPublishedSite} />
             <BentoActionsMenu actions={[
               { id: "site.properties", label: t("content.siteProperties"), icon: Settings,
                 onSelect: () => navigate(`${ROUTES.CONTENT_ROOT}/site/${siteId}`) },

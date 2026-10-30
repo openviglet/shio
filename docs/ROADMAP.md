@@ -34,10 +34,6 @@
 - 📋 **SH1325** (deps: —) **Double-clicking a folder in the file picker opens the one below it, as the dialog re-centres after the first click** — Selecting a row adds the path footer, the centred dialog moves up 26px, and the second click lands on the neighbour. → §XI.88
 - 📋 **SH1326** (deps: —) **A new page can only be saved, saving returns to the folder, and the folder's table opens a row only on double-click** — Publishing a page just written costs a curator ten clicks across seven screens, the most of SH1315's six tasks. → §XI.91
 
-## Block P — The visible site (what the human actually looks at, SH74)
-
-- 📋 **SH1304** (deps: —) **The console has no button that opens a site's published pages; every "View Site" opens the draft preview** — A curator cannot see what a visitor sees without typing /sites/<furl>/ by hand. → §XI.70
-
 ## Priority
 
 ## Done when — SH1245

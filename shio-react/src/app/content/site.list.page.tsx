@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 import {
-  IconDownload, IconExternalLink, IconFolderOpen, IconTrash, IconUpload,
+  IconDownload, IconExternalLink, IconFolderOpen, IconTrash, IconUpload, IconWorld,
 } from "@tabler/icons-react"
 import { toast } from "@viglet/viglet-design-system"
 import {
@@ -28,7 +28,7 @@ import type { ShSite } from "@/models/site/site"
 import { useInvalidate, useSites } from "@/hooks/use-catalogue"
 import { useSiteThumbnails } from "@/hooks/use-site-thumbnails"
 import { headlineOf, problemOf, reportProblem } from "@/lib/problem"
-import { siteDestination } from "@/lib/site-front-end"
+import { publishedDestination, siteDestination } from "@/lib/site-front-end"
 import { ShSiteService } from "@/services/site/site.service"
 
 
@@ -229,6 +229,11 @@ export default function BentoSiteListPage() {
     {
       id: "preview", label: t("content.preview"), icon: IconExternalLink,
       onSelect: ([site]) => window.open(siteDestination(site).url, "_blank", "noopener"),
+    },
+    {
+      // SH1304 — what a visitor sees, beside the curator's preview.
+      id: "published", label: t("content.viewPublishedSite"), icon: IconWorld,
+      onSelect: ([site]) => window.open(publishedDestination(site).url, "_blank", "noopener"),
     },
     { id: "open", label: t("content.openSite"), icon: IconFolderOpen, onSelect: ([site]) => navigate(browse(site)) },
     {

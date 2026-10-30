@@ -1718,9 +1718,18 @@ renderer over one body of content at a second address. See the section on it bel
   and `previewUrl` is the field always present. The fallback is **resolved, never stored**:
   writing `/preview/<site>` into the column would make every later reader unable to tell a
   placeholder from a real deployment, and would leave no empty value for `site.upsert` to fill.
-  The console mirrors it in `shio-react/src/lib/site-front-end.ts`, both **View Site** buttons
+  The console mirrors it in `shio-react/src/lib/site-front-end.ts`, every **Preview** action
   and the editor's iframe share it, since three inline copies of one rule is a rule that will be
   right in two of them.
+- **`ShSiteFrontEnd.publishedUrl` answers the other question: where a *visitor* sees it (SH1304).**
+  `of` falls back to the preview, which is bannered, authenticated and draft-preferred, so it
+  cannot confirm a publish or a members-only gate. `publishedUrl` returns the front end when one
+  is deployed and otherwise `/sites/<furl>/`, with a page under `/default/en-us/<url>`, a spelling
+  that reaches every page because `/sites/**` redirects one in another locale to its own (SH1279).
+  The console's `publishedDestination` mirrors it, and the site list, the object browser and the
+  site edit page each carry **View published site** beside **Preview**; `e2e/published-site.check.mjs`
+  clicks all three and reads the tab they open. The thumbnail capture keeps its own `homeUrl`: it
+  needs a same-origin frame even when a front end is deployed.
 
 ### The banner reads what was rendered, not two model keys (SH774)
 

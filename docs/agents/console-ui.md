@@ -275,7 +275,8 @@ Rendered inside `WidgetSpecificSettings` based on widget name:
 ## Content Navigation (GitHub-like file browser)
 
 ### Site List Page (`/console/content`)
-- Shows all sites as a list with hover actions (Download, Edit, View Site, Delete)
+- Shows all sites as a list with a row menu (Preview, View published site, Open, Export, Delete);
+  Preview is the draft at `/preview/**`, View published site is what a visitor gets (SH1304)
 - Tabs: Sites | Tasks
 - Search filter
 - Click site → navigates to `/console/content/object/{siteId}`
