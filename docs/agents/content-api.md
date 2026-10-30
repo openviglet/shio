@@ -251,6 +251,14 @@ SH134/SH137, and where the console is looser the console is the hole, not the ba
   against the site. **Three statements at any number of sites**: `findAll`, one grouped count
   (`countDistinctBySiteIdPerState`) and one newest-row read (`findNewestPerSite`), all keyed on the
   site's id. `ShSiteListingCostTest` counts the statements at 15 and 400 sites.
+  **Three statements is not three cheap statements (SH1305).** `findNewestPerSite` was a
+  *correlated* `max(date)` re-run over the whole audit trail for every row of it, so the count held
+  while the read grew quadratically: 3.5 s over 8,000 history rows, 10-20 s through the API on the
+  dev store. It is now `(shSite, date) in (select shSite, max(date) … group by shSite)`, 20 ms over
+  the same rows with no index. Matched as a **pair**, never the date alone, because one site's newest
+  instant is routinely an older row's in another. `ShSiteListingHistoryCostTest` seeds 8,000 rows
+  and asserts a 1 s ceiling, writing a row before each timed run: H2 answers a repeated query from
+  its result cache until something changes, which is how the old read once measured 122 ms.
 
   **No `@Fetch(JOIN)` on a collection (SH1236).** `ShObject.shWorkflowTasks` carried one, which makes
   a collection eager, and a query cannot join it implicitly, so every query over a site, folder or

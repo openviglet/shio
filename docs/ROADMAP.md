@@ -15,7 +15,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1305** (deps: —) **GET /api/v2/site takes ~10-20 s on a 16-site instance, so the sites list looks frozen on first open** — The list is the console's front door, and measuring showed the thumbnails are not the cause: the listing read alone is. → §XI.71
 - 📋 **SH1307** (deps: —) **The content browser stacks five bands of chrome before the first row of a folder** — Counts, actions, view toggles, filter and a Columns-only bar each take a framed row, so a folder of six reads as a toolbar. → §XI.73
 - 📋 **SH1308** (deps: —) **The post editor frames every field in its own card with a coloured stripe, inside a card, inside the page** — Three nested frames per field and a rainbow of stripes make a five-field form look busy and push the fourth field below the fold. → §XI.74
 - 📋 **SH1309** (deps: —) **The site list paints usage in the accent and fills every row's second line with an address** — An orange bar reads as a warning and `site:Name` under every name is noise, so sixteen rows carry forty-eight loud marks and say little. → §XI.75
@@ -33,6 +32,7 @@
 - 📋 **SH1324** (deps: —) **Search results glue title to type ("PricingSectionHero"), read Rascunho on published posts, and drop accents in pt** — The command palette is the fastest way into content, and three of its four words per row mislead or misspell. → §XI.90
 - 📋 **SH1325** (deps: —) **Double-clicking a folder in the file picker opens the one below it, as the dialog re-centres after the first click** — Selecting a row adds the path footer, the centred dialog moves up 26px, and the second click lands on the neighbour. → §XI.88
 - 📋 **SH1326** (deps: —) **A new page can only be saved, saving returns to the folder, and the folder's table opens a row only on double-click** — Publishing a page just written costs a curator ten clicks across seven screens, the most of SH1315's six tasks. → §XI.91
+- 📋 **SH1327** (deps: —) **Benchmarks that repeat an identical read on H2 time its result cache, so a 3.5 s query printed as 17 ms** — SH1217's own measurement hid the defect SH1305 fixed, and ten timing tests may be reporting cache hits as costs. → §XI.92
 
 ## Priority
 

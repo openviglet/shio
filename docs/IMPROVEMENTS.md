@@ -241,30 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.71 The sites listing read, measured before it is fixed (SH1305)
-
-Reported as "the sites list hangs on first open, probably the screenshots". Measured on
-2026-10-29 against the dev instance (16 sites, 14 with stored thumbnails), with a clean
-Playwright context on `/bento/content`. `GET /api/v2/site` answered at 20.9 s, the rows
-appeared at 21.4 s, and only then did any `/thumbnail/status` read start. With
-`/thumbnail/status` aborted, so that no capture could run, the listing still took 10.1
-s. The main thread recorded no long task over 100 ms in either run. Timed directly over
-the API, three consecutive calls took 122 ms, 10307 ms and 9970 ms, with an identical
-14106-byte body. The capture (SH1218) is already off the render path and is not the
-cost.
-
-`ShSiteListingService.list` makes three reads. The prime suspect is
-`ShHistoryRepository.findNewestPerSite`, a correlated `max(h2.date)` subquery over the
-whole audit table. The changelog declares no index on `ShHistory(shSite, date)`, and the
-table grows with every write. The other two are the grouped post count and the thumbnail
-directory listing. The 122 ms outlier still needs explaining.
-
-Per the measure-first rule, the first deliverable is a benchmark of `list()` against a
-history table of realistic size, with per-statement timing. `ShSiteListingCostTest`
-counts statements, not time. Only then does the fix follow, whatever the number argues
-for: an index, a maintained per-site last-change column, or a rewritten query. Run the
-schema ITs with Docker, since this touches Liquibase.
-
 ### XI.73 The content browser is all toolbar (SH1307)
 
 Measured at 1920px on `/bento/content/object/{site}` (ShowCase root, six folders):
@@ -589,6 +565,33 @@ Direction: the new-post form is the editor in its unsaved state, with the same a
 menu (Publish saves then publishes, with the same confirmation); Save keeps the editor
 open on the new post; the title cell links; the header names the type. Judged by
 `create-page`, which should drop to about five clicks and three screens.
+
+### XI.92 Timing benchmarks that measure H2's result cache (SH1327)
+
+Found by SH1305. H2 answers a query from its result cache when the identical SQL runs
+again and nothing in the database has changed since. A benchmark that warms a read and
+then times the same read three times therefore times the cache from the second call on.
+`ShSiteListingCostTest` printed 17 ms and 47 ms for a listing whose newest-change read
+cost 3.5 s once the cache could not answer, so SH1217's own measurement never showed the
+defect SH1305 fixed. The first `ShSiteListingHistoryCostTest` draft passed against the
+slow query for the same reason (3 ms).
+
+Ten test classes call `System.nanoTime()`: the five under `api/agent/benchmark/`
+(`ShAssetUsageBenchmarkTest`, `ShTemplateGraphMemoBenchmarkTest`,
+`ShCdaAvailableLocalesBenchmarkTest`, `ShMediaListingBenchmarkTest`,
+`ShConsoleListingBenchmarkTest`), their shared `ShAgentBenchmark`,
+`ShBlueprintRendersTest`, `ShTuringTextExtractionTest` and the two listing tests. Each
+that repeats an identical read with no write in between is reporting a cache hit as the
+cost.
+
+Per SH338, the instrument lands before the fixes. Add a shared helper that makes a timed
+run honest, for example by turning the cache off for the window (`SET QUERY_CACHE_SIZE
+0`, or the `QUERY_CACHE_SIZE=0` URL setting for a benchmark's own context) or by writing
+a row before each run, the way `ShSiteListingHistoryCostTest` does. Then add a lint that
+fails a test which times a repository read in a loop without going through that helper.
+Then re-measure each benchmark with the helper and record the figures that move. Done
+when every timing benchmark goes through the helper, the lint names none outside it, and
+the re-measured numbers are in each test's report.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

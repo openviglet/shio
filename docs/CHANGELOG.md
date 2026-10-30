@@ -2041,6 +2041,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1314** — Shio runs design system 2026.3.24, every two-line column declares lines: 2 for 56px rows and Activity draws its time inline, held by table-lines.test.mjs (design §XI.80 recorded in `docs/agents/console-ui.md`).
 - **SH1321** — The shio-console-review skill runs one bounded review iteration, and ui-review-pick.mjs rotates route families through a committed ledger, failing ones first (design §XI.87 recorded in `docs/agents/console-ui.md`).
 - **SH1315** — Six curator tasks are driven from /bento and held in curator-task-budget.json: find 1 click, approve 2, headline 4, image 7, new page 10 over 7 screens, preview blocked by SH1322 (design §XI.81 recorded in `docs/agents/console-ui.md`).
+- **SH1305** — The sites listing's newest-change read is a grouped (site, date) match instead of a per-row correlated max: 3.5 s to 20 ms over 8,000 history rows, asserted by ShSiteListingHistoryCostTest (design §XI.71 superseded: it expected an index or a maintained column; the query shape was the cost, and its 122 ms outlier was H2's result cache) (design §XI.71 recorded in `docs/agents/content-api.md`).
 
 ## Block BH — One content model, many languages
 

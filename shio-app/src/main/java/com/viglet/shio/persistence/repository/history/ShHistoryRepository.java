@@ -137,12 +137,20 @@ public interface ShHistoryRepository extends JpaRepository<ShHistory, String> {
 	/**
 	 * SH1217 — each site's newest change, for the sites listing, in one statement.
 	 *
-	 * <p>A correlated maximum rather than a read per site: a request per row is the cost SH1050
-	 * removed from home. Rows sharing a site's newest timestamp all come back, ordered so the caller
-	 * keeps the first per site and the choice is the same on every read (P5).</p>
+	 * <p>One statement rather than a read per site: a request per row is the cost SH1050 removed
+	 * from home. Rows sharing a site's newest timestamp all come back, ordered so the caller keeps
+	 * the first per site and the choice is the same on every read (P5).</p>
+	 *
+	 * <p>SH1305 — a <b>grouped</b> maximum matched as a {@code (site, date)} pair, not a correlated
+	 * one. The correlated {@code max(h2.date) where h2.shSite = h.shSite} re-ran over the whole audit
+	 * trail for every row of it: 3.5 s over 8,000 rows, 10-20 s through the API on the dev store, and
+	 * the sites list sat blank for all of it. The grouped form runs once (18-52 ms there, no index).
+	 * The pair, not the date alone: sites' histories overlap in time, and one site's newest instant
+	 * is often an older row's in another ({@code ShSiteListingHistoryCostTest}).</p>
 	 */
-	@Query("select h from ShHistory h where h.shSite is not null and h.date = "
-			+ "(select max(h2.date) from ShHistory h2 where h2.shSite = h.shSite) "
+	@Query("select h from ShHistory h where (h.shSite, h.date) in "
+			+ "(select h2.shSite, max(h2.date) from ShHistory h2 where h2.shSite is not null "
+			+ "group by h2.shSite) "
 			+ "order by h.shSite asc, h.id desc")
 	List<ShHistory> findNewestPerSite();
 
