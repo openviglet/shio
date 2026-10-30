@@ -825,9 +825,25 @@ public class ShPageRenderService {
         // DRAFT-preferred when previewing: a preview that showed the published row would
         // be showing the page the curator is trying to change.
         return state == ShPostState.DRAFT
-                ? first(shPostUnifiedRepository.findByShSite_IdAndFurlAndState(site.getId(), furl, ShPostState.DRAFT),
-                        () -> shPostUnifiedRepository.findByShSite_IdAndFurlAndState(site.getId(), furl, ShPostState.PUBLISHED))
-                : shPostUnifiedRepository.findByShSite_IdAndFurlAndState(site.getId(), furl, ShPostState.PUBLISHED);
+                ? first(storedAt(site, furl, ShPostState.DRAFT), () -> storedAt(site, furl, ShPostState.PUBLISHED))
+                : storedAt(site, furl, ShPostState.PUBLISHED);
+    }
+
+    /**
+     * SH1346 — the row at {@code furl} as requested, or stored without its leading slash.
+     *
+     * <p>A route always hands this a leading slash, and every write since SH651 stores the bare
+     * form, so a page made in the console or by a blueprint answered 404 here while its address
+     * resolved and {@code /agent/render} drew it. The leading slash is not a spelling of the URL
+     * anybody sees, so both are the same page. The trailing slash is: SH467 serves only the stored
+     * form and redirects the other, and this leaves that rule exactly as it was.</p>
+     */
+    private Optional<ShPostUnified> storedAt(ShSite site, String furl, ShPostState state) {
+        Optional<ShPostUnified> exact = shPostUnifiedRepository.findByShSite_IdAndFurlAndState(site.getId(), furl, state);
+        if (exact.isPresent() || furl == null || furl.length() <= 1 || !furl.startsWith("/")) {
+            return exact;
+        }
+        return shPostUnifiedRepository.findByShSite_IdAndFurlAndState(site.getId(), furl.substring(1), state);
     }
 
     /**
@@ -865,9 +881,10 @@ public class ShPageRenderService {
     private Optional<ShPageRedirectException> canonicalSlashRedirect(ShSite site, String furl,
                                                                      ShPostState state) {
         // SH583 — the other spelling comes from the shared generator, not from a fourth private
-        // rule. This route is the one deliberate *non*-tolerant reader: `pageWithFurl` matches the
-        // stored spelling exactly, because tolerating both here would serve one page at two URLs
-        // and that is the URL-space split SH467 exists to close. The tolerance is the 301.
+        // rule. This route is the one deliberate *non*-tolerant reader of the trailing slash:
+        // `pageWithFurl` matches the stored slash form exactly, because tolerating both here would
+        // serve one page at two URLs and that is the URL-space split SH467 exists to close. The
+        // tolerance is the 301. (The leading slash is not a URL anybody sees; SH1346 reads both.)
         return ShFurlSpellings.otherSlashForm(furl)
                 .flatMap(other -> pageWithFurl(site, other, state))
                 .map(found -> new ShPageRedirectException(found.getFurl(), true));

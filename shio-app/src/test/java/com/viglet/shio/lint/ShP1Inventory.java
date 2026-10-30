@@ -15,7 +15,6 @@ import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.TreeMap;
@@ -77,17 +76,19 @@ public final class ShP1Inventory {
      * forks: one fork read the file while another was halfway through writing it, and three P1 lints
      * failed on {@code Unexpected close marker '}'} in a run that passed unchanged on the next. So the
      * read-merge-write holds a lock on a sibling file, which the operating system shares between
-     * processes, and the new document is written beside the target and moved over it whole.</p>
+     * processes, and {@link #read} takes the same lock, so no reader can see a write half done.</p>
+     *
+     * <p>Written in place, not beside the target and renamed over it. The rename was the first version
+     * and failed on Windows one full run in a few with {@code AccessDeniedException}, when something
+     * outside the suite held the new file for a moment; under the lock it bought nothing.</p>
      */
     static synchronized void record(Path file, String instrument, Map<String, Object> counts) {
         locked(file, () -> {
             Map<String, Object> all = new TreeMap<>(parse(file));
             all.put(instrument, new TreeMap<>(counts));
-            Path next = file.resolveSibling(file.getFileName() + ".next");
             // Written as UTF-8 with LF endings, like every other generated artefact here (SH863).
-            Files.writeString(next, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(all)
+            Files.writeString(file, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(all)
                     .replace("\r\n", "\n") + "\n", StandardCharsets.UTF_8);
-            Files.move(next, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             return null;
         });
     }

@@ -41,6 +41,7 @@ import com.viglet.shio.ShH2ResultCache;
 import com.viglet.shio.api.token.ShPreviewTokenAPI;
 import com.viglet.shio.api.token.ShPreviewTokenResponse;
 import com.viglet.shio.api.token.ShShareLinksAPI;
+import com.viglet.shio.migration.unified.ShPostUnifiedWriteService;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -106,6 +107,8 @@ class ShBlueprintRendersTest {
     private com.viglet.shio.api.agent.ShAgentBatchService shAgentBatchService;
     @Autowired
     private com.viglet.shio.api.agent.ShAgentReadService shAgentReadService;
+    @Autowired
+    private ShPostUnifiedWriteService shPostUnifiedWriteService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -384,6 +387,32 @@ class ShBlueprintRendersTest {
         assertThat(shShareLinksAPI.live()).extracting(ShShareLinksAPI.ShShareLink::id)
                 .as("and it is no longer live")
                 .doesNotContain(link.id());
+    }
+
+    @Test
+    @DisplayName("SH1346: a page made the way the console makes one renders at its URL")
+    void aConsoleMadePageRendersAtItsUrl() {
+        String[] ids = new TransactionTemplate(transactionManager).execute(status -> new String[] {
+                entityManager.createQuery("select f.id from ShFolder f where f.rootFolder = 1 and f.shSite.name = :site",
+                        String.class).setParameter("site", siteName).getSingleResult(),
+                entityManager.createQuery("select t.id from ShPostType t where t.name = 'Page'", String.class)
+                        .getSingleResult() });
+        ShPostUnified made = shPostUnifiedWriteService.create(new ShPostUnifiedWriteService.CreateRequest(
+                ids[0], ids[1], new ObjectMapper().createObjectNode().put("title", "SH1346 Console Page"),
+                ShPostState.DRAFT, "admin", null, null));
+        assertThat(made.getFurl())
+                .as("SH651 stores a written URL without its leading slash; that is the case under test")
+                .isEqualTo("sh1346-console-page");
+
+        assertThat(shPageRenderService.render(siteName, "/sh1346-console-page", ShPostState.DRAFT).html())
+                .as("""
+                        SH1346: the preview route hands the renderer a leading slash, and a page made in \
+                        the console or by a blueprint answered render-page-unknown for it while its \
+                        address resolved and /agent/render drew it""")
+                .contains("SH1346 Console Page");
+        assertThat(shPageRenderService.render(siteName, "sh1346-console-page", ShPostState.DRAFT).html())
+                .as("SH1346: and the stored spelling itself still renders")
+                .contains("SH1346 Console Page");
     }
 
     private String pageAt(String furl) {
