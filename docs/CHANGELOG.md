@@ -2038,6 +2038,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1286** — The console's Portuguese strings load as their own chunk only for a Portuguese reader, cutting the eager load by 66.6 KB, so the raw ceiling went back down with room to spare (design §XCIII.1 recorded in `docs/agents/build.md`).
 - **SH1306** — ensureLanguage re-resolves after the pt bundle lands, so a Portuguese console reads "há 20 minutos" and <html lang="pt">, measured in a pt-BR browser (design §XI.72 recorded in `shio-react/test/bento-i18n.test.mjs`).
 - **SH1314** — Shio runs design system 2026.3.24, every two-line column declares lines: 2 for 56px rows and Activity draws its time inline, held by table-lines.test.mjs (design §XI.80 recorded in `docs/agents/console-ui.md`).
+- **SH1321** — The shio-console-review skill runs one bounded review iteration, and ui-review-pick.mjs rotates route families through a committed ledger, failing ones first (design §XI.87 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

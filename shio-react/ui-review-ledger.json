@@ -1,0 +1,4 @@
+{
+  "why": "SH1321: when each console route family was last judged by the shio-console-review skill, and what it filed. Written by `node e2e/ui-review-pick.mjs --record`, never by hand.",
+  "families": {}
+}

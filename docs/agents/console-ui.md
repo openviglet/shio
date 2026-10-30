@@ -4237,3 +4237,28 @@ cannot come back crowded by default.
 
 The design system's work grammar (VDS235: compact header, no frosted card) shipped in the same
 release and is **not** adopted here: it is a per-route choice, filed as SH1320.
+
+## Reviewing the console, continuously (SH1321)
+
+The console was judged in bursts: SH1307-SH1319 came from one sitting after weeks with nobody
+looking. `console-check.mjs` already makes the mechanical half continuous (every route
+screenshotted, axed, costed); the judging half had no instrument. It has two now:
+
+- **`shio-react/e2e/ui-review-pick.mjs`** decides *which* route families to judge next, from the
+  check's report and the committed `shio-react/ui-review-ledger.json`: failing families first,
+  then never reviewed, then oldest, then by name. `--record <families> --findings <ids>` advances
+  the ledger. The order is pure (`scripts/ui-review.mjs`) and tested in
+  `test/ui-review.test.mjs`, so two sessions rotate through the same sequence instead of both
+  reviewing the home page. Families are `familyOf` from `route-cost.mjs`, the grouping the cost
+  and a11y budgets already use.
+- **The `shio-console-review` project skill** is one bounded iteration: clean instance on `:2711`,
+  provision, check against the jar, pick three families, judge them against the skill's fixed
+  `checklist.md` (C1-C8), file each finding with roadkeep after searching for it, record, commit.
+  It **files and never fixes**: the lines are drained like any other.
+
+Run it once with `/shio-console-review`; continuously with `/loop /shio-console-review`, or
+unattended with a Windows scheduled task running `claude -p "/shio-console-review"` from the repo
+root (it needs the local instance, so a cloud routine would rebuild the jar every time). A
+finding the check could have caught mechanically is filed twice: once for the page, once for the
+probe that would have caught it. SH1315 (measuring whether a curator can finish a task) is the
+neighbouring instrument and is not this one: this judges a page, that times a journey.

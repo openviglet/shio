@@ -73,7 +73,7 @@ describes. The per-area detail below is **authoritative**; do not restate it her
 | Content as files `shio/content/**`, the three-way merge, assets | [docs/agents/content-files.md](docs/agents/content-files.md) | `shio-content-files` |
 | Blueprints: appliable starting points | [docs/agents/blueprints.md](docs/agents/blueprints.md) | `shio-content-files` |
 | The `shio` CLI and the CI gate order | [docs/agents/cli.md](docs/agents/cli.md) | `shio-content-files` |
-| Console UI: React patterns, widgets, editors, data model, i18n, theme | [docs/agents/console-ui.md](docs/agents/console-ui.md) | `shio-console-ui` |
+| Console UI: React patterns, widgets, editors, data model, i18n, theme | [docs/agents/console-ui.md](docs/agents/console-ui.md) | `shio-console-ui`; reviewing it: `shio-console-review` |
 | Security: CSRF, auth, CORS | [docs/agents/security.md](docs/agents/security.md) | `shio-console-ui` |
 | Liquibase, migrations, cross-DB ITs, multi-tenancy (SH22) | [docs/agents/database.md](docs/agents/database.md) | `shio-database` |
 | Turing indexing: published content becomes searchable, off by default | [docs/agents/turing.md](docs/agents/turing.md) | `shio-database` |
