@@ -16,7 +16,7 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1336** (deps: —) **A page that fails a check is not in home's waiting section, so a curator learns of it only by opening it** — SH1318's remainder: verify renders pages to answer, so the inbox needs a measured cheap read before it can list them. → §XI.101
+- ⏳ **SH1336** (deps: —) **A page that fails a check is not in home's waiting section, so a curator learns of it only by opening it** — Home lists pages failing a check from the last verify result, not a per-visit verify, since the cost grows with every readable site's pages. → §XI.101
 - 📋 **SH1338** (deps: —) **Reaching the new-page form takes four screens: Content hub, the Sites card, the site, then New Page** — Writing and publishing a page is six clicks now, and four of its six screens are only the way to the form. → §XI.103
 - 📋 **SH1343** (deps: —) **A MenuItem's editor asks the server for a preview render it refuses, 400 for a type with no layout** — The strict console check is red on post-edit:MenuItem every run, and a curator sees a failed preview that is not theirs. → §XI.104
 - 📋 **SH1344** (deps: —) **The new-token form shows no save bar after scrolling, where every sibling admin form does** — At the bottom of the form a curator has no Save in view, and the strict console check is red on bento-token-new every run. → §XI.105
@@ -43,6 +43,13 @@
   live after the maintainer picks the primary editor: the browser, search, home and the
   site list all open a page in the same editor, the other is a switch inside it that
   keeps the selection, and the decision is recorded in console-ui.md.
+
+## Done when — SH1336
+
+- **A page with an error-level finding is a link in home's Waiting for you** On a clean
+  instance, make a page fail a content or routes check, let the last verify result
+  record it, and open home: the item names the page and links to its insights, and the
+  summary read issues no verify of its own.
 
 ## Non-goals (do NOT add as tasks)
 
