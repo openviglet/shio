@@ -252,7 +252,7 @@ const TASKS = [
     async run(page, ctx) {
       await openFromSearch(page, "Pricing", "SectionHero")
       // A filled image field opens the picker on the current file's folder, which is what makes a
-      // replace short. An empty one opens on every site and is SH1325's path, not measured here.
+      // replace short. An empty one opens beside the post since SH1325, and is not measured here.
       await page.getByRole("group", { name: /^image$/i }).getByRole("button", { name: /^(pesquisar|search)$/i }).click()
       const dialog = page.getByRole("dialog")
       await dialog.getByRole("button", { name: new RegExp(`^${ctx.file.replace(".", "\\.")}`) }).first().click()

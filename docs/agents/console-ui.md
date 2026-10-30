@@ -2460,6 +2460,16 @@ place. It is deliberately **not persisted**, the durable answer is the field's `
 which an administrator sets once for everybody, and writing a session's guess to storage would let it
 quietly become the configuration.
 
+**The picker holds still, and opens where the curator is (SH1325).** `content-browser-dialog.tsx`
+drew its selection footer only once something was selected, so the first click of a double-click
+grew the centred dialog, it moved up 26px, and the second click opened the folder below. The footer
+is now always there at `h-9`; measured live, a row and the dialog's top stay at the same pixel across
+a selection. In `file` mode a folder is never the answer, so one click opens it and Select stays off
+until a file is chosen; elsewhere opening is its own button (`content.openFolderNamed`) instead of
+a hover chevron. And with no folder of its own, the File widget passes `nearPostId`, and the picker
+opens on that post's folder, read from `/v2/post-unified/{id}`'s `shFolder` (a post has no
+`/object/{id}/path`), instead of on the list of every site. `file-picker.test.mjs` holds the shape.
+
 ## One query layer, keyed on the address every other surface uses (SH1046)
 
 The console had no query cache. Seventeen call sites fetched a whole collection with the same six

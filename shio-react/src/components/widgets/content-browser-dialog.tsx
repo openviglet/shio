@@ -80,13 +80,18 @@ interface ContentBrowserDialogProps {
    * caller cannot use.
    */
   selectMode?: "content" | "file" | "folder"
+  /**
+   * SH1325 — the post being edited, so a picker with no folder of its own opens beside it, in its
+   * site, rather than on the list of every site. `startFolderId` wins when both are given.
+   */
+  nearPostId?: string
 }
 
 export function ContentBrowserDialog({ open, onOpenChange, ...rest }: ContentBrowserDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
-        <ContentBrowserBody key={rest.startFolderId ?? "__root__"} onOpenChange={onOpenChange} {...rest} />
+        <ContentBrowserBody key={rest.startFolderId ?? rest.nearPostId ?? "__root__"} onOpenChange={onOpenChange} {...rest} />
       </DialogContent>
     </Dialog>
   )
@@ -102,6 +107,7 @@ function ContentBrowserBody({
   onSelect,
   startFolderId,
   selectMode = "content",
+  nearPostId,
 }: Omit<ContentBrowserDialogProps, "open">) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
@@ -306,8 +312,16 @@ function ContentBrowserBody({
   // starts true and `selectedItem` starts null because this component did not exist a moment ago.
   useEffect(() => {
     const signal = begin()
-    if (startFolderId) {
-      axios.get(`/v2/object/${startFolderId}/path`, { signal }).then((pathRes) => {
+    // SH1325 — with no folder of its own, the folder the edited post lives in. A post has no
+    // `/object/{id}/path` (that is a folder's read), so its own row names the folder.
+    let start: Promise<string | undefined> = Promise.resolve(startFolderId)
+    if (!startFolderId && nearPostId) {
+      start = axios.get<{ shFolder?: { id?: string } }>(`/v2/post-unified/${nearPostId}`, { signal })
+        .then((res) => res.data?.shFolder?.id)
+    }
+    start.then((folderId) => {
+      if (!folderId) return fetchSites(signal)
+      return axios.get(`/v2/object/${folderId}/path`, { signal }).then((pathRes) => {
         const data = pathRes.data
         const crumbs: BreadcrumbItem[] = [
           { id: "__sites__", name: t("content.sites"), type: "SITE_LIST" },
@@ -316,17 +330,15 @@ function ContentBrowserBody({
         for (const c of breadcrumbFrom(data)) {
           crumbs.push({ id: c.id, name: c.name, type: c.type === "SITE" ? "SITE" : "FOLDER" })
         }
-        void fetchChildren(startFolderId, crumbs, signal)
-      }).catch((reason: unknown) => {
-        // A folder whose path cannot be read falls back to the site list; a closed dialog does not.
-        if (isCancelled(reason)) return
-        void fetchSites(signal)
+        return fetchChildren(folderId, crumbs, signal)
       })
-    } else {
+    }).catch((reason: unknown) => {
+      // A folder whose path cannot be read falls back to the site list; a closed dialog does not.
+      if (isCancelled(reason)) return
       void fetchSites(signal)
-    }
+    })
     return cancel
-  }, [startFolderId, t, fetchChildren, fetchSites, begin, cancel])
+  }, [startFolderId, nearPostId, t, fetchChildren, fetchSites, begin, cancel])
 
   return (
     <>
@@ -389,25 +401,42 @@ function ContentBrowserBody({
                 </button>
               ))}
 
-              {/* Folders */}
+              {/*
+                Folders. SH1325 — in file mode a folder is never the answer, so a click opens it, the
+                way a site row does. Elsewhere a click selects and the chevron is its own button,
+                which opens it: a hover decoration had no keyboard or screen-reader equivalent.
+              */}
               {folders.map((folder) => (
-                <button
+                <div
                   key={folder.id}
-                  type="button"
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-left transition-colors group ${
+                  className={`flex items-center rounded-md transition-colors group ${
                     selectedItem?.id === folder.id
                       ? "bg-primary/10 ring-1 ring-primary/30"
                       : "hover:bg-muted/60"
                   }`}
-                  onClick={() => setSelectedItem({ id: folder.id, name: folder.name, type: "FOLDER" })}
-                  onDoubleClick={() => navigateToFolder(folder)}
                 >
-                  <Folder className="h-4.5 w-4.5 text-orange-500 dark:text-orange-400 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{folder.name}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                </button>
+                  <button
+                    type="button"
+                    className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2.5 text-left"
+                    onClick={() => selectMode === "file"
+                      ? navigateToFolder(folder)
+                      : setSelectedItem({ id: folder.id, name: folder.name, type: "FOLDER" })}
+                    onDoubleClick={selectMode === "file" ? undefined : () => navigateToFolder(folder)}
+                  >
+                    <Folder className="h-4.5 w-4.5 text-orange-500 dark:text-orange-400 shrink-0" />
+                    <p className="flex-1 min-w-0 text-sm font-medium truncate">{folder.name}</p>
+                    {selectMode === "file" && (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+                    )}
+                  </button>
+                  {selectMode !== "file" && (
+                    <Button type="button" variant="ghost" size="icon-sm" className="mr-1 shrink-0"
+                      aria-label={t("content.openFolderNamed", { name: folder.name })}
+                      onClick={() => navigateToFolder(folder)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               ))}
 
               {/* Posts */}
@@ -463,15 +492,21 @@ function ContentBrowserBody({
 
         <Separator />
 
-        {/* Selection preview */}
-        {selectedItem && (
-          <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm">
-            {selectedItem.type === "FOLDER"
-              ? <Folder className="h-4 w-4 text-orange-500 shrink-0" />
-              : <FileText className="h-4 w-4 text-blue-500 shrink-0" />}
-            <span className="text-muted-foreground truncate">{buildPathString(selectedItem.name)}</span>
-          </div>
-        )}
+        {/*
+          Selection preview. SH1325 — its height is held from the first render: it appeared on the
+          first click, the centred dialog grew and moved up, and the second click of a double-click
+          landed on the row below.
+        */}
+        <div className={`flex h-9 items-center gap-2 rounded-md px-3 text-sm ${selectedItem ? "bg-muted/50" : ""}`}>
+          {selectedItem && (
+            <>
+              {selectedItem.type === "FOLDER"
+                ? <Folder className="h-4 w-4 text-orange-500 shrink-0" />
+                : <FileText className="h-4 w-4 text-blue-500 shrink-0" />}
+              <span className="text-muted-foreground truncate">{buildPathString(selectedItem.name)}</span>
+            </>
+          )}
+        </div>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

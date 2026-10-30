@@ -108,6 +108,7 @@
   "content.browseFile": "Navegar e selecionar arquivo...",
   "content.select": "Selecionar",
   "content.emptyFolder": "Esta pasta está vazia",
+  "content.openFolderNamed": "Abrir {{name}}",
   "content.noRelatorItems": "Nenhum item ainda. Clique no botão abaixo para adicionar.",
   "content.addRelatorItem": "Adicionar Item",
   "content.dropFileHere": "Arraste o arquivo aqui",

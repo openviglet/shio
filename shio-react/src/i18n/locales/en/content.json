@@ -108,6 +108,7 @@
   "content.browseFile": "Browse and select file...",
   "content.select": "Select",
   "content.emptyFolder": "This folder is empty",
+  "content.openFolderNamed": "Open {{name}}",
   "content.noRelatorItems": "No items yet. Click the button below to add one.",
   "content.addRelatorItem": "Add Item",
   "content.dropFileHere": "Drop file here",

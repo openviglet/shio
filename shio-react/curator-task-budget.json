@@ -20,7 +20,7 @@
       "keys": 1,
       "screens": 1,
       "ms": 3026,
-      "why": "A filled image field opens the picker on its own folder, so a replace is search → Search → file → Select → publish. An empty field opens on every site and is SH1325's path."
+      "why": "A filled image field opens the picker on its own folder, so a replace is search → Search → file → Select → publish. Since SH1325 an empty field opens beside the post too, and a folder opens on one click."
     },
     "find-page": {
       "clicks": 1,

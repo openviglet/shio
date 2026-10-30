@@ -101,7 +101,7 @@ async function resolveFullPath(fileId: string, read: ShRead = {}): Promise<Resol
   return null
 }
 
-export function FileWidget({ attr, onChange, labelledBy, describedBy }: WidgetProps) {
+export function FileWidget({ attr, onChange, labelledBy, describedBy, postId }: WidgetProps) {
   const { t } = useTranslation()
   const [browserOpen, setBrowserOpen] = useState(false)
   const [browserStartId, setBrowserStartId] = useState<string | undefined>(undefined)
@@ -401,6 +401,7 @@ export function FileWidget({ attr, onChange, labelledBy, describedBy }: WidgetPr
         onSelect={handleBrowserSelect}
         startFolderId={browserStartId}
         selectMode="file"
+        nearPostId={postId}
       />
       {/*
         SH1035 — the destination picker, folders only. Its own dialog rather than a mode on the one

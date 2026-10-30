@@ -16,7 +16,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1325** (deps: —) **Double-clicking a folder in the file picker opens the one below it, as the dialog re-centres after the first click** — Selecting a row adds the path footer, the centred dialog moves up 26px, and the second click lands on the neighbour. → §XI.88
 - 📋 **SH1326** (deps: —) **A new page can only be saved, saving returns to the folder, and the folder's table opens a row only on double-click** — Publishing a page just written costs a curator ten clicks across seven screens, the most of SH1315's six tasks. → §XI.91
 - 📋 **SH1327** (deps: —) **Benchmarks that repeat an identical read on H2 time its result cache, so a 3.5 s query printed as 17 ms** — SH1217's own measurement hid the defect SH1305 fixed, and ten timing tests may be reporting cache hits as costs. → §XI.92
 - 📋 **SH1328** (deps: —) **22 colour classes in the console paint nothing, because the design system's sheet does not ship them** — A selected row's tint, focus rings and a pages bar's draft share compile, review clean and render transparent. → §XI.93

@@ -261,25 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.88 The file picker moves under the pointer (SH1325)
-
-Measured in `content-browser-dialog.tsx` on a clean instance, with a real mouse: the
-`sections` row sits at y=363; one click selects it, the footer showing the selected path
-appears, the dialog (centred in the viewport) grows and re-centres, and the row is now
-at y=337. The second click of the double-click lands at y=363, on `theme`, and the
-picker opens `theme`. A curator double-clicking a folder enters the wrong one, sees
-"this folder is empty", and has no idea why.
-
-Three more frictions in the same dialog, met on the same task (replace a section's image):
-- it opens on the list of all sites, not on the site and folder of the post being edited;
-- a single click on a folder selects it, and Select then accepts a folder for an image field;
-- the chevron that suggests "open" is a hover decoration, not a control, and has no keyboard or screen-reader equivalent.
-
-Fix: reserve the footer's height from the first render (or pin the dialog's top), so
-selection never moves a row; open on the post's own folder; in file mode, a folder row
-opens on click and Select stays disabled until a file is chosen; make "open" a real
-control. Judged by SH1315's `replace-image` task.
-
 ### XI.91 Writing a page and publishing it should be one place (SH1326)
 
 Measured by SH1315's `create-page` task on a clean instance: rail Content (a hub), the
