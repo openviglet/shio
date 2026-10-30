@@ -46,9 +46,13 @@ test("SH1031: the chip narrows the page and says so by counting the page", () =>
 
 test("SH1031: alt is editable on the card, and only on an image", () => {
   assert.match(code, /const needsAlt = image && !\(item\.alt \?\? ""\)\.trim\(\)/u)
-  assert.match(code, /\{image && \(\s*\n\s*<div className="px-2 pb-2" onClick=\{\(event\) => event\.stopPropagation\(\)\}>/u,
+  assert.match(code, /\{image && \(\s*\n(\s*\/\/[^\n]*\n)?\s*<div className=\{cn\([^)]*\)\}\s*onClick=\{\(event\) => event\.stopPropagation\(\)\}>/u,
     "SH1031: outside the button and stopping the click, or typing in the field opens the dialog "
       + "over the thing being typed into")
+  // SH1312 — at rest the field is collapsed, not removed: `max-h-0`, so Tab still reaches it and
+  // focus opens it, and open for good while the needs-alt chip is narrowing the grid to this work.
+  assert.match(code, /altAlways \? "pb-2" : "max-h-0 overflow-hidden group-hover:max-h-12[^"]*group-focus-within:max-h-12/u,
+    "SH1312: the alt field shows on every tile at rest again, or is hidden in a way focus cannot open")
   assert.match(code, /onBlur=\{saveAlt\}/u)
   assert.match(code, /if \(event\.key === "Enter"\) event\.currentTarget\.blur\(\)/u,
     "SH1031: Enter commits, which is what makes fifty images fifty lines rather than 150 clicks")

@@ -15,7 +15,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1312** (deps: —) **The media library floats the site picker and Upload on a row of their own, and a font file is a 290px blank tile** — Three control rows sit between the title and the grid, and files without a preview draw large empty squares that read as broken images. → §XI.78
 - 📋 **SH1313** (deps: —) **The post-type editor draws Save, Save and close, Cancel and Add field all in the accent** — Four orange controls on one screen leave no primary action, and Add field's solid fill outshouts Save. → §XI.79
 - 📋 **SH1316** (deps: SH1315 ✅) **Opening a site shows its storage folders (fonts, theme, menu, en, pt) and "0 post", not its pages** — A curator thinks in pages as the visitor sees them; a file manager makes a site of 130 pages look empty and technical. → §XI.82
 - 📋 **SH1317** (deps: SH1315 ✅) **The curator, the builder and the administrator see one console, with tokens and post types beside page editing** — The product says the agent builds and the curator approves, yet half of what a curator sees is for someone else. → §XI.83

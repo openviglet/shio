@@ -241,25 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.78 The media library's controls and its empty tiles (SH1312)
-
-Measured at 1920px on `/bento/content/files` (VigR3): the hero's description wraps to
-two lines, then a row holding only the site picker and Upload aligned right, then the
-search and view toggles, then the chips (All 182, Images 67, …), and only then the grid.
-The first row of the grid is three `.woff2` fonts drawn as 290×290 grey squares with a
-document glyph, beside a photo.
-
-Two directions. Upload is the page's primary action and belongs in the hero's action
-slot, where every other page puts it; the site picker belongs with the search, since it
-is a filter. That removes a row. Files with no visual preview (fonts, documents,
-archives) should draw a compact tile, the extension as a label and the name, at a
-fraction of the height, or the grid should sort images first in the "All" chip; a font
-is not a picture and should not be given a picture's space.
-
-The alt-text inline input on an image tile is useful, but it shows on every tile at
-rest; showing it on hover or focus, with a muted mark when alt is missing, quiets the
-grid.
-
 ### XI.79 Four primary buttons on one screen (SH1313)
 
 Measured at 1920px on `/bento/content/post-type/BuildNote`: the hero has Salvar (filled

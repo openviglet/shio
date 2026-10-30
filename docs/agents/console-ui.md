@@ -4329,3 +4329,15 @@ one unframed line of figures (a number, its label, a link), and the quick action
 buttons, where only New site is filled. At 1920 px with one open note, every section's heading is
 above the fold. Listing the items themselves (which notes, on which posts) is SH1318's, which turns
 the page into the curator's inbox on top of this layout.
+
+## The media library's controls and its tiles (SH1312)
+
+Upload and the site an upload goes to are the hero's `actions`; they were a row of their own above
+the search. The design called the site picker a filter and asked for it beside the search, but it is
+the upload's **destination** (the page's own comment says so: it is component state on purpose, so a
+shared link never hands somebody a destination they did not pick), so it went with Upload. A file
+with no picture (a font, a document, an archive) is a 64px band naming its extension rather than a
+square, and the grid is `items-start` so a row does not stretch that band to the photo beside it.
+An image's alt field is collapsed at rest (`max-h-0`, so Tab still reaches it and focus opens it),
+with a muted "needs alt" line when it is missing, and stays open while the needs-alt chip is on.
+`media-library-layout.test.mjs` and `needs-alt.test.mjs` hold all three.

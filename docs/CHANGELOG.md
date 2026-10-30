@@ -2047,6 +2047,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1309** — The site list's subtitle counts the sites, a row shows its description or nothing instead of site:Name, and the pages bar is neutral and now actually paints its draft share (design §XI.75 recorded in `docs/agents/console-ui.md`).
 - **SH1310** — The post-type list shows a type's API key only where it differs from its title, in mono, with System as a muted mark instead of a column, and one-line rows when nothing differs (design §XI.76 recorded in `docs/agents/console-ui.md`).
 - **SH1311** — The home page leads with what waits as rows, then one unframed line of figures and one row of quick links with New site the only filled button, all above the fold at 1920 px (design §XI.77 recorded in `docs/agents/console-ui.md`).
+- **SH1312** — The media library puts Upload and its destination site in the hero, draws a file with no picture as a short band naming its extension, and folds each image's alt field until hover or focus (design §XI.78 superseded: it called the site picker a filter to put beside the search; it is the upload's destination, so it went into the hero with Upload) (design §XI.78 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

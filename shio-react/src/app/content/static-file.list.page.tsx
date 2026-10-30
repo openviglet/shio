@@ -347,6 +347,32 @@ export default function StaticFileListPage() {
         subtitle={t("staticFile.description")}
         urlBase={ROUTES.HOME}
         backLabel={t("home.title")}
+        /*
+          SH1312 — Upload is the page's primary action, so it sits in the hero's action slot where
+          every other page puts its own, and the site beside it is where the upload goes. They
+          used to take a row of their own between the title and the search.
+        */
+        actions={
+          <>
+            <Select value={targetSite} onValueChange={setTargetSite}>
+              <SelectTrigger size="sm" className="w-40" aria-label={t("staticFile.uploadTarget")}>
+                <SelectValue placeholder={t("staticFile.uploadTarget")} />
+              </SelectTrigger>
+              <SelectContent>
+                {sites.map((site) => (
+                  <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button size="sm" disabled={!targetSite} loading={activeUploads > 0}
+              onClick={() => fileInputRef.current?.click()}>
+              {activeUploads === 0 && <Upload className="mr-2 h-4 w-4" />}
+              {t("staticFile.upload")}
+            </Button>
+            <input ref={fileInputRef} type="file" multiple className="hidden"
+              aria-label={t("staticFile.upload")} onChange={handleFileInput} />
+          </>
+        }
       />
       <div
         className="relative"
@@ -363,30 +389,8 @@ export default function StaticFileListPage() {
           </div>
         )}
 
-        {/* Toolbar: title + search + site picker + upload + view toggle */}
+        {/* Toolbar: search + view toggle, then the chips. */}
         <div className="flex flex-col gap-4 mb-4">
-          <div className="flex items-start justify-end gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Select value={targetSite} onValueChange={setTargetSite}>
-                <SelectTrigger className="w-40" aria-label={t("staticFile.uploadTarget")}>
-                  <SelectValue placeholder={t("staticFile.uploadTarget")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {sites.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button size="sm" disabled={!targetSite} loading={activeUploads > 0}
-                onClick={() => fileInputRef.current?.click()}>
-                {activeUploads === 0 && <Upload className="mr-2 h-4 w-4" />}
-                {t("staticFile.upload")}
-              </Button>
-              <input ref={fileInputRef} type="file" multiple className="hidden"
-                aria-label={t("staticFile.upload")} onChange={handleFileInput} />
-            </div>
-          </div>
-
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-52 max-w-md">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -482,9 +486,10 @@ export default function StaticFileListPage() {
         ) : filtered.length === 0 ? (
           <FilesEmptyState items={items.length} query={query} category={category} t={t} />
         ) : view === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          // SH1312 — `items-start`, or a row stretches a file's compact tile to the photo beside it.
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 items-start gap-3">
             {filtered.map((item) => (
-              <MediaCard key={item.id} item={item} onOpen={() => setDetail(item)}
+              <MediaCard key={item.id} item={item} onOpen={() => setDetail(item)} altAlways={needsAlt}
                 selected={selected.has(item.id)} onToggleSelect={() => toggleSelect(item.id)}
                 onAltSaved={(alt) => setItems((rows) =>
                   rows.map((row) => (row.id === item.id ? { ...row, alt } : row)))} t={t} />
@@ -573,9 +578,11 @@ function CategoryChip({ active, label, count, onClick }: {
  * Not `BentoTile` itself: this tile carries a thumbnail, a hover-revealed selection checkbox and
  * an aspect-locked preview, none of which that component's children slot expresses.
  */
-function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
+function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, altAlways, t }: {
   item: ShStaticFileItem; onOpen: () => void; selected: boolean; onToggleSelect: () => void
   onAltSaved: (alt: string) => void
+  /** SH1312 — the alt field stays open while the curator is working through the images that need one. */
+  altAlways: boolean
   // SH1034 — options, because the usage badge is pluralised. The dialog's own `t` prop has taken
   // them since SH62; this one had not needed them and a narrower type is not a smaller `t`.
   t: (key: string, opts?: Record<string, unknown>) => string
@@ -624,14 +631,22 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
           className="bg-background/90 border-muted-foreground" />
       </div>
       <button type="button" onClick={onOpen} className="flex flex-col text-left">
-        <div className="aspect-square bg-muted/50 flex items-center justify-center overflow-hidden">
-          {image ? (
+        {/*
+          SH1312 — a picture's space for a picture. A font, a document or an archive has no preview,
+          and a 290px grey square with a glyph in it read as a broken image: it gets a short band
+          that names the kind instead.
+        */}
+        {image ? (
+          <div className="aspect-square bg-muted/50 flex items-center justify-center overflow-hidden">
             <img src={service.thumbUrl(item)} alt={item.fileName ?? ""} loading="lazy"
               className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
-          ) : (
-            <MediaCategoryIcon contentType={item.contentType} className="h-10 w-10 text-muted-foreground" />
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="bg-muted flex h-16 items-center gap-2 px-3">
+            <MediaCategoryIcon contentType={item.contentType} className="h-5 w-5 shrink-0 text-muted-foreground" />
+            <span className="text-muted-foreground font-mono text-xs uppercase">{extensionOf(item)}</span>
+          </div>
+        )}
         <div className="p-2">
           <p className="truncate text-xs font-medium" title={item.fileName ?? item.id}>
             {item.fileName ?? item.id}
@@ -679,9 +694,20 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
         SH1031 — outside the button, because a click in here must not open the dialog. Only on
         images: a font has no alt to miss, which is the same question `asset-no-alt` asks.
       */}
+      {/*
+        SH1312 — at rest it is a muted mark when the image has no alt, and the field opens on hover
+        or keyboard focus. Collapsed rather than hidden, so Tab still reaches it and opens it.
+      */}
+      {needsAlt && !altAlways && (
+        <p className="text-muted-foreground px-2 pb-1 text-[10px] group-hover:hidden group-focus-within:hidden">
+          {t("staticFile.needsAlt")}
+        </p>
+      )}
       {image && (
         // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- only stops the tile's click; the alt-text input inside is the control (SH1054)
-        <div className="px-2 pb-2" onClick={(event) => event.stopPropagation()}>
+        <div className={cn("px-2 transition-all",
+          altAlways ? "pb-2" : "max-h-0 overflow-hidden group-hover:max-h-12 group-hover:pb-2 group-focus-within:max-h-12 group-focus-within:pb-2")}
+          onClick={(event) => event.stopPropagation()}>
           <Input
             value={alt}
             disabled={saving}
@@ -698,6 +724,13 @@ function MediaCard({ item, onOpen, selected, onToggleSelect, onAltSaved, t }: {
       )}
     </div>
   )
+}
+
+/** A file's extension, from its name, for a tile that has no picture to show (SH1312). */
+function extensionOf(item: ShStaticFileItem): string {
+  const name = item.fileName ?? ""
+  const dot = name.lastIndexOf(".")
+  return dot > 0 ? name.slice(dot + 1) : (item.contentType?.split("/").pop() ?? "")
 }
 
 /** A file's thumbnail, or its kind's icon where it is not an image. */
