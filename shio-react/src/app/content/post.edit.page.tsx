@@ -25,7 +25,8 @@ import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
+import { useUsedOn } from "@/app/content/use-used-on"
 import axios from "axios"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
@@ -308,6 +309,8 @@ export default function PostUnifiedEditPage() {
   const renderable = isRenderable({
     siteId, failed: site.isError, layouts: site.data?.postTypeLayout, typeName: post?.shPostType?.name,
   })
+  // SH1323 — a post with no layout of its own (a section) is previewed on a page that uses it.
+  const usedOn = useUsedOn(postId, site.data?.name, post?.furl, renderable === false).data ?? []
 
   // The folder the post lives in: Cancel and the hero's Back link both return there, not to the
   // site list — the link used to be the bare content root, so Back skipped the site entirely.
@@ -795,8 +798,21 @@ export default function PostUnifiedEditPage() {
         <AdaptiveSectionCard>
           <AdaptiveSectionCard.StaticHeader icon={IconEye} title={t("insights.previewSection")} />
           <AdaptiveSectionCard.Content>
+            {usedOn.length > 0 && (
+              <p className="mb-3 text-xs text-muted-foreground">
+                {t("insights.previewUsedOn")}{" "}
+                {usedOn.map((page, index) => (
+                  <span key={page.id}>
+                    {index > 0 && ", "}
+                    <Link to={`${ROUTES.CONSOLE}/content/post/${page.id}`} className="font-medium text-foreground underline-offset-4 hover:underline">
+                      {page.title ?? page.address}
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            )}
             <PostLivePreview address={`id:${postId}`} data={data} revision={insightsAt}
-              renderable={renderable} />
+              renderable={renderable} on={usedOn[0]?.address} />
           </AdaptiveSectionCard.Content>
         </AdaptiveSectionCard>
 

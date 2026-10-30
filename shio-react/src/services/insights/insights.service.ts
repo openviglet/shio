@@ -91,10 +91,11 @@ export class ShInsightsService {
  * only a render that a newer keystroke or a save has already superseded.</p>
  */
 export class ShProposedRenderService {
-  async html(address: string, data: Record<string, unknown>, read: ShRead = {}): Promise<string> {
+  /** SH1323 — `on` draws a section's values on a page that uses it, a section having no layout. */
+  async html(address: string, data: Record<string, unknown>, read: ShRead = {}, on?: string): Promise<string> {
     const response = await axios.post<{ html?: string }>(
       "/v2/agent/render?format=html",
-      { address, state: "draft", data },
+      { address, state: "draft", data, on },
       { signal: read.signal },
     )
     return response.data?.html ?? ""

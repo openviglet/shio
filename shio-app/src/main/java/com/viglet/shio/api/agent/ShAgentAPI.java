@@ -718,7 +718,7 @@ public class ShAgentAPI {
             @RequestBody ShProposedRender body,
             @RequestParam(name = "format", required = false) String format) {
 
-        var proposed = shAgentRenderService.proposed(body.address(), body.state(), body.data(),
+        var proposed = shAgentRenderService.proposed(body.address(), body.state(), body.data(), body.on(),
                 "html".equalsIgnoreCase(format));
         return ResponseEntity.ok(proposed.html() == null ? proposed.digest() : proposed);
     }
@@ -727,8 +727,11 @@ public class ShAgentAPI {
      * @param address the page to render (SH79)
      * @param state   {@code draft} or {@code published}; a revision is refused, being a record
      * @param data    field values laid over the stored document; a field it does not name is kept
+     * @param on      SH1323 — with {@code address} a section, a page of its site that uses it: that
+     *                page is drawn with the section carrying {@code data}; absent, {@code address}
+     *                is the page
      */
-    public record ShProposedRender(String address, String state, JsonNode data) {
+    public record ShProposedRender(String address, String state, JsonNode data, String on) {
     }
 
     /**

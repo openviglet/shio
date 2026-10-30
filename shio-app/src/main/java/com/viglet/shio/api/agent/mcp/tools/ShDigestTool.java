@@ -61,9 +61,10 @@ public class ShDigestTool implements ShMcpTool {
     @Override
     public Map<String, Object> inputSchema() {
         return ShMcpTool.schema(Map.of(
-                "address", ShMcpTool.string("post:<site>/<url> — the page as Shio holds it."),
-                "url", ShMcpTool.string(
-                        "Absolute delivery URL, when the instance allows fetching."),
+                // SH1323 — these four descriptions were tightened to pay for `on` (P3: the list's
+                // ceiling held rather than raised).
+                "address", ShMcpTool.string("post:<site>/<url>, as stored."),
+                "url", ShMcpTool.string("Delivery URL, if fetch is on."),
                 // SH811 — a parameter and not a thirteenth tool, decided by measurement: the twelve
                 // tools sum to 2499 against a 2500 ceiling, so `tools/list` has ONE token of
                 // headroom, and a new tool the size of this one costs 146. This costs a fraction of
@@ -73,13 +74,14 @@ public class ShDigestTool implements ShMcpTool {
                 // plugin user's only surface, so a catalogue reachable over REST alone would be P1
                 // broken on the surface P1 is about.
                 "include", ShMcpTool.string(
-                        "editable — fields a curator could edit; insertable — what fits in each "
-                                + "section slot."),
+                        "editable: fields a curator edits; insertable: what fits each slot."),
                 // SH990 — REST's state=, which a revision renders through like /preview.
                 "state", ShMcpTool.string("published, draft or rev:<n>."),
                 // SH1014 — the digest of a page that does not exist yet, which is what turns a dry
                 // run into an answer about how the page will look.
-                "data", ShMcpTool.string("Field values to render unsaved; needs write.")),
+                "data", ShMcpTool.string("Unsaved field values; needs write."),
+                // SH1323 — a section has no layout, so its proposal is drawn on a page using it.
+                "on", ShMcpTool.string("Page to draw section data on.")),
                 List.of());
     }
 
@@ -95,7 +97,8 @@ public class ShDigestTool implements ShMcpTool {
         JsonNode proposed = arguments == null ? null : arguments.get("data");
         if (proposed != null && !proposed.isNull()) {
             return ShAgentVerifyTerse.digest(
-                    shAgentRenderService.proposed(address, state, proposed, false).digest());
+                    shAgentRenderService.proposed(address, state, proposed,
+                            ShMcpArgs.string(arguments, "on"), false).digest());
         }
 
         String digest = ShAgentVerifyTerse.digest(

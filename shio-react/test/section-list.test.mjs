@@ -13,7 +13,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import { stripComments } from "./support/source-text.mjs"
-import { friendlyUrlOf, moved, siteOf } from "../src/lib/section-urls.ts"
+import { friendlyUrlOf, moved, siteOf, usedOnParams } from "../src/lib/section-urls.ts"
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src")
 
@@ -46,4 +46,18 @@ test("SH1323: a listed section opens its editor, by the id its address resolved 
   const list = stripComments(readFileSync(join(SRC, "components", "widgets", "section-list.tsx"), "utf8"))
   assert.match(list, /<Link to=\{`\$\{ROUTES\.CONSOLE\}\/content\/post\/\$\{hit\.id\}`\}/u,
     "SH1323: a page's section is named in its list with no way into it, so its headline is reached by search")
+})
+
+test("SH1323: a section's pages are found by its quoted friendly URL, in its own site", () => {
+  assert.deepEqual(usedOnParams("Acme", "/sections/pricing/hero"),
+    { site: "Acme", q: "\"/sections/pricing/hero\"", ids: true, limit: 10 },
+    "SH1323: unquoted, a section's URL also finds the pages of every section whose URL extends it")
+})
+
+test("SH1323: a section's editor previews it on the first page that uses it, and names them all", () => {
+  const editor = stripComments(readFileSync(join(SRC, "app", "content", "post.edit.page.tsx"), "utf8"))
+  assert.match(editor, /useUsedOn\(postId, site\.data\?\.name, post\?\.furl, renderable === false\)/u,
+    "SH1323: the editor no longer asks which pages use a post that has no layout of its own")
+  assert.match(editor, /<PostLivePreview[^>]*on=\{usedOn\[0\]\?\.address\}/u,
+    "SH1323: a section's preview is the no-layout sentence again, so a headline is edited blind")
 })

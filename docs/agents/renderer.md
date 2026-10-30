@@ -2207,6 +2207,15 @@ for a console frame; an agent asking for an outline does not pay for it. `state=
 a revision is a record, and laying unsaved values over one would render a document that never
 existed under a version number saying it did.
 
+**A section is drawn on its page (SH1323).** A section has no layout, so a proposal of one had
+nothing to render and a curator edited a headline blind. `on` (REST body field, MCP `shio_digest`
+argument) names a page of the section's site that uses it; `renderProposedOn` renders that page as
+stored, with a transient copy of the section swapped in through `ShRenderHelpers.withTransient`,
+keyed by both the section's id and its friendly URL, the two spellings a Sections field holds. Write
+on the section, read on the page, and a page of another site is a teaching 400
+(`render-on-another-site`) naming the `find` that lists the right ones. Which pages use a section is
+`/agent/find?site=…&q="<friendly URL>"`, quoted: no reverse index, since `q` already reads field data.
+
 ## `{{#image}}` stops fabricating an empty alt (SH1031)
 
 The helper put `alt: ""` whenever the asset's `ALT` was null, and a template writing

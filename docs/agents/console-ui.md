@@ -4092,7 +4092,11 @@ same list of friendly URLs, so the renderer and the agent see nothing new; the p
 arithmetic is `lib/section-urls.ts`, and `section-list.test.mjs` holds it. Since SH1323 a resolved
 row's title is a link to that section's editor, by the id `/agent/resolve` already returned: a
 page's headline lives in its hero section, and the list named the section with no way into it. An
-unresolved row stays plain text. The section's editor still previews no page; that half is open.
+unresolved row stays plain text. And the section's editor previews the page: a post with no layout
+asks `/agent/find?site=…&q="<its friendly URL>"` (quoted, so `/hero` does not match `/hero-2`; the
+builder is `usedOnParams` in `lib/section-urls.ts`), names every page that answers ("Used on:"),
+and hands the first to `PostLivePreview` as `on`, which `POST /agent/render` draws with the
+section's unsaved values in place.
 
 ## A group's page shows who is in it (SH1200)
 

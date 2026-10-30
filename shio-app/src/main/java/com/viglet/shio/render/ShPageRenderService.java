@@ -266,6 +266,31 @@ public class ShPageRenderService {
     }
 
     /**
+     * SH1323 — the page at {@code url}, with {@code section} carrying {@code proposed} values.
+     *
+     * <p>A section has no layout of its own, so {@link #renderProposed} of one has nothing to draw,
+     * and a curator edited a page's headline without seeing the page. This renders the page that
+     * uses the section, as stored, with a transient copy of the section in its place for this one
+     * render: answered by its id and by its friendly URL, the two spellings a Sections field holds.
+     * Same merge and the same read-only transaction as {@link #renderProposed}, so nothing is
+     * written either.</p>
+     */
+    @Transactional(readOnly = true,
+        noRollbackFor = { ShTeachingException.class, ShPageRedirectException.class })
+    public ShRenderedPage renderProposedOn(String siteKey, String url, ShPostState state,
+                                           ShPostUnified section, JsonNode proposed) {
+        ShSite site = siteByKey(siteKey);
+        ShPostUnified page = pageAt(site, url, state);
+        ShPostUnified copy = proposedCopy(section, proposed);
+        Map<String, ShPostUnified> swapped = new java.util.HashMap<>();
+        swapped.put(section.getId(), copy);
+        if (section.getFurl() != null && !section.getFurl().isBlank()) {
+            swapped.put(section.getFurl(), copy);
+        }
+        return ShRenderHelpers.withTransient(swapped, () -> renderPage(site, page, state, Map.of(), null));
+    }
+
+    /**
      * SH1105 — what one section of {@code typeName} looks like on this page, as HTML.
      *
      * <p>A curator choosing between a hero and a rich-text block is choosing a shape, and a sentence

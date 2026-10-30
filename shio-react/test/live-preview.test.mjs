@@ -69,11 +69,12 @@ test("SH1014: the console asks for the markup, and says the values are not saved
   assert.match(service, /"\/v2\/agent\/render\?format=html"/u,
     "SH1014: format=html is what a frame needs; without it the same call answers the digest, "
       + "which an agent wants and this would otherwise pay for")
-  assert.match(service, /\{ address, state: "draft", data \}/u)
+  // SH1323 added `on`, the page a section is drawn on; the body is otherwise the same.
+  assert.match(service, /\{ address, state: "draft", data(, on)? \}/u)
   assert.match(preview, /t\("insights\.previewNotSaved"\)/u,
     "SH1014: a preview that looks like the page is exactly the thing a curator could mistake for "
       + "having saved it")
-  assert.match(page, /<PostLivePreview address=\{`id:\$\{postId\}`\} data=\{data\} revision=\{insightsAt\}\s+renderable=\{renderable\} \/>/u)
+  assert.match(page, /<PostLivePreview address=\{`id:\$\{postId\}`\} data=\{data\} revision=\{insightsAt\}\s+renderable=\{renderable\}( on=\{usedOn\[0\]\?\.address\})? \/>/u)
 })
 
 test("SH1014: every width is reachable and announced", () => {

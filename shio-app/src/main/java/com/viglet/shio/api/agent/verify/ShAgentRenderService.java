@@ -310,6 +310,21 @@ public class ShAgentRenderService {
      * @param data field values laid over the stored document; a field it does not name is unchanged
      */
     public ShAgentProposed proposed(String rawAddress, String state, JsonNode data, boolean html) {
+        return proposed(rawAddress, state, data, null, html);
+    }
+
+    /**
+     * {@link #proposed(String, String, JsonNode, boolean)}, drawn on another page (SH1323).
+     *
+     * <p>With {@code on} set, {@code rawAddress} is a section and {@code on} a page that uses it: the
+     * page renders as stored with the section carrying {@code data}. A section has no layout, so on
+     * its own it has no picture at all; this is the picture its edit changes. Write on the section is
+     * the gate, as for any proposal, and the page must be in the same site.</p>
+     */
+    public ShAgentProposed proposed(String rawAddress, String state, JsonNode data, String on, boolean html) {
+        if (on != null && !on.isBlank()) {
+            return proposedOn(rawAddress, state, data, on, html);
+        }
         ShContentPerspective perspective = ShContentPerspective.parse(state)
                 .requireVersion("/agent/render", "POST /api/v2/agent/render");
         if (perspective.isRevision()) {
@@ -331,6 +346,47 @@ public class ShAgentRenderService {
         ShAgentDigest digest = render(SOURCE_RENDERED, address, null, null, List.of(),
                 ShHtmlOutline.of(markup), look, markersOf(markup), regionsOf(markup, look));
         return new ShAgentProposed(digest, html ? framed(markup, post, rendered) : null);
+    }
+
+    private ShAgentProposed proposedOn(String rawAddress, String state, JsonNode data, String on,
+                                       boolean html) {
+        ShContentPerspective perspective = ShContentPerspective.parse(state)
+                .requireVersion("/agent/render", "POST /api/v2/agent/render");
+        if (perspective.isRevision()) {
+            throw new ProposedOnRevisionException(state);
+        }
+        ShPostUnified section = postFor(rawAddress, perspective);
+        shContentAclService.requireWrite(section.getId());
+        ShPostUnified page = postFor(on, perspective);
+        shContentAclService.requireRead(page.getId());
+        if (page.getShSite() == null || page.getFurl() == null || page.getFurl().isBlank()) {
+            throw new NotAPageException(on, "post");
+        }
+        if (section.getShSite() == null || !page.getShSite().getId().equals(section.getShSite().getId())) {
+            throw new OnAnotherSiteException(rawAddress, on);
+        }
+        var rendered = pageRenderService.renderProposedOn(page.getShSite().getId(), page.getFurl(),
+                page.getState(), section, data);
+        String markup = rendered.html();
+        ShHtmlAppearance.Appearance look = ShHtmlAppearance.of(markup);
+        ShAgentDigest digest = render(SOURCE_RENDERED, shAddressResolver.addressOf(page).toString(), null,
+                null, List.of(), ShHtmlOutline.of(markup), look, markersOf(markup), regionsOf(markup, look));
+        return new ShAgentProposed(digest, html ? framed(markup, page, rendered) : null);
+    }
+
+    /** SH1323 — a section is drawn on a page of its own site, or not at all. */
+    public static class OnAnotherSiteException extends ShTeachingException {
+
+        public OnAnotherSiteException(String address, String on) {
+            super(ShProblem.badRequest("render-on-another-site",
+                            "'" + on + "' is not in the site of '" + address + "'")
+                    .withDetail("`on` names the page a section is drawn on, and a page composes only "
+                            + "sections of its own site.")
+                    .withFix("Name a page of the section's site; GET /api/v2/agent/find?site=<site>"
+                            + "&type=Page&q=\"<the section's friendly URL>\" lists the ones that use it.")
+                    .withExample("{\"address\":\"post:Acme/sections/pricing/hero\",\"on\":\"post:Acme/pricing\","
+                            + "\"data\":{\"heading\":\"Plans\"}}"));
+        }
     }
 
     /**

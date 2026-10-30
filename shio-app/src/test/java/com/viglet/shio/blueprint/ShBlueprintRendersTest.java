@@ -440,4 +440,26 @@ class ShBlueprintRendersTest {
         assertThat(shPageRenderService.sectionPreview(aPageId(), "sections", "NoSuchType")).isEmpty();
         assertThat(shPageRenderService.sectionPreview("no-such-page", "sections", "SectionHero")).isEmpty();
     }
+
+    @Test
+    @DisplayName("SH1323: a section's unsaved values are drawn on the page that uses it, and stored nowhere")
+    void aSectionIsPreviewedOnItsPage() {
+        String hero = "post:" + siteName + "/sections/pricing/hero";
+        var proposed = new ObjectMapper().createObjectNode().put("heading", "SH1323 unsaved headline");
+
+        String html = shAgentRenderService.proposed(hero, "draft", proposed, "post:" + siteName + "/pricing",
+                true).html();
+
+        assertThat(html)
+                .as("SH1323: the hero's edit is not on the Pricing page drawn for it, so the curator "
+                        + "edits a headline without seeing the page it appears on")
+                .contains("SH1323 unsaved headline");
+        assertThat(html)
+                .as("SH1323: the page is drawn whole, its other sections around the one being edited")
+                .contains("data-shio-section=\"SectionFaq\"");
+        assertThat(shPageRenderService.renderProposed(siteName, "/pricing", ShPostState.DRAFT, null, java.util.Map.of())
+                        .html())
+                .as("SH1323: the proposal reached the stored page")
+                .doesNotContain("SH1323 unsaved headline");
+    }
 }

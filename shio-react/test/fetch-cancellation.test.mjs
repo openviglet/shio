@@ -413,7 +413,7 @@ test("SH1116: the last three abort what they superseded, and none reads a cancel
 
   // The live preview's render is a POST, and a read: it persists nothing, so it takes a signal.
   const insights = read("src/services/insights/insights.service.ts");
-  assert.match(insights, /\{ address, state: "draft", data \},\s*\{ signal: read\.signal \}/u,
+  assert.match(insights, /\{ address, state: "draft", data(, on)? \},\s*\{ signal: read\.signal \}/u,
     "SH1116: the proposed render does not forward the signal, so aborting it aborts nothing");
   const history = read("src/services/history/history.service.ts");
   assert.match(history, /`\/v2\/history\/object\/\$\{objectId\}`,\s*\{ params: params\(query\), signal: read\.signal \}/u,

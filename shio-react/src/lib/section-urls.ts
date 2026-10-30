@@ -29,3 +29,14 @@ export function moved(values: readonly string[], index: number, by: -1 | 1): str
   ;[next[index], next[target]] = [next[target], next[index]]
   return next
 }
+
+/**
+ * SH1323 — the `/agent/find` that lists the posts using a friendly URL: the URL, quoted, in its own
+ * site's data. A Sections field stores friendly URLs and `q` already searches stored field data, so
+ * this is the listing every surface has (`shio_find`, `shio find`), not a reverse index of its own.
+ * Quoted because the stored value is a JSON string: `"/sections/pricing/hero"` does not match
+ * `/sections/pricing/hero-2`.
+ */
+export function usedOnParams(site: string, furl: string) {
+  return { site, q: `"${furl}"`, ids: true, limit: 10 }
+}

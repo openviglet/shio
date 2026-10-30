@@ -36,6 +36,11 @@ interface Props {
    * version still rendered every menu once before its site had answered.
    */
   renderable: boolean | undefined
+  /**
+   * SH1323 — a page that uses this post, as an address: a section has no layout of its own, so its
+   * values are drawn on that page instead, and the frame renders even where `renderable` is false.
+   */
+  on?: string
 }
 
 /**
@@ -61,7 +66,7 @@ interface Props {
  * a preview renders content from this instance, but it is still a page being displayed inside the
  * console's own origin, and the console's session is exactly what it must not be able to reach.</p>
  */
-export function PostLivePreview({ address, data, revision, renderable }: Readonly<Props>) {
+export function PostLivePreview({ address, data, revision, renderable, on }: Readonly<Props>) {
   const { t } = useTranslation()
   const [html, setHtml] = useState<string>("")
   const [width, setWidth] = useState<Width>("desktop")
@@ -90,7 +95,7 @@ export function PostLivePreview({ address, data, revision, renderable }: Readonl
     inflight.current = abort
     setLoading(true)
     setFailed(false)
-    return service.html(address, latest.current, { signal: abort.signal })
+    return service.html(address, latest.current, { signal: abort.signal }, on)
       .then(setHtml)
       // A page with no layout cannot render, which is a fact about the page rather than an error:
       // the editor still works, and a dialog about it would be in the way of the fix. A superseded
@@ -101,7 +106,7 @@ export function PostLivePreview({ address, data, revision, renderable }: Readonl
       .finally(() => {
         if (!abort.signal.aborted) setLoading(false)
       })
-  }, [address])
+  }, [address, on])
 
   const cancel = useCallback(() => inflight.current?.abort(), [])
 
@@ -109,7 +114,7 @@ export function PostLivePreview({ address, data, revision, renderable }: Readonl
   // typing asks for below, so the spinner is raised from the timer's callback and not from the effect
   // body: the render is a request to an external system, and this is the effect subscribing to it.
   // SH1167 — only a type the site renders as a page is asked for, and only once that is known.
-  const asks = renderable === true
+  const asks = renderable === true || Boolean(on)
   useEffect(() => {
     if (!asks) return undefined
     const timer = setTimeout(() => void render(), 0)
@@ -128,7 +133,7 @@ export function PostLivePreview({ address, data, revision, renderable }: Readonl
     return () => clearTimeout(timer)
   }, [live, asks, render, typed])
 
-  if (renderable === false) {
+  if (renderable === false && !on) {
     return <p className="text-xs text-muted-foreground">{t("insights.previewNoLayout")}</p>
   }
 

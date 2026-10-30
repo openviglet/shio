@@ -188,6 +188,10 @@
             "description" : "#string",
             "type" : "string"
           },
+          "on" : {
+            "description" : "#string",
+            "type" : "string"
+          },
           "state" : {
             "description" : "#string",
             "type" : "string"

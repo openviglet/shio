@@ -261,26 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.89 From a page to its sections, and back to the page (SH1323)
-
-Measured on the marketing-site blueprint: the Pricing page's Sections field lists "1
-Pricing SectionHero · /sections/pricing/hero", "2 Questions people ask first", "3 Still
-deciding?", each with move up, move down and remove, and nothing that opens the section.
-The page's visible headline is the hero section's `heading`, so "change this page's
-headline" means leaving the page, searching for a post whose title is the old headline,
-and opening it.
-
-Once there, the live preview says the site has no layout for this post type, so the
-section "is content used by other pages", and draws nothing. The curator edits the
-headline without seeing the page it appears on, then publishes a post whose confirmation
-is titled "Publish this page?".
-
-Direction: each listed section is a link to its editor (and the row could expand to edit
-inline); a section's editor previews the page or pages that use it (the reverse index
-SH1033 built for assets has the same shape for section references), with "used on
-Pricing" named above the form. Judged by SH1315's `change-headline` task, whose path
-today is search, not the page.
-
 ### XI.90 What the command palette says about a post (SH1324)
 
 Measured on a clean instance in Portuguese: Ctrl+K and "Pricing" list "PricingMenuItem
