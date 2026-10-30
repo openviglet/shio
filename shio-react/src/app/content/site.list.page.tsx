@@ -115,12 +115,16 @@ function PagesBar({ published, draft }: Readonly<{ published: number; draft: num
  * SH1220 — a site as a card: its published home's picture, then exactly the row's facts. A site
  * with no stored picture shows its initials and says so, rather than a placeholder that reads as a
  * page. The card is one link, so the focus ring is the card's; the menu is the row's.
+ *
+ * SH1329 — the link is named by its own text. An `aria-label` of the site's name left the
+ * description, the pages and the last change out of a name the card shows, which axe fails as a
+ * label-content mismatch: a voice-control user saying what they see got no answer.
  */
 function SiteCard({ site, actions }: Readonly<{ site: ShSite; actions: BentoActionsMenuItem[] }>) {
   const { t } = useTranslation()
   return (
     <div className="bg-card focus-within:ring-ring relative flex h-full flex-col overflow-hidden rounded-xl border focus-within:ring-2">
-      <Link to={browse(site)} aria-label={site.name} className="flex flex-1 flex-col outline-none">
+      <Link to={browse(site)} className="flex flex-1 flex-col outline-none">
         <div className="bg-muted aspect-[16/10] w-full overflow-hidden">
           {site.thumbnail ? (
             <img

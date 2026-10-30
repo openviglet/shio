@@ -261,22 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.94 The site card's name and its visible text (SH1329)
-
-Found by the console check run for SH1313 on a clean instance (2026-10-30), on `sites`,
-`legacy-console-content`, `legacy-console-tenant-prefixed` and both `a11y-viewports`
-widths. axe reports `label-content-name-mismatch` as serious on `a[aria-label="Console
-Check"]`. That element is the sites grid's `SiteCard` link in `site.list.page.tsx`. Its
-accessible name is the site's name, but the visible text inside it also holds the
-description, the pages figures and the last change. WCAG 2.5.3 asks that the visible
-label be part of the name, so voice control users who say what they see cannot activate
-it. The console check treats serious findings as never debt, so every run is red here
-today.
-
-Fix: drop the `aria-label` and let the link's name come from its content, or give it
-`aria-labelledby` pointing at the name element. Either way the card's own text is the
-name. Done when the check's `sites` probe and both viewport runs pass axe on the grid.
-
 ### XI.95 Where /bento/admin goes (SH1330)
 
 Found by the console check run for SH1313 on a clean instance (2026-10-30). The
@@ -383,6 +367,50 @@ candidates, both cheap and both P1-neutral (they add a way in, not a new write):
 Judged by `create-page`, which should reach about four clicks over three screens. Record
 the budget when it drops, and keep the task's start at /bento (SH1315's rule), so the
 saving is real and not a deep link.
+
+### XI.104 A menu item's live preview asks for a render that cannot exist (SH1343)
+
+Found by the strict console check run for SH1329 on a clean instance with the
+marketing-site blueprint (2026-10-30). The `post-edit:MenuItem` probe fails on `400 POST
+/api/v2/agent/render?format=html`, and the answer is a teaching error: `Site 'Console
+Check' binds no layout for post-type 'MenuItem'`, `allowed: ["Page"]`. The Menu, Page
+and every section editor in the same run pass.
+
+`PostLivePreview` (`src/components/post-live-preview.tsx`) asks for a render only when
+`renderable === true` or an `on` page is known (SH1167, SH1323), so one of the two gates
+let a MenuItem through. Either `renderable` reads true for a type the site binds no
+layout to, or `useUsedOn` returns a page that uses the item and the server's `on` path,
+written for sections (`ShAgentRenderService`, SH1323), refuses a MenuItem drawn through
+a Menu rather than through a page's sections field. Reproduce first: open the item in
+the console, read the request body, and see which gate it came through.
+
+Fix at the gate that is wrong. If the `on` path is the one, it should either draw the
+item on the page through its menu, which is the picture a curator editing a menu entry
+wants, or the console should not pass `on` for a type the server cannot draw that way. A
+400 the editor asked for is a red probe on every check run, and a curator sees a preview
+that failed for a reason that is not theirs. Done when `post-edit:MenuItem` passes and
+an assertion names the gate that let the request through.
+
+### XI.105 The token form's save bar never appears (SH1344)
+
+Found by the strict console check run for SH1329 on a clean instance (2026-10-30). The
+`bento-token-new` probe at `/bento/admin/tokens/new` fails with "the save bar did not
+appear after scrolling", for both the save bar itself and its morph. The probe scrolled,
+so the form is tall enough to scroll at the check's viewport, which is what separates it
+from the auth-provider, exchange-provider and webhook forms beside it: those pass with
+"too short to scroll".
+
+The save-bar morph is SH901's contract: an entity form's Save and Cancel live in the
+shell's hero and morph into a sticky bar once the hero scrolls away, so a curator at the
+bottom of a long form can still save. Either the token form does not compose
+`BentoEntityShell` with a `formId` the way its siblings do, so there is no morph to
+show, or its scroll container is not the one the shell observes and the hero never
+reports leaving.
+
+Reproduce by opening the form at the check's viewport, scrolling to the bottom and
+reading whether the hero's actions are present at all. Fix the form to compose the shell
+the way the webhook form does, or move its scroll onto the observed container. Done when
+`bento-token-new` passes in the strict console check.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

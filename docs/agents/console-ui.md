@@ -4182,6 +4182,15 @@ test lists every token colour class the source names that neither the sheet nor 
 it held those 22 by name before the copy and holds none after. A ticked row on a fresh instance
 measured `oklab(0.75 0.10 0.15 / 0.05)`, the primary at 5%, where it had been transparent.
 
+**A card that is one link is named by its own text (SH1329).** The sites grid's `SiteCard` link
+carried `aria-label={site.name}` over a card that also shows the description, the pages and the last
+change, and axe fails that as `label-content-name-mismatch` (WCAG 2.5.3): a voice-control user saying
+what the card shows gets no answer. `aria-labelledby` pointing at the name would fail the same way,
+because the rule compares the name with the link's whole visible text; dropping the label is the fix,
+and `bento-site-slice.test.mjs` holds it. Verify an a11y change like this one against the jar's own
+console (`--base http://localhost:2710`), as CI does: driven through Vite the same run also failed a
+thumbnail `PUT` with 403, an artefact of the proxy's second origin.
+
 ## No element passes a prop the package ignores (SH1208)
 
 VDS182 made `tone` a no-op on `BentoEmptyState`, `BentoEntityTile`, `BentoFormSection`,

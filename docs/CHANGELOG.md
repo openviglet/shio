@@ -2063,6 +2063,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1326** — The new-post form publishes: Publish… saves and opens the editor with its own confirmation already asking, and create-page fell from nine clicks to six (design §XI.91 superseded: its target of five clicks over three screens was mostly navigation before the form, now SH1338) (design §XI.91 recorded in `docs/agents/console-ui.md`).
 - **SH1327** — Every timed test makes H2 forget its cached results first (ShH2ResultCache), a lint names any that does not, and re-measured figures held within noise (design §XI.92 superseded: switching the cache off (OPTIMIZE_REUSE_RESULTS, QUERY_CACHE_SIZE) also stops H2 reusing an IN subquery, so SH1305's read measured 15.9 s; a sequence create/drop invalidates instead) (design §XI.92 recorded in `docs/agents/build.md`).
 - **SH1328** — The console's theme carries the preset's colour keys, so all 22 token colour classes paint; a test lists any the sheet and theme cannot produce, and a ticked row shows its tint (design §XI.93 recorded in `docs/agents/console-ui.md`).
+- **SH1329** — The site card's link is named by its own text, so axe passes the sites route and both viewport runs in the strict console check, and a test holds the label off (design §XI.94 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

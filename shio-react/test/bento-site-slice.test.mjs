@@ -156,3 +156,15 @@ test("SH899: the reader is not vacuous — it parses real shells and a real surv
  * The census file is deleted and the digest has no era field, so there is no second reader left to
  * disagree with; `surface-digest.test.mjs` says what the digest measures now.
  */
+
+test("SH1329: the site card's link is named by its own text, not by the site alone", () => {
+  // The card is one link holding the name, the description, the pages figures and the last change.
+  // An `aria-label` of the site's name left most of that visible text out of the name, which axe
+  // fails as label-content-name-mismatch (WCAG 2.5.3): a voice-control user who says what the card
+  // shows gets no answer. Named from its content, every word on the card is in its name.
+  const card = LIST.slice(LIST.indexOf("function SiteCard"), LIST.indexOf("function useSitesView"))
+  const links = findElements(card, "Link")
+  assert.equal(links.length, 1, `SH1329: SiteCard should hold exactly one Link, found ${links.length}`)
+  assert.doesNotMatch(links[0].attrs, /aria-label(?:ledby)?\s*=/,
+    "SH1329: the site card's Link carries an aria-label again, so its name is narrower than its visible text")
+})
