@@ -155,6 +155,8 @@ export default function AdminUserPage() {
                       <FormControl>
                         <Input type="password" {...field} value={field.value ?? ""} />
                       </FormControl>
+                      {/* SH1335 — an edit sets a new password only when one is typed; blank keeps it. */}
+                      {!isNew && <p className="text-muted-foreground text-xs">{t("admin.passwordKeepHint")}</p>}
                       <FormMessage />
                     </FormItem>
                   )}

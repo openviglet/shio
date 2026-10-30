@@ -11,6 +11,7 @@ package com.viglet.shio.api.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.security.Principal;
 
@@ -96,5 +97,33 @@ class ShUserPasswordTest {
         assertThat(listed)
                 .as("SH1334: the user list sends every user's password hash to the console")
                 .doesNotContain("\"password\"");
+    }
+
+    @Test
+    @DisplayName("SH1335: an edit sets a new password when it carries one, and keeps the old one when blank")
+    void anEditChangesThePasswordOnlyWhenItCarriesOne() throws Exception {
+        String user = "sh1335-editor";
+        mockMvc.perform(post("/api/v2/user/" + user).principal(admin).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"" + user + "\",\"password\":\"first-pass\",\"firstName\":\"Edu\"}"));
+        try {
+            mockMvc.perform(put("/api/v2/user/" + user).principal(admin).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"username\":\"" + user + "\",\"password\":\"second-pass\",\"firstName\":\"Edu\"}"));
+            assertThat(passwordEncoder.matches("second-pass", shUserRepository.findByUsername(user).getPassword()))
+                    .as("SH1335: the password typed into an edit was dropped, so no password can ever be changed")
+                    .isTrue();
+
+            mockMvc.perform(put("/api/v2/user/" + user).principal(admin).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"username\":\"" + user + "\",\"password\":\"\",\"firstName\":\"Eduarda\"}"));
+            ShUser edited = shUserRepository.findByUsername(user);
+            assertThat(edited.getFirstName()).isEqualTo("Eduarda");
+            assertThat(passwordEncoder.matches("second-pass", edited.getPassword()))
+                    .as("SH1335: an edit with the password left blank cleared or replaced it, locking the user out")
+                    .isTrue();
+        } finally {
+            ShUser made = shUserRepository.findByUsername(user);
+            if (made != null) {
+                shUserRepository.delete(made);
+            }
+        }
     }
 }

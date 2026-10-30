@@ -11,6 +11,7 @@
   "admin.groups": "Grupos",
   "admin.newUser": "Novo Usuário",
   "admin.editUser": "Editar Usuário",
+  "admin.passwordKeepHint": "Deixe em branco para manter a senha atual.",
   "admin.newRole": "Novo Perfil",
   "admin.editRole": "Editar Perfil",
   "admin.newGroup": "Novo Grupo",

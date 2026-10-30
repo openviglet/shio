@@ -30,7 +30,6 @@
 - 📋 **SH1331** (deps: —) **The post editor at 1440px draws three panes and a tab strip where SH1094 holds two panes and none** — Either the layout or the probe changed without the other, and the split-pages probe is red on every run. → §XI.96
 - 📋 **SH1332** (deps: —) **A code-managed post type's editor fails axe colour contrast on its violet "managed by code" banner** — Every type a push or the API created opens on a banner whose text does not reach 4.5:1 in the dark theme. → §XI.97
 - 📋 **SH1333** (deps: —) **A site's pages view makes every new page at the root, not as a child of the page selected** — SH1316's remainder: a page meant for /about lands at /x and must be moved, because find rows carry no folder. → §XI.98
-- 📋 **SH1335** (deps: —) **Editing a user drops the password typed into the form, so no user's password can be changed after creation** — A user created before SH1334 holds a password that never signs in, and an administrator has no way to give it a working one. → §XI.100
 
 ## Priority
 

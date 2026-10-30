@@ -268,6 +268,11 @@ public class ShUserAPI {
 			shUserEdit.setLastName(shUser.lastName());
 			shUserEdit.setEmail(shUser.email());
 			shUserEdit.setShGroups(shUser.toShGroups());
+			// SH1335 — a password in the edit replaces the stored one, encoded; a blank one keeps it.
+			// It was ignored, so no password could change after creation.
+			if (shUser.password() != null && !shUser.password().isBlank()) {
+				shUserEdit.setPassword(passwordEncoder.encode(shUser.password()));
+			}
 			shUserRepository.save(shUserEdit);
 		}
 		return shUserEdit;

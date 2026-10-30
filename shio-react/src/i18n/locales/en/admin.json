@@ -11,6 +11,7 @@
   "admin.groups": "Groups",
   "admin.newUser": "New User",
   "admin.editUser": "Edit User",
+  "admin.passwordKeepHint": "Leave blank to keep the current password.",
   "admin.newRole": "New Role",
   "admin.editRole": "Edit Role",
   "admin.newGroup": "New Group",

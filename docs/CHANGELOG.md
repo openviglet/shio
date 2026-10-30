@@ -2052,6 +2052,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1316** — A site's root opens on its pages as a tree by URL with a language switch and New page, names every non-page type and the media from there, and keeps its folders one switch away; child creation is SH1333 (design §XI.82 recorded in `docs/agents/console-ui.md`).
 - **SH1317** — A non-administrator's rail and palette are the curator's (content surfaces, no post types, GraphQL, tokens or providers), Review leads the Content hub, and every route still opens by URL (design §XI.83 superseded: it planned a builder view too; the console knows one role, admin, and /user/current never fills privileges) (design §XI.83 recorded in `docs/agents/console-ui.md`).
 - **SH1334** — Creating a user encodes the password with bcrypt so the account signs in, and no user response or listing serialises a password or hash; existing rows never signed in, so none needed a rehash (design §XI.99 recorded in `docs/agents/security.md`).
+- **SH1335** — Editing a user sets a new bcrypt-encoded password when one is typed and keeps the stored one when blank, and the console's user form says so, so an administrator can unlock any account (design §XI.100 recorded in `docs/agents/security.md`).
 
 ## Block BH — One content model, many languages
 

@@ -905,5 +905,7 @@ root otherwise. `shio-react/test/return-url.test.mjs` holds the hostile spelling
 the account held a readable password and could never sign in, and the response echoed it back.
 `ShUser.password` is `@JsonProperty(access = WRITE_ONLY)`, the webhook secret's rule, so neither the
 create response nor `GET /api/v2/user` sends a password or a hash any more. Existing rows made the old
-way never signed in, so there is nothing to rehash; giving them a working password needs the update
-path to accept one, which is SH1335. `ShUserPasswordTest` holds all three facts.
+way never signed in, so there is nothing to rehash. `PUT /api/v2/user/{username}` (SH1335) now sets a
+new password, encoded, when the edit carries one and keeps the stored hash when it is blank, which is
+how an administrator gives such an account a working password; the console's user form says that a
+blank field keeps it. `ShUserPasswordTest` holds the create, the listing and both edits.

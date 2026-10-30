@@ -529,25 +529,6 @@ Then each page row gets a "New page here" action, and the new post's URL starts 
 the parent's path. Done when a page created from `/about`'s row is served at
 `/about/<slug>`, checked live.
 
-### XI.100 A user's password cannot be changed (SH1335)
-
-Found while fixing SH1334 (2026-10-30). `PUT /api/v2/user/{username}`
-(`ShUserAPI.shUserUpdate`) copies the first name, last name, email and groups, and
-ignores `password`. So a password typed into the console's user form when editing is
-silently dropped, and the save still answers 200. The only other writer is
-`ShAdminPasswordService`, which sets the admin's password at setup.
-
-This also leaves no way out for the users SH1334 left behind. Every account created
-through the API before that fix stored its password as typed and so could never sign in,
-and an administrator has no path to give it a working one.
-
-Fix: when the update carries a non-blank password, encode it with the injected
-`PasswordEncoder` and save it; when it carries none, keep the stored hash. The console's
-user form should say which it will do, so that a blank field reads as "unchanged" and
-not "cleared". The assertion that closes it: set a password through the update, then
-sign in with it and get 200. Then update again with no password and sign in with the
-first one, still 200.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
