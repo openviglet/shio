@@ -186,6 +186,68 @@ test("SH1199: the console's theme maps every radius and mono key the way the ins
       + "mono the console writes lands somewhere the package's own components do not.")
 })
 
+/** The design system's root, for reading what it ships. */
+function designSystem() {
+  const require_ = createRequire(join(ROOT, "noop.js"))
+  return dirname(dirname(require_.resolve("@viglet/viglet-design-system/exports.json")))
+}
+
+/** `--color-*` keys a stylesheet's `@theme` blocks declare, with their values. */
+function colourKeys(css) {
+  return new Map([...stripComments(css).matchAll(/(--color-[\w-]+):\s*([^;]+);/g)]
+    .map(([, key, value]) => [key, value.trim()]))
+}
+
+/** A class as Tailwind writes its selector: every character outside [A-Za-z0-9_-] backslash-escaped. */
+const selectorOf = (cls) => "." + cls.replace(/[^A-Za-z0-9_-]/g, (ch) => `\\${ch}`)
+
+test("SH1328: every token colour class the console names is one something generates", () => {
+  // The console's Tailwind generates a colour utility only for a `--color-*` key in its own theme,
+  // and the package's compiled sheet carries only the classes the package itself used. A class in
+  // neither compiles, reviews clean and paints nothing: the pages bar's draft share drew
+  // `bg-muted-foreground/40` as rgba(0, 0, 0, 0) from SH1219 until SH1309 measured it.
+  const root = designSystem()
+  const tokens = [...colourKeys(readFileSync(join(root, "dist", "preset.css"), "utf8")).keys()]
+    .map((key) => key.slice("--color-".length))
+  assert.ok(tokens.length >= 20, `SH1328: read only ${tokens.length} colour tokens from the preset`)
+  const sheet = readFileSync(join(root, "dist", "viglet-design-system.css"), "utf8")
+  const themed = colourKeys(readFileSync(join(SRC, "index.css"), "utf8"))
+  const PREFIX = "(?:bg|text|border(?:-[trblxyse])?|ring|ring-offset|outline|fill|stroke|divide|from|via|to|decoration|placeholder|caret|accent|shadow)"
+  // Longest token first, so `muted-foreground` is not read as `muted` followed by junk.
+  const TOKEN = [...tokens].sort((a, b) => b.length - a.length).join("|")
+  const UTILITY = new RegExp(`^!?${PREFIX}-(${TOKEN})(?:\\/\\d+)?$`)
+  const unpainted = new Set()
+  let named = 0
+  for (const file of [...TSX, ...sources(".ts").map(({ name, text }) => ({ name, code: stripComments(text, name) }))]) {
+    for (const [cls] of file.code.matchAll(/[^\s"'`{}(),]+/g)) {
+      // The utility is what follows the last variant: `dark:hover:bg-muted/50` is `bg-muted/50`.
+      const utility = cls.slice(cls.lastIndexOf(":") + 1)
+      const match = utility.match(UTILITY)
+      if (!match) continue
+      named++
+      if (themed.has(`--color-${match[1]}`) || sheet.includes(`${selectorOf(cls)}`)) continue
+      unpainted.add(cls)
+    }
+  }
+  assert.ok(named >= 100, `SH1328: read only ${named} token colour class(es), so a clean result proves nothing`)
+  assert.deepEqual([...unpainted].sort(), [],
+    "SH1328: these colour classes are in neither the design system's compiled sheet nor a `--color-*` "
+      + "key of index.css's @theme, so they render transparent. Declare the token's colour key in the "
+      + "console's @theme inline, copied from the installed preset.")
+})
+
+test("SH1328: the console's theme maps every colour key the way the installed preset does", () => {
+  // The same copy-and-compare as the radius block above, for the same reason.
+  const preset = colourKeys(readFileSync(join(designSystem(), "dist", "preset.css"), "utf8"))
+  const console_ = colourKeys(readFileSync(join(SRC, "index.css"), "utf8"))
+  assert.ok(preset.size >= 20, `SH1328: read only ${preset.size} colour keys from the preset`)
+  const differ = [...preset].filter(([key, value]) => console_.get(key) !== value)
+    .map(([key, value]) => `${key}: preset ${value}, console ${console_.get(key) ?? "absent"}`)
+  assert.deepEqual(differ, [],
+    "SH1328: index.css's @theme block no longer maps a colour token the way the design system's preset "
+      + "does, so a utility the console writes paints a different colour from the package's own.")
+})
+
 test("SH1199: the installed design system declares the tokens these checks assume", () => {
   // The proof the other four read something real: if the package stopped declaring the scale, a
   // console with no fixed heights would still be one with no scale.

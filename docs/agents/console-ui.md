@@ -4172,6 +4172,16 @@ against the dev store, the census then read button heights 22 to 21, fonts 3 to 
 12, recorded with `pnpm look -- --write`. What remains is GraphiQL's own radii, button heights the
 package draws off its control list, and product buttons that are cards rather than controls.
 
+**The colour keys are in the same block (SH1328).** With none, a token colour utility painted only
+when the package's compiled sheet happened to carry that exact class: `bg-muted-foreground/60` was
+there and `/40` was not, so the pages bar's draft share rendered `rgba(0, 0, 0, 0)` from SH1219 until
+SH1309 measured it. Twenty-two classes were in that state, among them a ticked browser row's
+`bg-primary/5`, `ring-ring/20` and `bg-muted/30`. `index.css` now copies the preset's `--color-*` keys,
+`visual-scale.test.mjs` compares them with the installed preset like the radius keys, and a second
+test lists every token colour class the source names that neither the sheet nor the theme produces;
+it held those 22 by name before the copy and holds none after. A ticked row on a fresh instance
+measured `oklab(0.75 0.10 0.15 / 0.05)`, the primary at 5%, where it had been transparent.
+
 ## No element passes a prop the package ignores (SH1208)
 
 VDS182 made `tone` a no-op on `BentoEmptyState`, `BentoEntityTile`, `BentoFormSection`,

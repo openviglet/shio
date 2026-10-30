@@ -16,7 +16,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1328** (deps: —) **22 colour classes in the console paint nothing, because the design system's sheet does not ship them** — A selected row's tint, focus rings and a pages bar's draft share compile, review clean and render transparent. → §XI.93
 - 📋 **SH1329** (deps: —) **The sites grid's card link is named only by the site, so axe fails it as a label-content mismatch** — Voice-control users say the text they see and the card does not answer, and every console check run is red on it. → §XI.94
 - 📋 **SH1330** (deps: —) **The console check expects /bento/admin to land on users, and it lands on the administration hub** — One of the two is stale, and a probe that is red for a known reason hides the next real failure beside it. → §XI.95
 - 📋 **SH1331** (deps: —) **The post editor at 1440px draws three panes and a tab strip where SH1094 holds two panes and none** — Either the layout or the probe changed without the other, and the split-pages probe is red on every run. → §XI.96

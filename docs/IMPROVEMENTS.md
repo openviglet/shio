@@ -261,32 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.93 Colour utilities the console names and nothing generates (SH1328)
-
-Found by SH1309. The sites list's pages bar drew its draft share with
-`bg-muted-foreground/40`, and in a browser that element's computed background is
-`rgba(0, 0, 0, 0)`. It had been invisible since SH1219. The cause is structural. The
-console's Tailwind (`src/index.css`) imports the design system's compiled `styles` and
-declares only radius and mono keys in its `@theme inline` (SH1199). It declares no
-`--color-*` keys, so a colour utility paints only when the package's compiled sheet
-happens to contain that exact class. The sheet has `bg-muted-foreground/60` and
-`bg-border`, but not `bg-muted-foreground/40` and not plain `bg-muted-foreground`.
-
-A scan of `shio-react/src` against `viglet-design-system.css` finds 22 token colour
-classes the sheet does not ship. Among them: `bg-primary/5` (a selected row's tint),
-`bg-muted/30` (12 uses), `ring-ring` and `ring-ring/20` (focus rings),
-`text-muted-foreground/50`, `border-primary/40` and `bg-destructive/10`. Each one
-compiles, reviews clean and paints nothing.
-
-The fix follows SH1199's pattern: copy the package `preset`'s `--color-*` keys into the
-console's `@theme inline` so Shio's own Tailwind generates any token utility its source
-names. Then extend `visual-scale.test.mjs`, which already compares the radius copy with
-the installed preset, to compare the colour keys too. Per SH338 the instrument lands
-first: a test that lists every `(bg|text|border|ring)-<token>(/n)?` class in `src` that
-neither the package sheet nor the console's theme can produce, held as a named list that
-the fix drives to empty. Done when the list is empty and a selected browser row shows
-its tint in a screenshot.
-
 ### XI.94 The site card's name and its visible text (SH1329)
 
 Found by the console check run for SH1313 on a clean instance (2026-10-30), on `sites`,

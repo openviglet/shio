@@ -35,6 +35,43 @@
   --radius-2xl: var(--vg-radius-panel);
   --radius-3xl: var(--vg-radius-panel);
   --radius-4xl: var(--vg-radius-panel);
+  /*
+   * SH1328 — and the preset's colour keys, for the same reason. Without them a token colour
+   * utility painted only when the package's compiled sheet happened to carry that exact class:
+   * `bg-muted-foreground/60` did and `/40` did not, so 22 classes here (a selected row's tint,
+   * focus rings, the pages bar's draft share) compiled and rendered transparent.
+   */
+  --color-background: var(--vg-background);
+  --color-foreground: var(--vg-foreground);
+  --color-card: var(--vg-card);
+  --color-card-foreground: var(--vg-card-foreground);
+  --color-popover: var(--vg-popover);
+  --color-popover-foreground: var(--vg-popover-foreground);
+  --color-primary: var(--vg-primary);
+  --color-primary-foreground: var(--vg-primary-foreground);
+  --color-secondary: var(--vg-secondary);
+  --color-secondary-foreground: var(--vg-secondary-foreground);
+  --color-muted: var(--vg-muted);
+  --color-muted-foreground: var(--vg-muted-foreground);
+  --color-accent: var(--vg-accent);
+  --color-accent-foreground: var(--vg-accent-foreground);
+  --color-destructive: var(--vg-destructive);
+  --color-border: var(--vg-border);
+  --color-input: var(--vg-input);
+  --color-ring: var(--vg-ring);
+  --color-chart-1: var(--vg-chart-1);
+  --color-chart-2: var(--vg-chart-2);
+  --color-chart-3: var(--vg-chart-3);
+  --color-chart-4: var(--vg-chart-4);
+  --color-chart-5: var(--vg-chart-5);
+  --color-sidebar: var(--vg-sidebar);
+  --color-sidebar-foreground: var(--vg-sidebar-foreground);
+  --color-sidebar-primary: var(--vg-sidebar-primary);
+  --color-sidebar-primary-foreground: var(--vg-sidebar-primary-foreground);
+  --color-sidebar-accent: var(--vg-sidebar-accent);
+  --color-sidebar-accent-foreground: var(--vg-sidebar-accent-foreground);
+  --color-sidebar-border: var(--vg-sidebar-border);
+  --color-sidebar-ring: var(--vg-sidebar-ring);
 }
 
 /*
