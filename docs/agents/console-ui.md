@@ -281,6 +281,9 @@ Rendered inside `WidgetSpecificSettings` based on widget name:
 ### Site List Page (`/console/content`)
 - Shows all sites as a list with a row menu (Preview, View published site, Open, Export, Delete);
   Preview is the draft at `/preview/**`, View published site is what a visitor gets (SH1304)
+- SH1310, the post-type list on the same rule: a type's second line is its API key only where it
+  differs from the title (`distinctKey` in `src/lib/post-type-label.ts`), in the mono face, with a
+  muted System mark that replaced the System column; one-line rows when no type has either
 - SH1309: the subtitle counts the sites; a row's second line is its description or nothing (the
   `site:<name>` fallback was the agent's address), and the name column asks for SH1314's two-line
   row only while some site has one; the pages bar is neutral (`bg-muted-foreground/60` and

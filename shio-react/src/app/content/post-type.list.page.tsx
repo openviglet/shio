@@ -2,8 +2,8 @@ import { IconPencil, IconTrash } from "@tabler/icons-react"
 import {
   BentoIdentityCell, BentoListPage, type BentoDataTableAction, type BentoDataTableColumn,
 } from "@viglet/viglet-design-system/bento"
-import { Badge } from "@/components/ui/badge"
 import { ROUTES } from "@/app/routes.const"
+import { distinctKey, labelOf } from "@/lib/post-type-label"
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -15,17 +15,33 @@ import { headlineOf, problemOf, reportProblem } from "@/lib/problem"
 
 const service = new ShPostTypeService()
 
-/** How a type is named to a reader: its title, or its name when it has none. */
-const labelOf = (type: ShPostType) => type.title || type.name
+/**
+ * SH1310 — the second line, when there is one: the API key where it differs from the title, in the
+ * mono face so it reads as a key, and a muted System mark that replaced a column of mostly nothing.
+ */
+function TypeDetail({ type, system }: Readonly<{ type: ShPostType; system: string }>) {
+  const key = distinctKey(type)
+  if (!key && !type.system) return null
+  return (
+    <span className="flex items-center gap-2">
+      {key && <span className="font-mono">{key}</span>}
+      {type.system ? <span className="text-muted-foreground">{system}</span> : null}
+    </span>
+  )
+}
+
+/** Whether a type's row draws a second line, which is what the name column's height follows. */
+const hasDetail = (type: ShPostType) => Boolean(distinctKey(type) || type.system)
 
 /**
  * SH1225 — the content model, on the design system's table.
  *
  * It was a shadcn `Table` with Name, Title, System and a column of two icon buttons per row, so it
  * had no sortable header, no row keyboard model and no column menu, and every change to the
- * package's table skipped it (SH1224's debt list). The type is now one identity cell (its title, its
- * name under it), System is a badge, and Edit and Delete are the row's actions menu, which a
- * keyboard reaches, rather than two buttons in a column.
+ * package's table skipped it (SH1224's debt list). The type is now one identity cell, and Edit and
+ * Delete are the row's actions menu, which a keyboard reaches, rather than two buttons in a column.
+ * SH1310 — its second line is the key only where it differs from the title, and System is a mark
+ * on that line rather than a column.
  */
 export default function PostTypeListPage() {
   const { t } = useTranslation()
@@ -59,18 +75,19 @@ export default function PostTypeListPage() {
   const open = (type: ShPostType) =>
     navigate(`${ROUTES.POST_TYPE_ROOT}/${encodeURIComponent(type.name)}`)
 
+  // SH1314's taller row only while some type has a second line to draw.
+  const twoLines = Boolean(items?.some(hasDetail))
   const columns = useMemo<BentoDataTableColumn<ShPostType>[]>(() => [
     {
-      id: "name", header: t("common.name"), width: "minmax(16rem, 3fr)", hideable: false, lines: 2,
+      id: "name", header: t("common.name"), width: "minmax(16rem, 3fr)", hideable: false,
+      lines: twoLines ? 2 : 1,
       sortValue: (type) => labelOf(type).toLowerCase(),
-      cell: (type) => <BentoIdentityCell name={labelOf(type)} detail={type.name} />,
+      cell: (type) => (
+        <BentoIdentityCell name={labelOf(type)}
+          detail={hasDetail(type) ? <TypeDetail type={type} system={t("content.system")} /> : undefined} />
+      ),
     },
-    {
-      id: "system", header: t("content.system"), width: "minmax(8rem, 1fr)",
-      sortValue: (type) => (type.system ? 1 : 0),
-      cell: (type) => (type.system ? <Badge variant="secondary">{t("content.system")}</Badge> : null),
-    },
-  ], [t])
+  ], [t, twoLines])
 
   // The package hands the one row, or every selected one; each is deleted with its own answer.
   const rowActions: BentoDataTableAction<ShPostType>[] = [

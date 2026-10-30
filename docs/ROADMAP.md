@@ -15,7 +15,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1310** (deps: —) **The post-type list repeats each name as its second line, "InfoPage" under "InfoPage"** — Most types' title equals their API name, so half the list's text is a duplicate and every row is twice as tall as its content. → §XI.76
 - 📋 **SH1311** (deps: —) **The home page spends a 390px tile on each single number, and the one that asks for action looks like the rest** — Sites, types and open notes are three identical tiles of mostly white, so what waits for the curator has no more weight than a count. → §XI.77
 - 📋 **SH1312** (deps: —) **The media library floats the site picker and Upload on a row of their own, and a font file is a 290px blank tile** — Three control rows sit between the title and the grid, and files without a preview draw large empty squares that read as broken images. → §XI.78
 - 📋 **SH1313** (deps: —) **The post-type editor draws Save, Save and close, Cancel and Add field all in the accent** — Four orange controls on one screen leave no primary action, and Add field's solid fill outshouts Save. → §XI.79

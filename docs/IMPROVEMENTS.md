@@ -241,22 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.76 A detail line that repeats the name (SH1310)
-
-Measured at 1920px on `/bento/content/post-type`: of the visible rows, all but two show
-the API name under a title that is the same word ("File / File", "Guide / Guide",
-"InfoPage / InfoPage"). Only types with a distinct display title ("How this was built /
-BuildNote", "Menu Item / MenuItem") gain anything from the second line.
-
-The same shape exists on any list built with `BentoIdentityCell` and a key as detail:
-users show the email, which is useful, but the post types show a copy.
-
-Direction: pass the API name as detail only when it differs from the title, and render
-it in the mono face so it reads as a key rather than as prose. The "Sistema" chip column
-is mostly empty; it can become a small muted mark after the name and give its width
-back. The gate is a unit test on the column definition: a type whose title equals its
-name renders no detail.
-
 ### XI.77 The dashboard is three big tiles and a lot of white (SH1311)
 
 Measured at 1920px on `/bento`: "Visão geral" is two 390×140 tiles (16 sites, 28 post
