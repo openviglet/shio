@@ -355,3 +355,14 @@ test("SH1330: the admin hub probe expects the redirect the router actually makes
   assert.equal(probe, `${areas}${target}`,
     "SH1330: the console check's bento-admin-hub probe expects a different landing from the one the router makes")
 })
+
+test("SH1344: the save-bar probe asks whether Save is reachable, not whether the bar appeared", () => {
+  // The bar fades in once the hero's actions leave the viewport. The token form is 256 px taller
+  // than the check's screen, so its hero Save was still in view at the bottom and the probe, which
+  // demanded the bar, reported a missing Save that a curator could see and press.
+  const check = stripComments(readFileSync(join(HERE, "..", "e2e", "console-check.mjs"), "utf8"))
+  assert.match(check, /saveInView: pressable\.length > 0/,
+    "SH1344: the morph probe no longer looks for a Save the reader can press")
+  assert.match(check, /if \(!bottom\.visible && !bottom\.saveInView\)/,
+    "SH1344: the morph probe fails a form whose hero Save is still in view at the bottom again")
+})

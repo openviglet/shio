@@ -649,11 +649,22 @@ async function checkSaveBarMorph(page) {
   const state = () => page.evaluate(() => {
     const spacer = document.querySelector(".bento-save-bar-spacer")
     const fade = document.querySelector(".bento-fade-in")
+    // SH1344 — a Save the reader can see and press, the hero's or the bar's. The bar fades in only
+    // once the hero's actions leave the viewport, so on a form a little taller than the screen the
+    // hero's Save is still there at the bottom, and no bar is the right answer, not a defect.
+    const pressable = [...document.querySelectorAll("button")].filter((button) => {
+      if (!/^(save|salvar)$/i.test(button.textContent?.trim() ?? "")) return false
+      const box = button.getBoundingClientRect()
+      const faded = button.closest(".bento-fade-in")
+      return box.width > 0 && box.bottom > 0 && box.top < innerHeight
+        && (!faded || getComputedStyle(faded).opacity !== "0")
+    })
     return {
       present: Boolean(spacer),
       // The morph is an opacity fade, not a mount: the bar is in the DOM from the first paint
       // and `pointer-events: none` until it fades in. Presence proves nothing about visibility.
       visible: fade ? getComputedStyle(fade).opacity !== "0" : false,
+      saveInView: pressable.length > 0,
       scrollable: document.body.scrollHeight > innerHeight + 40,
     }
   })
@@ -670,7 +681,7 @@ async function checkSaveBarMorph(page) {
   await page.evaluate(() => scrollTo(0, document.body.scrollHeight))
   await page.waitForTimeout(700)
   const bottom = await state()
-  if (!bottom.visible) findings.push("the save bar did not appear after scrolling")
+  if (!bottom.visible && !bottom.saveInView) findings.push("no Save is in view after scrolling: the bar did not appear and the hero's has scrolled away")
   await page.evaluate(() => scrollTo(0, 0))
 
   return { ran: true, findings }

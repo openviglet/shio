@@ -261,27 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.105 The token form's save bar never appears (SH1344)
-
-Found by the strict console check run for SH1329 on a clean instance (2026-10-30). The
-`bento-token-new` probe at `/bento/admin/tokens/new` fails with "the save bar did not
-appear after scrolling", for both the save bar itself and its morph. The probe scrolled,
-so the form is tall enough to scroll at the check's viewport, which is what separates it
-from the auth-provider, exchange-provider and webhook forms beside it: those pass with
-"too short to scroll".
-
-The save-bar morph is SH901's contract: an entity form's Save and Cancel live in the
-shell's hero and morph into a sticky bar once the hero scrolls away, so a curator at the
-bottom of a long form can still save. Either the token form does not compose
-`BentoEntityShell` with a `formId` the way its siblings do, so there is no morph to
-show, or its scroll container is not the one the shell observes and the hero never
-reports leaving.
-
-Reproduce by opening the form at the check's viewport, scrolling to the bottom and
-reading whether the hero's actions are present at all. Fix the form to compose the shell
-the way the webhook form does, or move its scroll onto the observed container. Done when
-`bento-token-new` passes in the strict console check.
-
 ### XI.108 A filtered budget record forgets the tasks it did not run (SH1347)
 
 Found while recording SH1338's new `create-page` budget (2026-10-30). `node
