@@ -261,27 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.98 A new page as a child of the selected one (SH1333)
-
-Split from SH1316, whose design asked where a curator creates a page and answered "in
-the tree, as a child of the selected node". The pages view at a site's root (SH1316)
-offers one New page link, which opens the new-post form in the root folder. A page meant
-to live under `/about` therefore lands at `/x` and has to be moved, or the curator
-switches to Folders and finds `about`'s folder.
-
-The obstacle is data, not layout. The view's rows come from `/agent/find`, and a find
-row carries the address, type, title, locale and publication, but not the folder. The
-new-post route needs a folder id (`/content/folder/<id>/post-type/<type>/new`). There
-are two ways to get it. One is to add the folder (its path, or its id behind `ids=true`)
-to the find row, opt-in so a default read costs nothing (P3), which also helps an agent
-placing a sibling. The other is to resolve it per click with `/agent/read`, which
-already returns `folder`. The first composes better, since the tree is drawn once from
-one read.
-
-Then each page row gets a "New page here" action, and the new post's URL starts under
-the parent's path. Done when a page created from `/about`'s row is served at
-`/about/<slug>`, checked live.
-
 ### XI.101 Failed checks in the home inbox, measured first (SH1336)
 
 Split from SH1318, whose design listed "pages with a failed check (verify findings,
