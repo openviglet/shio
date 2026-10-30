@@ -377,6 +377,13 @@ const SWEEP = {
       + "outward surface describes it and nothing a reader of the product can do changed — the "
       + "audience is a contributor, and `docs/agents/troubleshooting.md` is where that lands",
   },
+  AA: {
+    swept: false,
+    why: "reopened for one task, SH1345, and re-closed with it: the P1 inventory the reachability "
+      + "lints write is locked across surefire's forks and written atomically. A test-harness race "
+      + "with no outward surface: no README, site or docs page describes how the suite writes its "
+      + "artefacts, and COVERAGE names the id in a row of its own",
+  },
 };
 
 /** `## Block X — …` → the ids filed under it, in file order. */

@@ -2066,6 +2066,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1328** — The console's theme carries the preset's colour keys, so all 22 token colour classes paint; a test lists any the sheet and theme cannot produce, and a ticked row shows its tint (design §XI.93 recorded in `docs/agents/console-ui.md`).
 - **SH1329** — The site card's link is named by its own text, so axe passes the sites route and both viewport runs in the strict console check, and a test holds the label off (design §XI.94 recorded in `docs/agents/console-ui.md`).
 - **SH1330** — The console check's admin hub probe expects the Administration area hub SH1193 made /bento/admin open, and a test fails if the probe and the router disagree again.
+- **SH1331** — The split-pages probe counts only the split's own panes and switch, so the editor reads two panes at 1440px and the probe passes; a jsdom test drives both shapes (design §XI.96 superseded: it guessed a third pane in the layout; the third pane and the three tabs were the Notes, History and Insights tabs inside the editor's second pane).
 
 ## Block BH — One content model, many languages
 

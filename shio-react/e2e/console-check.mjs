@@ -36,6 +36,7 @@ import { compare, familyOf, foldFamilies, headroom, seedCeilings, staleEntries }
   from "../scripts/route-cost.mjs"
 import { a11yFindings, staleDebt } from "../scripts/a11y-debt.mjs"
 import axeCore from "axe-core"
+import { splitPanesOf } from "./split-panes.mjs"
 
 const args = process.argv.slice(2)
 const flag = (name, fallback) => {
@@ -945,15 +946,7 @@ async function checkSplitPages(browser, postId) {
       for (const path of [`/bento/content/post/${postId}`, `/bento/content/post/${postId}/translate`]) {
         await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" })
         await page.waitForTimeout(800)
-        const seen = await page.evaluate(() => {
-          const split = document.querySelector("[data-slot=bento-split-page]")
-          const visible = (node) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden"
-          return {
-            split: Boolean(split),
-            panes: split ? [...split.querySelectorAll("section[aria-label], [role=tabpanel]")].filter(visible).length : 0,
-            tabs: split ? [...split.querySelectorAll("[role=tab]")].filter(visible).length : 0,
-          }
-        })
+        const seen = await page.evaluate(splitPanesOf)
         probe.seen.push(`${width}:${path.endsWith("/translate") ? "translate" : "editor"}=${seen.panes}/${seen.tabs}`)
         const tabsWanted = wantPanes === 1 ? 2 : 0
         if (!seen.split || seen.panes !== wantPanes || seen.tabs !== tabsWanted) {

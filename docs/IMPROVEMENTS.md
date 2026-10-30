@@ -261,20 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.96 The post editor's panes at desktop width (SH1331)
-
-Found by the console check run for SH1313 on a clean instance (2026-10-30). The
-`split-pages` probe reports: "SH1094: /bento/content/post/<id> at 1440px shows 3 pane(s)
-and 3 tab(s), not 2 and 0". The translate page measured 2/0 as expected, and at 390px
-both pages measured 1 pane and 2 tabs. So at 1440px the post editor draws a third pane
-and the tab strip that should appear only on narrow screens. The third pane is likely
-the note rail or the review panel, which SH1094's two-pane rule predates.
-
-First decide whether three panes at 1440px is the intended layout now. If it is, the
-probe's expectation is what changed, and it should say why. If not, the editor's split
-should hold two panes and no tabs at desktop width. Done when the probe passes with an
-expectation that cites the task that set it.
-
 ### XI.97 The managed-by-code banner's contrast (SH1332)
 
 Found by the console check run for SH1313 on a clean instance (2026-10-30), on
