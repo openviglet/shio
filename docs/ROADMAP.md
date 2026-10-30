@@ -15,7 +15,7 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1319** (deps: SH1315 ✅) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
+- ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
 - 📋 **SH1320** (deps: SH1315 ✅) **Shio's working pages still use the showcase frame now that the design system ships a work grammar** — The content browser, editors and logs keep a 150px hero and a frosted card that VDS235 made optional per route. → §XI.86
 - 📋 **SH1322** (deps: —) **Preview on a page that has never been published opens Spring's Whitelabel 404 instead of the draft** — Previewing a draft is the curator's check before publishing, and the one page it fails on is the one that has no other way to be seen. → §XI.87
 - 📋 **SH1323** (deps: —) **A page's section list shows its sections but none of them opens, and editing a section shows no preview** — A headline lives in the hero section, so a curator must leave the page, search for the section by name and edit it blind. → §XI.89
