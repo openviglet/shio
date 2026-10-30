@@ -261,19 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.95 Where /bento/admin goes (SH1330)
-
-Found by the console check run for SH1313 on a clean instance (2026-10-30). The
-`bento-admin-hub` probe expects `/bento/admin` to redirect to `/bento/admin/users`. The
-console now lands on `/bento/areas/administration`, the area hub SH1193 introduced. One
-of the two is stale. Either the probe kept a redirect the hubs replaced, or the route
-regressed a promise somebody still relies on (a bookmark to `/bento/admin`).
-
-Decide it from SH1193's own record of what `/bento/admin` should open, then update the
-probe's `redirectsTo` or the route to match. Read `bento-nav.test.mjs` first, since it
-holds the router's routes. Done when the probe passes and the expectation it holds cites
-the task that set it.
-
 ### XI.96 The post editor's panes at desktop width (SH1331)
 
 Found by the console check run for SH1313 on a clean instance (2026-10-30). The

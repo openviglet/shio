@@ -340,3 +340,18 @@ test("SH1053: the check measures the landmark on every shell route, and what a k
   assert.match(source, /probe\.afterNav !== "h1"/,
     "SH1053: focus after navigation is no longer asserted")
 })
+test("SH1330: the admin hub probe expects the redirect the router actually makes", () => {
+  // SH1193 moved `/bento/admin` from the users board to the Administration area hub and left the
+  // probe expecting the board, so every console check run was red for a reason everybody knew.
+  const read = (...path) => stripComments(readFileSync(join(HERE, "..", ...path), "utf8"))
+  const routes = read("src", "app", "routes.const.ts")
+  const app = read("src", "App.tsx")
+  const check = read("e2e", "console-check.mjs")
+  const areas = routes.match(/BENTO_AREAS:\s*"([^"]+)"/)?.[1]
+  const target = app.match(/path="admin"\s+element=\{<Navigate to=\{`\$\{ROUTES\.BENTO_AREAS\}([^`]*)`\}/)?.[1]
+  assert.ok(areas && target !== undefined,
+    "SH1330: could not read where App.tsx sends `/bento/admin`; if the route changed shape, read it here again")
+  const probe = check.match(/name:\s*"bento-admin-hub",\s*path:\s*"\/bento\/admin",\s*redirectsTo:\s*"([^"]+)"/)?.[1]
+  assert.equal(probe, `${areas}${target}`,
+    "SH1330: the console check's bento-admin-hub probe expects a different landing from the one the router makes")
+})

@@ -498,9 +498,11 @@ async function discoverRoutes(siteName) {
       mustSee: [],
     })
   }
-  // And the admin hub, which under the console was a bare Outlet with an index redirect. It is the
-  // rail's Administration area route, so the rail and old bookmarks are what land on it.
-  routes.push({ name: "bento-admin-hub", path: "/bento/admin", redirectsTo: "/bento/admin/users", bento: true, mustSee: [] })
+  // And the admin hub, which under the console was a bare Outlet with an index redirect. Old
+  // bookmarks still land on it. SH1193 sends it to the Administration area hub, every admin surface
+  // one click away, where SH909 had sent it to the users board; SH1330 caught the probe still
+  // expecting the users board.
+  routes.push({ name: "bento-admin-hub", path: "/bento/admin", redirectsTo: "/bento/areas/administration", bento: true, mustSee: [] })
 
   routes.push({ name: "graphql", path: "/console/graphql", graphiql: true, redirectsTo: "/bento/graphql", mustSee: [] })
   routes.push({ name: "bento-graphql", path: "/bento/graphql", bento: true, graphiql: true, mustSee: [] })

@@ -15,7 +15,7 @@
       "requests": 8,
       "bytes": 5000,
       "firstRow": 2.2,
-      "why": "The admin hub, which redirects to the users board — so this entry costs the redirect as well as the destination, which is the honest number for what a curator clicking 'Admin' waits for."
+      "why": "The admin hub, which redirects to the Administration area hub (SH1193; the users board before it) — so this entry costs the redirect as well as the destination, which is the honest number for what a curator clicking 'Admin' waits for. SH1330 measured the area hub at 7 requests and 3.1 KB on a clean instance."
     },
     "bento-auth-provider-new": {
       "requests": 9,
