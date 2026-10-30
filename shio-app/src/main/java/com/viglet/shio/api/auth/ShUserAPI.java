@@ -30,6 +30,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -66,14 +67,17 @@ public class ShUserAPI {
 	private final ShGroupRepository shGroupRepository;
 	private final ShAuthProviderInstanceRepository shAuthProviderInstanceRepository;
 	private final ApplicationContext context;
+	private final PasswordEncoder passwordEncoder;
 	public ShUserAPI(ShUserRepository shUserRepository,
 					 ShGroupRepository shGroupRepository,
 					 ShAuthProviderInstanceRepository shAuthProviderInstanceRepository,
-					 ApplicationContext context) {
+					 ApplicationContext context,
+					 PasswordEncoder passwordEncoder) {
 		this.shUserRepository = shUserRepository;
 		this.shGroupRepository = shGroupRepository;
 		this.shAuthProviderInstanceRepository = shAuthProviderInstanceRepository;
 		this.context = context;
+		this.passwordEncoder = passwordEncoder;
 	}
 
 	@GetMapping
@@ -276,10 +280,17 @@ public class ShUserAPI {
 		return true;
 	}
 
+	/**
+	 * SH1334 — the password is encoded here, with the encoder sign-in checks against. It was saved as
+	 * typed, so the account held a readable password and could never sign in with it.
+	 */
 	@PostMapping("/{username}")
 	@JsonView({ ShJsonView.ShJsonViewObject.class })
 	public ShUser shUserAdd(@PathVariable String username, @RequestBody ShUserRequest shUser) {
 		ShUser shUserAdd = shUser.toNewShUser();
+		if (shUserAdd.getPassword() != null && !shUserAdd.getPassword().isBlank()) {
+			shUserAdd.setPassword(passwordEncoder.encode(shUserAdd.getPassword()));
+		}
 		shUserRepository.save(shUserAdd);
 
 		return shUserAdd;

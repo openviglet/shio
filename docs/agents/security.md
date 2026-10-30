@@ -896,3 +896,14 @@ the one act a team most wants held apart from writing.
 parameter in links the console did not build, so `safeReturnUrl` (`shio-react/src/lib/return-url.ts`)
 now accepts a value only when it starts with one `/` (not `//`, not `/\`) and falls back to the
 root otherwise. `shio-react/test/return-url.test.mjs` holds the hostile spellings.
+
+## A user's password is encoded on create and never serialised (SH1334)
+
+`POST /api/v2/user/{username}` encodes the password with the application's `PasswordEncoder`
+(bcrypt, `Shio.passwordEncoder`) before saving, the same encoder sign-in checks against and the one
+`ShAdminPasswordService` and `ShUserOnStartup` already used. Before this it saved the field as typed:
+the account held a readable password and could never sign in, and the response echoed it back.
+`ShUser.password` is `@JsonProperty(access = WRITE_ONLY)`, the webhook secret's rule, so neither the
+create response nor `GET /api/v2/user` sends a password or a hash any more. Existing rows made the old
+way never signed in, so there is nothing to rehash; giving them a working password needs the update
+path to accept one, which is SH1335. `ShUserPasswordTest` holds all three facts.

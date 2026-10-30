@@ -17,6 +17,7 @@
 package com.viglet.shio.persistence.model.auth;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -65,6 +66,12 @@ public class ShUser implements Serializable {
 
 	private int loginTimes;
 
+	/**
+	 * SH1334 — the bcrypt hash, accepted on a write and never sent: the user list and the create
+	 * response both serialised it, so the console received every user's hash, and a user created
+	 * before SH1334 had their plaintext echoed back. The same rule the webhook secret follows.
+	 */
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	@Column(name = "password")
 	private String password;
 

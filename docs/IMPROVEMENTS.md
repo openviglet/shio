@@ -529,30 +529,24 @@ Then each page row gets a "New page here" action, and the new post's URL starts 
 the parent's path. Done when a page created from `/about`'s row is served at
 `/about/<slug>`, checked live.
 
-### XI.99 A new user's password is never encoded (SH1334)
+### XI.100 A user's password cannot be changed (SH1335)
 
-Found while checking SH1317 on a clean instance (2026-10-30). `POST
-/api/v2/user/{username}` (`ShUserAPI.shUserAdd`) saves `ShUserRequest.toNewShUser()`,
-and that copies `password` into the entity as given. Nothing encodes it, so the
-plaintext is what lands in `ShUser.password`. The response then serialises the saved
-entity, password included, so the caller gets the plaintext back. And the account cannot
-sign in: authentication compares against `BCryptPasswordEncoder`
-(`Shio.passwordEncoder`), so the plaintext matches nothing. Basic auth with the password
-just set answered 401. Storing a bcrypt hash through the same endpoint signs in, which
-confirms the cause.
+Found while fixing SH1334 (2026-10-30). `PUT /api/v2/user/{username}`
+(`ShUserAPI.shUserUpdate`) copies the first name, last name, email and groups, and
+ignores `password`. So a password typed into the console's user form when editing is
+silently dropped, and the save still answers 200. The only other writer is
+`ShAdminPasswordService`, which sets the admin's password at setup.
 
-`ShAdminPasswordService` and `ShUserOnStartup` already encode with the injected
-`PasswordEncoder`. The create path should do the same: encode in `shUserAdd` before
-saving, and never return the password field. Setting it to null on the response, as
-`shUserCurrent` does, is the minimum, and excluding it from the JSON view is better.
-Check the update path too: `shUserUpdate` ignores the password today, so a changed
-password is silently dropped.
+This also leaves no way out for the users SH1334 left behind. Every account created
+through the API before that fix stored its password as typed and so could never sign in,
+and an administrator has no path to give it a working one.
 
-The assertion that closes it: create a user through the API, sign in with that password,
-and get 200. Then read the stored row and assert it is a bcrypt hash, and assert the
-response body carries no password. Existing rows created this way hold plaintext. Decide
-whether a startup pass rehashes them or they are listed for a reset, and say which in
-the ship.
+Fix: when the update carries a non-blank password, encode it with the injected
+`PasswordEncoder` and save it; when it carries none, keep the stored hash. The console's
+user form should say which it will do, so that a blank field reads as "unchanged" and
+not "cleared". The assertion that closes it: set a password through the update, then
+sign in with it and get 200. Then update again with no password and sign in with the
+first one, still 200.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
