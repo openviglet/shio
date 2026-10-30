@@ -15,7 +15,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1307** (deps: —) **The content browser stacks five bands of chrome before the first row of a folder** — Counts, actions, view toggles, filter and a Columns-only bar each take a framed row, so a folder of six reads as a toolbar. → §XI.73
 - 📋 **SH1308** (deps: —) **The post editor frames every field in its own card with a coloured stripe, inside a card, inside the page** — Three nested frames per field and a rainbow of stripes make a five-field form look busy and push the fourth field below the fold. → §XI.74
 - 📋 **SH1309** (deps: —) **The site list paints usage in the accent and fills every row's second line with an address** — An orange bar reads as a warning and `site:Name` under every name is noise, so sixteen rows carry forty-eight loud marks and say little. → §XI.75
 - 📋 **SH1310** (deps: —) **The post-type list repeats each name as its second line, "InfoPage" under "InfoPage"** — Most types' title equals their API name, so half the list's text is a duplicate and every row is twice as tall as its content. → §XI.76

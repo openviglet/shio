@@ -253,6 +253,8 @@
   "content.folderCount_other": "{{count}} folders",
   "content.postCount_one": "{{count}} post",
   "content.postCount_other": "{{count}} posts",
+  "content.view": "View",
+  "content.moreActions": "More actions",
   "content.showingPosts": "Showing {{loaded}} of {{total}} posts",
   "content.loadMore": "Load more",
   "content.selectAllCapped": "Selected the first {{loaded}} of {{total}} posts — narrow the search to reach the rest.",

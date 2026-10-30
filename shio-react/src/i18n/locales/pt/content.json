@@ -253,6 +253,8 @@
   "content.folderCount_other": "{{count}} pastas",
   "content.postCount_one": "{{count}} post",
   "content.postCount_other": "{{count}} posts",
+  "content.view": "Visualização",
+  "content.moreActions": "Mais ações",
   "content.showingPosts": "Exibindo {{loaded}} de {{total}} posts",
   "content.loadMore": "Carregar mais",
   "content.selectAllCapped": "Selecionados os primeiros {{loaded}} de {{total}} posts — refine a busca para alcançar o restante.",

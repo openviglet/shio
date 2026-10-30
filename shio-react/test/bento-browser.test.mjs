@@ -66,11 +66,16 @@ test("SH900: the browser is one component, with no Card or PageHeader of its own
    *
    * A panel is not a section. These three carry a count, a breadcrumb and a list of rows, with
    * the hero directly above naming the page; a header on any of them would be noise.
+   *
+   * SH1307 — and then two of the three were not regions at all. The counts became the hero's
+   * subtitle and the views joined the filter bar's row, because three framed strips above six rows
+   * made a folder read as a toolbar. One panel is left, the listing, and it is exactly one: a second
+   * frame above the rows is the band this task removed.
    */
   const panels = findElements(BROWSER, "Panel").filter((el) => !el.selfClosing)
-  assert.ok(panels.length >= 3,
-    `SH900/SH902: only ${panels.length} Panel(s) in the browser; its three regions — the`
-      + " stats strip, the toolbar and the listing — are panels.")
+  assert.equal(panels.length, 1,
+    `SH900/SH1307: ${panels.length} Panel(s) in the browser; the listing is its one framed region,`
+      + " and the counts and the controls sit unframed above it.")
   assert.doesNotMatch(BROWSER, /<AdaptiveSectionCard\b/,
     "SH902: the browser mounts an AdaptiveSectionCard again. Its regions are panels under a hero"
       + " that already names the page, not titled sections — use Panel (SH923).")

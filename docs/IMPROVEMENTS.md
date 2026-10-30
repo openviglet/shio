@@ -241,25 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.73 The content browser is all toolbar (SH1307)
-
-Measured at 1920px on `/bento/content/object/{site}` (ShowCase root, six folders):
-before the first row there is a framed counts strip ("6 pastas · 0 post"), an action row
-(New, New folder, Import, More filters, Order, Select), a framed strip holding only the
-four view toggles, a filter input with Changed and Views, and the table's own bar
-holding only Columns. Five bands, three of them framed, about 330px, for six rows that
-need about 260.
-
-This is the "aglutinado" the curator reported: every control has its own box, so nothing
-is more important than anything else and the content is the smallest thing on the page.
-
-Direction: one toolbar. The filter on the left, then the view toggles and Columns as
-icon buttons, then the primary New as the one filled button; Order, Select, More filters
-and Views move into a single overflow or into the table header where they act. The
-counts become a line of muted text under the title rather than a card. The tree on the
-left keeps its place. The gate is a screenshot at 1920px showing the first row within
-120px of the hero, and the surface digest moving for this page only.
-
 ### XI.74 A form is boxes inside boxes (SH1308)
 
 Measured at 1920px on `/bento/content/post/{id}` (a Quilhara page, en-US): the Fields

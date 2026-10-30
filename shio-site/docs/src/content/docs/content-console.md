@@ -117,14 +117,17 @@ permissions. To reject a change, open it in the review queue, where you can say 
 A site is a tree of **folders** holding **posts**. The browser walks it the way a file
 browser does: click a folder to go in, use the path to come back out.
 
-- **The path**: from the site down to where you are, in the browser's own toolbar.
-  Every segment is clickable. This is the one trail the console still draws, because it
-  is the one place you move up and down a tree all day.
-- **New \[Post Type]**: creates a post of the type you used last, remembered per
-  browser. The grid icon beside it opens the full post-type picker if you want a
-  different one.
-- **New Folder** and **Import** sit next to it.
-- **Sort**, **Select**, **Action in batch** are on the right.
+- **The path**: from the site down to where you are, above the folder's title.
+  Every segment is clickable, and the folders around this one are listed beside it.
+The folder's counts sit under its title, and every control is on one row above the list:
+
+- **The filter bar** on the left (see below).
+- **More filters**, then the three buttons that switch between list, grid and table.
+- **⋯** holds the rest: a post of another type, **New Folder**, **Import**, **Search in this
+  folder**, **Sort** and **Select**.
+- **Action in batch** appears once you have selected something.
+- **New \[Post Type]**, the one filled button, creates a post of the type you used last,
+  remembered per browser.
 
 Each row shows the item's name, when it changed, its type, and, on hover, the
 actions for that one item: view, edit, clone, copy, move, delete.
@@ -153,7 +156,7 @@ there. **The trash** has it too, narrowing what is in the trash by name and by p
 
 ### Three ways to look at a folder
 
-A folder opens as a **table**, and the buttons at the right of the toolbar switch it to a
+A folder opens as a **table**, and the view buttons beside the filter bar switch it to a
 **list** or a **grid** of cards. The choice is part of the address, like the filters. On a
 wide screen, the folders around the one you are in sit beside the listing: its ancestors
 down to it, and its own sub-folders under it, each one a link. The table shows each item's

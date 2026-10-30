@@ -3651,7 +3651,8 @@ What that argues for is units whose **dependencies are the whole of their inputs
 | `use-browser-keyboard.ts` | the listbox: roving focus, ranges, Space, Enter, Delete, and `/`. Takes the rows and what a key ends up doing. |
 | `use-bulk-verbs.ts` | the plan, the run, and the two pieces of state between them. |
 | `use-browser-open.ts` | the three verbs that leave the list: duplicate, open the site, open a page. |
-| `browser-toolbar.tsx` | both toolbars, markup, no state. |
+| `browser-toolbar.tsx` | the controls beside the filter bar, markup, no state (one row since SH1307). |
+| `site-view-buttons.tsx` | the hero's Preview and View published site (SH1304). |
 | `folder-picker.dialog.tsx` · `bulk-plan.dialog.tsx` | the two dialogs the page used to hold inline. |
 | `row-actions.ts` · `browser-listing.ts` | the seven verbs a row offers; the envelope, its rows and the request constants. |
 
@@ -4292,3 +4293,20 @@ from where it was written). SH1316 onward are judged against these numbers.
 "Publicado (no ar)" before anything happens, so the harness waits for the write's response instead.
 Publish is three clicks by design: Actions, Publish, then the confirmation (P7). And `/agent/read`
 answers one address with an array of one.
+
+## The content browser has one control row (SH1307)
+
+Five bands stood between the hero and a folder's first row: a framed counts strip, an action row, a
+framed strip holding only the view toggles, the filter bar, and the table's Columns bar. The last
+went with design system 2026.3.24 (SH1314). The rest are now one row: the filter bar on the left,
+then `BrowserToolbar` with More filters, the three view toggles, one ⋯ overflow (another post type,
+New folder, Import, Search in this folder, Sort, Select), the bulk menu once something is selected,
+and **New** as the page's one filled button. The counts are the hero's `subtitle`. The listing is the
+page's only `Panel`, which `bento-browser.test.mjs` now asserts as exactly one.
+
+**The width is the constraint, measured at 1920 px in Portuguese.** The filter bar wraps its own
+row: an input with `min-w-48`, one menu per facet, and Visões. With the post-type picker and Search in
+this folder still beside New, Visões fell onto a second line and cost 44 px; both moved into the
+overflow. Measured on the provisioned Console Check root: hero bottom at 181 px, the table's header
+row at 275 px (94 px), the first data row at 319 px. The 40 px under the hero is `PageHero`'s, shared
+by every page, and is not this page's to change.

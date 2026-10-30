@@ -996,7 +996,9 @@ async function checkTableSelectAll(context, site) {
     await page.getByRole("button", { name: /^(table view|ver como tabela)$/i }).click()
     await page.locator("[role=row][aria-selected]").first().waitFor({ timeout: 10_000 })
     const choose = async (item) => {
-      await page.getByRole("button", { name: /^(select|selecionar)$/i }).click()
+      // SH1307 — Select is a submenu of the toolbar's ⋯ now, not a button of its own.
+      await page.getByRole("button", { name: /^(more actions|mais ações)$/i }).last().click()
+      await page.getByRole("menuitem", { name: /^(select|selecionar)$/i }).click()
       await page.getByRole("menuitem", { name: item }).click()
       await page.waitForTimeout(300)
     }

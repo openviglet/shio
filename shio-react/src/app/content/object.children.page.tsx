@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { ROUTES } from "@/app/routes.const"
 import { DialogDelete } from "@/components/dialog.delete"
 import { PermissionsDialog } from "@/components/permissions.dialog"
-import { Folder, FileText, Download, Eye, Settings, Copy, Move, Trash2 } from "lucide-react"
+import { Folder, Download, Eye, Settings, Copy, Move, Trash2 } from "lucide-react"
 // SH1020 — the row actions live in the design system's menu, which is where the site list put
 // its four in its own sweep.
 import { BentoActionsMenu, BentoFilterBar, type BentoFilterValue } from "@viglet/viglet-design-system/bento"
@@ -299,6 +299,8 @@ export default function ObjectChildrenPage() {
       */}
       <PageHero
         title={breadcrumbPath.at(-1)?.name || siteName || t("content.browsing")}
+        // SH1307 — the counts, as a muted line under the title rather than a framed strip of their own.
+        subtitle={`${t("content.folderCount", { count: folderCount })} · ${t("content.postCount", { count: postCount })}`}
         trail={heroTrail(breadcrumbPath, { to: ROUTES.CONTENT_ROOT, label: t("content.sites") },
           (id) => `${ROUTES.CONTENT_ROOT}/object/${id}`, { ownPath: true })}
         urlBase={ROUTES.CONTENT_ROOT}
@@ -318,21 +320,21 @@ export default function ObjectChildrenPage() {
       <div className="flex gap-6"><BrowserTree path={breadcrumbPath} folders={listData.folders} />
       <div className="min-w-0 flex-1 space-y-4">
 
-        {/* Stats bar */}
-        <Panel contentClassName="flex items-center gap-8 py-3 px-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <Folder className="h-4 w-4" />
-              <span>{t("content.folderCount", { count: folderCount })}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <FileText className="h-4 w-4" />
-              <span>{t("content.postCount", { count: postCount })}</span>
-            </div>
-        </Panel>
         {/*
-          SH1145 — both toolbars are `BrowserToolbar`: markup with no state of its own, driven by
-          the list state, the facets the listing returned and the page's verbs.
+          SH1307 — one row: the filter bar, then `BrowserToolbar` (markup with no state of its own,
+          SH1145). SH1024 — the bar is the design system's, over the words this list already puts in
+          its URL (SH1022, SH1023), so a filtered view is a link the moment it is built; `/` focuses it.
         */}
+        <div className="flex flex-wrap items-start gap-2">
+        <div ref={searchRef} className="min-w-72 flex-1">
+          <BentoFilterBar
+            value={barValue}
+            onChange={onBarChange}
+            facets={facets}
+            views={<SavedViews list="browser" />}
+            queryLabel={t("content.filterItems")}
+          />
+        </div>
         <BrowserToolbar
           objectId={objectId}
           list={list}
@@ -348,21 +350,6 @@ export default function ObjectChildrenPage() {
           navigate={navigate}
           t={t}
         />
-
-        {/*
-          SH1024 — the design system's filter bar, over the words this list already puts in its URL
-          (SH1022, SH1023). It owns nothing: its value is read from the address and every change is
-          one patch back to it, so a filtered view is a link the moment it is built. SH1020's `/`
-          focuses its text field.
-        */}
-        <div ref={searchRef}>
-          <BentoFilterBar
-            value={barValue}
-            onChange={onBarChange}
-            facets={facets}
-            views={<SavedViews list="browser" />}
-            queryLabel={t("content.filterItems")}
-          />
         </div>
 
         {/*

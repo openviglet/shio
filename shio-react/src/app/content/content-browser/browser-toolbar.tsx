@@ -8,16 +8,21 @@
  */
 
 /**
- * SH1145 — the browser's two toolbars: what a curator can start, narrow, and act on.
+ * SH1145 — the browser's controls: what a curator can start, narrow, and act on.
  *
  * <p>Markup and no state. Every value it renders from is settled by the page — the list state owns
  * the filters and the view (SH1023), the verbs are the page's, and the facet options are computed
  * from what the listing returned. Thirteen props rather than a context, because thirteen named
  * inputs are a contract a reviewer can check and a context is a lookup they have to go and find.</p>
+ *
+ * <p>SH1307 — one row, beside the page's filter bar. It was two bands of its own (an action row and
+ * a framed strip holding only the view toggles) under a framed counts strip, so a folder of six read
+ * as a toolbar. Now the views and the filters are icons, New folder, Import, Order and Select share
+ * one overflow, and New is the one filled button, at the end where the eye finishes the row.</p>
  */
 import {
-  ChevronDown, Copy, Download, Eye, FileText, Folder, FolderPlus, LayoutGrid, List, Move, Plus,
-  Sheet, SlidersHorizontal, Trash2, Upload,
+  ChevronDown, Copy, Download, Eye, FileText, Folder, FolderPlus, LayoutGrid, List, MoreHorizontal, Move,
+  Plus, Search, Sheet, SlidersHorizontal, Trash2, Upload,
 } from "lucide-react"
 import { useState } from "react"
 import { useLocation } from "react-router-dom"
@@ -25,15 +30,13 @@ import { useLocation } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem,
+  DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Panel } from "@/components/panel"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ROUTES } from "@/app/routes.const"
 import type { ShPostType } from "@/models/post-type/post-type"
 import type { useListState } from "@/hooks/use-list-state"
@@ -67,59 +70,9 @@ export function BrowserToolbar({
 }: BrowserToolbarProps) {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const location = useLocation()
+  const view = (mode: BrowserView) => () => list.set("view", mode)
   return (
-    <>
-      {/* Toolbar: New Article | Grid | New Folder | Import || Order | Select | Action in Batch */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Left actions: New [PostType] + grid selector */}
-        <TooltipProvider>
-          <div className="flex items-center">
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-r-none"
-              disabled={!lastPostType}
-              onClick={() => {
-                if (lastPostType) {
-                  localStorage.setItem("sh-last-post-type", lastPostType.name)
-                  localStorage.setItem(lastPostTypeKey(objectId), lastPostType.name)
-                  navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${encodeURIComponent(lastPostType.name)}/new`)
-                }
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" /> {t("content.newItem", { type: lastPostType?.title || lastPostType?.name || t("content.defaultPostType") })}
-            </Button>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="rounded-l-none border-l-0"
-                  // SH1145 — named, not declared. This icon carried a tooltip and no accessible
-                  // name, which SH893 tolerated as a page's own debt; moving it into a shared
-                  // component makes it every page's, and that rule says fix it rather than list it.
-                  // A Tooltip is not a name: it needs hover or focus to exist at all.
-                  aria-label={t("content.selectPostTypeTooltip")}
-                  onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type-select`)}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{t("content.selectPostTypeTooltip")}</TooltipContent>
-            </Tooltip>
-          </div>
-        </TooltipProvider>
-
-        <Button variant="outline" size="sm" onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/new-folder`)}>
-          <FolderPlus className="mr-2 h-4 w-4" /> {t("content.newFolder")}
-        </Button>
-
-        <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.SITE_IMPORT)}>
-          <Upload className="mr-2 h-4 w-4" /> {t("content.import")}
-        </Button>
-
-        <div className="flex-1" />
-
+      <div className="flex shrink-0 flex-wrap items-center gap-0.5">
         {/*
           SH1022 — the filters, which are the server's words and not a second set computed here.
           A curator asking "drafts changed this week by Ana" is asking the same question an agent
@@ -128,29 +81,23 @@ export function BrowserToolbar({
         */}
         <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" data-testid="sh-filters">
-              <SlidersHorizontal className="mr-2 h-4 w-4" /> {t("content.moreFilters")}
+            <Button variant="ghost" size="sm" data-testid="sh-filters" aria-label={t("content.moreFilters")}>
+              <SlidersHorizontal className="h-4 w-4" />
               {list.narrowed(MORE_IGNORES) > 0 && (
-                <Badge variant="secondary" className="ml-2 text-[10px]">
-                  {list.narrowed(MORE_IGNORES)}
-                </Badge>
+                <Badge variant="secondary" className="ml-1 text-[10px]">{list.narrowed(MORE_IGNORES)}</Badge>
               )}
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-80 space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label className="text-xs" htmlFor="sh-filter-author">
-                  {t("content.filterAuthor")}
-                </Label>
+                <Label className="text-xs" htmlFor="sh-filter-author">{t("content.filterAuthor")}</Label>
                 <Input id="sh-filter-author" className="h-(--vg-control-dense) text-xs"
                   value={list.draft.author}
                   onChange={(event) => list.set("author", event.target.value)} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs" htmlFor="sh-filter-modifier">
-                  {t("content.filterModifier")}
-                </Label>
+                <Label className="text-xs" htmlFor="sh-filter-modifier">{t("content.filterModifier")}</Label>
                 <Input id="sh-filter-modifier" className="h-(--vg-control-dense) text-xs"
                   value={list.draft.modifier}
                   onChange={(event) => list.set("modifier", event.target.value)} />
@@ -175,41 +122,81 @@ export function BrowserToolbar({
                   onCheckedChange={(checked: boolean | "indeterminate") => list.set("subtree", checked ? "true" : "")} />
                 {t("content.filterSubtree")}
               </label>
-              <Button variant="ghost" size="sm" onClick={list.clear}>
-                {t("content.filterClear")}
-              </Button>
+              <Button variant="ghost" size="sm" onClick={list.clear}>{t("content.filterClear")}</Button>
             </div>
           </PopoverContent>
         </Popover>
 
-        {/* Right: Sort + Select + Batch + Download */}
-        <Select value={sortBy} onValueChange={(value) => list.set("sort", value)}>
-          <SelectTrigger size="sm" className="w-28 text-xs" aria-label={t("content.sortBy")}><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="order">{t("content.order")}</SelectItem>
-            <SelectItem value="name">{t("common.name")}</SelectItem>
-            <SelectItem value="date">{t("common.date")}</SelectItem>
-          </SelectContent>
-        </Select>
+        {/*
+          SH1026 — the three views, named and pressed. They used to be three unnamed icons
+          whose only effect was their own colour; now each draws the list its own way.
+        */}
+        <div className="flex items-center" role="group" aria-label={t("content.view")}>
+          <Button variant="ghost" size="icon-sm" className={viewMode === "list" ? "bg-muted" : ""}
+            aria-label={t("content.viewAsList")} aria-pressed={viewMode === "list" ? "true" : "false"}
+            onClick={view("list")}>
+            <List className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon-sm" className={viewMode === "grid" ? "bg-muted" : ""}
+            aria-label={t("content.viewAsGrid")} aria-pressed={viewMode === "grid" ? "true" : "false"}
+            onClick={view("grid")}>
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon-sm" className={viewMode === "spreadsheet" ? "bg-muted" : ""}
+            aria-label={t("content.viewAsTable")} aria-pressed={viewMode === "spreadsheet" ? "true" : "false"}
+            onClick={view("spreadsheet")}>
+            <Sheet className="h-4 w-4" />
+          </Button>
+        </div>
 
         {/*
-          SH1148 — in every view again. SH1142 took this menu out of the table view because the
-          table took no selection in: every item wrote `selectedItems` and nothing on screen
-          changed, so "Select all" then Delete could delete whatever the table last had ticked while
-          the dialog counted another set. Since VDS174 the table is controlled by `selectedIds`, so
-          what this menu writes is what the table ticks, and there is one selection in every view.
+          SH1307 — the secondary verbs in one overflow. SH1148 — Select is in every view: the table is
+          controlled by the page's set, so what it writes is what the table ticks.
         */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">{t("content.select")} <ChevronDown className="ml-1 h-3.5 w-3.5" /></Button>
+            <Button variant="ghost" size="icon-sm" aria-label={t("content.moreActions")}>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onSelectAction("content")}><FileText className="mr-2 h-4 w-4 text-green-600" /> {t("content.batchContent")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSelectAction("folder")}><Folder className="mr-2 h-4 w-4" /> {t("content.folder")}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type-select`)}>
+              <LayoutGrid className="mr-2 h-4 w-4" /> {t("content.selectPostTypeTooltip")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/new-folder`)}>
+              <FolderPlus className="mr-2 h-4 w-4" /> {t("content.newFolder")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate(ROUTES.SITE_IMPORT)}>
+              <Upload className="mr-2 h-4 w-4" /> {t("content.import")}
+            </DropdownMenuItem>
+            {/* SH1027 — the search page, scoped to this folder; a place to go, so it is a menu item. */}
+            {searchHereHref && (
+              <DropdownMenuItem onClick={() => navigate(searchHereHref, { state: searchBackState(location) })}>
+                <Search className="mr-2 h-4 w-4" /> {t("content.searchHere")}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onSelectAction("everything")}>{t("content.selectEverything")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSelectAction("invert")}>{t("content.selectInvert")}</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSelectAction("nothing")}>{t("content.selectNothing")}</DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>{t("content.sortBy")}</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuRadioGroup value={sortBy} onValueChange={(value) => list.set("sort", value)}>
+                  <DropdownMenuRadioItem value="order">{t("content.order")}</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="name">{t("common.name")}</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="date">{t("common.date")}</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>{t("content.select")}</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => onSelectAction("content")}><FileText className="mr-2 h-4 w-4" /> {t("content.batchContent")}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSelectAction("folder")}><Folder className="mr-2 h-4 w-4" /> {t("content.folder")}</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onSelectAction("everything")}>{t("content.selectEverything")}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSelectAction("invert")}>{t("content.selectInvert")}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSelectAction("nothing")}>{t("content.selectNothing")}</DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -234,46 +221,20 @@ export function BrowserToolbar({
           </DropdownMenuContent>
         </DropdownMenu>}
 
+        {/*
+          SH1307 — New is the page's one filled button (SH1195), last in the row. The other types are
+          the overflow's first item: a second button beside it pushed the filter bar onto two lines.
+        */}
+        <Button size="sm" className="ml-1" disabled={!lastPostType}
+          onClick={() => {
+            if (lastPostType) {
+              localStorage.setItem("sh-last-post-type", lastPostType.name)
+              localStorage.setItem(lastPostTypeKey(objectId), lastPostType.name)
+              navigate(`${ROUTES.CONTENT_ROOT}/folder/${objectId}/post-type/${encodeURIComponent(lastPostType.name)}/new`)
+            }
+          }}>
+          <Plus className="mr-2 h-4 w-4" /> {t("content.newItem", { type: lastPostType?.title || lastPostType?.name || t("content.defaultPostType") })}
+        </Button>
       </div>
-
-      {/* Sub-toolbar: search here and the three views */}
-      <Panel contentClassName="flex items-center gap-2 py-2 px-4">
-          {/* SH1203 — the path is the hero's trail now (SH1192); saying it here too was a third place. */}
-          <div className="flex-1" />
-          <div className="flex items-center gap-1 shrink-0">
-            {searchHereHref && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon-sm"
-                    aria-label={t("content.searchHere")}
-                    onClick={() => navigate(searchHereHref, { state: searchBackState(location) })}>
-                    <SlidersHorizontal className="h-4 w-4 rotate-90" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t("content.searchHere")}</TooltipContent>
-              </Tooltip>
-            )}
-            {/*
-              SH1026 — the three views, named and pressed. They used to be three unnamed icons
-              whose only effect was their own colour; now each draws the list its own way.
-            */}
-            <Button variant="ghost" size="icon-sm" className={viewMode === "list" ? "bg-muted" : ""}
-              aria-label={t("content.viewAsList")} aria-pressed={viewMode === "list" ? "true" : "false"}
-              onClick={() => list.set("view", "list")}>
-              <List className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon-sm" className={viewMode === "grid" ? "bg-muted" : ""}
-              aria-label={t("content.viewAsGrid")} aria-pressed={viewMode === "grid" ? "true" : "false"}
-              onClick={() => list.set("view", "grid")}>
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon-sm" className={viewMode === "spreadsheet" ? "bg-muted" : ""}
-              aria-label={t("content.viewAsTable")} aria-pressed={viewMode === "spreadsheet" ? "true" : "false"}
-              onClick={() => list.set("view", "spreadsheet")}>
-              <Sheet className="h-4 w-4" />
-            </Button>
-          </div>
-      </Panel>
-    </>
   )
 }
