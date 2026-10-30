@@ -241,24 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.75 The site list says the same thing three times a row (SH1309)
-
-Measured at 1920px on `/bento/content` with sixteen sites. Each row has a coloured
-initials square, a name with a second line, a bar filled in `bg-primary` (Shio's orange)
-with "130 publicadas · 117 rascunhos" beside it, a two-line change cell, and the row
-menu. Three columns of strong marks repeat down the list, and the curator reported the
-page as suffocating.
-
-Three Shio-owned causes, each small:
-
-- `PagesBar` fills the published share with the accent. The accent is the primary action's colour; on a meter it reads as alert, and two sites with different totals draw near-identical bars because the bar is a ratio with no stated whole. Neutral fills (foreground for published, muted for draft), or the numbers alone.
-- The identity cell's detail falls back to `site:<name>`. The address is for agents, the curator does not read it, and it doubles every row's height of text. Description when there is one; otherwise nothing.
-- The subtitle "Selecione seu site" says nothing a list does not; a count ("16 sites") does.
-
-Also worth asking: the review queue is the curator's main job (P7), and a site with
-agent changes waiting is the one fact this list could lead with. Not in scope here,
-named so it is not lost.
-
 ### XI.76 A detail line that repeats the name (SH1310)
 
 Measured at 1920px on `/bento/content/post-type`: of the visible rows, all but two show
@@ -553,6 +535,32 @@ fails a test which times a repository read in a loop without going through that 
 Then re-measure each benchmark with the helper and record the figures that move. Done
 when every timing benchmark goes through the helper, the lint names none outside it, and
 the re-measured numbers are in each test's report.
+
+### XI.93 Colour utilities the console names and nothing generates (SH1328)
+
+Found by SH1309. The sites list's pages bar drew its draft share with
+`bg-muted-foreground/40`, and in a browser that element's computed background is
+`rgba(0, 0, 0, 0)`. It had been invisible since SH1219. The cause is structural. The
+console's Tailwind (`src/index.css`) imports the design system's compiled `styles` and
+declares only radius and mono keys in its `@theme inline` (SH1199). It declares no
+`--color-*` keys, so a colour utility paints only when the package's compiled sheet
+happens to contain that exact class. The sheet has `bg-muted-foreground/60` and
+`bg-border`, but not `bg-muted-foreground/40` and not plain `bg-muted-foreground`.
+
+A scan of `shio-react/src` against `viglet-design-system.css` finds 22 token colour
+classes the sheet does not ship. Among them: `bg-primary/5` (a selected row's tint),
+`bg-muted/30` (12 uses), `ring-ring` and `ring-ring/20` (focus rings),
+`text-muted-foreground/50`, `border-primary/40` and `bg-destructive/10`. Each one
+compiles, reviews clean and paints nothing.
+
+The fix follows SH1199's pattern: copy the package `preset`'s `--color-*` keys into the
+console's `@theme inline` so Shio's own Tailwind generates any token utility its source
+names. Then extend `visual-scale.test.mjs`, which already compares the radius copy with
+the installed preset, to compare the colour keys too. Per SH338 the instrument lands
+first: a test that lists every `(bg|text|border|ring)-<token>(/n)?` class in `src` that
+neither the package sheet nor the console's theme can produce, held as a named list that
+the fix drives to empty. Done when the list is empty and a selected browser row shows
+its tint in a screenshot.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

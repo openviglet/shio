@@ -15,7 +15,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1309** (deps: —) **The site list paints usage in the accent and fills every row's second line with an address** — An orange bar reads as a warning and `site:Name` under every name is noise, so sixteen rows carry forty-eight loud marks and say little. → §XI.75
 - 📋 **SH1310** (deps: —) **The post-type list repeats each name as its second line, "InfoPage" under "InfoPage"** — Most types' title equals their API name, so half the list's text is a duplicate and every row is twice as tall as its content. → §XI.76
 - 📋 **SH1311** (deps: —) **The home page spends a 390px tile on each single number, and the one that asks for action looks like the rest** — Sites, types and open notes are three identical tiles of mostly white, so what waits for the curator has no more weight than a count. → §XI.77
 - 📋 **SH1312** (deps: —) **The media library floats the site picker and Upload on a row of their own, and a font file is a 290px blank tile** — Three control rows sit between the title and the grid, and files without a preview draw large empty squares that read as broken images. → §XI.78
@@ -31,6 +30,7 @@
 - 📋 **SH1325** (deps: —) **Double-clicking a folder in the file picker opens the one below it, as the dialog re-centres after the first click** — Selecting a row adds the path footer, the centred dialog moves up 26px, and the second click lands on the neighbour. → §XI.88
 - 📋 **SH1326** (deps: —) **A new page can only be saved, saving returns to the folder, and the folder's table opens a row only on double-click** — Publishing a page just written costs a curator ten clicks across seven screens, the most of SH1315's six tasks. → §XI.91
 - 📋 **SH1327** (deps: —) **Benchmarks that repeat an identical read on H2 time its result cache, so a 3.5 s query printed as 17 ms** — SH1217's own measurement hid the defect SH1305 fixed, and ten timing tests may be reporting cache hits as costs. → §XI.92
+- 📋 **SH1328** (deps: —) **22 colour classes in the console paint nothing, because the design system's sheet does not ship them** — A selected row's tint, focus rings and a pages bar's draft share compile, review clean and render transparent. → §XI.93
 
 ## Priority
 

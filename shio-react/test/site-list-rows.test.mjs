@@ -33,11 +33,25 @@ function idsBetween(start, end) {
 }
 
 test("SH1219: three columns, the facts the listing carries, and no Description", () => {
-  assert.deepEqual(idsBetween("const columns", "], [t])"), ["name", "pages", "changed"],
+  assert.deepEqual(idsBetween("const columns", "], [t, twoLines])"), ["name", "pages", "changed"],
     "SH1219: the sites list should be identity, pages and last changed — the description is the "
     + "identity cell's second line now")
-  assert.match(PAGE, /<BentoIdentityCell\b[^>]*detail=\{site\.description\?\.trim\(\) \|\| `site:\$\{site\.name\}`\}/,
-    "SH1219: a site with no description names its address under its name")
+  assert.match(PAGE, /<BentoIdentityCell\b[^>]*detail=\{site\.description\?\.trim\(\) \|\| undefined\}/,
+    "SH1309: a site with no description shows nothing under its name")
+  assert.doesNotMatch(PAGE, /`site:\$\{site\.name\}`/,
+    "SH1309: the agent's address is back under every name, doubling each row's text for no reader")
+  assert.match(PAGE, /lines: twoLines \? 2 : 1/,
+    "SH1309: the name column asks for a two-line row even when no site has a second line")
+  assert.doesNotMatch(PAGE, /className="bg-primary"/,
+    "SH1309: the pages bar fills with the accent again, which reads as a warning on every row")
+  // Measured in a browser: `bg-muted-foreground/40` computed to transparent, because the design
+  // system's sheet does not ship it (SH1328). These two it ships.
+  assert.match(PAGE, /className="bg-muted-foreground\/60" style=\{\{ width: `\$\{\(published/,
+    "SH1309: the published share uses a class nothing generates, so it paints nothing")
+  assert.match(PAGE, /className="bg-border" style=\{\{ width: `\$\{\(draft/,
+    "SH1309: the draft share uses a class nothing generates, so it paints nothing")
+  assert.match(PAGE, /subtitle=\{sites \? t\("content\.siteCount"/,
+    "SH1309: the subtitle should count the sites, not tell the curator to pick one")
   assert.match(PAGE, /<BentoChangeCell\b[^>]*actor=\{actor\}[^>]*agent=\{agent\}/,
     "SH1219: the change cell says who, and marks an agent")
   assert.match(PAGE, /t\("content\.noPagesYet"\)/, "SH1219: an empty site says so instead of a zero bar")

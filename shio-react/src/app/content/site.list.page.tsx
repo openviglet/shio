@@ -88,6 +88,11 @@ function LastChanged({ site }: Readonly<{ site: ShSite }>) {
 /**
  * SH1219 — whether a site is used: its live and draft pages as a bar, with the numbers beside it.
  * A page live with a pending draft counts under both, as the listing reports it (SH1217).
+ *
+ * SH1309 — in neutral fills. The accent is the primary action's colour, and sixteen orange meters
+ * down a list read as sixteen warnings about sites that were fine. Only colour utilities the design
+ * system's sheet ships paint here (the console's Tailwind has no colour theme), and its old
+ * `bg-muted-foreground/40` is not one: the draft share had computed to transparent since SH1219.
  */
 function PagesBar({ published, draft }: Readonly<{ published: number; draft: number }>) {
   const { t } = useTranslation()
@@ -96,8 +101,8 @@ function PagesBar({ published, draft }: Readonly<{ published: number; draft: num
   return (
     <div className="flex w-full min-w-0 items-center gap-2">
       <div className="bg-muted flex h-1.5 min-w-12 flex-1 overflow-hidden rounded-full" aria-hidden="true">
-        <div className="bg-primary" style={{ width: `${(published / total) * 100}%` }} />
-        <div className="bg-muted-foreground/40" style={{ width: `${(draft / total) * 100}%` }} />
+        <div className="bg-muted-foreground/60" style={{ width: `${(published / total) * 100}%` }} />
+        <div className="bg-border" style={{ width: `${(draft / total) * 100}%` }} />
       </div>
       <span className="text-muted-foreground whitespace-nowrap text-xs tabular-nums">
         {t("content.sitePages", { published, draft })}
@@ -130,7 +135,7 @@ function SiteCard({ site, actions }: Readonly<{ site: ShSite; actions: BentoActi
           )}
         </div>
         <div className="flex flex-col gap-2 p-3">
-          <BentoIdentityCell name={site.name} detail={site.description?.trim() || `site:${site.name}`} />
+          <BentoIdentityCell name={site.name} detail={site.description?.trim() || undefined} />
           <PagesBar published={site.pages?.published ?? 0} draft={site.pages?.draft ?? 0} />
           <LastChanged site={site} />
         </div>
@@ -185,17 +190,23 @@ export default function BentoSiteListPage() {
    * glow, which made it look more important than the other fourteen for no reason the data had.
    *
    * SH1219 — three columns, each a fact the listing's one read carries (SH1217). Description had
-   * half the width for one site in twenty-three; it is the identity cell's second line now, with
-   * the site's address where there is none. Pages says whether a site is used, and Last changed
-   * says when and by whom, marked when an agent did it, instead of one date repeated down the list.
+   * half the width for one site in twenty-three; it is the identity cell's second line now. Pages
+   * says whether a site is used, and Last changed says when and by whom, marked when an agent did
+   * it, instead of one date repeated down the list.
+   *
+   * SH1309 — and nothing where there is no description. The `site:<name>` it fell back to is the
+   * agent's address, which a curator does not read, and it doubled every row's text. So the column
+   * asks for two lines (SH1314's taller row) only while some site has a description to show.
    */
+  const twoLines = Boolean(sites?.some((site) => site.description?.trim()))
   const columns = useMemo<BentoDataTableColumn<ShSite>[]>(() => [
     {
-      id: "name", header: t("common.name"), width: "minmax(16rem, 3fr)", hideable: false, lines: 2,
+      id: "name", header: t("common.name"), width: "minmax(16rem, 3fr)", hideable: false,
+      lines: twoLines ? 2 : 1,
       sortValue: (site) => site.name.toLowerCase(),
       cell: (site) => (
         <Link to={browse(site)} className="block min-w-0 hover:underline">
-          <BentoIdentityCell name={site.name} detail={site.description?.trim() || `site:${site.name}`} />
+          <BentoIdentityCell name={site.name} detail={site.description?.trim() || undefined} />
         </Link>
       ),
     },
@@ -209,7 +220,7 @@ export default function BentoSiteListPage() {
       sortValue: (site) => changedAt(site) || null,
       cell: (site) => <LastChanged site={site} />,
     },
-  ], [t])
+  ], [t, twoLines])
 
   const handleDelete = async (site: ShSite) => {
     if (!confirm(t("dialog.deleteMessage"))) return
@@ -273,7 +284,8 @@ export default function BentoSiteListPage() {
       listId="sites"
       eyebrow={t("sidebar.content")}
       title={t("content.sites")}
-      subtitle={t("content.selectYourSite")}
+      // SH1309 — what the list holds, not an instruction the list already makes obvious.
+      subtitle={sites ? t("content.siteCount", { count: sites.length }) : ""}
       toolbar={
         <div className="flex items-center gap-2">
           <div className="relative">

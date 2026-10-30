@@ -281,6 +281,10 @@ Rendered inside `WidgetSpecificSettings` based on widget name:
 ### Site List Page (`/console/content`)
 - Shows all sites as a list with a row menu (Preview, View published site, Open, Export, Delete);
   Preview is the draft at `/preview/**`, View published site is what a visitor gets (SH1304)
+- SH1309: the subtitle counts the sites; a row's second line is its description or nothing (the
+  `site:<name>` fallback was the agent's address), and the name column asks for SH1314's two-line
+  row only while some site has one; the pages bar is neutral (`bg-muted-foreground/60` and
+  `bg-border`, both shipped by the design system's sheet, see SH1328), never the accent
 - Tabs: Sites | Tasks
 - Search filter
 - Click site → navigates to `/console/content/object/{siteId}`

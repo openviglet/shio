@@ -51,7 +51,8 @@ function twoLineCells(source) {
     const column = before.slice(start)
     // A cell rendered outside a column (a card, a helper component) is not this rule's subject.
     if (!/\bcell:/u.test(column)) continue
-    found.push({ column: column.match(/^id: "([^"]+)"/u)[1], declared: /\blines:\s*2\b/u.test(column) })
+    // SH1309 — a column whose second line is conditional may declare it conditionally, `lines: x ? 2 : 1`.
+    found.push({ column: column.match(/^id: "([^"]+)"/u)[1], declared: /\blines:\s*(?:[\w.]+\s*\?\s*)?2\b/u.test(column) })
   }
   return found
 }
@@ -79,6 +80,11 @@ test("SH1314: the reader sees a missing declaration, and an inline cell is not o
   assert.deepEqual(twoLineCells(without), [{ column: "name", declared: false }])
   const declared = without.replace('header: "Name",', 'header: "Name", lines: 2,')
   assert.deepEqual(twoLineCells(declared), [{ column: "name", declared: true }])
+  const conditional = without.replace('header: "Name",', 'header: "Name", lines: twoLines ? 2 : 1,')
+  assert.deepEqual(twoLineCells(conditional), [{ column: "name", declared: true }],
+    "SH1309: a column that asks for two lines only while a row has a second line declares it")
+  const neverTwo = without.replace('header: "Name",', 'header: "Name", lines: 1,')
+  assert.deepEqual(twoLineCells(neverTwo), [{ column: "name", declared: false }])
   const inline = 'const c = [{ id: "when", cell: (r) => <BentoChangeCell at={r.at} actor={r.who} inline /> }]'
   assert.deepEqual(twoLineCells(inline), [])
 })
