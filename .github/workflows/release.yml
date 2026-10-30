@@ -1,0 +1,85 @@
+# SH1339 — the 2026.3 line released on openviglet/shio.
+#
+# The Releases tab showed v0.3.8 from 2021 as Latest, and the 2026.3 line reached people only as a
+# Docker image pushed by hand and the npm packages. This tags the version pom.xml declares, attaches
+# the jar the console is built into, writes notes for people (the curator's half, the agent's half,
+# then fixes, from the commit subjects since the previous tag) and publishes the image from the same
+# commit, so the release and the image never name different versions.
+#
+# Dispatched by a person: a release is a decision, and this marks itself Latest.
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Resolve project version
+        id: version
+        run: echo "version=$(grep -m1 -oP '(?<=<revision>)[^<]+' pom.xml)" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse a version already released
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            echo "Tag $VERSION already exists: raise <revision> in pom.xml before releasing again."; exit 1
+          fi
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: 21
+          distribution: 'zulu'
+          cache: maven
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.8.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install JS workspace
+        run: pnpm install --frozen-lockfile
+
+      # The console is built into the jar, exactly as console-check.yml builds what it walks.
+      - name: Build the jar
+        run: ./mvnw -B -DskipTests package
+
+      - name: Write the notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -o pipefail
+          previous="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          range="${previous:+$previous..}HEAD"
+          git log "$range" --no-merges --format=%s | node scripts/release-notes.mjs "$VERSION" > "$RUNNER_TEMP/notes.md"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cp shio-app/target/viglet-shio.jar "$RUNNER_TEMP/viglet-shio-$VERSION.jar"
+          gh release create "$VERSION" "$RUNNER_TEMP/viglet-shio-$VERSION.jar#viglet-shio.jar" \
+            --target "$GITHUB_SHA" --title "Shio $VERSION" --notes-file "$RUNNER_TEMP/notes.md" --latest
+
+  docker:
+    needs: release
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-docker.yml

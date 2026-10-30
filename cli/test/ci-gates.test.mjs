@@ -393,7 +393,8 @@ test("SH1126: CI builds the console and refuses to be told nothing about its siz
 test("SH1259: a job that boots the jar waits for its own login, not for an open port", () => {
   // The run that found it: setup's POST landed before ShOnStartup seeded `admin`, answered 403
   // (no row reads as "setup done"), the step accepted 403, and every conformance call was a 401.
-  const booting = readdirSync(WORKFLOWS).filter((name) => /viglet-shio\.jar/.test(read(name)));
+  // A workflow that runs the jar, not one that only names it: release.yml attaches it (SH1339).
+  const booting = readdirSync(WORKFLOWS).filter((name) => /java -jar .*viglet-shio\.jar/.test(read(name)));
   assert.ok(booting.length >= 2,
     `SH1259: expected the conformance and console-check jobs to boot the jar, found ${booting.join(", ") || "none"}`);
 

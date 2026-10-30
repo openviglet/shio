@@ -8,6 +8,8 @@ name: Publish Docker Image
 
 on:
   workflow_dispatch:
+  # SH1339 — release.yml calls this once the release exists, so the two share a commit and a version.
+  workflow_call:
 
 env:
   REGISTRY: ghcr.io
