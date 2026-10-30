@@ -24,7 +24,7 @@
 
 - ⏳ **SH1339** (deps: maintainer dispatches release.yml) **The Releases tab shows v0.3.8 from 2021 as Latest, and the 2026.3 line has no release at all** — Dispatching release.yml once on 2026.3 and marking the 2020-21 releases pre-release are actions on GitHub for the maintainer. → §XCV.1
 - ⏳ **SH1340** (deps: maintainer sets the homepage) **The README sends readers to docs.viglet.org/shio and the repository homepage to shio.viglet.org, both now redirects** — The repository's homepage field still says shio.viglet.org, a GitHub setting. → §XCV.2
-- 📋 **SH1342** (deps: —) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
+- ⏳ **SH1342** (deps: a hosted Viglet Cloud instance) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
 
 ## Priority
 
@@ -54,6 +54,13 @@
 - **openviglet/shio's homepage field is openviglet.github.io/shio** gh repo view
   openviglet/shio --json homepageUrl answers https://openviglet.github.io/shio/, so the
   link beside the repository description no longer redirects.
+
+## Done when — SH1342
+
+- **A visitor opens the showcase and a guest console without installing** The README and
+  the site link a hosted instance where the Quilhara showcase renders publicly and a
+  guest role can browse, edit drafts and see the review queue but not publish, reset
+  from the blueprint on a schedule.
 
 ## Non-goals (do NOT add as tasks)
 
