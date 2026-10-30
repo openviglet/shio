@@ -40,6 +40,13 @@
   the More tools section carries a Shio line, and each link is in that repo's
   actions.json.
 
+## Done when — SH1319
+
+- **Opening a page from anywhere lands in one editor, with the other a mode** Checked
+  live after the maintainer picks the primary editor: the browser, search, home and the
+  site list all open a page in the same editor, the other is a switch inside it that
+  keeps the selection, and the decision is recorded in console-ui.md.
+
 ## Non-goals (do NOT add as tasks)
 
 Binding constraints — rationale in [IMPROVEMENTS.md](IMPROVEMENTS.md) §0.3–§0.4, §0.7 and
