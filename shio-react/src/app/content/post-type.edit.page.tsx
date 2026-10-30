@@ -946,7 +946,8 @@ export default function PostTypeEditPage() {
             <Lock className="mt-0.5 size-4 shrink-0 text-violet-600 dark:text-violet-400" />
             <div className="space-y-1">
               <p className="font-medium text-violet-800 dark:text-violet-300">{t("content.managedByCode")}</p>
-              <p className="text-violet-700/80 dark:text-violet-400/80">{t("content.managedByCodeDescription")}</p>
+              {/* SH1332 — solid, like the title above it: at 80% axe measured this under 4.5:1. */}
+              <p className="text-violet-800 dark:text-violet-300">{t("content.managedByCodeDescription")}</p>
             </div>
           </div>
         )}

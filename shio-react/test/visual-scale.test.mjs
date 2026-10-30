@@ -236,6 +236,20 @@ test("SH1328: every token colour class the console names is one something genera
       + "console's @theme inline, copied from the installed preset.")
 })
 
+test("SH1332: no text in the console is a palette colour at reduced opacity", () => {
+  // The managed-by-code banner's description was `dark:text-violet-400/80`, which axe measured at
+  // 4.38:1 on the dark ground: a hue chosen for contrast and then thinned below it. Palette text
+  // takes a solid step (`text-violet-800 dark:text-violet-300`); muted text is `text-muted-foreground`.
+  const ALPHA_TEXT = /(?<=^|[\s"'`{(:])text-[a-z]+-\d{2,3}\/\d+(?=[\s"'`})]|$)/g
+  const offenders = []
+  for (const file of TSX) {
+    for (const match of file.code.matchAll(ALPHA_TEXT)) offenders.push(`${file.name}: ${match[0]}`)
+  }
+  assert.deepEqual(offenders, [],
+    "SH1332: palette text at reduced opacity, which falls under 4.5:1 on one of the two grounds. Use a "
+      + "solid step per theme, or text-muted-foreground for secondary text.")
+})
+
 test("SH1328: the console's theme maps every colour key the way the installed preset does", () => {
   // The same copy-and-compare as the radius block above, for the same reason.
   const preset = colourKeys(readFileSync(join(designSystem(), "dist", "preset.css"), "utf8"))

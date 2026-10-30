@@ -261,22 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.97 The managed-by-code banner's contrast (SH1332)
-
-Found by the console check run for SH1313 on a clean instance (2026-10-30), on
-`post-type-edit:BuildNote` and its bento twin. axe reports `color-contrast` as serious
-on `.text-violet-700/80`. That is the "managed by code" banner in
-`post-type.edit.page.tsx` (`border-violet-200 bg-violet-50 ... dark:bg-violet-950/30`).
-In the dark theme its body text is violet-700 at 80% on a near-black ground. Any post
-type a `shio push` or the API created shows this banner, so every code-managed type's
-editor fails axe. The provisioned fixture only met it because SH1313's check created
-one.
-
-Fix: give the banner the console's own tokens or a dark-theme text colour that passes
-4.5:1, and measure it in both themes. Note SH1328: an opacity-modified colour class may
-not be generated at all, so read the computed colour, not the class. Done when both
-probes pass axe on a code-managed type.
-
 ### XI.98 A new page as a child of the selected one (SH1333)
 
 Split from SH1316, whose design asked where a curator creates a page and answered "in
