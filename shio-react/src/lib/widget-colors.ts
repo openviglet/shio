@@ -44,7 +44,3 @@ export const WIDGET_ACCENT_COLORS: Record<string, string> = {
 export function getWidgetBadgeColor(widgetName: string): string {
   return WIDGET_BADGE_COLORS[widgetName] ?? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-700"
 }
-
-export function getWidgetAccentColor(widgetName: string): string {
-  return WIDGET_ACCENT_COLORS[widgetName] ?? "border-l-gray-300 dark:border-l-gray-600"
-}

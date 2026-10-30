@@ -1035,12 +1035,19 @@ async function checkTableSelectAll(context, site) {
   return probe
 }
 
-/** Count the widget cards a form rendered, without depending on any one widget's markup. */
+/**
+ * Count the fields a form rendered, without depending on any one widget's markup.
+ *
+ * SH1308 — by `data-shio-field`, the attribute each field's wrapper carries, and the controls inside
+ * those. It used to count `border-l-4` cards, the frame SH1308 removed, and `main` inputs, which the
+ * bento shell (no `<main>`) never matched: the frame was the only half that counted anything.
+ */
 async function countFields(page) {
   return page.evaluate(() => {
-    const cards = document.querySelectorAll("[class*='border-l-4']")
+    const cards = document.querySelectorAll("[data-shio-field]")
     const inputs = document.querySelectorAll(
-      "main input:not([type=hidden]), main textarea, main select, main [contenteditable=true]",
+      "[data-shio-field] input:not([type=hidden]), [data-shio-field] textarea, [data-shio-field] select, "
+        + "[data-shio-field] [contenteditable=true]",
     )
     return { cards: cards.length, inputs: inputs.length }
   })

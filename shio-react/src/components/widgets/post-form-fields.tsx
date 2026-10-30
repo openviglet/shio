@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next"
 import { fieldAnchorId, fieldIds } from "@/lib/field-ids"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getWidget } from "@/components/widgets"
-import { getWidgetAccentColor } from "@/lib/widget-colors"
 import type { ShPostAttr, ShRelatorItem } from "@/models/post/post"
 import type { ShPostTypeSchemaField } from "@/models/post-unified/post-unified"
 import { useMemo } from "react"
@@ -81,7 +80,6 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
       return <Widget key={field.name} attr={attr} onChange={handleChange} />
     }
 
-    const accent = getWidgetAccentColor(field.widget)
     // SH955 — the server said this refusal was about this field, so it is marked here rather than
     // left to a toast the curator has already dismissed by the time they look for the input.
     const refused = problem?.field === field.name ? problem.message : undefined
@@ -103,7 +101,12 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
         // SH1013 — the anchor a finding scrolls to. A panel that says which field is wrong and
         // cannot take you there leaves the curator scanning a sixteen-field form for the name.
         id={fieldAnchorId(field.name)}
-        className={`rounded-lg border border-l-4 ${refused ? "border-destructive" : accent} bg-background p-4 space-y-3 transition-shadow hover:shadow-sm`}
+        data-shio-field={field.name}
+        // SH1308 — a label and its control, separated by space, not a card with a stripe in the
+        // widget's colour inside the panel's card. The widget colour says what kind of field a row
+        // is where fields are definitions (the post-type editor); here the control already says it.
+        // A refused field keeps a rule on its edge, the one mark a curator scanning for it needs.
+        className={`space-y-2 ${refused ? "border-l-2 border-destructive pl-3" : ""}`}
       >
         <div className="flex items-center gap-2 flex-wrap">
           <Label
@@ -180,7 +183,7 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
   }
 
   if (tabs.length <= 1) {
-    return <div className="space-y-4">{tabs[0]?.fields.map(renderField)}</div>
+    return <div className="space-y-6">{tabs[0]?.fields.map(renderField)}</div>
   }
 
   return (
@@ -196,7 +199,7 @@ export function PostFormFields({ schema, data, onDataChange, postId, postTypeNam
         ))}
       </TabsList>
       {tabs.map((tab) => (
-        <TabsContent key={tab.label} value={tab.label} className="space-y-4 pt-1">
+        <TabsContent key={tab.label} value={tab.label} className="space-y-6 pt-1">
           {tab.fields.map(renderField)}
         </TabsContent>
       ))}

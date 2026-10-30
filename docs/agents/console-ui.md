@@ -74,7 +74,11 @@ Editor pages follow a consistent layout:
 3. **Card(s)** containing the form content
 
 ### Field Card Pattern
-Form fields (both in post-type editor and post form) render as individual cards:
+**Post-type editor only since SH1308.** A post's fields are a label and its control, `space-y-6`
+apart, with no frame and no widget colour: the colour says what kind of definition a row is, which
+matters where fields are definitions, and in the post editor the control already says it. A refused
+field there keeps a `border-l-2 border-destructive` rule. Each wrapper carries `data-shio-field`,
+which `console-check.mjs`'s `countFields` counts. In the post-type editor, fields render as cards:
 - `border-l-4` with widget-type accent color
 - `rounded-lg border bg-background`
 - `hover:shadow-sm transition-shadow` for interactivity
@@ -167,8 +171,8 @@ Renders the dynamic form for post editing/creation:
 2. Groups fields into `TabGroup[]` when Tab widgets are present
 3. First group (before any Tab) gets the post type name as label
 4. Each tab trigger shows a field count badge
-5. Each visible field renders as a **color-coded card** with widget accent border
-6. Hidden widgets render invisibly (no card wrapper)
+5. Each visible field renders as a label and its control, unframed (SH1308)
+6. Hidden widgets render invisibly (no wrapper)
 7. Fields show: label with required asterisk, Title/Summary/WidgetType badges, widget component, description
 
 ### Tab Widget Behavior
@@ -300,7 +304,7 @@ Full page with grid of post types:
   which row the form is editing, *not* a permission), field count badge
 - Preview Draft, Translations, History, Schedule, Save, **Publish**, **Unpublish**,
   Save & Close, Cancel buttons
-- Card with `PostFormFields` rendering color-coded field cards
+- Card with `PostFormFields` rendering unframed fields (SH1308)
 - Loading state with animated spinner
 - Navigation: back to parent folder on save/cancel
 
@@ -1591,7 +1595,7 @@ move URL conflict (`data.furl`, `data.title`) and the site furl conflict, which 
 `furl`, not `data.furl`, because a site's own field is not a post's and a page with both would pin
 it on the wrong input.
 
-`PostFormFields` takes a `problem` prop and marks that one field: a destructive border and the
+`PostFormFields` takes a `problem` prop and marks that one field: a destructive rule on its edge and the
 message under the widget, with `role="alert"` so it is announced rather than only coloured.
 **Not `aria-invalid`**: the wrapper is a div, not a form control, and marking it invalid would
 tell a screen reader the wrong thing about what it is. (Writing it that way also looked like it

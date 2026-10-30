@@ -241,26 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.74 A form is boxes inside boxes (SH1308)
-
-Measured at 1920px on `/bento/content/post/{id}` (a Quilhara page, en-US): the Fields
-panel is a frosted card; inside it each field is a second card with a 4px left border in
-its widget colour (blue, indigo, pink…), and inside that the input has its own border.
-Five fields take about 680px, so Image starts at the fold, and the eye reads the stripes
-before the labels.
-
-The widget colours (`widget-colors.ts`) were meant to say what kind of field a row is in
-the post-type editor, where fields are a list of definitions. In the post editor the
-curator is filling values, and the type of a field is already said by its control: a
-textarea looks like a textarea.
-
-Direction: fields sit directly in the panel as label plus control, separated by space
-(24px) rather than frames; the widget colour stays in the post-type editor and leaves
-the post editor. Required stays the asterisk. Groups (tabs, sections) remain the only
-framing. The live preview pane keeps its card. The gate: the same post at 1920px shows
-all five fields above the fold, and `countFields` in `console-check.mjs` reads the
-inputs rather than `border-l-4` cards, since that selector is the old frame.
-
 ### XI.75 The site list says the same thing three times a row (SH1309)
 
 Measured at 1920px on `/bento/content` with sixteen sites. Each row has a coloured

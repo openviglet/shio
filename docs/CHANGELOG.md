@@ -2043,6 +2043,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1315** — Six curator tasks are driven from /bento and held in curator-task-budget.json: find 1 click, approve 2, headline 4, image 7, new page 10 over 7 screens, preview blocked by SH1322 (design §XI.81 recorded in `docs/agents/console-ui.md`).
 - **SH1305** — The sites listing's newest-change read is a grouped (site, date) match instead of a per-row correlated max: 3.5 s to 20 ms over 8,000 history rows, asserted by ShSiteListingHistoryCostTest (design §XI.71 superseded: it expected an index or a maintained column; the query shape was the cost, and its 122 ms outlier was H2's result cache) (design §XI.71 recorded in `docs/agents/content-api.md`).
 - **SH1307** — The content browser has one control row beside the filter bar, with New as its one filled button and the counts under the title; at 1920 px the table's header sits 94 px below the hero (design §XI.73 recorded in `docs/agents/console-ui.md`).
+- **SH1308** — A post's fields are a label and its control, spaced and unframed, with the widget colours left to the post-type editor; at 1920 px every field of the fixture page sits above the fold (design §XI.74 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 
