@@ -241,24 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.77 The dashboard is three big tiles and a lot of white (SH1311)
-
-Measured at 1920px on `/bento`: "Visão geral" is two 390×140 tiles (16 sites, 28 post
-types), "Esperando por você" is one tile of the same size (2 open notes), and "Ações
-rápidas" six more tiles with an eyebrow and a title each. Every tile is the same frame
-and weight; a number sits in the lower left of a mostly empty box; the coloured icon
-squares are the loudest thing on screen.
-
-"Waiting for you" is the one section that asks a person to act, and the product's
-orientation says the curator's job is to approve (P7). It should lead, and it should say
-what is waiting (two notes, on which posts) rather than a count in a tile.
-
-Direction: the overview becomes one compact row of figures (number plus label, no
-frame); the waiting section comes first, as a short list of the items with their post
-and age, with the review queue's pending count beside it; quick actions become a single
-row of buttons or links. Keep the accent for the one action that matters on the page.
-The gate is a screenshot at 1920px with everything above the fold.
-
 ### XI.78 The media library's controls and its empty tiles (SH1312)
 
 Measured at 1920px on `/bento/content/files` (VigR3): the hero's description wraps to

@@ -4321,3 +4321,11 @@ this folder still beside New, Visões fell onto a second line and cost 44 px; bo
 overflow. Measured on the provisioned Console Check root: hero bottom at 181 px, the table's header
 row at 275 px (94 px), the first data row at 319 px. The 40 px under the hero is `PageHero`'s, shared
 by every page, and is not this page's to change.
+## The home page leads with what waits (SH1311)
+
+`home.page.tsx` composes no tiles any more. **Waiting for you** comes first, as rows (the thing
+owed, its count, a link to where it is resolved), and is not drawn when nothing waits. The overview is
+one unframed line of figures (a number, its label, a link), and the quick actions are one row of
+buttons, where only New site is filled. At 1920 px with one open note, every section's heading is
+above the fold. Listing the items themselves (which notes, on which posts) is SH1318's, which turns
+the page into the curator's inbox on top of this layout.

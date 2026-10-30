@@ -64,12 +64,21 @@ test("SH898: the survey walks every domain tree, and the home is in it", () => {
       + " package's hero or the digest's vocabulary lost it.")
 })
 
-test("SH898: the migrated home composes the package's tiles and no Card", () => {
-  for (const component of ["BentoHero", "BentoCountTile", "BentoTile", "BentoEmptyState"]) {
+test("SH898: the migrated home composes the package's parts and no Card", () => {
+  // SH1311 retired the tiles: a 390px frame per number gave an inventory count the weight of a
+  // waiting review. What is owed leads as rows, and the counts and quick actions are one line each.
+  for (const component of ["BentoHero", "BentoSection", "BentoEmptyState"]) {
     assert.ok(homeSource.includes(component),
-      `SH898: the bento home no longer composes ${component}. §LV.1 asked for the package's tiles`
-        + " and count tiles rather than Card, and that is the whole of what this task changed.")
+      `SH898: the bento home no longer composes ${component}. §LV.1 asked for the package's parts`
+        + " rather than Card, and that is the whole of what this task changed.")
   }
+  for (const tile of ["<BentoCountTile", "<BentoTile"]) {
+    assert.ok(!homeSource.includes(tile), `SH1311: the home draws ${tile.slice(1)} again`)
+  }
+  assert.ok(homeSource.indexOf('t("home.attention")') < homeSource.indexOf('t("home.overview")'),
+    "SH1311: what waits for the curator comes after the inventory again")
+  assert.equal((homeSource.match(/variant=\{index === 0 \? "default" : "outline"\}/g) ?? []).length, 1,
+    "SH1311: the quick actions keep one filled button, New site")
   assert.doesNotMatch(homeSource, /@\/components\/ui\/card/,
     "SH898: the bento home imports the console Card. A page that renders both is a page where"
       + " half the surfaces re-skin and half do not.")

@@ -29,13 +29,11 @@ import {
 } from "@tabler/icons-react"
 import {
   BentoChangeMark,
-  BentoCountTile,
   BentoEmptyState,
   BentoHero,
   BentoSection,
-  BentoTile,
-  type BentoTone,
 } from "@viglet/viglet-design-system/bento"
+import { Button } from "@/components/ui/button"
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
@@ -58,8 +56,9 @@ import { ShConsoleSummaryService, type ShRun } from "@/services/console/summary.
  *
  * ## What it composes
  *
- * A `BentoHero`, `BentoCountTile` for the two counts, `BentoTile` for the six quick actions, and
- * `BentoEmptyState` for an activity list with nothing in it.
+ * A `BentoHero`, `BentoSection`s, and `BentoEmptyState` for an activity list with nothing in it.
+ * SH1311 retired the `BentoCountTile`s and `BentoTile`s: what waits is a list of rows and leads, the
+ * counts are one unframed line of figures, and the quick actions are one row of links.
  *
  * ## A row's action is a change, not a colour (SH1211)
  *
@@ -71,9 +70,9 @@ import { ShConsoleSummaryService, type ShRun } from "@/services/console/summary.
  *
  * ## Why the counts wait rather than showing zero
  *
- * `BentoCountTile` takes a `number`, and the obvious `?? 0` puts **"0 Sites"** on the first
- * thing a curator sees after login, for as long as the request takes. Zero is a real answer to
- * that question and a wrong one. The tiles render when the counts arrive.
+ * The obvious `?? 0` puts **"0 Sites"** on the first thing a curator sees after login, for as long
+ * as the request takes. Zero is a real answer to that question and a wrong one. The figures render
+ * when the counts arrive.
  */
 
 const summaryService = new ShConsoleSummaryService()
@@ -92,8 +91,8 @@ const ACTION_ICON: Record<string, TablerIcon> = {
 }
 
 /*
- * A list row's icon names the kind of thing, in a neutral well: the gradient chip belongs to the
- * tiles above (VDS182), and a row's colour, where it has one, is its state.
+ * A list row's icon names the kind of thing, in a neutral well (VDS182), and a row's colour, where
+ * it has one, is its state.
  */
 const LIST_CLASS = "bg-card divide-border/60 divide-y overflow-hidden rounded-xl border"
 const ROW_CLASS = "hover:bg-muted/40 flex items-center gap-3 px-4 py-3 transition-colors"
@@ -132,8 +131,8 @@ export default function BentoHomePage() {
   const incidents = summary?.diagnostics?.incidents ?? 0
 
   const stats = useMemo(() => [
-    { label: t("home.statSites"), value: siteCount, icon: IconFileText, url: `${ROUTES.CONSOLE}/content`, tone: "blue" as BentoTone },
-    { label: t("home.statPostTypes"), value: postTypeCount, icon: IconForms, url: ROUTES.POST_TYPE_ROOT, tone: "indigo" as BentoTone },
+    { label: t("home.statSites"), value: siteCount, url: `${ROUTES.CONSOLE}/content` },
+    { label: t("home.statPostTypes"), value: postTypeCount, url: ROUTES.POST_TYPE_ROOT },
   ], [t, siteCount, postTypeCount])
 
   /*
@@ -156,14 +155,12 @@ export default function BentoHomePage() {
       value: attention.reviewSessions,
       icon: IconChecklist,
       url: ROUTES.ADMIN_REVIEW,
-      tone: "amber" as BentoTone,
     },
     {
       label: t("home.attentionScheduled"),
       value: attention.scheduledSoon,
       icon: IconCalendarClock,
       url: ROUTES.SCHEDULED,
-      tone: "violet" as BentoTone,
     },
     {
       label: t("home.attentionNotes"),
@@ -171,7 +168,6 @@ export default function BentoHomePage() {
       icon: IconMessage,
       // SH1214 — the list it counts, not the content browser, which shows no notes.
       url: ROUTES.NOTES,
-      tone: "rose" as BentoTone,
     },
     {
       // A window and not a total: the incident log starts empty at boot, so zero means "nothing
@@ -181,23 +177,17 @@ export default function BentoHomePage() {
       value: incidents,
       icon: IconAlertTriangle,
       url: ROUTES.ADMIN_ACTIVITY,
-      tone: "rose" as BentoTone,
     },
   ].filter((tile) => tile.value > 0) : []), [t, attention, incidents])
 
-  /*
-   * `BentoTile` requires an eyebrow, so it carries the **area** each action leads into rather
-   * than the section's own name. The first draft passed `t("home.quickActions")` to all six,
-   * which rendered "QUICK ACTIONS" six times under a heading already saying it — a required prop
-   * answered with the nearest string to hand, which is how a tile grid becomes noise.
-   */
+  /* The first is the one that starts something, and the only one drawn filled. */
   const quickActions = useMemo(() => [
-    { label: t("home.actionNewSite"), area: t("sidebar.content"), icon: IconPlus, url: ROUTES.SITE_NEW, tone: "emerald" as BentoTone },
-    { label: t("home.actionBrowseContent"), area: t("sidebar.content"), icon: IconFileText, url: `${ROUTES.CONSOLE}/content`, tone: "blue" as BentoTone },
-    { label: t("home.actionSearch"), area: t("sidebar.content"), icon: IconSearch, url: ROUTES.SEARCH, tone: "blue" as BentoTone },
-    { label: t("home.actionPostTypes"), area: t("sidebar.content"), icon: IconForms, url: ROUTES.POST_TYPE_ROOT, tone: "indigo" as BentoTone },
-    { label: t("home.actionWebhooks"), area: t("sidebar.administration"), icon: IconWebhook, url: ROUTES.ADMIN_WEBHOOKS, tone: "slate" as BentoTone },
-    { label: t("home.actionActivity"), area: t("sidebar.administration"), icon: IconHistory, url: ROUTES.ADMIN_ACTIVITY, tone: "slate" as BentoTone },
+    { label: t("home.actionNewSite"), icon: IconPlus, url: ROUTES.SITE_NEW },
+    { label: t("home.actionBrowseContent"), icon: IconFileText, url: `${ROUTES.CONSOLE}/content` },
+    { label: t("home.actionSearch"), icon: IconSearch, url: ROUTES.SEARCH },
+    { label: t("home.actionPostTypes"), icon: IconForms, url: ROUTES.POST_TYPE_ROOT },
+    { label: t("home.actionWebhooks"), icon: IconWebhook, url: ROUTES.ADMIN_WEBHOOKS },
+    { label: t("home.actionActivity"), icon: IconHistory, url: ROUTES.ADMIN_ACTIVITY },
   ], [t])
 
   const actionLabel = (action: string) => {
@@ -214,59 +204,55 @@ export default function BentoHomePage() {
         subtitle={t("home.welcomeSubtitle")}
       />
 
+      {waiting.length > 0 && (
+        /*
+         * First: what is owed outranks what exists (P7). SH1311 — as rows, each the thing owed and
+         * how many, rather than 390px tiles that gave a count the same weight as the inventory below.
+         */
+        <BentoSection title={t("home.attention")} description={t("home.attentionDesc")} gridClassName="block">
+          <ul className={LIST_CLASS}>
+            {waiting.map((tile) => (
+              <li key={tile.label}>
+                <Link to={tile.url} className={ROW_CLASS}>
+                  <RowIcon icon={tile.icon} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{tile.label}</span>
+                  <span className="text-foreground shrink-0 text-base font-semibold tabular-nums">{tile.value}</span>
+                  <IconChevronRight size={16} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </BentoSection>
+      )}
+
       {siteCount !== null && postTypeCount !== null && (
         /*
-         * `home.overview`, not `home.statSites`: this section holds two different counts, so
-         * naming it after one of them is wrong — and the first draft also gave it the hero's own
-         * subtitle as a description, which put the same sentence on screen twice, forty pixels
-         * apart. A section with nothing to add says nothing.
+         * `home.overview`, not `home.statSites`: this section holds two different counts. SH1311 — a
+         * line of figures, each a number and its label and a link, with no frame: two inventory
+         * counts were two 390×140 tiles, mostly white, louder than anything a curator had to do.
          */
-        <BentoSection title={t("home.overview")}>
+        <BentoSection title={t("home.overview")} gridClassName="flex flex-wrap gap-x-10 gap-y-3">
           {stats.map((stat) => (
-            <BentoCountTile
-              key={stat.label}
-              to={stat.url}
-              icon={stat.icon}
-              tone={stat.tone}
-              label={stat.label}
-              count={stat.value ?? 0}
-              span="col-span-2"
-            />
+            <Link key={stat.label} to={stat.url} className="group flex items-baseline gap-2">
+              <span className="text-2xl font-semibold tabular-nums">{stat.value ?? 0}</span>
+              <span className="text-muted-foreground text-sm group-hover:underline">{stat.label}</span>
+            </Link>
           ))}
         </BentoSection>
       )}
 
-      {waiting.length > 0 && (
-        /* First, above the counts: what is owed outranks what exists. */
-        <BentoSection title={t("home.attention")} description={t("home.attentionDesc")}>
-          {waiting.map((tile) => (
-            <BentoCountTile
-              key={tile.label}
-              to={tile.url}
-              icon={tile.icon}
-              tone={tile.tone}
-              label={tile.label}
-              count={tile.value}
-              span="col-span-2"
-            />
-          ))}
-        </BentoSection>
-      )}
-
-      <BentoSection
-        title={t("home.quickActions")}
-        description={t("home.quickActionsDesc")}
-      >
-        {quickActions.map((action) => (
-          <BentoTile
-            key={action.label}
-            to={action.url}
-            icon={action.icon}
-            tone={action.tone}
-            eyebrow={action.area}
-            title={action.label}
-            span="col-span-2"
-          />
+      {/*
+        SH1311 — one row of links. Six tiles each with an eyebrow and a title were the page's largest
+        area. New site keeps the accent: the one action here that starts something (SH1195).
+      */}
+      <BentoSection title={t("home.quickActions")} gridClassName="flex flex-wrap gap-2">
+        {quickActions.map((action, index) => (
+          <Button key={action.label} asChild size="sm" variant={index === 0 ? "default" : "outline"}>
+            <Link to={action.url}>
+              <action.icon size={16} aria-hidden="true" className="mr-1.5" />
+              {action.label}
+            </Link>
+          </Button>
         ))}
       </BentoSection>
 
