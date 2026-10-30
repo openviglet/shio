@@ -14,7 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Badge } from "@/components/ui/badge"
-import { BadgeColorful } from "@/components/badge-colorful"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { FieldConstraints } from "@/components/field-constraints"
@@ -596,18 +595,18 @@ function SortableFieldRow({ field, index, widgets, postTypes, onFieldChange, onD
           </span>
         </div>
 
-        {/* Badges */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {field.required && (
-            <BadgeColorful text={t("content.required")} className="text-[10px] px-1.5 py-0 h-5" />
-          )}
-          {field.isTitle && (
-            <BadgeColorful text="T" className="text-[10px] px-1.5 py-0 h-5" />
-          )}
-          {field.isSummary && (
-            <BadgeColorful text="S" className="text-[10px] px-1.5 py-0 h-5" />
-          )}
-          <BadgeColorful text={widgetName || "—"} className="text-[10px] px-2 py-0 h-5 font-medium" />
+        {/*
+          SH1313 — what the field is, as muted text. These were chips coloured by a hash of their
+          words, so "Required" was pink and "Text" teal on every row, and the row's colour is
+          already said once, by its left edge in the widget's colour.
+        */}
+        <div className="text-muted-foreground flex shrink-0 items-center gap-1.5 text-xs">
+          {[
+            field.required ? t("content.required") : null,
+            field.isTitle ? t("content.title") : null,
+            field.isSummary ? t("content.summary") : null,
+            widgetName || "—",
+          ].filter(Boolean).join(" · ")}
         </div>
 
         {/* Delete button */}
@@ -731,7 +730,8 @@ function FieldList({ fields, widgets, postTypes, onChange }: {
         title={t("content.noFields")}
         description={t("content.noFieldsDescription")}
         action={
-          <Button type="button" onClick={addField} className="gap-2">
+          // SH1313 — an outline here too: the hero's Save is the screen's one filled button.
+          <Button type="button" variant="outline" onClick={addField} className="gap-2">
             <Plus className="h-4 w-4" />
             {t("content.addField")}
           </Button>
@@ -750,7 +750,8 @@ function FieldList({ fields, widgets, postTypes, onChange }: {
           </Badge>
           <span className="text-sm text-muted-foreground">{t("content.dragToReorder")}</span>
         </div>
-        <Button type="button" size="sm" onClick={addField} className="gap-1.5">
+        {/* SH1313 — an outline: Save is the screen's one filled button, and this solid fill outshouted it. */}
+        <Button type="button" size="sm" variant="outline" onClick={addField} className="gap-1.5">
           <Plus className="h-4 w-4" />
           {t("content.addField")}
         </Button>
@@ -918,7 +919,12 @@ export default function PostTypeEditPage() {
                 <Save className="size-4" />
                 {t("common.save")}
               </GradientButton>
-              <GradientButton
+              {/*
+                SH1313 — the console's neutral Button, not GradientButton's outline and ghost: those
+                paint in the accent, so Save, Save and close and Cancel were three orange controls and
+                none of them read as the one to press.
+              */}
+              <Button
                 type="button"
                 size="sm"
                 variant="outline"
@@ -926,10 +932,10 @@ export default function PostTypeEditPage() {
                 onClick={form.handleSubmit((data) => save(data, true))}
               >
                 {t("content.saveAndClose")}
-              </GradientButton>
-              <GradientButton type="button" size="sm" variant="ghost" onClick={() => navigate(ROUTES.POST_TYPE_ROOT)}>
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => navigate(ROUTES.POST_TYPE_ROOT)}>
                 {t("common.cancel")}
-              </GradientButton>
+              </Button>
             </>
           )}
       />

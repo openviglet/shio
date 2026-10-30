@@ -199,6 +199,13 @@ const USER = process.env.SHIO_USER || "admin"
 const PASS = process.env.SHIO_PASSWORD || "admin"
 const AUTH = "Basic " + Buffer.from(`${USER}:${PASS}`).toString("base64")
 
+/**
+ * SH1313 — routes that show more than one filled accent button today, each with the task that owns
+ * the fix. A named list, not a ceiling: a ceiling lets one page pay the debt and another spend it.
+ * Seeded from the first run of `countFilledAccent`.
+ */
+const ACCENT_DEBT = {}
+
 /** Text that means the page gave up. Seeing any of these is a failure, not a warning. */
 const BROKEN_TEXT = [
   "Schema JSON is empty",
@@ -1036,6 +1043,40 @@ async function checkTableSelectAll(context, site) {
 }
 
 /**
+ * SH1313 — how many filled accent buttons a page shows. One filled primary per screen is SH1195's
+ * rule, and the post-type editor spent the accent four times (Save, Save and close, Cancel, Add
+ * field) without any check noticing, because the colour is a computed fact and every source scan
+ * reads class names. So the accent is read off a probe element, and each visible button or link
+ * whose computed background is that colour counts.
+ */
+async function countFilledAccent(page) {
+  return page.evaluate(() => {
+    const probe = document.createElement("div")
+    probe.className = "bg-primary"
+    document.body.appendChild(probe)
+    const accent = getComputedStyle(probe).backgroundColor
+    probe.remove()
+    if (!accent || accent === "rgba(0, 0, 0, 0)") return { accent, labels: [] }
+    // Shown, not merely mounted: the sticky save bar keeps its own Save in the DOM, faded out until
+    // the page scrolls, and counting it made every form read as two primaries.
+    // And actions only: a checked switch or checkbox fills with the accent as its state, not as a
+    // claim to be the thing to press.
+    const labels = [...document.querySelectorAll("button, a")]
+      .filter((el) => !["switch", "checkbox", "radio", "tab"].includes(el.getAttribute("role") ?? ""))
+      .filter((el) => {
+        const box = el.getBoundingClientRect()
+        return box.width > 0 && box.height > 0
+          && el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+          // `GradientButton` fills with a gradient image, not a colour, and it is a primary too.
+          && (getComputedStyle(el).backgroundColor === accent
+            || getComputedStyle(el).backgroundImage.includes("gradient"))
+      })
+      .map((el) => (el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 40))
+    return { accent, labels }
+  })
+}
+
+/**
  * Count the fields a form rendered, without depending on any one widget's markup.
  *
  * SH1308 — by `data-shio-field`, the attribute each field's wrapper carries, and the controls inside
@@ -1867,6 +1908,12 @@ async function main() {
       })
       probe.broken = BROKEN_TEXT.filter((t) => body.includes(t))
       probe.missing = (route.mustSee || []).filter((t) => !body.includes(t))
+      // SH1313 — one filled primary per screen (SH1195), counted off computed colour.
+      const filled = await countFilledAccent(page)
+      probe.filledAccent = filled.labels
+      if (filled.labels.length > 1 && !ACCENT_DEBT[route.name]) {
+        probe.missing.push(`SH1313: ${filled.labels.length} filled accent buttons (${filled.labels.join(", ")}), where a screen has one`)
+      }
       if (route.mustSeeFields) {
         probe.fields = await countFields(page)
         if (probe.fields.cards === 0 && probe.fields.inputs === 0) probe.missing.push("<any form field>")

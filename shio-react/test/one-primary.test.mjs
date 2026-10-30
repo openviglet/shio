@@ -48,6 +48,23 @@ test("SH1195: the browser's bulk verbs appear with a selection, and site actions
     "SH1195: Download Site is not in the hero's overflow menu")
 })
 
+test("SH1313: the post-type editor fills Save and nothing else", () => {
+  const page = read("app", "content", "post-type.edit.page.tsx")
+  // GradientButton's outline and ghost paint in the accent, so they were three orange controls.
+  assert.doesNotMatch(page, /<GradientButton[^>]*variant="(outline|ghost)"/,
+    "SH1313: Save and close or Cancel is an accent-painted GradientButton again")
+  assert.equal((page.match(/onClick=\{addField\}/g) ?? []).length, 2, "SH1313: Add field moved; update this test")
+  assert.doesNotMatch(page, /<Button type="button"(?: size="sm")? onClick=\{addField\}/,
+    "SH1313: Add field is a filled button again, which outshouts Save")
+  assert.doesNotMatch(page, /BadgeColorful/, "SH1313: the field rows draw hash-coloured chips again")
+  const rail = read("components", "note-rail.tsx")
+  assert.match(rail, /<Button size="sm" variant="outline"[^>]*onClick=\{\(\) => void add\(\)\}/,
+    "SH1313: Leave a note is filled beside the post editor's Actions, two primaries on one screen")
+  const check = readFileSync(join(SRC, "..", "e2e", "console-check.mjs"), "utf8")
+  assert.match(check, /async function countFilledAccent\(page\)/,
+    "SH1313: the console check no longer counts filled accent buttons per page")
+})
+
 test("SH1195: a read-only post type offers no save", () => {
   const page = read("app", "content", "post-type.edit.page.tsx")
   assert.match(page, /onCancel=\{managed \? undefined :/, "SH1195: a managed type still gets the save-bar morph")

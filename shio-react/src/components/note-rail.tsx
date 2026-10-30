@@ -176,7 +176,8 @@ export function NoteRail({ objectId, field }: { objectId: string; field?: string
             </button>
           ))}
         </div>
-        <Button size="sm" className="ml-auto" disabled={!body.trim()} loading={busy} onClick={() => void add()}>
+        {/* SH1313 — an outline: the rail sits beside the editor, whose Actions is the screen's one filled button. */}
+        <Button size="sm" variant="outline" className="ml-auto" disabled={!body.trim()} loading={busy} onClick={() => void add()}>
           {t("note.add")}
         </Button>
       </div>

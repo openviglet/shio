@@ -241,25 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.79 Four primary buttons on one screen (SH1313)
-
-Measured at 1920px on `/bento/content/post-type/BuildNote`: the hero has Salvar (filled
-accent), Salvar e Fechar (accent outline) and Cancelar (accent text); the Fields panel
-has "+ Campo Texto" as a filled accent button. Each field row adds coloured chips
-(Obrigatório in pink, Text in teal). The accent is the product's signal for "the one
-thing to do here", and here it is spent four times.
-
-Direction: one filled button per screen. Save keeps the fill; Save and close becomes a
-neutral outline; Cancel a ghost in the foreground colour; Add field a neutral outline
-with its plus. The chips on field rows move to muted text, with the widget colour kept
-only as the small square that already marks the type. This is the post-type editor's
-half of the same rule SH1308 applies to the post editor: colour where it carries a
-decision, nowhere else.
-
-There is also a lint this suggests and that would hold the rule console-wide: count the
-filled accent buttons a page renders in `console-check.mjs` and fail above one. Filed
-here rather than separately, because it is how this task proves itself.
-
 ### XI.82 Navigate a site by its pages, not its folders (SH1316)
 
 Measured at 1920px: the ShowCase root lists six folders (`en`, `fonts`, `images`,
@@ -508,6 +489,65 @@ first: a test that lists every `(bg|text|border|ring)-<token>(/n)?` class in `sr
 neither the package sheet nor the console's theme can produce, held as a named list that
 the fix drives to empty. Done when the list is empty and a selected browser row shows
 its tint in a screenshot.
+
+### XI.94 The site card's name and its visible text (SH1329)
+
+Found by the console check run for SH1313 on a clean instance (2026-10-30), on `sites`,
+`legacy-console-content`, `legacy-console-tenant-prefixed` and both `a11y-viewports`
+widths. axe reports `label-content-name-mismatch` as serious on `a[aria-label="Console
+Check"]`. That element is the sites grid's `SiteCard` link in `site.list.page.tsx`. Its
+accessible name is the site's name, but the visible text inside it also holds the
+description, the pages figures and the last change. WCAG 2.5.3 asks that the visible
+label be part of the name, so voice control users who say what they see cannot activate
+it. The console check treats serious findings as never debt, so every run is red here
+today.
+
+Fix: drop the `aria-label` and let the link's name come from its content, or give it
+`aria-labelledby` pointing at the name element. Either way the card's own text is the
+name. Done when the check's `sites` probe and both viewport runs pass axe on the grid.
+
+### XI.95 Where /bento/admin goes (SH1330)
+
+Found by the console check run for SH1313 on a clean instance (2026-10-30). The
+`bento-admin-hub` probe expects `/bento/admin` to redirect to `/bento/admin/users`. The
+console now lands on `/bento/areas/administration`, the area hub SH1193 introduced. One
+of the two is stale. Either the probe kept a redirect the hubs replaced, or the route
+regressed a promise somebody still relies on (a bookmark to `/bento/admin`).
+
+Decide it from SH1193's own record of what `/bento/admin` should open, then update the
+probe's `redirectsTo` or the route to match. Read `bento-nav.test.mjs` first, since it
+holds the router's routes. Done when the probe passes and the expectation it holds cites
+the task that set it.
+
+### XI.96 The post editor's panes at desktop width (SH1331)
+
+Found by the console check run for SH1313 on a clean instance (2026-10-30). The
+`split-pages` probe reports: "SH1094: /bento/content/post/<id> at 1440px shows 3 pane(s)
+and 3 tab(s), not 2 and 0". The translate page measured 2/0 as expected, and at 390px
+both pages measured 1 pane and 2 tabs. So at 1440px the post editor draws a third pane
+and the tab strip that should appear only on narrow screens. The third pane is likely
+the note rail or the review panel, which SH1094's two-pane rule predates.
+
+First decide whether three panes at 1440px is the intended layout now. If it is, the
+probe's expectation is what changed, and it should say why. If not, the editor's split
+should hold two panes and no tabs at desktop width. Done when the probe passes with an
+expectation that cites the task that set it.
+
+### XI.97 The managed-by-code banner's contrast (SH1332)
+
+Found by the console check run for SH1313 on a clean instance (2026-10-30), on
+`post-type-edit:BuildNote` and its bento twin. axe reports `color-contrast` as serious
+on `.text-violet-700/80`. That is the "managed by code" banner in
+`post-type.edit.page.tsx` (`border-violet-200 bg-violet-50 ... dark:bg-violet-950/30`).
+In the dark theme its body text is violet-700 at 80% on a near-black ground. Any post
+type a `shio push` or the API created shows this banner, so every code-managed type's
+editor fails axe. The provisioned fixture only met it because SH1313's check created
+one.
+
+Fix: give the banner the console's own tokens or a dark-theme text colour that passes
+4.5:1, and measure it in both themes. Note SH1328: an opacity-modified colour class may
+not be generated at all, so read the computed colour, not the class. Done when both
+probes pass axe on a code-managed type.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

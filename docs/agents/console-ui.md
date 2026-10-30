@@ -4341,3 +4341,18 @@ square, and the grid is `items-start` so a row does not stretch that band to the
 An image's alt field is collapsed at rest (`max-h-0`, so Tab still reaches it and focus opens it),
 with a muted "needs alt" line when it is missing, and stays open while the needs-alt chip is on.
 `media-library-layout.test.mjs` and `needs-alt.test.mjs` hold all three.
+
+## One filled button per screen, counted (SH1313)
+
+SH1195's rule now has a live instrument: `countFilledAccent` in `e2e/console-check.mjs` counts, on
+every route, the visible buttons and links whose computed background is `bg-primary`'s or a gradient
+(`GradientButton`'s default), and fails a route above one unless `ACCENT_DEBT` names it with its task.
+Three traps it had to step around, each found on its first run: the sticky save bar keeps a second
+Save in the DOM, faded out (`checkVisibility({ checkOpacity: true })`); a checked switch fills with
+the accent as a state (switch, checkbox, radio and tab roles are skipped); and `GradientButton`'s
+`outline` and `ghost` variants paint in the accent too, which is why the post-type editor's Save and
+close and Cancel are the console's neutral `Button` now. Add field (both of them) and the note rail's
+Leave a note are outlines; the field rows' hash-coloured chips are muted text. `ACCENT_DEBT` is
+empty: the full run's only repeat was the post editor's Actions beside Leave a note, on all fourteen
+post-edit routes, and the post editor, the post-type editor and the new-token form were each re-read
+at one after the fix (the full run was not repeated).

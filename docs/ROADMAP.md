@@ -15,7 +15,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1313** (deps: —) **The post-type editor draws Save, Save and close, Cancel and Add field all in the accent** — Four orange controls on one screen leave no primary action, and Add field's solid fill outshouts Save. → §XI.79
 - 📋 **SH1316** (deps: SH1315 ✅) **Opening a site shows its storage folders (fonts, theme, menu, en, pt) and "0 post", not its pages** — A curator thinks in pages as the visitor sees them; a file manager makes a site of 130 pages look empty and technical. → §XI.82
 - 📋 **SH1317** (deps: SH1315 ✅) **The curator, the builder and the administrator see one console, with tokens and post types beside page editing** — The product says the agent builds and the curator approves, yet half of what a curator sees is for someone else. → §XI.83
 - 📋 **SH1318** (deps: SH1315 ✅, SH1311 ✅) **The home page opens on counts of sites and post types instead of what is waiting for the curator** — A curator's day is approving and fixing, so the first screen should be that queue, not an inventory. → §XI.84
@@ -28,6 +27,10 @@
 - 📋 **SH1326** (deps: —) **A new page can only be saved, saving returns to the folder, and the folder's table opens a row only on double-click** — Publishing a page just written costs a curator ten clicks across seven screens, the most of SH1315's six tasks. → §XI.91
 - 📋 **SH1327** (deps: —) **Benchmarks that repeat an identical read on H2 time its result cache, so a 3.5 s query printed as 17 ms** — SH1217's own measurement hid the defect SH1305 fixed, and ten timing tests may be reporting cache hits as costs. → §XI.92
 - 📋 **SH1328** (deps: —) **22 colour classes in the console paint nothing, because the design system's sheet does not ship them** — A selected row's tint, focus rings and a pages bar's draft share compile, review clean and render transparent. → §XI.93
+- 📋 **SH1329** (deps: —) **The sites grid's card link is named only by the site, so axe fails it as a label-content mismatch** — Voice-control users say the text they see and the card does not answer, and every console check run is red on it. → §XI.94
+- 📋 **SH1330** (deps: —) **The console check expects /bento/admin to land on users, and it lands on the administration hub** — One of the two is stale, and a probe that is red for a known reason hides the next real failure beside it. → §XI.95
+- 📋 **SH1331** (deps: —) **The post editor at 1440px draws three panes and a tab strip where SH1094 holds two panes and none** — Either the layout or the probe changed without the other, and the split-pages probe is red on every run. → §XI.96
+- 📋 **SH1332** (deps: —) **A code-managed post type's editor fails axe colour contrast on its violet "managed by code" banner** — Every type a push or the API created opens on a banner whose text does not reach 4.5:1 in the dark theme. → §XI.97
 
 ## Priority
 
