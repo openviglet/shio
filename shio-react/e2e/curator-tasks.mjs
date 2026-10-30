@@ -220,13 +220,16 @@ const TASKS = [
     what: "approve one agent run waiting in review",
     async setup(_page, ctx) {
       ctx.slug = `careers-${RUN}`
-      await agentRun(`ux-${RUN}-approve`, "Add a careers page", [{
+      ctx.intent = `Add a careers page ${RUN}`
+      await agentRun(`ux-${RUN}-approve`, ctx.intent, [{
         op: "post.upsert", address: `post:${SITE}/${ctx.slug}`, type: "Page", folder: "/",
         data: { title: `Careers ${RUN}`, description: "Work with us.", content: "We are hiring." },
       }])
     },
-    async run(page) {
-      await page.getByRole("link", { name: /fila de revisão|review queue/i }).first().click()
+    // SH1337 — home's waiting section names a pending run by its intent (SH1318), so the row to
+    // press is this run's own, as the curator reads it, not a generic link to the queue.
+    async run(page, ctx) {
+      await page.getByRole("link", { name: ctx.intent }).first().click()
       await clickAndWrite(page, page.getByRole("button", { name: /^(aprovar|approve)$/i }).first())
     },
     // Its own page, live: a queue count would also move for a run some other task left behind.

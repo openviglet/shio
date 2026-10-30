@@ -72,3 +72,12 @@ test("SH1315: the harness drives exactly the tasks the budget holds, each from /
   assert.match(HARNESS, /page\.goto\(`\$\{BASE\}\/bento`[^)]*\)[\s\S]{0,200}m\.start\(\)/u,
     "SH1315: the meter no longer starts on /bento, so a task could skip finding where its work is")
 })
+
+test("SH1337: approve-run presses its own run's row on home, which names a run by its intent", () => {
+  assert.doesNotMatch(HARNESS, /fila de revisão|review queue/u,
+    "SH1337: home has no link by that name since SH1318, so approve-run timed out on every run")
+  assert.match(HARNESS, /ctx\.intent = `[^`]*\$\{RUN\}`/u,
+    "SH1337: an intent shared between runs would press a run some earlier task left waiting")
+  assert.match(HARNESS, /getByRole\("link", \{ name: ctx\.intent \}\)/u,
+    "SH1337: approve-run no longer clicks the row its own setup created")
+})

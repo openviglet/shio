@@ -4296,9 +4296,15 @@ its id, and completing it later reads as an improvement.
 **Today's figures** (2026-10-30): find a page 1 click, approve a run 2, change a headline 4,
 replace an image 7, create and publish a page 10 clicks over 7 screens, and preview a draft is blocked.
 The run that took them filed what it walked into: SH1322 (preview of a never-published draft is a
-404), SH1323 (a page's sections do not open, and a section has no preview), SH1324 (the palette's
+404, in fact every page of a site whose name needs encoding; it now costs 2 clicks over 2 screens), SH1323 (a page's sections do not open, and a section has no preview), SH1324 (the palette's
 rows), SH1325 (the file picker moves under the pointer) and SH1326 (a new page cannot be published
 from where it was written). SH1316 onward are judged against these numbers.
+
+**A change to home runs this script (SH1337).** SH1318 renamed home's waiting rows after each run's
+intent, and `approve-run`, which clicked a "review queue" link, timed out on every run since; no
+gate runs the script, so nothing said so. The task now gives its run an intent of its own and clicks
+that row, which is what a curator reads. Any change to a surface a task walks through owes one
+`node e2e/curator-tasks.mjs` on a clean instance before it ships.
 
 **Three things the first draft got wrong.** Waiting for "Publicado" on screen: the editor says
 "Publicado (no ar)" before anything happens, so the harness waits for the write's response instead.

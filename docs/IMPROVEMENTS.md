@@ -491,21 +491,6 @@ the summary carries the last verify run's result, which the publish gate already
 produces, rather than running one. Done when a page with an error-level finding appears
 in "Waiting for you" as a link to it, checked live, with the cost measured and recorded.
 
-### XI.102 approve-run lost its link to SH1318 (SH1337)
-
-Measured on a clean instance provisioned by `e2e/provision.mjs`: `node
-e2e/curator-tasks.mjs` fails `approve-run` with a 30-second timeout on its first click.
-The task looks for a home link named "review queue" (pt "fila de revisão"). Since SH1318
-(9bd5d3e29), home's waiting section names each pending run by its intent instead ("Add a
-careers page · 1 waiting"), still linking to the review queue. So the link the locator
-wants no longer exists. The SH1318 work never ran this task, which is how the regression
-shipped.
-
-Fix: `approve-run` clicks the waiting row named after its own run's intent, which is
-also what a curator reads. The click count stays at two, matching the budget. Then
-re-record the budget with `--record` and keep each why. The assertion is the task
-passing in a full run.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
