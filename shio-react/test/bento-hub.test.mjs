@@ -79,3 +79,19 @@ test("SH1193: no hub group offers more than four surfaces, and no hub more than 
     }
   }
 })
+
+test("SH1338: the Content hub opens a few sites directly, so the Sites card is not a step", () => {
+  // Writing and publishing a page was six screens, four of them getting to the form; the Sites card
+  // was one of the four. `create-page` in curator-task-budget.json measures the saving end to end;
+  // this holds the hub to naming the sites, and to stopping at the threshold where a list is better.
+  const area = stripComments(readFileSync(join(SRC, "app", "system", "bento-area.page.tsx"), "utf8"))
+  assert.match(area, /\buseSites\(\)/, "SH1338: the hub no longer reads the sites, so it cannot name them")
+  assert.match(area, /sectionId === "content"/, "SH1338: the sites group is no longer the Content hub's")
+  const threshold = Number(area.match(/const DIRECT_SITES = (\d+)/)?.[1])
+  assert.ok(threshold >= 1 && threshold <= 4,
+    `SH1338: the hub names up to ${threshold} sites; past four a hub of tiles is a worse list than the Sites list`)
+  assert.match(area, /content\/object\/\$\{site\.id\}/, "SH1338: a site tile no longer opens the site")
+  const budget = JSON.parse(readFileSync(join(HERE, "..", "curator-task-budget.json"), "utf8"))
+  assert.ok(budget.tasks["create-page"].clicks <= 5,
+    `SH1338: create-page is budgeted at ${budget.tasks["create-page"].clicks} clicks again, above the five this saving measured`)
+})

@@ -283,9 +283,11 @@ const TASKS = [
     what: "create a page under an existing section and publish it",
     async run(page, ctx) {
       ctx.title = `Team ${RUN}`
-      // The rail's Content opens a hub of content screens, and the site list is one card on it.
+      // The rail's Content opens a hub of content screens. SH1338 — with up to four sites the hub
+      // names each, so the site opens from there; the Sites card was a screen of only getting there.
       await page.getByRole("navigation").getByRole("link", { name: /^(conteúdo|content)$/i }).click()
-      await page.getByRole("link", { name: /^sites\b/i }).first().click()
+      // Home's inbox also names the site (a draft's address), so wait for the hub before choosing.
+      await page.waitForURL(/\/areas\/content\b/)
       await page.getByRole("link", { name: SITE }).first().click()
       // SH1316 — a link at a site's root (the Pages view's New), a button in a folder's toolbar.
       const newPage = /^(novo|new) page$/i

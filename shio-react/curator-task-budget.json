@@ -30,11 +30,11 @@
       "why": "Ctrl+K, the title, and the result: the floor every other task's first step is measured against."
     },
     "create-page": {
-      "clicks": 6,
+      "clicks": 5,
       "keys": 0,
-      "screens": 6,
-      "ms": 3585,
-      "why": "Since SH1326 the form publishes: Publish… saves and opens the editor with its confirmation already asking, so writing and publishing is six clicks. Four of the six screens are getting there: Content opens a hub, the site list is a card on it, then the site, then New Page (SH1338)."
+      "screens": 5,
+      "ms": 1995,
+      "why": "Since SH1326 the form publishes: Publish… saves and opens the editor with its confirmation already asking. SH1338 took one screen out of the way there: with up to four sites the Content hub names each, so the site opens from the hub instead of through the Sites card. Content, the site, New Page, Publish…, Publish."
     },
     "preview-draft": {
       "clicks": 2,
