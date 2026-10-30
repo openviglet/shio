@@ -13,7 +13,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import { stripComments } from "./support/source-text.mjs"
-import { friendlyUrlOf, moved, siteOf, usedOnParams } from "../src/lib/section-urls.ts"
+import { friendlyUrlOf, moved, pagesAmong, siteOf, usedOnParams } from "../src/lib/section-urls.ts"
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src")
 
@@ -56,8 +56,22 @@ test("SH1323: a section's pages are found by its quoted friendly URL, in its own
 
 test("SH1323: a section's editor previews it on the first page that uses it, and names them all", () => {
   const editor = stripComments(readFileSync(join(SRC, "app", "content", "post.edit.page.tsx"), "utf8"))
-  assert.match(editor, /useUsedOn\(postId, site\.data\?\.name, post\?\.furl, renderable === false\)/u,
+  assert.match(editor, /useUsedOn\(postId, site\.data\?\.name, post\?\.furl, renderable === false,\s*boundPostTypes\(site\.data\?\.postTypeLayout\)\)/u,
     "SH1323: the editor no longer asks which pages use a post that has no layout of its own")
   assert.match(editor, /<PostLivePreview[^>]*on=\{usedOn\[0\]\?\.address\}/u,
     "SH1323: a section's preview is the no-layout sentence again, so a headline is edited blind")
+})
+
+test("SH1343: only a page that uses the post can carry its preview, not a Menu that lists it", () => {
+  // A menu item's URL is found in the Menu that lists it, and passing that Menu as `on` asked the
+  // render to draw a section on a type with no layout: 400 on every menu item's editor.
+  const rows = [
+    { id: "menu", type: "Menu", address: "post:Acme/menu/main" },
+    { id: "self", type: "Page", address: "post:Acme/pricing" },
+    { id: "home", type: "Page", address: "post:Acme/" },
+    { id: "untyped", address: "post:Acme/x" },
+  ]
+  assert.deepEqual(pagesAmong(rows, new Set(["Page"]), "self").map((row) => row.id), ["home"])
+  assert.deepEqual(pagesAmong(rows, new Set(), "self"), [],
+    "SH1343: a site that binds no page type has nowhere to draw a preview")
 })

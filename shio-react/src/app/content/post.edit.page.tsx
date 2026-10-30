@@ -34,7 +34,7 @@ import { ShPreviewTokenService } from "@/services/preview-token/preview-token.se
 import { ShAclService } from "@/services/acl/acl.service"
 import { ShSiteService } from "@/services/site/site.service"
 import type { ShSite } from "@/models/site/site"
-import { isRenderable } from "@/lib/layout-bindings"
+import { boundPostTypes, isRenderable } from "@/lib/layout-bindings"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NoteRail } from "@/components/note-rail"
 import { PostHistoryPanel } from "@/components/post-history.panel"
@@ -335,7 +335,8 @@ export default function PostUnifiedEditPage() {
     siteId, failed: site.isError, layouts: site.data?.postTypeLayout, typeName: post?.shPostType?.name,
   })
   // SH1323 — a post with no layout of its own (a section) is previewed on a page that uses it.
-  const usedOn = useUsedOn(postId, site.data?.name, post?.furl, renderable === false).data ?? []
+  const usedOn = useUsedOn(postId, site.data?.name, post?.furl, renderable === false,
+    boundPostTypes(site.data?.postTypeLayout)).data ?? []
 
   // The folder the post lives in: Cancel and the hero's Back link both return there, not to the
   // site list — the link used to be the bare content root, so Back skipped the site entirely.

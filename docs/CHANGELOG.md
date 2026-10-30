@@ -2072,6 +2072,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1346** — The renderer reads a page stored without its leading slash, so console- and blueprint-made pages preview at their URL, checked live with /about and its new child, and SH467's trailing-slash rule is unchanged.
 - **SH1336** — Home's Waiting for you lists pages failing verify's content or routes checks, each a link to the page's insights, from one verify per summary read; checked live with a dangling section (design §XI.101 superseded: no verify run is stored to read back, and the measured per-visit pass is cheap: 14 statements and ~35 ms per 150-page site, against 92 for ten addresses).
 - **SH1338** — Ctrl+K offers New page in the reader's one site, so writing and publishing a page from /bento is 3 clicks, 1 key and 2 screens, measured by create-page and recorded.
+- **SH1343** — A post's preview is drawn only on a page the site renders, never on a Menu that lists its URL, and post-edit:MenuItem passes on a clean instance; a test holds the filter (design §XI.104 superseded: the 400 did not reproduce on a fresh instance: the usedOn search found no row for the probed item, so the gate that let the original request through is unproven; the filter closes the one path a non-page could take).
 
 ## Block BH — One content model, many languages
 

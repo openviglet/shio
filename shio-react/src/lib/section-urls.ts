@@ -40,3 +40,15 @@ export function moved(values: readonly string[], index: number, by: -1 | 1): str
 export function usedOnParams(site: string, furl: string) {
   return { site, q: `"${furl}"`, ids: true, limit: 10 }
 }
+
+/**
+ * SH1343 — of the posts naming a URL, the ones a preview can be drawn on: pages, by the site's own
+ * layout bindings, other than the post itself.
+ *
+ * The listing is a text search, so a menu item's URL also finds the Menu that lists it. The editor
+ * passed that Menu as `on`, and the render, which draws a section on a page that uses it, answered
+ * 400 for a type with no layout: a failed preview on every menu item, and a red console check.
+ */
+export function pagesAmong<T extends { id: string; type?: string }>(rows: readonly T[], pageTypes: ReadonlySet<string>, self: string): T[] {
+  return rows.filter((row) => row.id !== self && row.type !== undefined && pageTypes.has(row.type))
+}
