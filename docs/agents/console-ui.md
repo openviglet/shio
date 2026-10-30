@@ -4377,3 +4377,12 @@ link to Search narrowed to that type and this site (`?site=&type=`, the words th
 reads), plus the Media library. Named by type rather than a fixed list, because a menu is a blueprint's
 own type. So a curator reaches the theme and the menus without the folder view. Making a new page as
 a child of a selected one is SH1333: it needs the row's folder, and `find`'s rows do not carry it.
+
+## Review is the curator's, not the administrator's (SH1317, first slice)
+
+`review` is a `content` surface in `console/surfaces.json` now, and the Content hub opens on a
+"Waiting for you" group (Review, Notes, Scheduled) above the Library, with Publishing left holding
+Forms and the visual editor. The route did not move (`/bento/admin/review`), so links and bookmarks
+keep working; only where the rail and hub file it changed. `review-placement.test.mjs` holds both.
+What remains of SH1317 is the views per role: the console does not hold the user's roles today, so a
+curator's rail cannot yet leave out tokens and post types.

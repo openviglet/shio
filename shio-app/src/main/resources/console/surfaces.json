@@ -262,7 +262,7 @@
     },
     {
       "id": "review",
-      "section": "administration",
+      "section": "content",
       "route": "/bento/admin/review",
       "capability": "approve or revert an agent's run",
       "exception": {

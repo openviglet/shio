@@ -238,14 +238,17 @@ export function useMultiTenant(): boolean {
  * vanishing.</p>
  */
 export const HUB_GROUPS: Record<string, readonly { labelKey: string; ids: readonly string[] }[]> = {
+  // SH1317 — Review is the curator's main job (P7), so it leads the Content hub with the other things
+  // that wait for a person, rather than sitting under Administration beside users and tokens.
   content: [
+    { labelKey: "nav.hub.content.waiting", ids: ["review", "notes", "scheduled"] },
     { labelKey: "nav.hub.content.library", ids: ["sites", "search", "files", "trash"] },
-    { labelKey: "nav.hub.content.publishing", ids: ["scheduled", "notes", "forms", "universal-editor"] },
+    { labelKey: "nav.hub.content.publishing", ids: ["forms", "universal-editor"] },
     { labelKey: "nav.hub.content.model", ids: ["post-types"] },
   ],
   administration: [
     { labelKey: "nav.hub.administration.access", ids: ["users", "auth-providers", "tenants"] },
-    { labelKey: "nav.hub.administration.oversight", ids: ["review", "activity"] },
+    { labelKey: "nav.hub.administration.oversight", ids: ["activity"] },
     { labelKey: "nav.hub.administration.integration", ids: ["api-tokens", "webhooks", "graphql", "exchange-providers"] },
     { labelKey: "nav.hub.administration.instance", ids: ["email-config", "marketplace"] },
   ],
