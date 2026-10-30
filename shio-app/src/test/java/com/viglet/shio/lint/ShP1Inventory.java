@@ -10,9 +10,13 @@ package com.viglet.shio.lint;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -57,29 +61,63 @@ public final class ShP1Inventory {
      * @param instrument the test class's simple name, which is what prose names
      * @param counts     what the run measured, keyed as the prose would say it
      */
-    public static synchronized void record(String instrument, Map<String, Object> counts) {
-        Map<String, Object> all = new TreeMap<>(read());
-        all.put(instrument, new TreeMap<>(counts));
-        try {
-            Files.createDirectories(FILE.getParent());
-            // Written as UTF-8 with LF endings, like every other generated artefact here (SH863).
-            Files.writeString(FILE, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(all)
-                    .replace("\r\n", "\n") + "\n", StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException("cannot write " + FILE.toAbsolutePath(), e);
-        }
+    public static void record(String instrument, Map<String, Object> counts) {
+        record(FILE, instrument, counts);
     }
 
     /** What the run has recorded so far, or empty. */
-    @SuppressWarnings("unchecked")
     public static Map<String, Object> read() {
-        if (!Files.exists(FILE)) {
-            return Map.of();
-        }
+        return read(FILE);
+    }
+
+    /**
+     * SH1345 — the same, against {@code file}, safe across JVMs.
+     *
+     * <p>{@code synchronized} orders the threads of one JVM, and surefire runs the suite in several
+     * forks: one fork read the file while another was halfway through writing it, and three P1 lints
+     * failed on {@code Unexpected close marker '}'} in a run that passed unchanged on the next. So the
+     * read-merge-write holds a lock on a sibling file, which the operating system shares between
+     * processes, and the new document is written beside the target and moved over it whole.</p>
+     */
+    static synchronized void record(Path file, String instrument, Map<String, Object> counts) {
+        locked(file, () -> {
+            Map<String, Object> all = new TreeMap<>(parse(file));
+            all.put(instrument, new TreeMap<>(counts));
+            Path next = file.resolveSibling(file.getFileName() + ".next");
+            // Written as UTF-8 with LF endings, like every other generated artefact here (SH863).
+            Files.writeString(next, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(all)
+                    .replace("\r\n", "\n") + "\n", StandardCharsets.UTF_8);
+            Files.move(next, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            return null;
+        });
+    }
+
+    static synchronized Map<String, Object> read(Path file) {
+        return locked(file, () -> parse(file));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> parse(Path file) throws IOException {
+        return Files.exists(file)
+                ? MAPPER.readValue(Files.readString(file, StandardCharsets.UTF_8), Map.class)
+                : Map.of();
+    }
+
+    private interface Locked<T> {
+        T run() throws IOException;
+    }
+
+    /** Runs {@code work} holding an exclusive lock every JVM in the run respects. */
+    private static <T> T locked(Path file, Locked<T> work) {
+        Path lock = file.resolveSibling(file.getFileName() + ".lock");
         try {
-            return MAPPER.readValue(Files.readString(FILE, StandardCharsets.UTF_8), Map.class);
+            Files.createDirectories(file.toAbsolutePath().getParent());
+            try (FileChannel channel = FileChannel.open(lock, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                    FileLock held = channel.lock()) {
+                return work.run();
+            }
         } catch (IOException e) {
-            throw new UncheckedIOException("cannot read " + FILE.toAbsolutePath(), e);
+            throw new UncheckedIOException("cannot read or write " + file.toAbsolutePath(), e);
         }
     }
 }
