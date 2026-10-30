@@ -2384,6 +2384,15 @@ product group, so destinations stay where they were and actions and content shar
 actions first. The ordering is intact, the component preserves what the product sends. What is
 missing is the headings, and that is a package change.
 
+**A content row says whether the post is live (SH1324).** The description read the find row's
+`state`, which names the working row and is DRAFT on every live post, so every hit said Rascunho.
+It now reads `published` through `lifecycleKey` (`lib/post-lifecycle.ts`), and so does the editor
+header's subtitle, from `isLive`. The description starts with `· ` because the package's option
+joins title and description into one accessible name with nothing between ("PricingSectionHero");
+the separator belongs in the package, and this holds until it does. The third state, live with
+unpublished changes, needs the find row to say so and is not drawn yet. And `post-lifecycle.test.mjs`
+fails on a pt string missing an accent its word always has: the palette's were all unaccented.
+
 ## The media card says how many pages use the asset (SH1034)
 
 `static-file.list.page.tsx` renders `usageCount` as a badge beside the file size. The detail dialog

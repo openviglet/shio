@@ -29,6 +29,7 @@ import { ROUTES } from "@/app/routes.const"
 // SH1028 — the palette answers with content and verbs, not only with destinations.
 import { commandsFor, contextOf } from "./bento-commands"
 import { rank, remember } from "@/lib/command-match"
+import { lifecycleKey, paletteDescription } from "@/lib/post-lifecycle"
 import { ShSearchService } from "@/services/search/search.service"
 import { UserProvider } from "@/contexts/user.context"
 import { useBentoNav, useBentoNavItems } from "./bento-nav"
@@ -217,7 +218,8 @@ function BentoShellRoot() {
   const found = useMemo<PaletteRow[]>(() => (read.data?.results ?? []).map((row) => ({
     id: row.address,
     label: row.title || row.address,
-    description: `${row.type ?? ""} ${row.state === "DRAFT" ? t("content.filterDraft") : ""}`.trim(),
+    // SH1324 — live or not, by `published`: `state` is the working row, DRAFT on a live post too.
+    description: paletteDescription(row.type, t(lifecycleKey(row.published))),
     route: row.id ? `${ROUTES.CONTENT_ROOT}/post/${row.id}` : "",
     confirm: false,
   })), [read.data, t])

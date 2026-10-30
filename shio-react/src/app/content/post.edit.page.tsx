@@ -27,6 +27,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useUsedOn } from "@/app/content/use-used-on"
+import { lifecycleKey } from "@/lib/post-lifecycle"
 import axios from "axios"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
@@ -515,7 +516,8 @@ export default function PostUnifiedEditPage() {
          */
         title={post.title || t("content.editPost")}
         subtitle={[postTypeName, post.locale?.toUpperCase(),
-          state === "DRAFT" ? t("content.filterDraft") : t("content.filterPublished")].filter(Boolean).join(" · ")}
+          // SH1324 — whether the site serves it, not which row is open: a live page reads Published.
+          t(lifecycleKey(isLive))].filter(Boolean).join(" · ")}
         trail={trail}
         urlBase={backUrl}
         saveTitle={post.title || t("content.editPost")}

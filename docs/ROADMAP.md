@@ -16,7 +16,7 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1324** (deps: —) **Search results glue title to type ("PricingSectionHero"), read Rascunho on published posts, and drop accents in pt** — The command palette is the fastest way into content, and three of its four words per row mislead or misspell. → §XI.90
+- ⏳ **SH1324** (deps: —) **Search results glue title to type ("PricingSectionHero"), read Rascunho on published posts, and drop accents in pt** — Neither says when a live post has unpublished changes: the find row carries no such flag, so live-with-changes reads as plain live. → §XI.90
 - 📋 **SH1325** (deps: —) **Double-clicking a folder in the file picker opens the one below it, as the dialog re-centres after the first click** — Selecting a row adds the path footer, the centred dialog moves up 26px, and the second click lands on the neighbour. → §XI.88
 - 📋 **SH1326** (deps: —) **A new page can only be saved, saving returns to the folder, and the folder's table opens a row only on double-click** — Publishing a page just written costs a curator ten clicks across seven screens, the most of SH1315's six tasks. → §XI.91
 - 📋 **SH1327** (deps: —) **Benchmarks that repeat an identical read on H2 time its result cache, so a 3.5 s query printed as 17 ms** — SH1217's own measurement hid the defect SH1305 fixed, and ten timing tests may be reporting cache hits as costs. → §XI.92
@@ -43,6 +43,13 @@
   live after the maintainer picks the primary editor: the browser, search, home and the
   site list all open a page in the same editor, the other is a switch inside it that
   keeps the selection, and the decision is recorded in console-ui.md.
+
+## Done when — SH1324
+
+- **A live post with unsaved-to-live edits reads differently from one without** Edit and
+  save a published Pricing page's title without publishing; Ctrl+K "Pricing" and the
+  editor header both name it live with unpublished changes, while an untouched published
+  page reads plain Published.
 
 ## Non-goals (do NOT add as tasks)
 
