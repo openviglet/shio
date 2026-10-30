@@ -107,6 +107,12 @@ import { fileURLToPath } from "node:url"
  * it), its stylesheet's growth and `xlsx` moved from a dependency to a peer, none of which a line here
  * was waiting for. The pin moved in the same commit as the console's budget review.
  *
+ * 2026.3.24 carried VDS229–VDS235, filed from the console review that found the lists crowded: no
+ * bar for a lone Columns button, neutral identity squares, a ghost row menu, 56px rows behind a
+ * column's `lines: 2`, a neutral theme toggle and an opt-in work grammar. The one line waiting on
+ * them, SH1314, named them as `VDS<n> in viglet-design-system`, adopted the release and moved this
+ * pin in the same commit; the work grammar is a per-route choice of its own, SH1320.
+ *
  * <h2>What this replaced</h2>
  *
  * `no-duplicate-components.test.mjs` carried SH919's expiry assertion beside the gate it was about.
@@ -133,7 +139,7 @@ const INSTALLED = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "u
  * ship those, and then move this line — in that order, because moving it first is how a release
  * that ended a wait passes through unnoticed.
  */
-const PINNED = "2026.3.23"
+const PINNED = "2026.3.24"
 
 function manifest() {
   return JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"))

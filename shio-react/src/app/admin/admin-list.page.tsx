@@ -151,6 +151,7 @@ export function AdminListPage<T>({
         header: t("common.name"),
         width: "minmax(16rem, 3fr)",
         hideable: false,
+        lines: 2,
         sortValue: (item) => tileOf(item).title.toLowerCase(),
         cell: (item) => {
           const tile = tileOf(item)

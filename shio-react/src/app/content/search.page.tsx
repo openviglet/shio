@@ -118,7 +118,7 @@ export default function SearchPage() {
    */
   const columns = useMemo<BentoDataTableColumn<ShConsoleSearchRow>[]>(() => [
     {
-      id: "title", header: t("common.title"), width: "minmax(18rem, 3fr)", hideable: false,
+      id: "title", header: t("common.title"), width: "minmax(18rem, 3fr)", hideable: false, lines: 2,
       sortValue: (row) => (row.title || row.address).toLowerCase(),
       cell: (row) => <BentoIdentityCell name={row.title || "(untitled)"} detail={row.address} />,
     },

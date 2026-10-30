@@ -191,7 +191,7 @@ export default function FormsPage() {
             getRowLabel={(row) => row.title || row.address}
             columns={[
               {
-                id: "title", header: t("common.title"), width: "minmax(18rem, 3fr)", hideable: false,
+                id: "title", header: t("common.title"), width: "minmax(18rem, 3fr)", hideable: false, lines: 2,
                 sortValue: (row) => (row.title || row.address).toLowerCase(),
                 cell: (row) => <BentoIdentityCell name={row.title || t("content.formsUntitled")} detail={row.address} />,
               },

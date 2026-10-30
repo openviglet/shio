@@ -223,7 +223,7 @@ export default function LanguagesPage() {
   const current = (row: Row) => locales.filter((locale) => row.cells[locale]?.state === "current").length
   const columns: BentoDataTableColumn<Row>[] = [
     {
-      id: "page", header: t("content.coveragePage"), width: "minmax(16rem, 3fr)", hideable: false,
+      id: "page", header: t("content.coveragePage"), width: "minmax(16rem, 3fr)", hideable: false, lines: 2,
       sortValue: (row) => (row.title || row.address).toLowerCase(),
       cell: (row) => <BentoIdentityCell name={row.title || row.address} detail={row.address} />,
     },

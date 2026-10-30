@@ -61,7 +61,7 @@ export default function PostTypeListPage() {
 
   const columns = useMemo<BentoDataTableColumn<ShPostType>[]>(() => [
     {
-      id: "name", header: t("common.name"), width: "minmax(16rem, 3fr)", hideable: false,
+      id: "name", header: t("common.name"), width: "minmax(16rem, 3fr)", hideable: false, lines: 2,
       sortValue: (type) => labelOf(type).toLowerCase(),
       cell: (type) => <BentoIdentityCell name={labelOf(type)} detail={type.name} />,
     },

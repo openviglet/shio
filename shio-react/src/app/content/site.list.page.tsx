@@ -191,7 +191,7 @@ export default function BentoSiteListPage() {
    */
   const columns = useMemo<BentoDataTableColumn<ShSite>[]>(() => [
     {
-      id: "name", header: t("common.name"), width: "minmax(16rem, 3fr)", hideable: false,
+      id: "name", header: t("common.name"), width: "minmax(16rem, 3fr)", hideable: false, lines: 2,
       sortValue: (site) => site.name.toLowerCase(),
       cell: (site) => (
         <Link to={browse(site)} className="block min-w-0 hover:underline">
@@ -205,7 +205,7 @@ export default function BentoSiteListPage() {
       cell: (site) => <PagesBar published={site.pages?.published ?? 0} draft={site.pages?.draft ?? 0} />,
     },
     {
-      id: "changed", header: t("content.lastChanged"), width: "minmax(10rem, 1fr)",
+      id: "changed", header: t("content.lastChanged"), width: "minmax(10rem, 1fr)", lines: 2,
       sortValue: (site) => changedAt(site) || null,
       cell: (site) => <LastChanged site={site} />,
     },

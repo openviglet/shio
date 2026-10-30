@@ -124,7 +124,7 @@ export function GroupMembers({ members, onChange }: Readonly<{
           getRowId={(member) => member.username}
           getRowLabel={nameOf}
           columns={[{
-            id: "member", header: t("common.name"), width: "minmax(16rem, 1fr)", hideable: false,
+            id: "member", header: t("common.name"), width: "minmax(16rem, 1fr)", hideable: false, lines: 2,
             sortValue: (member) => nameOf(member).toLowerCase(),
             cell: (member) => <BentoIdentityCell name={nameOf(member)} detail={member.username} />,
           }]}

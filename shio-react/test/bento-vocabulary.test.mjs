@@ -148,6 +148,8 @@ const DEFERRED = {
   BentoCalendar: "SH1082 — rendered by scheduled.page.tsx as its calendar view; a harness has no schedule to draw.",
   BentoSplitPage: "SH1094 — rendered by post.edit.page.tsx and translate.page.tsx; a harness has no form to split.",
   BentoChangeMark: "SH1178 — rendered by bulk-plan.dialog.tsx per change; a harness has no plan to mark.",
+  // SH1314 — 2026.3.24 (VDS230) drew identity squares neutral by default and exported the old hash.
+  bentoToneOf: "SH1314 — the name-hashed tone VDS230 took out of the default; Shio draws identity squares neutral and passes no tone.",
 }
 
 test("SH887: the harness accounts for every runtime export the bento layer ships", () => {

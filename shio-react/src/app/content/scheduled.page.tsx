@@ -152,7 +152,7 @@ export default function ScheduledPage() {
                 ),
               },
               {
-                id: "page", header: t("content.scheduledPage"), width: "minmax(16rem, 3fr)",
+                id: "page", header: t("content.scheduledPage"), width: "minmax(16rem, 3fr)", lines: 2,
                 sortValue: (entry) => (entry.title || entry.address).toLowerCase(),
                 cell: (entry) => <BentoIdentityCell name={entry.title || entry.address} detail={entry.address} />,
               },

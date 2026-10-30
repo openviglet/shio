@@ -288,7 +288,7 @@ export default function ActivityListPage() {
                 cell: (item) => (
                   <span className="flex min-w-0 items-center gap-2">
                     {item.date
-                      ? <BentoChangeCell at={item.date} actor={item.owner} agent={Boolean(item.agent)} />
+                      ? <BentoChangeCell at={item.date} actor={item.owner} agent={Boolean(item.agent)} inline />
                       : <span className="text-muted-foreground">{item.owner}</span>}
                     {/*
                       SH999 — the run beside the person, because both are true: an agent acts as

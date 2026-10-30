@@ -4219,3 +4219,21 @@ set. `ShSiteRequest` now carries it, and `ShSitesMembersOnlyTest` saves it the w
 is `shio-react/test/site-request-fields.test.mjs`: every key the site form writes in `onSubmit`
 must be a component of `ShSiteRequest`, so the next setting added to the form and not to the
 request fails the build rather than a browser run.
+
+## A column that draws two lines says so (SH1314)
+
+The design system's 2026.3.24 took most of the crowding a curator reported off every list: the
+table's bar is gone when there is no toolbar (Columns is an icon in the header row), identity
+squares are neutral, the row menu is a muted ghost, and the header's theme toggle is neutral
+(VDS229-VDS234). One part is the consumer's: a row is 56px instead of 44px only while a visible
+column declares `lines: 2`, because the row height is the table's and only the column knows it
+draws a name and a detail, or a time and an actor.
+
+So every Shio column that renders `BentoIdentityCell` with a `detail`, or `BentoChangeCell` with an
+`actor`, declares `lines: 2`. A long log keeps its density instead: Activity draws its change cell
+`inline` ("há 13 horas · admin"), one line at 44px. `shio-react/test/table-lines.test.mjs` reads
+every column's `cell:` and fails one that draws two lines without the declaration, so a new list
+cannot come back crowded by default.
+
+The design system's work grammar (VDS235: compact header, no frosted card) shipped in the same
+release and is **not** adopted here: it is a per-route choice, filed as SH1320.

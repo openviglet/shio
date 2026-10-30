@@ -101,7 +101,7 @@ export default function NotesPage() {
           getRowLabel={(note) => `${kindLabel(note.kind)}: ${note.address ?? t("note.openGone")}`}
           columns={[
             {
-              id: "page", header: t("note.openPage"), width: "minmax(16rem, 2fr)", hideable: false,
+              id: "page", header: t("note.openPage"), width: "minmax(16rem, 2fr)", hideable: false, lines: 2,
               sortValue: (note) => note.address ?? "",
               cell: (note) => (
                 <BentoIdentityCell name={note.address ?? t("note.openGone")} detail={note.field ?? undefined} />
@@ -118,7 +118,7 @@ export default function NotesPage() {
               ),
             },
             {
-              id: "when", header: t("note.openWhen"), width: "minmax(10rem, 1fr)",
+              id: "when", header: t("note.openWhen"), width: "minmax(10rem, 1fr)", lines: 2,
               sortValue: (note) => (note.createdAt ? new Date(note.createdAt) : null),
               cell: (note) => (note.createdAt
                 ? <BentoChangeCell at={note.createdAt} actor={note.author ?? undefined} />

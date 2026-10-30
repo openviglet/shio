@@ -144,7 +144,8 @@ test("SH1232: open notes resolve one at a time or as a selection, and name who l
 test("SH1233: the activity trail is the package's table, paged by the same cursor", () => {
   const page = readFileSync(join(SRC, "app", "admin", "activity", "activity.list.page.tsx"), "utf8")
   assert.match(page, /<BentoDataTable\b[\s\S]*rows=\{items\}/, "SH1233: the audit rows are not the package's table")
-  assert.match(page, /<BentoChangeCell at=\{item\.date\} actor=\{item\.owner\} agent=\{Boolean\(item\.agent\)\} \/>/,
+  // SH1314 — `inline` keeps the actor on the time's line, so a long log stays one line a row.
+  assert.match(page, /<BentoChangeCell at=\{item\.date\} actor=\{item\.owner\} agent=\{Boolean\(item\.agent\)\}(?: inline)? \/>/,
     "SH1233: when and by whom is the change cell, marked when an agent did it")
   assert.match(page, /onSelect: \(\[item\]\) => narrow\("actor", item\.owner\)/,
     "SH1233: the name-as-filter is still one gesture away, in the row's menu")

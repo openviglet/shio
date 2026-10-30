@@ -417,25 +417,6 @@ There is also a lint this suggests and that would hold the rule console-wide: co
 filled accent buttons a page renders in `console-check.mjs` and fail above one. Filed
 here rather than separately, because it is how this task proves itself.
 
-### XI.80 Taking the design system's density release (SH1314)
-
-The 2026-10-29 walk through eighteen console surfaces found that most of what reads as
-crowded is not Shio's code: the table's toolbar band, the hashed initials, the ringed
-row menu, the 44px two-line rows, the boxed inline title and the accented theme toggle
-are all in `@viglet/viglet-design-system`, filed there as VDS229 to VDS234.
-
-This task is Shio's half once they ship: bump the package, start Vite with `--force` (a
-stale pre-bundle has blanked the console after a bump before), and walk the same
-surfaces at 1920px in both themes, comparing with the screenshots of this walk. Every
-list that passed a detail purely to fill the second line (see SH1309 and SH1310) is
-checked again, since a neutral square and more air change what that line is worth.
-`console-check.mjs` and the a11y pass run, because the row menu change touches the focus
-path.
-
-Before the release, `pnpm use:local` in the design system pushes a build into
-`shio-react`, which is how each VDS task can be judged in this console before it is
-published.
-
 ### XI.81 Measure the curator's tasks before changing the interface (SH1315)
 
 The console has been redone three times (console, bento, the bento sweep), and each
@@ -540,6 +521,27 @@ the same place, and the mode switch keeps the selection.
 This is a decision before it is code. The deliverable is the decision recorded in
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
+
+### XI.86 Choosing the work grammar, route by route (SH1320)
+
+`@viglet/viglet-design-system` 2026.3.24 ships VDS235: a `grammar="work"` prop on
+`BentoHero`, `BentoDataTable`, `BentoListPage`, `BentoFormHero` and `BentoEntityShell`
+that draws the header on one line (back link above in small type, no subtitle by
+default) and lays lists flush on the page ground between hairlines instead of inside a
+frosted card. The default stays `showcase`, so adopting the release changed nothing
+here.
+
+Which routes take it is Shio's decision. The candidates are the surfaces a curator works
+in for long stretches: the content browser, the post and post-type editors, activity,
+review, search, trash, scheduled and the media library. The home page and the site list
+are the ones a showcase suits.
+
+Two rules for doing it. The choice is made once per route through Shio's own seams
+(`PageHero`, `AdminListPage`, `IdentityEntityPage`), not by each page, so a seam takes a
+`grammar` and passes it on. And it is judged by the curator-task measurement filed
+beside this line, with screenshots of each route before and after at 1920px in both
+themes; the surface digest will move for every route that switches, which is expected
+and named in the commit.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
