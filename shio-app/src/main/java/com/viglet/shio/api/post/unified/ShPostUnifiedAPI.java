@@ -123,7 +123,8 @@ public class ShPostUnifiedAPI {
                 principal != null ? principal.getName() : null,
                 payload.locale(),
                 payload.translationGroupId(),
-                payload.furl())));
+                payload.furl(),
+                payload.under())));
     }
 
     /**
@@ -376,9 +377,13 @@ public class ShPostUnifiedAPI {
      *             the post's title field and corrected to the first free spelling in the
      *             site — before SH651 nothing derived one and the post was unreachable.
      */
+    /**
+     * @param under SH1333 — a parent path the derived URL starts with, sent by the pages view's
+     *              "new page here"; ignored when {@code furl} is declared
+     */
     public record CreatePayload(String folderId, String postTypeId, String postType, JsonNode data,
                                 ShPostState state, String locale, String translationGroupId,
-                                String furl) {
+                                String furl, String under) {
     }
 
     /**

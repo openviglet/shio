@@ -261,7 +261,7 @@ public class ShPostUnifiedWriteService {
         // either way (SH583); this is only about what is written.
         row.setFurl(bareFurl(req.furl() != null && !req.furl().isBlank()
                 ? req.furl()
-                : derivedFurl(row, postType)));
+                : derivedFurl(row, postType, req.under())));
 
         // After the title is derived, never before: a template's title is a *field* (SH183's model
         // is content), so there is nothing to check until the write has decided what it will be.
@@ -1222,11 +1222,11 @@ public class ShPostUnifiedWriteService {
      * to opt out is the caller that will forget; the suite caught this one, and the next
      * binary post-type will not have a test already watching.</p>
      */
-    private String derivedFurl(ShPostUnified row, ShPostType postType) {
+    private String derivedFurl(ShPostUnified row, ShPostType postType, String under) {
         if (postType != null && ShSystemPostType.FILE.equals(postType.getName())) {
             return "";
         }
-        return shFurlNaming.freeFurl(siteIdOf(row), row.getTitle());
+        return shFurlNaming.freeFurl(siteIdOf(row), under, row.getTitle());
     }
 
     /**
@@ -1474,7 +1474,19 @@ public class ShPostUnifiedWriteService {
      */
     public record CreateRequest(String folderId, String postTypeId, JsonNode data,
                                 ShPostState state, String owner, String locale,
-                                String translationGroupId, String furl) {
+                                String translationGroupId, String furl, String under) {
+
+        /**
+         * Without a parent path, which only the console's pages view sends (SH1333).
+         *
+         * @param under ignored when {@code furl} is declared; otherwise the derived URL is the
+         *              first free one beneath this path
+         */
+        public CreateRequest(String folderId, String postTypeId, JsonNode data,
+                             ShPostState state, String owner, String locale,
+                             String translationGroupId, String furl) {
+            this(folderId, postTypeId, data, state, owner, locale, translationGroupId, furl, null);
+        }
 
         /** Without an address — what every caller wanted before SH651 gave them a choice. */
         public CreateRequest(String folderId, String postTypeId, JsonNode data,

@@ -11,7 +11,7 @@ import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ShPostTypeService } from "@/services/post-type/post-type.service"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import type { ShPostType } from "@/models/post-type/post-type"
@@ -27,6 +27,8 @@ export default function PostUnifiedNewPage() {
   const { folderId, postTypeName } = useParams() as { folderId: string; postTypeName: string }
   const { t } = useTranslation()
   const navigate = useNavigate()
+  // SH1333 — the page this one is made beneath, from the pages view's "new page here": `/about`.
+  const under = useSearchParams()[0].get("under") || undefined
   const [postType, setPostType] = useState<ShPostType | null>(null)
   const [data, setData] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -79,6 +81,7 @@ export default function PostUnifiedNewPage() {
         postType: postType.name,
         data,
         state: "DRAFT",
+        under,
       })
       toast.success(t("common.saved"))
       // SH1326 — on into the editor of the post just made, where Publish is: returning to the
@@ -110,7 +113,7 @@ export default function PostUnifiedNewPage() {
       {/* SH901 — one call, for the same 1:2 reason as the editor next door. */}
       {/* SH1326 — the header names the type ("New Page"), and no internal word ("unified"). */}
       <PageHero grammar="work"
-        eyebrow={t("content.postLabel")}
+        eyebrow={under ? t("content.newPageUnder", { path: under }) : t("content.postLabel")}
         title={t("content.newPostOfType", { type: postTypeLabel })}
         urlBase={backUrl}
         onCancel={navigateBack}

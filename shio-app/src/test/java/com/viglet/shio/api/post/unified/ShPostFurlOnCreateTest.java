@@ -192,6 +192,29 @@ class ShPostFurlOnCreateTest {
                 .isEqualTo("free-address");
     }
 
+    private ShPostUnified createUnder(String under, String title, String furl) {
+        ObjectNode data = objectMapper.createObjectNode();
+        data.put("headline", title);
+        return writeService.create(new CreateRequest(
+                folderId, postTypeId, data, ShPostState.DRAFT, "admin", null, null, furl, under));
+    }
+
+    @Test
+    void aPageMadeUnderAnotherAnswersBeneathItsUrl() {
+        assertThat(createUnder("/about/", "Our Team", null).getFurl())
+                .as("""
+                        SH1333 — a page made from /about's row in the pages view answers at \
+                        /about/<slug>. Before, every new page was derived at the root and a page \
+                        meant for /about had to be moved after it was made.""")
+                .isEqualTo("about/our-team");
+        assertThat(createUnder("about", "Our Team", null).getFurl())
+                .as("SH1333 — and the free-slug rule holds beneath the parent, with or without slashes")
+                .isEqualTo("about/our-team-2");
+        assertThat(createUnder("about", "Careers", "jobs").getFurl())
+                .as("SH1333 — a declared furl is identity and wins over the parent")
+                .isEqualTo("jobs");
+    }
+
     @Test
     void aPostWithNoTitleKeepsABlankAddressRatherThanAnInventedOne() {
         ShPostUnified untitled = writeService.create(new CreateRequest(

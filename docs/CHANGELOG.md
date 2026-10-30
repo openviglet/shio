@@ -2068,6 +2068,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1330** — The console check's admin hub probe expects the Administration area hub SH1193 made /bento/admin open, and a test fails if the probe and the router disagree again.
 - **SH1331** — The split-pages probe counts only the split's own panes and switch, so the editor reads two panes at 1440px and the probe passes; a jsdom test drives both shapes (design §XI.96 superseded: it guessed a third pane in the layout; the third pane and the three tabs were the Notes, History and Insights tabs inside the editor's second pane).
 - **SH1332** — The managed-by-code banner's text is a solid violet step in both themes, so axe finds no contrast failure on a code-managed type, and a lint refuses palette text at reduced opacity.
+- **SH1333 (create under a parent)** — Each page row offers New page under its path, and the create derives the first free slug beneath it: a page made from /about's row gets post:<site>/about/<slug>, checked live.
 
 ## Block BH — One content model, many languages
 

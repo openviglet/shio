@@ -289,6 +289,8 @@
   "content.clearSelection": "Clear selection",
   "content.createFolderOrPost": "Create a folder or post to get started.",
   "content.newItem": "New {{type}}",
+  "content.newPageUnder": "Under {{path}}",
+  "content.newPageHere": "New page under {{path}}",
   "content.defaultPostType": "Article",
   "content.folderId": "Folder ID",
   "content.none": "NONE",

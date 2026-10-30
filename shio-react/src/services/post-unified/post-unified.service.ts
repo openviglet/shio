@@ -71,6 +71,12 @@ export interface CreateUnifiedPostRequest {
    * derived one and a console-created post answered at its folder's address, i.e. nowhere.
    */
   furl?: string
+  /**
+   * SH1333 — a parent path the derived address starts with: `about` and a title "Our team" answer
+   * at `/about/our-team`. Sent by the pages view's "new page here"; the server keeps choosing the
+   * free slug, so the console never guesses one. Ignored when `furl` is sent.
+   */
+  under?: string
 }
 
 export interface UpdateUnifiedPostRequest {

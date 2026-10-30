@@ -16,11 +16,12 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1333** (deps: —) **A site's pages view makes every new page at the root, not as a child of the page selected** — SH1316's remainder: a page meant for /about lands at /x and must be moved, because find rows carry no folder. → §XI.98
+- ⏳ **SH1333** (deps: SH1346) **A site's pages view makes every new page at the root, not as a child of the page selected** — Seeing that child served at /preview/<site>/about/<slug> waits on SH1346, since the renderer misses every bare-stored furl. → §XI.98
 - 📋 **SH1336** (deps: —) **A page that fails a check is not in home's waiting section, so a curator learns of it only by opening it** — SH1318's remainder: verify renders pages to answer, so the inbox needs a measured cheap read before it can list them. → §XI.101
 - 📋 **SH1338** (deps: —) **Reaching the new-page form takes four screens: Content hub, the Sites card, the site, then New Page** — Writing and publishing a page is six clicks now, and four of its six screens are only the way to the form. → §XI.103
 - 📋 **SH1343** (deps: —) **A MenuItem's editor asks the server for a preview render it refuses, 400 for a type with no layout** — The strict console check is red on post-edit:MenuItem every run, and a curator sees a failed preview that is not theirs. → §XI.104
 - 📋 **SH1344** (deps: —) **The new-token form shows no save bar after scrolling, where every sibling admin form does** — At the bottom of the form a curator has no Save in view, and the strict console check is red on bento-token-new every run. → §XI.105
+- 📋 **SH1346** (deps: —) **A page created in the console answers 404 in preview, because the renderer matches only the leading-slash furl** — Every console or blueprint page stored bare (SH651) is invisible at /preview while its address and agent render work. → §XI.107
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
@@ -44,6 +45,13 @@
   live after the maintainer picks the primary editor: the browser, search, home and the
   site list all open a page in the same editor, the other is a switch inside it that
   keeps the selection, and the decision is recorded in console-ui.md.
+
+## Done when — SH1333
+
+- **A child made from /about's row previews at /about/<slug>** On a clean instance with
+  the marketing-site blueprint, click New page under /about in the pages view, save, and
+  GET /preview/<site>/about/<slug> answers 200 with the page. Its first half is checked:
+  the post gets post:<site>/about/<slug>.
 
 ## Non-goals (do NOT add as tasks)
 

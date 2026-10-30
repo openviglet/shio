@@ -84,10 +84,26 @@ public class ShFurlNaming {
      * @return the free URL, or blank where there is no title to derive one from
      */
     public String freeFurl(String siteId, String rawTitle) {
-        String base = rawTitle == null ? "" : ShURLFormatter.format(rawTitle);
-        if (base == null || base.isBlank()) {
+        return freeFurl(siteId, null, rawTitle);
+    }
+
+    /**
+     * SH1333 — the same, beneath {@code under}: {@code under = "about"} and a title of
+     * {@code Our team} derive {@code about/our-team}, then {@code about/our-team-2}.
+     *
+     * <p>A page's URL is its friendly URL, not its folder's path, so a page "under" another one is
+     * a URL that starts with the parent's. The console asks for it from a row of the pages view;
+     * the loop stays here so the console never guesses whether a URL is free.</p>
+     *
+     * @param under the parent path, with or without slashes; blank derives at the site's root
+     */
+    public String freeFurl(String siteId, String under, String rawTitle) {
+        String slug = rawTitle == null ? "" : ShURLFormatter.format(rawTitle);
+        if (slug == null || slug.isBlank()) {
             return "";
         }
+        String parent = under == null ? "" : under.strip().replaceAll("^/+|/+$", "");
+        String base = parent.isEmpty() ? slug : parent + "/" + slug;
         for (int n = 1; ; n++) {
             String candidate = n == 1 ? base : base + "-" + n;
             if (isFree(siteId, candidate)) {

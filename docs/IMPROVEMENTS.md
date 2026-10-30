@@ -369,6 +369,29 @@ reading whether the hero's actions are present at all. Fix the form to compose t
 the way the webhook form does, or move its scroll onto the observed container. Done when
 `bento-token-new` passes in the strict console check.
 
+### XI.107 The renderer asks for one spelling of a URL the writes store another way (SH1346)
+
+Found while checking SH1333 live on a clean instance with the marketing-site blueprint
+(2026-10-30). A page created through the console's new-page form answers 404 at
+`/preview/<site>/<slug>`: `render-page-unknown`, "Looked for a DRAFT post whose friendly
+URL is '/child-…'". The same page resolves by address (`/agent/find` lists
+`post:<site>/child-…`) and `/agent/render` draws it through the site's layout. The
+blueprint's own `/about` page fails the same way while `/pricing` previews, so it is not
+only console posts.
+
+The cause is two spellings of one URL. SH651 stores a written furl bare (`child-…`,
+`about/our-team`, no leading slash), and SH583 made the address resolver spelling-blind
+through `ShFurlSpellings.candidates`. `ShPageRenderService.pageWithFurl` still asks the
+repository for the exact string the route hands it (`/child-…`), so any row stored bare
+is invisible to preview, and probably to the public `/sites/**` route too, which goes
+through the same `pageAt`.
+
+Fix: resolve the page through `ShFurlSpellings.candidates` the way `ShAddressResolver`
+does, DRAFT-preferred as now, keeping SH467's trailing-slash redirect for the canonical
+form. Check the public route against the same rows. Done when an assertion naming this
+id creates a page through `ShPostUnifiedWriteService.create` and renders it at its URL
+with and without the leading slash, and SH1333's `/about/<slug>` child previews live.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.

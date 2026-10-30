@@ -61,11 +61,17 @@ export function SiteRootSwitch({ mode, onChange }: Readonly<{
   )
 }
 
-function PageRowLink({ node, depth }: Readonly<{ node: PageNode; depth: number }>) {
+/** Where "new page" opens: the type's form in the site's root folder, beneath `under` when given. */
+type NewPageHref = (under?: string) => string | null
+
+function PageRowLink({ node, depth, newPage }: Readonly<{ node: PageNode; depth: number; newPage: NewPageHref }>) {
   const { t } = useTranslation()
   const page = node.page
   const label = page?.title || node.segment || t("content.homePage")
   const state = page?.published ? t("content.filterPublished") : t("content.filterDraft")
+  // SH1333 — a child of this page: its URL starts with this one's. The home's children are the
+  // screen's own New button, so the home row offers none.
+  const child = node.path === "/" ? null : newPage(node.path)
   return (
     <li>
       <div className="flex items-center gap-3 px-4 py-2.5" style={{ paddingLeft: `${1 + depth * 1.25}rem` }}>
@@ -78,10 +84,18 @@ function PageRowLink({ node, depth }: Readonly<{ node: PageNode; depth: number }
         )}
         <span className="text-muted-foreground hidden shrink-0 font-mono text-xs sm:inline">{node.path}</span>
         {page && <span className="text-muted-foreground w-24 shrink-0 text-right text-xs">{state}</span>}
+        {child && (
+          <Button asChild size="icon-sm" variant="ghost">
+            <Link to={child} aria-label={t("content.newPageHere", { path: node.path })}
+              title={t("content.newPageHere", { path: node.path })}>
+              <Plus className="h-4 w-4" />
+            </Link>
+          </Button>
+        )}
       </div>
       {node.children.length > 0 && (
         <ul className="divide-border/60 divide-y">
-          {node.children.map((child) => <PageRowLink key={child.path} node={child} depth={depth + 1} />)}
+          {node.children.map((each) => <PageRowLink key={each.path} node={each} depth={depth + 1} newPage={newPage} />)}
         </ul>
       )}
     </li>
@@ -92,6 +106,10 @@ export function SitePages({ site, folderId }: Readonly<{ site: PageSite; folderI
   const { t } = useTranslation()
   // A new page is the site's own page type, or the first type it binds to a layout (SH1283).
   const newType = site.pageType || [...pageTypesOf(site)][0]
+  const newPage: NewPageHref = (under) => newType
+    ? `${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${encodeURIComponent(newType)}/new`
+      + (under ? `?under=${encodeURIComponent(under)}` : "")
+    : null
   const { data: rows, isPending, error } = useQuery({
     queryKey: addressKey(`post:${site.name}/|pages`),
     // Read again on every visit, as the folder listing beside it is: saving a new page returns here,
@@ -124,7 +142,7 @@ export function SitePages({ site, folderId }: Readonly<{ site: PageSite; folderI
         {/* The screen's one filled button (SH1195): a page is what a curator makes here. */}
         {newType && (
           <Button asChild size="sm">
-            <Link to={`${ROUTES.CONTENT_ROOT}/folder/${folderId}/post-type/${encodeURIComponent(newType)}/new`}>
+            <Link to={newPage() ?? ""}>
               <Plus className="mr-1.5 h-4 w-4" /> {t("content.newItem", { type: newType })}
             </Link>
           </Button>
@@ -134,7 +152,7 @@ export function SitePages({ site, folderId }: Readonly<{ site: PageSite; folderI
         <p className="text-muted-foreground py-12 text-center text-sm">{t("content.noPagesYet")}</p>
       ) : (
         <ul className="bg-card divide-border/60 divide-y overflow-hidden rounded-xl border">
-          <PageRowLink node={tree} depth={0} />
+          <PageRowLink node={tree} depth={0} newPage={newPage} />
         </ul>
       )}
       {/*

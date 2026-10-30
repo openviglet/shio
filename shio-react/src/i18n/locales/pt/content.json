@@ -289,6 +289,8 @@
   "content.clearSelection": "Limpar seleção",
   "content.createFolderOrPost": "Crie uma pasta ou post para começar.",
   "content.newItem": "Novo {{type}}",
+  "content.newPageUnder": "Em {{path}}",
+  "content.newPageHere": "Nova página em {{path}}",
   "content.defaultPostType": "Artigo",
   "content.folderId": "ID da Pasta",
   "content.none": "NENHUM",
