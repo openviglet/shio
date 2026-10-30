@@ -19,6 +19,7 @@
   "content.editPostType": "Edit Post Type",
   "content.newPostType": "New Post Type",
   "content.publish": "Publish",
+  "content.publishNew": "Publish…",
   "content.unpublish": "Unpublish",
   "content.publishSuccess": "Published — the page is live",
   "content.unpublishSuccess": "Unpublished — the page is no longer live",

@@ -261,25 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.91 Writing a page and publishing it should be one place (SH1326)
-
-Measured by SH1315's `create-page` task on a clean instance: rail Content (a hub), the
-Sites card, the site, "New Page", the title, Save; Save returns to the folder listing,
-where the new page's title is plain text in the default table view, so the curator
-double-clicks the row (nothing on screen says so), lands in the editor, and only there
-finds Actions → Publish → confirm. Ten clicks, seven screens.
-
-Four separate frictions, each small:
-- the new-post form has Save and Cancel only; the editor has Publish, Schedule and the rest, so the same post offers different verbs depending on whether it has been saved once;
-- Save on a new post closes the form instead of becoming the editor of the post it just created;
-- the table view's title cell is not a link, unlike the list and grid views, and its open gesture is undiscoverable;
-- the form's header reads "Novo Post" for a Page and shows "Page unified · 4 campos", an internal word, and its Sections field is a free-text "press Enter" box where the editor offers the searchable picker.
-
-Direction: the new-post form is the editor in its unsaved state, with the same action
-menu (Publish saves then publishes, with the same confirmation); Save keeps the editor
-open on the new post; the title cell links; the header names the type. Judged by
-`create-page`, which should drop to about five clicks and three screens.
-
 ### XI.92 Timing benchmarks that measure H2's result cache (SH1327)
 
 Found by SH1305. H2 answers a query from its result cache when the identical SQL runs
@@ -434,6 +415,27 @@ and the inbox lists them as items linking to the page's insights. If it is not c
 the summary carries the last verify run's result, which the publish gate already
 produces, rather than running one. Done when a page with an error-level finding appears
 in "Waiting for you" as a link to it, checked live, with the cost measured and recorded.
+
+### XI.103 The way to a new page (SH1338)
+
+Measured by SH1315's `create-page` after SH1326 (form publishes): six clicks over six
+screens, and four of the six screens are the way to the form. The rail's Content opens a
+hub; the site list is one card on it; the site opens on its pages; its New Page opens
+the form. Only then does the curator type a title and press Publish… and confirm.
+
+The site list as a hub card is SH1193's grouping, and it is right for a console with
+many surfaces; what is missing is a direct route for the most common job. Two
+candidates, both cheap and both P1-neutral (they add a way in, not a new write):
+
+- the command palette offers "New page in <site>" when the reader has one site, or when the
+  current route is inside a site, routing to the same new-post form (palette commands already
+  route to forms, never write: SH1028);
+- the Content hub names the reader's sites directly when there are few (one to four), so the
+  Sites card is skipped.
+
+Judged by `create-page`, which should reach about four clicks over three screens. Record
+the budget when it drops, and keep the task's start at /bento (SH1315's rule), so the
+saving is real and not a deep link.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 
@@ -1338,3 +1340,88 @@ package half is VDS204 to VDS207 in the design system's own backlog.
 ## XCIII The console as an application: cost, resilience and access
 
 ## XCIV The design system's consumer contract, adopted and gated
+
+## XCV What a visitor finds first: release, links and a demo
+
+Filed from the portfolio review of 2026-10-30 (visibility repo, estrategia/portfolio.md
+and produtos/shio.md): no channel gets a launch before the page, the release and the
+README say the same thing. Shio's are the furthest apart of the suite.
+
+### XCV.1 The 2026.3 line is released on openviglet/shio (SH1339)
+
+**Where it showed.** On 2026-10-30 the Releases tab of openviglet/shio shows v0.3.8 as
+Latest: a 2021 jar built with JDK 14 and Gradle, followed by two pre-releases from 2020.
+The repository has no release workflow at all; the 2026.3 line reaches people only as
+`ghcr.io/openviglet/shio-ce` (pushed by hand through `publish-docker.yml`, last on
+2026-07-08) and the `@viglet/*` npm packages.
+
+**Why it costs.** The README describes October's agent-ready CMS, and the first thing an
+evaluator opens beside it says the project stopped in 2021. The owner confirmed on
+2026-10-30 that the 2026.3 line is released on openviglet/shio (visibility repo,
+produtos/shio.md and estrategia/portfolio.md).
+
+**Design.** A release workflow on the 2026.3 branch that tags the version from
+`pom.xml`, attaches the jar, writes notes for people (what changed for a curator and for
+an agent, then fixes), and calls `publish-docker.yml` so the image and the release never
+disagree again. The first run makes 2026.3 Latest. The 2020–2021 releases stay as
+history, marked as the pre-rewrite line in their titles or as pre-releases, so none of
+them can be Latest.
+
+### XCV.2 The README points at the docs where they live (SH1340)
+
+**Where it showed.** The README's Docs badge and its "Documentation" line point at
+docs.viglet.org/shio, which since SH1262 is frozen with a moved notice and now answers
+301; the documentation lives in `shio-site/docs` and is served at
+openviglet.github.io/shio/docs/. The GitHub homepage field still says shio.viglet.org,
+also a 301.
+
+**Why it costs.** Two redirects on the first click read as an abandoned address, and a
+search engine or AI assistant that follows the README indexes the old host. On
+2026-10-29 the product sites moved to openviglet.github.io and the old addresses were
+left without redirects of their own (visibility repo, CLAUDE.md and produtos/shio.md,
+2026-10-30).
+
+**Design.** Point the README's badge and documentation links at
+openviglet.github.io/shio/docs/, sweep the repository's other READMEs (CLI, SDKs,
+plugin) for docs.viglet.org/shio and shio.viglet.org, and set the homepage field to
+openviglet.github.io/shio. A docs check that refuses the old hosts in README files keeps
+it from coming back.
+
+### XCV.3 One tool count, derived (SH1341)
+
+**Where it showed.** The README lists 12 MCP tools (SH678 made `shio_marketplace` the
+twelfth), the site's `MCP_TOOLS` lists the same twelve, the docs say twelve, but the
+landing's surface section hard-codes "Eleven tools, six resources"
+(`shio-site/src/components/sections/surface.tsx`), and `docs/agents/mcp.md` still says
+eleven twice.
+
+**Why it costs.** The tool count is the claim a reader of an agent-ready CMS checks
+first, and two different numbers on the README and the landing read as carelessness
+(visibility repo, produtos/shio.md, 2026-10-30).
+
+**Design.** The landing derives the number from `MCP_TOOLS.length` (and the resources
+from their list) instead of spelling it, and a site test compares that list against the
+server's registered tools, as `showcase-coverage.test.mjs` already does for the
+showcase. The agent docs drop the stale "eleven". Any future tool then moves every count
+at once.
+
+### XCV.4 A hosted showcase with a guest console (SH1342)
+
+**Where it showed.** Shio has no public instance anyone can open. The site shows a
+scripted Claude Code session and four screenshots of the Quilhara showcase (SH1258), and
+the owner confirmed on 2026-10-30 that no production site built with Shio exists to
+point at: the showcase and the promo video are the window (visibility repo,
+produtos/shio.md).
+
+**Why it costs.** The portfolio review of 2026-10-30 names a demo that opens without
+installing as what every launch channel is missing for Turing, Shio and Dumont
+(estrategia/portfolio.md). For a CMS, the visitor wants to click the rendered site and
+the console behind it; screenshots and `docker run` ask for trust or for ten minutes
+first.
+
+**Design.** A hosted instance on the Viglet Cloud with the Quilhara showcase applied
+from the marketplace (SH1257 already makes that one click), its rendered pages public,
+and the console open to a guest role that can browse, edit drafts and see the review
+queue but not publish, reset from the blueprint on a schedule. The README and the site
+link it beside `docker run`. If a guest console is too costly to keep safe, the rendered
+showcase alone, with a recorded console tour, is the first step.

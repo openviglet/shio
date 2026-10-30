@@ -5,7 +5,7 @@ import { BadgeColorful } from "@/components/badge-colorful"
 import { ROUTES } from "@/app/routes.const"
 import { PostFormFields } from "@/components/widgets/post-form-fields"
 import { IconFileText } from "@tabler/icons-react"
-import { Save } from "lucide-react"
+import { Save, Upload } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
@@ -66,7 +66,11 @@ export default function PostUnifiedNewPage() {
   const backUrl = `${ROUTES.CONTENT_ROOT}/object/${folderId}`
   const navigateBack = () => navigate(backUrl)
 
-  async function handleSave() {
+  /**
+   * SH1326 — `publish` saves, then opens the editor with its own publish confirmation already
+   * asking: one confirmation and one gate for a page, whether it was saved a moment ago or a week.
+   */
+  async function handleSave(publish = false) {
     if (!postType) return
     setIsLoading(true)
     try {
@@ -79,7 +83,7 @@ export default function PostUnifiedNewPage() {
       toast.success(t("common.saved"))
       // SH1326 — on into the editor of the post just made, where Publish is: returning to the
       // folder left the curator to find the page again before they could put it live.
-      navigate(created?.id ? `${ROUTES.CONTENT_ROOT}/post/${created.id}` : backUrl)
+      navigate(created?.id ? `${ROUTES.CONTENT_ROOT}/post/${created.id}${publish ? "?publish=1" : ""}` : backUrl)
     } catch (error) {
       reportProblem(error, t("common.error"))
     } finally {
@@ -121,9 +125,14 @@ export default function PostUnifiedNewPage() {
           }
         actions={
             <>
-              <GradientButton type="button" size="sm" loading={isLoading} onClick={handleSave}>
+              <GradientButton type="button" size="sm" loading={isLoading} onClick={() => handleSave()}>
                 <Save className="size-4" />
                 {t("common.save")}
+              </GradientButton>
+              <GradientButton type="button" size="sm" variant="outline" disabled={isLoading}
+                onClick={() => handleSave(true)}>
+                <Upload className="size-4" />
+                {t("content.publishNew")}
               </GradientButton>
               <GradientButton type="button" size="sm" variant="ghost" onClick={navigateBack}>
                 {t("common.cancel")}

@@ -2060,7 +2060,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1323** — A section's editor names the pages that use it and previews its unsaved values drawn on the first, through POST /agent/render's new `on`, also on shio_digest (design §XI.89 superseded: no reverse index was needed: /agent/find's q already reads field data, so a quoted friendly URL lists a section's pages) (design §XI.89 recorded in `docs/agents/renderer.md`).
 - **SH1324** — The palette and the editor header name a live post with unpublished changes as such, through a new `changed` flag on find rows computed from rows already in hand (design §XI.90 recorded in `docs/agents/console-ui.md`).
 - **SH1325** — The file picker holds still under a double-click, opens folders on one click in file mode, makes opening a named control, and starts beside the edited post (design §XI.88 recorded in `docs/agents/console-ui.md`).
-- **SH1326 (save opens the editor)** — Saving a new post opens its editor where Publish is, and the header names its type; create-page drops to eight clicks over six screens.
+- **SH1326** — The new-post form publishes: Publish… saves and opens the editor with its own confirmation already asking, and create-page fell from nine clicks to six (design §XI.91 superseded: its target of five clicks over three screens was mostly navigation before the form, now SH1338) (design §XI.91 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 
@@ -2109,3 +2109,6 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1249** — A GraalVM CE 25 native image boots in 4 s at 363 MB against 19 s and 1 GB; no-go, untraced reflection 500s; AppCDS plus SerialGC is the go (design §LXXV.3 superseded: CE 21 cannot build it (Spring Boot 4 targets GraalVM 25), and Artemis, which the risk list named, is not in the jar) (design §LXXV.3 recorded in `docs/specs/SH1249-graalvm-native-spike.md`).
 - **SH1260** — Both Dockerfiles train a CDS archive and run SerialGC: first 200 from 17.3 s to 13.7 s and idle RSS from 985 to 688 MB at the same p95, image 433 MB instead of 575 (design §LXXV.4 recorded in `docs/agents/build.md`).
 - **SH1261** — hazelcast-all, JGit and hazelcast.xml are gone: the jar fell from 155.7 to 125.3 MiB, the suite stays green, and a test refuses their quiet return (design §LXXV.5 recorded in `shio-app/pom.xml`).
+
+## Block BJ — What a visitor finds first: release, links and a demo
+

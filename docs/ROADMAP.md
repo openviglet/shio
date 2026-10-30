@@ -16,7 +16,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- ⏳ **SH1326** (deps: —) **A new page can only be saved, saving returns to the folder, and the folder's table opens a row only on double-click** — The new-post form still only saves: Publish, with the editor's action menu and its confirmation, waits until the page exists. → §XI.91
 - 📋 **SH1327** (deps: —) **Benchmarks that repeat an identical read on H2 time its result cache, so a 3.5 s query printed as 17 ms** — SH1217's own measurement hid the defect SH1305 fixed, and ten timing tests may be reporting cache hits as costs. → §XI.92
 - 📋 **SH1328** (deps: —) **22 colour classes in the console paint nothing, because the design system's sheet does not ship them** — A selected row's tint, focus rings and a pages bar's draft share compile, review clean and render transparent. → §XI.93
 - 📋 **SH1329** (deps: —) **The sites grid's card link is named only by the site, so axe fails it as a label-content mismatch** — Voice-control users say the text they see and the card does not answer, and every console check run is red on it. → §XI.94
@@ -25,6 +24,14 @@
 - 📋 **SH1332** (deps: —) **A code-managed post type's editor fails axe colour contrast on its violet "managed by code" banner** — Every type a push or the API created opens on a banner whose text does not reach 4.5:1 in the dark theme. → §XI.97
 - 📋 **SH1333** (deps: —) **A site's pages view makes every new page at the root, not as a child of the page selected** — SH1316's remainder: a page meant for /about lands at /x and must be moved, because find rows carry no folder. → §XI.98
 - 📋 **SH1336** (deps: —) **A page that fails a check is not in home's waiting section, so a curator learns of it only by opening it** — SH1318's remainder: verify renders pages to answer, so the inbox needs a measured cheap read before it can list them. → §XI.101
+- 📋 **SH1338** (deps: —) **Reaching the new-page form takes four screens: Content hub, the Sites card, the site, then New Page** — Writing and publishing a page is six clicks now, and four of its six screens are only the way to the form. → §XI.103
+
+## Block BJ — What a visitor finds first: release, links and a demo
+
+- 📋 **SH1339** (deps: —) **The Releases tab shows v0.3.8 from 2021 as Latest, and the 2026.3 line has no release at all** — The first thing an evaluator opens beside the README says the project stopped in 2021. → §XCV.1
+- 📋 **SH1340** (deps: —) **The README sends readers to docs.viglet.org/shio and the repository homepage to shio.viglet.org, both now redirects** — Two redirects on the first click read as an abandoned address, and crawlers index the old host. → §XCV.2
+- 📋 **SH1341** (deps: —) **The README counts 12 MCP tools and the site's landing says eleven** — The tool count is the claim a reader checks first, and two numbers for it read as carelessness. → §XCV.3
+- 📋 **SH1342** (deps: —) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
 
 ## Priority
 
@@ -41,12 +48,6 @@
   live after the maintainer picks the primary editor: the browser, search, home and the
   site list all open a page in the same editor, the other is a switch inside it that
   keeps the selection, and the decision is recorded in console-ui.md.
-
-## Done when — SH1326
-
-- **A new page can be published from the form it is written in** On the new-post form
-  the editor's Actions menu offers Publish, which saves then publishes with the same
-  confirmation; create-page records about five clicks over three screens.
 
 ## Non-goals (do NOT add as tasks)
 

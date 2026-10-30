@@ -25,7 +25,7 @@ import { addressKey } from "@/lib/query-keys"
 import { isCancelled } from "@/lib/read-options"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useUsedOn } from "@/app/content/use-used-on"
 import { draftDiffers, lifecycleKey } from "@/lib/post-lifecycle"
 import axios from "axios"
@@ -194,6 +194,27 @@ export default function PostUnifiedEditPage() {
   const publishHint = allowed.data && !allowed.data.publish
     ? (allowed.data.publishHint ?? null)
     : null
+
+  /*
+   * SH1326 — "Publish…" on the new-post form arrives here with `?publish=1`: the same confirmation
+   * Actions → Publish opens, asked once the post and the right to publish it are known. Opened in
+   * render, once, and the parameter dropped afterwards so a reload does not ask again.
+   */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const wantsPublish = searchParams.get("publish") === "1"
+  const [publishAsked, setPublishAsked] = useState(false)
+  if (wantsPublish && !publishAsked && post && allowed.data) {
+    setPublishAsked(true)
+    if (allowed.data.publish) setPublishPreviewOpen(true)
+  }
+  useEffect(() => {
+    if (!publishAsked || !wantsPublish) return
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      next.delete("publish")
+      return next
+    }, { replace: true })
+  }, [publishAsked, wantsPublish, setSearchParams])
 
   /**
    * SH1011 — is there unsaved work here?

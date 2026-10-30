@@ -291,16 +291,18 @@ const TASKS = [
       const newPage = /^(novo|new) page$/i
       await page.getByRole("link", { name: newPage }).or(page.getByRole("button", { name: newPage })).first().click()
       await page.getByRole("textbox", { name: /^title/i }).fill(ctx.title)
-      // The new-post form offers Save and Cancel only. SH1326 — Save opens the editor on the page
-      // just made, where Publish is; it used to return to the folder, to find the page again.
-      await clickAndWrite(page, page.getByRole("button", { name: /^(salvar|save)$/i }).first())
+      // SH1326 — the form publishes: "Publish…" saves, and the editor opens on the new page with
+      // the same publish confirmation already asking. It used to be Save, back to the folder, find
+      // the page, open it, Actions, Publish, confirm.
+      await clickAndWrite(page, page.getByRole("button", { name: /^(publicar|publish)…$/i }).first())
       await page.waitForURL(/\/content\/post\/[0-9a-f-]{36}/, { timeout: 15_000 })
-      await page.getByRole("button", { name: /^(ações|actions)$/i }).first().waitFor({ timeout: 15_000 })
-      await publish(page)
+      await clickAndWrite(page, page.getByRole("dialog").getByRole("button", { name: /^(publicar|publish)$/i }),
+        (url) => /\/publish\b/.test(url))
     },
+    // Live, not merely made: the task is "create and publish".
     async check(ctx) {
       const found = await api(`/agent/find?site=${encodeURIComponent(SITE)}&q=${encodeURIComponent(ctx.title)}`)
-      return (found.results ?? []).some((r) => r.title === ctx.title)
+      return (found.results ?? []).some((r) => r.title === ctx.title && r.published === true)
     },
   },
   {

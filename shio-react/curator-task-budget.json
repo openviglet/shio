@@ -5,42 +5,42 @@
       "clicks": 4,
       "keys": 1,
       "screens": 1,
-      "ms": 1854,
+      "ms": 2248,
       "why": "The headline is the hero section's, so the path is search → section → field → Actions → Publish → confirm. Since SH1323 the page's section list opens the section too, at the same cost, and the section's editor previews the page it is on."
     },
     "approve-run": {
       "clicks": 2,
       "keys": 0,
       "screens": 1,
-      "ms": 279,
+      "ms": 370,
       "why": "Home names the waiting run and the queue approves in one press, with no confirmation: the reference for what a curator decision can cost."
     },
     "replace-image": {
       "clicks": 7,
       "keys": 1,
       "screens": 1,
-      "ms": 2854,
+      "ms": 3508,
       "why": "A filled image field opens the picker on its own folder, so a replace is search → Search → file → Select → publish. Since SH1325 an empty field opens beside the post too, and a folder opens on one click."
     },
     "find-page": {
       "clicks": 1,
       "keys": 1,
       "screens": 1,
-      "ms": 890,
+      "ms": 953,
       "why": "Ctrl+K, the title, and the result: the floor every other task's first step is measured against."
     },
     "create-page": {
-      "clicks": 8,
+      "clicks": 6,
       "keys": 0,
       "screens": 6,
-      "ms": 2662,
-      "why": "Content opens a hub, the site list is a card on it, and the new-post form only saves, so Publish waits in the editor. SH1316 opened the site on its pages; SH1326 made Save open the editor on the new page instead of returning to the site, one click and one screen less. Publishing from the form itself is SH1326's open half."
+      "ms": 3585,
+      "why": "Since SH1326 the form publishes: Publish… saves and opens the editor with its confirmation already asking, so writing and publishing is six clicks. Four of the six screens are getting there: Content opens a hub, the site list is a card on it, then the site, then New Page (SH1338)."
     },
     "preview-draft": {
       "clicks": 2,
       "keys": 1,
       "screens": 2,
-      "ms": 1218,
+      "ms": 1359,
       "why": "The draft only exists as a draft, which is the case a preview is for. Search, the result, Preview: the second screen is the preview's own tab. It was Spring's 404 on any site whose name needs encoding until SH1322."
     }
   }

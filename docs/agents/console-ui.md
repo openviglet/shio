@@ -4339,8 +4339,12 @@ that row, which is what a curator reads. Any change to a surface a task walks th
 folder after `create`, so publishing the page just written meant finding it again; Save now
 navigates to `/content/post/<the new id>`, where Publish is, and the header reads "New Page" (the
 type, `content.newPostOfType`) without the internal "unified" badge. `create-page` went from nine
-clicks over seven screens to eight over six (recorded). Publishing from the unsaved form, with the
-editor's action menu, is the open half; `new-post.test.mjs` holds this one.
+clicks over seven screens to eight over six (recorded). **And the form publishes:** "Publish…"
+saves, then opens the editor at `?publish=1`, where the same confirmation Actions → Publish opens is
+already asking, once the post and the right to publish it are known (a curator who may not publish
+just lands in the editor), and the parameter is dropped so a reload does not ask again. One
+confirmation and one gate for a page, however recently it was saved; `create-page` is six clicks
+(recorded), and the four screens before the form are SH1338's. `new-post.test.mjs` holds both.
 
 **Three things the first draft got wrong.** Waiting for "Publicado" on screen: the editor says
 "Publicado (no ar)" before anything happens, so the harness waits for the write's response instead.

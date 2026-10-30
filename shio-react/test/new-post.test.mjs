@@ -22,8 +22,17 @@ const page = stripComments(readFileSync(join(SRC, "app", "content", "post.new.pa
 
 test("SH1326: Save on a new post opens its editor, not the folder it was made in", () => {
   assert.match(page, /const created = await unifiedService\.create\(/u)
-  assert.match(page, /navigate\(created\?\.id \? `\$\{ROUTES\.CONTENT_ROOT\}\/post\/\$\{created\.id\}` : backUrl\)/u,
+  assert.match(page, /navigate\(created\?\.id \? `\$\{ROUTES\.CONTENT_ROOT\}\/post\/\$\{created\.id\}[^`]*` : backUrl\)/u,
     "SH1326: Save returns to the folder again, so the curator has to find the page to publish it")
+})
+
+test("SH1326: the form publishes through the editor's own confirmation, asked once", () => {
+  assert.match(page, /onClick=\{\(\) => handleSave\(true\)\}/u, "SH1326: the new-post form only saves again")
+  assert.match(page, /\$\{publish \? "\?publish=1" : ""\}/u)
+  const editor = stripComments(readFileSync(join(SRC, "app", "content", "post.edit.page.tsx"), "utf8"))
+  assert.match(editor, /if \(wantsPublish && !publishAsked && post && allowed\.data\) \{\s*setPublishAsked\(true\)\s*if \(allowed\.data\.publish\) setPublishPreviewOpen\(true\)/u,
+    "SH1326: the editor ignores ?publish=1, or opens the confirmation for a curator who may not publish")
+  assert.match(editor, /next\.delete\("publish"\)/u, "SH1326: a reload of the editor asks to publish again")
 })
 
 test("SH1326: the new-post header names the type and no internal word", () => {
