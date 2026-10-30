@@ -15,7 +15,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- ⏳ **SH1316** (deps: SH1315 ✅) **Opening a site shows its storage folders (fonts, theme, menu, en, pt) and "0 post", not its pages** — Theme, Menu and media still live only under Folders, and a new page is made at the root rather than as a child of the selected node. → §XI.82
 - 📋 **SH1317** (deps: SH1315 ✅) **The curator, the builder and the administrator see one console, with tokens and post types beside page editing** — The product says the agent builds and the curator approves, yet half of what a curator sees is for someone else. → §XI.83
 - 📋 **SH1318** (deps: SH1315 ✅, SH1311 ✅) **The home page opens on counts of sites and post types instead of what is waiting for the curator** — A curator's day is approving and fixing, so the first screen should be that queue, not an inventory. → §XI.84
 - 📋 **SH1319** (deps: SH1315 ✅) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
@@ -31,6 +30,7 @@
 - 📋 **SH1330** (deps: —) **The console check expects /bento/admin to land on users, and it lands on the administration hub** — One of the two is stale, and a probe that is red for a known reason hides the next real failure beside it. → §XI.95
 - 📋 **SH1331** (deps: —) **The post editor at 1440px draws three panes and a tab strip where SH1094 holds two panes and none** — Either the layout or the probe changed without the other, and the split-pages probe is red on every run. → §XI.96
 - 📋 **SH1332** (deps: —) **A code-managed post type's editor fails axe colour contrast on its violet "managed by code" banner** — Every type a push or the API created opens on a banner whose text does not reach 4.5:1 in the dark theme. → §XI.97
+- 📋 **SH1333** (deps: —) **A site's pages view makes every new page at the root, not as a child of the page selected** — SH1316's remainder: a page meant for /about lands at /x and must be moved, because find rows carry no folder. → §XI.98
 
 ## Priority
 
@@ -40,13 +40,6 @@
   io.github.openviglet/shio, the Claude Code lists the visibility repo tracks name Shio,
   the More tools section carries a Shio line, and each link is in that repo's
   actions.json.
-
-## Done when — SH1316
-
-- **Theme, Menu and Media are reachable from the site without opening Folders** Checked
-  live at a site's root: the pages view links the site's theme and menu settings and its
-  media, and a new page can be made as a child of a selected page, so a curator never
-  needs the folder view.
 
 ## Non-goals (do NOT add as tasks)
 

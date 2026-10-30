@@ -2049,7 +2049,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1311** — The home page leads with what waits as rows, then one unframed line of figures and one row of quick links with New site the only filled button, all above the fold at 1920 px (design §XI.77 recorded in `docs/agents/console-ui.md`).
 - **SH1312** — The media library puts Upload and its destination site in the hero, draws a file with no picture as a short band naming its extension, and folds each image's alt field until hover or focus (design §XI.78 superseded: it called the site picker a filter to put beside the search; it is the upload's destination, so it went into the hero with Upload) (design §XI.78 recorded in `docs/agents/console-ui.md`).
 - **SH1313** — The post-type editor fills Save alone, with neutral Save and close, Cancel and Add field and muted field tags, and console-check now fails any route showing more than one filled accent button (design §XI.79 recorded in `docs/agents/console-ui.md`).
-- **SH1316 (the page tree at a site's root)** — A site's root opens on its pages, the types it binds to a layout as a tree by URL with a language switch and New page, and its folders are one switch away.
+- **SH1316** — A site's root opens on its pages as a tree by URL with a language switch and New page, names every non-page type and the media from there, and keeps its folders one switch away; child creation is SH1333 (design §XI.82 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

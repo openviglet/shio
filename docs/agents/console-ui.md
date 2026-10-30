@@ -4370,3 +4370,10 @@ drops `post:` keys and a page just saved would otherwise be hidden for 30 s. The
 link (the site's page type) is the screen's one filled button. The create-page curator task went from
 10 clicks to 9. `table-select-all` in `console-check.mjs` opens its folder with `as=folders`, since
 that folder can be the root.
+
+**Second slice: the rest of the site, named.** Under the tree, "Also in this site" lists every type
+that is not a page with its count (`otherContentOf`: the theme, its layouts, menus, sections), each a
+link to Search narrowed to that type and this site (`?site=&type=`, the words the search page already
+reads), plus the Media library. Named by type rather than a fixed list, because a menu is a blueprint's
+own type. So a curator reaches the theme and the menus without the folder view. Making a new page as
+a child of a selected one is SH1333: it needs the row's folder, and `find`'s rows do not carry it.

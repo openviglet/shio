@@ -12,7 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 
-import { localesOf, pageCount, pageTree, pageTypesOf, pathOf } from "../src/lib/site-pages.ts"
+import { localesOf, otherContentOf, pageCount, pageTree, pageTypesOf, pathOf } from "../src/lib/site-pages.ts"
 
 /**
  * SH1316 — opening a site showed six storage folders and "0 posts" for a site of 130 pages. A page
@@ -56,6 +56,11 @@ test("SH1316: a site's root opens on its pages, which offer New, and the folders
   assert.match(view, /\/post-type\/\$\{encodeURIComponent\(newType\)\}\/new/,
     "SH1316: the pages view offers no New, so a curator at the root cannot make a page")
   assert.match(view, /staleTime: 0/, "SH1316: a page just saved is hidden by the cache on return")
+})
+
+test("SH1316: what is not a page is named by type and counted, so the theme and menus need no folder", () => {
+  assert.deepEqual(otherContentOf(ROWS, SITE), [{ type: "Menu", count: 1 }, { type: "SectionHero", count: 1 }],
+    "SH1316: a non-page type is missing, or a page type is listed as other content")
 })
 
 test("SH1316: a locale switch shows one language's pages, and an untranslated page shows in all", () => {

@@ -108,6 +108,21 @@ export function pageTree(rows: readonly PageRow[], site: PageSite, locale?: stri
   return root
 }
 
+/**
+ * The rest of the site, by type: what is not a page (a theme, its layouts, its menus, its sections),
+ * with how many of each. Named by the type rather than a fixed list, because a menu is a blueprint's
+ * own type and the next blueprint may call it something else. Ordered by type, so two reads agree.
+ */
+export function otherContentOf(rows: readonly PageRow[], site: PageSite): { type: string; count: number }[] {
+  const types = pageTypesOf(site)
+  const counts = new Map<string, number>()
+  for (const row of rows) {
+    if (!row.type || types.has(row.type)) continue
+    counts.set(row.type, (counts.get(row.type) ?? 0) + 1)
+  }
+  return [...counts].map(([type, count]) => ({ type, count })).sort((a, b) => a.type.localeCompare(b.type))
+}
+
 /** How many pages the tree holds, which is the number the view states. */
 export function pageCount(node: PageNode): number {
   return (node.page ? 1 : 0) + node.children.reduce((sum, child) => sum + pageCount(child), 0)

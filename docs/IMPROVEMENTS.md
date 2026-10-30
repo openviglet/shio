@@ -241,26 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.82 Navigate a site by its pages, not its folders (SH1316)
-
-Measured at 1920px: the ShowCase root lists six folders (`en`, `fonts`, `images`,
-`menu`, `pt`, `theme`) and the counts strip says "6 pastas · 0 post", for a site the
-site list reports as 130 published pages. The structure is how Shio stores a site, and
-the content browser shows storage directly. Finding the Trails page means knowing it
-lives under `en/pages`.
-
-Direction: a site opens on its page tree, built from what the visitor navigates (the
-home page, its sections, their children) per language, with the language as a switch
-rather than a folder. Each node shows title, state (published, draft, pending review)
-and when it changed; selecting one opens it. What is not a page moves out of the tree
-into named places: Theme and Menu under the site's settings, images and fonts under
-Media. The folder browser stays, one level down, as the builder's view.
-
-Open questions to settle with the measurement: how a page tree is derived where the
-folder layout and the menu disagree (the renderer already resolves routes, so
-`/agent/routes` is the likely source), and where a curator creates a page (in the tree,
-as a child of the selected node). Judged by tasks 1, 4 and 5 of SH1315.
-
 ### XI.83 One console, a view per role (SH1317)
 
 Today every signed-in user meets the same rail and the same palette: Content holds
@@ -548,6 +528,27 @@ Fix: give the banner the console's own tokens or a dark-theme text colour that p
 4.5:1, and measure it in both themes. Note SH1328: an opacity-modified colour class may
 not be generated at all, so read the computed colour, not the class. Done when both
 probes pass axe on a code-managed type.
+
+### XI.98 A new page as a child of the selected one (SH1333)
+
+Split from SH1316, whose design asked where a curator creates a page and answered "in
+the tree, as a child of the selected node". The pages view at a site's root (SH1316)
+offers one New page link, which opens the new-post form in the root folder. A page meant
+to live under `/about` therefore lands at `/x` and has to be moved, or the curator
+switches to Folders and finds `about`'s folder.
+
+The obstacle is data, not layout. The view's rows come from `/agent/find`, and a find
+row carries the address, type, title, locale and publication, but not the folder. The
+new-post route needs a folder id (`/content/folder/<id>/post-type/<type>/new`). There
+are two ways to get it. One is to add the folder (its path, or its id behind `ids=true`)
+to the find row, opt-in so a default read costs nothing (P3), which also helps an agent
+placing a sibling. The other is to resolve it per click with `/agent/read`, which
+already returns `folder`. The first composes better, since the tree is drawn once from
+one read.
+
+Then each page row gets a "New page here" action, and the new post's URL starts under
+the parent's path. Done when a page created from `/about`'s row is served at
+`/about/<slug>`, checked live.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

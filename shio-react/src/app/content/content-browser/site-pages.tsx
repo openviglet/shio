@@ -15,7 +15,7 @@ import { Link } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { Button } from "@/components/ui/button"
 import { addressKey } from "@/lib/query-keys"
-import { localesOf, pageCount, pageTree, pageTypesOf, type PageNode, type PageRow, type PageSite } from "@/lib/site-pages"
+import { localesOf, otherContentOf, pageCount, pageTree, pageTypesOf, type PageNode, type PageRow, type PageSite } from "@/lib/site-pages"
 import type { SiteRootMode } from "./use-site-root-mode"
 
 /**
@@ -137,6 +137,20 @@ export function SitePages({ site, folderId }: Readonly<{ site: PageSite; folderI
           <PageRowLink node={tree} depth={0} />
         </ul>
       )}
+      {/*
+        SH1316 — the rest of the site, named, so a curator reaches the theme, the menus and the media
+        without the folder view: each type opens Search narrowed to it and to this site.
+      */}
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-muted-foreground">{t("content.sitePagesAlso")}</span>
+        {otherContentOf(rows ?? [], site).map(({ type, count }) => (
+          <Link key={type} className="hover:bg-muted rounded-md border px-2 py-0.5"
+            to={`${ROUTES.SEARCH}?site=${encodeURIComponent(site.name)}&type=${encodeURIComponent(type)}`}>
+            {type} <span className="text-muted-foreground tabular-nums">{count}</span>
+          </Link>
+        ))}
+        <Link className="hover:bg-muted rounded-md border px-2 py-0.5" to={ROUTES.FILES}>{t("staticFile.title")}</Link>
+      </div>
       <p className="text-muted-foreground flex items-center gap-1 text-xs">
         <ChevronRight className="h-3 w-3" aria-hidden="true" /> {t("content.sitePagesHint")}
       </p>
