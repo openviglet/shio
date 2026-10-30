@@ -86,6 +86,15 @@ test("SH898: the migrated home composes the package's parts and no Card", () => 
     "SH898: the bento home imports PageHeader, which is console chrome — the hero replaces it")
 })
 
+test("SH1318: the waiting section lists the runs and notes themselves, each a link to where it is resolved", () => {
+  assert.match(homeSource, /queryKey: addressKey\("summary:notes"\),\s*queryFn: \(\{ signal \}\) => noteService\.open\(\{ signal \}\),\s*enabled: openNotes > 0,/,
+    "SH1318: the inbox reads notes under its own key, or before the summary says there are any")
+  assert.match(homeSource, /\.\.\.pendingRuns\.map\(/, "SH1318: a pending agent run is a count again, not an item")
+  assert.match(homeSource, /\.\.\.shownNotes\.map\(/, "SH1318: an open note is a count again, not an item")
+  assert.match(homeSource, /\{settledRuns\.map\(\(run\) =>/,
+    "SH1318: a pending run is listed twice, in the inbox and again in the runs below")
+})
+
 test("SH898: the counts wait rather than answering zero", () => {
   // "0 Sites" on the first screen after login is a real answer to the question and a wrong one.
   // The console page rendered `—` while loading; BentoCountTile takes a number, so the tiles are

@@ -15,7 +15,7 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- 📋 **SH1318** (deps: SH1315 ✅, SH1311 ✅) **The home page opens on counts of sites and post types instead of what is waiting for the curator** — A curator's day is approving and fixing, so the first screen should be that queue, not an inventory. → §XI.84
+- ⏳ **SH1318** (deps: SH1315 ✅, SH1311 ✅) **The home page opens on counts of sites and post types instead of what is waiting for the curator** — The curator's own unpublished drafts and pages with a failed check are not in the inbox yet, and an empty inbox does not say so in one line. → §XI.84
 - 📋 **SH1319** (deps: SH1315 ✅) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
 - 📋 **SH1320** (deps: SH1315 ✅) **Shio's working pages still use the showcase frame now that the design system ships a work grammar** — The content browser, editors and logs keep a 150px hero and a frosted card that VDS235 made optional per route. → §XI.86
 - 📋 **SH1322** (deps: —) **Preview on a page that has never been published opens Spring's Whitelabel 404 instead of the draft** — Previewing a draft is the curator's check before publishing, and the one page it fails on is the one that has no other way to be seen. → §XI.87
@@ -39,6 +39,13 @@
   io.github.openviglet/shio, the Claude Code lists the visibility repo tracks name Shio,
   the More tools section carries a Shio line, and each link is in that repo's
   actions.json.
+
+## Done when — SH1318
+
+- **Drafts and failed checks are inbox items, and an empty inbox is one line** Checked
+  live: a draft the curator started and a page verify flags each appear in Waiting for
+  you as a link to it, and with nothing waiting the section is one sentence offering the
+  sites.
 
 ## Non-goals (do NOT add as tasks)
 

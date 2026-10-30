@@ -4397,3 +4397,12 @@ by `/user/current`), so the builder's own view the design asked for has no role 
 `BentoRootPage` now mounts `UserProvider` above the shell (`BentoShellRoot`), because the rail's hook
 runs in the shell and `useCurrentUser` throws above its provider. The unit tests passed while every
 page crashed, and only the live check caught it.
+
+**SH1318, first slice: the inbox names its items.** "Waiting for you" lists each pending agent run
+(its intent, or agent, or short session, and how many changes wait) and up to five open notes (the
+note, its page and who left it), each a link to where it is resolved: the review queue for a run, the
+post editor for a note on a post. The notes are `noteService.open()` under the notes page's own
+`summary:notes` key, so both share one fetch, and are asked for only when the summary counts some. A
+count row stays only for what the items do not already list in full (scheduled, incidents, more than
+five notes), and the runs section below keeps only settled runs, so nothing shows twice. Still to come:
+the curator's own unpublished drafts, pages with a failed check, and a one-line empty state.

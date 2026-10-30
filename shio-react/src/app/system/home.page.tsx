@@ -43,6 +43,7 @@ import { useQuery } from "@tanstack/react-query"
 import { addressKey } from "@/lib/query-keys"
 import { changeStateOf } from "@/lib/change-mark"
 import { ShConsoleSummaryService, type ShRun } from "@/services/console/summary.service"
+import { ShNoteService } from "@/services/note/note.service"
 
 
 /**
@@ -76,6 +77,10 @@ import { ShConsoleSummaryService, type ShRun } from "@/services/console/summary.
  */
 
 const summaryService = new ShConsoleSummaryService()
+const noteService = new ShNoteService()
+
+/** SH1318 — how many open notes the inbox lists by name; past it, a count row links to them all. */
+const INBOX_NOTES = 5
 
 /** SH1050 — one identity each while the summary loads, not one per render. */
 const EMPTY_ACTIVITY: ShHistory[] = []
@@ -180,6 +185,39 @@ export default function BentoHomePage() {
     },
   ].filter((tile) => tile.value > 0) : []), [t, attention, incidents])
 
+  /*
+   * SH1318 — the inbox: the things themselves, not their count. Each pending agent run with what it
+   * said it was doing, and each open note with its page and who left it, each opening where it is
+   * resolved. The notes are the notes page's own read, under its key, so the two share one fetch,
+   * and they are asked for only when the summary says there are some.
+   */
+  const openNotes = attention?.openNotes ?? 0
+  const { data: notes } = useQuery({
+    queryKey: addressKey("summary:notes"),
+    queryFn: ({ signal }) => noteService.open({ signal }),
+    enabled: openNotes > 0,
+  })
+  const pendingRuns = runs.filter((run) => run.pending > 0)
+  // The runs list below keeps the settled ones: a pending run is already an inbox item above.
+  const settledRuns = runs.filter((run) => run.pending === 0)
+  const shownNotes = (notes ?? []).slice(0, INBOX_NOTES)
+  const inbox = [
+    ...pendingRuns.map((run) => ({
+      key: `run:${run.session}`, icon: IconRobot, url: ROUTES.ADMIN_REVIEW,
+      label: run.intent || run.agent || t("home.runSession", { id: run.session.slice(0, 8) }),
+      detail: t("home.runPending", { count: run.pending }),
+    })),
+    ...shownNotes.map((note) => ({
+      key: `note:${note.id}`, icon: IconMessage,
+      url: note.address?.startsWith("post:") ? `${ROUTES.CONSOLE}/content/post/${note.objectId}` : ROUTES.NOTES,
+      label: note.body,
+      detail: [note.address, note.author].filter(Boolean).join(" · "),
+    })),
+  ]
+  // A count row stays only for what the items above do not already list in full.
+  const counts = waiting.filter((tile) => !(tile.url === ROUTES.ADMIN_REVIEW && pendingRuns.length > 0)
+    && !(tile.url === ROUTES.NOTES && notes !== undefined && openNotes <= INBOX_NOTES))
+
   /* The first is the one that starts something, and the only one drawn filled. */
   const quickActions = useMemo(() => [
     { label: t("home.actionNewSite"), icon: IconPlus, url: ROUTES.SITE_NEW },
@@ -204,14 +242,27 @@ export default function BentoHomePage() {
         subtitle={t("home.welcomeSubtitle")}
       />
 
-      {waiting.length > 0 && (
+      {(inbox.length > 0 || counts.length > 0) && (
         /*
          * First: what is owed outranks what exists (P7). SH1311 — as rows, each the thing owed and
          * how many, rather than 390px tiles that gave a count the same weight as the inventory below.
+         * SH1318 — and the items themselves first, one click from where each is resolved.
          */
         <BentoSection title={t("home.attention")} description={t("home.attentionDesc")} gridClassName="block">
           <ul className={LIST_CLASS}>
-            {waiting.map((tile) => (
+            {inbox.map((item) => (
+              <li key={item.key}>
+                <Link to={item.url} className={ROW_CLASS}>
+                  <RowIcon icon={item.icon} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{item.label}</span>
+                    {item.detail && <span className="text-muted-foreground block truncate text-xs">{item.detail}</span>}
+                  </span>
+                  <IconChevronRight size={16} className="text-muted-foreground shrink-0" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+            {counts.map((tile) => (
               <li key={tile.label}>
                 <Link to={tile.url} className={ROW_CLASS}>
                   <RowIcon icon={tile.icon} />
@@ -256,7 +307,7 @@ export default function BentoHomePage() {
         ))}
       </BentoSection>
 
-      {runs.length > 0 && (
+      {settledRuns.length > 0 && (
         /*
          * SH1050 — what the agent has been doing, and what it said it was doing.
          *
@@ -277,7 +328,7 @@ export default function BentoHomePage() {
           gridClassName="block"
         >
           <ul className={LIST_CLASS}>
-            {runs.map((run) => {
+            {settledRuns.map((run) => {
               const pending = run.pending > 0
               return (
                 <li key={run.session}>
