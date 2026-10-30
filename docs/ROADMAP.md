@@ -16,7 +16,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- ⏳ **SH1338** (deps: —) **Reaching the new-page form takes four screens: Content hub, the Sites card, the site, then New Page** — The palette's New page in a site, which the design puts at about four clicks over three screens from /bento, is still to build. → §XI.103
 - 📋 **SH1343** (deps: —) **A MenuItem's editor asks the server for a preview render it refuses, 400 for a type with no layout** — The strict console check is red on post-edit:MenuItem every run, and a curator sees a failed preview that is not theirs. → §XI.104
 - 📋 **SH1344** (deps: —) **The new-token form shows no save bar after scrolling, where every sibling admin form does** — At the bottom of the form a curator has no Save in view, and the strict console check is red on bento-token-new every run. → §XI.105
 - 📋 **SH1347** (deps: —) **Recording one curator task with --only --record erases every other task's budget from the file** — A filtered re-record answers "recorded 1 task(s)" and silently drops eleven gated budgets and their reasons. → §XI.108
@@ -43,13 +42,6 @@
   live after the maintainer picks the primary editor: the browser, search, home and the
   site list all open a page in the same editor, the other is a switch inside it that
   keeps the selection, and the decision is recorded in console-ui.md.
-
-## Done when — SH1338
-
-- **create-page reaches about four clicks over three screens from /bento** Run node
-  e2e/curator-tasks.mjs --only create-page on a clean provisioned instance, starting at
-  /bento as SH1315 requires, through the palette's New page in a site; record the budget
-  it measures, editing only that task's entry while SH1347 is open.
 
 ## Non-goals (do NOT add as tasks)
 

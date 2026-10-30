@@ -40,6 +40,7 @@
   "common.refresh": "Atualizar",
   "palette.group": "Ações e conteúdo",
   "palette.searchContent": "Buscar conteúdo",
+  "palette.newPageIn": "Nova página em {{site}}",
   "palette.newPost": "Criar um conteúdo aqui",
   "palette.publishPage": "Publicar esta página",
   "palette.openReview": "Abrir a fila de revisão",

@@ -40,6 +40,7 @@
   "common.refresh": "Refresh",
   "palette.group": "Actions and content",
   "palette.searchContent": "Search content",
+  "palette.newPageIn": "New page in {{site}}",
   "palette.newPost": "Create a post here",
   "palette.publishPage": "Publish this page",
   "palette.openReview": "Open the review queue",

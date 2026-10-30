@@ -283,15 +283,12 @@ const TASKS = [
     what: "create a page under an existing section and publish it",
     async run(page, ctx) {
       ctx.title = `Team ${RUN}`
-      // The rail's Content opens a hub of content screens. SH1338 — with up to four sites the hub
-      // names each, so the site opens from there; the Sites card was a screen of only getting there.
-      await page.getByRole("navigation").getByRole("link", { name: /^(conteúdo|content)$/i }).click()
-      // Home's inbox also names the site (a draft's address), so wait for the hub before choosing.
-      await page.waitForURL(/\/areas\/content\b/)
-      await page.getByRole("link", { name: SITE }).first().click()
-      // SH1316 — a link at a site's root (the Pages view's New), a button in a folder's toolbar.
-      const newPage = /^(novo|new) page$/i
-      await page.getByRole("link", { name: newPage }).or(page.getByRole("button", { name: newPage })).first().click()
+      // SH1338 — the palette offers "New page in <site>" when the reader has one site, which is the
+      // site's page form; before it, the way there was Content, the hub, the Sites card, the site and
+      // New Page. (With up to four sites the hub also names each, one screen shorter than the card.)
+      await page.keyboard.press("Control+k")
+      await page.getByRole("option", { name: /^(nova página em|new page in) /i }).first().click()
+      await page.waitForURL(/\/post-type\/[^/]+\/new/)
       await page.getByRole("textbox", { name: /^title/i }).fill(ctx.title)
       // SH1326 — the form publishes: "Publish…" saves, and the editor opens on the new page with
       // the same publish confirmation already asking. It used to be Save, back to the folder, find

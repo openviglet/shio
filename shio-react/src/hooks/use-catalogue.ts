@@ -60,11 +60,17 @@ export function usePostTypes() {
   });
 }
 
-/** Every site. Read by nine screens, four of them only to fill a picker. */
-export function useSites() {
+/**
+ * Every site. Read by nine screens, four of them only to fill a picker.
+ *
+ * @param enabled SH1338 — false defers the read, as the palette does until it is opened, so a route
+ *                that never opens it pays nothing for the shortcut
+ */
+export function useSites({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery<ShSite[]>({
     queryKey: addressKey("site:"),
     queryFn: () => siteService.query(),
+    enabled,
   });
 }
 

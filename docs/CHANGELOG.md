@@ -2071,7 +2071,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1333** — A page made from a row of the pages view previews beneath that page: the child of /about answered 200 at /preview/<site>/about/<slug> on a clean instance (design §XI.98 superseded: a page's URL is its own furl, not its folder's path, so no find row needed a folder; the create takes a parent path and derives the free slug beneath it).
 - **SH1346** — The renderer reads a page stored without its leading slash, so console- and blueprint-made pages preview at their URL, checked live with /about and its new child, and SH467's trailing-slash rule is unchanged.
 - **SH1336** — Home's Waiting for you lists pages failing verify's content or routes checks, each a link to the page's insights, from one verify per summary read; checked live with a dangling section (design §XI.101 superseded: no verify run is stored to read back, and the measured per-visit pass is cheap: 14 statements and ~35 ms per 150-page site, against 92 for ten addresses).
-- **SH1338 (sites on the Content hub)** — With up to four sites the Content hub names each, so a page is written and published in five clicks over five screens instead of six, measured by create-page and recorded.
+- **SH1338** — Ctrl+K offers New page in the reader's one site, so writing and publishing a page from /bento is 3 clicks, 1 key and 2 screens, measured by create-page and recorded.
 
 ## Block BH — One content model, many languages
 

@@ -61,6 +61,8 @@ export interface ShioCommand {
   confirm: boolean
   /** True when it is about the page the reader is on, which outranks everything else. */
   contextual?: (context: ShioCommandContext) => boolean
+  /** Values the label interpolates, when it names something in the context (SH1338). */
+  labelArgs?: (context: ShioCommandContext) => Record<string, string>
 }
 
 /** What the palette knows about where the reader is. */
@@ -71,6 +73,11 @@ export interface ShioCommandContext {
   folderId?: string | null
   /** The post being edited, when one is. */
   postId?: string | null
+  /**
+   * SH1338 — where "new page" goes when the reader has exactly one site: that site's page form.
+   * Read only while the palette is open, so absent until then and on any instance with more sites.
+   */
+  newPage?: { site: string; href: string } | null
 }
 
 const DECLARED: ReadonlySet<string> = new Set(SURFACES.surfaces.map((surface) => surface.id))
@@ -82,6 +89,18 @@ const DECLARED: ReadonlySet<string> = new Set(SURFACES.surfaces.map((surface) =>
  * a menu and a menu's first row is the one it is really offering.
  */
 const COMMANDS: readonly ShioCommand[] = [
+  {
+    // SH1338 — the most common job, one row from anywhere: the site's page form, which saves and
+    // publishes. The palette routes to the form and never writes (SH1028).
+    id: "new-page",
+    surface: "sites",
+    labelKey: "palette.newPageIn",
+    labelArgs: (context) => ({ site: context.newPage?.site ?? "" }),
+    aliases: ["create", "add", "page", "new"],
+    route: (context) => context.newPage?.href ?? null,
+    confirm: true,
+    contextual: (context) => Boolean(context.newPage),
+  },
   {
     id: "search-content",
     surface: "search",

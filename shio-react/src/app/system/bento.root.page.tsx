@@ -17,7 +17,10 @@ import {
 } from "@viglet/viglet-design-system/bento"
 import { columnFor } from "./bento-column"
 import { useQuery } from "@tanstack/react-query"
+import axios from "axios"
 import { addressKey } from "@/lib/query-keys"
+import { pageTypesOf } from "@/lib/site-pages"
+import { useSites } from "@/hooks/use-catalogue"
 import type { ShConsoleSearchResult } from "@/services/search/search.service"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
@@ -159,7 +162,27 @@ function BentoShellRoot() {
   const [query, setQuery] = useState("")
   const [recent, setRecent] = useState<string[]>([])
 
-  const context = useMemo(() => contextOf(location.pathname), [location.pathname])
+  /*
+   * SH1338 — "new page in <site>" when the reader has one site. Both reads wait for the palette to
+   * open, so no route pays for a shortcut nobody asked for: the sites (the shared `site:` read) and
+   * that site's root folder, which the new-page form is addressed by.
+   */
+  const { data: sites } = useSites({ enabled: paletteOpen })
+  const only = sites?.length === 1 ? sites[0] : null
+  const siteId = only?.id ?? ""
+  const { data: rootFolder } = useQuery({
+    queryKey: addressKey(`site:${siteId}|root`),
+    queryFn: ({ signal }) => axios.get<{ folderId?: string }>(`/v2/object/${siteId}/list?page=0&size=1`,
+      { signal }).then((response) => response.data.folderId ?? null),
+    enabled: paletteOpen && Boolean(only),
+  })
+  const pageType = only ? only.pageType || [...pageTypesOf(only)][0] : undefined
+  const context = useMemo(() => ({
+    ...contextOf(location.pathname),
+    newPage: only && rootFolder && pageType
+      ? { site: only.name, href: `${ROUTES.CONTENT_ROOT}/folder/${rootFolder}/post-type/${encodeURIComponent(pageType)}/new` }
+      : null,
+  }), [location.pathname, only, rootFolder, pageType])
 
   /**
    * The actions, ranked here because nothing else can (VDS123).
@@ -171,7 +194,7 @@ function BentoShellRoot() {
   const actions = useMemo(
     () => rank<PaletteRow>(commandsFor(context).map((command) => ({
       id: command.id,
-      label: t(command.labelKey),
+      label: t(command.labelKey, command.labelArgs?.(context)),
       aliases: command.aliases,
       contextual: command.contextualHere,
       confirm: command.confirm,

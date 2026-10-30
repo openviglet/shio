@@ -261,27 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.103 The way to a new page (SH1338)
-
-Measured by SH1315's `create-page` after SH1326 (form publishes): six clicks over six
-screens, and four of the six screens are the way to the form. The rail's Content opens a
-hub; the site list is one card on it; the site opens on its pages; its New Page opens
-the form. Only then does the curator type a title and press Publish… and confirm.
-
-The site list as a hub card is SH1193's grouping, and it is right for a console with
-many surfaces; what is missing is a direct route for the most common job. Two
-candidates, both cheap and both P1-neutral (they add a way in, not a new write):
-
-- the command palette offers "New page in <site>" when the reader has one site, or when the
-  current route is inside a site, routing to the same new-post form (palette commands already
-  route to forms, never write: SH1028);
-- the Content hub names the reader's sites directly when there are few (one to four), so the
-  Sites card is skipped.
-
-Judged by `create-page`, which should reach about four clicks over three screens. Record
-the budget when it drops, and keep the task's start at /bento (SH1315's rule), so the
-saving is real and not a deep link.
-
 ### XI.104 A menu item's live preview asks for a render that cannot exist (SH1343)
 
 Found by the strict console check run for SH1329 on a clean instance with the

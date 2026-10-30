@@ -30,11 +30,11 @@
       "why": "Ctrl+K, the title, and the result: the floor every other task's first step is measured against."
     },
     "create-page": {
-      "clicks": 5,
-      "keys": 0,
-      "screens": 5,
-      "ms": 1995,
-      "why": "Since SH1326 the form publishes: Publish… saves and opens the editor with its confirmation already asking. SH1338 took one screen out of the way there: with up to four sites the Content hub names each, so the site opens from the hub instead of through the Sites card. Content, the site, New Page, Publish…, Publish."
+      "clicks": 3,
+      "keys": 1,
+      "screens": 2,
+      "ms": 2819,
+      "why": "SH1338: Ctrl+K offers New page in <site> when the reader has one site, which opens that site's page form; the form publishes (SH1326), so the rest is Publish… and the confirmation. Before it, four of six screens were the way to the form: Content, the hub, the Sites card, the site."
     },
     "preview-draft": {
       "clicks": 2,

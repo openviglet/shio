@@ -92,6 +92,22 @@ test("SH1338: the Content hub opens a few sites directly, so the Sites card is n
     `SH1338: the hub names up to ${threshold} sites; past four a hub of tiles is a worse list than the Sites list`)
   assert.match(area, /content\/object\/\$\{site\.id\}/, "SH1338: a site tile no longer opens the site")
   const budget = JSON.parse(readFileSync(join(HERE, "..", "curator-task-budget.json"), "utf8"))
-  assert.ok(budget.tasks["create-page"].clicks <= 5,
-    `SH1338: create-page is budgeted at ${budget.tasks["create-page"].clicks} clicks again, above the five this saving measured`)
+  const createPage = budget.tasks["create-page"]
+  assert.ok(createPage.clicks + createPage.keys <= 4 && createPage.screens <= 3,
+    `SH1338: create-page is budgeted at ${createPage.clicks} clicks, ${createPage.keys} keys and `
+      + `${createPage.screens} screens, above the four and three the palette's New page measured`)
+})
+
+test("SH1338: the palette offers New page in the reader's one site, read only while it is open", () => {
+  // The palette route is the shorter of the two ways in (Ctrl+K, the row, the form). Its reads wait
+  // for the palette to open, because every route has a request ceiling and a shortcut nobody opened
+  // must not spend it.
+  const commands = stripComments(readFileSync(join(SRC, "app", "system", "bento-commands.ts"), "utf8"))
+  const root = stripComments(readFileSync(join(SRC, "app", "system", "bento.root.page.tsx"), "utf8"))
+  assert.match(commands, /id: "new-page"[\s\S]{0,400}route: \(context\) => context\.newPage\?\.href \?\? null/,
+    "SH1338: the palette no longer has a new-page command routed by the context's site")
+  assert.match(root, /useSites\(\{ enabled: paletteOpen \}\)/,
+    "SH1338: the palette's sites read no longer waits for the palette to open")
+  assert.match(root, /enabled: paletteOpen && Boolean\(only\)/,
+    "SH1338: the root-folder read no longer waits for the palette, or no longer needs one site")
 })
