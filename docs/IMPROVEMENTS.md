@@ -1191,26 +1191,6 @@ disagree again. The first run makes 2026.3 Latest. The 2020–2021 releases stay
 history, marked as the pre-rewrite line in their titles or as pre-releases, so none of
 them can be Latest.
 
-### XCV.2 The README points at the docs where they live (SH1340)
-
-**Where it showed.** The README's Docs badge and its "Documentation" line point at
-docs.viglet.org/shio, which since SH1262 is frozen with a moved notice and now answers
-301; the documentation lives in `shio-site/docs` and is served at
-openviglet.github.io/shio/docs/. The GitHub homepage field still says shio.viglet.org,
-also a 301.
-
-**Why it costs.** Two redirects on the first click read as an abandoned address, and a
-search engine or AI assistant that follows the README indexes the old host. On
-2026-10-29 the product sites moved to openviglet.github.io and the old addresses were
-left without redirects of their own (visibility repo, CLAUDE.md and produtos/shio.md,
-2026-10-30).
-
-**Design.** Point the README's badge and documentation links at
-openviglet.github.io/shio/docs/, sweep the repository's other READMEs (CLI, SDKs,
-plugin) for docs.viglet.org/shio and shio.viglet.org, and set the homepage field to
-openviglet.github.io/shio. A docs check that refuses the old hosts in README files keeps
-it from coming back.
-
 ### XCV.4 A hosted showcase with a guest console (SH1342)
 
 **Where it showed.** Shio has no public instance anyone can open. The site shows a
