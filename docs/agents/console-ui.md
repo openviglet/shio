@@ -4404,5 +4404,8 @@ note, its page and who left it), each a link to where it is resolved: the review
 post editor for a note on a post. The notes are `noteService.open()` under the notes page's own
 `summary:notes` key, so both share one fetch, and are asked for only when the summary counts some. A
 count row stays only for what the items do not already list in full (scheduled, incidents, more than
-five notes), and the runs section below keeps only settled runs, so nothing shows twice. Still to come:
-the curator's own unpublished drafts, pages with a failed check, and a one-line empty state.
+five notes), and the runs section below keeps only settled runs, so nothing shows twice. The second
+slice added the curator's own drafts that never went live (`find` with `state=draft` and
+`author=<me>`, up to five, from a hundred rows; **author, not modifier**, because a blueprint's writes
+carry no modifier and "modified by me" listed none of them), and a one-line empty state that offers
+the sites. Pages with a failed check are SH1336: verify renders pages, so the cost comes first.

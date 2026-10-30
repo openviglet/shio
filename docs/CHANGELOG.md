@@ -2053,7 +2053,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1317** — A non-administrator's rail and palette are the curator's (content surfaces, no post types, GraphQL, tokens or providers), Review leads the Content hub, and every route still opens by URL (design §XI.83 superseded: it planned a builder view too; the console knows one role, admin, and /user/current never fills privileges) (design §XI.83 recorded in `docs/agents/console-ui.md`).
 - **SH1334** — Creating a user encodes the password with bcrypt so the account signs in, and no user response or listing serialises a password or hash; existing rows never signed in, so none needed a rehash (design §XI.99 recorded in `docs/agents/security.md`).
 - **SH1335** — Editing a user sets a new bcrypt-encoded password when one is typed and keeps the stored one when blank, and the console's user form says so, so an administrator can unlock any account (design §XI.100 recorded in `docs/agents/security.md`).
-- **SH1318 (pending runs and open notes, by name)** — Home's Waiting for you lists each pending agent run and up to five open notes by name, each a link to where it is resolved, with count rows only for the rest.
+- **SH1318** — Home opens on an inbox: pending agent runs, open notes and the curator's own unpublished drafts by name, each a link to where it is resolved, or one line when nothing waits; failed checks are SH1336 (design §XI.84 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

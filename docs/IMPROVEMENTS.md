@@ -241,25 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.84 The home page as the curator's inbox (SH1318)
-
-The dashboard leads with an overview (16 sites, 28 post types), then "Waiting for you"
-as one tile with a count, then quick actions. SH1311 makes that layout lighter; this
-task changes what the page is for.
-
-Direction: the home page is an inbox, ordered by what needs a person: agent runs waiting
-for review (with the intent, the site and how many pages each touched), open notes on
-posts (with the post and who left it), drafts the curator started and did not publish,
-scheduled publishes in the next days, and pages with a failed check (verify findings,
-missing alt text). Each item opens where it is resolved. When nothing waits, the page
-says so in one line and offers the sites, which is today's content.
-
-Everything listed already has an endpoint (review, notes, scheduled, verify, the media
-alt counts), so this composes reads, P10, and needs no new service. Shared with the
-rail: the badge on Review and the inbox count are the same number (SH953). Judged by
-SH1315's task 2, and by a curator reaching a waiting item in one click from the first
-screen.
-
 ### XI.85 One way to edit a page (SH1319)
 
 The post editor is a form with a live preview pane beside it; the Universal Editor is
@@ -528,6 +509,28 @@ one read.
 Then each page row gets a "New page here" action, and the new post's URL starts under
 the parent's path. Done when a page created from `/about`'s row is served at
 `/about/<slug>`, checked live.
+
+### XI.101 Failed checks in the home inbox, measured first (SH1336)
+
+Split from SH1318, whose design listed "pages with a failed check (verify findings,
+missing alt text)" among what the home inbox shows. Home now names pending agent runs,
+open notes and the curator's own unpublished drafts, each linking to where it is
+resolved. A page that fails a check is not there.
+
+The obstacle is cost, not data. `/agent/verify` renders pages to answer `page` and
+`a11y`, so calling it from the home page on every visit would put a render pass on the
+console's front door. P3 makes that a measured question before it is a design one. The
+cheap half is already counted elsewhere: the media library's needs-alt chip (SH1031)
+reads `asset-no-alt` per page of the library, and verify's `content` and `routes` checks
+do not render.
+
+Direction: measure `/agent/verify?checks=content,routes` against a site of the
+showcase's size and decide from the number. If it is cheap, the summary read
+(`/v2/console/summary`) carries a count of error findings with the first few addresses,
+and the inbox lists them as items linking to the page's insights. If it is not cheap,
+the summary carries the last verify run's result, which the publish gate already
+produces, rather than running one. Done when a page with an error-level finding appears
+in "Waiting for you" as a link to it, checked live, with the cost measured and recorded.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

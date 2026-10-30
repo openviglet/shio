@@ -44,6 +44,8 @@ import { addressKey } from "@/lib/query-keys"
 import { changeStateOf } from "@/lib/change-mark"
 import { ShConsoleSummaryService, type ShRun } from "@/services/console/summary.service"
 import { ShNoteService } from "@/services/note/note.service"
+import axios from "axios"
+import { useCurrentUser } from "@/contexts/user.context"
 
 
 /**
@@ -197,6 +199,18 @@ export default function BentoHomePage() {
     queryFn: ({ signal }) => noteService.open({ signal }),
     enabled: openNotes > 0,
   })
+  // SH1318 — the drafts this curator started and never put live: `find`'s own words, the console's
+  // user as the author, the question `shio find --state draft --author <me>` asks. Author and not
+  // modifier: a blueprint's writes carry no modifier, so "modified by me" missed every page it made.
+  // A hundred rows, because most of a curator's posts are live and the filter is after the page.
+  const { user } = useCurrentUser()
+  const { data: drafts } = useQuery({
+    queryKey: addressKey(`post:|drafts|${user?.username ?? ""}`),
+    queryFn: ({ signal }) => axios.get<{ results?: { id?: string; address: string; title?: string; published?: boolean }[] }>(
+      "/v2/agent/find", { signal, params: { state: "draft", author: user?.username, ids: true, limit: 100 } })
+      .then((response) => (response.data.results ?? []).filter((row) => !row.published).slice(0, INBOX_NOTES)),
+    enabled: Boolean(user?.username),
+  })
   const pendingRuns = runs.filter((run) => run.pending > 0)
   // The runs list below keeps the settled ones: a pending run is already an inbox item above.
   const settledRuns = runs.filter((run) => run.pending === 0)
@@ -212,6 +226,11 @@ export default function BentoHomePage() {
       url: note.address?.startsWith("post:") ? `${ROUTES.CONSOLE}/content/post/${note.objectId}` : ROUTES.NOTES,
       label: note.body,
       detail: [note.address, note.author].filter(Boolean).join(" · "),
+    })),
+    ...(drafts ?? []).filter((row) => row.id).map((row) => ({
+      key: `draft:${row.id}`, icon: IconPencil, url: `${ROUTES.CONSOLE}/content/post/${row.id}`,
+      label: row.title || row.address,
+      detail: t("home.draftNotLive", { address: row.address }),
     })),
   ]
   // A count row stays only for what the items above do not already list in full.
@@ -242,6 +261,13 @@ export default function BentoHomePage() {
         subtitle={t("home.welcomeSubtitle")}
       />
 
+      {/* SH1318 — an empty inbox says so in one line and offers the sites, which is today's work. */}
+      {!isPending && inbox.length === 0 && counts.length === 0 && (
+        <p className="text-muted-foreground text-sm">
+          {t("home.nothingWaits")}{" "}
+          <Link to={`${ROUTES.CONSOLE}/content`} className="text-foreground underline">{t("home.openSites")}</Link>
+        </p>
+      )}
       {(inbox.length > 0 || counts.length > 0) && (
         /*
          * First: what is owed outranks what exists (P7). SH1311 — as rows, each the thing owed and

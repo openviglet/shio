@@ -93,6 +93,13 @@ test("SH1318: the waiting section lists the runs and notes themselves, each a li
   assert.match(homeSource, /\.\.\.shownNotes\.map\(/, "SH1318: an open note is a count again, not an item")
   assert.match(homeSource, /\{settledRuns\.map\(\(run\) =>/,
     "SH1318: a pending run is listed twice, in the inbox and again in the runs below")
+  // Author, not modifier: measured live, a blueprint's writes carry no modifier, so "modified by
+  // me" listed none of the drafts a curator's own run had made.
+  assert.match(homeSource, /params: \{ state: "draft", author: user\?\.username, ids: true, limit: 100 \}/,
+    "SH1318: the curator's own drafts are read by modifier again, which misses every blueprint-made page")
+  assert.match(homeSource, /\.filter\(\(row\) => !row\.published\)/, "SH1318: a live page is listed as a waiting draft")
+  assert.match(homeSource, /!isPending && inbox\.length === 0 && counts\.length === 0 && \(/,
+    "SH1318: an empty inbox no longer says so, or says it before the summary has answered")
 })
 
 test("SH898: the counts wait rather than answering zero", () => {
