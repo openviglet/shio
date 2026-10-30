@@ -94,5 +94,5 @@ npm test   # node:test — scaffolds into a temp dir and asserts the output
 
 Apache-2.0 — [Viglet Shio](https://openviglet.github.io/shio/) ·
 [github.com/openviglet/shio](https://github.com/openviglet/shio) ·
-[docs.viglet.org/shio](https://docs.viglet.org/shio/) ·
+[openviglet.github.io/shio/docs](https://openviglet.github.io/shio/docs/) ·
 part of the [Viglet](https://www.viglet.org) open source family.

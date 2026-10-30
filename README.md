@@ -3,7 +3,7 @@
 ![Viglet Shio, Agent-ready CMS](.github/banner.png)
 
 [![Website](https://img.shields.io/badge/Website-Viglet_Shio-0ea5e9?style=for-the-badge&logo=googlechrome&logoColor=white)](https://openviglet.github.io/shio/)
-[![Docs](https://img.shields.io/badge/Docs-docs.viglet.org%2Fshio-6366f1?style=for-the-badge&logo=readthedocs&logoColor=white)](https://docs.viglet.org/shio/)
+[![Docs](https://img.shields.io/badge/Docs-openviglet.github.io%2Fshio-6366f1?style=for-the-badge&logo=readthedocs&logoColor=white)](https://openviglet.github.io/shio/docs/)
 [![npm](https://img.shields.io/npm/v/@viglet/shio?style=for-the-badge&logo=npm&label=%40viglet%2Fshio)](https://www.npmjs.com/package/@viglet/shio)
 [![License](https://img.shields.io/github/license/openviglet/shio.svg?style=for-the-badge&logo=apache)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/openviglet/shio.svg?style=for-the-badge&logo=github)](https://github.com/openviglet/shio/commits)
@@ -22,7 +22,7 @@ drives, so the differentiator is protocol quality (discoverability, determinism,
 verifiability, token economy), not intelligence.
 
 > 🌐 **Product site:** [openviglet.github.io/shio](https://openviglet.github.io/shio/) ·
-> 📚 **Documentation:** [docs.viglet.org/shio](https://docs.viglet.org/shio/) ·
+> 📚 **Documentation:** [openviglet.github.io/shio/docs](https://openviglet.github.io/shio/docs/) ·
 > 🏛 **Viglet open source:** [viglet.org](https://www.viglet.org) ·
 > 🔎 **Search & personalization:** [turing.viglet.org](https://turing.viglet.org)
 

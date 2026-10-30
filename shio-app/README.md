@@ -15,7 +15,7 @@ renderer, and the packaged React administration console.
 | **Docker image** | [`ghcr.io/openviglet/shio-ce`](https://github.com/openviglet/shio/pkgs/container/shio-ce) |
 | **License** | [Apache-2.0](../LICENSE) |
 | **Website** | [openviglet.github.io/shio](https://openviglet.github.io/shio/) |
-| **Docs** | [docs.viglet.org/shio](https://docs.viglet.org/shio/) |
+| **Docs** | [openviglet.github.io/shio/docs](https://openviglet.github.io/shio/docs/) |
 
 > **Distribution.** `shio-app` is a **runnable application**, not a library, and
 > it is **not published to Maven Central**. Consume it as the Docker image above

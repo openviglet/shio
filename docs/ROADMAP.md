@@ -23,7 +23,7 @@
 ## Block BJ — What a visitor finds first: release, links and a demo
 
 - ⏳ **SH1339** (deps: maintainer dispatches release.yml) **The Releases tab shows v0.3.8 from 2021 as Latest, and the 2026.3 line has no release at all** — Dispatching release.yml once on 2026.3 and marking the 2020-21 releases pre-release are actions on GitHub for the maintainer. → §XCV.1
-- 📋 **SH1340** (deps: —) **The README sends readers to docs.viglet.org/shio and the repository homepage to shio.viglet.org, both now redirects** — Two redirects on the first click read as an abandoned address, and crawlers index the old host. → §XCV.2
+- ⏳ **SH1340** (deps: maintainer sets the homepage) **The README sends readers to docs.viglet.org/shio and the repository homepage to shio.viglet.org, both now redirects** — The repository's homepage field still says shio.viglet.org, a GitHub setting. → §XCV.2
 - 📋 **SH1341** (deps: —) **The README counts 12 MCP tools and the site's landing says eleven** — The tool count is the claim a reader checks first, and two numbers for it read as carelessness. → §XCV.3
 - 📋 **SH1342** (deps: —) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
 
@@ -49,6 +49,12 @@
   release.yml has run once from the 2026.3 branch, the Releases tab shows the pom.xml
   version as Latest with the jar attached and the notes grouped for curators, agents and
   fixes, and v0.3.8 and the two 2020 releases are marked pre-release.
+
+## Done when — SH1340
+
+- **openviglet/shio's homepage field is openviglet.github.io/shio** gh repo view
+  openviglet/shio --json homepageUrl answers https://openviglet.github.io/shio/, so the
+  link beside the repository description no longer redirects.
 
 ## Non-goals (do NOT add as tasks)
 
