@@ -4262,3 +4262,32 @@ root (it needs the local instance, so a cloud routine would rebuild the jar ever
 finding the check could have caught mechanically is filed twice: once for the page, once for the
 probe that would have caught it. SH1315 (measuring whether a curator can finish a task) is the
 neighbouring instrument and is not this one: this judges a page, that times a journey.
+
+## What a curator's task costs, measured (SH1315)
+
+The console was redrawn three times and each round closed on a structural criterion; none asked
+whether a person finishes a job with less effort. `e2e/curator-tasks.mjs` (`pnpm --filter shio-react
+curator:tasks`) drives six jobs through the UI on a clean instance provisioned by
+`e2e/provision.mjs`: change a page's headline and publish it, approve an agent run, replace a page's
+image, find a page by title, create a page and publish it, and preview a draft. Each starts at
+`/bento` with no deep link, logs in and builds its own fixture before the meter starts, and ends with
+the API confirming the outcome. `curator-task-budget.json` holds the numbers;
+`scripts/curator-tasks-budget.mjs` is the rule; `test/curator-tasks.test.mjs` runs in `pnpm test`.
+
+**What gates.** Trusted clicks, keystrokes outside a text field, and route changes, each held at the
+measurement with no headroom; a scripted path is deterministic (two consecutive runs gave identical
+figures). Wall-clock is printed and never gated. An improvement fails too until it is recorded with
+`--record`, so a ceiling never quietly stays high. A task stopped by a filed defect is `blocked` with
+its id, and completing it later reads as an improvement.
+
+**Today's figures** (2026-10-30): find a page 1 click, approve a run 2, change a headline 4,
+replace an image 7, create and publish a page 10 clicks over 7 screens, and preview a draft is blocked.
+The run that took them filed what it walked into: SH1322 (preview of a never-published draft is a
+404), SH1323 (a page's sections do not open, and a section has no preview), SH1324 (the palette's
+rows), SH1325 (the file picker moves under the pointer) and SH1326 (a new page cannot be published
+from where it was written). SH1316 onward are judged against these numbers.
+
+**Three things the first draft got wrong.** Waiting for "Publicado" on screen: the editor says
+"Publicado (no ar)" before anything happens, so the harness waits for the write's response instead.
+Publish is three clicks by design: Actions, Publish, then the confirmation (P7). And `/agent/read`
+answers one address with an array of one.

@@ -417,31 +417,6 @@ There is also a lint this suggests and that would hold the rule console-wide: co
 filled accent buttons a page renders in `console-check.mjs` and fail above one. Filed
 here rather than separately, because it is how this task proves itself.
 
-### XI.81 Measure the curator's tasks before changing the interface (SH1315)
-
-The console has been redone three times (console, bento, the bento sweep), and each
-round closed on a structural criterion: a surface composes the bento seams, its panels
-are frosted, the digest moved. None asked whether a person finishes a job faster. The
-project measures tokens (P3), route cost (SH1113), contrast and accessibility; it does
-not measure the curator.
-
-Instrument first, as SH322 and SH338 ask of any law found broken. Six scripted tasks in
-`shio-react/e2e/`, each driven through the UI the way a curator would, counting clicks,
-screens visited, keystrokes outside text fields and wall-clock, written to a committed
-baseline like `console-route-budget.json`:
-
-1. change a page's headline and publish it;
-2. approve one agent run waiting in review;
-3. replace a page's image with one from the library;
-4. find a page by its title and open it;
-5. create a page under an existing section and publish it;
-6. preview a draft as the visitor will see it.
-
-Each script starts at `/bento` with no deep link, because finding the place is part of
-the task. The first run is the deliverable: the numbers for today's console. Every later
-change to navigation or editing filed beside this one must improve at least one figure
-and regress none, the same rule the token budget holds.
-
 ### XI.82 Navigate a site by its pages, not its folders (SH1316)
 
 Measured at 1920px: the ShowCase root lists six folders (`en`, `fonts`, `images`,
@@ -542,6 +517,101 @@ Two rules for doing it. The choice is made once per route through Shio's own sea
 beside this line, with screenshots of each route before and after at 1920px in both
 themes; the surface digest will move for every route that switches, which is expected
 and named in the commit.
+
+### XI.87 Preview fails on the draft it exists for (SH1322)
+
+Measured on a clean instance provisioned by `e2e/provision.mjs` (Console Check,
+marketing-site): an agent run creates `post:Console Check/draft-<run>` as a draft; the
+curator opens it from search and clicks Preview. The tab opens
+`/preview/Console%20Check/draft-<run>` and the instance answers 404 with Spring's
+"Whitelabel Error Page" text. The same route answers 200 for `pricing`, `careers`
+(approved, so published) and the home page.
+
+So the preview resolves only what has a published twin, and the post that most needs a
+preview, a page nobody has seen yet, is the one it cannot show. The error is also the
+raw container page, which breaks P6 on the curator's side: nothing says what happened or
+what to do.
+
+Fix: the console's preview renders the draft for a signed-in curator whether or not a
+published row exists (the SH13 preview token path already carries the session), and an
+address that genuinely resolves to nothing answers the console's own not-found, naming
+the address. The assertion is SH1315's `preview-draft` task, which records this line as
+its blocker and turns into an improvement the day it passes.
+
+### XI.89 From a page to its sections, and back to the page (SH1323)
+
+Measured on the marketing-site blueprint: the Pricing page's Sections field lists "1
+Pricing SectionHero · /sections/pricing/hero", "2 Questions people ask first", "3 Still
+deciding?", each with move up, move down and remove, and nothing that opens the section.
+The page's visible headline is the hero section's `heading`, so "change this page's
+headline" means leaving the page, searching for a post whose title is the old headline,
+and opening it.
+
+Once there, the live preview says the site has no layout for this post type, so the
+section "is content used by other pages", and draws nothing. The curator edits the
+headline without seeing the page it appears on, then publishes a post whose confirmation
+is titled "Publish this page?".
+
+Direction: each listed section is a link to its editor (and the row could expand to edit
+inline); a section's editor previews the page or pages that use it (the reverse index
+SH1033 built for assets has the same shape for section references), with "used on
+Pricing" named above the form. Judged by SH1315's `change-headline` task, whose path
+today is search, not the page.
+
+### XI.90 What the command palette says about a post (SH1324)
+
+Measured on a clean instance in Portuguese: Ctrl+K and "Pricing" list "PricingMenuItem
+Rascunho", "PricingPage Rascunho", "PricingSectionHero Rascunho". Three problems in one
+row:
+
+- the title and the type are run together with no separator, so "Pricing" and "SectionHero" read as one word, and a title ending in a type name is ambiguous;
+- every row says Rascunho (draft), including posts the blueprint published and the editor itself reports as "Publicado (no ar)"; the palette is reading the working row's state, which is DRAFT whenever a published post keeps its editable copy;
+- the group heading is "Acoes e conteudo" and the first entry "Buscar conteudo", unaccented strings in a Portuguese console.
+
+The same contradiction is on the editor's header: "Page · EN · Rascunho" above "DRAFT ·
+Publicado (no ar)". The state a curator needs is one of three: draft only, live, live
+with unpublished changes; show that, in one place, in the palette and the header alike.
+Separate title and type visually (type as a muted label), and route the two strings
+through `t()` with the accented pt values; `console-english.test.mjs` is the lint that
+should have caught the second.
+
+### XI.88 The file picker moves under the pointer (SH1325)
+
+Measured in `content-browser-dialog.tsx` on a clean instance, with a real mouse: the
+`sections` row sits at y=363; one click selects it, the footer showing the selected path
+appears, the dialog (centred in the viewport) grows and re-centres, and the row is now
+at y=337. The second click of the double-click lands at y=363, on `theme`, and the
+picker opens `theme`. A curator double-clicking a folder enters the wrong one, sees
+"this folder is empty", and has no idea why.
+
+Three more frictions in the same dialog, met on the same task (replace a section's image):
+- it opens on the list of all sites, not on the site and folder of the post being edited;
+- a single click on a folder selects it, and Select then accepts a folder for an image field;
+- the chevron that suggests "open" is a hover decoration, not a control, and has no keyboard or screen-reader equivalent.
+
+Fix: reserve the footer's height from the first render (or pin the dialog's top), so
+selection never moves a row; open on the post's own folder; in file mode, a folder row
+opens on click and Select stays disabled until a file is chosen; make "open" a real
+control. Judged by SH1315's `replace-image` task.
+
+### XI.91 Writing a page and publishing it should be one place (SH1326)
+
+Measured by SH1315's `create-page` task on a clean instance: rail Content (a hub), the
+Sites card, the site, "New Page", the title, Save; Save returns to the folder listing,
+where the new page's title is plain text in the default table view, so the curator
+double-clicks the row (nothing on screen says so), lands in the editor, and only there
+finds Actions → Publish → confirm. Ten clicks, seven screens.
+
+Four separate frictions, each small:
+- the new-post form has Save and Cancel only; the editor has Publish, Schedule and the rest, so the same post offers different verbs depending on whether it has been saved once;
+- Save on a new post closes the form instead of becoming the editor of the post it just created;
+- the table view's title cell is not a link, unlike the list and grid views, and its open gesture is undiscoverable;
+- the form's header reads "Novo Post" for a Page and shows "Page unified · 4 campos", an internal word, and its Sections field is a free-text "press Enter" box where the editor offers the searchable picker.
+
+Direction: the new-post form is the editor in its unsaved state, with the same action
+menu (Publish saves then publishes, with the same confirmation); Save keeps the editor
+open on the new post; the title cell links; the header names the type. Judged by
+`create-page`, which should drop to about five clicks and three screens.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

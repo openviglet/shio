@@ -1,0 +1,44 @@
+{
+  "_comment": "SH1315 — what each curator task costs in the console today. clicks, keys and screens gate at the measurement with no headroom; ms is printed and never gated. Re-record with `node e2e/curator-tasks.mjs --record`, which keeps each why. A task a filed defect stops is `blocked` until it completes.",
+  "tasks": {
+    "change-headline": {
+      "clicks": 4,
+      "keys": 1,
+      "screens": 1,
+      "ms": 2550,
+      "why": "The headline is the hero section's, and a page's section list does not open its sections (SH1323), so the path is search → section → field → Actions → Publish → confirm."
+    },
+    "approve-run": {
+      "clicks": 2,
+      "keys": 0,
+      "screens": 1,
+      "ms": 1191,
+      "why": "Home names the waiting run and the queue approves in one press, with no confirmation: the reference for what a curator decision can cost."
+    },
+    "replace-image": {
+      "clicks": 7,
+      "keys": 1,
+      "screens": 1,
+      "ms": 3026,
+      "why": "A filled image field opens the picker on its own folder, so a replace is search → Search → file → Select → publish. An empty field opens on every site and is SH1325's path."
+    },
+    "find-page": {
+      "clicks": 1,
+      "keys": 1,
+      "screens": 1,
+      "ms": 1006,
+      "why": "Ctrl+K, the title, and the result: the floor every other task's first step is measured against."
+    },
+    "create-page": {
+      "clicks": 10,
+      "keys": 0,
+      "screens": 7,
+      "ms": 5347,
+      "why": "Content opens a hub, the site list is a card on it, the new-post form only saves, saving returns to the folder, and a table row opens on double-click, so publishing a new page crosses seven screens (SH1326)."
+    },
+    "preview-draft": {
+      "blocked": "SH1322 — the preview of a never-published page is Spring's Whitelabel 404",
+      "why": "The draft only exists as a draft, which is the case a preview is for."
+    }
+  }
+}

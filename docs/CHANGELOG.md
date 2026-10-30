@@ -2039,6 +2039,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1306** — ensureLanguage re-resolves after the pt bundle lands, so a Portuguese console reads "há 20 minutos" and <html lang="pt">, measured in a pt-BR browser (design §XI.72 recorded in `shio-react/test/bento-i18n.test.mjs`).
 - **SH1314** — Shio runs design system 2026.3.24, every two-line column declares lines: 2 for 56px rows and Activity draws its time inline, held by table-lines.test.mjs (design §XI.80 recorded in `docs/agents/console-ui.md`).
 - **SH1321** — The shio-console-review skill runs one bounded review iteration, and ui-review-pick.mjs rotates route families through a committed ledger, failing ones first (design §XI.87 recorded in `docs/agents/console-ui.md`).
+- **SH1315** — Six curator tasks are driven from /bento and held in curator-task-budget.json: find 1 click, approve 2, headline 4, image 7, new page 10 over 7 screens, preview blocked by SH1322 (design §XI.81 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 
