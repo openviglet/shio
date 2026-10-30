@@ -261,23 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.90 What the command palette says about a post (SH1324)
-
-Measured on a clean instance in Portuguese: Ctrl+K and "Pricing" list "PricingMenuItem
-Rascunho", "PricingPage Rascunho", "PricingSectionHero Rascunho". Three problems in one
-row:
-
-- the title and the type are run together with no separator, so "Pricing" and "SectionHero" read as one word, and a title ending in a type name is ambiguous;
-- every row says Rascunho (draft), including posts the blueprint published and the editor itself reports as "Publicado (no ar)"; the palette is reading the working row's state, which is DRAFT whenever a published post keeps its editable copy;
-- the group heading is "Acoes e conteudo" and the first entry "Buscar conteudo", unaccented strings in a Portuguese console.
-
-The same contradiction is on the editor's header: "Page · EN · Rascunho" above "DRAFT ·
-Publicado (no ar)". The state a curator needs is one of three: draft only, live, live
-with unpublished changes; show that, in one place, in the palette and the header alike.
-Separate title and type visually (type as a muted label), and route the two strings
-through `t()` with the accented pt values; `console-english.test.mjs` is the lint that
-should have caught the second.
-
 ### XI.88 The file picker moves under the pointer (SH1325)
 
 Measured in `content-browser-dialog.tsx` on a clean instance, with a real mouse: the

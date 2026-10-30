@@ -219,7 +219,7 @@ function BentoShellRoot() {
     id: row.address,
     label: row.title || row.address,
     // SH1324 — live or not, by `published`: `state` is the working row, DRAFT on a live post too.
-    description: paletteDescription(row.type, t(lifecycleKey(row.published))),
+    description: paletteDescription(row.type, t(lifecycleKey(row.published, row.changed))),
     route: row.id ? `${ROUTES.CONTENT_ROOT}/post/${row.id}` : "",
     confirm: false,
   })), [read.data, t])

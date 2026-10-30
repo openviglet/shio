@@ -2058,7 +2058,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1322** — Preview and share links render the page asked for on a site whose name needs encoding; the renderer reads the page path past the site segment (design §XI.87 superseded: it blamed never-published drafts, but every page of a spaced site 404'd: pathWithin matched the decoded site name against an encoded path) (design §XI.87 recorded in `docs/agents/renderer.md`).
 - **SH1337** — approve-run clicks the home row named after its own run's intent, and all six curator tasks pass at their recorded budget again (design §XI.102 recorded in `docs/agents/console-ui.md`).
 - **SH1323** — A section's editor names the pages that use it and previews its unsaved values drawn on the first, through POST /agent/render's new `on`, also on shio_digest (design §XI.89 superseded: no reverse index was needed: /agent/find's q already reads field data, so a quoted friendly URL lists a section's pages) (design §XI.89 recorded in `docs/agents/renderer.md`).
-- **SH1324 (palette and header wording)** — Palette rows set type and state apart from the title and say Published on a live post, as does the editor header; pt palette strings carry their accents.
+- **SH1324** — The palette and the editor header name a live post with unpublished changes as such, through a new `changed` flag on find rows computed from rows already in hand (design §XI.90 recorded in `docs/agents/console-ui.md`).
 
 ## Block BH — One content model, many languages
 

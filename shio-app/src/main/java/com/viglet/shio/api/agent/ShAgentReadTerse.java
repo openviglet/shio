@@ -69,6 +69,8 @@ public final class ShAgentReadTerse {
                     // rather than `published=false` on every draft row: the JSON omits it for the
                     // same measured reason, so the two forms say the same thing.
                     .flag("published", Boolean.TRUE.equals(row.published()))
+                    // SH1324 — live, with a draft not yet published; absent like `published`.
+                    .flag("changed", Boolean.TRUE.equals(row.changed()))
                     .attr("id", row.id())
                     .attr("locale", row.locale())
                     // SH991 — present only on a `scheduled=` listing, so an ordinary row is unchanged.

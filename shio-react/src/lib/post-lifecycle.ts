@@ -16,8 +16,20 @@
  * `isLive`). The i18n key is returned rather than the word, so this stays a pure function a test
  * can call.</p>
  */
-export function lifecycleKey(live: boolean | undefined): "content.filterPublished" | "content.filterDraft" {
+export function lifecycleKey(live: boolean | undefined, changed?: boolean):
+  "content.liveChanged" | "content.filterPublished" | "content.filterDraft" {
+  if (live && changed) return "content.liveChanged"
   return live ? "content.filterPublished" : "content.filterDraft"
+}
+
+/**
+ * Whether a draft says something its live row does not: title or document, the two a publish
+ * copies across. The server's `changed` on a find row is the same comparison (SH1324).
+ */
+export function draftDiffers(draft: { title?: string; data?: unknown } | null | undefined,
+  live: { title?: string; data?: unknown } | null | undefined): boolean {
+  if (!draft || !live) return false
+  return draft.title !== live.title || JSON.stringify(draft.data ?? {}) !== JSON.stringify(live.data ?? {})
 }
 
 /**

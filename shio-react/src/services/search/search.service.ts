@@ -20,6 +20,8 @@ export interface ShConsoleSearchRow {
    * SH545). The model called it `live`, a field the server never sent.
    */
   published?: boolean
+  /** SH1324 — live, with a draft not yet published; absent otherwise. */
+  changed?: boolean
 }
 
 export interface ShConsoleSearchResult {

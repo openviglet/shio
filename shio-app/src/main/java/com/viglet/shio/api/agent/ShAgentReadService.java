@@ -334,6 +334,9 @@ public class ShAgentReadService {
         // narrowed the query so that they are not. Never a query per row: that is what made the
         // field affordable on the cheapest read there is.
         Set<String> live = publishedAmong(matches, wanted);
+        // SH1324 — and whether a live post's draft has moved on, from the same two rows; a `state=`
+        // listing holds one row per post and does not answer it.
+        Set<String> changed = wanted == null ? changedIds(matches) : Set.of();
         // SH991 — a schedule is set on the draft row (SH15), so a published-only listing has to
         // fetch the drafts it did not select. Only when `scheduled` was asked for.
         Map<String, ShPostUnified> drafts = window == null ? Map.of() : draftsOf(matches, wanted);
@@ -341,10 +344,13 @@ public class ShAgentReadService {
                 .filter(post -> !trash || folderIds.isEmpty() || inScope(post, folderIds))
                 .filter(post -> window == null || scheduledIn(drafts.get(post.getId()), window))
                 .filter(post -> members == null || members.contains(post.getId()))
-                .map(post -> window == null
-                        ? row(post, ids, live.contains(post.getId()), trash)
-                        : withSchedule(row(post, ids, live.contains(post.getId()), trash),
-                                drafts.get(post.getId())))
+                .map(post -> {
+                    ShAgentFound.Row row = window == null
+                            ? row(post, ids, live.contains(post.getId()), trash)
+                            : withSchedule(row(post, ids, live.contains(post.getId()), trash),
+                                    drafts.get(post.getId()));
+                    return changed.contains(post.getId()) ? row.withChanged() : row;
+                })
                 .filter(row -> from == null || row.address().compareTo(from) > 0)
                 .sorted(Comparator.comparing(ShAgentFound.Row::address))
                 .toList();
@@ -1299,6 +1305,26 @@ public class ShAgentReadService {
      * away, so publication is already in memory and this is the last moment it is. That is what
      * makes the field free on {@code find}: no second query, and none per row.</p>
      */
+    /**
+     * SH1324 — the ids among {@code rows} whose draft differs from their published row.
+     *
+     * <p>Title and stored document, the two things a publish copies across; a post with one row
+     * is not in the set. Compared as stored strings, both written by the same serializer.</p>
+     */
+    private static Set<String> changedIds(List<ShPostUnified> rows) {
+        Map<String, ShPostUnified> drafts = draftsById(rows);
+        Set<String> changed = new java.util.HashSet<>();
+        for (ShPostUnified row : rows) {
+            ShPostUnified draft = drafts.get(row.getId());
+            if (row.getState() == ShPostState.PUBLISHED && draft != null
+                    && (!java.util.Objects.equals(draft.getData(), row.getData())
+                            || !java.util.Objects.equals(draft.getTitle(), row.getTitle()))) {
+                changed.add(row.getId());
+            }
+        }
+        return changed;
+    }
+
     private static Set<String> publishedIds(List<ShPostUnified> rows) {
         return rows.stream()
                 .filter(row -> row.getState() == ShPostState.PUBLISHED)

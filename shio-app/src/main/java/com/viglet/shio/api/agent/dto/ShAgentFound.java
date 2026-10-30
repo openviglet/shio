@@ -86,10 +86,27 @@ public record ShAgentFound(int count, boolean truncated, List<Row> results, List
      *                measured reason recorded on {@code ShAgentDoc.published}. It costs no query
      *                either: the walk already fetches both states and {@code dedupe} was discarding
      *                the published one, so this is a fact that was in memory and being thrown away
+     * @param changed SH1324 — {@code true} on a live post whose draft differs from what the site
+     *                serves, absent otherwise: the third state a curator reads ("live, with changes
+     *                not yet published"). Free on the same terms as {@code published}, from the two
+     *                rows the walk already holds, so a {@code state=} listing does not carry it
      */
     @JsonInclude(Include.NON_NULL)
     public record Row(String address, String type, String state, String title, String id,
-                      String locale, Boolean published, String publishAt, String unpublishAt) {
+                      String locale, Boolean published, String publishAt, String unpublishAt,
+                      Boolean changed) {
+
+        /** The nine-field form, before SH1324. */
+        public Row(String address, String type, String state, String title, String id,
+                   String locale, Boolean published, String publishAt, String unpublishAt) {
+            this(address, type, state, title, id, locale, published, publishAt, unpublishAt, null);
+        }
+
+        /** This row, marked as a live post with unpublished changes (SH1324). */
+        public Row withChanged() {
+            return new Row(address, type, state, title, id, locale, published, publishAt, unpublishAt,
+                    Boolean.TRUE);
+        }
 
         /**
          * The seven-field form, before SH991. {@code publishAt} and {@code unpublishAt} are set only

@@ -12,7 +12,7 @@ import { dirname, join } from "node:path"
 import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 import { stripComments } from "./support/source-text.mjs"
-import { lifecycleKey, paletteDescription } from "../src/lib/post-lifecycle.ts"
+import { draftDiffers, lifecycleKey, paletteDescription } from "../src/lib/post-lifecycle.ts"
 
 /**
  * SH1324 — what the command palette and the editor header say about a post.
@@ -30,6 +30,15 @@ test("SH1324: a live post reads Published, whatever row is open", () => {
   assert.equal(lifecycleKey(undefined), "content.filterDraft")
 })
 
+test("SH1324: a live post whose draft moved on is the third state, and only a live one can be", () => {
+  assert.equal(lifecycleKey(true, true), "content.liveChanged")
+  assert.equal(lifecycleKey(false, true), "content.filterDraft", "SH1324: a draft-only post has nothing to differ from")
+  assert.equal(draftDiffers({ title: "A", data: { x: 1 } }, { title: "A", data: { x: 1 } }), false)
+  assert.equal(draftDiffers({ title: "B", data: { x: 1 } }, { title: "A", data: { x: 1 } }), true)
+  assert.equal(draftDiffers({ title: "A", data: { x: 2 } }, { title: "A", data: { x: 1 } }), true)
+  assert.equal(draftDiffers({ title: "A" }, null), false)
+})
+
 test("SH1324: a palette row's type and state are set apart from its title", () => {
   assert.equal(paletteDescription("SectionHero", "Publicado"), "· SectionHero · Publicado",
     "SH1324: the package joins title and description with nothing between, so the type ran into the title")
@@ -38,9 +47,9 @@ test("SH1324: a palette row's type and state are set apart from its title", () =
 
 test("SH1324: the palette and the header ask whether the post is live, not which row they read", () => {
   assert.match(read("app", "system", "bento.root.page.tsx"),
-    /description: paletteDescription\(row\.type, t\(lifecycleKey\(row\.published\)\)\)/u,
+    /description: paletteDescription\(row\.type, t\(lifecycleKey\(row\.published, row\.changed\)\)\)/u,
     "SH1324: the palette reads the working row's state again, which is DRAFT on every live post")
-  assert.match(read("app", "content", "post.edit.page.tsx"), /t\(lifecycleKey\(isLive\)\)\]/u,
+  assert.match(read("app", "content", "post.edit.page.tsx"), /t\(lifecycleKey\(isLive, draftDiffers\(post, liveRow\)\)\)\]/u,
     "SH1324: the editor's header says Draft above a badge saying the page is live")
 })
 

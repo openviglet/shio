@@ -27,7 +27,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useUsedOn } from "@/app/content/use-used-on"
-import { lifecycleKey } from "@/lib/post-lifecycle"
+import { draftDiffers, lifecycleKey } from "@/lib/post-lifecycle"
 import axios from "axios"
 import { ShPostUnifiedService } from "@/services/post-unified/post-unified.service"
 import { ShPreviewTokenService } from "@/services/preview-token/preview-token.service"
@@ -96,6 +96,8 @@ export default function PostUnifiedEditPage() {
    * hide the button in exactly the case a curator needs it.
    */
   const [isLive, setIsLive] = useState(false)
+  /** SH1324 — the row the site serves, so the header can say when the draft has moved past it. */
+  const [liveRow, setLiveRow] = useState<ShPostUnified | null>(null)
   const [isPublishing, setIsPublishing] = useState(false)
   const [parentFolderId, setParentFolderId] = useState<string | null>(null)
   const [versionsOpen, setVersionsOpen] = useState(false)
@@ -173,6 +175,7 @@ export default function PostUnifiedEditPage() {
     setPost(loaded.data.unified)
     setState(loaded.data.resolvedState)
     setIsLive(loaded.data.live !== null)
+    setLiveRow(loaded.data.live)
     setData(loaded.data.unified.data || {})
     // SH933 — the folder is still read for the parent id, which the move dialog and the "up one
     // level" action both need.
@@ -435,6 +438,7 @@ export default function PostUnifiedEditPage() {
       setPost(saved)
       setData(saved.data || {})
       setIsLive(true)
+      setLiveRow(saved)
       setGateRefusal(null)
       setPublishPreviewOpen(false)
       toast.success(t("content.publishSuccess"))
@@ -464,6 +468,7 @@ export default function PostUnifiedEditPage() {
     try {
       await unifiedService.unpublish(postId)
       setIsLive(false)
+      setLiveRow(null)
       toast.success(t("content.unpublishSuccess"))
     } catch (error) {
       // SH955 — the report says what happened; `at` says where, so the field is marked too.
@@ -517,7 +522,7 @@ export default function PostUnifiedEditPage() {
         title={post.title || t("content.editPost")}
         subtitle={[postTypeName, post.locale?.toUpperCase(),
           // SH1324 — whether the site serves it, not which row is open: a live page reads Published.
-          t(lifecycleKey(isLive))].filter(Boolean).join(" · ")}
+          t(lifecycleKey(isLive, draftDiffers(post, liveRow)))].filter(Boolean).join(" · ")}
         trail={trail}
         urlBase={backUrl}
         saveTitle={post.title || t("content.editPost")}

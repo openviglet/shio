@@ -422,6 +422,7 @@
   "content.filterClear": "Clear",
   "content.filterPublished": "Published",
   "content.filterDraft": "Draft",
+  "content.liveChanged": "Published, with unpublished changes",
   "content.statusChanged": "Published, with changes",
   "content.showingRows": "Showing {{loadedFolders}} of {{totalFolders}} folders and {{loaded}} of {{total}} posts",
   "content.filterSite": "Site",

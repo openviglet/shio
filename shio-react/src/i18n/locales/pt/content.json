@@ -422,6 +422,7 @@
   "content.filterClear": "Limpar",
   "content.filterPublished": "Publicado",
   "content.filterDraft": "Rascunho",
+  "content.liveChanged": "Publicado, com alterações não publicadas",
   "content.statusChanged": "Publicado, com alterações",
   "content.showingRows": "Mostrando {{loadedFolders}} de {{totalFolders}} pastas e {{loaded}} de {{total}} conteúdos",
   "content.filterSite": "Site",

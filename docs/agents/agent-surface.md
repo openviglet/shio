@@ -1474,6 +1474,13 @@ lie about where `data` came from, so `/agent/read` and `/agent/find` carry **`pu
 after a publish `state` is still `DRAFT`, correctly. **On `find` it costs no query**: the walk
 already fetches both state rows and `dedupe` was throwing the published one away.
 
+**And `changed` says the live page is behind its draft (SH1324).** A `find` row carries
+`changed: true` when the post is live and its draft's title or stored document differs from the
+published row's; absent otherwise, the same conditional shape as `published` and for the same
+measured reason. Free on the same terms, from the two rows already in hand, so a `state=` listing
+(one row per post) does not carry it. The terse form adds the flag `changed`. A freshly published
+page compares equal: both rows are written by one serializer.
+
 **Two measurements decided its shape, and both refused the first design.** Present-on-every-row
 (`published: false` on a draft) cost 2.6% of a single-address read and dropped
 `attribution.addressing@scale.min-token-ratio` below its floor; grounding the convention in a full

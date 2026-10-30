@@ -99,6 +99,8 @@ class ShBlueprintRendersTest {
     private ShShareLinksAPI shShareLinksAPI;
     @Autowired
     private com.viglet.shio.api.agent.ShAgentBatchService shAgentBatchService;
+    @Autowired
+    private com.viglet.shio.api.agent.ShAgentReadService shAgentReadService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -439,6 +441,44 @@ class ShBlueprintRendersTest {
     void anUnknownThumbnailIsEmpty() {
         assertThat(shPageRenderService.sectionPreview(aPageId(), "sections", "NoSuchType")).isEmpty();
         assertThat(shPageRenderService.sectionPreview("no-such-page", "sections", "SectionHero")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("SH1324: find says a live post has unpublished changes, and only when it has")
+    void findSaysWhenALivePostHasChanged() {
+        String pricing = pageAt("/pricing");
+        assertThat(pricingRow().changed())
+                .as("SH1324: a page published as the blueprint wrote it reads as changed, so every live "
+                        + "page would say it has unpublished edits")
+                .isNull();
+        String title = retitleDraft(pricing, "SH1324 retitled draft");
+        try {
+            var row = pricingRow();
+            assertThat(row.published()).isTrue();
+            assertThat(row.changed())
+                    .as("SH1324: a live page whose draft moved on reads as plain live in the palette")
+                    .isTrue();
+        } finally {
+            retitleDraft(pricing, title);
+        }
+    }
+
+    private com.viglet.shio.api.agent.dto.ShAgentFound.Row pricingRow() {
+        return shAgentReadService.find(siteName, "Page", null, null, 100, true).results().stream()
+                .filter(row -> row.address().equals("post:" + siteName + "/pricing"))
+                .findFirst().orElseThrow();
+    }
+
+    private String retitleDraft(String id, String title) {
+        return new TransactionTemplate(transactionManager).execute(status -> {
+            String before = entityManager.createQuery(
+                    "select p.title from ShPostUnified p where p.id = :id and p.state = :draft", String.class)
+                    .setParameter("id", id).setParameter("draft", ShPostState.DRAFT).getSingleResult();
+            entityManager.createQuery("update ShPostUnified p set p.title = :title where p.id = :id and p.state = :draft")
+                    .setParameter("title", title).setParameter("id", id).setParameter("draft", ShPostState.DRAFT)
+                    .executeUpdate();
+            return before;
+        });
     }
 
     @Test
