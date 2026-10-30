@@ -474,7 +474,7 @@ export default function PostUnifiedEditPage() {
   if (!post) {
     return (
       <>
-        <PageHero title={t("content.editPost")} urlBase={ROUTES.CONTENT_ROOT} />
+        <PageHero grammar="work" title={t("content.editPost")} urlBase={ROUTES.CONTENT_ROOT} />
         {/*
           SH1049 — three states, not two. `LoadProvider` shows the skeleton while
           `checkIsNotUndefined` is undefined and the blank slate with "try again" once `error` is
@@ -503,7 +503,7 @@ export default function PostUnifiedEditPage() {
         SH901 — the header and the save bar are one call, because `BentoFormHero` owns both halves
         of the morph and the authoring contract forbids composing them by hand.
       */}
-      <PageHero
+      <PageHero grammar="work"
         eyebrow={t("content.postLabel")}
         /*
          * SH1204 — the page is the post, so the title is its title, and the line under it says what

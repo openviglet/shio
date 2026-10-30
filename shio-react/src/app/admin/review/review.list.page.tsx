@@ -250,7 +250,7 @@ export default function ReviewListPage() {
         header — the hero above already names the page, and a header-less section card renders a
         console card in both eras (SH902).
       */}
-      <PageHero
+      <PageHero grammar="work"
         title={t("review.title")}
         eyebrow={t("admin.title")}
         subtitle={t("review.description")}

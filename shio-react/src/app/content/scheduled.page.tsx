@@ -96,7 +96,7 @@ export default function ScheduledPage() {
 
   return (
     <>
-      <PageHero
+      <PageHero grammar="work"
         title={t("content.scheduledTitle")}
         subtitle={t("content.scheduledDescription")}
         urlBase={ROUTES.HOME}

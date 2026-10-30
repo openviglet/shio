@@ -261,27 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.86 Choosing the work grammar, route by route (SH1320)
-
-`@viglet/viglet-design-system` 2026.3.24 ships VDS235: a `grammar="work"` prop on
-`BentoHero`, `BentoDataTable`, `BentoListPage`, `BentoFormHero` and `BentoEntityShell`
-that draws the header on one line (back link above in small type, no subtitle by
-default) and lays lists flush on the page ground between hairlines instead of inside a
-frosted card. The default stays `showcase`, so adopting the release changed nothing
-here.
-
-Which routes take it is Shio's decision. The candidates are the surfaces a curator works
-in for long stretches: the content browser, the post and post-type editors, activity,
-review, search, trash, scheduled and the media library. The home page and the site list
-are the ones a showcase suits.
-
-Two rules for doing it. The choice is made once per route through Shio's own seams
-(`PageHero`, `AdminListPage`, `IdentityEntityPage`), not by each page, so a seam takes a
-`grammar` and passes it on. And it is judged by the curator-task measurement filed
-beside this line, with screenshots of each route before and after at 1920px in both
-themes; the surface digest will move for every route that switches, which is expected
-and named in the commit.
-
 ### XI.87 Preview fails on the draft it exists for (SH1322)
 
 Measured on a clean instance provisioned by `e2e/provision.mjs` (Console Check,

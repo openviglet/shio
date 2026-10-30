@@ -234,7 +234,7 @@ export default function TrashPage() {
 
   return (
     <>
-      <PageHero
+      <PageHero grammar="work"
         title={t("content.trash")}
         subtitle={t("content.trashDescription")}
         urlBase={ROUTES.HOME}

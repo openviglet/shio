@@ -342,7 +342,7 @@ export default function StaticFileListPage() {
 
   return (
     <>
-      <PageHero
+      <PageHero grammar="work"
         title={t("staticFile.title")}
         subtitle={t("staticFile.description")}
         urlBase={ROUTES.HOME}

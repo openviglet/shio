@@ -88,7 +88,7 @@ export default function PostUnifiedNewPage() {
   if (!postType) {
     return (
       <>
-        <PageHero title={t("content.newPost")} urlBase={backUrl} />
+        <PageHero grammar="work" title={t("content.newPost")} urlBase={backUrl} />
         <div className="flex items-center gap-2 text-muted-foreground">
           <Spinner labelled />
           <span>{t("common.loading")}</span>
@@ -102,7 +102,7 @@ export default function PostUnifiedNewPage() {
   return (
     <>
       {/* SH901 — one call, for the same 1:2 reason as the editor next door. */}
-      <PageHero
+      <PageHero grammar="work"
         eyebrow={t("content.postLabel")}
         title={t("content.newPost")}
         urlBase={backUrl}

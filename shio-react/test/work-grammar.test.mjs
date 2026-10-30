@@ -34,6 +34,24 @@ test("SH1320: the content browser is a work surface, its hero and its table", ()
     "SH1320: the content browser's table is a frosted card again")
 })
 
+test("SH1320: every working route is work, and home and the site list stay showcase", () => {
+  const work = [["app", "content", "post.edit.page.tsx"], ["app", "content", "post.new.page.tsx"],
+    ["app", "content", "post-type.edit.page.tsx"], ["app", "content", "search.page.tsx"],
+    ["app", "content", "trash.page.tsx"], ["app", "content", "scheduled.page.tsx"],
+    ["app", "content", "static-file.list.page.tsx"], ["app", "admin", "review", "review.list.page.tsx"],
+    ["app", "admin", "activity", "activity.list.page.tsx"]]
+  for (const route of work) {
+    const page = read(...route)
+    const heroes = page.match(/<PageHero\b/g)?.length ?? 0
+    assert.equal(page.match(/<PageHero grammar="work"/g)?.length ?? 0, heroes,
+      `SH1320: ${route.at(-1)} draws a showcase header on a working surface`)
+  }
+  assert.doesNotMatch(read("app", "system", "home.page.tsx"), /grammar="work"/,
+    "SH1320: home is the one page a showcase suits")
+  assert.doesNotMatch(read("app", "content", "site.list.page.tsx"), /grammar="work"/,
+    "SH1320: the site list is a showcase of the sites")
+})
+
 test("SH1320: a site's id redirects to its root with the query it was opened with", () => {
   const root = read("app", "content", "content-browser", "use-sole-root.ts")
   assert.match(root, /object\/\$\{soleRoot\}\$\{search\}/,

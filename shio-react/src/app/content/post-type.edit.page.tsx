@@ -895,7 +895,7 @@ export default function PostTypeEditPage() {
         a `PUT` to a new name creates a second type and orphans the first while answering 200.
         The API name therefore stays a read-only field with its Rename button, below.
       */}
-      <PageHero
+      <PageHero grammar="work"
         eyebrow={t("content.postType")}
         title={t("content.editPostType")}
         urlBase={ROUTES.POST_TYPE_ROOT}

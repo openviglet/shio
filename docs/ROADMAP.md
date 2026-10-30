@@ -16,7 +16,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- ⏳ **SH1320** (deps: SH1315 ✅) **Shio's working pages still use the showcase frame now that the design system ships a work grammar** — The post and post-type editors, activity, review, search, trash, scheduled and the media library still draw the showcase frame. → §XI.86
 - 📋 **SH1322** (deps: —) **Preview on a page that has never been published opens Spring's Whitelabel 404 instead of the draft** — Previewing a draft is the curator's check before publishing, and the one page it fails on is the one that has no other way to be seen. → §XI.87
 - 📋 **SH1323** (deps: —) **A page's section list shows its sections but none of them opens, and editing a section shows no preview** — A headline lives in the hero section, so a curator must leave the page, search for the section by name and edit it blind. → §XI.89
 - 📋 **SH1324** (deps: —) **Search results glue title to type ("PricingSectionHero"), read Rascunho on published posts, and drop accents in pt** — The command palette is the fastest way into content, and three of its four words per row mislead or misspell. → §XI.90
@@ -46,13 +45,6 @@
   live after the maintainer picks the primary editor: the browser, search, home and the
   site list all open a page in the same editor, the other is a switch inside it that
   keeps the selection, and the decision is recorded in console-ui.md.
-
-## Done when — SH1320
-
-- **Every working route draws the work grammar through its seam** Checked live at 1920px
-  in both themes: the editors, activity, review, search, trash, scheduled and media each
-  show the one-line header, with home and the site list left on showcase, and each
-  choice made in PageHero or AdminListPage.
 
 ## Non-goals (do NOT add as tasks)
 

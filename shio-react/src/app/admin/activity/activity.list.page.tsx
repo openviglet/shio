@@ -153,7 +153,7 @@ export default function ActivityListPage() {
         package covers least well. It stays a table: an audit log is read down a column, and a
         mosaic of tiles is the wrong instrument for "what changed, by whom, when".
       */}
-      <PageHero
+      <PageHero grammar="work"
         title={t("activity.title")}
         eyebrow={t("admin.title")}
         subtitle={t("activity.description")}

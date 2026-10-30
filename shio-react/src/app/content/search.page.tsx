@@ -178,7 +178,7 @@ export default function SearchPage() {
 
   return (
     <>
-      <PageHero
+      <PageHero grammar="work"
         title={t("content.searchTitle")}
         subtitle={t("content.searchDescription")}
         urlBase={backTo}

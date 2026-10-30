@@ -4418,5 +4418,8 @@ content browser is the first `work` route, its hero and its table (`BrowserTable
 `grammar="work"`, flush between hairlines). The browser's own listing `Panel` stays, since SH1307
 holds it as the page's one frame. Found on the way: opening a site by its id redirected to its root
 folder and dropped the query, so `?as=folders` (SH1316) or `?view=` never arrived;
-`useSoleRootRedirect` now carries `location.search`. Still showcase: the post and post-type
-editors, activity, review, search, trash, scheduled and the media library.
+`useSoleRootRedirect` now carries `location.search`. The second slice took the rest: the post
+editor and new-post form, the post-type editor, search, trash, scheduled, the media library, review
+and activity all pass `grammar="work"` to `PageHero`, checked live at 1920 px in both themes (a
+20 px one-line title on each). Home and the site list stay showcase; `work-grammar.test.mjs` holds
+both lists.
