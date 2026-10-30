@@ -170,6 +170,8 @@ export function BrowserTable({
       layout={layout}
       onLayoutChange={setLayout}
       onRowOpen={onOpen}
+      // SH1320 — flush on the page ground between hairlines, not a frosted card inside the panel.
+      grammar="work"
       // SH1223 — no `height`: the table is as tall as its rows and scrolls with the page, its header
       // row held under the shell's. A 560 px cap scrolled a folder of thousands inside a box on a
       // screen with room for twice as many rows, with a second scrollbar in the busiest screen. While

@@ -7,7 +7,7 @@
  * (at your option) any later version.
  */
 import { useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { ROUTES } from "@/app/routes.const"
 import { soleRootFolder } from "./browser-view"
 
@@ -26,8 +26,10 @@ export function useSoleRootRedirect(objectId: string, siteId: string | null, lis
   posts?: readonly unknown[] | null
 }) {
   const navigate = useNavigate()
+  // SH1320 — the query goes with it: `?as=folders` or `?view=` on a site's id named the view wanted.
+  const { search } = useLocation()
   const soleRoot = siteId === objectId && listing.folderId === objectId ? soleRootFolder(listing) : null
   useEffect(() => {
-    if (soleRoot) navigate(`${ROUTES.CONTENT_ROOT}/object/${soleRoot}`, { replace: true })
-  }, [soleRoot, navigate])
+    if (soleRoot) navigate(`${ROUTES.CONTENT_ROOT}/object/${soleRoot}${search}`, { replace: true })
+  }, [soleRoot, navigate, search])
 }

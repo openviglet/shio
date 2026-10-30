@@ -4409,3 +4409,14 @@ slice added the curator's own drafts that never went live (`find` with `state=dr
 `author=<me>`, up to five, from a hundred rows; **author, not modifier**, because a blueprint's writes
 carry no modifier and "modified by me" listed none of them), and a one-line empty state that offers
 the sites. Pages with a failed check are SH1336: verify renders pages, so the cost comes first.
+
+## The work grammar, route by route (SH1320, first slice)
+
+`PageHero` takes `grammar` and hands it to `BentoHero` or `BentoFormHero` (VDS235: `work` draws the
+header on one line with the trail above it in small type), so a route chooses once, at the seam. The
+content browser is the first `work` route, its hero and its table (`BrowserTable` passes
+`grammar="work"`, flush between hairlines). The browser's own listing `Panel` stays, since SH1307
+holds it as the page's one frame. Found on the way: opening a site by its id redirected to its root
+folder and dropped the query, so `?as=folders` (SH1316) or `?view=` never arrived;
+`useSoleRootRedirect` now carries `location.search`. Still showcase: the post and post-type
+editors, activity, review, search, trash, scheduled and the media library.

@@ -6,7 +6,7 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
-import { BentoFormHero, BentoHero, type BentoTrailStep } from "@viglet/viglet-design-system/bento"
+import { BentoFormHero, BentoHero, type BentoGrammar, type BentoTrailStep } from "@viglet/viglet-design-system/bento"
 import type React from "react"
 import { useTranslation } from "react-i18next"
 
@@ -48,6 +48,12 @@ interface PageHeroProps {
   saveDisabled?: boolean
   dirty?: boolean
   titleMissing?: boolean
+  /**
+   * SH1320 — `work` for the surfaces a curator works in for long stretches: the header on one line,
+   * the back link above it in small type (VDS235). Chosen here, once per route, rather than by each
+   * page composing the package's hero itself. Absent, the package's `showcase`.
+   */
+  grammar?: BentoGrammar
 }
 
 /**
@@ -75,6 +81,7 @@ export function PageHero({
   saveDisabled,
   dirty,
   titleMissing,
+  grammar,
 }: Readonly<PageHeroProps>) {
   // A page has a save bar when it gave this adapter something only a save bar takes. `actions`
   // alone is not enough — the content browser passes two navigation buttons and wants no bar.
@@ -102,6 +109,7 @@ export function PageHero({
         stickyTitle={saveTitle ?? title}
         stickyBadges={saveBadges}
         trailing={trailing}
+        grammar={grammar}
       />
     )
   }
@@ -121,6 +129,7 @@ export function PageHero({
       title={title}
       subtitle={subtitle}
       trailing={actions}
+      grammar={grammar}
     />
   )
 }

@@ -311,6 +311,7 @@ export default function ObjectChildrenPage() {
           (id) => `${ROUTES.CONTENT_ROOT}/object/${id}`, { ownPath: true })}
         urlBase={ROUTES.CONTENT_ROOT}
         backLabel={t("content.sites")}
+        grammar="work"
         actions={siteId ? (
           <>
             <SiteViewButtons onPreview={handleViewSite} onPublished={handleViewPublishedSite} />

@@ -2054,6 +2054,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1334** — Creating a user encodes the password with bcrypt so the account signs in, and no user response or listing serialises a password or hash; existing rows never signed in, so none needed a rehash (design §XI.99 recorded in `docs/agents/security.md`).
 - **SH1335** — Editing a user sets a new bcrypt-encoded password when one is typed and keeps the stored one when blank, and the console's user form says so, so an administrator can unlock any account (design §XI.100 recorded in `docs/agents/security.md`).
 - **SH1318** — Home opens on an inbox: pending agent runs, open notes and the curator's own unpublished drafts by name, each a link to where it is resolved, or one line when nothing waits; failed checks are SH1336 (design §XI.84 recorded in `docs/agents/console-ui.md`).
+- **SH1320 (the seam and the content browser)** — PageHero passes a route's grammar to the package's heroes, the content browser's hero and table use work, and a site id's redirect keeps its query.
 
 ## Block BH — One content model, many languages
 
