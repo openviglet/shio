@@ -1274,24 +1274,6 @@ plugin) for docs.viglet.org/shio and shio.viglet.org, and set the homepage field
 openviglet.github.io/shio. A docs check that refuses the old hosts in README files keeps
 it from coming back.
 
-### XCV.3 One tool count, derived (SH1341)
-
-**Where it showed.** The README lists 12 MCP tools (SH678 made `shio_marketplace` the
-twelfth), the site's `MCP_TOOLS` lists the same twelve, the docs say twelve, but the
-landing's surface section hard-codes "Eleven tools, six resources"
-(`shio-site/src/components/sections/surface.tsx`), and `docs/agents/mcp.md` still says
-eleven twice.
-
-**Why it costs.** The tool count is the claim a reader of an agent-ready CMS checks
-first, and two different numbers on the README and the landing read as carelessness
-(visibility repo, produtos/shio.md, 2026-10-30).
-
-**Design.** The landing derives the number from `MCP_TOOLS.length` (and the resources
-from their list) instead of spelling it, and a site test compares that list against the
-server's registered tools, as `showcase-coverage.test.mjs` already does for the
-showcase. The agent docs drop the stale "eleven". Any future tool then moves every count
-at once.
-
 ### XCV.4 A hosted showcase with a guest console (SH1342)
 
 **Where it showed.** Shio has no public instance anyone can open. The site shows a

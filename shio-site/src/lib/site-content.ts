@@ -595,6 +595,11 @@ export const MCP_TOOLS = [
   { name: "shio_marketplace", gloss: "packages this instance could install" },
 ];
 
+/*
+ * SH1341 — every resource the server registers, not the six this list held when the landing said
+ * "six": `mcp-surface.test.mjs` compares this list and `MCP_TOOLS` with the server's own sources, and
+ * the landing derives both counts from their lengths.
+ */
 export const MCP_RESOURCES = [
   "shio://manifest",
   "shio://context",
@@ -602,6 +607,13 @@ export const MCP_RESOURCES = [
   "shio://blueprints",
   "shio://schema/{postType}",
   "shio://blueprint/{name}",
+  "shio://index",
+  "shio://surfaces",
+  "shio://diagnostics",
+  "shio://usage",
+  "shio://notes",
+  "shio://requests",
+  "shio://review/mine",
 ];
 
 export const CLI_VERBS = [

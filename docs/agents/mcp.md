@@ -108,7 +108,7 @@ Jackson-2/Boot-3 while this app is Jackson-3/Boot-4. `GET /mcp` is a deliberate 
   holds every restated budget against its key in `pnpm test`, both sides are files, so no instance
   is involved, and a second restatement is a row in its table rather than another test.
   **The replication chain has no MCP tool**, so "the same chain over `tools/call`" is not a scenario
-  that exists: `clone → propose → convert` is a CLI path and the eleven tools are the content
+  that exists: `clone → propose → convert` is a CLI path and the MCP tools are the content
   surface. The module driver stays (faster, and it localises a failure) but it is not evidence
   about the wire.
 - **`shio://usage` is what the caller has spent, and the meter had counted it without telling it

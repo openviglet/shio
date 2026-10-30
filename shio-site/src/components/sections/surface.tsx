@@ -1,6 +1,18 @@
 import { Container, LawChip, SectionHeader } from "@/components/brand";
 import { CLI_VERBS, LINKS, MCP_RESOURCES, MCP_TOOLS } from "@/lib/site-content";
 
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+  "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
+
+/**
+ * SH1341 — a count spelled from the list it counts. The heading spelled eleven tools and six
+ * resources over a list of twelve tools, against a server registering thirteen resources.
+ */
+function counted(count: number, noun: string, capital = false) {
+  const word = WORDS[count] ?? String(count);
+  return `${capital ? word.charAt(0).toUpperCase() + word.slice(1) : word} ${noun}`;
+}
+
 export function Surface() {
   return (
     <section
@@ -12,7 +24,7 @@ export function Surface() {
           eyebrow="P1 + P10 &middot; the surface"
           title={
             <>
-              Eleven tools, six resources,{" "}
+              {counted(MCP_TOOLS.length, "tools", true)}, {counted(MCP_RESOURCES.length, "resources")},{" "}
               <span className="text-primary">and no second contract</span>
             </>
           }
