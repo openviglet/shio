@@ -32,6 +32,7 @@ import type { BentoNavGroup, BentoNavItem } from "@viglet/viglet-design-system/b
 import { useMemo } from "react"
 import { ROUTES } from "@/app/routes.const"
 import { useDiscovery } from "@/hooks/use-discovery"
+import { useCurrentUser } from "@/contexts/user.context"
 // SH979 — the backend owns the list of surfaces, and this is one of its four readers. The rail and
 // the palette derive from the same file the manifest serves behind `include=surfaces`, the MCP
 // resource `shio://surfaces` publishes and `shio surfaces` prints, so an agent and a curator are
@@ -192,14 +193,30 @@ export const BENTO_NAV_IDS: readonly string[] = ITEMS.map((item) => item.id)
 export function useBentoNav(): BentoNavGroup[] {
   const discovery = useDiscovery()
   const multiTenant = discovery?.multiTenant === true
+  // SH1317 — a curator's view. Unknown until the user loads, and unknown shows everything, so an
+  // administrator never watches the rail lose half its entries and get them back.
+  const { user } = useCurrentUser()
+  const curator = user ? !user.admin : false
 
   return useMemo(() => {
     const visible = ITEMS.filter((item) => item.requires !== "multiTenant" || multiTenant)
+      .filter((item) => !curator || isCuratorSurface(item))
     return Object.values(SECTIONS).map((section) => ({
       section,
       items: visible.filter((item) => item.section === section.id),
-    }))
-  }, [multiTenant])
+    })).filter((group) => group.items.length > 0)
+  }, [multiTenant, curator])
+}
+
+/**
+ * SH1317 — the surfaces in a curator's rail and palette: content work, not the model or the
+ * instance. The console knows one role today, `admin` on the current user, so a non-administrator
+ * gets this view and an administrator gets every surface. Nothing is removed: each route still opens
+ * by its URL, and what a user may do there is the server's to answer, as it always was.
+ */
+const BUILDER_SURFACES = new Set(["post-types", "graphql"])
+export function isCuratorSurface(item: { section: string; id: string }): boolean {
+  return item.section === "content" && !BUILDER_SURFACES.has(item.id)
 }
 
 /** The same list flattened, which is what the command palette takes. */

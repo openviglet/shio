@@ -4386,3 +4386,14 @@ Forms and the visual editor. The route did not move (`/bento/admin/review`), so 
 keep working; only where the rail and hub file it changed. `review-placement.test.mjs` holds both.
 What remains of SH1317 is the views per role: the console does not hold the user's roles today, so a
 curator's rail cannot yet leave out tokens and post types.
+
+**Second slice: a curator's rail.** `useBentoNav` reads the current user, and a non-administrator
+gets the curator view (`isCuratorSurface`): content surfaces only, without Post types and the
+GraphQL explorer, and a section left with nothing is not drawn. So a curator's rail is Home and
+Content, and the palette does not offer tokens or providers. Until the user loads, everything shows,
+so an administrator never watches entries vanish. Every route still opens by URL, and what a user may
+do there stays the server's answer. The console knows one role (`admin`; `privileges` is never filled
+by `/user/current`), so the builder's own view the design asked for has no role to key on yet.
+`BentoRootPage` now mounts `UserProvider` above the shell (`BentoShellRoot`), because the rail's hook
+runs in the shell and `useCurrentUser` throws above its provider. The unit tests passed while every
+page crashed, and only the live check caught it.

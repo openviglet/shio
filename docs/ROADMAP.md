@@ -15,7 +15,6 @@
 
 ## Block BG — The console as an application: cost, resilience and access
 
-- ⏳ **SH1317** (deps: SH1315 ✅) **The curator, the builder and the administrator see one console, with tokens and post types beside page editing** — The rail and palette still show every surface to every user, since the console does not hold the user's roles to choose a view by. → §XI.83
 - 📋 **SH1318** (deps: SH1315 ✅, SH1311 ✅) **The home page opens on counts of sites and post types instead of what is waiting for the curator** — A curator's day is approving and fixing, so the first screen should be that queue, not an inventory. → §XI.84
 - 📋 **SH1319** (deps: SH1315 ✅) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
 - 📋 **SH1320** (deps: SH1315 ✅) **Shio's working pages still use the showcase frame now that the design system ships a work grammar** — The content browser, editors and logs keep a 150px hero and a frosted card that VDS235 made optional per route. → §XI.86
@@ -31,6 +30,7 @@
 - 📋 **SH1331** (deps: —) **The post editor at 1440px draws three panes and a tab strip where SH1094 holds two panes and none** — Either the layout or the probe changed without the other, and the split-pages probe is red on every run. → §XI.96
 - 📋 **SH1332** (deps: —) **A code-managed post type's editor fails axe colour contrast on its violet "managed by code" banner** — Every type a push or the API created opens on a banner whose text does not reach 4.5:1 in the dark theme. → §XI.97
 - 📋 **SH1333** (deps: —) **A site's pages view makes every new page at the root, not as a child of the page selected** — SH1316's remainder: a page meant for /about lands at /x and must be moved, because find rows carry no folder. → §XI.98
+- 📋 **SH1334** (deps: —) **Creating a user stores the password in plain text, echoes it back, and the account then cannot sign in** — Every user made through the console or the API holds a readable password at rest and is locked out of the instance. → §XI.99
 
 ## Priority
 
@@ -40,13 +40,6 @@
   io.github.openviglet/shio, the Claude Code lists the visibility repo tracks name Shio,
   the More tools section carries a Shio line, and each link is in that repo's
   actions.json.
-
-## Done when — SH1317
-
-- **A curator account's rail and palette leave out tokens, providers and post types**
-  Checked live with a curator-only account: the console reads the user's roles, the rail
-  and the command palette list only the curator's surfaces, every other route still
-  opens by URL, and an account with every role sees today's console in three groups.
 
 ## Non-goals (do NOT add as tasks)
 

@@ -241,27 +241,6 @@ its link recorded in the visibility repo's `actions.json`.
 
 Measure: weekly npm downloads of `@viglet/shio`, and referrals to `/claude-code/`.
 
-### XI.83 One console, a view per role (SH1317)
-
-Today every signed-in user meets the same rail and the same palette: Content holds
-sites, post types, media, search, trash and scheduled; Administration holds users,
-groups, roles, tokens, auth and exchange providers, webhooks, tenants, email, review,
-activity and marketplace; GraphQL sits beside them. Review, the curator's main job under
-P7, is filed under Administration.
-
-Direction: three views of the same console, chosen by what the user may do rather than
-by a setting. A curator sees Review, Pages, Media and Publishing (scheduled, releases).
-A builder adds Post types, Blueprints, Theme and the GraphQL explorer. An administrator
-adds People (users, groups, roles), Access (tokens, providers) and Integrations
-(webhooks, Turing, email). Nothing is removed and every route keeps working; the rail
-and the command palette show what belongs to the role, and the rest is reached by search
-or a "More" entry.
-
-The roles exist already (ACL, SH1302's read gates), so this is navigation, not
-permissions. A user with every role sees today's console grouped in three sections.
-Judged by SH1315's tasks for a curator account, plus a count of rail and palette entries
-a curator meets.
-
 ### XI.84 The home page as the curator's inbox (SH1318)
 
 The dashboard leads with an overview (16 sites, 28 post types), then "Waiting for you"
@@ -549,6 +528,31 @@ one read.
 Then each page row gets a "New page here" action, and the new post's URL starts under
 the parent's path. Done when a page created from `/about`'s row is served at
 `/about/<slug>`, checked live.
+
+### XI.99 A new user's password is never encoded (SH1334)
+
+Found while checking SH1317 on a clean instance (2026-10-30). `POST
+/api/v2/user/{username}` (`ShUserAPI.shUserAdd`) saves `ShUserRequest.toNewShUser()`,
+and that copies `password` into the entity as given. Nothing encodes it, so the
+plaintext is what lands in `ShUser.password`. The response then serialises the saved
+entity, password included, so the caller gets the plaintext back. And the account cannot
+sign in: authentication compares against `BCryptPasswordEncoder`
+(`Shio.passwordEncoder`), so the plaintext matches nothing. Basic auth with the password
+just set answered 401. Storing a bcrypt hash through the same endpoint signs in, which
+confirms the cause.
+
+`ShAdminPasswordService` and `ShUserOnStartup` already encode with the injected
+`PasswordEncoder`. The create path should do the same: encode in `shUserAdd` before
+saving, and never return the password field. Setting it to null on the response, as
+`shUserCurrent` does, is the minimum, and excluding it from the JSON view is better.
+Check the update path too: `shUserUpdate` ignores the password today, so a changed
+password is silently dropped.
+
+The assertion that closes it: create a user through the API, sign in with that password,
+and get 200. Then read the stored row and assert it is a bcrypt hash, and assert the
+response body carries no password. Existing rows created this way hold plaintext. Decide
+whether a startup pass rehashes them or they are listed for a reset, and say which in
+the ship.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

@@ -104,7 +104,20 @@ const searchService = new ShSearchService()
 /** How long the palette waits before asking the server. A keystroke is not a query. */
 const SEARCH_DEBOUNCE_MS = 200
 
+/**
+ * SH1317 — the provider is mounted above the shell, not inside it, because the shell's own hooks
+ * read who is signed in: the rail is chosen by role, and `useBentoNav` ran above the provider it
+ * rendered, where `useCurrentUser` throws.
+ */
 export default function BentoRootPage() {
+  return (
+    <UserProvider>
+      <BentoShellRoot />
+    </UserProvider>
+  )
+}
+
+function BentoShellRoot() {
   const groups = useBentoNav()
   useAgentRunReports()
   useScheduleReports()
@@ -232,7 +245,7 @@ export default function BentoRootPage() {
   }), [actions, found, navigate, searching, t])
 
   return (
-    <UserProvider>
+    <>
       {/*
         SH946 — the package's shell owns the rail's gutter, the header, `main` with its reading
         column, and the corner. It replaced a hand-composed `div`/`header`/gutter here, and with
@@ -306,6 +319,6 @@ export default function BentoRootPage() {
       />
       <BentoShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <BentoDockPreferences open={dockPreferencesOpen} onOpenChange={setDockPreferencesOpen} />
-    </UserProvider>
+    </>
   )
 }
