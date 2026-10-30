@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import javax.sql.DataSource;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterAll;
@@ -34,6 +36,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.viglet.shio.ShH2ResultCache;
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
@@ -81,6 +84,8 @@ class ShSiteListingCostTest {
     private EntityManagerFactory entityManagerFactory;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private DataSource dataSource;
     @Autowired
     private ShSiteThumbnailStore thumbnails;
     /** SH1276 — the sweep that prepared statements inside the window, on its own thread. */
@@ -310,6 +315,9 @@ class ShSiteListingCostTest {
             long millis = Long.MAX_VALUE;
             int listed = 0;
             for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
+                // SH1327 — the repeats read nothing new, so H2 answered them from its result cache
+                // and this printed 17 ms for a listing that cost 3.5 s. Outside the count's window.
+                ShH2ResultCache.forget(dataSource);
                 long before = statistics.getPrepareStatementCount();
                 long started = System.nanoTime();
                 JsonNode listing = listing();

@@ -11,9 +11,12 @@ package com.viglet.shio.api.agent.benchmark;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+
+import javax.sql.DataSource;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +31,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.ShH2ResultCache;
 import com.viglet.shio.api.staticfile.ShStaticFileItem;
 import com.viglet.shio.api.staticfile.ShStaticFileService;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -123,6 +127,8 @@ class ShMediaListingBenchmarkTest {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private DataSource dataSource;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -186,9 +192,10 @@ class ShMediaListingBenchmarkTest {
                 .isInstanceOf(CountingMapper.class);
 
         long before = CountingMapper.PARSES.get();
-        long started = System.nanoTime();
-        List<ShStaticFileItem> items = listing();
-        long millis = (System.nanoTime() - started) / 1_000_000;
+        List<List<ShStaticFileItem>> listed = new ArrayList<>();
+        // SH1327 — with H2's result cache off, so a listing another test already ran is not recalled.
+        long millis = ShH2ResultCache.millis(dataSource, () -> listed.add(listing()));
+        List<ShStaticFileItem> items = listed.get(0);
         long parses = CountingMapper.PARSES.get() - before;
 
         System.out.printf(

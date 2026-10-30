@@ -23,6 +23,8 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.sql.DataSource;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterAll;
@@ -39,6 +41,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.ShH2ResultCache;
 import com.viglet.shio.api.reference.ShObjectReferenceService;
 import com.viglet.shio.api.staticfile.ShStaticFileService;
 import com.viglet.shio.api.staticfile.ShStaticFileUsage;
@@ -142,6 +145,8 @@ class ShAssetUsageBenchmarkTest {
     private ShObjectReferenceService shObjectReferenceService;
     @Autowired
     private ShObjectReferenceRepository shObjectReferenceRepository;
+    @Autowired
+    private DataSource dataSource;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -490,10 +495,9 @@ class ShAssetUsageBenchmarkTest {
                 + "' and p.state = '" + state + "' and p.data like '%" + assetId + "%'";
     }
 
+    /** SH1327 — with H2's result cache off, since the timed read repeats {@code usage()}. */
     private long millisOf(Runnable work) {
-        long started = System.nanoTime();
-        work.run();
-        return (System.nanoTime() - started) / 1_000_000;
+        return ShH2ResultCache.millis(dataSource, work);
     }
 
     // --- the maintenance, as it actually runs ---

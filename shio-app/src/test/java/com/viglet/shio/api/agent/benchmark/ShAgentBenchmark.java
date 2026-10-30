@@ -12,10 +12,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.context.WebApplicationContext;
 
+import com.viglet.shio.ShH2ResultCache;
 import com.viglet.shio.api.agent.ShTokenBudget;
 
 /**
@@ -72,6 +76,9 @@ public final class ShAgentBenchmark {
      */
     public MvcResult call(String label, MockHttpServletRequestBuilder request, String sentBody)
             throws Exception {
+        // SH1327 — a read task repeats reads with nothing written between them, and H2 would
+        // recall them from its result cache; the wall clock is the calls' own.
+        ShH2ResultCache.forget(dataSource());
         MvcResult result = mockMvc.perform(request).andReturn();
         int requestTokens = ShTokenBudget.estimate(result.getRequest().getRequestURI())
                 + ShTokenBudget.estimate(nullSafe(result.getRequest().getQueryString()))
@@ -94,6 +101,16 @@ public final class ShAgentBenchmark {
     public Run finish() {
         return new Run(task, path, List.copyOf(steps),
                 (System.nanoTime() - startedNanos) / 1_000_000L);
+    }
+
+    /** The database behind the {@code MockMvc}'s context, which is the one its calls read. */
+    private DataSource dataSource() {
+        WebApplicationContext context = mockMvc.getDispatcherServlet().getWebApplicationContext();
+        if (context == null) {
+            throw new IllegalStateException("SH1327: the MockMvc has no application context, so "
+                    + "its calls cannot be timed with H2's result cache off");
+        }
+        return context.getBean(DataSource.class);
     }
 
     private static String nullSafe(String value) {

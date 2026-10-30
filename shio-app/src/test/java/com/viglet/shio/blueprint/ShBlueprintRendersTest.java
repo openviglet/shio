@@ -18,6 +18,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import javax.sql.DataSource;
+
 import jakarta.servlet.http.Cookie;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -35,6 +37,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.ShH2ResultCache;
 import com.viglet.shio.api.token.ShPreviewTokenAPI;
 import com.viglet.shio.api.token.ShPreviewTokenResponse;
 import com.viglet.shio.api.token.ShShareLinksAPI;
@@ -97,6 +100,8 @@ class ShBlueprintRendersTest {
     private ShPreviewTokenAPI shPreviewTokenAPI;
     @Autowired
     private ShShareLinksAPI shShareLinksAPI;
+    @Autowired
+    private DataSource dataSource;
     @Autowired
     private com.viglet.shio.api.agent.ShAgentBatchService shAgentBatchService;
     @Autowired
@@ -221,6 +226,9 @@ class ShBlueprintRendersTest {
         long[] nanos = new long[21];
         String first = null;
         for (int run = 0; run < nanos.length; run++) {
+            // SH1327 — twenty-one identical renders with nothing written between them: without
+            // this H2 answers every read after the first from its result cache.
+            ShH2ResultCache.forget(dataSource);
             long start = System.nanoTime();
             String digest = shAgentRenderService.digest(address, null, null).digest();
             nanos[run] = System.nanoTime() - start;

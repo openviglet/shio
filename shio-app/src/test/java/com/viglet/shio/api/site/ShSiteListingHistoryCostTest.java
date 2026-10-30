@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.sql.DataSource;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.ShH2ResultCache;
 import com.viglet.shio.persistence.model.history.ShHistory;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
@@ -67,6 +70,8 @@ class ShSiteListingHistoryCostTest {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private ShHistoryRepository shHistoryRepository;
+    @Autowired
+    private DataSource dataSource;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -148,14 +153,8 @@ class ShSiteListingHistoryCostTest {
         List<Long> runs = new ArrayList<>();
         for (int attempt = 0; attempt < 3; attempt++) {
             // H2 answers a repeated query from its result cache until the database changes, which
-            // is how the old read measured 3 ms here and 122 ms once on the dev store. A listing
-            // follows writes, so each run follows one: an older row, which moves no site's newest.
-            int nth = attempt;
-            new TransactionTemplate(transactionManager).executeWithoutResult(status ->
-                    history(made.get(nth), EPOCH.minusSeconds(nth + 1L)));
-            long started = System.nanoTime();
-            shHistoryRepository.findNewestPerSite();
-            long millis = (System.nanoTime() - started) / 1_000_000;
+            // is how the old read measured 3 ms here and 122 ms once on the dev store (SH1327).
+            long millis = ShH2ResultCache.millis(dataSource, shHistoryRepository::findNewestPerSite);
             runs.add(millis);
             best = Math.min(best, millis);
         }

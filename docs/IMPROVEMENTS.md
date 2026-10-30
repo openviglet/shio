@@ -261,33 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.92 Timing benchmarks that measure H2's result cache (SH1327)
-
-Found by SH1305. H2 answers a query from its result cache when the identical SQL runs
-again and nothing in the database has changed since. A benchmark that warms a read and
-then times the same read three times therefore times the cache from the second call on.
-`ShSiteListingCostTest` printed 17 ms and 47 ms for a listing whose newest-change read
-cost 3.5 s once the cache could not answer, so SH1217's own measurement never showed the
-defect SH1305 fixed. The first `ShSiteListingHistoryCostTest` draft passed against the
-slow query for the same reason (3 ms).
-
-Ten test classes call `System.nanoTime()`: the five under `api/agent/benchmark/`
-(`ShAssetUsageBenchmarkTest`, `ShTemplateGraphMemoBenchmarkTest`,
-`ShCdaAvailableLocalesBenchmarkTest`, `ShMediaListingBenchmarkTest`,
-`ShConsoleListingBenchmarkTest`), their shared `ShAgentBenchmark`,
-`ShBlueprintRendersTest`, `ShTuringTextExtractionTest` and the two listing tests. Each
-that repeats an identical read with no write in between is reporting a cache hit as the
-cost.
-
-Per SH338, the instrument lands before the fixes. Add a shared helper that makes a timed
-run honest, for example by turning the cache off for the window (`SET QUERY_CACHE_SIZE
-0`, or the `QUERY_CACHE_SIZE=0` URL setting for a benchmark's own context) or by writing
-a row before each run, the way `ShSiteListingHistoryCostTest` does. Then add a lint that
-fails a test which times a repository read in a loop without going through that helper.
-Then re-measure each benchmark with the helper and record the figures that move. Done
-when every timing benchmark goes through the helper, the lint names none outside it, and
-the re-measured numbers are in each test's report.
-
 ### XI.93 Colour utilities the console names and nothing generates (SH1328)
 
 Found by SH1309. The sites list's pages bar drew its draft share with

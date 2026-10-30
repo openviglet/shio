@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import javax.sql.DataSource;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,6 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.ShH2ResultCache;
 import com.viglet.shio.api.cda.ShCdaService;
 import com.viglet.shio.api.cda.dto.ShCdaPost;
 import com.viglet.shio.persistence.model.folder.ShFolder;
@@ -73,6 +76,8 @@ class ShCdaAvailableLocalesBenchmarkTest {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private EntityManagerFactory entityManagerFactory;
+    @Autowired
+    private DataSource dataSource;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -159,11 +164,10 @@ class ShCdaAvailableLocalesBenchmarkTest {
         // Each service call opens its own transaction and so its own persistence context, which is
         // what keeps the first call's loaded rows from making the second one look cheaper.
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        // SH1327 — the batched and per-row reads repeat the same queries, which H2 would recall.
         long before = statistics.getPrepareStatementCount();
-        long started = System.nanoTime();
-        read.get();
-        return new Cost(statistics.getPrepareStatementCount() - before,
-                (System.nanoTime() - started) / 1_000_000);
+        long millis = ShH2ResultCache.millis(dataSource, read::get);
+        return new Cost(statistics.getPrepareStatementCount() - before, millis);
     }
 
     private void persist(ShSite site, ShFolder folder, ShPostType type, String furl, String locale,

@@ -16,7 +16,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1327** (deps: —) **Benchmarks that repeat an identical read on H2 time its result cache, so a 3.5 s query printed as 17 ms** — SH1217's own measurement hid the defect SH1305 fixed, and ten timing tests may be reporting cache hits as costs. → §XI.92
 - 📋 **SH1328** (deps: —) **22 colour classes in the console paint nothing, because the design system's sheet does not ship them** — A selected row's tint, focus rings and a pages bar's draft share compile, review clean and render transparent. → §XI.93
 - 📋 **SH1329** (deps: —) **The sites grid's card link is named only by the site, so axe fails it as a label-content mismatch** — Voice-control users say the text they see and the card does not answer, and every console check run is red on it. → §XI.94
 - 📋 **SH1330** (deps: —) **The console check expects /bento/admin to land on users, and it lands on the administration hub** — One of the two is stale, and a probe that is red for a known reason hides the next real failure beside it. → §XI.95

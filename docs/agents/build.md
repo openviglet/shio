@@ -1410,6 +1410,21 @@ being the four classes whose properties are registered at runtime. `*IT.java` is
 is a separate JVM with its own cache. **The current state is 62 of 64 with zero spare**, so the next
 context is a deliberate decision about the ceiling rather than a surprise.
 
+**A timed repeat on H2 times its result cache (SH1327).** H2 hands back the last result of a parsed
+query when the identical SQL runs again and nothing it reads has changed, so a benchmark that warms
+a read and times the same read measures the cache: `ShSiteListingCostTest` printed 17 ms for a
+listing whose newest-change read cost 3.5 s, and SH1217 never saw the defect SH1305 fixed. Every
+test that calls `System.nanoTime()` now goes through `ShH2ResultCache` (`millis(dataSource, work)`,
+or `forget(dataSource)` right before the clock starts), and `ShTimedReadLintTest` names any that
+does not, beside an exempt list of two classes that time no database read. **`forget` creates and
+drops a sequence**: the schema change makes H2 recompile every cached statement on every connection.
+**Switching the cache off was the first version and it was wrong**: `SET OPTIMIZE_REUSE_RESULTS
+FALSE` also stops H2 evaluating an uncorrelated `IN` subquery once, so SH1305's fixed read went
+from 32 ms to 15.9 s, a cost production never pays. `ShH2ResultCacheTest` counts calls to a
+deterministic function to hold both halves. Re-measured on this machine, no benchmark moved beyond
+its own noise (SH1305's read 32 → 30 ms, the 400-site listing 79 → 68 ms, the composed digest 58 →
+31 ms median): today's figures were honest, and the next one is too.
+
 **Skip the frontend build for backend-only work.** The three frontend executions
 bind to `generate-resources`, so a plain `mvn compile`/`test` triggers the
 (slow, Node-dependent) React build. For backend compile/test, always pass

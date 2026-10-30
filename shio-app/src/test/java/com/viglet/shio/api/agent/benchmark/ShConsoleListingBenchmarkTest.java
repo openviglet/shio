@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import javax.sql.DataSource;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,6 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.viglet.shio.ShH2ResultCache;
 import com.viglet.shio.api.object.ShObjectNavigationService;
 import com.viglet.shio.api.object.dto.ShConsoleListing;
 import com.viglet.shio.api.query.ShContentQuery;
@@ -101,6 +104,8 @@ class ShConsoleListingBenchmarkTest {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private EntityManagerFactory entityManagerFactory;
+    @Autowired
+    private DataSource dataSource;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -244,10 +249,11 @@ class ShConsoleListingBenchmarkTest {
         return new TransactionTemplate(transactionManager).execute(status -> {
             entityManager.clear();
             long before = statistics.getEntityLoadCount();
-            long started = System.nanoTime();
-            ShConsoleListing listing = answer(() ->
-                    shObjectNavigationService.list(sectionId, query).orElseThrow());
-            long elapsed = (System.nanoTime() - started) / 1_000_000;
+            ShConsoleListing[] listed = new ShConsoleListing[1];
+            // SH1327 — the second listing repeats the first one's post read, which H2 would recall.
+            long elapsed = ShH2ResultCache.millis(dataSource, () -> listed[0] = answer(() ->
+                    shObjectNavigationService.list(sectionId, query).orElseThrow()));
+            ShConsoleListing listing = listed[0];
             return new Cost(statistics.getEntityLoadCount() - before,
                     objectMapper.writeValueAsString(listing).length(), elapsed);
         });
