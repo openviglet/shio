@@ -16,7 +16,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1322** (deps: —) **Preview on a page that has never been published opens Spring's Whitelabel 404 instead of the draft** — Previewing a draft is the curator's check before publishing, and the one page it fails on is the one that has no other way to be seen. → §XI.87
 - 📋 **SH1323** (deps: —) **A page's section list shows its sections but none of them opens, and editing a section shows no preview** — A headline lives in the hero section, so a curator must leave the page, search for the section by name and edit it blind. → §XI.89
 - 📋 **SH1324** (deps: —) **Search results glue title to type ("PricingSectionHero"), read Rascunho on published posts, and drop accents in pt** — The command palette is the fastest way into content, and three of its four words per row mislead or misspell. → §XI.90
 - 📋 **SH1325** (deps: —) **Double-clicking a folder in the file picker opens the one below it, as the dialog re-centres after the first click** — Selecting a row adds the path footer, the centred dialog moves up 26px, and the second click lands on the neighbour. → §XI.88
@@ -29,6 +28,7 @@
 - 📋 **SH1332** (deps: —) **A code-managed post type's editor fails axe colour contrast on its violet "managed by code" banner** — Every type a push or the API created opens on a banner whose text does not reach 4.5:1 in the dark theme. → §XI.97
 - 📋 **SH1333** (deps: —) **A site's pages view makes every new page at the root, not as a child of the page selected** — SH1316's remainder: a page meant for /about lands at /x and must be moved, because find rows carry no folder. → §XI.98
 - 📋 **SH1336** (deps: —) **A page that fails a check is not in home's waiting section, so a curator learns of it only by opening it** — SH1318's remainder: verify renders pages to answer, so the inbox needs a measured cheap read before it can list them. → §XI.101
+- 📋 **SH1337** (deps: —) **The approve-run curator task times out: home no longer has a link named review queue** — The approve-run cost the budget holds can no longer be measured, so a regression in the curator's cheapest decision would pass unseen. → §XI.102
 
 ## Priority
 

@@ -97,6 +97,8 @@ class ShBlueprintRendersTest {
     private ShPreviewTokenAPI shPreviewTokenAPI;
     @Autowired
     private ShShareLinksAPI shShareLinksAPI;
+    @Autowired
+    private com.viglet.shio.api.agent.ShAgentBatchService shAgentBatchService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -284,6 +286,56 @@ class ShBlueprintRendersTest {
     }
 
     /**
+     * SH1322 — a share link renders the page it was minted for when that page has never been published.
+     *
+     * <p>Measured live, it was not about drafts: on a site named "Console Check" every page's link
+     * answered Spring's Whitelabel 404, because the renderer looked for the page after the site's
+     * <em>decoded</em> name in a path that still carried it encoded, found nothing, and asked for
+     * `/`, which a one-page link refuses. A curator's own preview of any page rendered the home. So
+     * this renames the site to need encoding for its duration, and previews a draft-only page.</p>
+     */
+    @Test
+    @DisplayName("SH1322: a share link renders its draft-only page on a site whose name needs encoding")
+    void aShareLinkRendersANeverPublishedDraft() throws Exception {
+        String spaced = siteName + " spaced";
+        renameSite(siteName, spaced);
+        try {
+            aShareLinkRendersADraftOn(spaced);
+        } finally {
+            renameSite(spaced, siteName);
+        }
+    }
+
+    private void renameSite(String from, String to) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> entityManager
+                .createQuery("update ShSite s set s.name = :to where s.name = :from")
+                .setParameter("to", to).setParameter("from", from).executeUpdate());
+    }
+
+    private void aShareLinkRendersADraftOn(String siteName) throws Exception {
+        MockMvc secured = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+        shAgentBatchService.run(new com.viglet.shio.api.agent.dto.ShAgentBatch(false, List.of(
+                new com.viglet.shio.api.agent.dto.ShAgentBatch.Op(com.viglet.shio.api.agent.ShAgentBatchService.POST_UPSERT,
+                        "post:" + siteName + "/sh1322-draft", "Page", "/", null,
+                        new ObjectMapper().readTree("{\"title\":\"SH1322 draft only\"}")))), false, "ut-sh1322");
+        String draft = pageAt(siteName, "/sh1322-draft");
+        ShPreviewTokenResponse minted = new TransactionTemplate(transactionManager).execute(status ->
+                (ShPreviewTokenResponse) shPreviewTokenAPI
+                        .mint(new ShPreviewTokenAPI.MintRequest(draft, 600L), () -> "admin").getBody());
+        assertThat(minted).isNotNull();
+        MvcResult exchanged = secured.perform(get(URI.create(minted.previewUrl()))).andReturn();
+        Cookie share = exchanged.getResponse().getCookie(ShApiTokenFilter.SHARE_COOKIE);
+        String landing = exchanged.getResponse().getHeader(HttpHeaders.LOCATION);
+        assertThat(landing).as("SH1322: the landing path carries the site's name encoded").contains("%20");
+        MvcResult page = secured.perform(get(URI.create(landing)).cookie(share)).andReturn();
+        assertThat(page.getResponse().getStatus())
+                .as("SH1322: the share link for a never-published draft answered %s at %s, so Preview "
+                        + "fails on the one page that has no other way to be seen", page.getResponse().getStatus(), landing)
+                .isEqualTo(200);
+        assertThat(page.getResponse().getContentAsString()).contains("SH1322 draft only");
+    }
+
+    /**
      * SH1111 — a live link is listed, and a revoked one is refused at the preview.
      *
      * <p>Revocation already worked in the filter; what was missing was a way to reach it. So the
@@ -325,10 +377,14 @@ class ShBlueprintRendersTest {
     }
 
     private String pageAt(String furl) {
+        return pageAt(siteName, furl);
+    }
+
+    private String pageAt(String site, String furl) {
         return new TransactionTemplate(transactionManager).execute(status -> entityManager
                 .createQuery("select p from ShPostUnified p where p.furl = :furl", ShPostUnified.class)
                 .setParameter("furl", furl).getResultList().stream()
-                .filter(post -> post.getShSite() != null && siteName.equals(post.getShSite().getName()))
+                .filter(post -> post.getShSite() != null && site.equals(post.getShSite().getName()))
                 .map(ShPostUnified::getId).findFirst().orElseThrow());
     }
 

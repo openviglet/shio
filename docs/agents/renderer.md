@@ -486,6 +486,13 @@ renderer over one body of content at a second address. See the section on it bel
   `editor=true`. A reference inside this page's own prefix is now kept as it is and gets the carried
   parameters. Another site's `/preview/…` is still left alone. `ShSiteFrontEndTest` had pinned
   `/preview/My+Site`, the 404 itself. It now pins `%20`.
+- **The page path is read past the site segment, not after the site's name (SH1322)**:
+  `ShRenderAPI.pathWithin` looked for `"/preview/" + siteKey` in the handler-mapping path, which
+  still carries the segment encoded, while `siteKey` is decoded. On a site named "Console Check"
+  the match never happened, every page resolved to `/`, a curator's preview of any page rendered
+  the home, and a one-page share link (SH1110) refused it: Whitelabel 404 on every page. It now
+  takes whatever follows the first segment after `/preview/`. `ShBlueprintRendersTest` renames its
+  site to need encoding and previews a draft-only page through a share link.
 - **A plain field is read the way it is written (SH1175, bridge half)**: `shio-editor.js` wrote a
   `plain` field with `textContent` and read every field with `innerHTML`, so a typed trailing space
   arrived as `&nbsp;`. The server stored it as text, the template escaped it, and each save added

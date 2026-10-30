@@ -2055,6 +2055,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1335** — Editing a user sets a new bcrypt-encoded password when one is typed and keeps the stored one when blank, and the console's user form says so, so an administrator can unlock any account (design §XI.100 recorded in `docs/agents/security.md`).
 - **SH1318** — Home opens on an inbox: pending agent runs, open notes and the curator's own unpublished drafts by name, each a link to where it is resolved, or one line when nothing waits; failed checks are SH1336 (design §XI.84 recorded in `docs/agents/console-ui.md`).
 - **SH1320** — Every working route (browser, editors, search, trash, scheduled, media, review, activity) draws the work grammar through PageHero, checked live in both themes, while home and the site list stay showcase (design §XI.86 recorded in `docs/agents/console-ui.md`).
+- **SH1322** — Preview and share links render the page asked for on a site whose name needs encoding; the renderer reads the page path past the site segment (design §XI.87 superseded: it blamed never-published drafts, but every page of a spaced site 404'd: pathWithin matched the decoded site name against an encoded path) (design §XI.87 recorded in `docs/agents/renderer.md`).
 
 ## Block BH — One content model, many languages
 

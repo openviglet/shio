@@ -391,11 +391,24 @@ public class ShRenderAPI {
         return pairs.isEmpty() ? null : String.join("&", pairs);
     }
 
+    /**
+     * The page path after the site segment.
+     *
+     * <p>SH1322 — cut at the first segment, never matched against {@code siteKey}'s spelling. The
+     * handler path keeps the segment as the URL encoded it ({@code Console%20Check}) while the
+     * variable arrives decoded ({@code Console Check}), so the prefix never matched for a site whose
+     * name needs encoding: every page of it previewed as the home, and a share link, bounded to its
+     * one page, answered 404 on every page including its own.</p>
+     */
     private String pathWithin(String siteKey, HttpServletRequest request) {
         Object attribute = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         String full = attribute == null ? "" : attribute.toString();
-        String prefix = "/preview/" + siteKey;
-        String rest = full.startsWith(prefix) ? full.substring(prefix.length()) : "";
+        String base = "/preview/";
+        if (!full.startsWith(base)) {
+            return "/";
+        }
+        int slash = full.indexOf('/', base.length());
+        String rest = slash < 0 ? "" : full.substring(slash);
         return rest.isBlank() ? "/" : rest;
     }
 }

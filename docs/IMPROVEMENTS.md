@@ -261,26 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.87 Preview fails on the draft it exists for (SH1322)
-
-Measured on a clean instance provisioned by `e2e/provision.mjs` (Console Check,
-marketing-site): an agent run creates `post:Console Check/draft-<run>` as a draft; the
-curator opens it from search and clicks Preview. The tab opens
-`/preview/Console%20Check/draft-<run>` and the instance answers 404 with Spring's
-"Whitelabel Error Page" text. The same route answers 200 for `pricing`, `careers`
-(approved, so published) and the home page.
-
-So the preview resolves only what has a published twin, and the post that most needs a
-preview, a page nobody has seen yet, is the one it cannot show. The error is also the
-raw container page, which breaks P6 on the curator's side: nothing says what happened or
-what to do.
-
-Fix: the console's preview renders the draft for a signed-in curator whether or not a
-published row exists (the SH13 preview token path already carries the session), and an
-address that genuinely resolves to nothing answers the console's own not-found, naming
-the address. The assertion is SH1315's `preview-draft` task, which records this line as
-its blocker and turns into an improvement the day it passes.
-
 ### XI.89 From a page to its sections, and back to the page (SH1323)
 
 Measured on the marketing-site blueprint: the Pricing page's Sections field lists "1
@@ -510,6 +490,21 @@ and the inbox lists them as items linking to the page's insights. If it is not c
 the summary carries the last verify run's result, which the publish gate already
 produces, rather than running one. Done when a page with an error-level finding appears
 in "Waiting for you" as a link to it, checked live, with the cost measured and recorded.
+
+### XI.102 approve-run lost its link to SH1318 (SH1337)
+
+Measured on a clean instance provisioned by `e2e/provision.mjs`: `node
+e2e/curator-tasks.mjs` fails `approve-run` with a 30-second timeout on its first click.
+The task looks for a home link named "review queue" (pt "fila de revisão"). Since SH1318
+(9bd5d3e29), home's waiting section names each pending run by its intent instead ("Add a
+careers page · 1 waiting"), still linking to the review queue. So the link the locator
+wants no longer exists. The SH1318 work never ran this task, which is how the regression
+shipped.
+
+Fix: `approve-run` clicks the waiting row named after its own run's intent, which is
+also what a curator reads. The click count stays at two, matching the budget. Then
+re-record the budget with `--record` and keep each why. The assertion is the task
+passing in a full run.
 
 ## XII. Agent safety & human-in-the-loop (Block L)
 

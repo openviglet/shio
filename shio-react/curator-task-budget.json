@@ -37,8 +37,11 @@
       "why": "Content opens a hub, the site list is a card on it, the new-post form only saves, and saving returns to the site, so publishing a new page crosses seven screens (SH1326). SH1316 took one click off: the site opens on its pages, where the page just made is a link rather than a row to double-click."
     },
     "preview-draft": {
-      "blocked": "SH1322 — the preview of a never-published page is Spring's Whitelabel 404",
-      "why": "The draft only exists as a draft, which is the case a preview is for."
+      "clicks": 2,
+      "keys": 1,
+      "screens": 2,
+      "ms": 1298,
+      "why": "The draft only exists as a draft, which is the case a preview is for. Search, the result, Preview: the second screen is the preview's own tab. It was Spring's 404 on any site whose name needs encoding until SH1322."
     }
   }
 }
