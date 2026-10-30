@@ -81,3 +81,21 @@ test("SH1337: approve-run presses its own run's row on home, which names a run b
   assert.match(HARNESS, /getByRole\("link", \{ name: ctx\.intent \}\)/u,
     "SH1337: approve-run no longer clicks the row its own setup created")
 })
+
+test("SH1347: recording a filtered run keeps the tasks it did not run", () => {
+  // `--only create-page --record` rewrote the budget with one task and dropped the other eleven,
+  // each with a reason somebody wrote, and said only "recorded 1 task(s)".
+  const previous = { _comment: "kept", tasks: {
+    "create-page": { clicks: 6, keys: 0, screens: 6, ms: 3000, why: "the old path" },
+    "find-page": { clicks: 1, keys: 2, screens: 1, ms: 200, why: "the floor" },
+  } }
+  const measured = { "create-page": { clicks: 3, keys: 1, screens: 2, ms: 2000 } }
+  const filtered = record(measured, previous, { filtered: true })
+  assert.deepEqual(filtered.tasks["find-page"], previous.tasks["find-page"],
+    "SH1347: a filtered record dropped or changed a task it never ran")
+  assert.equal(filtered.tasks["create-page"].clicks, 3)
+  assert.equal(filtered.tasks["create-page"].why, "the old path", "SH1347: the measured task lost its reason")
+  assert.equal(filtered._comment, "kept")
+  assert.deepEqual(Object.keys(record(measured, previous).tasks), ["create-page"],
+    "SH1347: a full run must still drop a task the runner no longer has")
+})

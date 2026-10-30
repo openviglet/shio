@@ -2074,6 +2074,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1338** — Ctrl+K offers New page in the reader's one site, so writing and publishing a page from /bento is 3 clicks, 1 key and 2 screens, measured by create-page and recorded.
 - **SH1343** — A post's preview is drawn only on a page the site renders, never on a Menu that lists its URL, and post-edit:MenuItem passes on a clean instance; a test holds the filter (design §XI.104 superseded: the 400 did not reproduce on a fresh instance: the usedOn search found no row for the probed item, so the gate that let the original request through is unproven; the filter closes the one path a non-page could take).
 - **SH1344** — The save-bar probe passes a form whose hero Save is still in view at the bottom, so bento-token-new passes the console check; the form always had Save reachable (design §XI.105 superseded: the form was right and the probe wrong: at the check's viewport the token form scrolls 256 px, its hero Save stays in view, and the bar only appears once the hero's actions leave).
+- **SH1347** — A filtered --record keeps every task it did not run and updates only those it measured, while a full run still drops tasks the runner no longer has; a test holds both.
 
 ## Block BH — One content model, many languages
 

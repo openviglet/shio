@@ -77,8 +77,10 @@ export function compare(measured, budget) {
 }
 
 /** The budget a `--record` run writes: the measurement, with each entry's `why` kept. */
-export function record(measured, previous) {
-  const tasks = {}
+export function record(measured, previous, { filtered = false } = {}) {
+  // SH1347 — a filtered run measured some tasks, not the set: it keeps every task it did not run.
+  // A full run starts empty, so a task deleted from the runner leaves the budget with it.
+  const tasks = filtered ? { ...(previous?.tasks ?? {}) } : {}
   for (const [task, run] of Object.entries(measured)) {
     const why = previous?.tasks?.[task]?.why ?? ""
     tasks[task] = run.blocked

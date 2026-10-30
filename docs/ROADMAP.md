@@ -16,7 +16,6 @@
 ## Block BG — The console as an application: cost, resilience and access
 
 - ⏳ **SH1319** (deps: SH1315 ✅, maintainer picks the primary editor) **A page can be edited in the post form or in the Universal Editor, and nothing tells the curator which to use** — Two editors for one job double what a curator learns and split every improvement between two surfaces. → §XI.85
-- 📋 **SH1347** (deps: —) **Recording one curator task with --only --record erases every other task's budget from the file** — A filtered re-record answers "recorded 1 task(s)" and silently drops eleven gated budgets and their reasons. → §XI.108
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 

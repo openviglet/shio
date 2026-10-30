@@ -392,7 +392,7 @@ async function main() {
     return
   }
   if (RECORD) {
-    await writeFile(BUDGET, JSON.stringify(record(measured, previous), null, 2) + "\n")
+    await writeFile(BUDGET, JSON.stringify(record(measured, previous, { filtered: Boolean(ONLY?.length) }), null, 2) + "\n")
     console.log(`recorded ${Object.keys(measured).length} task(s) to ${BUDGET}`)
     return
   }

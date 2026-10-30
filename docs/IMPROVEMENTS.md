@@ -261,25 +261,6 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
-### XI.108 A filtered budget record forgets the tasks it did not run (SH1347)
-
-Found while recording SH1338's new `create-page` budget (2026-10-30). `node
-e2e/curator-tasks.mjs --only create-page --record` answered "recorded 1 task(s)" and
-rewrote `curator-task-budget.json` with that one task: the other eleven entries, each
-with a `why` somebody wrote, were gone from the file. Nothing warned, and a commit taken
-after it would have dropped every other task's gate.
-
-The cause is `record(measured, previous)` in `scripts/curator-tasks-budget.mjs`. It
-builds `tasks` from `measured` alone and carries only each measured task's `why` over
-from `previous`, which is right for a full run (a task deleted from the runner should
-leave the budget) and wrong for a filtered one.
-
-Fix: when the run was filtered with `--only`, start from `previous.tasks` and overwrite
-the measured entries; a full run keeps today's behaviour. Add a case to the budget's own
-test that records a filtered run over a two-task budget and finds both tasks afterwards,
-the unmeasured one unchanged. Until then, re-record with a full run, or restore the file
-and edit the one entry by hand, as SH1338 did.
-
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
