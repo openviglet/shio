@@ -27,8 +27,8 @@ REM
 REM The source is chosen by VERSION, never by position - candidates are asked
 REM `--version` and the highest wins. Set ROADKEEP_SRC to force one.
 REM
-REM Written in Python, and NEITHER this repository nor freewilly is a Python
-REM project - Shio is Java, freewilly is .NET. Python is required by roadkeep
+REM Written in Python, and NEITHER this repository nor freeharbor is a Python
+REM project - Shio is Java, freeharbor is .NET. Python is required by roadkeep
 REM itself: .claude\settings.json already runs its guard hook as `python ...`.
 REM So this adds no runtime that the thing being installed did not already
 REM force, where a Node implementation would have.

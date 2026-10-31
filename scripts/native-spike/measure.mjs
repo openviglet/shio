@@ -14,7 +14,7 @@
 // `--docker-arg` and the trailing command exist for the tracing-agent run that collects the
 // native image's reachability metadata: the same boot and the same replay, on a JVM.
 //
-// Prints one JSON object per run and a median line. Docker runs through freewilly.
+// Prints one JSON object per run and a median line. Docker runs through freeharbor.
 
 import { execFileSync } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
