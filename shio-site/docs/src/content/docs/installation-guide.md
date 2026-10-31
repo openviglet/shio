@@ -181,8 +181,8 @@ ALTER USER shio SET SEARCH_PATH = shio;
 Pull the pre-built image published to the GitHub Container Registry (`ghcr.io`) by the **Publish Docker Image** GitHub Action:
 
 ```bash
-docker pull ghcr.io/openviglet/shio-ce:latest
-docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=change-me-please ghcr.io/openviglet/shio-ce:latest
+docker pull ghcr.io/openviglet/shio:latest
+docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=change-me-please ghcr.io/openviglet/shio:latest
 ```
 
 `SHIO_ADMIN_PASSWORD` (minimum six characters) gives the container a usable `admin` login on its
@@ -340,7 +340,7 @@ Set `SHIO_ADMIN_PASSWORD` (or the equivalent property `shio.admin.password`) and
 to the `admin` user at startup:
 
 ```bash
-docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=change-me-please ghcr.io/openviglet/shio-ce:latest
+docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=change-me-please ghcr.io/openviglet/shio:latest
 ```
 
 ```bash
@@ -429,7 +429,7 @@ docker-compose up
 ```
 
 :::tip[Deploy with the pre-built image]
-The commands above build Shio from source for local development. For deployment, replace the `build:` of the `shio` service with the published image instead (`image: ghcr.io/openviglet/shio-ce:latest`) so the stack pulls the image from `ghcr.io` rather than compiling it.
+The commands above build Shio from source for local development. For deployment, replace the `build:` of the `shio` service with the published image instead (`image: ghcr.io/openviglet/shio:latest`) so the stack pulls the image from `ghcr.io` rather than compiling it.
 :::
 
 :::note

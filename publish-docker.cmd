@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 REM ============================================================================
 REM publish-docker.cmd — Build the Viglet Shio CMS Docker image LOCALLY and
-REM push it to the GitHub Container Registry (ghcr.io/openviglet/shio-ce).
+REM push it to the GitHub Container Registry (ghcr.io/openviglet/shio).
 REM
 REM Unlike .github/workflows/publish-docker.yml (which clones + builds the source
 REM INSIDE the container), this builds the Spring Boot fat-jar on the HOST using
@@ -25,7 +25,7 @@ REM                                 at shio-app/target/viglet-shio.jar.
 REM ============================================================================
 
 set "REGISTRY=ghcr.io"
-set "IMAGE_NAME=openviglet/shio-ce"
+set "IMAGE_NAME=openviglet/shio"
 set "IMAGE=%REGISTRY%/%IMAGE_NAME%"
 set "JAR=shio-app\target\viglet-shio.jar"
 

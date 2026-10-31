@@ -783,7 +783,7 @@ export const BLUEPRINT_STEPS = [
 
 /** The one line from the quick start that gets a fresh instance to the marketplace. */
 export const SHOWCASE_RUN =
-  "docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=change-me ghcr.io/openviglet/shio-ce:latest";
+  "docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=change-me ghcr.io/openviglet/shio:latest";
 
 /** The console path: the admin marketplace, which reads the published catalogue by default. */
 export const SHOWCASE_CONSOLE_STEPS = [

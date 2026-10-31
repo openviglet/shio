@@ -26,7 +26,7 @@ const FACTS = [
 
 const COMPOSE = `services:
   shio:
-    image: ghcr.io/openviglet/shio-ce:2026.3
+    image: ghcr.io/openviglet/shio:2026.3
     ports:
       - 2710:2710
     volumes:

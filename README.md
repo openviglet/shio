@@ -96,7 +96,7 @@ Read the full concept:
 ### Run with Docker
 
 ```bash
-docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=shio123 ghcr.io/openviglet/shio-ce:latest
+docker run -p 2710:2710 -e SHIO_ADMIN_PASSWORD=shio123 ghcr.io/openviglet/shio:latest
 ```
 
 `SHIO_ADMIN_PASSWORD` (minimum 6 characters) is applied on the **first** start and gives you a
@@ -227,7 +227,7 @@ All published to **[npm](https://www.npmjs.com/org/viglet)** under the
 | [`@viglet/create-shio-app`](https://www.npmjs.com/package/@viglet/create-shio-app) | **Next.js starter generator** ([source](create-shio-app/)) |
 
 The Java backend ships as a **Docker image**,
-[`ghcr.io/openviglet/shio-ce`](https://github.com/openviglet/shio/pkgs/container/shio-ce),
+[`ghcr.io/openviglet/shio`](https://github.com/openviglet/shio/pkgs/container/shio),
 and as an executable Spring Boot jar built from [shio-app/](shio-app/).
 
 ## The ten design laws

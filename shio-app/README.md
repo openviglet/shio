@@ -12,7 +12,7 @@ renderer, and the packaged React administration console.
 | **Packaging** | executable Spring Boot `jar` |
 | **Java** | 21 |
 | **Spring Boot** | 4.1 |
-| **Docker image** | [`ghcr.io/openviglet/shio-ce`](https://github.com/openviglet/shio/pkgs/container/shio-ce) |
+| **Docker image** | [`ghcr.io/openviglet/shio`](https://github.com/openviglet/shio/pkgs/container/shio) |
 | **License** | [Apache-2.0](../LICENSE) |
 | **Website** | [openviglet.github.io/shio](https://openviglet.github.io/shio/) |
 | **Docs** | [openviglet.github.io/shio/docs](https://openviglet.github.io/shio/docs/) |
@@ -45,7 +45,7 @@ java -jar shio-app/target/shio-app-*.jar
 Or with Docker:
 
 ```bash
-docker run -p 2710:2710 ghcr.io/openviglet/shio-ce:latest
+docker run -p 2710:2710 ghcr.io/openviglet/shio:latest
 ```
 
 ## What this module exposes
