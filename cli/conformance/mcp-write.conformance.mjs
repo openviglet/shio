@@ -302,7 +302,9 @@ describe("SH709: the four tools that change something, against a store that keep
     // Written rather than omitted, and that is the assertion: "can I delete this" is answered by
     // the ABSENCE of referrers, so a missing line and a zero must not read the same. Nothing in
     // this fixture references the asset, so zero is the true answer and it has to be visible.
-    assert.match(text, /^used 0$/m,
+    // SH1280 appended `loaded=N` (and `rendered=` past the cap) to the same line, so the count
+    // is matched as the line's first word rather than as the whole line.
+    assert.match(text, /^used 0(?: |$)/m,
       "SH1032: an unreferenced asset said nothing about its usage. A caller asking `usage: true` "
       + "and reading silence cannot tell 'nothing uses this' from 'the flag did nothing', and one "
       + "of those two readings ends in a deletion.");
