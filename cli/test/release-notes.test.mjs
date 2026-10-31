@@ -47,3 +47,10 @@ test("SH1339: the release workflow tags pom.xml's revision, attaches the jar and
   const docker = readFileSync(join(ROOT, ".github", "workflows", "publish-docker.yml"), "utf8")
   assert.match(docker, /workflow_call/u, "SH1339: publish-docker.yml cannot be called by the release")
 })
+
+test("SH1349: the image is tagged with the version the release is, read from the same pom.xml", () => {
+  const docker = readFileSync(join(ROOT, ".github", "workflows", "publish-docker.yml"), "utf8")
+  assert.match(docker, /<revision>/u, "SH1349: the image's version no longer comes from pom.xml's revision")
+  assert.match(docker, /type=raw,value=\$\{\{ steps\.version\.outputs\.version \}\}/u,
+    "SH1349: the image is pushed without a version tag, so shio-ce:2026.3 cannot match release 2026.3")
+})

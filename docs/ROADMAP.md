@@ -20,7 +20,6 @@
 ## Block BJ — What a visitor finds first: release, links and a demo
 
 - ⏳ **SH1342** (deps: a hosted Viglet Cloud instance) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
-- ⏳ **SH1349** (deps: maintainer pushes 2026.3 and dispatches publish-docker.yml) **ghcr.io/openviglet/shio-ce has no 2026.3 image: latest is still the July build** — The release names 2026.3 while the image a reader pulls predates it; publishing waits on a push of SH1348. → §XCV.6
 
 ## Priority
 
@@ -44,11 +43,6 @@
   the site link a hosted instance where the Quilhara showcase renders publicly and a
   guest role can browse, edit drafts and see the review queue but not publish, reset
   from the blueprint on a schedule.
-
-## Done when — SH1349
-
-- **ghcr.io/openviglet/shio-ce:2026.3 exists and answers on :2710** The release and the
-  image name the same version.
 
 ## Non-goals (do NOT add as tasks)
 

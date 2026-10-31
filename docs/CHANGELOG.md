@@ -2130,3 +2130,5 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1340** — The repository homepage is openviglet.github.io/shio and every README links the docs at openviglet.github.io/shio/docs/, so no first click lands on a redirect
 - **SH1341** — The landing counts its tool and resource lists instead of spelling numbers, both lists match the server's registered twelve tools and thirteen resources, and a site test holds all three.
 - **SH1348** — The Dockerfile's build stage installs libatomic1, so the Node 26 binary the Maven build downloads runs and the image builds again; verified by building that stage in eclipse-temurin:21-jdk to BUILD SUCCESS
+- **SH1349** — ghcr.io/openviglet/shio-ce:2026.3 and latest are built from 02c53008f by publish-docker.yml, and the pulled image starts in 11 s and answers 200 on / and on the authenticated manifest
+  checked **ghcr.io/openviglet/shio-ce:2026.3 exists and answers on :2710** The release and the image name the same version.
