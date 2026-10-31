@@ -7,7 +7,8 @@
 # crashing on Java 25) no longer applies, since no Artemis jar ships in viglet-shio.jar (SH1249).
 # A move to 25 is its own change, measured, not a side effect of this one.
 FROM eclipse-temurin:21-jdk AS build
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+# SH1348 — libatomic1: the Node 26 binary frontend-maven-plugin downloads exits 127 without it.
+RUN apt-get update && apt-get install -y git libatomic1 && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 ARG REPO_BRANCH=2026.3
 ARG CACHE_BUST=none

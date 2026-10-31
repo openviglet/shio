@@ -35,6 +35,12 @@ test("SH1249: the shipped image runs the JVM jar, not a native binary", () => {
   assert.doesNotMatch(dockerfile, /native-image|native-spike/, "the native build stays in scripts/native-spike/");
 });
 
+test("SH1348: the build stage installs libatomic1, which the downloaded Node binary loads", () => {
+  const build = read("Dockerfile").split(/^FROM /m).find((stage) => /\bAS build\b/.test(stage));
+  assert.match(build, /apt-get install[^\n]*\blibatomic1\b/,
+    "SH1348: without libatomic1 the Node 26 binary exits 127 and the image build fails");
+});
+
 test("SH1260: both shipped images start from the class data sharing archive with SerialGC", () => {
   for (const file of ["Dockerfile", "Dockerfile.local"]) {
     const dockerfile = read(file);
