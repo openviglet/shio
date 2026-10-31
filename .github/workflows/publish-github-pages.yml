@@ -25,7 +25,7 @@
 #
 # Published from this repository with the native Pages deploy (upload-pages-artifact +
 # deploy-pages), so it needs no secret: the job's own GITHUB_TOKEN carries `pages: write`.
-# It used to push to the github-pages branch of openviglet/shio-ce, which no longer exists.
+# It used to push to a github-pages branch in another repository, which no longer exists.
 # One-time repository setting: Settings → Pages → Source = "GitHub Actions", and no custom
 # domain. The site is the repository's project page, so it is served under /shio/, which is
 # why vite.config.ts and docs/astro.config.mjs both carry that base.

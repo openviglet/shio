@@ -15,7 +15,7 @@
       "[New] Replicate an existing website with shio clone and shio convert.",
       "[New] Universal Editor, review queue and preview links in the console.",
       "[New] Multi-tenancy.",
-      "[New] Docker image ghcr.io/openviglet/shio-ce, with SHIO_ADMIN_PASSWORD for a scriptable first start.",
+      "[New] Docker image ghcr.io/openviglet/shio, with SHIO_ADMIN_PASSWORD for a scriptable first start.",
       "[Improved] React console replaces the AngularJS one, with 15 form widgets.",
       "[Improved] Liquibase schema, proved on PostgreSQL and MariaDB by containerized integration tests.",
       "[Improved] Response sizes are a measured token budget asserted in CI.",

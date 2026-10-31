@@ -358,7 +358,7 @@ const DEBT = [
   "SH1072",
   // DOES NOT EARN one, for SH1072's reason pointed at GitHub instead of a sibling repository.
   // SH1241's deliverable is repository metadata on github.com (description, homepage, topics of
-  // openviglet/shio and shio-ce), set with `gh repo edit`. No file here holds it, and a suite that
+  // openviglet/shio), set with `gh repo edit`. No file here holds it, and a suite that
   // called the GitHub API would be a network test asserting someone else's state. Its check was the
   // line's own criterion, `gh repo view`, run at ship.
   "SH1241",
