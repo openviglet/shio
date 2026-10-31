@@ -1,0 +1,26 @@
+---
+/**
+ * Starlight's own head, plus a BreadcrumbList. Without one, Google builds the result's breadcrumb
+ * from the URL and drops the `shio` segment, so every page read "openviglet.github.io › docs"
+ * as though the docs belonged to the whole host. The trail is Shio › Docs › page.
+ */
+import Default from "@astrojs/starlight/components/Head.astro";
+
+const SITE = "https://openviglet.github.io";
+const docsHome = `${SITE}${import.meta.env.BASE_URL.replace(/\/?$/, "/")}`;
+const url = new URL(Astro.url.pathname, SITE).href;
+const items = [
+  { name: "Shio", item: `${SITE}/shio/` },
+  { name: "Docs", item: docsHome },
+];
+if (url !== docsHome) items.push({ name: Astro.locals.starlightRoute.entry.data.title, item: url });
+
+const breadcrumbs = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: items.map((it, i) => ({ "@type": "ListItem", position: i + 1, ...it })),
+}).replace(/</g, "\\u003c");
+---
+
+<Default />
+<script is:inline type="application/ld+json" set:html={breadcrumbs} />
