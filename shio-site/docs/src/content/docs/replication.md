@@ -12,7 +12,7 @@ That is three commands (`clone`, `propose`, `convert`) and one decision you shou
 
 ---
 
-![Clone, propose, convert, publish, serve, judge](/img/diagrams/shio-replication-flow.svg)
+![Clone, propose, convert, publish, serve, judge](/shio/docs/img/diagrams/shio-replication-flow.svg)
 
 ## Two modes, and the choice is the whole thing
 

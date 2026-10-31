@@ -39,7 +39,7 @@ language changed.
 
 ---
 
-![The render pipeline: page, layout, region, theme, helpers, HTML, digest](/img/diagrams/shio-render-pipeline.svg)
+![The render pipeline: page, layout, region, theme, helpers, HTML, digest](/shio/docs/img/diagrams/shio-render-pipeline.svg)
 
 ## The five content types
 

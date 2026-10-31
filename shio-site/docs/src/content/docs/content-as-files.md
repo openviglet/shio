@@ -19,7 +19,7 @@ in the console while you were working.
 
 ---
 
-![Pull, edit, push, with the three-way merge against a fingerprint base](/img/diagrams/shio-content-files.svg)
+![Pull, edit, push, with the three-way merge against a fingerprint base](/shio/docs/img/diagrams/shio-content-files.svg)
 
 ## The tree
 

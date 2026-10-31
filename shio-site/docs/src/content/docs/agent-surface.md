@@ -16,7 +16,7 @@ discoverability, determinism, and a response an agent can act on without a secon
 
 ---
 
-![The agent loop: discover, plan, write, verify, then hand over](/img/diagrams/shio-agent-loop.svg)
+![The agent loop: discover, plan, write, verify, then hand over](/shio/docs/img/diagrams/shio-agent-loop.svg)
 
 ## Authenticating
 

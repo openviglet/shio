@@ -21,7 +21,7 @@ content, the files and the keys stay on your infrastructure.
 
 ## Component diagram
 
-![Shio architecture: callers, surfaces, core services and persistence](/img/diagrams/shio-architecture.svg)
+![Shio architecture: callers, surfaces, core services and persistence](/shio/docs/img/diagrams/shio-architecture.svg)
 
 Two edges in that picture are the ones worth reading twice:
 
@@ -71,14 +71,14 @@ Two edges in that picture are the ones worth reading twice:
 
 ### The agent loop: discover, plan, write, verify
 
-![The agent loop: discover, plan, write, verify, then hand over to a curator](/img/diagrams/shio-agent-loop.svg)
+![The agent loop: discover, plan, write, verify, then hand over to a curator](/shio/docs/img/diagrams/shio-agent-loop.svg)
 
 The plan step writes nothing, and the write step carries its own proof (`?verify&digest`),
 so a task that would be a dozen round trips is three or four calls.
 
 ### A curator's correction
 
-![Curation: a draft, the review queue, the Universal Editor, publishing, the trash](/img/diagrams/shio-curation-flow.svg)
+![Curation: a draft, the review queue, the Universal Editor, publishing, the trash](/shio/docs/img/diagrams/shio-curation-flow.svg)
 
 Every arrow into `PUBLISHED` passes through a person. See
 [Letting an agent in](/shio/docs/agent-safety/).
@@ -100,15 +100,15 @@ sequenceDiagram
 
 ### The content-as-files round trip
 
-![Pull, edit, push, with the three-way merge against a fingerprint base](/img/diagrams/shio-content-files.svg)
+![Pull, edit, push, with the three-way merge against a fingerprint base](/shio/docs/img/diagrams/shio-content-files.svg)
 
 ### The render pipeline
 
-![Page, layout, region, theme, helpers, HTML, digest](/img/diagrams/shio-render-pipeline.svg)
+![Page, layout, region, theme, helpers, HTML, digest](/shio/docs/img/diagrams/shio-render-pipeline.svg)
 
 ### A replicated site being served
 
-![Clone, propose, convert, publish, serve, judge](/img/diagrams/shio-replication-flow.svg)
+![Clone, propose, convert, publish, serve, judge](/shio/docs/img/diagrams/shio-replication-flow.svg)
 
 ---
 

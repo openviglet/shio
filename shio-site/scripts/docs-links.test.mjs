@@ -10,11 +10,14 @@
 // and runs in the site's own suite.
 
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { test } from "node:test";
 
 const CONTENT = join(process.cwd(), "docs", "src", "content", "docs");
+const PUBLIC = join(process.cwd(), "docs", "public");
+/** The other sites on openviglet.github.io a page may link to by root path. */
+const SIBLING_SITES = ["/turing/"];
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -73,6 +76,13 @@ test("SH1262: every link inside /docs reaches a page, and its anchor a heading o
     ].map(([, href]) => href);
     for (const href of links) {
       const [path, hash] = href.split("#");
+      // A path with an extension is a file Astro copies verbatim out of docs/public.
+      if (/\.\w+$/.test(path)) {
+        if (!existsSync(join(PUBLIC, path.replace(/^\/shio\/docs\//, "")))) {
+          broken.push(`${slug || "index"}: ${href} (SH1350: no such file under docs/public)`);
+        }
+        continue;
+      }
       const target = path.replace(/^\/shio\/docs\/?/, "").replace(/\/$/, "");
       const page = pages.get(target);
       if (!page) broken.push(`${slug || "index"}: ${href} (no such page)`);
@@ -87,6 +97,14 @@ test("SH1262: every link inside /docs reaches a page, and its anchor a heading o
     // A link missing the base reaches the host's root, which is not this site.
     for (const [, href] of [...prose(text).matchAll(/\]\((\/docs\/[^)\s]*)\)/g), ...text.matchAll(/href="(\/docs\/[^"]*)"/g)]) {
       broken.push(`${slug || "index"}: ${href} (missing the /shio base; write /shio${href})`);
+    }
+    // SH1350: the six diagrams were `/img/diagrams/*.svg`, which Docusaurus served from its static/
+    // and Starlight resolves at the host's root, so every one 404d in production. Any root path
+    // outside /shio/ is another site on openviglet.github.io, and only the ones named here exist.
+    for (const [, href] of prose(text).matchAll(/\]\((\/(?!shio\/|docs\/)[^)\s]*)\)/g)) {
+      if (!SIBLING_SITES.some((site) => href.startsWith(site))) {
+        broken.push(`${slug || "index"}: ${href} (SH1350: outside /shio/; a file belongs in docs/public, linked as /shio/docs/...)`);
+      }
     }
   }
   assert.deepEqual(broken, [], `${broken.length} broken link(s) in the documentation`);
