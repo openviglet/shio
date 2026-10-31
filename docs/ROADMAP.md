@@ -19,8 +19,8 @@
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
-- ⏳ **SH1339** (deps: maintainer dispatches release.yml) **The Releases tab shows v0.3.8 from 2021 as Latest, and the 2026.3 line has no release at all** — Dispatching release.yml once on 2026.3 and marking the 2020-21 releases pre-release are actions on GitHub for the maintainer. → §XCV.1
 - ⏳ **SH1342** (deps: a hosted Viglet Cloud instance) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
+- ⏳ **SH1349** (deps: maintainer pushes 2026.3 and dispatches publish-docker.yml) **ghcr.io/openviglet/shio-ce has no 2026.3 image: latest is still the July build** — The release names 2026.3 while the image a reader pulls predates it; publishing waits on a push of SH1348. → §XCV.6
 
 ## Priority
 
@@ -38,19 +38,17 @@
   site list all open a page in the same editor, the other is a switch inside it that
   keeps the selection, and the decision is recorded in console-ui.md.
 
-## Done when — SH1339
-
-- **The 2026.3 release is Latest on openviglet/shio, and no 2020-21 release is** After
-  release.yml has run once from the 2026.3 branch, the Releases tab shows the pom.xml
-  version as Latest with the jar attached and the notes grouped for curators, agents and
-  fixes, and v0.3.8 and the two 2020 releases are marked pre-release.
-
 ## Done when — SH1342
 
 - **A visitor opens the showcase and a guest console without installing** The README and
   the site link a hosted instance where the Quilhara showcase renders publicly and a
   guest role can browse, edit drafts and see the review queue but not publish, reset
   from the blueprint on a schedule.
+
+## Done when — SH1349
+
+- **ghcr.io/openviglet/shio-ce:2026.3 exists and answers on :2710** The release and the
+  image name the same version.
 
 ## Non-goals (do NOT add as tasks)
 

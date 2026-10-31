@@ -2126,7 +2126,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 
 ## Block BJ — What a visitor finds first: release, links and a demo
 
-- **SH1339 (the release workflow)** — release.yml tags pom.xml's revision, attaches the jar, writes notes for curators, agents and fixes, and publishes the image from the same commit, all tested.
+- **SH1339** — Release 2026.3 is Latest on openviglet/shio with viglet-shio.jar attached, made by release.yml's first run, and every 2018-2021 release including v0.3.8 is a pre-release
 - **SH1340** — The repository homepage is openviglet.github.io/shio and every README links the docs at openviglet.github.io/shio/docs/, so no first click lands on a redirect
 - **SH1341** — The landing counts its tool and resource lists instead of spelling numbers, both lists match the server's registered twelve tools and thirteen resources, and a site test holds all three.
 - **SH1348** — The Dockerfile's build stage installs libatomic1, so the Node 26 binary the Maven build downloads runs and the image builds again; verified by building that stage in eclipse-temurin:21-jdk to BUILD SUCCESS

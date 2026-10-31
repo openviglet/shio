@@ -1171,26 +1171,6 @@ Filed from the portfolio review of 2026-10-30 (visibility repo, estrategia/portf
 and produtos/shio.md): no channel gets a launch before the page, the release and the
 README say the same thing. Shio's are the furthest apart of the suite.
 
-### XCV.1 The 2026.3 line is released on openviglet/shio (SH1339)
-
-**Where it showed.** On 2026-10-30 the Releases tab of openviglet/shio shows v0.3.8 as
-Latest: a 2021 jar built with JDK 14 and Gradle, followed by two pre-releases from 2020.
-The repository has no release workflow at all; the 2026.3 line reaches people only as
-`ghcr.io/openviglet/shio-ce` (pushed by hand through `publish-docker.yml`, last on
-2026-07-08) and the `@viglet/*` npm packages.
-
-**Why it costs.** The README describes October's agent-ready CMS, and the first thing an
-evaluator opens beside it says the project stopped in 2021. The owner confirmed on
-2026-10-30 that the 2026.3 line is released on openviglet/shio (visibility repo,
-produtos/shio.md and estrategia/portfolio.md).
-
-**Design.** A release workflow on the 2026.3 branch that tags the version from
-`pom.xml`, attaches the jar, writes notes for people (what changed for a curator and for
-an agent, then fixes), and calls `publish-docker.yml` so the image and the release never
-disagree again. The first run makes 2026.3 Latest. The 2020–2021 releases stay as
-history, marked as the pre-rewrite line in their titles or as pre-releases, so none of
-them can be Latest.
-
 ### XCV.4 A hosted showcase with a guest console (SH1342)
 
 **Where it showed.** Shio has no public instance anyone can open. The site shows a
@@ -1211,3 +1191,17 @@ and the console open to a guest role that can browse, edit drafts and see the re
 queue but not publish, reset from the blueprint on a schedule. The README and the site
 link it beside `docker run`. If a guest console is too costly to keep safe, the rendered
 showcase alone, with a recorded console tour, is the first step.
+
+### XCV.6 The 2026.3 image matches the release (SH1349)
+
+**Where it showed.** release.yml's first run (41147242440, 2026-10-30) published release
+2026.3, but its `docker` job failed on the Node 26 / libatomic1 defect SH1348 fixed. The
+fix is a local commit, and the Dockerfile clones the branch from GitHub, so no image can
+carry it until it is pushed. ghcr.io/openviglet/shio-ce still serves the 2026-07-08
+build under `latest`.
+
+**Design.** Push 2026.3 with SH1348, then dispatch `publish-docker.yml` on 2026.3 (not
+release.yml again: its tag guard refuses an existing version, correctly). The job tags
+the image `2026.3`, `latest` and the commit sha, so the image and the release name the
+same version. Done when `docker pull ghcr.io/openviglet/shio-ce:2026.3` starts and
+answers on :2710.
