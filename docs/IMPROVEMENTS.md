@@ -261,6 +261,25 @@ This is a decision before it is code. The deliverable is the decision recorded i
 `docs/agents/console-ui.md`, judged against SH1315's tasks 1, 3 and 6 measured in both
 editors, and then the merge, filed as its own tasks.
 
+### XI.109 A blueprint with a gallery and a contact form (SH1356)
+
+The mobile product's first run is a small business: a few photos, a line about the
+place, a way to be contacted. marketing-site is the nearest package and it has no
+section that holds a set of images and no section that submits anything. Both halves
+exist one level down: a File post carries WIDTH and HEIGHT and the image helper emits a
+srcset from them; sh_site_form, the FORM scope and the rendered form's endpoint shipped
+with SH631 to SH637.
+
+Two sections in the vocabulary, SectionGallery (a list of File references with the alt
+each carries) and SectionForm (the fields and the folder submissions land in), and a
+package, small-business, that composes them with the existing hero, rich text and CTA
+into home, about and contact. Its parameters are the ones a phone can ask in five
+questions: name, what it does, where, how to reach it, and the opening line. The form
+section declares nothing the site configuration does not already own, so applying the
+package never opens the door; the curator enables submissions, as SH632 decided.
+verify.posts promises the three pages, and the apply benchmark in
+token-budgets.properties takes a row for it.
+
 ## XII. Agent safety & human-in-the-loop (Block L)
 
 > An agent-driven CMS is only adoptable if a human can bound it and undo it.
@@ -290,6 +309,23 @@ editors, and then the merge, filed as its own tasks.
 > change in three blocks to move a ratio by improving the *agent* path rather than by the
 > baseline getting leaner, and what it left behind is mostly the shape of that argument
 > getting harder: the calls that remain are real work.
+
+### XIII.27 The phone's run, priced (SH1357)
+
+ShAgentTaskBenchmarkTest prices four jobs, and build-marketing-site is the nearest: one
+apply, five calls, under five thousand tokens. The mobile run is that job plus what a
+phone adds, a batch of uploads, a page or a gallery entry per photo, alt text the agent
+writes, a review, a publish. None of that is in the four, and the free tier's one
+variable cost is the model behind exactly those calls.
+
+A fifth canonical job, build-site-from-photos, run twice like the others, over the agent
+surface and over the console and CDA path a client without a context pack would take,
+guarded on calls and tokens with the same loose token ceiling and exact call ceiling.
+The number it prints is the one the mobile project multiplies by a model's price to set
+the agent-call cap, and a regression in it is a build failure, as P3 says. It lands
+before the small-business package is built on it and is re-measured once with it,
+because the package changes the call count. The assertion carrying this id is the
+benchmark row itself.
 
 ## XIV. Realignment of what already shipped (Block N) — what building it opened
 
@@ -507,6 +543,25 @@ asserted at the level the agent surface is.
 > service-level param, not a URL segment; `siteId` is a first-class query param)
 > still bind, and now also bind the agent surface.
 
+### I.6 A person-bound credential for a native client (SH1351)
+
+The console authenticates a person twice over: a session cookie after a password or OIDC
+login, and HTTP Basic on the review path so a script can approve. A phone fits neither.
+A cookie needs a browser the app does not own, and Basic means the password lives on the
+device, which an OIDC user does not even have. The API token is the other credential and
+it is deliberately a machine: READ, PREVIEW, WRITE, AGENT and FORM, with the review
+routes kept off it because the agent never approves its own work.
+
+What is missing is a token bound to a person: minted after a sign-in the instance
+already runs (oauth2Login, or an ID token from Google or Apple exchanged against the
+instance), carrying that user's authorities and tenant memberships, scoped to one device
+and revocable from the console. It reaches every path a Basic login reaches, the review
+queue included, and nothing the agent namespace grants beyond what the person holds.
+ShStatelessReachabilityLintTest and ShAgentP1ConformanceTest classify it. The assertion
+carrying this id is that a revoked device token answers 401 on the next call, and that
+the token never reaches a review decision for a run the same person did not start as a
+curator.
+
 ## II. JavaScript-for-pages DX
 
 > ✅ **Fully shipped (SH6–SH11, and the SH62 epic SH63–SH66)** →
@@ -545,6 +600,58 @@ asserted at the level the agent surface is.
 > tools (§0.5), so they gained importance rather than becoming maintenance debt.
 
 ## VI. Market positioning
+
+### VI.6 A cap on agent calls per tenant (SH1352)
+
+SH45 records every call per tenant, UTC day and surface, and the three surfaces are kept
+apart because which of them a plan charges for is a pricing question. VigletQuotaService
+caps what is held: sites, posts, bytes. Nothing caps a flow, and the agent surface is
+the one flow whose cost is not the instance's: every call to /api/v2/agent/** or /mcp is
+a model turn somebody pays for.
+
+The cap is a per-plan ceiling on agent calls per day, checked before the call runs,
+answering 402 with the plan, the count and when the window resets, in the teaching shape
+every other refusal has. The console and CDA surfaces stay uncapped here: a free tier
+that refuses a curator's own reads is a product nobody keeps. A suspended tenant already
+answers 403 and is unchanged. The count is the meter's own heap accumulator plus the
+flushed row, so one node over the cap is at most one flush window late, which is the
+same tolerance the bill accepts. The assertion carrying this id drives a tenant to the
+ceiling and reads the next call refused and the one after the reset admitted.
+
+### VI.7 A tenant reads its own limits beside what it holds (SH1353)
+
+GET /api/v2/tenant/current answers the id and whether the instance is multi-tenant;
+/usage answers API calls per day; the tenant row carries the plan name and the stored
+bytes. The limits live in the plan, in VigletQuotaService, and the counts of sites and
+posts are a query the quota check already runs. No read puts the four side by side for
+the tenant's own members, so the first time a free plan is full is the 402 on an upload
+the person just took the photo for.
+
+One read, GET /api/v2/tenant/quota, scoped to the caller's tenant the way /usage is: per
+resource, the limit, what is held and what is left, plus the agent-call window once the
+cap lands. It is a read of numbers the instance already has, so it costs no new column.
+The console's Tenants page and the manifest's instance facts read the same shape, which
+is what keeps two surfaces from deciding what a plan allows by different means. The
+assertion carrying this id fills a resource to the limit and reads zero left before the
+write that is refused.
+
+### VI.8 A site with an address of its own (SH1354)
+
+Delivery is positional: /sites/<site>/<format>/<locale>/<path>, with site.url kept for
+the customer's own deployed front end. That is right for a headless instance behind
+somebody's Next.js and wrong for the case where Shio is the host: a hairdresser's site
+is reachable at a path on a shared hostname, which nobody prints on a card.
+
+The idea is host-based site resolution in front of the same delivery: a request whose
+Host is <name>.<service-domain> resolves the site the way the first path segment does
+today, and the path grammar that follows is unchanged, so every link the renderer
+already emits keeps working. The proxy, the wildcard certificate and the DNS are
+infrastructure and stay outside the product, which is the line SH540 drew; what the
+product owes is the resolution, the canonical URL it emits when a site has a host, and a
+teaching 404 for a host nothing claims. Custom domains are a later line and need a
+verification step this one does not. 'Shio does not host a model.' is untouched: a
+site's address is hosting, inference is not. An idea rather than a design because the
+service domain is a decision the mobile project has not made.
 
 ## VII. Content portability
 
@@ -1104,6 +1211,25 @@ The security defect that belongs here, uploads served inline and executable, was
 promoted to Block AV and is fixed first. This block follows the measure-first rule
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
+
+### LXX.10 An upload that can resume (SH1355)
+
+POST /api/v2/staticfile/upload takes the whole file in one request: the post row and the
+bytes land in one transaction, the quota is charged before either, and the sha256 and
+size are stamped on the way. On a desk that is the right shape. On a phone the
+connection is the thing that fails, and a request that dies at ninety percent leaves
+nothing to continue from.
+
+The design is a session: begin with the name, the size, the folder and the digest the
+client already computed, which is where the quota check moves to; append chunks by
+offset, idempotently, so a retried chunk is a no-op; finish, where the server compares
+its digest with the declared one and only then creates the File post, so a half upload
+never becomes an asset. Chunks live outside /file_source until the finish, the way
+renditions do, because a partial file must not be publicly readable. An abandoned
+session expires and is swept by the same reconcile that keeps the byte meter honest. The
+single-request upload stays for every caller that has it. The assertion carrying this id
+kills a session midway, resumes from the reported offset, and reads one asset with the
+declared digest.
 
 ## LXXI The visual editor becomes a composer (Block BF)
 

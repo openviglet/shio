@@ -12,6 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
+- 📋 **SH1356** (deps: —) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — marketing-site stops at hero, features, testimonials and FAQ; the form path and File posts with dimensions exist, so two sections compose what shipped. → §XI.109
 
 ## Block BG — The console as an application: cost, resilience and access
 
@@ -20,6 +21,24 @@
 ## Block BJ — What a visitor finds first: release, links and a demo
 
 - ⏳ **SH1342** (deps: a hosted Viglet Cloud instance) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
+
+## Block A — Headless foundation (Content Delivery API)
+
+- 📋 **SH1351** (deps: —) **A native app has no credential that is a person: the session is a cookie and an API token is a machine** — The phone is the curator on the go, and approving is the one act a token must never do, so the app needs the person's authority without storing a password. → §I.6
+
+## Block F — Market positioning / bold bets
+
+- 📋 **SH1352** (deps: —) **A tenant's agent calls are metered for billing but never capped, so a plan cannot bound them** — The model is the only variable cost of a free service, and the meter already counts agent calls apart from CDA and console, so a cap is one plan field and a 402. → §VI.6
+- 📋 **SH1353** (deps: —) **A member cannot read the plan's limits beside what the tenant holds; a full quota first appears as a 402** — A phone shows a bar before a refusal, and sites, posts and bytes are already counted and the plan is on the row, so this is one read scoped to the caller's tenant. → §VI.7
+- 💭 **SH1354** (deps: —) **A delivered site has no address of its own: delivery is a path under /sites/<name>/ on the instance host** — A public service hands each site a link to say aloud, and a name per site is what a person shares and a reverse proxy routes. → §VI.8
+
+## Block BE — Media: what the bytes mean
+
+- 📋 **SH1355** (deps: —) **An upload is one multipart POST, so a phone video on a mobile network starts over when the link drops** — Capture is the phone's job, a large upload that cannot resume never completes on 4G, and the per-asset digest is the completion check chunks need. → §LXX.10
+
+## Block M — Token economy, measured (SH74)
+
+- 📋 **SH1357** (deps: —) **The phone's run, apply, uploads, a page per photo and publish, is not a canonical job, so it is unpriced** — A free tier's agent budget is set from this number, and the rule here is that the measurement lands before anything is built on it. → §XIII.27
 
 ## Priority
 
