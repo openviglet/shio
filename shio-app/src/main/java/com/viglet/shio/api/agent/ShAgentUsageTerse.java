@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.viglet.shio.tenant.ShTenantApiCallMeter;
+import com.viglet.shio.tenant.ShTenantQuota;
 import com.viglet.shio.tenant.ShTenantUsage;
 
 /**
@@ -63,6 +64,36 @@ public final class ShAgentUsageTerse {
      */
     public static String render(ShTenantUsage usage, Map<String, Long> pending,
                                 String tenant, String period) {
+        return render(usage, pending, tenant, period, null);
+    }
+
+    /**
+     * The same document with the plan's limits after it (SH1353): one {@code limit} line per
+     * resource, the shape {@code GET /api/v2/tenant/quota} answers, so an agent asked to work inside
+     * a plan reads how much is left before the write that would be refused. {@code max=none} is
+     * unlimited, and the agent-call line says when its window resets.
+     */
+    public static String render(ShTenantUsage usage, Map<String, Long> pending,
+                                String tenant, String period, ShTenantQuota quota) {
+        String base = renderUsage(usage, pending, tenant, period);
+        if (quota == null) {
+            return base;
+        }
+        StringBuilder out = new StringBuilder(base);
+        for (ShTenantQuota.Resource resource : quota.resources()) {
+            out.append(ShTerse.line("limit")
+                    .word(resource.key())
+                    .attr("max", resource.limit() == null ? "none" : resource.limit().toString())
+                    .attr("used", resource.used())
+                    .attr("left", resource.left() == null ? null : resource.left().toString())
+                    .attr("resets", resource.resetsAt())
+                    .build());
+        }
+        return out.toString();
+    }
+
+    private static String renderUsage(ShTenantUsage usage, Map<String, Long> pending,
+                                      String tenant, String period) {
         StringBuilder out = new StringBuilder();
         out.append(ShTerse.line("shio-usage")
                 .attr("tenant", tenant)

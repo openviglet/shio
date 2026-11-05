@@ -728,3 +728,15 @@ whose bare 402 is a sentence: the refusal is `application/problem+json` carrying
 refusal it does not bill, so a client retrying past the cap cannot run the count up.
 `ShAgentCallCapTest` drives a tenant to the ceiling, reads the refusal, and reads the call after the
 reset admitted.
+## A tenant reads its limits beside what it holds (SH1353)
+
+`GET /api/v2/tenant/quota` answers the caller's own tenant, scoped like `/usage`: the plan name and,
+per resource (`sites`, `posts`, `storage` in bytes, `agentCalls` today), `limit`, `used` and `left`,
+with `resetsAt` on the per-day one. Unlimited is `limit: null` and `left: null`, never `-1`, and
+`left: 0` is exactly the state in which the next write of that kind answers 402. Every figure comes
+from where the refusing check reads it, `ShTenantQuotaService.quota`: the limit from the kernel's
+`currentLimits()` and the count from `ShVigletResourceCounter`, so the bar a phone draws and the
+402 it would meet cannot disagree. An agent token cannot reach `/api/v2/tenant/**`, so the agent's
+usage document (`shio://usage`, `/agent/context?include=usage`) carries the same figures as
+`limit <key> max= used= left= resets=` lines. `ShTenantQuotaIT` fills a FREE tenant's sites to the
+ceiling, reads zero left, and reads the next site refused.

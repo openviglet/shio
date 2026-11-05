@@ -89,6 +89,52 @@ class ShTenantQuotaIT {
     }
 
     @Test
+    void theQuotaReadsZeroLeftBeforeTheRefusedWrite() {
+        // SH1353 — the read a phone shows as a bar. At the ceiling it must say zero left, and the
+        // write it predicts must then be refused: a read that disagreed with the check would be two
+        // surfaces deciding what a plan allows by different means.
+        catalogTenant("barco", "FREE");
+
+        asTenant("barco", () -> {
+            ShTenantQuota.Resource sites = sitesOf(quotaService.quota("barco"));
+            assertThat(sites.limit()).isEqualTo(ShTenantPlanLimits.FREE.maxSites());
+            assertThat(sites.left()).isEqualTo(ShTenantPlanLimits.FREE.maxSites());
+
+            saveSite("b1");
+            saveSite("b2");
+            ShTenantQuota quota = quotaService.quota("barco");
+            assertThat(quota.plan()).isEqualTo("FREE");
+            assertThat(sitesOf(quota).used()).isEqualTo(2);
+            assertThat(sitesOf(quota).left()).as("SH1353: full reads zero left").isZero();
+            assertThatThrownBy(() -> quotaService.checkCanCreateSite())
+                    .as("SH1353: and the write the bar predicted is the one refused")
+                    .isInstanceOf(ResponseStatusException.class);
+
+            ShTenantQuota.Resource agent = quota.resources().stream()
+                    .filter(r -> ShVigletResourceCounter.AGENT_CALLS.equals(r.key())).findFirst().orElseThrow();
+            assertThat(agent.limit()).isEqualTo(ShTenantPlanLimits.FREE_AGENT_CALLS_PER_DAY);
+            assertThat(agent.resetsAt()).as("the per-day window says when it resets").isNotBlank();
+            return null;
+        });
+    }
+
+    @Test
+    void aPaidPlanReadsUnlimited() {
+        catalogTenant("unboundco", "PRO");
+        asTenant("unboundco", () -> {
+            ShTenantQuota.Resource sites = sitesOf(quotaService.quota("unboundco"));
+            assertThat(sites.limit()).as("SH1353: unlimited is null, never -1").isNull();
+            assertThat(sites.left()).isNull();
+            return null;
+        });
+    }
+
+    private static ShTenantQuota.Resource sitesOf(ShTenantQuota quota) {
+        return quota.resources().stream()
+                .filter(r -> ShVigletResourceCounter.SITES.equals(r.key())).findFirst().orElseThrow();
+    }
+
+    @Test
     void aSingleUploadLargerThanTheWholePlanIsRefused() {
         // SH110's defect, stated as the number that made it one. FREE bounds storage; the tenant is
         // at ZERO, so the old `count >= max` check passed for ANY size of write — a single upload

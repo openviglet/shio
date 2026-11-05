@@ -8,10 +8,15 @@
  */
 package com.viglet.shio.tenant;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.viglet.core.tenancy.VigletPlanLimits;
 import com.viglet.core.tenancy.VigletQuotaService;
+import com.viglet.shio.persistence.model.tenant.ShTenant;
+import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 
 /**
  * Per-plan create quotas (SH22/D). Enforced with HTTP 402 at site / post creation.
@@ -33,9 +38,42 @@ import com.viglet.core.tenancy.VigletQuotaService;
 public class ShTenantQuotaService {
 
     private final VigletQuotaService quotaService;
+    private final ShVigletResourceCounter counter;
+    private final ShTenantApiCallMeter meter;
+    private final ShTenantRepository tenants;
 
-    public ShTenantQuotaService(VigletQuotaService quotaService) {
+    public ShTenantQuotaService(VigletQuotaService quotaService, ShVigletResourceCounter counter,
+            ShTenantApiCallMeter meter, ShTenantRepository tenants) {
         this.quotaService = quotaService;
+        this.counter = counter;
+        this.meter = meter;
+        this.tenants = tenants;
+    }
+
+    /**
+     * SH1353 — the caller's tenant's limits beside what it holds, so a client shows a bar before the
+     * 402 rather than meeting the 402 first.
+     *
+     * <p>Every number comes from where the check that refuses reads it: the limit from
+     * {@code currentLimits()} (so tenancy off, the default tenant and a paid plan read unlimited
+     * exactly as they are enforced), the count from the same {@link ShVigletResourceCounter}. A
+     * second derivation here would be two surfaces deciding what a plan allows by different means.</p>
+     */
+    public ShTenantQuota quota(String tenant) {
+        VigletPlanLimits limits = quotaService.currentLimits();
+        String plan = tenants.findByName(tenant).map(ShTenant::getPlan).orElse(null);
+        String resetsAt = meter.nextPeriodStart().toString();
+        List<ShTenantQuota.Resource> resources = new ArrayList<>();
+        for (String key : List.of(ShVigletResourceCounter.SITES, ShVigletResourceCounter.POSTS,
+                ShVigletResourceCounter.STORAGE, ShVigletResourceCounter.AGENT_CALLS)) {
+            long max = limits.limit(key);
+            long used = counter.count(tenant, key);
+            boolean unlimited = limits.isUnlimited(max);
+            resources.add(new ShTenantQuota.Resource(key, unlimited ? null : max, used,
+                    unlimited ? null : Math.max(0, max - used),
+                    ShVigletResourceCounter.AGENT_CALLS.equals(key) ? resetsAt : null));
+        }
+        return new ShTenantQuota(tenant, plan, List.copyOf(resources));
     }
 
     /**

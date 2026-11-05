@@ -28,7 +28,6 @@
 
 ## Block F — Market positioning / bold bets
 
-- 📋 **SH1353** (deps: —) **A member cannot read the plan's limits beside what the tenant holds; a full quota first appears as a 402** — A phone shows a bar before a refusal, and sites, posts and bytes are already counted and the plan is on the row, so this is one read scoped to the caller's tenant. → §VI.7
 - 💭 **SH1354** (deps: —) **A delivered site has no address of its own: delivery is a path under /sites/<name>/ on the instance host** — A public service hands each site a link to say aloud, and a name per site is what a person shares and a reverse proxy routes. → §VI.8
 
 ## Block BE — Media: what the bytes mean

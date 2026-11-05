@@ -28,6 +28,8 @@ import com.viglet.shio.tenant.ShTenantContext;
 import com.viglet.shio.tenant.ShTenantFilter;
 import com.viglet.shio.tenant.ShTenantMembershipService;
 import com.viglet.shio.tenant.ShTenantProvisioningService;
+import com.viglet.shio.tenant.ShTenantQuota;
+import com.viglet.shio.tenant.ShTenantQuotaService;
 import com.viglet.shio.tenant.ShTenantTeardownService;
 import com.viglet.shio.tenant.ShTenantTeardownService.ShTenantTeardownReport;
 import com.viglet.shio.tenant.ShTenantUsage;
@@ -68,13 +70,16 @@ public class ShTenantAPI {
     private final ShTenantMembershipService shTenantMembershipService;
     private final ShBillingExportService shBillingExportService;
     private final ShTenantApiCallMeter shTenantApiCallMeter;
+    private final ShTenantQuotaService shTenantQuotaService;
 
     public ShTenantAPI(ShAppProperties shAppProperties, ShTenantRepository shTenantRepository,
                        ShTenantProvisioningService shTenantProvisioningService,
                        ShTenantTeardownService shTenantTeardownService,
                        ShTenantMembershipService shTenantMembershipService,
                        ShBillingExportService shBillingExportService,
-                       ShTenantApiCallMeter shTenantApiCallMeter) {
+                       ShTenantApiCallMeter shTenantApiCallMeter,
+                       ShTenantQuotaService shTenantQuotaService) {
+        this.shTenantQuotaService = shTenantQuotaService;
         this.shAppProperties = shAppProperties;
         this.shTenantRepository = shTenantRepository;
         this.shTenantProvisioningService = shTenantProvisioningService;
@@ -111,6 +116,17 @@ public class ShTenantAPI {
         return shBillingExportService.usageFor(currentTenant(),
                 from == null || from.isBlank() ? today : from,
                 to == null || to.isBlank() ? today : to);
+    }
+
+    /**
+     * SH1353 — the current tenant's limits beside what it holds: per resource, the limit, what is
+     * used and what is left, and for agent calls when the day resets. Scoped like {@link #usage}: a
+     * member reads their own tenant and nobody else's. {@code left: 0} is the state in which the next
+     * write of that kind answers 402, so a client can show it before the refusal.
+     */
+    @GetMapping("/quota")
+    public ShTenantQuota quota() {
+        return shTenantQuotaService.quota(currentTenant());
     }
 
     /** The request's tenant, with the same fallbacks {@code GET /current} reports. */

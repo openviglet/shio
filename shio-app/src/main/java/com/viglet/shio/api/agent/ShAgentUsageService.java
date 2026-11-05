@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.viglet.shio.tenant.ShBillingExportService;
 import com.viglet.shio.tenant.ShTenantApiCallMeter;
 import com.viglet.shio.tenant.ShTenantContext;
+import com.viglet.shio.tenant.ShTenantQuotaService;
 import com.viglet.shio.tenant.ShTenantUsage;
 
 /**
@@ -40,11 +41,14 @@ public class ShAgentUsageService {
 
     private final ShBillingExportService shBillingExportService;
     private final ShTenantApiCallMeter shTenantApiCallMeter;
+    private final ShTenantQuotaService shTenantQuotaService;
 
     public ShAgentUsageService(ShBillingExportService shBillingExportService,
-                               ShTenantApiCallMeter shTenantApiCallMeter) {
+                               ShTenantApiCallMeter shTenantApiCallMeter,
+                               ShTenantQuotaService shTenantQuotaService) {
         this.shBillingExportService = shBillingExportService;
         this.shTenantApiCallMeter = shTenantApiCallMeter;
+        this.shTenantQuotaService = shTenantQuotaService;
     }
 
     /** Today's usage for the request's tenant, terse. */
@@ -57,8 +61,10 @@ public class ShAgentUsageService {
                 ShTenantApiCallMeter.CONSOLE)) {
             pending.put(surface, shTenantApiCallMeter.pendingCalls(tenant, surface));
         }
+        // SH1353 — the plan's limits beside the spend, the same figures GET /api/v2/tenant/quota reads.
         return ShAgentUsageTerse.render(
-                written.isEmpty() ? null : written.get(0), pending, tenant, period);
+                written.isEmpty() ? null : written.get(0), pending, tenant, period,
+                shTenantQuotaService.quota(tenant));
     }
 
     /**

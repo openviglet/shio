@@ -22,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import com.viglet.shio.api.agent.mcp.ShMcpResource;
 import com.viglet.shio.tenant.ShTenantApiCallMeter;
+import com.viglet.shio.tenant.ShTenantQuota;
 import com.viglet.shio.tenant.ShTenantUsage;
 
 /**
@@ -134,5 +135,23 @@ class ShAgentUsageReachTest {
                 .as("SH754: storage is a LEVEL and is labelled apart from the flows above it, so "
                         + "nobody averages it over the period")
                 .contains("storage bytes=4096 plan=FREE");
+    }
+
+    @Test
+    @DisplayName("SH1353: the agent reads the plan's limits beside its spend, in the quota's shape")
+    void theUsageDocumentCarriesTheLimits() {
+        ShTenantQuota quota = new ShTenantQuota("ut-sh1353", "FREE", java.util.List.of(
+                new ShTenantQuota.Resource("sites", 2L, 2, 0L, null),
+                new ShTenantQuota.Resource("posts", null, 5, null, null),
+                new ShTenantQuota.Resource("agentCalls", 500L, 12, 488L, "2026-08-15T00:00:00Z")));
+
+        String rendered = ShAgentUsageTerse.render(null, Map.of(), "ut-sh1353", "2026-08-14", quota);
+
+        assertThat(rendered)
+                .as("SH1353: full reads zero left, before the write that would be refused")
+                .contains("limit sites max=2 used=2 left=0")
+                .as("SH1353: unlimited is spelled, not omitted")
+                .contains("limit posts max=none used=5")
+                .contains("limit agentCalls max=500 used=12 left=488 resets=2026-08-15T00:00:00Z");
     }
 }

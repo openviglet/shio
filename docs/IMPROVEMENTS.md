@@ -607,23 +607,6 @@ and fails with the wrong verifier.
 
 ## VI. Market positioning
 
-### VI.7 A tenant reads its own limits beside what it holds (SH1353)
-
-GET /api/v2/tenant/current answers the id and whether the instance is multi-tenant;
-/usage answers API calls per day; the tenant row carries the plan name and the stored
-bytes. The limits live in the plan, in VigletQuotaService, and the counts of sites and
-posts are a query the quota check already runs. No read puts the four side by side for
-the tenant's own members, so the first time a free plan is full is the 402 on an upload
-the person just took the photo for.
-
-One read, GET /api/v2/tenant/quota, scoped to the caller's tenant the way /usage is: per
-resource, the limit, what is held and what is left, plus the agent-call window once the
-cap lands. It is a read of numbers the instance already has, so it costs no new column.
-The console's Tenants page and the manifest's instance facts read the same shape, which
-is what keeps two surfaces from deciding what a plan allows by different means. The
-assertion carrying this id fills a resource to the limit and reads zero left before the
-write that is refused.
-
 ### VI.8 A site with an address of its own (SH1354)
 
 Delivery is positional: /sites/<site>/<format>/<locale>/<path>, with site.url kept for
