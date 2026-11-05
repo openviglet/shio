@@ -2558,3 +2558,24 @@ jar is no longer kept beside the extracted one. `cli/test/native-spike.test.mjs`
 it. The opt-in
 `native-spike` Maven profile and everything else that reproduces the table live in
 `scripts/native-spike/`.
+
+## The release tag carries a `v`, because the branch already has the bare name (SH1358)
+
+SH1339 tagged the first release of the 2026.3 line `2026.3`, the version `pom.xml` declares, and
+this repository names its version branches the same way, one worktree per line. Git resolves a
+short push source against heads and tags alike and refuses one that matches both, so from the day
+that release was cut `git push origin 2026.3:2026.3`, the push an editor's sync runs after every
+commit, failed with `src refspec 2026.3 matches more than one`. The commit itself succeeded, which
+is why it was reported as "the commit fails" and found one step away from its cause, in the Git
+output log rather than in the editor's error.
+
+The branch cannot move: the worktree layout, the `latest` junction, the CI branch filters and the
+Dockerfile's `REPO_BRANCH` all name it. The tag can, and every tag before 2026.3 was `v0.3.8`-shaped,
+so `release.yml` now creates `v$VERSION` and refuses a repeat against that spelling. The jar name,
+the release title and the Docker image tag keep the bare version, since none of them is a git ref;
+the image tag is read from `pom.xml`, never from the git tag, so renaming moved no image. The
+published release was re-pointed at `v2026.3` on the same commit and the bare tag deleted locally
+and on origin; nothing in the tree linked to the old download URL. `cli/test/release-tag-name.test.mjs`
+holds both spellings and proves its own reader on a bare sample. A clone that fetched the old tag
+before this keeps it until `git fetch --prune --prune-tags`, and its push fails the same way until
+then.

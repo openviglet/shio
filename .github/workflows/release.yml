@@ -7,6 +7,13 @@
 # commit, so the release and the image never name different versions.
 #
 # Dispatched by a person: a release is a decision, and this marks itself Latest.
+#
+# SH1358 — the tag is `v<version>`, never the bare version. This repository names its version
+# branches `2026.3`, and git resolves a short push source against heads and tags alike, so a tag
+# spelled like the branch made `git push origin 2026.3:2026.3` (what an editor's sync runs) fail
+# with "src refspec matches more than one" from the first release on. Every tag before 2026.3 was
+# `v0.3.8`-shaped; this restores that. The jar name, the title and the Docker tag keep the bare
+# version, because none of them is a git ref. `cli/test/release-tag-name.test.mjs` holds it.
 name: Release
 
 on:
@@ -32,8 +39,8 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
-            echo "Tag $VERSION already exists: raise <revision> in pom.xml before releasing again."; exit 1
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "Tag v$VERSION already exists: raise <revision> in pom.xml before releasing again."; exit 1
           fi
 
       - name: Set up JDK 21
@@ -74,7 +81,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           cp shio-app/target/viglet-shio.jar "$RUNNER_TEMP/viglet-shio-$VERSION.jar"
-          gh release create "$VERSION" "$RUNNER_TEMP/viglet-shio-$VERSION.jar#viglet-shio.jar" \
+          gh release create "v$VERSION" "$RUNNER_TEMP/viglet-shio-$VERSION.jar#viglet-shio.jar" \
             --target "$GITHUB_SHA" --title "Shio $VERSION" --notes-file "$RUNNER_TEMP/notes.md" --latest
 
   docker:

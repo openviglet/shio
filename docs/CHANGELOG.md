@@ -2133,3 +2133,4 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1349** — ghcr.io/openviglet/shio-ce:2026.3 and latest are built from 02c53008f by publish-docker.yml, and the pulled image starts in 11 s and answers 200 on / and on the authenticated manifest
   checked **ghcr.io/openviglet/shio-ce:2026.3 exists and answers on :2710** The release and the image name the same version.
 - **SH1350** — The six diagrams live in shio-site/docs/public and link under /shio/docs/; docs-links.test.mjs refuses any root path that leaves /shio/ or names a missing file (design §XCV.7 recorded in `shio-site/scripts/docs-links.test.mjs`).
+- **SH1358** — release.yml tags v$VERSION and checks the same spelling, the 2026.3 release now sits at v2026.3 with the bare tag gone locally and on origin, and git push origin 2026.3:2026.3 resolves again (design §XCV.7 recorded in `docs/agents/build.md`).
