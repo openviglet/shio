@@ -141,6 +141,8 @@ export const ROUTES = {
    * the wrong shape even once bento gets tenant scoping.
    */
   BENTO_TOKENS: "/bento/admin/tokens",
+  /** SH1351 — the signed-in person's own device tokens. */
+  BENTO_DEVICES: "/bento/admin/devices",
   BENTO_TENANTS: "/bento/admin/tenants",
   BENTO_AUTH_PROVIDERS: "/bento/admin/auth-providers",
   BENTO_EXCHANGE_PROVIDERS: "/bento/admin/exchange-providers",

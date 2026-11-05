@@ -543,24 +543,30 @@ asserted at the level the agent surface is.
 > service-level param, not a URL segment; `siteId` is a first-class query param)
 > still bind, and now also bind the agent surface.
 
-### I.6 A person-bound credential for a native client (SH1351)
+### I.7 Signing a native app in through the instance's own login (SH1360)
 
-The console authenticates a person twice over: a session cookie after a password or OIDC
-login, and HTTP Basic on the review path so a script can approve. A phone fits neither.
-A cookie needs a browser the app does not own, and Basic means the password lives on the
-device, which an OIDC user does not even have. The API token is the other credential and
-it is deliberately a machine: READ, PREVIEW, WRITE, AGENT and FORM, with the review
-routes kept off it because the agent never approves its own work.
+SH1351 gave a person a device token. A password user mints one from the app with HTTP
+Basic; a user who signs in with OIDC has no password, so today they add a device on the
+console's My devices page and paste a 43-character secret into the phone.
 
-What is missing is a token bound to a person: minted after a sign-in the instance
-already runs (oauth2Login, or an ID token from Google or Apple exchanged against the
-instance), carrying that user's authorities and tenant memberships, scoped to one device
-and revocable from the console. It reaches every path a Basic login reaches, the review
-queue included, and nothing the agent namespace grants beyond what the person holds.
-ShStatelessReachabilityLintTest and ShAgentP1ConformanceTest classify it. The assertion
-carrying this id is that a revoked device token answers 401 on the next call, and that
-the token never reaches a review decision for a run the same person did not start as a
-curator.
+What to build: the app opens the instance's own sign-in in the system browser (an
+ASWebAuthenticationSession or a Custom Tab), with a PKCE challenge and a redirect to the
+app's registered scheme. After oauth2Login or the password form succeeds, a new route
+(`GET /api/v2/device-token/authorize`) mints a device token for the signed-in session,
+stores it against a one-time code bound to the challenge, and redirects to the app with
+the code only. The app then exchanges code plus verifier at `POST
+/api/v2/device-token/exchange`, which answers the secret once. No secret rides in a URL,
+and the redirect must match a configured allow-list.
+
+This reuses SH1351 whole: the same entity, filter and revoke. It needs no Google or
+Apple verification inside Shio, because the instance's own login is what signs the
+person in; an instance that wants Google adds it as an OIDC provider, which it already
+can.
+
+Open choice: whether the one-time code lives in the database or in memory. Memory is
+enough for one node and is wrong behind a load balancer, so the table is the safer
+default. The assertion carrying the id: a code is single-use, expires in two minutes,
+and fails with the wrong verifier.
 
 ## II. JavaScript-for-pages DX
 

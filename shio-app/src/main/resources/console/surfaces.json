@@ -186,6 +186,17 @@
       }
     },
     {
+      "id": "devices",
+      "section": "administration",
+      "route": "/bento/admin/devices",
+      "capability": "add, list and revoke the signed-in person's own device tokens",
+      "exception": {
+        "reason": "operator-only",
+        "why": "a device token is the person (SH1351): an agent minting one would hold a human's authority, review queue included, which is the escalation the agent's own token is built to prevent",
+        "closedBy": ""
+      }
+    },
+    {
       "id": "tenants",
       "section": "administration",
       "route": "/bento/admin/tenants",

@@ -80,6 +80,7 @@ class ShConsoleReadAclLintTest {
     private static final Map<String, String> NOT_CONTENT = new TreeMap<>(Map.ofEntries(
             Map.entry("api-token", "a credential, governed by the admin role"),
             Map.entry("config", "instance configuration, governed by the admin role"),
+            Map.entry("device-token", "SH1351 — the reader's own device credentials, scoped to them"),
             Map.entry("group", "an identity, governed by the admin role"),
             Map.entry("locale", "the locale catalogue — the same list for everybody"),
             Map.entry("marketplace", "a catalogue of packages, not this instance's content"),

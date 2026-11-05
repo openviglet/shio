@@ -935,3 +935,9 @@ A stateless caller may still be given a session (`IF_REQUIRED`), which is why th
 on the cookie: a native client must not replay `JSESSIONID`, or its writes become CSRF-checked.
 `ShDeviceTokenTest` holds the 401 after revocation, the machine key refused on the review queue and
 on minting, and the self-mint refusal.
+
+The console's **My devices** page (`/bento/admin/devices`, surface `devices`, `operator-only`) lists
+the reader's own devices, revokes them, and adds one from the session, showing the secret once. That
+is how a person who signs in with OIDC, and so has no password for the app's Basic sign-in, gets a
+device today: the session mints and the secret is pasted into the app.
+`shio-react/test/device-tokens.test.mjs` holds the surface, the route and the three calls.

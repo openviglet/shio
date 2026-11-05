@@ -18,6 +18,7 @@ import BentoRoleListPage from "./app/admin/role.list.page"
 import BentoUserListPage from "./app/admin/user.list.page"
 import AdminUserPage from "./app/admin/admin.user.page"
 import BentoApiTokenListPage from "./app/admin/api-token.list.page"
+import BentoDeviceTokenListPage from "./app/admin/device-token.list.page"
 import BentoAuthProviderListPage from "./app/admin/auth-provider.list.page"
 import BentoExchangeProviderListPage from "./app/admin/exchange-provider.list.page"
 import BentoSiteWebhookListPage from "./app/admin/site-webhook.list.page"
@@ -248,6 +249,7 @@ const router = createBrowserRouter(createRoutesFromElements(
                   twelve.
                 */}
                 <Route path="admin/tokens" element={<BentoApiTokenListPage />} />
+                <Route path="admin/devices" element={<BentoDeviceTokenListPage />} />
                 <Route
                   path="admin/tokens/:tokenId"
                   element={<ApiTokenPage />}
