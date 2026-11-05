@@ -1,11 +1,11 @@
 // @scans prose reason: the subject is the documentation's Markdown, its links and its headings,
 // read as text (SH740).
 //
-// SH1262 — every link inside /shio/docs reaches a page, and every #anchor a heading on it.
+// SH1262 — every link inside /docs reaches a page, and every #anchor a heading on it.
 //
 // The pages came over from Docusaurus, which resolved `./page.md#anchor` itself; Starlight does
-// not, so the importer rewrote each one to an absolute `/shio/docs/<slug>/#anchor` (the site is
-// published under /shio/, on openviglet.github.io). A rewrite nobody
+// not, so the importer rewrote each one to an absolute `/docs/<slug>/#anchor` (the site is
+// published at the root of shio.viglet.org). A rewrite nobody
 // checks is a 404 nobody sees until a reader clicks, so this reads the sources, needs no build,
 // and runs in the site's own suite.
 
@@ -16,8 +16,8 @@ import { test } from "node:test";
 
 const CONTENT = join(process.cwd(), "docs", "src", "content", "docs");
 const PUBLIC = join(process.cwd(), "docs", "public");
-/** The other sites on openviglet.github.io a page may link to by root path. */
-const SIBLING_SITES = ["/turing/"];
+/** The site's own routes outside /docs a page may link to by root path. */
+const SITE_ROUTES = ["/console/", "/claude-code/", "/compare/", "/replicate/", "/curator/", "/showcase/", "/features/"];
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -71,19 +71,19 @@ test("SH1262: every link inside /docs reaches a page, and its anchor a heading o
   const broken = [];
   for (const [slug, { text }] of pages) {
     const links = [
-      ...prose(text).matchAll(/\]\((\/shio\/docs\/[^)\s]*)\)/g),
-      ...text.matchAll(/href="(\/shio\/docs\/[^"]*)"/g),
+      ...prose(text).matchAll(/\]\((\/docs\/[^)\s]*)\)/g),
+      ...text.matchAll(/href="(\/docs\/[^"]*)"/g),
     ].map(([, href]) => href);
     for (const href of links) {
       const [path, hash] = href.split("#");
       // A path with an extension is a file Astro copies verbatim out of docs/public.
       if (/\.\w+$/.test(path)) {
-        if (!existsSync(join(PUBLIC, path.replace(/^\/shio\/docs\//, "")))) {
+        if (!existsSync(join(PUBLIC, path.replace(/^\/docs\//, "")))) {
           broken.push(`${slug || "index"}: ${href} (SH1350: no such file under docs/public)`);
         }
         continue;
       }
-      const target = path.replace(/^\/shio\/docs\/?/, "").replace(/\/$/, "");
+      const target = path.replace(/^\/docs\/?/, "").replace(/\/$/, "");
       const page = pages.get(target);
       if (!page) broken.push(`${slug || "index"}: ${href} (no such page)`);
       else if (hash && !page.anchors.has(hash)) broken.push(`${slug || "index"}: ${href} (no #${hash} there)`);
@@ -91,19 +91,17 @@ test("SH1262: every link inside /docs reaches a page, and its anchor a heading o
     for (const [, href] of prose(text).matchAll(/\]\((\.{1,2}\/[^)\s]+\.mdx?(?:#[^)\s]*)?)\)/g)) {
       broken.push(`${slug || "index"}: ${href} (a Docusaurus file link Starlight does not resolve)`);
     }
-    for (const [, href] of prose(text).matchAll(/\]\((\/shio\/(?!docs\/)[^)\s]*)\)/g)) {
-      broken.push(`${slug || "index"}: ${href} (the Docusaurus /shio/ path; the pages are under /shio/docs/)`);
-    }
-    // A link missing the base reaches the host's root, which is not this site.
-    for (const [, href] of [...prose(text).matchAll(/\]\((\/docs\/[^)\s]*)\)/g), ...text.matchAll(/href="(\/docs\/[^"]*)"/g)]) {
-      broken.push(`${slug || "index"}: ${href} (missing the /shio base; write /shio${href})`);
+    // The Docusaurus tree lived under /shio/, and the site lived there too from 2026-10-29 to
+    // 2026-11-05; at the root of shio.viglet.org both are 404s.
+    for (const [, href] of [...prose(text).matchAll(/\]\((\/shio\/[^)\s]*)\)/g), ...text.matchAll(/href="(\/shio\/[^"]*)"/g)]) {
+      broken.push(`${slug || "index"}: ${href} (the old /shio/ base; the pages are under /docs/)`);
     }
     // SH1350: the six diagrams were `/img/diagrams/*.svg`, which Docusaurus served from its static/
-    // and Starlight resolves at the host's root, so every one 404d in production. Any root path
-    // outside /shio/ is another site on openviglet.github.io, and only the ones named here exist.
-    for (const [, href] of prose(text).matchAll(/\]\((\/(?!shio\/|docs\/)[^)\s]*)\)/g)) {
-      if (!SIBLING_SITES.some((site) => href.startsWith(site))) {
-        broken.push(`${slug || "index"}: ${href} (SH1350: outside /shio/; a file belongs in docs/public, linked as /shio/docs/...)`);
+    // and Starlight resolves at the host's root, so every one 404d in production. Any other root
+    // path must be one of the site's own routes.
+    for (const [, href] of prose(text).matchAll(/\]\((\/(?!docs\/|shio\/)[^)\s]*)\)/g)) {
+      if (!SITE_ROUTES.some((route) => href.startsWith(route))) {
+        broken.push(`${slug || "index"}: ${href} (SH1350: not a page on this site; a file belongs in docs/public, linked as /docs/...)`);
       }
     }
   }

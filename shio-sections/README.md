@@ -2,9 +2,9 @@
 
 [![npm](https://img.shields.io/npm/v/@viglet/shio-sections?logo=npm)](https://www.npmjs.com/package/@viglet/shio-sections)
 [![License](https://img.shields.io/npm/l/@viglet/shio-sections)](https://github.com/openviglet/shio/blob/HEAD/LICENSE)
-[![Website](https://img.shields.io/badge/website-0ea5e9?logo=googlechrome&logoColor=white)](https://openviglet.github.io/shio/)
+[![Website](https://img.shields.io/badge/website-0ea5e9?logo=googlechrome&logoColor=white)](https://shio.viglet.org/)
 
-The **page-section vocabulary** for **[Viglet Shio](https://openviglet.github.io/shio/)**,
+The **page-section vocabulary** for **[Viglet Shio](https://shio.viglet.org/)**,
 the open source, **agent-ready CMS**: composable section
 post-types authored with [`@viglet/shio-model`](https://www.npmjs.com/package/@viglet/shio-model),
 plus the matching **React** components.
@@ -140,7 +140,7 @@ npm test           # node:test
 
 ## License
 
-Apache-2.0 — [Viglet Shio](https://openviglet.github.io/shio/) ·
+Apache-2.0 — [Viglet Shio](https://shio.viglet.org/) ·
 [github.com/openviglet/shio](https://github.com/openviglet/shio) ·
-[openviglet.github.io/shio/docs](https://openviglet.github.io/shio/docs/) ·
+[shio.viglet.org/docs](https://shio.viglet.org/docs/) ·
 part of the [Viglet](https://www.viglet.org) open source family.

@@ -1,6 +1,6 @@
 # `shio-app` — the Viglet Shio backend (Java 21 + Spring Boot 4)
 
-The Java content engine behind **[Viglet Shio](https://openviglet.github.io/shio/)**, the
+The Java content engine behind **[Viglet Shio](https://shio.viglet.org/)**, the
 **open source, agent-ready CMS**. This
 module is the whole server: the content model, the **Content Delivery API**, the
 **agent gateway**, the **MCP (Model Context Protocol) server**, the page
@@ -14,8 +14,8 @@ renderer, and the packaged React administration console.
 | **Spring Boot** | 4.1 |
 | **Docker image** | [`ghcr.io/openviglet/shio`](https://github.com/openviglet/shio/pkgs/container/shio) |
 | **License** | [Apache-2.0](../LICENSE) |
-| **Website** | [openviglet.github.io/shio](https://openviglet.github.io/shio/) |
-| **Docs** | [openviglet.github.io/shio/docs](https://openviglet.github.io/shio/docs/) |
+| **Website** | [shio.viglet.org](https://shio.viglet.org/) |
+| **Docs** | [shio.viglet.org/docs](https://shio.viglet.org/docs/) |
 
 > **Distribution.** `shio-app` is a **runnable application**, not a library, and
 > it is **not published to Maven Central**. Consume it as the Docker image above

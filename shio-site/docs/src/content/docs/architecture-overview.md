@@ -21,7 +21,7 @@ content, the files and the keys stay on your infrastructure.
 
 ## Component diagram
 
-![Shio architecture: callers, surfaces, core services and persistence](/shio/docs/img/diagrams/shio-architecture.svg)
+![Shio architecture: callers, surfaces, core services and persistence](/docs/img/diagrams/shio-architecture.svg)
 
 Two edges in that picture are the ones worth reading twice:
 
@@ -62,7 +62,7 @@ Two edges in that picture are the ones worth reading twice:
 | **Schema** | **Liquibase owns it.** `ddl-auto` is `none`; an upgrade is a restart, not a hand-written `ALTER` |
 | **Databases** | PostgreSQL, MariaDB/MySQL, or embedded H2 for development |
 | **Content model** | One unified post row per state (`DRAFT`, `PUBLISHED`), over a JOINED inheritance hierarchy whose root carries the tenant discriminator |
-| **Multi-tenancy** | A discriminator column on the shared schema, applied by a Hibernate filter: see [Multi-Tenancy](/shio/docs/multi-tenancy/) |
+| **Multi-tenancy** | A discriminator column on the shared schema, applied by a Hibernate filter: see [Multi-Tenancy](/docs/multi-tenancy/) |
 | **File bytes** | Under `store/`, addressed by post id and, for a site's own assets, by folder path |
 
 ---
@@ -71,17 +71,17 @@ Two edges in that picture are the ones worth reading twice:
 
 ### The agent loop: discover, plan, write, verify
 
-![The agent loop: discover, plan, write, verify, then hand over to a curator](/shio/docs/img/diagrams/shio-agent-loop.svg)
+![The agent loop: discover, plan, write, verify, then hand over to a curator](/docs/img/diagrams/shio-agent-loop.svg)
 
 The plan step writes nothing, and the write step carries its own proof (`?verify&digest`),
 so a task that would be a dozen round trips is three or four calls.
 
 ### A curator's correction
 
-![Curation: a draft, the review queue, the Universal Editor, publishing, the trash](/shio/docs/img/diagrams/shio-curation-flow.svg)
+![Curation: a draft, the review queue, the Universal Editor, publishing, the trash](/docs/img/diagrams/shio-curation-flow.svg)
 
 Every arrow into `PUBLISHED` passes through a person. See
-[Letting an agent in](/shio/docs/agent-safety/).
+[Letting an agent in](/docs/agent-safety/).
 
 ### A delivery read
 
@@ -100,15 +100,15 @@ sequenceDiagram
 
 ### The content-as-files round trip
 
-![Pull, edit, push, with the three-way merge against a fingerprint base](/shio/docs/img/diagrams/shio-content-files.svg)
+![Pull, edit, push, with the three-way merge against a fingerprint base](/docs/img/diagrams/shio-content-files.svg)
 
 ### The render pipeline
 
-![Page, layout, region, theme, helpers, HTML, digest](/shio/docs/img/diagrams/shio-render-pipeline.svg)
+![Page, layout, region, theme, helpers, HTML, digest](/docs/img/diagrams/shio-render-pipeline.svg)
 
 ### A replicated site being served
 
-![Clone, propose, convert, publish, serve, judge](/shio/docs/img/diagrams/shio-replication-flow.svg)
+![Clone, propose, convert, publish, serve, judge](/docs/img/diagrams/shio-replication-flow.svg)
 
 ---
 
@@ -174,8 +174,8 @@ met a write the node it asked did not stamp.
 
 | Page | Description |
 |---|---|
-| [Core Concepts](/shio/docs/getting-started/core-concepts/) | The vocabulary this diagram uses |
-| [The Agent Surface](/shio/docs/agent-surface/) | The protocol the agent edge speaks |
-| [Pages, Layouts & Regions](/shio/docs/website-development/) | The renderer, in full |
-| [Multi-Tenancy](/shio/docs/multi-tenancy/) | One JVM, many isolated tenants |
-| [Installation Guide](/shio/docs/installation-guide/) | Getting the topologies above running |
+| [Core Concepts](/docs/getting-started/core-concepts/) | The vocabulary this diagram uses |
+| [The Agent Surface](/docs/agent-surface/) | The protocol the agent edge speaks |
+| [Pages, Layouts & Regions](/docs/website-development/) | The renderer, in full |
+| [Multi-Tenancy](/docs/multi-tenancy/) | One JVM, many isolated tenants |
+| [Installation Guide](/docs/installation-guide/) | Getting the topologies above running |

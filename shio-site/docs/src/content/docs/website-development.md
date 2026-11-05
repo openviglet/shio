@@ -39,7 +39,7 @@ language changed.
 
 ---
 
-![The render pipeline: page, layout, region, theme, helpers, HTML, digest](/shio/docs/img/diagrams/shio-render-pipeline.svg)
+![The render pipeline: page, layout, region, theme, helpers, HTML, digest](/docs/img/diagrams/shio-render-pipeline.svg)
 
 ## The five content types
 
@@ -232,7 +232,7 @@ page on the CSS alone while recording the failure: the page must not break, and 
 degradation must not be silent.
 
 The format, every rule the compiler applies, and how a replicated site's stylesheet
-becomes tokens are on their own page: [Design Tokens (DTCG)](/shio/docs/design-tokens/).
+becomes tokens are on their own page: [Design Tokens (DTCG)](/docs/design-tokens/).
 
 ## Third-party scripts
 
@@ -446,7 +446,7 @@ three-segment shape, and a lenient format slot answered those with the *home pag
 200. A browser expecting an image got HTML, and a missing asset stopped being
 something an author could see. `{locale}` is checked the same way: accepted when the
 site has published content in that locale, or when it is the default. See
-[Content in several languages](/shio/docs/content-i18n/) for what fills that segment.
+[Content in several languages](/docs/content-i18n/) for what fills that segment.
 
 Root-relative `href`s are rebased into whichever space is serving the page, so a link
 that is wrong 404s **inside** the site , where the route lint already reports it ,
@@ -466,7 +466,7 @@ Either can be transformed on the way out with query parameters, `?w=`, `?h=`,
 
 Running the instance rather than writing the template? The result cache, the dimension
 and format ceilings, and how to require signed transform URLs are in
-[Search & Caching § Image transforms](/shio/docs/search-caching/#image-transforms-the-operators-half).
+[Search & Caching § Image transforms](/docs/search-caching/#image-transforms-the-operators-half).
 
 ## Editing the rendered page
 
@@ -520,9 +520,9 @@ kept separate so a restyle and a structural break are never confused for each ot
 
 | Page | Description |
 |---|---|
-| [Core Concepts](/shio/docs/getting-started/core-concepts/) | Sites, Folders, Posts and Post Types |
-| [Content Modeling](/shio/docs/content-modeling/) | Post Types, fields and the publishing workflow |
-| [Content Delivery API](/shio/docs/headless/content-delivery-api/) | Serving this content to your own front end |
-| [Configuration Reference](/shio/docs/configuration-reference/) | Application properties |
+| [Core Concepts](/docs/getting-started/core-concepts/) | Sites, Folders, Posts and Post Types |
+| [Content Modeling](/docs/content-modeling/) | Post Types, fields and the publishing workflow |
+| [Content Delivery API](/docs/headless/content-delivery-api/) | Serving this content to your own front end |
+| [Configuration Reference](/docs/configuration-reference/) | Application properties |
 
 ---

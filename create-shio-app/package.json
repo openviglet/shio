@@ -2,7 +2,7 @@
   "name": "@viglet/create-shio-app",
   "version": "2026.3.3",
   "description": "Scaffold a Next.js (App Router) site wired to the Viglet Shio Content Delivery API. The flagship 'JS dev, zero Java' starter.",
-  "homepage": "https://openviglet.github.io/shio/",
+  "homepage": "https://shio.viglet.org/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/openviglet/shio.git",

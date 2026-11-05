@@ -1,7 +1,7 @@
 # shio-site
 
 The public site for **Viglet Shio**, published to
-[openviglet.github.io/shio](https://openviglet.github.io/shio/).
+[shio.viglet.org](https://shio.viglet.org/).
 
 Stack: **Vite + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui**, the same
 conventions as [`turing-site`](https://turing.viglet.org) in the sibling
@@ -164,20 +164,21 @@ the one this site is discovered by.
 ## Static assets
 
 Served from the site root, in [`public/`](public/): `robots.txt`, `sitemap.xml`,
-`llms.txt`, `favicon.svg` and `og.svg`. There is no `CNAME`: the site has no custom domain.
+`llms.txt`, `favicon.svg`, `og.svg` and `CNAME`, which names the custom domain
+`shio.viglet.org`; the Pages workflow refuses to publish without it.
 
 ## The base path
 
-The site is the repository's GitHub Pages project page, so it is served under **`/shio/`**,
-not at a host's root. `base` in [`vite.config.ts`](vite.config.ts) says so once, and Vite
-hands it to both builds as `BASE_URL`. Two rules follow:
+The site is served at the root of **`shio.viglet.org`**, so `base` in
+[`vite.config.ts`](vite.config.ts) is `/`. It sat under `/shio/` on
+`openviglet.github.io` from 2026-10-29 to 2026-11-05 and moved back because a custom domain
+carries more search authority than a path on a shared host. Two rules survive the move:
 
 - **Every internal link goes through `withBase()`** ([`src/lib/base.ts`](src/lib/base.ts)):
-  write `withBase("/console/")`, never `"/console/"`. The dev server and a local preview
-  answer the bare form, so only the published site would 404. The prerender checks every
-  `href` and `src` it writes and fails the build on one without the base.
-- **The docs area's base is `/shio/docs`**, and the links typed in its pages carry it
-  (`/shio/docs/<slug>/`); `scripts/docs-links.test.mjs` fails on one written as `/docs/…`.
+  write `withBase("/console/")`, never `"/console/"`. At the root it changes nothing, and it
+  is what makes another move a one-line change to `base`.
+- **The docs area's base is `/docs`**, and the links typed in its pages carry it
+  (`/docs/<slug>/`); `scripts/docs-links.test.mjs` fails on one still written as `/shio/…`.
 
 ## The documentation, at /docs (SH1262)
 
@@ -196,7 +197,7 @@ found the REST reference still documenting the cache-clearing endpoint SH954 rem
 ## Publish
 
 [`.github/workflows/publish-github-pages.yml`](../.github/workflows/publish-github-pages.yml)
-is the whole path to [openviglet.github.io/shio](https://openviglet.github.io/shio/): it installs the
+is the whole path to [shio.viglet.org](https://shio.viglet.org/): it installs the
 workspace, runs `pnpm run build:site`, assembles `_site/` from `dist/` and deploys
 it to this repository's GitHub Pages with `actions/deploy-pages`.
 

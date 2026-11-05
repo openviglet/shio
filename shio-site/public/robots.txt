@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://openviglet.github.io/shio/sitemap.xml
+Sitemap: https://shio.viglet.org/sitemap.xml

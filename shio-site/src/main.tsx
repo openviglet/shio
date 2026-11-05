@@ -6,7 +6,7 @@ import { BASE } from "@/lib/base";
 import "./index.css";
 
 // The route is derived from the URL: the same trivial rule the server used, once the
-// path the site is published under ("/shio/") is taken off.
+// path the site is published under (BASE, "/" at shio.viglet.org) is taken off.
 const { pathname } = globalThis.location;
 const path = pathname.startsWith(BASE) ? `/${pathname.slice(BASE.length)}` : pathname;
 const container = document.getElementById("root")!;

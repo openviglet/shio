@@ -18,9 +18,10 @@ import { resolve, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import { pageToMarkdown } from "./markdown.mjs";
 
-const SITE_HOST = "https://openviglet.github.io";
+const SITE_HOST = "https://shio.viglet.org";
 // The path the site is published under: vite.config.ts's `base`, without its trailing slash.
-const BASE = "/shio";
+// Empty since the site moved back to the root of shio.viglet.org.
+const BASE = "";
 const SITE_ORIGIN = `${SITE_HOST}${BASE}`;
 const distDir = resolve(process.cwd(), "dist");
 const serverEntry = resolve(process.cwd(), "dist-ssr", "entry-server.js");
@@ -54,9 +55,9 @@ function pageUrl(path) {
 const routePaths = new Set(routes.map((r) => r.path).filter((p) => p !== "/"));
 function assertSlashedLinks(text, where) {
   const bad = [];
-  const re = /(?:href="|\]\(|<loc>)(?:https:\/\/openviglet\.github\.io)?(\/[^"#?)<\s]*)/g;
+  const re = /(?:href="|\]\(|<loc>)(?:https:\/\/shio\.viglet\.org)?(\/[^"#?)<\s]*)/g;
   for (const m of text.matchAll(re)) {
-    const path = m[1] === BASE || m[1].startsWith(`${BASE}/`) ? m[1].slice(BASE.length) || "/" : m[1];
+    const path = BASE && (m[1] === BASE || m[1].startsWith(`${BASE}/`)) ? m[1].slice(BASE.length) || "/" : m[1];
     if (routePaths.has(path)) bad.push(m[1]);
   }
   if (bad.length) {
@@ -68,9 +69,10 @@ function assertSlashedLinks(text, where) {
 }
 
 /**
- * Every root-anchored link must carry the base. On openviglet.github.io a bare "/console/" is
- * another site's 404, and nothing else would notice: the dev server and a local preview both
- * answer it. A link written without `withBase()` (src/lib/base.ts) fails the build here.
+ * Every root-anchored link must carry the base. Under a path, a bare "/console/" is the host's
+ * 404, and nothing else would notice: the dev server and a local preview both answer it. A link
+ * written without `withBase()` (src/lib/base.ts) fails the build here. At the root of
+ * shio.viglet.org BASE is empty and every root-anchored link passes.
  */
 function assertBasedLinks(text, where) {
   const bad = [];
@@ -86,9 +88,9 @@ function assertBasedLinks(text, where) {
 }
 
 /**
- * A BreadcrumbList for every page below the landing one. Without it Google builds the result's
- * breadcrumb from the URL and drops `shio`, so a page reads "openviglet.github.io › console" as
- * though it belonged to the host. The docs area emits its own (docs/src/components/Head.astro).
+ * A BreadcrumbList for every page below the landing one, so the result's breadcrumb reads
+ * Shio › page rather than whatever Google derives from the URL. The docs area emits its own
+ * (docs/src/components/Head.astro).
  */
 function breadcrumbJsonLd(route, canonical) {
   if (route.path === "/") return "";

@@ -17,7 +17,7 @@ covered, is this page.
 
 ---
 
-![Curation: a draft, the review queue, the Universal Editor, publishing, the trash](/shio/docs/img/diagrams/shio-curation-flow.svg)
+![Curation: a draft, the review queue, the Universal Editor, publishing, the trash](/docs/img/diagrams/shio-curation-flow.svg)
 
 ## The invariant
 
@@ -157,7 +157,7 @@ about it. Three, as of 2026.3:
 
 | Page | Description |
 |---|---|
-| [The Agent Surface](/shio/docs/agent-surface/) | The endpoints these rules bound, and the op vocabulary |
-| [MCP Server](/shio/docs/mcp/) | Connecting an agent in the first place |
-| [Administration Guide](/shio/docs/administration-guide/) | Users, groups, roles and permissions |
-| [Security](/shio/docs/security/) | Authentication, token scopes, CSRF and CORS |
+| [The Agent Surface](/docs/agent-surface/) | The endpoints these rules bound, and the op vocabulary |
+| [MCP Server](/docs/mcp/) | Connecting an agent in the first place |
+| [Administration Guide](/docs/administration-guide/) | Users, groups, roles and permissions |
+| [Security](/docs/security/) | Authentication, token scopes, CSRF and CORS |
