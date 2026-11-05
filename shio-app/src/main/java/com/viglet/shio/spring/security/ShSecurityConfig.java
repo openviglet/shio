@@ -227,6 +227,13 @@ public class ShSecurityConfig {
      * console-only feature, which law P1 forbids.
      */
     private static final String REVIEW_PATH = "/api/v2/review/**";
+    /**
+     * SH1351 — mint, list and revoke a person's device tokens. The native client signs in with Basic
+     * and holds no session, so this gets the review queue's narrowed exemption: a curator's browser
+     * minting from the console stays CSRF-checked. A machine token never reaches it, because
+     * {@code ShApiTokenFilter} confines those to the delivery and agent namespaces.
+     */
+    private static final String DEVICE_TOKEN_PATH = "/api/v2/device-token/**";
     /** The MCP endpoint (SH75) — the same surface over JSON-RPC; equally stateless, equally narrowed. */
     private static final String MCP_PATH = "/mcp";
     /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
@@ -258,6 +265,7 @@ public class ShSecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http,
             ShLogoutHandler shLogoutHandler,
             ShApiTokenFilter shApiTokenFilter,
+            ShDeviceTokenFilter shDeviceTokenFilter,
             ShAppProperties shAppProperties,
             ShAuthenticationEntryPoint shAuthenticationEntryPoint,
             ShOAuth2UserService shOAuth2UserService,
@@ -327,6 +335,8 @@ public class ShSecurityConfig {
                         new ShStatelessRequestMatcher(mvc.matcher(STATIC_FILE_PATH), sessionCookieName),
                         // SH109 — same narrowed exemption, same reason (see REVIEW_PATH).
                         new ShStatelessRequestMatcher(mvc.matcher(REVIEW_PATH), sessionCookieName),
+                        // SH1351 — see DEVICE_TOKEN_PATH: the native client's sign-in and sign-out.
+                        new ShStatelessRequestMatcher(mvc.matcher(DEVICE_TOKEN_PATH), sessionCookieName),
                         // SH677 — see MARKETPLACE_PATH. The narrowing is the usual one: the CLI
                         // holds Basic auth and no session, the console holds both and stays
                         // CSRF-checked. The privilege is carried by the ADMIN role below rather
@@ -351,6 +361,9 @@ public class ShSecurityConfig {
                         mvc.matcher(LOGIN_PATH)))
                 .addFilterAfter(new ShCsrfHeaderFilter(), BasicAuthenticationFilter.class);
         http.addFilterBefore(shApiTokenFilter, BasicAuthenticationFilter.class);
+        // SH1351 — a person on a device. Ahead of Basic like the API token, and on every path, because
+        // it is the person's authority and not a scope: it reaches exactly what a Basic login reaches.
+        http.addFilterBefore(shDeviceTokenFilter, BasicAuthenticationFilter.class);
         http.addFilterAfter(shTenantFilter, BasicAuthenticationFilter.class);
 
         if (shAppProperties.isKeycloak()) {

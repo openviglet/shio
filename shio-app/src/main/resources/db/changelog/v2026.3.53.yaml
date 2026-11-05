@@ -1,0 +1,64 @@
+databaseChangeLog:
+  # SH1351 — `sh_device_token`: a credential that is a person on one device, for the native client.
+  #
+  # No tenant_id, for ShUser's reason: a person spans tenants and the token is looked up before the
+  # request's tenant is known; the tenant is resolved from the principal downstream, as for Basic.
+  # Only the SHA-256 of the secret is stored (token_hash). A revoked row is kept (revoked_at) so the
+  # console can say when a device lost access. Types DB-agnostic per
+  # ShLiquibaseChangelogAgnosticTest; SH26: preserve identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1351-device-token
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_device_token
+      changes:
+        - createTable:
+            tableName: sh_device_token
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: device_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_device_token_hash
+              - column:
+                  name: created_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_used_at
+                  type: TIMESTAMP
+              - column:
+                  name: revoked_at
+                  type: TIMESTAMP
+              - column:
+                  name: revoked_by
+                  type: VARCHAR(255)
+        - createIndex:
+            tableName: sh_device_token
+            indexName: idx_device_token_username
+            columns:
+              - column:
+                  name: username

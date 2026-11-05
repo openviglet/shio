@@ -119,6 +119,8 @@ class ShAnonymousRouteAccessTest {
 			new Route("/api/v2", "/api/v2", Access.AUTHENTICATED),
 			new Route("/api/v2/agent/**", "/api/v2/agent/manifest", Access.AUTHENTICATED),
 			new Route("/api/v2/api-token/**", "/api/v2/api-token", Access.AUTHENTICATED),
+			// SH1351 — minting a person's device credential needs a sign-in the instance already runs.
+			new Route("/api/v2/device-token/**", "/api/v2/device-token", Access.AUTHENTICATED),
 			// SH633 — its own row ahead of the /api/v2/cda/** one, though that would have covered it.
 			// This is the single endpoint in the product whose whole purpose is to be reachable from a
 			// public page, so it is exactly where a future reader reasons that it "should" be

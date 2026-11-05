@@ -254,6 +254,12 @@ class ShAgentP9ConformanceTest {
                 no("ShSavedViewAPI.java", "digest", IDENTITY_OR_CONFIG),
                 no("ShSavedViewAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
                 no("ShSavedViewAPI.java", "routes", NO_ROUTE_MOVED)));
+        // SH1351 — a person's own device credentials, the api-token's kind.
+        byPath.put("/api/v2/device-token", new Proof(
+                no("ShDeviceTokenAPI.java", "ChangeSet", ONE_OBJECT_NO_SET),
+                no("ShDeviceTokenAPI.java", "digest", IDENTITY_OR_CONFIG),
+                no("ShDeviceTokenAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
+                no("ShDeviceTokenAPI.java", "routes", NO_ROUTE_MOVED)));
 
         return byPath;
     }

@@ -212,6 +212,12 @@ class ShAgentP7ConformanceTest {
                 no("ShSavedViewAPI.java", "confirm", DELETE_IS_THE_CONSOLE_GESTURE),
                 no("ShSavedViewAPI.java", "shContentAuditService", NOT_CONTENT),
                 no("ShSavedViewAPI.java", "findAgentEntries", NOT_CONTENT)));
+        // SH1351 — a person's own device credentials, the api-token's kind.
+        byPath.put("/api/v2/device-token", new Guards(
+                no("ShDeviceTokenAPI.java", "dryRun", PLAN_IS_THE_CALL),
+                no("ShDeviceTokenAPI.java", "confirm", DELETE_IS_THE_CONSOLE_GESTURE),
+                no("ShDeviceTokenAPI.java", "shContentAuditService", NOT_CONTENT),
+                no("ShDeviceTokenAPI.java", "findAgentEntries", NOT_CONTENT)));
 
         // SH1218 — a picture of a site's published home, refused unless it was taken of the home
         // as it is published now. It changes no content and no visitor sees it.

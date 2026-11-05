@@ -24,7 +24,7 @@
 
 ## Block A — Headless foundation (Content Delivery API)
 
-- 📋 **SH1351** (deps: —) **A native app has no credential that is a person: the session is a cookie and an API token is a machine** — The phone is the curator on the go, and approving is the one act a token must never do, so the app needs the person's authority without storing a password. → §I.6
+- ⏳ **SH1351** (deps: —) **A native app has no credential that is a person: the session is a cookie and an API token is a machine** — The console cannot list or revoke a person's devices yet, and a user with no password (OIDC, Google, Apple) cannot mint one without an ID-token exchange. → §I.6
 
 ## Block F — Market positioning / bold bets
 
@@ -62,6 +62,14 @@
   the site link a hosted instance where the Quilhara showcase renders publicly and a
   guest role can browse, edit drafts and see the review queue but not publish, reset
   from the blueprint on a schedule.
+
+## Done when — SH1351
+
+- **A console user lists and revokes their devices, and an OIDC user can mint one**
+  Checked when the console's account page shows GET /api/v2/device-token with a revoke
+  action, and an ID token from the instance's OIDC provider (or Google/Apple) is
+  exchanged for a device token by a user who has no password, each with an assertion
+  carrying SH1351.
 
 ## Non-goals (do NOT add as tasks)
 

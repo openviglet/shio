@@ -909,3 +909,29 @@ way never signed in, so there is nothing to rehash. `PUT /api/v2/user/{username}
 new password, encoded, when the edit carries one and keeps the stored hash when it is blank, which is
 how an administrator gives such an account a working password; the console's user form says that a
 blank field keeps it. `ShUserPasswordTest` holds the create, the listing and both edits.
+
+## A device token is a person, not a machine (SH1351)
+
+The native client is the curator on the go, so it needs the person's authority without storing a
+password. `POST /api/v2/device-token {"deviceName":"..."}`, called with a sign-in the instance already
+runs (HTTP Basic from the app, or a console session), returns a `shd_` secret once; only its SHA-256
+is stored, in `sh_device_token`, which carries no `tenant_id` for `ShUser`'s reason. The app then
+sends `Authorization: Bearer shd_...`. `ShDeviceTokenFilter` resolves the user's authorities on every
+call through the same `UserDetailsService` as Basic, so the device reaches exactly what a Basic login
+reaches, the review queue included, and `ShTenantFilter` resolves the tenant from the principal as it
+does for Basic. There is no scope and no `ROLE_AGENT`: the two token stores are disjoint, and a machine
+key is never looked up as a device, so an agent's credential cannot present itself as a person.
+
+Three refusals are deliberate. A presented `shd_` value that is unknown, revoked, or whose person is
+gone or disabled answers 401 with a `fix` **in the filter**, even on a `permitAll` route, because a
+revoked phone must learn it on its next call rather than read a 200. A device token cannot mint
+another one (403), so a stolen device cannot extend itself. And an API token never reaches
+`/api/v2/device-token` at all, because `ShApiTokenFilter` confines machine keys to the delivery and
+agent namespaces. `GET` lists the caller's own devices (never the secret, `current` marks the calling
+one); `DELETE /{id}` revokes, by the owner (a device revoking itself is the app's sign-out) or by an
+administrator. The path has the review queue's narrowed CSRF exemption (`DEVICE_TOKEN_PATH`).
+
+A stateless caller may still be given a session (`IF_REQUIRED`), which is why the CSRF exemptions key
+on the cookie: a native client must not replay `JSESSIONID`, or its writes become CSRF-checked.
+`ShDeviceTokenTest` holds the 401 after revocation, the machine key refused on the review queue and
+on minting, and the self-mint refusal.

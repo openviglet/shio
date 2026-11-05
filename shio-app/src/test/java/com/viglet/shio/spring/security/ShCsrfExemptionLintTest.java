@@ -102,7 +102,11 @@ class ShCsrfExemptionLintTest {
             "IMPORT_PATH",
             // SH327. The endpoint that makes a site visible; a curator's browser stays checked, a
             // credential-based caller could not obtain a token and got a bodiless 403.
-            "RENDER_PATH");
+            "RENDER_PATH",
+            // SH1351. Minting a person's credential from a forged cross-site request against a
+            // curator's browser would hand that credential to nobody, but revoking would sign a
+            // phone out; either way the browser stays checked.
+            "DEVICE_TOKEN_PATH");
 
     @Test
     @DisplayName("SH167: every CSRF exemption is either session-narrowed or argued in the allow-list")
