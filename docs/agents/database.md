@@ -707,3 +707,24 @@ Unique on (owner, list_key, name, tenant_id), declared on the entity as well, so
 already used replaces the row instead of adding one, and the H2 unit suite sees the constraint.
 Nothing reads the query string server-side: the list that opens a view validates it, as it does a
 pasted link.
+
+## A plan caps agent calls per day (SH1352)
+
+The agent surface (`/api/v2/agent/**` and `/mcp`) is the one flow whose cost is not the instance's:
+every call is a model turn somebody pays for. So a plan may cap it, and only it: the console and the
+CDA stay uncapped, because a free tier that refuses a curator's own reads is a product nobody keeps.
+The ceiling is a fourth key on the quota SPI, `ShVigletResourceCounter.AGENT_CALLS`, set on `FREE`
+from `ShTenantPlanLimits.FREE_AGENT_CALLS_PER_DAY` (a placeholder until SH1357 prices the phone's
+run); a paid plan, tenancy off and the default tenant are unlimited by the kernel's own
+`currentLimits()`. The count is `ShTenantApiCallMeter.callsToday`: the flushed row for today's UTC
+period plus this node's unflushed window, so a node is at most one flush window late, the tolerance
+the bill already accepts.
+
+`ShAgentCallCapFilter` checks it before the call runs, registered beside the meter at
+`LOWEST_PRECEDENCE - 25` (inside the meter, inside the security chain, so the tenant is resolved and
+a caller without a credential has already met its 401). It does not use `VigletQuotaService.check`,
+whose bare 402 is a sentence: the refusal is `application/problem+json` carrying `plan`, `limit`,
+`used`, `resetsAt` (the next UTC midnight), a `fix`, and `Retry-After`. The meter now treats 402 as a
+refusal it does not bill, so a client retrying past the cap cannot run the count up.
+`ShAgentCallCapTest` drives a tenant to the ceiling, reads the refusal, and reads the call after the
+reset admitted.

@@ -28,7 +28,6 @@
 
 ## Block F — Market positioning / bold bets
 
-- 📋 **SH1352** (deps: —) **A tenant's agent calls are metered for billing but never capped, so a plan cannot bound them** — The model is the only variable cost of a free service, and the meter already counts agent calls apart from CDA and console, so a cap is one plan field and a 402. → §VI.6
 - 📋 **SH1353** (deps: —) **A member cannot read the plan's limits beside what the tenant holds; a full quota first appears as a 402** — A phone shows a bar before a refusal, and sites, posts and bytes are already counted and the plan is on the row, so this is one read scoped to the caller's tenant. → §VI.7
 - 💭 **SH1354** (deps: —) **A delivered site has no address of its own: delivery is a path under /sites/<name>/ on the instance host** — A public service hands each site a link to say aloud, and a name per site is what a person shares and a reverse proxy routes. → §VI.8
 

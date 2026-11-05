@@ -41,23 +41,32 @@ public class ShVigletResourceCounter implements VigletResourceCounter {
     public static final String POSTS = "posts";
     /** SH45 — bytes, read from the maintained meter rather than counted per check. */
     public static final String STORAGE = "storage";
+    /**
+     * SH1352 — agent calls today (UTC), a flow and not a holding: the SH45 meter's flushed row plus
+     * what this node holds unflushed, so a node over the cap is at most one flush window late.
+     */
+    public static final String AGENT_CALLS = "agentCalls";
 
-    /** The bounded FREE plan: 2 sites, 200 posts. */
+    /** The bounded FREE plan: 2 sites, 200 posts, 512 MB, and a daily ceiling on agent calls. */
     private static final VigletPlanLimits FREE = VigletPlanLimits.of(
             SITES, ShTenantPlanLimits.FREE.maxSites(),
             POSTS, ShTenantPlanLimits.FREE.maxPosts(),
-            STORAGE, ShTenantPlanLimits.FREE.maxStorageBytes());
+            STORAGE, ShTenantPlanLimits.FREE.maxStorageBytes(),
+            AGENT_CALLS, ShTenantPlanLimits.FREE_AGENT_CALLS_PER_DAY);
 
     private final ShSiteRepository shSiteRepository;
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShTenantStorageMeter shTenantStorageMeter;
+    private final ShTenantApiCallMeter shTenantApiCallMeter;
 
     public ShVigletResourceCounter(ShSiteRepository shSiteRepository,
             ShPostUnifiedRepository shPostUnifiedRepository,
-            ShTenantStorageMeter shTenantStorageMeter) {
+            ShTenantStorageMeter shTenantStorageMeter,
+            ShTenantApiCallMeter shTenantApiCallMeter) {
         this.shSiteRepository = shSiteRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
         this.shTenantStorageMeter = shTenantStorageMeter;
+        this.shTenantApiCallMeter = shTenantApiCallMeter;
     }
 
     @Override
@@ -69,6 +78,7 @@ public class ShVigletResourceCounter implements VigletResourceCounter {
             // this one would be a filesystem walk or a JSON parse per row, which is
             // why it reads a figure kept up to date instead (IMPROVEMENTS VI.5).
             case STORAGE -> shTenantStorageMeter.bytesFor(tenantId);
+            case AGENT_CALLS -> shTenantApiCallMeter.callsToday(tenantId, ShTenantApiCallMeter.AGENT);
             default -> 0L;
         };
     }

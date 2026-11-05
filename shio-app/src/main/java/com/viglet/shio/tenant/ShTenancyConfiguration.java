@@ -15,10 +15,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
+import com.viglet.core.tenancy.VigletQuotaService;
 import com.viglet.core.tenancy.VigletTenantContext;
 import com.viglet.core.tenancy.VigletTenantProvisioner;
 import com.viglet.core.tenancy.VigletTenantSlugValidator;
 import com.viglet.shio.persistence.model.tenant.ShTenant;
+import com.viglet.shio.persistence.repository.tenant.ShTenantRepository;
 import com.viglet.shio.property.ShAppProperties;
 
 import lombok.extern.slf4j.Slf4j;
@@ -114,6 +116,22 @@ public class ShTenancyConfiguration {
         registration.addUrlPatterns("/api/*", "/graphql", "/mcp");
         registration.setName("shTenantApiCallFilter");
         registration.setOrder(Ordered.LOWEST_PRECEDENCE - 30);
+        return registration;
+    }
+
+    /**
+     * SH1352 — the agent surface's daily ceiling, inside the meter (a higher order runs later), so a
+     * refusal is a 402 the meter sees and does not count.
+     */
+    @Bean
+    FilterRegistrationBean<ShAgentCallCapFilter> shAgentCallCapFilter(VigletQuotaService quotaService,
+            ShVigletResourceCounter counter, ShTenantApiCallMeter meter, ShTenantRepository tenants) {
+        FilterRegistrationBean<ShAgentCallCapFilter> registration = new FilterRegistrationBean<>(
+                new ShAgentCallCapFilter(quotaService, counter, meter, tenant -> tenants.findByName(tenant)
+                        .map(ShTenant::getPlan).filter(plan -> plan != null && !plan.isBlank()).orElse("FREE")));
+        registration.addUrlPatterns("/api/v2/agent/*", "/mcp", "/mcp/*");
+        registration.setName("shAgentCallCapFilter");
+        registration.setOrder(Ordered.LOWEST_PRECEDENCE - 25);
         return registration;
     }
 }

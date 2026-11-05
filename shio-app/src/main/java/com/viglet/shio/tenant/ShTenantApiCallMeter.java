@@ -198,6 +198,19 @@ public class ShTenantApiCallMeter {
         }
     }
 
+    /**
+     * SH1352 — today's calls for one tenant and surface: the flushed row plus what this node holds.
+     * Another node's unflushed window is not seen, which is the tolerance the bill already accepts.
+     */
+    public long callsToday(String tenant, String surface) {
+        return persistedCalls(tenant, currentPeriod(), surface) + pendingCalls(tenant, surface);
+    }
+
+    /** The first instant of the next period, which is when a daily cap resets. */
+    public java.time.Instant nextPeriodStart() {
+        return LocalDate.now(clock).plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+    }
+
     /** What the table holds for one bucket, ignoring anything still pending. */
     public long persistedCalls(String tenant, String period, String surface) {
         return repository.findByTenantNameAndPeriodKeyAndSurface(tenant, period, surface)

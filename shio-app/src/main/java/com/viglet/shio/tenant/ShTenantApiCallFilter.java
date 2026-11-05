@@ -94,7 +94,11 @@ public class ShTenantApiCallFilter extends OncePerRequestFilter {
 
     /** Refused before the instance did any work for the caller — see the class javadoc. */
     private static boolean isRefusal(int status) {
+        // SH1352 — 402 too: a call refused because the plan is spent is not a call the plan pays
+        // for, and counting it would let a client that keeps retrying run the meter up past a cap
+        // it is already over.
         return status == HttpServletResponse.SC_UNAUTHORIZED
+                || status == HttpServletResponse.SC_PAYMENT_REQUIRED
                 || status == HttpServletResponse.SC_FORBIDDEN
                 || status == 429;
     }

@@ -25,6 +25,14 @@ public record ShTenantPlanLimits(long maxSites, long maxPosts, long maxStorageBy
     public static final ShTenantPlanLimits UNLIMITED = new ShTenantPlanLimits(-1, -1, -1);
     public static final ShTenantPlanLimits FREE = new ShTenantPlanLimits(2, 200, 512L * 1024 * 1024);
 
+    /**
+     * SH1352 — agent calls a FREE tenant may make per UTC day, across {@code /api/v2/agent/**} and
+     * {@code /mcp}. A flow rather than a holding, so it is not a component of this record: it is keyed
+     * on {@code ShVigletResourceCounter#AGENT_CALLS} and counted from the SH45 meter. A placeholder
+     * until SH1357 prices the phone's run; changing it is one number here.
+     */
+    public static final long FREE_AGENT_CALLS_PER_DAY = 500;
+
     /** Resolve the limits for a (free-form) plan id; unknown / paid plans are unlimited. */
     public static ShTenantPlanLimits forPlan(String plan) {
         if (plan == null) {

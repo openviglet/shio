@@ -607,23 +607,6 @@ and fails with the wrong verifier.
 
 ## VI. Market positioning
 
-### VI.6 A cap on agent calls per tenant (SH1352)
-
-SH45 records every call per tenant, UTC day and surface, and the three surfaces are kept
-apart because which of them a plan charges for is a pricing question. VigletQuotaService
-caps what is held: sites, posts, bytes. Nothing caps a flow, and the agent surface is
-the one flow whose cost is not the instance's: every call to /api/v2/agent/** or /mcp is
-a model turn somebody pays for.
-
-The cap is a per-plan ceiling on agent calls per day, checked before the call runs,
-answering 402 with the plan, the count and when the window resets, in the teaching shape
-every other refusal has. The console and CDA surfaces stay uncapped here: a free tier
-that refuses a curator's own reads is a product nobody keeps. A suspended tenant already
-answers 403 and is unchanged. The count is the meter's own heap accumulator plus the
-flushed row, so one node over the cap is at most one flush window late, which is the
-same tolerance the bill accepts. The assertion carrying this id drives a tenant to the
-ceiling and reads the next call refused and the one after the reset admitted.
-
 ### VI.7 A tenant reads its own limits beside what it holds (SH1353)
 
 GET /api/v2/tenant/current answers the id and whether the instance is multi-tenant;
