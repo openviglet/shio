@@ -277,9 +277,9 @@ package never opens the door; the curator enables submissions, as SH632 decided.
 The finding that has to be settled first: `POST /api/v2/cda/form/<site>` takes a JSON
 body, so a `<form>` the server renders cannot post to it without script. Either the
 endpoint also accepts `application/x-www-form-urlencoded` (answering a browser with a
-redirect back to the page, which a JSON caller never asks for), or the layout carries a
-few lines of script that serialize the form. The first is preferred: a contact form that
-works with script off is the expected behaviour.
+redirect back to the page, which a JSON caller never asks for), or a script serializes
+it. Script-free also puts the FORM token in the POST body (SH364 made submissions
+token-scoped): a new credential path, a person's call.
 
 The package, small-business, composes hero, gallery, rich text, form and CTA into home,
 about and contact, with five parameters a phone can ask: name, what it does, where, how

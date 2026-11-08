@@ -12,7 +12,7 @@
 ## Block J — Blueprints (appliable units) + Claude Code plugin (SH74)
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
-- ⏳ **SH1356** (deps: —) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — SectionForm and the small-business package remain; the form endpoint takes JSON, so a server-rendered form cannot post to it without script. → §XI.109
+- ⏳ **SH1356** (deps: decision: how a FORM token reaches a script-free form) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — SectionForm and the small-business package remain; a script-free form must carry the FORM token, a security choice. → §XI.109
 
 ## Block BG — The console as an application: cost, resilience and access
 
