@@ -123,6 +123,45 @@ and the bytes are then reachable two ways:
 
 Both accept transform parameters, `?w=`, `?h=`, `?format=`, `?crop=`.
 
+### Uploads that resume
+
+`POST /api/v2/staticfile/upload` sends a file in one multipart request. On a mobile network a
+large file (a video, a batch of photos) often loses the connection before it finishes, and a
+single request has to start again from zero. For that case, send the file as an upload session
+instead:
+
+```http
+POST /api/v2/staticfile/upload-session
+{"name": "clip.mp4", "size": 73400320, "folderId": "<id>",
+ "sha256": "<the file's SHA-256, lower-case hex>", "contentType": "video/mp4"}
+```
+
+The answer is `201` with the session's `id`, the `offset` to send from (0) and when it expires.
+The upload policy and your storage quota are checked here, before any bytes travel.
+
+Then send the bytes in chunks, each as the raw request body:
+
+```http
+PUT /api/v2/staticfile/upload-session/{id}?offset=0
+```
+
+Each answer says how many bytes have arrived (`offset`) and whether the file is `complete`. If
+the connection drops, ask where to continue with `GET /api/v2/staticfile/upload-session/{id}`
+and send from that offset. Resending a chunk that already arrived is harmless, and a chunk that
+starts anywhere else is refused with a `409` that names the right offset.
+
+When every byte is there, finish it:
+
+```http
+POST /api/v2/staticfile/upload-session/{id}/finish
+```
+
+Shio checks that the bytes hash to the `sha256` you declared, and only then creates the `File`
+post, the same one a single-request upload would have made. If the digest does not match, the
+session is discarded and nothing is created. `DELETE /api/v2/staticfile/upload-session/{id}`
+abandons a session; one left unfinished expires after 24 hours (`shio.upload-sessions.ttl`).
+A session is visible only to the account that started it.
+
 ## The rest
 
 | Root | Owns |
