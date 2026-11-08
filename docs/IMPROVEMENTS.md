@@ -1337,19 +1337,6 @@ showcase alone, with a recorded console tour, is the first step.
 
 ## XCVI End-user documentation for 2026.3 (docs-shio)
 
-### XCVI.3 shio doctor is the one CLI verb no page names (SH1367)
-
-The report (2026-11-08) finds 47 of the 48 CLI verbs on a page. The missing one is `shio
-doctor` (SH397, `cli/src/commands/doctor.mjs`). It answers "can I work here?": is the
-instance reachable, is it running this tree's build, are the credentials and the files
-on disk in order. Each check comes back `ok`, `problem` or `unknown`, and the command
-exits 1 on any problem, so a pipeline can run it before a longer job.
-
-It is the cheapest first command of a session and the one that turns "my change does not
-work" into "my change is not deployed". `cli.md` § Discover or § Prove it works is the
-natural home, with one line in § In a pipeline about the exit code. Done when the report
-lists no CLI verb as unnamed.
-
 ### XCVI.4 The configuration reference is not the complete list it says it is (SH1368)
 
 The page opens "Every property below exists in the current release" and its description

@@ -53,12 +53,35 @@ lists without its bytes.
 
 | Command | Does |
 |---|---|
+| `shio doctor` | Can I work here? Checks the instance, the render model, the sites and the local content tree, and prints a fix for each problem. Run it first in a new session |
+| `shio status` | The instance in one call: counts, what is waiting, what just happened. The same numbers the console's home shows; a row is printed only when it is not zero |
+| `shio site` | List the sites, marking the ones declared disposable. `shio site rm --scratch` deletes every site created with the scratch flag (`shio convert --create-site --scratch`) in one confirmation; a site without the flag is never touched. The delete is **permanent**, so try `--dry-run` first |
 | `shio context` | The agent context pack (model, sitemap and conventions) in one call. `--out <file>` writes it |
 | `shio resolve <address>` | Resolve `post:` / `folder:` / `site:` / `id:` to the object it names |
 | `shio impact <address>` | What a change to this template would affect: layouts, types, page counts |
 | `shio changes` | What changed, with a cursor to resume from (`--since`, `--cursor`) |
 | `shio remember` | The instance memory: bare lists it, `<key> "<note>"` writes one, `--forget` drops one, `--site` scopes it |
 | `shio mcp` | Bridge stdio to this instance's MCP endpoint, `claude mcp add shio -- shio mcp` |
+
+#### What `shio doctor` checks
+
+```text
+ok   instance     up at http://localhost:2710, version dev (commit 59ff6b5, built 2026-11-08T14:02:11Z)
+ok   model        the render post-types are provisioned and match this build
+ok   sites        2: Blog, Docs
+??   content      no local content tree (shio/content absent) — `shio pull --content` makes one
+```
+
+| Check | Asks |
+|---|---|
+| `instance` | Does the instance answer, do your credentials work, and **which build is it running**? The build time is what tells you whether the server has your latest change: a change that is not deployed reads exactly like a change that does not work |
+| `model` | Are the `PageLayout`/`Region`/`Theme` post types provisioned, and do they match this build? |
+| `sites` | Which sites the instance holds |
+| `content` | Is there a local `shio/content` tree to compare? |
+
+Each line is `ok`, `FAIL` or `??`. The third means *could not tell*: when the instance does not
+answer, the checks that need it say so instead of reporting a failure each. `--json` prints the
+same checks as data.
 
 ### The content model
 
@@ -82,6 +105,7 @@ removes a system type.
 | `shio push --content` | Compile the tree into a desired-state document and apply it |
 | `shio apply [file]` | Plan/apply a desired-state document, `--dry-run`, `--check`, `-` for stdin. `--blueprint <name> --site <site>` applies a package instead; `--create-site` makes the site in either mode |
 | `shio dev --content` | Watch `shio/content/**` and sync both ways, logging events |
+| `shio preview <file>` | Render one content file's page **before you push it**, saving nothing: prints the page's outline and structural hash and writes the markup to a file you can open (`--out`). `--state published` renders against the live row. The page must already exist on the instance; for a new file, push it once or pass `--address` |
 | `shio post set <address> <field>=<value>…` | Change some fields of one post's draft and leave the rest as they are. `field:=json` sets a number, `true`, a list or an object; `--publish` publishes after the change |
 
 See [Content as Files](/docs/content-as-files/) for the tree, the sidecars and the merge.
@@ -110,6 +134,9 @@ shio post set post:Blog/hello summary="Shorter" --if-match '"3a22…"'
 | `shio snapshot <page>` | A PNG for a person, plus whether the page looks different |
 | `shio report` | The curator handoff: what changed, a preview link each, and the warnings as open questions, Markdown, for a PR body |
 | `shio diff --against published` | What a publish would change: which **fields** differ between each draft and the live row, per post. `--address` narrows it. **Exits non-zero when anything would change**, so a pipeline can gate on it. It agrees with the console's version dialog on what counts as a change: an object whose keys only moved is not one |
+| `shio gate run --site <name>` | Run the site's publish gates over the addresses named, or every draft, before anything goes live. **Exits `1` when a blocking check fails.** `shio gate list` prints the gates the site declares. The same gates run on the instance at every publish; this is where a pipeline finds out first |
+| `shio index status` | Is published content findable: the search routing table, site by site. A site with published pages and no search site reads `UNROUTABLE`, and the command **exits `1`**. `shio index reindex --site <name>` sends that site's published pages again (`--dry-run` counts them). See [Search & Caching](/docs/search-caching/) |
+| `shio assets prune` | The assets nothing references and no rendered page loads, with the bytes they occupy. A report only: it never deletes. `--site` / `--folder` scope it |
 | `shio redirects` | The site's redirects (where each sends, 301 or 302) and, under them, the addresses it used to serve that no longer answer, each with the `post.redirect` that fixes it. **Exits `1` when there is one.** `--no-check` skips the second half. See [Keeping an old address answering](/docs/content-lifecycle/#keeping-an-old-address-answering) |
 
 Two things about `verify` that matter in a pipeline: the report's `notes` are printed,
@@ -163,6 +190,18 @@ Each rule stops after a fixed number of findings per page load, and the report s
 a `note:` line naming the rule and how many it did not examine: a truncated run must not
 read as a clean one.
 
+### Working with a curator
+
+| Command | Does |
+|---|---|
+| `shio review list` | One line per agent run: its intent, its counts, and what is waiting for a person. `show <session>` lists that run's changes with whatever has been decided |
+| `shio review decide <session>` | Approve, reject or hold named changes: `--approve` publishes them, `--reject` undoes them and needs `--note "<why>"`, `--hold` parks them. `--dry-run` prints what it would do |
+| `shio review mine` | What a curator decided about **your own** runs; rejections by default, each with its reason. Read it when resuming work |
+| `shio notes` | What a curator is still asking for, across every site: `--kind request`, `--site` to scope it |
+
+`--strict` on `review list`, `review mine` and `notes` exits `1` while anything is waiting or
+was rejected, so a pipeline can refuse to proceed past an unanswered curator.
+
 ### Replicate an existing site
 
 | Command | Does |
@@ -190,6 +229,10 @@ shio verify                # 3. is what is there internally consistent and reach
 empty**, so a pull-request job fails on drift instead of silently reconciling it.
 `verify` exits non-zero on an error, which is what makes it the last gate rather than a
 report.
+
+Put `shio doctor` in front of a longer job: it exits `1` when any check fails, so a job
+pointed at the wrong URL or with refused credentials stops in a second with the fix printed,
+not ten minutes later. A check it could not answer does not fail it.
 
 Every non-zero exit closes cleanly, so a piped run does not lose its last lines.
 

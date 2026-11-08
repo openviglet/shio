@@ -12,7 +12,22 @@
  * of the rule.
  */
 
-const kebabToCamel = (s) => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+/**
+ * A CLI verb is named when a page writes it as a command, `shio <verb>` (SH1367).
+ *
+ * <p>Not a substring of the prose, which is what `docsNamer` would answer: `status`, `index`,
+ * `site`, `assets`, `review`, `notes`, `gate` and `preview` are words every page uses, so the
+ * loose read reported eight undocumented commands as documented, and `doctor` was the only miss it
+ * could see.</p>
+ *
+ * @param {string} prose every published page, joined
+ * @returns {(verb: string) => boolean}
+ */
+export function cliVerbNamer(prose) {
+  return (verb) => new RegExp(`shio ${verb.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`).test(prose);
+}
+
+const kebabToCamel =(s) => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
 
 /**
  * @param {string} prose every published page, joined; COVERAGE.md is not a page and must not be in it

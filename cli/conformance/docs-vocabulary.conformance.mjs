@@ -47,7 +47,7 @@ import { AUDIT_RULES } from "../src/audit.mjs";
 
 import { CLAIMS, extract, toolRows } from "./docs-examples.mjs";
 import { productVocabulary, routeExists } from "./support/product-vocabulary.mjs";
-import { docsNamer } from "./support/docs-named.mjs";
+import { cliVerbNamer, docsNamer } from "./support/docs-named.mjs";
 
 // @scans prose reason: it reads the published Markdown pages for the verbs, routes, tool names
 // and property keys they spell, so the prose IS the corpus being checked (SH740).
@@ -420,6 +420,18 @@ ${report(misses)}`);
       "SH1366: the server registers a resource no page names. Resources are what a plugin user "
         + "attaches without a tool call, so an unnamed one is a capability that user never learns "
         + "to ask for. Add it to the table in mcp.md § Resources.");
+  });
+
+  test("SH1367: every `shio` verb in the command registry is written as a command on a page", () => {
+    const asCommand = cliVerbNamer(PROSE);
+    assert.ok(vocabulary.cliVerbs.size > 20,
+      `SH1367: the command registry read ${vocabulary.cliVerbs.size} verb(s); an empty read passes below`);
+    assert.ok(!asCommand("doctorr"), "SH1367: a verb reader that matches everything checks nothing");
+    assert.deepEqual([...vocabulary.cliVerbs].filter((verb) => !asCommand(verb)).sort(), [],
+      "SH1367: this CLI has a command no page writes as `shio <verb>`. A bare word does not count: "
+        + "`status`, `index` and `review` are on every page as English, and that is how eight "
+        + "commands read as documented while no page told a reader they could run them. Add a row "
+        + "to cli.md.");
   });
 
   /**

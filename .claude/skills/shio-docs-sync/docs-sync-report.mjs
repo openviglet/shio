@@ -27,7 +27,7 @@ const args = new Set(process.argv.slice(2));
 
 const { productVocabulary } = await import(
   pathToFileURL(join(ROOT, "cli", "conformance", "support", "product-vocabulary.mjs")).href);
-const { docsNamer } = await import(
+const { docsNamer, cliVerbNamer } = await import(
   pathToFileURL(join(ROOT, "cli", "conformance", "support", "docs-named.mjs")).href);
 const { DOCS_DIR } = await import(pathToFileURL(join(ROOT, "scripts", "docs-location.mjs")).href);
 const SIDEBAR = join(ROOT, "shio-site", "docs", "astro.config.mjs");
@@ -85,10 +85,13 @@ const POPULATIONS = [
 ];
 const isTemplate = (s) => /[<>]/.test(s);
 // The same reader the conformance suite fails on (SH1365), so the two cannot disagree.
-const named = docsNamer(prose);
+const loosely = docsNamer(prose);
+const asCommand = cliVerbNamer(prose);
+const namedAs = (key) => (key === "cliVerbs" ? asCommand : loosely);
 
 const reverse = POPULATIONS.map(({ key, label, advisory }) => {
   const subjects = [...(vocabulary[key] ?? [])].map(String).filter((s) => !isTemplate(s));
+  const named = namedAs(key);
   const missing = subjects.filter((s) => !named(s)).sort();
   return { key, label, advisory, total: subjects.length, missing };
 });

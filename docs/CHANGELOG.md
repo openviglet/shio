@@ -1468,6 +1468,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH499** — Two instruments in cli/conformance/: docs-vocabulary reads the product's own declarations and holds every documented verb, route, tool name and shio.* key against them with no instance, and docs-examples.conformance issues the 15 read-only documented requests against a live one; the execution half found three P6 gaps on its first run, now held by SH621 and SH622 in a fifth debt ledger.
 - **SH1365** — agent-surface.md's op table lists all 29 ops with no hand-typed count, release confirms are explained, and docs-vocabulary now fails on any dispatched op no page names.
 - **SH1366** — mcp.md § Resources now lists all 13 resources with the endpoint behind each, and docs-vocabulary fails on any registered resource no page names.
+- **SH1367** — cli.md documents shio doctor plus eight verbs the loose substring check had hidden (status, site, preview, gate, index, assets, review, notes); a strict shio-verb assertion gates it.
 
 ## Block S — The public site (shio.viglet.org)
 
