@@ -106,7 +106,7 @@ export function ClaudeCodePage() {
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   Same server, no marketplace. You get the twelve tools and six
                   resources and none of the skills or commands, which is the
-                  right trade if you are wiring Shio into something that is not
+                  right trade if you are wiring Viglet Shio into something that is not
                   Claude Code.
                 </p>
               </div>
@@ -119,7 +119,7 @@ export function ClaudeCodePage() {
           <Container>
             <SectionHeader
               eyebrow="Step two"
-              title="A session that starts already knowing Shio"
+              title="A session that starts already knowing Viglet Shio"
               description="The skills load when the work calls for them rather than on every turn: a schema you pay for each turn is a schema you pay for whether you use it or not."
             />
 
@@ -302,7 +302,7 @@ export function ClaudeCodePage() {
               <div className="rounded-2xl border border-border bg-card p-6">
                 <h3 className="flex items-center gap-2 font-bold">
                   <Ban className="size-4 text-muted-foreground" />
-                  Two things Shio will not do
+                  Two things Viglet Shio will not do
                 </h3>
                 <div className="mt-4 space-y-4 text-sm leading-relaxed text-muted-foreground">
                   <p>
@@ -310,7 +310,7 @@ export function ClaudeCodePage() {
                       It hosts no model and runs no prompts.
                     </span>{" "}
                     There is no provider API key in the CMS, no bundled inference and no
-                    "generate this page for me" button. Shio is the substrate your agent
+                    "generate this page for me" button. Viglet Shio is the substrate your agent
                     drives; the agent is yours, and so is the model behind it.
                   </p>
                   <p>

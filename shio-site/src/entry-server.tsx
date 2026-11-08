@@ -27,7 +27,7 @@ export const routes: PrerenderRoute[] = [
   },
   {
     path: "/console",
-    title: "Shio without an agent: the CMS in the browser | Viglet Shio",
+    title: "The CMS in the browser, without an agent | Viglet Shio",
     description:
       "The traditional path, in full: create a site, build the content model with fifteen field widgets, write pages in a form, upload media, preview and edit on the rendered page, publish or schedule, and manage users, roles and tokens. All in the console. Plus the four things that live only on the command line, and what changes if you attach an agent later.",
   },
@@ -39,7 +39,7 @@ export const routes: PrerenderRoute[] = [
   },
   {
     path: "/compare",
-    title: "Shio vs Contentful, Sanity, Strapi and WordPress | Viglet Shio",
+    title: "Compared with Contentful, Sanity, Strapi and WordPress | Viglet Shio",
     description:
       "Viglet Shio against Contentful, Sanity, Strapi and WordPress on the axis where they differ: agent-operability. Eighteen checkable questions grouped by the design law each comes from, plus what Contentful, Sanity, Strapi and WordPress do better and when to pick them instead.",
   },
@@ -57,7 +57,7 @@ export const routes: PrerenderRoute[] = [
   },
   {
     path: "/showcase",
-    title: "The showcase: a finished site built with Shio | Viglet Shio",
+    title: "The showcase: a finished, published site | Viglet Shio",
     description:
       "Quilhara, a fictional bilingual trail magazine built with Viglet Shio, installs on your own instance from the console marketplace or with one shio CLI command. Every page it carries, and the features each one demonstrates, from the agent's discovery call to the curator's review queue.",
   },

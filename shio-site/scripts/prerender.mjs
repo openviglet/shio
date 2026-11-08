@@ -89,13 +89,13 @@ function assertBasedLinks(text, where) {
 
 /**
  * A BreadcrumbList for every page below the landing one, so the result's breadcrumb reads
- * Shio › page rather than whatever Google derives from the URL. The docs area emits its own
+ * Viglet Shio › page rather than whatever Google derives from the URL. The docs area emits its own
  * (docs/src/components/Head.astro).
  */
 function breadcrumbJsonLd(route, canonical) {
   if (route.path === "/") return "";
   const items = [
-    { name: "Shio", item: `${SITE_ORIGIN}/` },
+    { name: "Viglet Shio", item: `${SITE_ORIGIN}/` },
     { name: route.title.replace(/\s*\|\s*Viglet Shio$/, ""), item: canonical },
   ];
   const json = JSON.stringify({

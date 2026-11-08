@@ -6,7 +6,7 @@
 > projected to files for a repository workflow; and REST/GraphQL delivery with
 > TypeScript SDKs. Same posts, same drafts, same publish act behind all four.
 > Agent-first is the order a capability is built in (law P1), not a condition of use.
-> Shio hosts no model and no prompts: it is the substrate an external agent drives.
+> Viglet Shio hosts no model and no prompts: it is the substrate an external agent drives.
 
 ## Read the Markdown, not the HTML
 

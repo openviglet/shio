@@ -1504,6 +1504,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1248** — shio.viglet.org/changelog.json now publishes Shio's releases, 0.2.0 through 2026.3, in the shape Turing's uses, asserted by shio-site's changelog test; www.viglet.org reads it instead of a hand-kept copy (design §XCII.1 recorded in `shio-site/scripts/changelog.test.mjs`).
 - **SH1262** — COVERAGE.md, the docs gates, CI and the roadmap skill now read shio-site/docs; vigletdocs' docs-shio is frozen with a moved notice per page, and COVERAGE citations are link-checked.
 - **SH1258** — The public /showcase page and landing section now show four screenshots captured from an applied showcase, the same files the marketplace entry publishes, beside both install paths and the per-page feature map (design §XIX.15 recorded in `shio-site/README.md`).
+- **SH1369 (the marketing site)** — Every string a visitor or crawler reads on the marketing site names the product Viglet Shio: copy, page titles, both JSON-LD breadcrumbs, llms.txt, and the phone header, which keeps the wordmark.
 
 ## Block T — End-user documentation, round two (the curator's half)
 

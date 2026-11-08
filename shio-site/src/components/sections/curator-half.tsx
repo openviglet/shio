@@ -52,7 +52,7 @@ export function CuratorHalf() {
 
         <p className="mx-auto mt-10 max-w-3xl text-center text-sm leading-relaxed text-[#a89189]">
           <LawChip id="P7" tone="dark" /> And the boundary that is not a setting at
-          all: Shio hosts no model, runs no prompts and holds no provider keys. There
+          all: Viglet Shio hosts no model, runs no prompts and holds no provider keys. There
           is no inference inside the content engine to misfire.
         </p>
 

@@ -91,8 +91,10 @@ export function SiteNav() {
       <Container className="flex h-16 items-center gap-4">
         <div className="flex shrink-0 items-center gap-2.5">
           <a href={withBase("/")} className="text-base" aria-label="Viglet Shio home">
-            <Logo className="hidden sm:inline-flex" />
-            <Logo showWord={false} className="sm:hidden" />
+            {/* SH1369: the full name at every width. The hub's naming rule says change the
+                layout rather than abbreviate, so on a phone the Get started button moves into the
+                menu and the wordmark stays. */}
+            <Logo />
           </a>
           <a
             href={LINKS.viglet}
@@ -154,7 +156,7 @@ export function SiteNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="hidden sm:inline-flex">
             <a href={LINKS.docs}>
               Get started
               <ArrowRight className="size-4" />
@@ -176,6 +178,12 @@ export function SiteNav() {
       {menuOpen && (
         <nav className="border-t border-border bg-background/95 backdrop-blur-md lg:hidden">
           <Container className="flex flex-col py-3">
+            <Button asChild size="sm" className="mb-2 w-fit sm:hidden">
+              <a href={LINKS.docs} onClick={closeMenu}>
+                Get started
+                <ArrowRight className="size-4" />
+              </a>
+            </Button>
             {NAV_LINKS.map((item) => (
               <a
                 key={item.label}

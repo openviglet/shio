@@ -29,7 +29,7 @@ export function OneCall() {
               <span className="text-primary">and it has a price</span>
             </>
           }
-          description="Most CMSs make an agent crawl a REST surface to learn what exists. Shio answers that in one call, and the cost of every answer is a ceiling the build refuses to exceed."
+          description="Most CMSs make an agent crawl a REST surface to learn what exists. Viglet Shio answers that in one call, and the cost of every answer is a ceiling the build refuses to exceed."
         />
 
         <div className="grid items-start gap-8 lg:grid-cols-[0.95fr_1.05fr] [&>*]:min-w-0">

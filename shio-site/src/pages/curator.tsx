@@ -160,7 +160,7 @@ export function CuratorPage() {
                     <span className="absolute -top-2.5 left-2 rounded bg-primary px-1.5 py-0.5 font-mono text-[0.6rem] font-bold text-primary-foreground">
                       hero.heading
                     </span>
-                    <p className="text-lg font-extrabold">Launching Shio 2026.3</p>
+                    <p className="text-lg font-extrabold">Launching Viglet Shio 2026.3</p>
                     <MousePointerClick className="absolute -right-1 -bottom-1 size-5 text-primary" />
                   </div>
                   <div className="rounded-lg border border-dashed border-border p-3">

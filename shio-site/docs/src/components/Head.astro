@@ -1,7 +1,7 @@
 ---
 /**
  * Starlight's own head, plus a BreadcrumbList, so the result's breadcrumb reads
- * Shio › Docs › page rather than whatever Google derives from the URL.
+ * Viglet Shio › Docs › page rather than whatever Google derives from the URL.
  */
 import Default from "@astrojs/starlight/components/Head.astro";
 
@@ -9,7 +9,7 @@ const SITE = "https://shio.viglet.org";
 const docsHome = `${SITE}${import.meta.env.BASE_URL.replace(/\/?$/, "/")}`;
 const url = new URL(Astro.url.pathname, SITE).href;
 const items = [
-  { name: "Shio", item: `${SITE}/` },
+  { name: "Viglet Shio", item: `${SITE}/` },
   { name: "Docs", item: docsHome },
 ];
 if (url !== docsHome) items.push({ name: Astro.locals.starlightRoute.entry.data.title, item: url });

@@ -95,7 +95,7 @@ export function Comparison() {
             className="h-auto max-w-full whitespace-normal px-5 py-2.5 text-center"
           >
             <a href={withBase("/compare/")}>
-              The full matrix, named products, and where Shio loses
+              The full matrix, named products, and where Viglet Shio loses
               <ArrowRight className="size-4" />
             </a>
           </Button>

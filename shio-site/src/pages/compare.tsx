@@ -97,7 +97,7 @@ export function ComparePage() {
               variant="outline"
               className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
-              <a href="#wins">Where Shio loses</a>
+              <a href="#wins">Where Viglet Shio loses</a>
             </Button>
           </div>
         </PageHero>
@@ -207,11 +207,11 @@ export function ComparePage() {
               eyebrow="Where they win"
               title={
                 <>
-                  Four products Shio{" "}
+                  Four products Viglet Shio{" "}
                   <span className="text-primary">does not beat</span>
                 </>
               }
-              description="A table where one column wins every row is a table nobody believes. Here is what each alternative does better, and the case where picking it over Shio is the right call."
+              description="A table where one column wins every row is a table nobody believes. Here is what each alternative does better, and the case where picking it over Viglet Shio is the right call."
             />
 
             <div className="grid gap-5 sm:grid-cols-2">
@@ -233,7 +233,7 @@ export function ComparePage() {
             </div>
 
             <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-primary/25 bg-primary/5 p-5">
-              <h3 className="text-sm font-bold">And the case against Shio, stated plainly</h3>
+              <h3 className="text-sm font-bold">And the case against Viglet Shio, stated plainly</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 If nobody on the project is going to drive it with an agent, most of what
                 this page argues is worth nothing to you: you are buying a

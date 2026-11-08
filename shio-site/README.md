@@ -77,7 +77,7 @@ with the depth pages in [`src/lib/feature-content.ts`](src/lib/feature-content.t
 What stays in [`src/components/sections/`](src/components/sections/) is a section's
 own heading and lead, because those are written against the layout they sit in.
 
-Four rules for editing any of it:
+Five rules for editing any of it:
 
 - **Every claim is about a real surface.** A route, a tool name, a flag or an
   error body that appears there is the one the build produces. `docs/agents/` is
@@ -108,6 +108,15 @@ Four rules for editing any of it:
   will not let past is anything a reader is handed, a comment inside a rendered
   code sample included. The one exception it names out loud is
   `public/marketplace/**`, which republishes another module's bytes (SH930).
+- **The product is Viglet Shio every time a visitor reads it (SH1369).** The hub
+  decided full names everywhere (viglet.org `docs/STRATEGY.md` §I.7): headings,
+  buttons, titles, breadcrumbs, `llms.txt`, repeated mentions included. When the
+  name does not fit, change the layout instead of abbreviating it. That is why the
+  phone header moves Get started into the menu and keeps the wordmark. Commands,
+  package names and code identifiers stay as they are.
+  [`scripts/full-names.test.mjs`](scripts/full-names.test.mjs) scans `src/` and
+  the crawler outputs and names its exceptions: the historical changelog, and the
+  generated marketplace catalogue.
 
 ## The showcase (SH1258)
 

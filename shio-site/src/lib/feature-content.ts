@@ -89,7 +89,7 @@ const AGENT_GATEWAY: FeatureDetail = {
     { "op": "post.upsert",
       "address": "post:acme/launch",
       "postType": "Page",
-      "fields": { "title": "Launching Shio" } }
+      "fields": { "title": "Launching Viglet Shio" } }
   ]
 }`,
       },
@@ -125,7 +125,7 @@ const CONTENT_AS_FILES: FeatureDetail = {
         caption: "shio/content/acme/launch.md",
         text: `---
 postType: Page
-title: Launching Shio 2026.3
+title: Launching Viglet Shio 2026.3
 status: DRAFT
 folder: folder:acme/
 bodyField: content

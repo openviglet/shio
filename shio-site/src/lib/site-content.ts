@@ -206,7 +206,7 @@ export const TRANSCRIPT: TranscriptStep[] = [
         " ---",
         " postType: Page",
         "-title: Untitled",
-        "+title: Launching Shio 2026.3",
+        "+title: Launching Viglet Shio 2026.3",
         " status: DRAFT",
         " ---",
         "+",
@@ -254,7 +254,7 @@ export const TRANSCRIPT: TranscriptStep[] = [
       lines: [
         "## 1 change awaiting review",
         "",
-        "- **Launching Shio 2026.3** - created",
+        "- **Launching Viglet Shio 2026.3** - created",
         "  preview: /preview/acme/launch",
         "",
         "### Open questions",
@@ -324,7 +324,7 @@ export const CONSOLE_SESSION: ConsoleStep[] = [
     artefact: {
       label: "New Page",
       lines: [
-        "Title    │ Launching Shio 2026.3",
+        "Title    │ Launching Viglet Shio 2026.3",
         "Summary  │ What changed, and why.",
         "Content  │ [ rich text ]",
         "URL      │ /launch",
@@ -413,7 +413,7 @@ export const PATHS: UsePath[] = [
     body:
       "Create the site, shape the content model, write the pages, upload the media, publish or schedule it, and add the rest of the team. All in a browser, with no agent, no terminal and no file to hand-edit anywhere in it.",
     surface: ["React console", "Universal Editor", "Preview links"],
-    start: { label: "Shio without an agent", href: withBase("/console/") },
+    start: { label: "Viglet Shio without an agent", href: withBase("/console/") },
   },
   {
     id: "agent",
@@ -648,7 +648,7 @@ export const CONTENT_TREE = `shio/
 
 export const CONTENT_FILE = `---
 postType: Page
-title: Launching Shio 2026.3
+title: Launching Viglet Shio 2026.3
 status: DRAFT
 folder: folder:acme/
 ---
@@ -873,7 +873,7 @@ export const PACKAGES: Pkg[] = [
 /* ── Comparison ──────────────────────────────────────────────────────────── */
 
 export const COMPARISON_COLUMNS = {
-  shio: "Shio",
+  shio: "Viglet Shio",
   headless: "Headless SaaS CMS",
   diy: "Git-backed / DIY",
 };
@@ -1196,7 +1196,7 @@ export const PHASES: Phase[] = [
     command: "shio judge --site example",
     what: "Runs the instruments, answers once, and names where two of them disagreed, which is where every real finding of this work came from. Then it holds that answer to a written bar: a finding at or below it prints as a task for later, one above it fails, and a kind the bar does not name fails too.",
     promise:
-      "A round can end ACCEPTED, which is not the same as ending empty. What the bar leaves out is the point: looking like the source is not a test an authorable replica has to pass. It is presented by Shio's theme on purpose, so it answers for its content, its structure and its routes. `--fidelity` is how you ask for the pixel comparison instead.",
+      "A round can end ACCEPTED, which is not the same as ending empty. What the bar leaves out is the point: looking like the source is not a test an authorable replica has to pass. It is presented by Viglet Shio's theme on purpose, so it answers for its content, its structure and its routes. `--fidelity` is how you ask for the pixel comparison instead.",
   },
 ];
 
@@ -1305,7 +1305,7 @@ export const PROPOSE_OUTPUT = `$ shio propose --site example
 
 /* ── /compare: the matrix, and where it loses ────────────────────────────── */
 
-export const COMPARE_COLUMNS = ["Shio", "Contentful", "Sanity", "Strapi", "WordPress"] as const;
+export const COMPARE_COLUMNS = ["Viglet Shio", "Contentful", "Sanity", "Strapi", "WordPress"] as const;
 
 export interface CompareRow {
   /** The capability, phrased so it can be checked rather than argued. */
