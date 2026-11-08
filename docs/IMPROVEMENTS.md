@@ -1337,21 +1337,6 @@ showcase alone, with a recorded console tour, is the first step.
 
 ## XCVI End-user documentation for 2026.3 (docs-shio)
 
-### XCVI.2 Four MCP resources no page names (SH1366)
-
-`mcp.md` § Resources tables seven URIs. The report (2026-11-08) reads thirteen from the
-server and finds four named on no page: `shio://usage`, where the usage meter reaches
-the caller it counts (SH754); `shio://notes`, every open note across sites (SH1215);
-`shio://diagnostics`, the failure report for a plugin user (SH596); and
-`shio://review/mine`, the review verdict readable by the agent it is about (SH1002). A
-grep of `shio-site/docs/src/content/docs` finds them only in COVERAGE.md, which the
-collection excludes.
-
-These are the attach-as-context surfaces a plugin user reaches without a tool call, so a
-missing row is a capability the user never learns to ask for. Add four rows and a line
-on when each beats the matching tool. Done when the report lists no MCP resource as
-unnamed.
-
 ### XCVI.3 shio doctor is the one CLI verb no page names (SH1367)
 
 The report (2026-11-08) finds 47 of the 48 CLI verbs on a page. The missing one is `shio

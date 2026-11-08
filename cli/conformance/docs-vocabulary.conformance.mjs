@@ -411,6 +411,17 @@ ${report(misses)}`);
         + "agent-surface.md § A batch of ops.");
   });
 
+  test("SH1366: every MCP resource the server registers is named on a published page", () => {
+    assert.ok(vocabulary.mcpResources.size > 5,
+      `SH1366: the resource registry read ${vocabulary.mcpResources.size}; an empty read passes below`);
+    // A template is registered by its prefix (`shio://schema/`), and a page spells it with its
+    // parameter (`shio://schema/{postType}`), which contains the prefix — so `includes` holds.
+    assert.deepEqual(unnamed(vocabulary.mcpResources), [],
+      "SH1366: the server registers a resource no page names. Resources are what a plugin user "
+        + "attaches without a tool call, so an unnamed one is a capability that user never learns "
+        + "to ask for. Add it to the table in mcp.md § Resources.");
+  });
+
   /**
    * SH697 — and the number in the prose, derived rather than typed.
    *

@@ -201,6 +201,18 @@ Read-only resources, for a client that prefers attaching context to calling a to
 | `shio://blueprints` | The blueprint catalogue |
 | `shio://blueprint/{name}` | One blueprint's full schema |
 | `shio://requests` | Questions curators sent from the console's dock, waiting for an answer |
+| `shio://notes` | Every note still asking for something, across sites, newest first: its kind, its page and what it says. Fix the page, then close the note with `note.resolve` |
+| `shio://review/mine` | What a curator **rejected** from your own runs, with the reason each time. Read it first when resuming a session: a revert leaves ordinary restore rows, so the content alone cannot tell you a page was turned down |
+| `shio://diagnostics` | What has failed on this instance, folded by cause (webhook deliveries, image transforms, scheduled publishes, 5xx errors), each with a count, first and last seen, a fix, and the stack frames. Read it after a `500` or when something did not happen |
+| `shio://usage` | What this tenant has spent today: API calls per surface (`cda`, `agent`, `console`), stored bytes and the plan. Read it to know what a budget has left instead of guessing |
+| `shio://index` | Whether this instance indexes what it publishes into search, and the routing table site by site. Read it when search is missing content that exists |
+| `shio://surfaces` | Every console screen and how an agent reaches the same capability (the tool, op or endpoint), or why there is none |
+
+Each one is the same data as an endpoint, for a client that would rather attach it once than
+spend a tool call: `shio://usage` is `GET /api/v2/agent/context?include=usage`,
+`shio://diagnostics` is `GET /api/v2/agent/diagnostics`, `shio://notes` is
+`GET /api/v2/note/open`, and `shio://review/mine` is
+`GET /api/v2/agent/review?decision=reject`.
 
 ### Answering a curator's question
 
