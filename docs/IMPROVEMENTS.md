@@ -1334,3 +1334,70 @@ and the console open to a guest role that can browse, edit drafts and see the re
 queue but not publish, reset from the blueprint on a schedule. The README and the site
 link it beside `docker run`. If a guest console is too costly to keep safe, the rendered
 showcase alone, with a recorded console tour, is the first step.
+
+## XCVI End-user documentation for 2026.3 (docs-shio)
+
+### XCVI.1 The op table claims a closed vocabulary it no longer has (SH1365)
+
+`agent-surface.md` § A batch of ops says "The vocabulary is closed. Fifteen ops:" and
+tables fifteen. `node .claude/skills/shio-docs-sync/docs-sync-report.mjs` (2026-11-08)
+reads the server's op registry, the same population `docs-vocabulary` checks, and counts
+29, with nine named on no page: `asset.meta` (SH1032), `folder.acl` (SH1277),
+`post.rollback` (SH987), and `release.add`, `release.archive`, `release.remove`,
+`release.rollback`, `release.run`, `release.upsert` (SH993). Every one of them shipped
+before the page was last touched on 2026-11-05.
+
+A completeness claim is the case where a single gap misleads. An agent that reads the
+table learns there is no rollback verb and no release set, and then works around both.
+The fix is to add the nine rows, drop the hard-coded count (or state where the live
+count comes from: `GET /api/v2/agent/context?include=ops`), and update the COVERAGE rows
+for releases and revisions. Done when the report lists no batch op as unnamed.
+
+### XCVI.2 Four MCP resources no page names (SH1366)
+
+`mcp.md` § Resources tables seven URIs. The report (2026-11-08) reads thirteen from the
+server and finds four named on no page: `shio://usage`, where the usage meter reaches
+the caller it counts (SH754); `shio://notes`, every open note across sites (SH1215);
+`shio://diagnostics`, the failure report for a plugin user (SH596); and
+`shio://review/mine`, the review verdict readable by the agent it is about (SH1002). A
+grep of `shio-site/docs/src/content/docs` finds them only in COVERAGE.md, which the
+collection excludes.
+
+These are the attach-as-context surfaces a plugin user reaches without a tool call, so a
+missing row is a capability the user never learns to ask for. Add four rows and a line
+on when each beats the matching tool. Done when the report lists no MCP resource as
+unnamed.
+
+### XCVI.3 shio doctor is the one CLI verb no page names (SH1367)
+
+The report (2026-11-08) finds 47 of the 48 CLI verbs on a page. The missing one is `shio
+doctor` (SH397, `cli/src/commands/doctor.mjs`). It answers "can I work here?": is the
+instance reachable, is it running this tree's build, are the credentials and the files
+on disk in order. Each check comes back `ok`, `problem` or `unknown`, and the command
+exits 1 on any problem, so a pipeline can run it before a longer job.
+
+It is the cheapest first command of a session and the one that turns "my change does not
+work" into "my change is not deployed". `cli.md` § Discover or § Prove it works is the
+natural home, with one line in § In a pipeline about the exit code. Done when the report
+lists no CLI verb as unnamed.
+
+### XCVI.4 The configuration reference is not the complete list it says it is (SH1368)
+
+The page opens "Every property below exists in the current release" and its description
+says it is every property. On 2026-11-08 the report names 29 committed `shio.*` keys on
+no page (the uncommitted `shio.device-auth.*` keys are left out of this count). By
+cluster, with the class that binds each:
+
+- `shio.events.*` ×6, `ShEventsProperties` (SH967)
+- `shio.meter.*` ×3, `ShMeterProperties` (SH45)
+- `shio.asset-renditions.*` ×3, `ShAssetRenditionProperties` (SH1035)
+- `shio.turing.extract-*` ×4, `max-attempts`, `retry-backoff`, `ShTuringProperties` (SH912/913)
+- `shio.upload-sessions.path` (SH1355); `shio.site-thumbnails.*` ×2 (SH1218)
+- `shio.cda.preview.path`/`token-param`/`url-param`
+- `shio.agent.batch.max-session-ops`/`session-window`; `shio.agent.changes.max-budget-tokens`
+- `shio.required-viglet-client`; `shio.sites.host-scheme`
+
+The defaults the page already lists match the code (cda, agent, turing were checked).
+Take each new row's default from its class, and mark any key that is genuinely internal
+🔒 in COVERAGE rather than leaving it out. Done when `docs-sync-report.mjs --strict`
+lists no committed `shio.*` property.

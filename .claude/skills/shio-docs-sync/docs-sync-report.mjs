@@ -83,7 +83,14 @@ const POPULATIONS = [
 ];
 const isTemplate = (s) => /[<>]/.test(s);
 const kebabToCamel = (s) => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-const named = (subject) => prose.includes(subject)
+// Sibling shorthand, the configuration reference's house style for one row of related keys:
+// `` `shio.agent.read.default-limit` · `.max-limit` `` names `shio.agent.read.max-limit` too.
+// Each `.suffix` replaces the last segment of the full key that opens the run.
+const shorthand = new Set();
+for (const [, head, tail] of prose.matchAll(/`([a-z][\w.-]*\.)[\w-]+`((?:\s*·\s*`\.[\w-]+`)+)/g)) {
+  for (const [, suffix] of tail.matchAll(/`\.([\w-]+)`/g)) shorthand.add(head + suffix);
+}
+const named = (subject) => prose.includes(subject) || shorthand.has(subject)
   // Spring relaxed binding: `shio.allowed-origins` may be documented as `shio.allowedOrigins`.
   || (subject.startsWith("shio.") && prose.includes(kebabToCamel(subject)));
 
