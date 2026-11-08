@@ -5,7 +5,7 @@ sidebar:
   label: Pages, Layouts & Regions
 ---
 
-Shio composes a page out of content it already holds. A **Page** finds its **Page
+Viglet Shio composes a page out of content it already holds. A **Page** finds its **Page
 Layout**, the layout slots one or more **Regions**, and a **Theme** supplies the CSS, 
 all four are ordinary content, so everything you can do to a post (write it over the
 API, project it to a file, export it in a package, lint it) works on your templates
@@ -16,7 +16,7 @@ sandbox to configure: a template interpolates the content model and calls a smal
 fixed set of helpers.
 
 :::note[What changed since the JavaScript engine]
-Older versions of Shio rendered pages by **executing server-side JavaScript**
+Older versions of Viglet Shio rendered pages by **executing server-side JavaScript**
 (Nashorn or an external Node.js runtime) and exposed an `shObject` API to that code.
 That engine was removed, and it is not coming back, running arbitrary JavaScript
 inside the CMS was a sandboxing liability, and a template that can do anything is a
@@ -33,7 +33,7 @@ If you are moving from those docs:
 | A Navigation or Query **Component API** attached to a region | the `{{#navigation}}` and `{{#query}}` **helpers**, called from the region's own template |
 
 The model (pages, layouts, regions, themes, and `sh-region`) is unchanged. A site
-exported from a 2018-era Shio renders with **no migration**; only the template
+exported from a 2018-era Viglet Shio renders with **no migration**; only the template
 language changed.
 :::
 
@@ -223,7 +223,7 @@ with no dialect to learn:
 { "color": { "accent": { "$value": "#0b5d3b" } }, "font": { "body": { "$value": "Inter, sans-serif" } } }
 ```
 
-Shio compiles it to custom properties on `:root` (`color.accent` →
+Viglet Shio compiles it to custom properties on `:root` (`color.accent` →
 `--color-accent`) and **prepends** the block to the theme's own CSS, so existing
 layouts get tokens without being edited. The same values are readable as
 `{{theme.tokens.color.accent}}` for the places `var()` cannot reach. A theme with no
@@ -259,13 +259,13 @@ empty, so a layout's loop is never an expression resolving to nothing:
 {{#each site.scripts.head}}<script src="{{src}}"{{#if defer}} defer{{/if}}></script>{{/each}}
 ```
 
-**Shio never injects them.** A layout emits them where it wants; the delivery layer
+**Viglet Shio never injects them.** A layout emits them where it wants; the delivery layer
 reads the same post through the CDA. Nothing behaves one way in preview and another in
 production, because there is no injection path to diverge. An entry with neither `src`
 nor `inline` is skipped (and reported as `site-scripts-entry-empty`), and an
 unrecognised position falls back to `bodyEnd`: never `head`, because a typo must not
 move a script *earlier* than its author wrote it. `category` is carried for a layout
-that gates its own emission; Shio itself never acts on it.
+that gates its own emission; Viglet Shio itself never acts on it.
 
 Because a layout has to emit them, `verify` reports a bound layout that never does:
 that is `site-scripts-dropped`, and for a public site with a consent banner it is a
@@ -415,7 +415,7 @@ engine (one exact path in, one address out, no patterns) which is what makes a
 site's URL space checkable without issuing requests.
 
 Both spellings of a path answer: if `/docs/` is stored and a reader asks for `/docs`,
-Shio redirects to the stored form (permanently: two spellings of one path will not
+Viglet Shio redirects to the stored form (permanently: two spellings of one path will not
 stop meaning the same page), keeping the reader's query string.
 
 ## Seeing the page
@@ -459,7 +459,7 @@ instead of silently walking the reader out of it.
 
 ## Static files and images
 
-A file uploaded to Shio is a `File` post, and its bytes are reachable two ways:
+A file uploaded to Viglet Shio is a `File` post, and its bytes are reachable two ways:
 
 | URL | Use |
 |---|---|
@@ -475,7 +475,7 @@ and format ceilings, and how to require signed transform URLs are in
 
 ## Editing the rendered page
 
-Add `?editor=true` to a preview URL and Shio injects `/preview/_shio/editor.js`; an
+Add `?editor=true` to a preview URL and Viglet Shio injects `/preview/_shio/editor.js`; an
 ordinary preview ships no editor code at all. Annotate a template and the fields
 become directly editable in the **Universal Editor**:
 
@@ -490,7 +490,7 @@ resolution is nearest-ancestor.
 
 ## Proving it renders
 
-A template is checked **when you save it**: Shio compiles a `PageLayout`'s or
+A template is checked **when you save it**: Viglet Shio compiles a `PageLayout`'s or
 `Region`'s `HTML` on write and refuses a broken one with the line, the column and a
 caret. A dry run reports the same thing as a plan note instead of failing.
 

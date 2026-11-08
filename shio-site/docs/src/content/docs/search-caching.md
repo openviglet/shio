@@ -1,6 +1,6 @@
 ---
 title: Search & Caching
-description: "Full-text search in Shio, the opt-in Viglet Turing indexing that makes content searchable on publish, and the caching layers between a request and the database."
+description: "Full-text search in Viglet Shio, the opt-in Viglet Turing indexing that makes content searchable on publish, and the caching layers between a request and the database."
 sidebar:
   order: 3
 ---
@@ -32,12 +32,12 @@ faceted search engine. For that, see the next section.
 
 ## Viglet Turing indexing
 
-For faceted navigation, autocomplete, semantic search and RAG-powered answers, Shio
+For faceted navigation, autocomplete, semantic search and RAG-powered answers, Viglet Shio
 **indexes published content into [Viglet Turing](https://turing.viglet.org/)**.
 
 :::caution[Indexing is opt-in and off by default]
 Earlier documentation said content is "automatically indexed… no additional configuration
-required". That was never true of Turing indexing, and it is worth being precise about,
+required". That was never true of Viglet Turing indexing, and it is worth being precise about,
 because the failure mode is a site that appears to have search and does not.
 
 **Nothing is indexed until you enable it**, and indexing happens **when content is
@@ -88,7 +88,7 @@ three must hold before anything is sent:
 
 1. `shio.turing.enabled=true`, does this instance index at all?
 2. A configured `url`, does it know where to send?
-3. A resolved Turing site for *this* Shio site, does this site route anywhere?
+3. A resolved Viglet Turing site for *this* Viglet Shio site, does this site route anywhere?
 
 **None of the three failing is an error.** An instance that does not index is not a broken
 instance, and a site with no mapping and no `default-site` is simply not indexed, guessing
@@ -97,7 +97,7 @@ ever.
 
 ### Which events index
 
-| In Shio | In Turing |
+| In Viglet Shio | In Viglet Turing |
 |---|---|
 | Publish | index / re-index the document |
 | Unpublish | de-index (unless `de-index-on-unpublish=false`) |
@@ -105,13 +105,13 @@ ever.
 | Save a draft | nothing |
 
 Indexing happens **after the transaction commits**, so a publish that rolls back never
-reaches the index, and a slow Turing never becomes a slow publish. A failed push is
+reaches the index, and a slow Viglet Turing never becomes a slow publish. A failed push is
 recorded as an incident you can read at `/api/v2/agent/diagnostics` rather than thrown at
 the person who clicked publish.
 
 ### Routing is configuration, not content
 
-Which Turing site a Shio site feeds is a **deployment** fact: staging and production hold
+Which Viglet Turing site a Viglet Shio site feeds is a **deployment** fact: staging and production hold
 the same content and must feed different indexes. Keeping it in configuration is why
 exporting a site and importing it elsewhere does not carry one environment's index routing
 into another. Names are matched case-insensitively, because they are typed by people into
@@ -119,11 +119,11 @@ two different systems.
 
 ### Mapping fields
 
-When you model a post type, each field can be mapped to a Turing Semantic Navigation
+When you model a post type, each field can be mapped to a Viglet Turing Semantic Navigation
 field (Title, Description, Text, Date, URL, Image) or to a custom field for facets and
 filtering. That mapping is what decides how a document is shaped in the index.
 
-### What Turing adds
+### What Viglet Turing adds
 
 | Feature | Description |
 |---|---|
@@ -134,7 +134,7 @@ filtering. That mapping is what decides how a document is shaped in the index.
 | **Spotlights** | Curated results pinned to specific terms |
 
 A search context is exposed at `/__tur/sn/{siteName}`, which proxies to the configured
-Turing instance so a page can use Turing's search without talking to it directly.
+Viglet Turing instance so a page can use Viglet Turing's search without talking to it directly.
 
 ---
 

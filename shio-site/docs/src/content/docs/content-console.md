@@ -9,7 +9,7 @@ This is the screen you spend your day in. An agent builds the site through files
 API calls; you open the console to look at what it built, fix a sentence, move a page
 into the right folder, and put things away.
 
-The console is at `/bento/content` on your Shio instance. Everything below is
+The console is at `/bento/content` on your Viglet Shio instance. Everything below is
 reachable from that first screen.
 
 :::note[The console moved from `/console` to `/bento`]
@@ -42,7 +42,7 @@ the fastest route to a named screen is not a menu:
   page, focus lands on that page's title, so a screen reader announces where you arrived.
   A button that is working keeps its focus and is announced as busy until it finishes.
 
-Across the top, the header starts with the Shio name, which takes you home, and the search
+Across the top, the header starts with the Viglet Shio name, which takes you home, and the search
 button that opens the command palette. At its right end is the theme button: choose
 **Light**, **Dark** or **System**, which follows your operating system. The console
 remembers your choice in this browser, and the login page uses it too.
@@ -289,7 +289,7 @@ Selecting a file opens its details, where you can set:
   content"*. Check it before deleting.
 
 Those three values are declared fields on the **File** content type, alongside the path,
-checksum, size and image dimensions Shio stamps on upload. So they are not only a dialog:
+checksum, size and image dimensions Viglet Shio stamps on upload. So they are not only a dialog:
 they appear when you open the file as a post, they are part of the type's schema for
 anything reading it over the API, and `shio verify` treats them as known fields rather
 than reporting a captioned image as carrying data its model does not describe.

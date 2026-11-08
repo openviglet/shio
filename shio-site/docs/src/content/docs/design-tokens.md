@@ -5,8 +5,8 @@ sidebar:
   label: Design Tokens (DTCG)
 ---
 
-A `Theme` in Shio carries a `TOKENS` field. It holds **design tokens in the W3C DTCG
-format**, and Shio compiles them into CSS custom properties on every page the theme
+A `Theme` in Viglet Shio carries a `TOKENS` field. It holds **design tokens in the W3C DTCG
+format**, and Viglet Shio compiles them into CSS custom properties on every page the theme
 renders.
 
 The reason it exists is narrow and worth stating first, because it explains every
@@ -65,17 +65,17 @@ Three parts of the spec matter here:
 | `$type` | What kind of value it is (`color`, `dimension`, `fontFamily`, `fontWeight`, `shadow`, …) |
 | `$description` | Prose for a reader. Carried, never rendered |
 
-The `$` prefix is the spec's, not a Shio convention. Any other `$`-prefixed key at group
+The `$` prefix is the spec's, not a Viglet Shio convention. Any other `$`-prefixed key at group
 level is spec metadata and is skipped.
 
-**Shio adopted this format rather than inventing one.** That was the open question when
+**Viglet Shio adopted this format rather than inventing one.** That was the open question when
 the feature was designed, and the answer is that a dialect nothing else reads is a design
 project with no payoff: **Style Dictionary, Figma and Tokens Studio already export and
 import DTCG**, so a designer's export pastes straight into the field.
 
 ---
 
-## What Shio does with it
+## What Viglet Shio does with it
 
 ### Compiled to custom properties
 

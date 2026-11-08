@@ -78,7 +78,7 @@ The published catalogue also carries **`shio-blueprint-quilhara`**, a finished s
 that ships with no instance. Quilhara is a fictional trail magazine and guided-trip
 outfitter, written in English and Brazilian Portuguese: a home page, trails, stories, a
 guide and a trip, each with its own layout, a designed theme, self-hosted fonts and its own
-photography. Install it and apply it to a new site to see what Shio renders before you
+photography. Install it and apply it to a new site to see what Viglet Shio renders before you
 build your own:
 
 ```bash

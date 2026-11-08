@@ -1,6 +1,6 @@
 ---
 title: "What is Viglet Shio?"
-description: Viglet Shio is an open-source, agent-ready CMS. A coding agent builds the site, a curator approves it, and Shio renders it or the Content Delivery API serves it.
+description: Viglet Shio is an open-source, agent-ready CMS. A coding agent builds the site, a curator approves it, and Viglet Shio renders it or the Content Delivery API serves it.
 sidebar:
   order: 1
 ---
@@ -10,12 +10,12 @@ difference that shapes everything else: every capability is built for a **coding
 first, and a person can still do all of it from the console.
 
 Most CMSs are designed for a person clicking through forms, with an API added afterwards
-for developers. Shio is designed the other way round. An agent, Claude Code, Cursor,
+for developers. Viglet Shio is designed the other way round. An agent, Claude Code, Cursor,
 anything that speaks MCP, builds and maintains the site. A curator **approves**: reviewing,
 correcting, publishing. And the Content Delivery API serves the result to whatever front
 end you like.
 
-Shio hosts **no model and no prompts**. It is not an AI product; it is the substrate an
+Viglet Shio hosts **no model and no prompts**. It is not an AI product; it is the substrate an
 external agent drives, running on your own infrastructure with your content in your own
 database.
 
@@ -28,7 +28,7 @@ types exist? What fields does this one have? What is this page's id? Which endpo
 creates a folder? Every question is a round trip, and every answer is a UUID that has to
 survive to the next call.
 
-Shio's answer is to make the instance **describe itself in one call**, to address content
+Viglet Shio's answer is to make the instance **describe itself in one call**, to address content
 by **path instead of id**, and to make every write **idempotent**, so an agent can plan
 work, do it, and check it without interrupting anyone for anything except the decisions
 that are genuinely a person's.
@@ -57,7 +57,7 @@ dates, code. A post type is a reusable shape that both a curator's form and an a
 write are validated against.
 
 ### Build pages, or don't
-Shio can render pages itself, from **Handlebars** templates over page layouts, regions and
+Viglet Shio can render pages itself, from **Handlebars** templates over page layouts, regions and
 themes, which is how a site an agent just built is visible with no front end at all. Or
 serve nothing but JSON and let your own front end own the markup. Both are first-class;
 see [what "headless" means here](#what-headless-means-here).
@@ -67,7 +67,7 @@ Project a whole site to disk as Markdown, edit it with the tools you already use
 it back, with a three-way merge that never silently overwrites a curator's edit.
 
 ### Adopt a site that already exists
-Point Shio at a live website and it will capture it, propose which blocks could become
+Point Viglet Shio at a live website and it will capture it, propose which blocks could become
 editable content, and convert it into a site a curator can maintain.
 
 ### Query it from anywhere
@@ -93,12 +93,12 @@ Two things about that tree are worth knowing early:
 
 ### Post types
 
-A **post type** declares the fields a post may have. It is Shio's **one name-keyed
+A **post type** declares the fields a post may have. It is Viglet Shio's **one name-keyed
 surface**: types are referenced by name (`Article`, `Page`, `PageLayout`) everywhere, in
 the API, in the CLI, in the files on disk, and never by id. That is deliberate, and it is
 what lets a content model live in git as `shio/post-types/Article.json`.
 
-Some post types are **system types**, created by Shio itself: `PageLayout`, `Region`,
+Some post types are **system types**, created by Viglet Shio itself: `PageLayout`, `Region`,
 `Theme`, `Redirect`, `SiteScripts`. They are ordinary content, which is why your
 templates can be exported, diffed and linted like anything else.
 
@@ -133,7 +133,7 @@ see the published one. The draft is where work happens.
 
 ### Page layouts, regions and themes
 
-If Shio is rendering your pages, three system types do the work:
+If Viglet Shio is rendering your pages, three system types do the work:
 
 - A **Page Layout** is the page-level Handlebars template.
 - A **Region** is a reusable fragment the layout slots by name, through a `sh-region`
@@ -146,18 +146,18 @@ A page does not name its own layout: the **site** binds a post type to a layout,
 
 ### What "headless" means here
 
-Headless normally means "no rendering". Shio renders, so the honest description is that
+Headless normally means "no rendering". Viglet Shio renders, so the honest description is that
 **presentation is never coupled to content**:
 
 | Route | Serves | Guards |
 |---|---|---|
 | `/api/v2/cda/**` + `/graphql` | JSON, for your own front end | API key, per-site and per-environment scoping |
-| `/sites/{site}/…` | Published pages, rendered by Shio | Anonymous, cacheable, indexable |
-| `/preview/{site}/…` | **Drafts**, rendered by Shio | Authenticated, never cached, never indexed |
+| `/sites/{site}/…` | Published pages, rendered by Viglet Shio | Anonymous, cacheable, indexable |
+| `/preview/{site}/…` | **Drafts**, rendered by Viglet Shio | Authenticated, never cached, never indexed |
 
 Nothing forces you to pick one. A site can be delivered by a Next.js app over the API
 while a curator uses the preview route to check a draft, and a replicated site can be
-served straight from Shio while you decide what to do with it.
+served straight from Viglet Shio while you decide what to do with it.
 
 ---
 

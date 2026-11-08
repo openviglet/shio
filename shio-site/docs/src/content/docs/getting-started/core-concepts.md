@@ -13,7 +13,7 @@ one level deeper: the words the API, the CLI, the files on disk and the console 
 ## Sites
 
 A **site** is one website's worth of content: its own folder tree, its own URL space, its
-own configuration. One Shio instance hosts as many as you like.
+own configuration. One Viglet Shio instance hosts as many as you like.
 
 A site carries a few decisions that nothing else can make:
 
@@ -81,7 +81,7 @@ each is required. It is what a curator's form is generated from and what an agen
 is validated against: a `data` key the post type does not declare is **refused**, not
 stored.
 
-**Post types are Shio's one name-keyed surface.** They are referenced by name, 
+**Post types are Viglet Shio's one name-keyed surface.** They are referenced by name, 
 `Article`, `Page`, `PageLayout`, in the REST API, in MCP calls, in the CLI, and in the
 files on disk. There is no id-keyed twin. That is what lets a content model live in git as
 `shio/post-types/Article.json` and be diffed like code.
@@ -97,7 +97,7 @@ See [Content Modeling](/docs/content-modeling/).
 
 ### System post types
 
-Some post types are created by Shio itself and are read-only in the console:
+Some post types are created by Viglet Shio itself and are read-only in the console:
 
 | Type | For |
 |---|---|
@@ -133,13 +133,13 @@ Three rules:
 2. **A site's home page is `post:<site>/`.** The trailing slash with nothing after it: the
    one form the grammar does not spell out.
 3. `id:` exists for reads. Addressing writes by path is what removes "which UUID was that?"
-   from every workflow that touches Shio.
+   from every workflow that touches Viglet Shio.
 
 ---
 
 ## The render model
 
-If Shio renders your pages, three system types do it:
+If Viglet Shio renders your pages, three system types do it:
 
 | | Is | Named by |
 |---|---|---|
@@ -171,8 +171,8 @@ The console shows you everything; a reader gets only what is published. Concrete
 | Route | Serves | Guards |
 |---|---|---|
 | `/api/v2/cda/**` · `/graphql` | JSON for your own front end | API key; a preview-scoped key reads drafts |
-| `/sites/{site}/…` | Published pages rendered by Shio | anonymous, cacheable, indexable |
-| `/preview/{site}/…` | **Drafts** rendered by Shio | authenticated, never cached, never indexed, and banner-marked |
+| `/sites/{site}/…` | Published pages rendered by Viglet Shio | anonymous, cacheable, indexable |
+| `/preview/{site}/…` | **Drafts** rendered by Viglet Shio | authenticated, never cached, never indexed, and banner-marked |
 
 ---
 

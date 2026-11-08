@@ -42,9 +42,9 @@ included, in a new tab.
 
 What happens depends on where the site's front end is:
 
-- **Shio renders the site itself**: the preview opens straight away. The console session
+- **Viglet Shio renders the site itself**: the preview opens straight away. The console session
   you are already signed in with is the authorization, and no credential is minted.
-- **The site has an external front end** (a Next.js app, say): Shio mints a **short-lived
+- **The site has an external front end** (a Next.js app, say): Viglet Shio mints a **short-lived
   preview token**, confined to that one site, and opens the front end's preview route
   carrying it.
 
@@ -73,7 +73,7 @@ If preview is switched off, the button is quietly unavailable rather than failin
 
 ### Send a draft to someone without an account
 
-When Shio renders the site itself, **Preview Draft** can also give you a **share link**: a link a
+When Viglet Shio renders the site itself, **Preview Draft** can also give you a **share link**: a link a
 stakeholder with no login can open. The link is exchanged once for a cookie, so the credential
 leaves the address bar, and the page still carries the banner saying it is a draft.
 

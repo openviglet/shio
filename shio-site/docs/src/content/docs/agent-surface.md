@@ -5,8 +5,8 @@ sidebar:
   label: The Agent Surface (REST)
 ---
 
-`/api/v2/agent/**` is Shio's REST surface for a program that builds and maintains a
-site. If you are driving Shio from Claude Code or another MCP client, you want the MCP
+`/api/v2/agent/**` is Viglet Shio's REST surface for a program that builds and maintains a
+site. If you are driving Viglet Shio from Claude Code or another MCP client, you want the MCP
 server instead: it is the same capabilities in a different shape. This page is for
 building your own agent, or for understanding what the MCP tools actually call.
 
@@ -364,7 +364,7 @@ run with `site`, `folder`, `address`, `checks`, `limit` or `since=<cursor>` so a
 re-checks only what changed. `render` returns a page's structural digest, 
 heading outline, landmarks, link and image inventory with alt text, word count, plus an
 appearance hash, kept as two separate values so a restyle and a structural break are
-never mistaken for each other. It digests the markup Shio holds and needs no front end
+never mistaken for each other. It digests the markup Viglet Shio holds and needs no front end
 running; digesting a live delivery URL instead (`url=`) is off unless an operator turns
 it on, because an endpoint that fetches on the server's behalf needs the operator's
 consent, not the caller's.

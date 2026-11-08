@@ -1,6 +1,6 @@
 ---
 title: JavaScript Client
-description: "@viglet/shio-client, the framework-agnostic TypeScript client for the Shio Content Delivery API."
+description: "@viglet/shio-client, the framework-agnostic TypeScript client for the Viglet Shio Content Delivery API."
 sidebar:
   order: 8
 ---

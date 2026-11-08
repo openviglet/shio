@@ -3,7 +3,7 @@ title: Security
 description: "Authentication in Viglet Shio: sessions for the console, API-key scopes for everything else, what an AGENT key may not do, CSRF on cookie callers only, CORS, and how uploaded files and rich text are kept from running as script."
 ---
 
-Shio has two kinds of caller and treats them differently on purpose:
+Viglet Shio has two kinds of caller and treats them differently on purpose:
 
 - **A browser** carries a session cookie and is therefore exposed to cross-site request
   forgery, so it gets CSRF protection.
@@ -25,7 +25,7 @@ A successful login sets a session cookie. Console writes additionally require a 
 which the server issues in a cookie and expects echoed in a header. `GET /api/v2/csrf`
 hands one out.
 
-Identity can come from Shio's own user store, from OAuth2/OIDC (`shio.keycloak=true` for a
+Identity can come from Viglet Shio's own user store, from OAuth2/OIDC (`shio.keycloak=true` for a
 Keycloak realm), or from a social provider configured under
 `/api/v2/provider/auth`. Passwords are hashed, never stored recoverably.
 
@@ -141,7 +141,7 @@ API called from a browser needs the browser's origin listed here; a server-side 
 
 ## Uploaded files and rich text
 
-Content is written by curators, by agents and by whatever a curator pastes, so Shio treats two
+Content is written by curators, by agents and by whatever a curator pastes, so Viglet Shio treats two
 kinds of content as potentially hostile: the **files** that get uploaded, and the **HTML** in a
 rich-text field.
 

@@ -1,6 +1,6 @@
 ---
 title: Configuration Reference
-description: "Every Viglet Shio configuration property, read from the tree: the instance, the delivery API, the agent surface, files and images, Turing indexing, and the schema."
+description: "Every Viglet Shio configuration property, read from the tree: the instance, the delivery API, the agent surface, files and images, Viglet Turing indexing, and the schema."
 sidebar:
   order: 2
 ---
@@ -34,7 +34,7 @@ from this page, check the two notes: it may have been removed.
 | `shio.config.system` · `.auth` · `.exchange` | `/system` · `/provider/auth/%s` · `/provider/exchange/%s` | Configuration paths |
 
 :::note[Removed: the JavaScript engine properties]
-`shio.website.javascript.engine` and `shio.website.nashorn` **no longer exist**. Shio
+`shio.website.javascript.engine` and `shio.website.nashorn` **no longer exist**. Viglet Shio
 renders pages with Handlebars templates, and there is no server-side script engine to
 select or tune (the Nashorn dependency is explicitly excluded from the build). Setting
 either property has no effect. See [Pages, Layouts & Regions](/docs/website-development/).
@@ -137,22 +137,22 @@ maximum is clamped, and the response says so.
 
 ---
 
-## Turing indexing (`shio.turing.*`)
+## Viglet Turing indexing (`shio.turing.*`)
 
 **Off by default.** See [Search & Caching](/docs/search-caching/).
 
 | Property | Default | Description |
 |---|---|---|
-| `shio.turing.enabled` | **`false`** | Index published content into Turing |
-| `shio.turing.url` | *(unset)* | The Turing instance |
+| `shio.turing.enabled` | **`false`** | Index published content into Viglet Turing |
+| `shio.turing.url` | *(unset)* | The Viglet Turing instance |
 | `shio.turing.api-key` | *(unset)* | Its API key |
-| `shio.turing.default-site` | *(unset)* | Turing SN site for any Shio site not mapped below |
-| `shio.turing.sites.<ShioSite>` | *(unset)* | Explicit Shio site → Turing SN site mapping (case-insensitive) |
+| `shio.turing.default-site` | *(unset)* | Viglet Turing SN site for any Viglet Shio site not mapped below |
+| `shio.turing.sites.<ShioSite>` | *(unset)* | Explicit Viglet Shio site → Viglet Turing SN site mapping (case-insensitive) |
 | `shio.turing.source-app` | `shio` | The `source_apps` stamp on indexed documents |
 | `shio.turing.de-index-on-unpublish` | `true` | De-index when a post is unpublished |
 | `shio.turing.max-attempts` | `3` | Attempts per push, the first included; `1` disables retrying |
 | `shio.turing.retry-backoff` | `1s` | Wait before the second attempt, doubled before each one after it |
-| `shio.turing.extract-text` | `true` | Ask Turing to read the text of a published attachment so it answers a search |
+| `shio.turing.extract-text` | `true` | Ask Viglet Turing to read the text of a published attachment so it answers a search |
 | `shio.turing.extract-types` | `pdf,doc,docx,odt,rtf,txt,md,ppt,pptx,odp,xls,xlsx,ods` | File extensions whose text is asked for |
 | `shio.turing.extract-max-size` | `33554432` (32 MB) | Larger files are indexed by their metadata alone; `0` removes the limit |
 | `shio.turing.extract-timeout` | `60s` | How long to wait for one file's text before indexing it without |
@@ -238,7 +238,7 @@ spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
 ```
 
 The dialect is inferred from the URL; set `spring.jpa.properties.hibernate.dialect` only if
-you have a reason to override it. Shio ships no Oracle driver: the schema is verified on
+you have a reason to override it. Viglet Shio ships no Oracle driver: the schema is verified on
 PostgreSQL, MariaDB and H2 by integration tests.
 
 ---

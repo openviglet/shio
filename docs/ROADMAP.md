@@ -13,6 +13,7 @@
 
 - ⏳ **SH1245** (deps: owner submits entries) **No MCP directory or Claude Code plugin list names Shio, so a Claude Code user meets it only by chance** — Entries are drafted in the visibility repo; the npm package must ship mcpName before the registry accepts it. → §XI.28
 - ⏳ **SH1356** (deps: decision: how a FORM token reaches a script-free form) **No blueprint carries a photo gallery or a contact form, so a site built from photos has nowhere for them** — SectionForm and the small-business package remain; a script-free form must carry the FORM token, a security choice. → §XI.109
+- 📋 **SH1376** (deps: SH1369 ✅) **The Quilhara sample pages still name the product bare, in both languages and in the showcase screenshots** — The hub's full-name rule covers what a visitor reads, and the showcase displays these pages on the public site. → §XI.110
 
 ## Block BG — The console as an application: cost, resilience and access
 
@@ -28,12 +29,11 @@
 
 ## Block S — The public site (shio.viglet.org)
 
-- ⏳ **SH1369** (deps: —) **Public product names still alternate between full names and abbreviations** — The docs pages still carry 191 bare mentions, and the Quilhara blueprint text the marketplace catalogue is generated from. → §XIX.17
-- 📋 **SH1370** (deps: SH1369 ⏳) **Product pages retain decorative chips and hero styling absent from the revised hub** — Use the hub visual grammar across marketing and documentation while preserving the product accent and the function of each page. → §XIX.18
-- 📋 **SH1371** (deps: SH1369 ⏳) **Getting started and resource links do not express the same journey as the hub** — Give evaluation, installation, documentation and release history explicit destinations and a reliable route back to the portfolio. → §XIX.19
-- 📋 **SH1372** (deps: SH1369 ⏳) **The home page repeats technical detail before visitors can choose their next step** — Shorten the evaluation path and move depth into existing pages without removing evidence, stable URLs or useful technical documentation. → §XIX.20
+- 📋 **SH1370** (deps: SH1369 ✅) **Product pages retain decorative chips and hero styling absent from the revised hub** — Use the hub visual grammar across marketing and documentation while preserving the product accent and the function of each page. → §XIX.18
+- 📋 **SH1371** (deps: SH1369 ✅) **Getting started and resource links do not express the same journey as the hub** — Give evaluation, installation, documentation and release history explicit destinations and a reliable route back to the portfolio. → §XIX.19
+- 📋 **SH1372** (deps: SH1369 ✅) **The home page repeats technical detail before visitors can choose their next step** — Shorten the evaluation path and move depth into existing pages without removing evidence, stable URLs or useful technical documentation. → §XIX.20
 - 📋 **SH1373** (deps: —) **The public site scarcely explains the optional search integration described by the hub** — Show how published content reaches Viglet Turing while keeping Viglet Shio useful on its own and keeping agent support claims precise. → §XIX.21
-- 📋 **SH1374** (deps: SH1369 ⏳, SH1370, SH1371, SH1372, SH1373) **No acceptance check compares the product site with the revised hub contract** — Validate the rendered brand and journeys across routes, themes and small screens so future site changes cannot silently undo the alignment. → §XIX.22
+- 📋 **SH1374** (deps: SH1369 ✅, SH1370, SH1371, SH1372, SH1373) **No acceptance check compares the product site with the revised hub contract** — Validate the rendered brand and journeys across routes, themes and small screens so future site changes cannot silently undo the alignment. → §XIX.22
 
 ## Priority
 
@@ -63,15 +63,6 @@
 - **A contact form on a blueprint page submits with script off** An applied
   small-business site's contact page, with submissions enabled, stores a Contact post
   from a plain browser form post, and verify reports its three promised pages.
-
-## Done when — SH1369
-
-- **Evidence and boundary are verified** Re-read the cited source and rendered routes,
-  satisfy the acceptance checks in the design, and preserve technical identifiers and
-  existing URLs.
-- **The hub contract survives the change** Review full names, relevant light/dark and
-  mobile layouts, and links to installation, documentation and the portfolio; retain the
-  product-specific behavior.
 
 ## Done when — SH1370
 

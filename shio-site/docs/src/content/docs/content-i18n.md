@@ -5,7 +5,7 @@ sidebar:
   label: Content i18n
 ---
 
-Shio has one locale axis, and it is worth reading before you write the content rather
+Viglet Shio has one locale axis, and it is worth reading before you write the content rather
 than after: the single decision that is expensive to change later is **the URL**, and it
 is decided the moment the first translation is created.
 
@@ -143,7 +143,7 @@ narrowing it to what is already translated would stop it ever gaining a second.
   `GET /api/v2/site/{id}/coverage` for one site, and the `missingLocale` filter on every content
   listing (`?missingLocale=pt-br` on `/agent/find`, `shio find`, and the console) for one
   language at a time.
-- **Asking the agent for it.** Shio runs no model, but while an agent is connected the board
+- **Asking the agent for it.** Viglet Shio runs no model, but while an agent is connected the board
   can hand it the work. The robot button on a missing cell creates the translation's draft and
   asks the agent to write it; on a stale one it asks for the translation to be brought up to
   date. A row's button asks for that page in every language it is missing or behind in, and a
@@ -193,7 +193,7 @@ hears about a language that only exists in drafts.
 
 ## The locale segment in delivery URLs
 
-Pages Shio renders itself are served at:
+Pages Viglet Shio renders itself are served at:
 
 ```http
 GET /sites/{site}/{format}/{locale}/{path}

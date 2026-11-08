@@ -1,6 +1,6 @@
 ---
 title: Content as Files
-description: "Project a Shio site to disk as Markdown and edit it with ordinary tools: the tree layout, sidecars, assets, and the three-way merge that protects a curator's edit."
+description: "Project a Viglet Shio site to disk as Markdown and edit it with ordinary tools: the tree layout, sidecars, assets, and the three-way merge that protects a curator's edit."
 sidebar:
   label: Content as Files
 ---
@@ -9,7 +9,7 @@ An agent's cheapest tools are the ones it already has: **edit a file, write a fi
 a tree.** Every one of those costs a fraction of an API round trip, and every editor,
 diff and version-control tool in existence already works on them.
 
-So Shio projects a site to disk. `shio pull --content` writes the site as Markdown,
+So Viglet Shio projects a site to disk. `shio pull --content` writes the site as Markdown,
 you change it however you like, and `shio push --content` sends it back. A rename is a
 rename, a search is a grep, and a review is a diff.
 

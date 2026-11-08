@@ -5,7 +5,7 @@ sidebar:
   label: Multi-Tenancy
 ---
 
-One Shio process can serve many fully isolated **tenants**: separate content, separate
+One Viglet Shio process can serve many fully isolated **tenants**: separate content, separate
 users, separate files, separate API tokens, out of one schema and one JVM.
 
 It is **off by default**. A single-instance installation behaves exactly as it always did,
@@ -113,7 +113,7 @@ kept as files arrive and leave, so reading it costs nothing), and the plan's byt
 published alongside the other two. What does not happen yet is a refusal: the quota check compares
 a *current total*, which is exact for sites and posts because each write adds one, and would let a
 single large upload through under any limit. Rather than advertise a ceiling that a big enough file
-walks past, Shio reports the number and leaves the refusal for when the check can weigh the
+walks past, Viglet Shio reports the number and leaves the refusal for when the check can weigh the
 incoming size too.
 
 ### Suspension and teardown

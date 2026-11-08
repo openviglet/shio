@@ -6,7 +6,7 @@ sidebar:
 ---
 
 If an agent operates your CMS, the cost of operating it is measured in **tokens**. That
-makes response size a product property, not an implementation detail, so Shio treats it
+makes response size a product property, not an implementation detail, so Viglet Shio treats it
 like one: every response on the agent surface has a declared ceiling, and **a build that
 makes a response bigger fails.**
 

@@ -114,9 +114,11 @@ Five rules for editing any of it:
   name does not fit, change the layout instead of abbreviating it. That is why the
   phone header moves Get started into the menu and keeps the wordmark. Commands,
   package names and code identifiers stay as they are.
-  [`scripts/full-names.test.mjs`](scripts/full-names.test.mjs) scans `src/` and
-  the crawler outputs and names its exceptions: the historical changelog, and the
-  generated marketplace catalogue.
+  The same holds for Viglet Turing and Viglet Dumont.
+  [`scripts/full-names.test.mjs`](scripts/full-names.test.mjs) scans `src/`, the
+  crawler outputs and the prose of the docs pages, and names its exceptions: the
+  historical changelog, and the console's own provider labels (**Shio Native**,
+  **Shio Package**), which a page has to spell the way the screen does.
 
 ## The showcase (SH1258)
 

@@ -5,7 +5,7 @@ sidebar:
   label: Webhooks
 ---
 
-When content is **published**, **unpublished** or **deleted**, Shio can POST a small
+When content is **published**, **unpublished** or **deleted**, Viglet Shio can POST a small
 signed JSON body to a URL you choose. The usual reason is to rebuild or revalidate a
 static front end at the moment its content changed, rather than on a timer.
 
@@ -31,7 +31,7 @@ catch-all plus a site-scoped subscription both matching one event both fire.
 :::caution
 **A subscription with no secret delivers nothing.** Signing is not optional: a target
 with a blank secret is skipped, with a warning in the server log. Leave the field blank
-on creation and Shio generates one for you; do not clear it afterwards.
+on creation and Viglet Shio generates one for you; do not clear it afterwards.
 :::
 
 The secret is **write-only on the wire**: once saved, reading the subscription back

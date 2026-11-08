@@ -1,11 +1,11 @@
 ---
 title: React SDK
-description: "@viglet/shio-react-sdk: React hooks and render components for the Shio Content Delivery API."
+description: "@viglet/shio-react-sdk: React hooks and render components for the Viglet Shio Content Delivery API."
 sidebar:
   order: 9
 ---
 
-React hooks and render components for consuming Shio content, built on top of
+React hooks and render components for consuming Viglet Shio content, built on top of
 [`@viglet/shio-client`](/docs/headless/javascript-client/). React is one consumer of the
 core client, the data fetching, types, and auth all come from the core.
 
@@ -95,7 +95,7 @@ import { ShioRichText, ShioField, ShioRelator } from "@viglet/shio-react-sdk";
 ```
 
 :::caution[Sanitize untrusted HTML]
-`ShioRichText` injects HTML verbatim. Shio content is authored by trusted
+`ShioRichText` injects HTML verbatim. Viglet Shio content is authored by trusted
 editors, but if your content can contain untrusted input, sanitize it upstream
 (e.g. with DOMPurify) before rendering.
 :::

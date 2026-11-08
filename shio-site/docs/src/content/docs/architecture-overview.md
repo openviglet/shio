@@ -14,21 +14,21 @@ That constraint is the architecture's main idea. There is no separate agent back
 second serialization, no third way to write a post. Adding a capability means adding it
 once, in the service, and projecting it where callers need it.
 
-Nothing calls out to a hosted service: Shio holds **no model and no prompts**, and the
+Nothing calls out to a hosted service: Viglet Shio holds **no model and no prompts**, and the
 content, the files and the keys stay on your infrastructure.
 
 ---
 
 ## Component diagram
 
-![Shio architecture: callers, surfaces, core services and persistence](/docs/img/diagrams/shio-architecture.svg)
+![Viglet Shio architecture: callers, surfaces, core services and persistence](/docs/img/diagrams/shio-architecture.svg)
 
 Two edges in that picture are the ones worth reading twice:
 
 - **MCP delegates to the agent surface, which delegates to the same write services the
   console uses.** An agent is not a privileged path into the data; it is a different
   spelling of the same operations, with its own guards on top.
-- **Turing indexing is a dotted line.** It is an opt-in integration reached on publish, not
+- **Viglet Turing indexing is a dotted line.** It is an opt-in integration reached on publish, not
   a component the system needs to run.
 
 ---
@@ -41,7 +41,7 @@ Two edges in that picture are the ones worth reading twice:
 | **Agent REST** | `/api/v2/agent/**` | API key (`AGENT` scope), stateless | Discovery, addressed reads, atomic writes, verification |
 | **Console API** | `/api/v2/**` | Session + CSRF | The React console |
 | **Delivery (CDA)** | `/api/v2/cda/**`, `/graphql` | API key (read / preview / write scope) | Your own front end |
-| **Renderer** | `/preview/**`, `/sites/**` | authenticated / anonymous | Pages Shio serves itself |
+| **Renderer** | `/preview/**`, `/sites/**` | authenticated / anonymous | Pages Viglet Shio serves itself |
 
 ## Core modules
 
@@ -121,7 +121,7 @@ sequenceDiagram
 | **Database** | PostgreSQL · MariaDB/MySQL · H2 | H2 for development; the schema is DB-agnostic and Liquibase-managed |
 | **Schema** | Liquibase | `ddl-auto=none`; migrations are the source of truth |
 | **Template engine** | Handlebars.java | No script engine on the classpath |
-| **Search** | In-database full text; **optional** Viglet Turing client | Turing is off by default (`shio.turing.enabled=false`) |
+| **Search** | In-database full text; **optional** Viglet Turing client | Viglet Turing is off by default (`shio.turing.enabled=false`) |
 | **Cache** | Hazelcast (embedded), HTTP `ETag` / `Cache-Control`, per-transaction render caches | |
 | **File extraction** | Apache Tika | Text extraction from uploads |
 | **Console** | React 19 + TypeScript + Radix UI + Tailwind + Vite | Built into the JAR |
@@ -131,7 +131,7 @@ sequenceDiagram
 :::note[Not dependencies]
 Two things earlier documentation listed as part of the stack are **not**: there is no
 server-side JavaScript engine (the Nashorn artifact is explicitly excluded from the build),
-and **Elasticsearch is not a dependency**: search runs in your database, and Turing is
+and **Elasticsearch is not a dependency**: search runs in your database, and Viglet Turing is
 an optional client you enable if you want faceted enterprise search.
 :::
 
@@ -147,7 +147,7 @@ separately only if you are changing the console itself.
 
 ### Single node
 
-Shio + PostgreSQL (or MariaDB/MySQL). This is the shape most installations want:
+Viglet Shio + PostgreSQL (or MariaDB/MySQL). This is the shape most installations want:
 
 - **What must be co-located with the process:** `store/`: the file bytes and logs. Put it
   on a volume that survives a redeploy.
@@ -158,12 +158,12 @@ Shio + PostgreSQL (or MariaDB/MySQL). This is the shape most installations want:
 
 ### Containers
 
-`docker compose` with Shio, a database, and a volume for `store/`. Turing is a separate
+`docker compose` with Viglet Shio, a database, and a volume for `store/`. Viglet Turing is a separate
 compose service only if you enabled indexing.
 
 ### Multiple nodes
 
-Shio runs multi-node, with two things to know before you scale out: the CDA's rate limiter
+Viglet Shio runs multi-node, with two things to know before you scale out: the CDA's rate limiter
 is **per JVM**, so a per-token budget is multiplied by your node count; and the change feed
 is commit-ordered per node, so a consumer walking it across a cluster is told when it has
 met a write the node it asked did not stamp.

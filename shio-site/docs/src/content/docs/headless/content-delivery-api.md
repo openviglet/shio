@@ -1,6 +1,6 @@
 ---
 title: Content Delivery API (CDA)
-description: The read-only, headless Content Delivery API for serving published Shio content to any JavaScript front-end.
+description: The read-only, headless Content Delivery API for serving published Viglet Shio content to any JavaScript front-end.
 sidebar:
   order: 7
 ---
@@ -89,7 +89,7 @@ curl "https://cms.example.com/api/v2/cda/post/by-url?siteId=SITE_ID&url=/blog/he
 ### Redirects on a site with its own front end
 
 A redirect you create in Viglet Shio (a `Redirect` post, or the offer to keep an old address
-working when you rename a page) is served by Shio's own `/sites/**` delivery. If your site is
+working when you rename a page) is served by Viglet Shio's own `/sites/**` delivery. If your site is
 rendered by its own front end, such as Next.js, visitors never pass through that delivery, so
 the front end has to do the redirecting itself. This endpoint gives it the table:
 

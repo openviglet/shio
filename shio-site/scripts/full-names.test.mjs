@@ -16,8 +16,8 @@ import { test } from "node:test";
 
 const SITE = fileURLToPath(new URL("..", import.meta.url));
 
-/** A bare product name: `Shio` not preceded by `Viglet `. Case-sensitive, so `shio push` is a command. */
-const BARE = /(?<!Viglet )\bShio\b/gu;
+/** A bare product name, not preceded by `Viglet `. Case-sensitive, so `shio push` is a command. */
+const BARE = /(?<!Viglet )\b(Shio|Turing|Dumont)\b/gu;
 
 /** Files outside `src/` a visitor or a crawler reads. */
 const OUTPUTS = ["public/llms.txt", "scripts/prerender.mjs", "docs/src/components/Head.astro"];
@@ -25,8 +25,28 @@ const OUTPUTS = ["public/llms.txt", "scripts/prerender.mjs", "docs/src/component
 /** Visitor-reachable files that may keep a bare name, and why. */
 const EXCEPTIONS = {
   "public/changelog.json": "a historical release record (\"Product name was changed to Shio\"), kept as written",
-  "public/marketplace/marketplace.json": "generated from marketplace/quilhara/blueprint.json, whose package text is the docs pass's remainder",
 };
+
+/** The docs pages a visitor reads; COVERAGE.md is the contributors' matrix and is not published. */
+const DOCS = "docs/src/content/docs";
+
+/**
+ * Names in the docs that are labels the console shows, not mentions: the two built-in providers.
+ * Rewriting them would make the page disagree with the screen it describes.
+ */
+const DOCS_LABELS = /\*\*Shio (Native|Package)\*\*/gu;
+
+/** Prose only: fenced code, inline code, link targets and HTML tags are technical and stay. */
+function docsProse(text) {
+  let fence = false;
+  return text.split(/\r?\n/u).map((line) => {
+    if (/^\s*(```|~~~)/u.test(line)) {
+      fence = !fence;
+      return "";
+    }
+    return fence ? "" : line.replace(/`[^`]*`|\]\([^)]*\)|<[^>]+>/gu, "").replace(DOCS_LABELS, "");
+  });
+}
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -54,6 +74,17 @@ test("SH1369: the site's visitor text names the product Viglet Shio every time",
   assert.deepEqual(found, [],
     "SH1369: a bare Shio in a string a visitor reads; the hub decided full names everywhere, so "
       + "write Viglet Shio, and change the layout rather than abbreviate when it does not fit");
+});
+
+test("SH1369: the docs pages name Viglet Shio, Viglet Turing and Viglet Dumont in full", () => {
+  const BARE_ANY = /(?<!Viglet )(?<![\w/.-])(Shio|Turing|Dumont)\b(?![\w-]*\.(?:java|ts|mjs|md))/u;
+  const found = walk(join(SITE, DOCS))
+    .filter((path) => path.endsWith(".md") && !path.endsWith("COVERAGE.md"))
+    .flatMap((path) => docsProse(readFileSync(path, "utf8")).flatMap((line, index) =>
+      BARE_ANY.test(line) ? [`${relative(SITE, path).replaceAll("\\", "/")}:${index + 1}: ${line.trim().slice(0, 120)}`] : []));
+  assert.deepEqual(found, [],
+    "SH1369: a bare product name in a docs page's prose; commands, properties and code stay as "
+      + "they are, but a sentence names the product in full");
 });
 
 test("SH1369: the breadcrumbs crawlers read name the product in full", () => {

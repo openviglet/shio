@@ -12,7 +12,7 @@ The **Universal Editor** puts the editing surface on the page itself. You open t
 rendered page inside the console, click the text you want to change, type, and save. What
 you save goes to the **draft**, not to the live page.
 
-It works two ways, on Shio's own rendered pages, and on **your own front end**, wherever
+It works two ways, on Viglet Shio's own rendered pages, and on **your own front end**, wherever
 it is deployed, which is the case that matters once delivery is a Next.js app over the
 Content Delivery API.
 
@@ -58,7 +58,7 @@ external URL, and a token selector: the editor saves through a delivery token wi
 scope, not through your console session, because the page being edited may be served from
 another origin entirely.
 
-Pick a site to edit Shio's own preview render, or paste the URL of your deployed front
+Pick a site to edit Viglet Shio's own preview render, or paste the URL of your deployed front
 end.
 
 Behind the scenes, a preview URL with `?editor=true` gets a small bridge script injected at
@@ -150,7 +150,7 @@ That meta tag is not optional: **the package is inert without it.** A framed pag
 work out who framed it, `document.referrer` is empty on some navigations and reading the
 parent's location throws cross-origin, so the allowed origin has to be stated by the page.
 
-The same reasoning applies on Shio's side: the console pins the iframe's origin and ignores
+The same reasoning applies on Viglet Shio's side: the console pins the iframe's origin and ignores
 messages from anywhere else, and the injected script is handed its parent's origin
 explicitly. **Neither side ever posts to `"*"`**, and that is asserted by a test rather
 than promised in a comment.

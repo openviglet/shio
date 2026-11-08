@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-Everything an operator configures lives in the Shio console under **Administration**,
+Everything an operator configures lives in the Viglet Shio console under **Administration**,
 at `/bento/admin` on your instance. This page walks those screens in order.
 
 The curator's half (the content browser, the post form, copy and move, the trash) is on
@@ -63,7 +63,7 @@ sign in to the console, be the subject of a permission grant, and own content.
 
 ### Default user
 
-On first startup Shio creates a default administrator account:
+On first startup Viglet Shio creates a default administrator account:
 
 | Field | Value |
 |---|---|
@@ -102,7 +102,7 @@ is what its members may do; each links to the role, where that relation is chang
 
 ## Permissions
 
-Shio has two independent permission layers. They answer different questions and are
+Viglet Shio has two independent permission layers. They answer different questions and are
 configured in different places.
 
 ### Console access
@@ -131,7 +131,7 @@ write on both ends. See [Letting an agent in](/docs/agent-safety/).
 
 The ACL decides who edits. A separate rule decides who may **read a published page**: a
 folder can be made **members-only**, for any signed-in user or for named groups, and
-everything inside it follows. A member is a Shio user, so a members area needs no
+everything inside it follows. A member is a Viglet Shio user, so a members area needs no
 second account system.
 
 - On the published site (`/sites/...`) a visitor outside the groups gets the same
@@ -232,7 +232,7 @@ Full detail, including how a request is resolved to a tenant, is on
 ## Authentication providers
 
 **Administration → Authentication Providers** configures where console users are
-authenticated. Shio ships one provider: **Shio Native**, the built-in username and
+authenticated. Viglet Shio ships one provider: **Shio Native**, the built-in username and
 password store described above. The screen exists so an external identity source can be
 added as a second provider instance.
 
@@ -244,7 +244,7 @@ see [Security](/docs/security/).
 ## Exchange providers
 
 **Administration → Exchange Providers** configures the sources content can be imported
-from and exported to. Shio ships one: **Shio Package**, the local exchange archive that
+from and exported to. Viglet Shio ships one: **Shio Package**, the local exchange archive that
 site import and download use.
 
 See [Import & Export](/docs/import-export/) for the package format and the import flow.
@@ -253,7 +253,7 @@ See [Import & Export](/docs/import-export/) for the package format and the impor
 
 ## Email
 
-**Administration → Email** configures the outgoing SMTP server Shio sends mail through:
+**Administration → Email** configures the outgoing SMTP server Viglet Shio sends mail through:
 host, port, credentials and whether the connection is secured. The same settings can be
 supplied as properties at startup. See the
 [Configuration Reference](/docs/configuration-reference/).
@@ -262,7 +262,7 @@ supplied as properties at startup. See the
 
 ## Webhooks
 
-**Administration → Webhooks** manages the outbound notifications Shio fires when content
+**Administration → Webhooks** manages the outbound notifications Viglet Shio fires when content
 is **published**, **unpublished** or **deleted**. A subscription belongs to a site, so a
 static-site rebuild can be triggered by the one site that changed rather than by all of
 them.
@@ -329,14 +329,14 @@ folders and configuration, and is what **Import Site** reads back.
 |---|---|
 | **Name** | The site's display name, and the name it is addressed by (`site:<name>`). |
 | **Description** | Free text. |
-| **URL** | The base URL of the site's front end. The Universal Editor frames this, and "Preview" and "View published site" open it. Left empty, "Preview" opens Shio's draft preview at `/preview/<site>/` and "View published site" opens the published pages at `/sites/<furl>/`, exactly as a visitor receives them. |
+| **URL** | The base URL of the site's front end. The Universal Editor frames this, and "Preview" and "View published site" open it. Left empty, "Preview" opens Viglet Shio's draft preview at `/preview/<site>/` and "View published site" opens the published pages at `/sites/<furl>/`, exactly as a visitor receives them. |
 
 ### A site at its own address
 
 An instance can also serve each site at a hostname of its own, such as `quilhara.sites.example.org`.
 Set `shio.sites.host-domain=sites.example.org` (or the `SHIO_SITES_HOST_DOMAIN` environment
 variable), then point a wildcard DNS record and certificate for `*.sites.example.org` at the
-instance. Shio takes care of the rest: the first label of the host is the site's friendly URL, the
+instance. Viglet Shio takes care of the rest: the first label of the host is the site's friendly URL, the
 rest of the path is the page, and the page's canonical URL names the host. The friendly URL has to be
 a valid hostname label (lower-case letters, digits and hyphens); a site whose friendly URL is not one
 keeps its `/sites/<furl>/` address. A site with a **URL** of its own keeps that URL as its canonical
@@ -350,7 +350,7 @@ page, and the site's API read returns that address as `publishedUrl`.
 ## Search
 
 Search is configured with properties rather than on a console screen. Site search is
-served by Shio itself; connecting an external index is an operator setting. See
+served by Viglet Shio itself; connecting an external index is an operator setting. See
 [Search & Caching](/docs/search-caching/).
 
 ---

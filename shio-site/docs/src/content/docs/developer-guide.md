@@ -5,9 +5,9 @@ sidebar:
   order: 5
 ---
 
-Whether you are **building against Shio** or **contributing to it**, start here.
+Whether you are **building against Viglet Shio** or **contributing to it**, start here.
 
-Shio is an open-source, **agent-native** CMS. A coding agent builds and maintains the
+Viglet Shio is an open-source, **agent-native** CMS. A coding agent builds and maintains the
 site; a curator approves what it produced; a headless delivery layer serves it. That order
 is the product, not a description of it: every capability lands on an agent-drivable
 surface first, and a feature reachable only from the console is considered incomplete.
@@ -52,7 +52,7 @@ console**.
 
 :::note
 The versions in that table are **checked against this repository's own build files** by
-`cli/conformance/docs-stack.conformance.mjs`. A version that drifts fails a Shio build
+`cli/conformance/docs-stack.conformance.mjs`. A version that drifts fails a Viglet Shio build
 rather than misleading a reader here.
 :::
 
@@ -243,7 +243,7 @@ These are binding, and a change that breaks one is wrong even if it was asked fo
 9. **Close the perception loop**: cheap textual proof (lint, routes, render digest) instead of asking someone to look.
 10. **Compose, don't fork**: MCP is a *shape* over the delivery API and console services, never a third contract.
 
-Three things Shio deliberately does **not** do: host a model or run prompts, replace the
+Three things Viglet Shio deliberately does **not** do: host a model or run prompts, replace the
 Java backend, or add a parallel API semantic.
 
 ---

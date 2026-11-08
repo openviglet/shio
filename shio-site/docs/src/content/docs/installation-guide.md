@@ -9,13 +9,13 @@ Viglet Shio ([https://www.viglet.org/shio/](https://www.viglet.org/shio/)) is an
 
 ## Installing Java
 
-Shio requires Java.
+Viglet Shio requires Java.
 
 :::note
-Shio only supports Java 21.
+Viglet Shio only supports Java 21.
 :::
 
-During installation, Shio reads the JAVA_HOME and PATH variables to install the necessary services. Therefore, you must modify the variables as specified here:
+During installation, Viglet Shio reads the JAVA_HOME and PATH variables to install the necessary services. Therefore, you must modify the variables as specified here:
 
 - **On Windows:**
   - Set the JAVA_HOME system variable to point to the JAVA location.
@@ -27,9 +27,9 @@ During installation, Shio reads the JAVA_HOME and PATH variables to install the 
 
 <span id="shio-cms-requirements"></span>
 
-## Shio Requirements
+## Viglet Shio Requirements
 
-The information below describes the resource modes available to run Shio.
+The information below describes the resource modes available to run Viglet Shio.
 
 :::note
 Use a screen resolution of at least 1024 x 768 for optimum clarity.
@@ -48,13 +48,13 @@ In addition, the following is required:
 
 ## Installing and Configuring Databases
 
-Shio supports multiple database platforms, each with specific unique requirements to maximize effectiveness with Shio.
+Viglet Shio supports multiple database platforms, each with specific unique requirements to maximize effectiveness with Viglet Shio.
 
 <span id="shio-cms-database-table-requirements"></span>
 
-### Shio Database Table Requirements
+### Viglet Shio Database Table Requirements
 
-Shio uses multiple tables in multiple databases (also called database schemas by some vendors such as Oracle). You must create new databases / schemas that will contain the sets of tables described below.
+Viglet Shio uses multiple tables in multiple databases (also called database schemas by some vendors such as Oracle). You must create new databases / schemas that will contain the sets of tables described below.
 
 ### Oracle Database Requirements
 
@@ -62,18 +62,18 @@ This section describes configuration requirements for an existing database.
 
 To set up an Oracle database:
 
-1. Install and configure a single database instance for use by Shio.
-2. Create a database schema to contain the Shio system tables.
-3. Configure the Shio admin user for the database. For Oracle, the database user with the grant of the CONNECT and RESOURCE roles. Make sure the user has UNLIMITED TABLESPACE and CREATE VIEW privileges.
+1. Install and configure a single database instance for use by Viglet Shio.
+2. Create a database schema to contain the Viglet Shio system tables.
+3. Configure the Viglet Shio admin user for the database. For Oracle, the database user with the grant of the CONNECT and RESOURCE roles. Make sure the user has UNLIMITED TABLESPACE and CREATE VIEW privileges.
 
 ### Microsoft SQL Server Database Requirements
 
-When creating the Shio database, use the following options:
+When creating the Viglet Shio database, use the following options:
 
 - You must install the Database Engine feature and Management Tools are recommended.
 - Set the Collation configuration variable to `SQL_Latin1_General_CP1_CS_AS` or `Latin1_General / Case-sensitive / Accent-Sensitive`.
 - Set authentication mode to mixed mode.
-- Shio system user cannot be sa.
+- Viglet Shio system user cannot be sa.
 
 #### Configuring the SQL Server Database and Schemas
 
@@ -136,10 +136,10 @@ autovacuum = off
 ```
 
 :::important
-The autovacuum daemon must be re-enabled after installing and configuring Shio.
+The autovacuum daemon must be re-enabled after installing and configuring Viglet Shio.
 :::
 
-#### Configuring the Shio user, database, and schemas
+#### Configuring the Viglet Shio user, database, and schemas
 
 :::important
 When you create a database table in PostgreSQL, the field name must be lowercase.
@@ -174,7 +174,7 @@ ALTER USER shio SET SEARCH_PATH = shio;
 
 <span id="installing-shio-cms"></span>
 
-## Installing Shio
+## Installing Viglet Shio
 
 ### Option 1: Docker (fastest)
 
@@ -207,7 +207,7 @@ For a larger deployment, set your own `JAVA_OPTS`, for example
 
 ### Option 2: JAR download
 
-Go to [https://www.viglet.org/shio/download/](https://www.viglet.org/shio/download/) and click on "Download Shio" button to download the `viglet-shio.jar` executable.
+Go to [https://www.viglet.org/shio/download/](https://www.viglet.org/shio/download/) and click on "Download Viglet Shio" button to download the `viglet-shio.jar` executable.
 
 Copy the `viglet-shio.jar` to `/appl/viglet/shio/server`:
 
@@ -227,7 +227,7 @@ cp shio-app/target/viglet-shio.jar /appl/viglet/shio/server/
 
 ### Database
 
-By default, Shio uses H2 as its embedded database, but if you prefer another database you can create an external properties file and reference it at startup using `--spring.config.additional-location`.
+By default, Viglet Shio uses H2 as its embedded database, but if you prefer another database you can create an external properties file and reference it at startup using `--spring.config.additional-location`.
 
 Create `/appl/viglet/shio/server/viglet-shio.properties`:
 
@@ -261,7 +261,7 @@ spring.datasource.driver-class-name=org.postgresql.Driver
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQL94Dialect
 ```
 
-Then start Shio referencing the properties file:
+Then start Viglet Shio referencing the properties file:
 
 ```bash
 java -Xmx1g -Xms1g -jar viglet-shio.jar \
@@ -272,7 +272,7 @@ java -Xmx1g -Xms1g -jar viglet-shio.jar \
 
 <span id="creating-shio-cms-service-on-linux"></span>
 
-### Creating Shio Service on Linux
+### Creating Viglet Shio Service on Linux
 
 As root, create a `/etc/systemd/system/shio.service` file with the following lines:
 
@@ -295,7 +295,7 @@ WantedBy=multi-user.target
 ```
 
 :::note[Spring Boot 4]
-Starting with Spring Boot 4, JAR files are no longer directly executable (`./viglet-shio.jar`). You must launch Shio using `java -jar` explicitly. The `.conf` file pattern used in older versions is no longer supported: use `--spring.config.additional-location` to load external properties instead.
+Starting with Spring Boot 4, JAR files are no longer directly executable (`./viglet-shio.jar`). You must launch Viglet Shio using `java -jar` explicitly. The `.conf` file pattern used in older versions is no longer supported: use `--spring.config.additional-location` to load external properties instead.
 :::
 
 Enable and start the service:
@@ -314,17 +314,17 @@ systemctl restart shio.service
 systemctl status shio.service
 ```
 
-### Accessing the Shio Console
+### Accessing the Viglet Shio Console
 
-Shio provides remote access through its Web application interfaces at: [http://localhost:2710](http://localhost:2710).
+Viglet Shio provides remote access through its Web application interfaces at: [http://localhost:2710](http://localhost:2710).
 
 The administrator user is **`admin`**. Viglet Shio ships **no default password**: the `admin`
 user is created without one, so there is no shipped credential to change or to forget to change.
 You choose the password on first access, in one of two ways:
 
-- **The first-access screen.** Open the console and Shio asks you to set the `admin` password
+- **The first-access screen.** Open the console and Viglet Shio asks you to set the `admin` password
   before anything else. This is the right path for an installation someone is sitting in front of.
-- **`SHIO_ADMIN_PASSWORD`.** Set it before the first start and Shio applies it for you, skipping
+- **`SHIO_ADMIN_PASSWORD`.** Set it before the first start and Viglet Shio applies it for you, skipping
   the screen. This is the path for a container, a Compose file or an automated deploy: see
   [Setting the admin password without the console](#setting-the-admin-password-without-the-console).
 
@@ -336,7 +336,7 @@ chose.
 
 ### Setting the admin password without the console
 
-Set `SHIO_ADMIN_PASSWORD` (or the equivalent property `shio.admin.password`) and Shio applies it
+Set `SHIO_ADMIN_PASSWORD` (or the equivalent property `shio.admin.password`) and Viglet Shio applies it
 to the `admin` user at startup:
 
 ```bash
@@ -377,11 +377,11 @@ Minimal setup using an embedded H2 database. Suitable for local development and 
 
 ### Docker Compose
 
-Shio and its dependencies installed via Docker Compose, including:
+Viglet Shio and its dependencies installed via Docker Compose, including:
 
-- MariaDB: Shio system tables
+- MariaDB: Viglet Shio system tables
 - Nginx: reverse proxy on port 80
-- Shio
+- Viglet Shio
 
 **Prerequisites:**
 1. Linux server with Docker and Docker Compose installed
@@ -392,11 +392,11 @@ Shio and its dependencies installed via Docker Compose, including:
 
 ### Kubernetes
 
-Shio and its dependencies deployed via Kubernetes manifests (available in the `k8s/` directory), including:
+Viglet Shio and its dependencies deployed via Kubernetes manifests (available in the `k8s/` directory), including:
 
-- MariaDB: Shio system tables
+- MariaDB: Viglet Shio system tables
 - Nginx: reverse proxy
-- Shio
+- Viglet Shio
 
 **Prerequisites:**
 1. Linux server with Kubernetes, or a cloud Kubernetes service (GKE, EKS, AKS)
@@ -409,8 +409,8 @@ Shio and its dependencies deployed via Kubernetes manifests (available in the `k
 
 Each service installed individually following this guide:
 
-- MariaDB: Shio system tables
-- Shio
+- MariaDB: Viglet Shio system tables
+- Viglet Shio
 
 **Prerequisites:**
 1. One to two Linux servers
@@ -421,7 +421,7 @@ Each service installed individually following this guide:
 
 ## Appendix B: Docker Compose
 
-You can start Shio using MariaDB and Nginx.
+You can start Viglet Shio using MariaDB and Nginx.
 
 ```shell
 mvn clean package -pl shio-app
@@ -429,7 +429,7 @@ docker-compose up
 ```
 
 :::tip[Deploy with the pre-built image]
-The commands above build Shio from source for local development. For deployment, replace the `build:` of the `shio` service with the published image instead (`image: ghcr.io/openviglet/shio:latest`) so the stack pulls the image from `ghcr.io` rather than compiling it.
+The commands above build Viglet Shio from source for local development. For deployment, replace the `build:` of the `shio` service with the published image instead (`image: ghcr.io/openviglet/shio:latest`) so the stack pulls the image from `ghcr.io` rather than compiling it.
 :::
 
 :::note
@@ -438,7 +438,7 @@ If you have problems with permissions on directories, run `chmod -R 777 volumes`
 
 ### Docker Commands
 
-#### Shio
+#### Viglet Shio
 
 ```shell
 docker exec -it shio /bin/bash

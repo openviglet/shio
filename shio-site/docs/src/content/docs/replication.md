@@ -1,11 +1,11 @@
 ---
 title: Replication
-description: "Point Shio at a site that already exists: capture it, propose what could become editable content, convert it, and serve it, in fidelity or authorable mode."
+description: "Point Viglet Shio at a site that already exists: capture it, propose what could become editable content, convert it, and serve it, in fidelity or authorable mode."
 sidebar:
   label: Replication
 ---
 
-Point Shio at a website that already exists and get back a site a curator can edit.
+Point Viglet Shio at a website that already exists and get back a site a curator can edit.
 
 That is three commands (`clone`, `propose`, `convert`) and one decision you should make
 *before* you run them, because choosing wrong wastes the run.
@@ -19,7 +19,7 @@ That is three commands (`clone`, `propose`, `convert`) and one decision you shou
 | | **Fidelity** | **Authorable** |
 |---|---|---|
 | What `convert` writes | The source's markup, verbatim, behind a Theme + Page Layout + Page | The captured blocks as **sections**: real fields, in a generated layout that annotates each one |
-| How close it looks | Pixel-identical is achievable and has been achieved | The pixels have moved: the captured CSS classes are dropped and the page is drawn with Shio's own vocabulary, styled by a theme whose colours are taken from the source |
+| How close it looks | Pixel-identical is achievable and has been achieved | The pixels have moved: the captured CSS classes are dropped and the page is drawn with Viglet Shio's own vocabulary, styled by a theme whose colours are taken from the source |
 | Can a curator edit it? | **Not on its own**: verbatim markup carries no field annotations, so the Universal Editor opens a page with nothing to edit. `convert --annotate` adds them without touching the pixels: see [Fidelity with editable blocks](#fidelity-with-editable-blocks) | **Yes.** Every field is annotated and editable |
 | On a page that mixes them | The kept markup is a section of its own, movable and replaceable: see below | The accepted blocks, in the same list, in source order |
 | Use it for | Proving the capture is faithful; archiving a site as-is | Actually adopting the site into a CMS |
@@ -45,7 +45,7 @@ Two things follow, and both are visible on the page:
   there. An authorable page does not receive it, deliberately: it draws `shio-*` names and
   the captured CSS defines none of them.
 - **The page's own title is editable on a mixed page too.** It is annotated whether or not
-  Shio drew it, so the Universal Editor reaches it even where the visible heading is the
+  Viglet Shio drew it, so the Universal Editor reaches it even where the visible heading is the
   one the capture recorded.
 
 Authorable is the mode that makes the replica a *CMS site* rather than a copy. Fidelity is
@@ -64,7 +64,7 @@ shio convert --site mysite --create-site --annotate
 
 `propose` already worked out which node on a captured page is a heading and which is an
 intro; the authorable mode spends that mapping one way: read the values out, write them
-into section posts, redraw the page with Shio's vocabulary. `--annotate` spends it the
+into section posts, redraw the page with Viglet Shio's vocabulary. `--annotate` spends it the
 other way: the mapping is **stamped onto the source's own markup** as editable fields, and
 nothing else about the page changes. Strip the annotations back out and the bytes are the
 source's body exactly.
@@ -201,7 +201,7 @@ travels with `shio export`, and a later conversion replaces it.
 
 #### The replica's navigation is the one the source stated
 
-An authorable page is redrawn with Shio's vocabulary, and the source's own `<nav>` is part
+An authorable page is redrawn with Viglet Shio's vocabulary, and the source's own `<nav>` is part
 of what that drops. `convert` puts one back, from what the capture recorded rather than
 from the content model: `clone` reads `<nav>` and `[role=navigation]` (a footer's links
 are links), keeps the entries **in source order**, and counts how many pages each appears
@@ -224,7 +224,7 @@ behaviour: the layout lists the site's pages by title.
 
 #### The theme an authorable replica is presented with
 
-An authorable page is drawn with Shio's own `shio-*` vocabulary (a container, a stack, a
+An authorable page is drawn with Viglet Shio's own `shio-*` vocabulary (a container, a stack, a
 grid, a card), and the `Theme` `convert` writes styles every one of those roles. Its
 **values come from the source**: `convert` reads the palette `propose` extracted and fills
 the theme's tokens from it, matching each one by the role the source uses it in rather than
@@ -397,7 +397,7 @@ not a reason to stop.
 
 ## Boundaries, stated up front
 
-- **The instance does not run a browser.** Shio itself never renders JavaScript; `--render`
+- **The instance does not run a browser.** Viglet Shio itself never renders JavaScript; `--render`
   drives a browser on *your* machine at capture time, and it is an optional dependency. A
   source that builds its content client-side is capturable only through that flag, and only
   as the DOM looked at capture time.
@@ -406,7 +406,7 @@ not a reason to stop.
   the pages that kept all of their markup. For a mixed page, the authorable half is the
   editable half.
 - **Authorable mode arrives styled, but not as the source.** The captured classes are dropped
-  and the page is redrawn with Shio's own vocabulary, so the layout, the spacing and the type
+  and the page is redrawn with Viglet Shio's own vocabulary, so the layout, the spacing and the type
   are the theme's rather than the source's; the colours, the corner radius and the font stack
   are the source's where its stylesheet states them plainly ([the theme an authorable replica
   is presented with](#the-theme-an-authorable-replica-is-presented-with)). This is the trade you

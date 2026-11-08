@@ -11,7 +11,7 @@ Viglet Shio provides a **GraphQL** API for querying content. GraphQL is ideal fo
 
 ## GraphiQL Console
 
-Shio includes a built-in **GraphiQL** interactive console for exploring and testing GraphQL queries:
+Viglet Shio includes a built-in **GraphiQL** interactive console for exploring and testing GraphQL queries:
 
 ```
 http://localhost:2710/graphiql

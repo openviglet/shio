@@ -3,7 +3,7 @@ title: REST API Reference
 description: "The console REST API: unified posts, folders, sites, post types, static files, the trash, review sessions and tokens, plus the endpoints that deliberately do not exist."
 ---
 
-Shio has **four** HTTP surfaces, and picking the right one is most of the work:
+Viglet Shio has **four** HTTP surfaces, and picking the right one is most of the work:
 
 | Surface | Path | Use it when |
 |---|---|---|
@@ -158,7 +158,7 @@ When every byte is there, finish it:
 POST /api/v2/staticfile/upload-session/{id}/finish
 ```
 
-Shio checks that the bytes hash to the `sha256` you declared, and only then creates the `File`
+Viglet Shio checks that the bytes hash to the `sha256` you declared, and only then creates the `File`
 post, the same one a single-request upload would have made. If the digest does not match, the
 session is discarded and nothing is created. `DELETE /api/v2/staticfile/upload-session/{id}`
 abandons a session; one left unfinished expires after 24 hours (`shio.upload-sessions.ttl`).

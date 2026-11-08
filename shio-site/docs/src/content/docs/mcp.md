@@ -5,7 +5,7 @@ sidebar:
   label: MCP Server
 ---
 
-Shio speaks the **Model Context Protocol**. One endpoint:
+Viglet Shio speaks the **Model Context Protocol**. One endpoint:
 
 ```http
 POST /mcp
@@ -17,12 +17,12 @@ JSON-RPC 2.0 over streamable HTTP. It answers `initialize`, `tools/list`, `tools
 `MCP-Protocol-Version`.
 
 This is the surface the product is designed around: the agent that builds your site
-talks to Shio here. It is a **shape over the same capabilities** as
+talks to Viglet Shio here. It is a **shape over the same capabilities** as
 [the REST agent surface](/docs/agent-surface/), not a separate contract: a tool call ends
 up in the same service the REST endpoint calls, under the same guards.
 
 :::caution[A bare instance has no MCP server registered for your client]
-Starting Shio does not make it appear in Claude Code. Until you register it, `POST /mcp`
+Starting Viglet Shio does not make it appear in Claude Code. Until you register it, `POST /mcp`
 is just an HTTP endpoint. Two ways to close that gap, both below: **install the plugin**,
 or point your client at the CLI's stdio bridge with
 `claude mcp add shio -- shio mcp`. Skipping this is worth an afternoon of confusion.

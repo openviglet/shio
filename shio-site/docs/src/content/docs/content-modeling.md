@@ -94,7 +94,7 @@ order**, and a region's template walks them with `{{#getRelation}}`. See
 
 ## System post types
 
-Some types are created by Shio itself and are read-only in the console:
+Some types are created by Viglet Shio itself and are read-only in the console:
 
 | Type | For |
 |---|---|
@@ -257,9 +257,9 @@ neither refuses a publish even when the type marks it required.
 
 ## Search fields
 
-A field can be mapped to a Turing Semantic Navigation field, title, description, text,
+A field can be mapped to a Viglet Turing Semantic Navigation field, title, description, text,
 date, URL, image, or to a custom field for facets. That mapping only matters if you have
-enabled Turing indexing, which is **off by default**; see
+enabled Viglet Turing indexing, which is **off by default**; see
 [Search & Caching](/docs/search-caching/).
 
 ---

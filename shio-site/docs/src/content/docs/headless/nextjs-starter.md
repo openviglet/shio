@@ -1,11 +1,11 @@
 ---
 title: Next.js Starter
-description: "create-shio-app: scaffold a Next.js App Router site wired to the Shio Content Delivery API."
+description: "create-shio-app: scaffold a Next.js App Router site wired to the Viglet Shio Content Delivery API."
 sidebar:
   order: 10
 ---
 
-Scaffold a **Next.js (App Router)** site wired to the Shio
+Scaffold a **Next.js (App Router)** site wired to the Viglet Shio
 [Content Delivery API](/docs/headless/content-delivery-api/) in seconds. This is the
 flagship "JS dev, zero Java" path: a JavaScript/TypeScript developer gets a
 working, typed site without touching the Java backend.
@@ -103,8 +103,8 @@ moved path with its `301` or `302` before any page is looked up.
 
 - The table is fetched once a minute, not on every request. A new redirect takes effect within a
   minute of being published.
-- If Shio cannot be reached, the last table fetched keeps working.
-- A Shio instance too old to have the table answers `404`, and the site simply has no redirects.
+- If Viglet Shio cannot be reached, the last table fetched keeps working.
+- A Viglet Shio instance too old to have the table answers `404`, and the site simply has no redirects.
 
 ## Environment
 
