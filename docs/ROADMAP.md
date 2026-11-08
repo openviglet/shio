@@ -22,10 +22,6 @@
 
 - ⏳ **SH1342** (deps: a hosted Viglet Cloud instance) **Nobody can open a Shio site or its console without installing it; the site offers screenshots and a scripted session** — A demo that opens without installing is what every launch channel is missing, and no production site exists to show. → §XCV.4
 
-## Block A — Headless foundation (Content Delivery API)
-
-- 🛠 **SH1360** (deps: SH1351 ✅) **An OIDC user gets a device token only by pasting a secret from the console into the app** — Signing in from the app through the instance's own login, with PKCE and a one-time code, removes the paste and keeps secrets out of URLs. → §I.7
-
 ## Block F — Market positioning / bold bets
 
 - 📋 **SH1361** (deps: SH1354 ✅) **The console's Open published ignores a site's own host and still opens /sites/<furl>/ on the instance** — The backend emits the site host as canonical and live URL, and the console's hand mirror cannot know the domain. → §VI.9

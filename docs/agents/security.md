@@ -941,3 +941,22 @@ the reader's own devices, revokes them, and adds one from the session, showing t
 is how a person who signs in with OIDC, and so has no password for the app's Basic sign-in, gets a
 device today: the session mints and the secret is pasted into the app.
 `shio-react/test/device-tokens.test.mjs` holds the surface, the route and the three calls.
+## A native app signs in through the instance's own login (SH1360)
+
+A person who signs in with OIDC has no password for the app's Basic sign-in, so SH1351 left them
+pasting a secret from My devices. `GET /api/v2/device-token/authorize` (redirect_uri, a PKCE S256
+code_challenge, device_name, optional state) is what the app opens in the system browser: anonymous,
+it redirects to `/login?returnUrl=` (the password form or OIDC, whichever the instance runs); signed
+in, it stores a one-time code and redirects to the app with the code only. `POST
+/api/v2/device-token/exchange {code, codeVerifier}` checks S256 and mints through the same `mintFor`
+as the console's `POST`, returning the secret once. Both routes are `permitAll` in both chains
+(`DEVICE_AUTHORIZE_PATH`, `DEVICE_EXCHANGE_PATH`): authorize must answer an unsigned browser, and the
+code plus verifier is the exchange's credential.
+
+**No secret at rest.** `sh_device_auth_code` holds the code's SHA-256, the person, the device name,
+the challenge and the redirect; the device token is minted at the exchange. A table, not memory,
+because memory is wrong behind a load balancer. A code is good for **one attempt**: a wrong verifier
+burns it like a right one, and every refusal reads the same. A redirect not on
+`shio.device-auth.redirect-uris` (exact match, empty by default, which turns the flow off) is refused
+before any redirect. A device token cannot authorize another device. `ShDeviceAuthCodeTest` holds the
+login redirect, single use, the burned code, expiry and the refused redirect.

@@ -1,0 +1,68 @@
+databaseChangeLog:
+  # SH1360 - `sh_device_auth_code`: the one-time code a browser sign-in hands back to a native app.
+  #
+  # No secret at rest: only the SHA-256 of the code (code_hash), the person, the device name, the
+  # PKCE S256 challenge and the redirect it was issued for. The device token is minted at the
+  # exchange. No tenant_id, for sh_device_token's reason: the code belongs to a person and the
+  # exchange runs before any tenant is known. A table rather than memory, because memory is wrong
+  # behind a load balancer. Types DB-agnostic per ShLiquibaseChangelogAgnosticTest; SH26: preserve
+  # identifier case on PostgreSQL.
+  - objectQuotingStrategy: QUOTE_ALL_OBJECTS
+  - changeSet:
+      id: sh1360-device-auth-code
+      author: alexandre
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: sh_device_auth_code
+      changes:
+        - createTable:
+            tableName: sh_device_auth_code
+            columns:
+              - column:
+                  name: id
+                  type: VARCHAR(255)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_device_auth_code_hash
+              - column:
+                  name: username
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: device_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code_challenge
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: redirect_uri
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: used_at
+                  type: TIMESTAMP

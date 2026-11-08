@@ -186,6 +186,29 @@ reaches.
 
 ---
 
+## Device tokens
+
+A device token lets the Viglet Shio mobile app, or any native client, act as **you** without
+storing your password. It reaches exactly what your own sign-in reaches, and changes to your groups
+apply to it at once.
+
+**Administration → My devices** lists your devices, shows when each was last used, and revokes
+them. A revoked device is refused on its next call. You can also **add a device** there: the token
+is shown once, to paste into the app.
+
+The app can also sign you in itself, through this instance's own sign-in page, with your password
+or your company's single sign-on. Nothing needs pasting, and no secret appears in a URL. An operator
+turns that on by listing the app's redirect address:
+
+```properties
+shio.device-auth.redirect-uris=com.example.shio://signed-in
+```
+
+The address must match exactly. With the setting empty, which is the default, the in-app sign-in
+is off and My devices is the only way to add a device.
+
+---
+
 ## Tenants
 
 **Administration → Tenants** lists the isolated workspaces on this instance. Each tenant

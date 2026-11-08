@@ -25,6 +25,8 @@ from this page, check the two notes: it may have been removed.
 | `shio.keycloak` | `false` | Authenticate against a Keycloak realm |
 | `shio.keycloak-admin-id` | *(empty)* | The realm's admin identifier |
 | `shio.multi-tenant` | `false` | Tenant isolation: see [Multi-Tenancy](/docs/multi-tenancy/) |
+| `shio.device-auth.redirect-uris` | *(empty)* | Redirect addresses a native app may be sent back to after signing in through this instance, compared exactly. Empty turns the in-app sign-in off. See [Administration § Device tokens](/docs/administration-guide/#device-tokens) |
+| `shio.device-auth.code-ttl` | `2m` | How long the one-time code from that sign-in can be exchanged for a device token |
 | `server.compression.enabled` | `true` | Response compression |
 | `server.compression.mime-types` | `application/json,text/css,application/javascript` | What to compress |
 | `server.compression.min-response-size` | `2048` | Minimum size, in bytes |

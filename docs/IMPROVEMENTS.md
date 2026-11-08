@@ -533,31 +533,6 @@ asserted at the level the agent surface is.
 > service-level param, not a URL segment; `siteId` is a first-class query param)
 > still bind, and now also bind the agent surface.
 
-### I.7 Signing a native app in through the instance's own login (SH1360)
-
-SH1351 gave a person a device token. A password user mints one from the app with HTTP
-Basic; a user who signs in with OIDC has no password, so today they add a device on the
-console's My devices page and paste a 43-character secret into the phone.
-
-What to build: the app opens the instance's own sign-in in the system browser (an
-ASWebAuthenticationSession or a Custom Tab), with a PKCE challenge and a redirect to the
-app's registered scheme. After oauth2Login or the password form succeeds, a new route
-(`GET /api/v2/device-token/authorize`) mints a device token for the signed-in session,
-stores it against a one-time code bound to the challenge, and redirects to the app with
-the code only. The app then exchanges code plus verifier at `POST
-/api/v2/device-token/exchange`, which answers the secret once. No secret rides in a URL,
-and the redirect must match a configured allow-list.
-
-This reuses SH1351 whole: the same entity, filter and revoke. It needs no Google or
-Apple verification inside Shio, because the instance's own login is what signs the
-person in; an instance that wants Google adds it as an OIDC provider, which it already
-can.
-
-Open choice: whether the one-time code lives in the database or in memory. Memory is
-enough for one node and is wrong behind a load balancer, so the table is the safer
-default. The assertion carrying the id: a code is single-use, expires in two minutes,
-and fails with the wrong verifier.
-
 ## II. JavaScript-for-pages DX
 
 > ✅ **Fully shipped (SH6–SH11, and the SH62 epic SH63–SH66)** →

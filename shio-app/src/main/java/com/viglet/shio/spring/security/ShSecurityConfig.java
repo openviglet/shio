@@ -234,6 +234,14 @@ public class ShSecurityConfig {
      * {@code ShApiTokenFilter} confines those to the delivery and agent namespaces.
      */
     private static final String DEVICE_TOKEN_PATH = "/api/v2/device-token/**";
+    /**
+     * SH1360 — the native app's browser sign-in. Both public, in both chains: {@code authorize} has to
+     * answer a browser nobody has signed in yet with a redirect to the login page (the controller does
+     * that, so the chain must let it through), and {@code exchange} is authenticated by the code and its
+     * PKCE verifier rather than by a session. Neither grants anything without the other half.
+     */
+    private static final String DEVICE_AUTHORIZE_PATH = "/api/v2/device-token/authorize";
+    private static final String DEVICE_EXCHANGE_PATH = "/api/v2/device-token/exchange";
     /** The MCP endpoint (SH75) — the same surface over JSON-RPC; equally stateless, equally narrowed. */
     private static final String MCP_PATH = "/mcp";
     /** Tenant catalog (SH22) — writes are admin-only; {@code GET /current} stays open to any user. */
@@ -403,6 +411,9 @@ public class ShSecurityConfig {
                         // no account in either: an instance behind Keycloak is exactly the one
                         // where a stakeholder cannot be asked to log in.
                         mvc.matcher(PREVIEW_SHARE_PATH),
+                        // SH1360 — see DEVICE_AUTHORIZE_PATH.
+                        mvc.matcher(HttpMethod.GET, DEVICE_AUTHORIZE_PATH),
+                        mvc.matcher(HttpMethod.POST, DEVICE_EXCHANGE_PATH),
                         mvc.matcher(SETUP_PATH),
                         mvc.matcher(LOGIN_PATH)).permitAll();
                 // CDA write surface (SH10) — must precede the GET rule; a WRITE-scope token
@@ -475,6 +486,9 @@ public class ShSecurityConfig {
                                 // request that arrives without one. `ShPreviewIsNotPublicTest` is
                                 // unchanged and still passes, which is the point.
                                 mvc.matcher(PREVIEW_SHARE_PATH),
+                                // SH1360 — see DEVICE_AUTHORIZE_PATH.
+                                mvc.matcher(HttpMethod.GET, DEVICE_AUTHORIZE_PATH),
+                                mvc.matcher(HttpMethod.POST, DEVICE_EXCHANGE_PATH),
                                 mvc.matcher("/__tur/**"),
                                 mvc.matcher("/"),
                                 mvc.matcher("/assets/**"),

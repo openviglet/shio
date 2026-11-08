@@ -105,6 +105,20 @@ public class ShDeviceTokenFilter extends OncePerRequestFilter {
         }
     }
 
+    /**
+     * SH1360 — base64url(SHA-256(verifier)) without padding: RFC 7636's S256, which the native app's
+     * browser sign-in compares against the challenge it started with. Beside {@link #hash} because
+     * both are the one place a device credential is hashed.
+     */
+    public static String s256(String verifier) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(verifier.getBytes(StandardCharsets.US_ASCII));
+            return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is required by every JVM", e);
+        }
+    }
+
     @Override
     protected void doFilterInternal(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response,
             @NotNull FilterChain filterChain) throws ServletException, IOException {

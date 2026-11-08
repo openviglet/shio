@@ -81,6 +81,14 @@ const SURFACES = ["README.md", "shio-site/src", "docs/coverage-named.json"];
  * which is why it has to carry a reason a reader can disagree with.</p>
  */
 const SWEEP = {
+  A: {
+    swept: true,
+    why: "the headless foundation, re-closed by SH1360: a native app signs an OIDC user in through the "
+      + "instance's own login with PKCE and a one-time code, and gets a device token without a pasted "
+      + "secret. docs-shio moved: the administration guide's Device tokens section and two configuration "
+      + "reference rows, with COVERAGE's row naming SH1360 and the mirror regenerated. README and shio-site "
+      + "are NOT moved: neither describes device tokens or how an app signs in",
+  },
   M: {
     swept: true,
     why: "token economy, measured, re-closed by SH1357: the mobile run priced as a fifth canonical job, "
