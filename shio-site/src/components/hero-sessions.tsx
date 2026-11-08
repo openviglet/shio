@@ -52,7 +52,7 @@ export function HeroSessions() {
       <div
         role="tablist"
         aria-label="Two ways to build the same page"
-        className="mb-3 flex gap-1 rounded-xl border border-white/12 bg-white/[0.04] p-1"
+        className="mb-3 flex gap-1 rounded-xl border border-border bg-muted/60 p-1"
       >
         {TABS.map((t) => (
           <button
@@ -65,8 +65,8 @@ export function HeroSessions() {
             className={cn(
               "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold transition-colors sm:text-sm",
               tab === t.id
-                ? "bg-[#7c3aed]/15 text-[#ddd6fe] shadow-sm"
-                : "text-[#a89189] hover:bg-white/5 hover:text-[#f6ece8]"
+                ? "bg-background text-primary shadow-sm"
+                : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
             )}
           >
             <t.icon className="size-4 shrink-0" aria-hidden />

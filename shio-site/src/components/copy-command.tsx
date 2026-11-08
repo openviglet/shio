@@ -30,7 +30,9 @@ export function CopyCommand({
         // inline-flex keeps it a compact pill on desktop; max-w-full caps it to
         // the parent so a long command can't push the page wider on mobile; the
         // command itself scrolls horizontally instead (min-w-0 lets it shrink).
-        "inline-flex max-w-full items-center gap-3 rounded-lg border border-white/15 bg-black/30 px-4 py-2.5 font-mono text-sm text-[#f0ded6] backdrop-blur",
+        // SH1370: a solid terminal surface, the code block's, so it reads on a light page as well
+        // as on the dark bands it was first drawn for.
+        "inline-flex max-w-full items-center gap-3 rounded-lg border border-black/10 bg-[#17100e] px-4 py-2.5 font-mono text-sm text-[#f0ded6] dark:border-white/15",
         className
       )}
     >

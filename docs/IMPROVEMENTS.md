@@ -665,16 +665,17 @@ Adopt the hub typography roles, title scale, content gutters, spacing, button hi
 borders and focus treatment. shio-site does not depend on @viglet/viglet-design-system
 (shio-site/package.json); the console pins ^2026.3.24 (shio-react/package.json:46),
 which exports a product-site layer: ./site (SiteNav, SiteHero, SiteFooter) over
-./site.css and ./tokens.css. Add it at that pin and use those entries, never ./styles,
-the Tailwind bundle known to override an app's arbitrary responsive utilities; the Astro
-docs link tokens.css. Preserve violet as the product accent. Replace decorative chips
-with plain eyebrow text (the Eyebrow in brand.tsx:68 is gradient), separators or
-ordinary navigation links. Keep genuine filter selections and status controls
-functional. Restyle the shared PageHero (page-hero.tsx:26, seven subpages) and the dark
-bands in laws.tsx, curator-half.tsx, cta.tsx, console.tsx, curator.tsx and replicate.tsx
-instead of adding a hero; documentation keeps its reading sidebar and article layout
-while sharing brand tokens. Avoid permanent dark heroes in light mode and remove
-decorative motion that competes with the product evidence.
+./site.css and ./tokens.css. Measured: that SiteHero draws a gradient half-headline and
+pills, and SiteNav truncates the name on phones, against this contract, and the hub uses
+neither. Take ./tokens.css at most, never ./styles; the Astro docs link tokens.css.
+Preserve violet as the product accent. Replace decorative chips with plain eyebrow text
+(the Eyebrow in brand.tsx:68 is gradient), separators or ordinary navigation links. Keep
+genuine filter selections and status controls functional. Restyle the shared PageHero
+(page-hero.tsx:26, seven subpages) and the dark bands in laws.tsx, curator-half.tsx,
+cta.tsx, console.tsx, curator.tsx and replicate.tsx instead of adding a hero;
+documentation keeps its reading sidebar and article layout while sharing brand tokens.
+Avoid permanent dark heroes in light mode and remove decorative motion that competes
+with the product evidence.
 
 Acceptance: compare home, one solution page, a feature page, docs overview and article
 at 390/768/1440 pixels, light/dark and reduced motion. Preserve real demos, code

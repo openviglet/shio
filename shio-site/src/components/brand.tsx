@@ -62,12 +62,14 @@ export function TableScroll({
 }
 
 /**
- * Gradient eyebrow above a heading. Monospaced on purpose — it is the site's
- * one persistent nod to the surface the product is actually operated from.
+ * Eyebrow above a heading. Monospaced on purpose: it is the site's one
+ * persistent nod to the surface the product is actually operated from.
+ * SH1370: plain violet text, as the hub's eyebrows are, where it was a
+ * violet-to-amber gradient.
  */
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-block bg-gradient-to-r from-[#5b21b6] to-[#f59e0b] bg-clip-text font-mono text-xs font-bold tracking-[0.12em] text-transparent uppercase">
+    <span className="inline-block font-mono text-xs font-bold tracking-[0.12em] text-primary uppercase">
       {children}
     </span>
   );

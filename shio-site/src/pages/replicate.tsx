@@ -28,7 +28,7 @@ export function ReplicatePage() {
           title={
             <>
               Point it at a site you{" "}
-              <span className="text-gradient">already have</span>
+              <span className="text-primary">already have</span>
             </>
           }
           lead={
@@ -50,7 +50,6 @@ export function ReplicatePage() {
               asChild
               size="lg"
               variant="outline"
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
               <a href="#bounds">What it will not do</a>
             </Button>

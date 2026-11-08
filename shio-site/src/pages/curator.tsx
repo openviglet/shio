@@ -26,7 +26,7 @@ export function CuratorPage() {
           title={
             <>
               An agent wrote nine pages last night.{" "}
-              <span className="text-gradient">Nobody has seen them yet.</span>
+              <span className="text-primary">Nobody has seen them yet.</span>
             </>
           }
           lead={
@@ -47,7 +47,6 @@ export function CuratorPage() {
               asChild
               size="lg"
               variant="outline"
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
               <a href="#gates">The six gates</a>
             </Button>

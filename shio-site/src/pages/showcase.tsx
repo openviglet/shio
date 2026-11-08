@@ -34,7 +34,7 @@ export function ShowcasePage() {
           eyebrow="The showcase"
           title={
             <>
-              A finished site to <span className="text-gradient">take apart</span>
+              A finished site to <span className="text-primary">take apart</span>
             </>
           }
           lead={
@@ -56,7 +56,6 @@ export function ShowcasePage() {
               asChild
               size="lg"
               variant="outline"
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
               <a href="#tour">What each page shows</a>
             </Button>

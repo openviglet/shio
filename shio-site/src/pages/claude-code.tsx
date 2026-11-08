@@ -36,7 +36,7 @@ export function ClaudeCodePage() {
           title={
             <>
               An MCP CMS you hand to Claude Code in{" "}
-              <span className="text-gradient">one command</span>
+              <span className="text-primary">one command</span>
             </>
           }
           lead={
@@ -58,7 +58,6 @@ export function ClaudeCodePage() {
               asChild
               size="lg"
               variant="outline"
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
               <a href="#credential">The credential it runs on</a>
             </Button>

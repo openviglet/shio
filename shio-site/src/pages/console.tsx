@@ -36,7 +36,7 @@ export function ConsolePage() {
           title={
             <>
               It is a CMS first.{" "}
-              <span className="text-gradient">The agent is optional.</span>
+              <span className="text-primary">The agent is optional.</span>
             </>
           }
           lead={
@@ -59,7 +59,6 @@ export function ConsolePage() {
               asChild
               size="lg"
               variant="outline"
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
               <a href="#not-here">What the console does not do</a>
             </Button>

@@ -45,7 +45,7 @@ export function FeaturePage({ detail }: Readonly<{ detail: FeatureDetail }>) {
           title={
             <>
               {detail.title}{" "}
-              <span className="text-gradient">{detail.titleAccent}</span>
+              <span className="text-primary">{detail.titleAccent}</span>
             </>
           }
           lead={detail.lead}
@@ -60,7 +60,6 @@ export function FeaturePage({ detail }: Readonly<{ detail: FeatureDetail }>) {
               asChild
               size="lg"
               variant="outline"
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
               <a href={withBase("/#laws")}>The ten laws</a>
             </Button>

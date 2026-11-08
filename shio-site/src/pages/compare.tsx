@@ -73,7 +73,7 @@ export function ComparePage() {
           title={
             <>
               Every CMS has an API.{" "}
-              <span className="text-gradient">Few were designed for the caller.</span>
+              <span className="text-primary">Few were designed for the caller.</span>
             </>
           }
           lead={
@@ -95,7 +95,6 @@ export function ComparePage() {
               asChild
               size="lg"
               variant="outline"
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white dark:bg-white/10"
             >
               <a href="#wins">Where Viglet Shio loses</a>
             </Button>
