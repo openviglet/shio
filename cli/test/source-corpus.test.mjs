@@ -999,7 +999,8 @@ describe("SH560 group J: the replica as a site somebody can move around in", () 
  * only reader of the other direction — a fixture edit that costs the corpus its last producer of a
  * type — and a check that exists only while it is failing is one nobody re-adds.</p>
  */
-const UNPRODUCED_TYPES = [];
+// SH1356 — the gallery joined the vocabulary with no classifier that maps a block into it.
+const UNPRODUCED_TYPES = ["SectionGallery"];
 
 describe("SH833: every section type the vocabulary declares has a source that produces it", () => {
   test("the corpus names the types it has never converted to, and the count is printed", async () => {

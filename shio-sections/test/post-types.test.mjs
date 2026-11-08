@@ -39,6 +39,7 @@ test("the vocabulary is a fixed, ordered set", () => {
       "SectionCta",
       "SectionFaq",
       "SectionFeatureGrid",
+      "SectionGallery",
       "SectionHero",
       "SectionLogoWall",
       "SectionMarkup",
@@ -56,6 +57,7 @@ test("the vocabulary is a fixed, ordered set", () => {
     cta: SECTION_TYPES.cta,
     faq: SECTION_TYPES.faq,
     featureGrid: SECTION_TYPES.featureGrid,
+    gallery: SECTION_TYPES.gallery,
     hero: SECTION_TYPES.hero,
     logoWall: SECTION_TYPES.logoWall,
     markup: SECTION_TYPES.markup,
@@ -147,6 +149,21 @@ test("the repeatable sections use a Relator with named children", () => {
   // Ordinals are 1-based by position, assigned by the DSL — the console renders in this
   // order and the digest reads headings in it.
   assert.deepEqual(features.fields.map((field) => field.ordinal), [1, 2, 3]);
+});
+
+test("SH1356: a gallery row is a File and a caption, and its alt text stays the asset's own", () => {
+  const gallery = byName(SECTION_TYPES.gallery);
+  assert.ok(gallery, "SectionGallery is in the vocabulary a package provisions");
+  const images = gallery.fields.find((field) => field.name === "images");
+
+  assert.equal(images.widget, "Relator");
+  assert.deepEqual(images.fields.map((field) => field.name), ["image", "caption"],
+    "no `alt` on the row: a second alt field would be a copy of the media library's that drifts, "
+      + "and `image-no-alt` checks the asset's");
+  assert.equal(images.fields[0].widget, "File");
+  assert.equal(images.fields[0].required, true, "a row with no picture is not a gallery item");
+  assert.ok(gallery.fields.some((field) => field.name === "columns"),
+    "the feature grid's `columns` choice, so the theme's existing rule lays it out");
 });
 
 test("the choice fields encode to the legacy widgetSettings string, not to an object", () => {

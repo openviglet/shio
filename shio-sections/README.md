@@ -25,7 +25,7 @@ npm install react
 
 ## The vocabulary
 
-Eight sections, plus the page and menu types that hold them:
+Nine sections, plus the page and menu types that hold them:
 
 | Post-type | Factory | React component | For |
 |---|---|---|---|
@@ -35,6 +35,7 @@ Eight sections, plus the page and menu types that hold them:
 | `SectionLogoWall` | `sectionLogoWall()` | `<LogoWall>` | Customer / partner logos |
 | `SectionTestimonial` | `sectionTestimonial()` | `<Testimonial>` | Quote, author, portrait |
 | `SectionFaq` | `sectionFaq()` | `<Faq>` | Question / answer rows |
+| `SectionGallery` | `sectionGallery()` | `<Gallery>` | Photographs with captions; alt text is each image's own (SH1356) |
 | `SectionRichText` | `sectionRichText()` | `<RichText>` | Free-form HTML body |
 | `SectionMarkup` | `sectionMarkup()` | `<Markup>` | Markup kept verbatim from a captured page (SH763) |
 | `Page` | `page()` | `<Sections>` | The ordered list of sections |
@@ -102,7 +103,7 @@ import {
   SECTION_TYPES, PAGE_TYPE, MENU_TYPE, MENU_ITEM_TYPE,
   page, menu, menuItem, sectionPostTypes,
   sectionHero, sectionFeatureGrid, sectionCta, sectionLogoWall,
-  sectionTestimonial, sectionFaq, sectionRichText,
+  sectionTestimonial, sectionFaq, sectionGallery, sectionRichText,
 } from "@viglet/shio-sections";
 
 // Render

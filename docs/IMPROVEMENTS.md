@@ -264,19 +264,26 @@ editors, and then the merge, filed as its own tasks.
 ### XI.109 A blueprint with a gallery and a contact form (SH1356)
 
 The mobile product's first run is a small business: a few photos, a line about the
-place, a way to be contacted. marketing-site is the nearest package and it has no
-section that holds a set of images and no section that submits anything. Both halves
-exist one level down: a File post carries WIDTH and HEIGHT and the image helper emits a
-srcset from them; sh_site_form, the FORM scope and the rendered form's endpoint shipped
-with SH631 to SH637.
+place, a way to be contacted. SectionGallery shipped as the first part (see
+docs/agents/renderer.md, "A gallery section"). What is left is the contact half and the
+package.
 
-Two sections in the vocabulary, SectionGallery (a list of File references with the alt
-each carries) and SectionForm (the fields and the folder submissions land in), and a
-package, small-business, that composes them with the existing hero, rich text and CTA
-into home, about and contact. Its parameters are the ones a phone can ask in five
-questions: name, what it does, where, how to reach it, and the opening line. The form
-section declares nothing the site configuration does not already own, so applying the
+SectionForm is not a list of fields of its own. `{{#form type=...}}` already renders a
+post-type's declared fields, and a site's form configuration (sh_site_form, SH631 to
+SH637) already owns the folder and the invited types, so the section names the post-type
+a submission is stored as, plus a heading, an intro and a submit label. Applying a
 package never opens the door; the curator enables submissions, as SH632 decided.
+
+The finding that has to be settled first: `POST /api/v2/cda/form/<site>` takes a JSON
+body, so a `<form>` the server renders cannot post to it without script. Either the
+endpoint also accepts `application/x-www-form-urlencoded` (answering a browser with a
+redirect back to the page, which a JSON caller never asks for), or the layout carries a
+few lines of script that serialize the form. The first is preferred: a contact form that
+works with script off is the expected behaviour.
+
+The package, small-business, composes hero, gallery, rich text, form and CTA into home,
+about and contact, with five parameters a phone can ask: name, what it does, where, how
+to reach it, and the opening line. It ships a Contact post-type for the form,
 verify.posts promises the three pages, and the apply benchmark in
 token-budgets.properties takes a row for it.
 

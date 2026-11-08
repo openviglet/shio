@@ -25,6 +25,7 @@ import {
   type CtaData,
   type FaqData,
   type FeatureGridData,
+  type GalleryData,
   type HeroData,
   type LogoWallData,
   type MarkupData,
@@ -180,6 +181,44 @@ export function Faq({ data, className, postId }: SectionProps<FaqData>): JSX.Ele
   );
 }
 
+/**
+ * A set of photographs (SH1356).
+ *
+ * The alt text is the asset's own and a headless host is not handed it, so the caption stands in
+ * when there is one and the attribute is otherwise **left off**: an `alt=""` would declare every
+ * undescribed photo decorative, which is SH1031's defect, while an absent one is what `verify`'s
+ * `image-no-alt` can see and report.
+ */
+export function Gallery({ data, resolveAsset = defaultResolveAsset, className, postId }: SectionProps<GalleryData>): JSX.Element {
+  const images = rows<{ image?: string; caption?: string }>(data.images);
+  return (
+    <section
+      className={cx("shio-section", "shio-gallery", className)}
+      data-columns={str(data.columns) ?? "3"}
+      {...editable("columns", "data-columns")}
+      {...editableSection(postId, "SectionGallery")}
+    >
+      {str(data.heading) && <h2 className="shio-gallery__heading" {...editable("heading")}>{data.heading}</h2>}
+      {str(data.intro) && <p className="shio-gallery__intro" {...editable("intro")}>{data.intro}</p>}
+      <ul className="shio-gallery__list" {...editable("images")}>
+        {images.map((item, index) => {
+          const image = str(item.image);
+          const caption = str(item.caption);
+          if (!image) return null;
+          return (
+            <li className="shio-gallery__item" key={`${image}-${index}`}>
+              <figure>
+                <img className="shio-gallery__image" src={resolveAsset(image)} alt={caption} loading="lazy" />
+                {caption && <figcaption className="shio-gallery__caption">{caption}</figcaption>}
+              </figure>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 export function RichText({ data, className, postId }: SectionProps<RichTextData>): JSX.Element {
   return (
     <section className={cx("shio-section", "shio-richtext", className)} {...editableSection(postId, "SectionRichText")}>
@@ -226,6 +265,7 @@ export const SECTION_COMPONENTS: Record<string, (props: SectionProps<never>) => 
   [SECTION_TYPES.logoWall]: LogoWall as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.testimonial]: Testimonial as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.faq]: Faq as (props: SectionProps<never>) => JSX.Element,
+  [SECTION_TYPES.gallery]: Gallery as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.markup]: Markup as (props: SectionProps<never>) => JSX.Element,
   [SECTION_TYPES.richText]: RichText as (props: SectionProps<never>) => JSX.Element,
 };

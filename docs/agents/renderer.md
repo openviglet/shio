@@ -1812,8 +1812,8 @@ template need it, and a capability added on speculation is one nobody measured.
 
 ### The section vocabulary: `@viglet/shio-sections` (SH95)
 
-Nine post-types (`Page` + `SectionHero`/`SectionFeatureGrid`/`SectionCta`/`SectionLogoWall`/
-`SectionTestimonial`/`SectionFaq`/`SectionRichText`/`SectionMarkup`) authored with
+Ten post-types (`Page` + `SectionHero`/`SectionFeatureGrid`/`SectionCta`/`SectionLogoWall`/
+`SectionTestimonial`/`SectionFaq`/`SectionGallery`/`SectionRichText`/`SectionMarkup`) authored with
 `@viglet/shio-model`, and
 the matching React components with a `SECTION_COMPONENTS` registry and a `<Sections>`
 dispatcher. This is what makes *"now change the site"* cheap instead of archaeological: one
@@ -1856,6 +1856,17 @@ vocabulary for the agent, the console and the front end.
   and not `postType` because sections are heterogeneous, and not a naming convention because
   nothing can check prose.
 
+### A gallery section (SH1356)
+
+`SectionGallery` is a heading, an intro, the feature grid's `columns` choice and an `images` relator
+whose rows are a `File` reference and an optional caption. **No alt field on the row**: the alt text
+is the asset's own (SH62's metadata), so a photo described once in the media library is described
+everywhere it appears. The union layout in `convert.mjs` draws each row through `{{#image ./image}}`
+and emits `{{{altAttr}}}`, so an undescribed photo leaves the attribute off and `image-no-alt` can
+report it (SH1031's three states); the React `<Gallery>` is not handed the asset's alt, so it uses
+the caption and otherwise also leaves `alt` off. Propose maps no block into it yet, which
+`source-corpus.test.mjs` holds as `UNPRODUCED_TYPES`. SH832's row-scope reader treats the keys
+`{{#image}}` yields as that block's own.
 
 ## A listing loads the page, not the folder (SH419)
 

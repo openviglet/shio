@@ -113,6 +113,14 @@ export interface FaqData {
   questions?: Array<{ question?: string; answer?: string }>;
 }
 
+/** SH1356 — a row is a File reference and a caption; the alt text is the asset's own. */
+export interface GalleryData {
+  heading?: string;
+  intro?: string;
+  columns?: string;
+  images?: Array<{ image?: string; caption?: string }>;
+}
+
 export interface RichTextData {
   heading?: string;
   body?: string;

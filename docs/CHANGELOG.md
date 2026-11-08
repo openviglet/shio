@@ -418,6 +418,7 @@
 - **SH1301** — A post's own members-only gate rides its frontmatter like a folder's rides _folder.md: the read reports it, the merge treats it as a field, and push compiles it to post.visibility (design §XI.67 recorded in `docs/agents/content-files.md`).
 - **SH1302** — The content browser locks a members-only row and the site form saves its sign-in switch, both checked in a browser, which also found and fixed the site request dropping that switch (design §XI.68 recorded in `docs/agents/console-ui.md`).
 - **SH1303** — The console's site save stores the page type it sends, and a test now fails the build when the site form writes a key ShSiteRequest does not declare (design §XI.69 recorded in `docs/agents/console-ui.md`).
+- **SH1356 (SectionGallery)** — SectionGallery joined the vocabulary: photos with captions whose alt is each asset's own, drawn by the union layout through {{#image}} and by a React Gallery, emitted into every package.
 
 ## Block M — Token economy, measured (SH74)
 

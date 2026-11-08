@@ -1410,20 +1410,32 @@ test("SH763: the layout draws a markup section verbatim, in the place the list g
  * a list would go stale on the next field the vocabulary gains. Block names, `@index`, helper names
  * and quoted literals are not references; `../` is a reference to a scope this rule is not about.
  */
+/**
+ * SH1356 — the keys `{{#image}}` yields, which are its block's own context rather than the row's.
+ * The same set `ShRenderHelpers.IMAGE_KEYS` declares; inside that block a bare `{{url}}` is the
+ * resolved asset's, so it is not a lookup that can leak up to the section.
+ */
+const IMAGE_BLOCK_KEYS = new Set(["url", "width", "height", "alt", "altAttr", "widths", "srcset", "sizes"]);
+
 function eachScopedReferences(template) {
   const found = [];
   let depth = 0;
+  let image = 0;
   for (const [, body] of template.matchAll(/\{\{\{?([^{}]+)\}?\}\}/g)) {
     const trimmed = body.trim();
     if (/^#each\b/.test(trimmed)) { depth += 1; continue; }
     if (/^\/each\b/.test(trimmed)) { depth -= 1; continue; }
+    if (/^\/image\b/.test(trimmed)) { image -= 1; continue; }
     if (!depth || /^[!>=/]/.test(trimmed)) continue;
+    const opensImage = /^#image\b/.test(trimmed);
     const tokens = trimmed.replace(/^[#^]\S*\s*/, "").split(/\s+/);
     for (const token of tokens) {
       if (!token || /^[@"'(]/.test(token) || token.includes("=") || token.startsWith("../")) continue;
       if (["this", "else", "if", "unless", "each", "with", "file_url"].includes(token)) continue;
+      if (image > 0 && IMAGE_BLOCK_KEYS.has(token)) continue;
       found.push({ token, scoped: token.startsWith("./") });
     }
+    if (opensImage) image += 1;
   }
   return found;
 }

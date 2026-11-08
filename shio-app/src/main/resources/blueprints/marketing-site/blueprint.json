@@ -43,6 +43,7 @@
     "post-types/SectionCta.json",
     "post-types/SectionFaq.json",
     "post-types/SectionFeatureGrid.json",
+    "post-types/SectionGallery.json",
     "post-types/SectionHero.json",
     "post-types/SectionLogoWall.json",
     "post-types/SectionMarkup.json",

@@ -280,7 +280,7 @@ checked.
 For pages assembled from blocks rather than written as one document, the
 `@viglet/shio-sections` package ships a shared vocabulary: a `Page` type plus
 `SectionHero`, `SectionFeatureGrid`, `SectionCta`, `SectionLogoWall`,
-`SectionTestimonial`, `SectionFaq`, `SectionRichText` and `SectionMarkup`, with matching
+`SectionTestimonial`, `SectionFaq`, `SectionGallery`, `SectionRichText` and `SectionMarkup`, with matching
 unstyled, semantic React components behind stable `shio-*` class names.
 
 `SectionMarkup` is the odd one and is worth knowing about even if you never write one by
@@ -288,6 +288,11 @@ hand: it declares a single `html` field and holds markup kept exactly as a captu
 wrote it. A replication puts one in the list for each run of markup nobody made
 authorable, which is what lets a curator move or replace a raw block instead of meeting it
 as a field they cannot reach.
+
+`SectionGallery` holds a set of photographs, each a file and an optional caption. It has no
+alt-text field of its own: each photo's alt text is the one you give it in the media library,
+so describing a picture once describes it on every page that shows it, and a photo nobody
+described is flagged by `shio verify` instead of being silently marked as decoration.
 
 A `Page` names its sections **by friendly URL, in order**, in a `Multi Select` whose
 settings declare what it holds:

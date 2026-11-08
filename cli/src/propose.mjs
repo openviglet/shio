@@ -126,6 +126,13 @@ export const SECTION_TYPES = {
     repeats: { field: "questions", of: ["question", "answer"] },
   },
   SectionRichText: { fields: ["heading", "body"], repeats: null },
+  // SH1356 — in the table because the generated layout draws it, so a site that adds a gallery to a
+  // converted page renders it; no classifier maps a block into it yet, which is what the corpus
+  // test's UNPRODUCED_TYPES says out loud.
+  SectionGallery: {
+    fields: ["heading", "intro", "columns", "images"],
+    repeats: { field: "images", of: ["image", "caption"] },
+  },
 };
 
 /**
@@ -185,6 +192,7 @@ export const SECTION_REQUIRED = {
 };
 
 export const SECTION_FILE_FIELDS = {
+  SectionGallery: { fields: [], rows: { images: ["image"] } },
   SectionHero: { fields: ["image"], rows: {} },
   SectionLogoWall: { fields: [], rows: { logos: ["image"] } },
   SectionTestimonial: { fields: [], rows: { quotes: ["avatar"] } },

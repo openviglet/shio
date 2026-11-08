@@ -43,6 +43,7 @@ export const SECTION_TYPES = {
   logoWall: "SectionLogoWall",
   testimonial: "SectionTestimonial",
   faq: "SectionFaq",
+  gallery: "SectionGallery",
   markup: "SectionMarkup",
   richText: "SectionRichText",
 } as const;
@@ -309,6 +310,41 @@ export const sectionFaq = (): ShPostTypeDef =>
   });
 
 /**
+ * A set of photographs (SH1356).
+ *
+ * The section a small business's site is mostly made of, and the vocabulary had none: every image
+ * field was one picture beside some prose. A row is a `File` reference and an optional caption, and
+ * nothing else on purpose. The alt text is the **asset's** own (SH62's metadata, which `{{#image}}`
+ * reads and `verify`'s `image-no-alt` checks), so describing a photo once in the media library
+ * describes it on every page that shows it; a second alt field here would be a copy that drifts.
+ * `columns` reuses the feature grid's choice, so the theme's existing `data-shio-columns` rule lays
+ * it out.
+ */
+export const sectionGallery = (): ShPostTypeDef =>
+  postType(SECTION_TYPES.gallery, {
+    title: "Gallery Section",
+    namePlural: "Gallery Sections",
+    description: "A set of photographs, each with an optional caption. Alt text is the image's own.",
+    fields: [
+      text("heading", { label: "Heading", isTitle: true }),
+      textArea("intro", { label: "Intro", isSummary: true }),
+      comboBox("columns", {
+        label: "Columns",
+        choices: { "2": "Two", "3": "Three", "4": "Four" },
+        allowNull: true,
+      }),
+      relator("images", {
+        label: "Images",
+        title: "Image",
+        fields: [
+          file("image", { label: "Image", required: true }),
+          text("caption", { label: "Caption" }),
+        ],
+      }),
+    ],
+  });
+
+/**
  * Markup kept exactly as somebody else's page wrote it, as a section (SH763).
  *
  * Why a section type rather than a second field on `Page`. `shio convert` splits a mixed page's
@@ -374,6 +410,7 @@ export const sectionPostTypes = (): ShPostTypeDef[] => [
   sectionCta(),
   sectionFaq(),
   sectionFeatureGrid(),
+  sectionGallery(),
   sectionHero(),
   sectionLogoWall(),
   sectionMarkup(),

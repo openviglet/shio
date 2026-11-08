@@ -196,7 +196,7 @@ class ShVocabularyPostTypesTest {
         assertThat(shVocabularyPostTypes.names())
                 .as("the catalogue is the SH95 vocabulary, sorted so two instances print one list")
                 .containsExactly("Menu", "MenuItem", "Page", "SectionCta", "SectionFaq",
-                        "SectionFeatureGrid", "SectionHero", "SectionLogoWall", "SectionMarkup",
+                        "SectionFeatureGrid", "SectionGallery", "SectionHero", "SectionLogoWall", "SectionMarkup",
                         "SectionRichText", "SectionTestimonial");
     }
 
