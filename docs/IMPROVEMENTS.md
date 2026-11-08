@@ -572,29 +572,28 @@ asserted at the level the agent surface is.
 
 ## VI. Market positioning
 
-### VI.10 Sign-in from a page on a site host (SH1362)
+### VI.11 Signing in back onto a site host (SH1375)
 
-SH1299 sends an anonymous visitor who reaches a members-only page to
-`/login?returnUrl=<page>`, a relative URL, so the browser asks the host it is on. On the
-instance host that is the console's login. On a site host (SH1354,
-`<furl>.<shio.sites.host-domain>`) it is not: `ShSiteHostFilter` passes only the
-instance routes (`/api`, `/mcp`, `/file_source`, `/preview`, `/sites`) through, so
-`/login` is re-addressed to `/sites/login`, which no page answers, and the visitor gets
-a 404 where the site asked for a sign-in. The `returnUrl` is also wrong there:
-`request.getRequestURI()` on the re-addressed request is `/sites/<path>`, not the path
-the visitor typed.
+SH1362 made sign-in from a members-only page on a site host work by sending the visitor
+to the instance login (`shio.url`) and back to the page's
+`/sites/<furl>/default/en-us/<path>` address on the instance, because that is the host
+the session cookie is sent to. The visitor ends signed in, but at the instance's address
+rather than the site's own, and every link they follow from there stays under `/sites`.
 
-What to build: when the request came through a site host, the redirect goes to the
-instance's own login, absolute (`shio.url` + `/login`), with the page's absolute
-site-host URL as `returnUrl`; and the login's `returnUrl` check has to admit an origin
-under the configured host domain, or the round trip stops at the console. The session
-question has to be answered too: a session cookie set on the instance host is not sent
-to a site host, so either the cookie is scoped to the parent domain when site hosts
-share it, or a members-only site on a host is documented as needing that. Measure that
-in a browser before choosing.
+Coming back to `<furl>.<shio.sites.host-domain>` needs two things. The login has to
+admit an absolute `returnUrl` whose origin is under the configured host domain
+(`safeReturnUrl` accepts only a path today, the SH1299 open-redirect rule), and the site
+host has to see a session. Two ways to give it one, and the choice is a security call:
 
-Done when an anonymous visitor on a site host is sent to a working sign-in and comes
-back to the page signed in, and a test covers the redirect's target and its `returnUrl`.
+- scope the session cookie to a parent domain shared by the instance and the site hosts
+  (`server.servlet.session.cookie.domain`). Simple, but every site host then receives the
+  console session, and a replicated site in fidelity mode runs the source's scripts on that
+  host, where `/api` is passed through;
+- a one-time handoff code, minted after sign-in and exchanged on the site host for a
+  session scoped to that host alone, the shape SH1360 uses for device tokens.
+
+Done when a person picks one, an anonymous visitor on a site host signs in and lands
+back on the site host signed in, and a test covers the returnUrl check and the session.
 
 ## VII. Content portability
 

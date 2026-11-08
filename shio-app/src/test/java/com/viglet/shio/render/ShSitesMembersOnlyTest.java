@@ -66,6 +66,8 @@ class ShSitesMembersOnlyTest {
     private PlatformTransactionManager transactionManager;
     @Autowired
     private ShContentAclService shContentAclService;
+    @Autowired
+    private com.viglet.shio.property.ShAppProperties appProperties;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -295,6 +297,37 @@ class ShSitesMembersOnlyTest {
         // SH1299: off is the 404 SH1285 shipped.
         mockMvc.perform(get(page("lounge")))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("SH1362: on a site host the visitor goes to the instance's login and back to the page there")
+    void aSiteHostSendsAVisitorToTheInstanceLogin() throws Exception {
+        String domain = "sites.test";
+        MockMvc onHosts = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .addFilters(new ShSiteHostFilter(new ShSiteHost(domain, "https")))
+                .apply(SecurityMockMvcConfigurers.springSecurity()).build();
+        setMembersLogin(true);
+        try {
+            onHosts.perform(get("/lounge").queryParam("from", "card").with(request -> {
+                        request.setServerName(siteName + "." + domain);
+                        return request;
+                    }))
+                    .andExpect(status().isFound())
+                    .andExpect(result -> assertThat(result.getResponse().getHeader("Location"))
+                            .as("SH1362: a relative /login asks the site host, which re-addresses it into "
+                                    + "delivery and answers 404; and the way back is the page's address on "
+                                    + "the instance, where the session the login sets is sent")
+                            .isEqualTo(instanceUrl() + "/login?returnUrl=" + java.net.URLEncoder.encode(
+                                    "/sites/" + siteName + "/default/en-us/lounge?from=card",
+                                    java.nio.charset.StandardCharsets.UTF_8)));
+        } finally {
+            setMembersLogin(null);
+        }
+    }
+
+    private String instanceUrl() {
+        String url = appProperties.getUrl().trim();
+        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 
     private void setMembersLogin(Boolean on) {

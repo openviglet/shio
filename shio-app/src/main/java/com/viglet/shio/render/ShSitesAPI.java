@@ -28,6 +28,7 @@ import org.springframework.web.servlet.HandlerMapping;
 import com.viglet.shio.api.acl.ShContentAclService;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.property.ShAppProperties;
 import com.viglet.shio.api.agent.ShAddress;
 import com.viglet.shio.api.error.ShProblem;
 import com.viglet.shio.api.error.ShTeachingException;
@@ -150,13 +151,17 @@ public class ShSitesAPI {
     private final ShContentAclService shContentAclService;
     /** SH1299 — whether a site sends a turned-away visitor to sign in. */
     private final ShSiteRepository shSiteRepository;
+    /** SH1362 — {@code shio.url}, the instance's own address, where a site host's visitor signs in. */
+    private final ShAppProperties appProperties;
 
     /** SH1299 — the console's login, which follows `returnUrl` back after sign-in. */
     static final String LOGIN = "/login?returnUrl=";
 
     public ShSitesAPI(ShPageRenderService shPageRenderService, ShPreviewLinks links,
                       ShSiteAssetDelivery assetDelivery, ShDraftAssetGrant draftAssetGrant,
-                      ShContentAclService shContentAclService, ShSiteRepository shSiteRepository) {
+                      ShContentAclService shContentAclService, ShSiteRepository shSiteRepository,
+                      ShAppProperties appProperties) {
+        this.appProperties = appProperties;
         this.shContentAclService = shContentAclService;
         this.shSiteRepository = shSiteRepository;
         this.shPageRenderService = shPageRenderService;
@@ -201,11 +206,8 @@ public class ShSitesAPI {
             // with this page as the way back. A signed-in user outside the groups still gets the 404:
             // signing in again would not help them, and the redirect would say the page exists.
             if (shContentAclService.isAnonymous() && sendsMembersToLogin(rendered.siteId())) {
-                String back = request.getRequestURI()
-                        + (request.getQueryString() == null ? "" : "?" + request.getQueryString());
                 return ResponseEntity.status(HttpStatus.FOUND)
-                        .location(java.net.URI.create(LOGIN + java.net.URLEncoder.encode(back,
-                                java.nio.charset.StandardCharsets.UTF_8)))
+                        .location(java.net.URI.create(loginFor(request)))
                         .cacheControl(CacheControl.noStore())
                         .build();
             }
@@ -253,6 +255,35 @@ public class ShSitesAPI {
             return Address.ofHost(withinBase(request), host);
         }
         return Address.of(withinBase(request), siteHeader, format);
+    }
+
+    /**
+     * SH1299 — where a turned-away visitor signs in, with this page as the way back.
+     *
+     * <p>SH1362 — on a site host the relative {@code /login} asks that host, which re-addresses it
+     * into delivery and answers 404, and {@code getRequestURI()} is the re-addressed {@code /sites/<path>}
+     * with no site in it. So a site-host request goes to the instance's own login, absolute
+     * ({@code shio.url}), and comes back to the page's {@code /sites/<furl>/…} address on the
+     * instance: the host where the session the login sets is sent. Coming back to the site host
+     * instead would need that session there too, which is a cookie-scope decision, not a redirect.</p>
+     */
+    String loginFor(HttpServletRequest request) {
+        String query = request.getQueryString() == null ? "" : "?" + request.getQueryString();
+        Object label = request.getAttribute(ShSiteHostFilter.SITE_LABEL);
+        if (label instanceof String host) {
+            // The path form spells format and locale before the page; `/sites/**` redirects a page
+            // written in another locale to its own (SH1279), so the default reaches every page.
+            // A site-host label is a DNS label (ShSiteHost.LABEL), so it needs no escaping.
+            String back = BASE + "/" + host + "/" + DEFAULT_FORMAT + "/" + DEFAULT_LOCALE
+                    + withinBase(request) + query;
+            String instance = appProperties.getUrl() == null ? "" : appProperties.getUrl().trim();
+            while (instance.endsWith("/")) {
+                instance = instance.substring(0, instance.length() - 1);
+            }
+            return instance + LOGIN + java.net.URLEncoder.encode(back, java.nio.charset.StandardCharsets.UTF_8);
+        }
+        return LOGIN + java.net.URLEncoder.encode(request.getRequestURI() + query,
+                java.nio.charset.StandardCharsets.UTF_8);
     }
 
     private boolean sendsMembersToLogin(String siteId) {

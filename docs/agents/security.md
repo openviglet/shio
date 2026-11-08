@@ -897,6 +897,15 @@ parameter in links the console did not build, so `safeReturnUrl` (`shio-react/sr
 now accepts a value only when it starts with one `/` (not `//`, not `/\`) and falls back to the
 root otherwise. `shio-react/test/return-url.test.mjs` holds the hostile spellings.
 
+**On a site host the rule is kept, not widened (SH1362).** A relative `/login` from
+`<furl>.<shio.sites.host-domain>` asked the site host, which `ShSiteHostFilter` re-addresses into
+delivery: a 404. `ShSitesAPI.loginFor` now sends a site-host request to `shio.url` + `/login`, and
+its `returnUrl` is the page's `/sites/<furl>/default/en-us/<path>` on the instance, still a path on
+the login's own host. Returning to the site host itself was rejected for now: it needs an absolute
+`returnUrl` the login would have to admit by domain, and a session there, which means a cookie
+scoped to a parent domain every site host's scripts share, or a handoff code. The session the login
+sets is valid where the visitor lands. `ShSitesMembersOnlyTest` pins the target and the way back.
+
 ## A user's password is encoded on create and never serialised (SH1334)
 
 `POST /api/v2/user/{username}` encodes the password with the application's `PasswordEncoder`

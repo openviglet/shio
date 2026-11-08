@@ -24,7 +24,7 @@
 
 ## Block F — Market positioning / bold bets
 
-- 📋 **SH1362** (deps: SH1354 ✅) **A members-only page on a site host sends the visitor to /login there, which delivery answers with a 404** — The sign-in a site asked for has to work at the address the site is shared under, or a gated page is a dead end. → §VI.10
+- 📋 **SH1375** (deps: SH1362 ✅, decision: how a session reaches a site host) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Returning there needs a session on that host, and a parent-domain cookie or a handoff code is a security choice. → §VI.11
 
 ## Block BE — Media: what the bytes mean
 

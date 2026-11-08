@@ -143,6 +143,10 @@ second account system.
   request, in single reads and in every listing.
 - A site can send an anonymous visitor to **sign in** instead of the 404: with
   `membersLogin` on, the visitor goes to the console login and comes back to the page.
+  On a site served at its own hostname, the visitor signs in at the instance's address
+  (`shio.url`) and comes back to the page's `/sites/...` address on the instance. That is
+  where the sign-in session applies, because a browser does not send the instance's
+  session cookie to a different hostname.
 - Administrators always read everything, and the preview still shows gated pages to
   editors, because that is where they are edited.
 
