@@ -177,7 +177,7 @@ public class ShSitesAPI {
     public ResponseEntity<?> serve(@RequestHeader(name = SITE_HEADER, required = false) String siteHeader,
                                    @RequestParam(name = FORMAT_PARAM, required = false) String format,
                                    HttpServletRequest request) {
-        Address address = Address.of(withinBase(request), siteHeader, format);
+        Address address = addressOf(request, siteHeader, format);
         requireKnownLocale(address);
         ShRenderedPage rendered;
         try {
@@ -237,6 +237,22 @@ public class ShSitesAPI {
                 // the one form that keeps the reader's trailing slash.
                 .body(links.rewriteInto(rendered.html(), address.prefix(), rendered, address.path(), null,
                         path -> linkPrefix(address, locales, segmentIsALocale, path)));
+    }
+
+    /**
+     * SH1354 — the address a request names: by its site host when {@link ShSiteHostFilter} found
+     * one, else by header or path as before. A host no site claims is a teaching 404 here rather
+     * than the render's "no site named", because the caller typed a host, not a key.
+     */
+    private Address addressOf(HttpServletRequest request, String siteHeader, String format) {
+        Object label = request.getAttribute(ShSiteHostFilter.SITE_LABEL);
+        if (label instanceof String host) {
+            if (shPageRenderService.siteIdOf(host).isEmpty()) {
+                throw new UnknownSiteHostException(host, request.getServerName());
+            }
+            return Address.ofHost(withinBase(request), host);
+        }
+        return Address.of(withinBase(request), siteHeader, format);
     }
 
     private boolean sendsMembersToLogin(String siteId) {
@@ -521,9 +537,22 @@ public class ShSitesAPI {
                     ? null : locale;
         }
 
-        /** Whether this is the {@code x-sh-site} form, whose URLs carry no format or locale. */
+        /**
+         * Whether this is the {@code x-sh-site} form, or SH1354's site-host form: URLs that carry no
+         * format or locale.
+         */
         public boolean isHeaderForm() {
-            return BASE.equals(prefix);
+            return BASE.equals(prefix) || prefix.isEmpty();
+        }
+
+        /**
+         * SH1354 — the site-host form: {@code <site>.<service-domain>/<path>}. The whole path is
+         * content, as in the header form, and the prefix is empty because the site owns the host's
+         * root, so every root-relative link the renderer emits is already in this site's space.
+         */
+        public static Address ofHost(String within, String site) {
+            String rest = within == null || within.isBlank() ? "/" : within;
+            return new Address(site, leading(rest), "", DEFAULT_LOCALE);
         }
 
         /**
@@ -683,6 +712,26 @@ public class ShSitesAPI {
                     .withFix("Add the site, or send the `x-sh-site` header and keep the URL to the "
                             + "content path — which is how one host serves one site.")
                     .withExample(BASE + "/acme/" + DEFAULT_FORMAT + "/" + DEFAULT_LOCALE + "/"));
+        }
+    }
+
+    /**
+     * A 404: this host is a site host by shape, and no site has the friendly URL it names (SH1354).
+     *
+     * <p>404 because "nothing is here" is the true answer to a visitor, and the body says how a site
+     * claims a host, which is the one thing the operator who mistyped it cannot derive.</p>
+     */
+    public static class UnknownSiteHostException extends ShTeachingException {
+
+        public UnknownSiteHostException(String label, String host) {
+            super(ShProblem.of("sites-unknown-host", HttpStatus.NOT_FOUND,
+                            "No site answers at '" + host + "'")
+                    .withDetail("A site host is <site>.<service-domain>, and <site> is a site's "
+                            + "friendly URL. No site on this instance has the friendly URL '" + label + "'.")
+                    .withFix("Give the site the friendly URL '" + label + "' (lower-case letters, digits "
+                            + "and hyphens), or use the address a site already has: GET /api/v2/site "
+                            + "lists them.")
+                    .withExample(BASE + "/" + label + "/"));
         }
     }
 }

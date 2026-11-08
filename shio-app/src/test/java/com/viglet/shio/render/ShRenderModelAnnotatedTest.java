@@ -43,7 +43,8 @@ class ShRenderModelAnnotatedTest {
     // mock would assert that; a null says it, and fails loudly if the path ever starts deriving.
     private final ShRenderModel renderModel = new ShRenderModel(new ObjectMapper(),
             new ShAgentIncidentLog(),
-            new ShSiteLocaleService(null, null, new ShAgentIncidentLog(), new ObjectMapper()));
+            new ShSiteLocaleService(null, null, new ShAgentIncidentLog(), new ObjectMapper()),
+            new ShSiteHost("", "https"));
 
     /** A verbatim block as `convert` keeps it, with one element annotated (SH868 stamps these). */
     private static final String KEPT =

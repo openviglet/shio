@@ -687,7 +687,8 @@ public class ShPreviewLinks {
     }
 
     /** Whether the path's first segment names a route the instance serves rather than a site. */
-    private static boolean isInstanceRoute(String value) {
+    /** Also SH1354's: a site host passes these through to the instance rather than to delivery. */
+    static boolean isInstanceRoute(String value) {
         int end = value.indexOf('/', 1);
         int query = firstOf(value, '?', '#');
         if (query >= 0 && (end < 0 || query < end)) {

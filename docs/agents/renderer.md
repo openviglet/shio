@@ -2256,3 +2256,20 @@ filters: `/preview`, the Universal Editor and the agent's render digest are auth
 editor outside the group still sees and edits the gated page there. On an instance with no gate the
 check is one `count()` that loads no entity, which is what `ShRenderListingPageBenchmarkTest`
 measures. `ShSitesMembersOnlyTest` renders one public page for a visitor, a member, and in preview.
+
+## A site can have a host of its own (SH1354)
+
+`shio.sites.host-domain` (empty by default, so nothing changes until an operator sets it) makes
+`<site>.<domain>` an address for a site: `ShSiteHostFilter`, registered first so Spring Security
+judges the result, re-addresses a `GET`/`HEAD` on that host to `/sites/<path>` and leaves the label
+for `ShSitesAPI`, whose `Address.ofHost` is the `x-sh-site` form with an empty prefix. The site owns
+the host's root, so every root-relative link the renderer emits is already right. The instance's own
+routes (`ShPreviewLinks.isInstanceRoute`: `/api`, `/mcp`, `/file_source`, `/preview`, `/sites`) and
+every write pass through untouched, so a form action and `{{file_url}}` keep working there.
+
+**The label is the site's furl, and only a furl that is a DNS label.** A browser lower-cases a host,
+so `ShSiteHost.originOf` emits a host URL only for a furl that can come back; any other site keeps its
+`/sites` address. `site.url` still wins, since it is the front end a curator chose. That origin is what
+`post.canonical` and the agent's `live` URL say. A host no site claims is `sites-unknown-host`, a
+teaching 404. The proxy, the wildcard certificate and the DNS stay infrastructure (SH540's line).
+`ShSiteHostTest` drives both forms through the filter.

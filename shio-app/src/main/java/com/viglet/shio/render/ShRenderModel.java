@@ -105,9 +105,12 @@ public class ShRenderModel {
     private final ShAgentIncidentLog incidentLog;
     /** SH1056 — the site's declared policy, read off its own column and never derived here. */
     private final ShSiteLocaleService shSiteLocaleService;
+    /** SH1354 — a site's own host, when the instance serves sites at one. */
+    private final ShSiteHost shSiteHost;
 
     public ShRenderModel(ObjectMapper objectMapper, ShAgentIncidentLog incidentLog,
-                         ShSiteLocaleService shSiteLocaleService) {
+                         ShSiteLocaleService shSiteLocaleService, ShSiteHost shSiteHost) {
+        this.shSiteHost = shSiteHost;
         this.objectMapper = objectMapper;
         this.incidentLog = incidentLog;
         this.shSiteLocaleService = shSiteLocaleService;
@@ -337,8 +340,12 @@ public class ShRenderModel {
         // site's front end. Composed here rather than left to `{{site.baseUrl}}{{post.url}}`
         // because a furl is not guaranteed to lead with `/` and that concatenation silently
         // yields `/preview/Democontato`; `pageUrl` is the one place that normalizes it.
+        // SH1354 — a site served at a host of its own is canonical there, not at the preview.
         frame.put("canonical", site == null ? null
-                : ShSiteFrontEnd.pageUrl(ShSiteFrontEnd.of(site), post.getFurl()));
+                : shSiteHost.originOf(site)
+                        .map(origin -> ShSiteFrontEnd.pageUrl(
+                                new ShSiteFrontEnd.Destination(ShSiteFrontEnd.Kind.EXTERNAL, origin), post.getFurl()))
+                        .orElseGet(() -> ShSiteFrontEnd.pageUrl(ShSiteFrontEnd.of(site), post.getFurl())));
         // SH383 — the fact the whole render model was missing. SH348 gave a file `locale:` and
         // stopped at the projection, so a six-language site could be *stored* and could not render
         // `<html lang>`.

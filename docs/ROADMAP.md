@@ -28,7 +28,8 @@
 
 ## Block F — Market positioning / bold bets
 
-- 💭 **SH1354** (deps: —) **A delivered site has no address of its own: delivery is a path under /sites/<name>/ on the instance host** — A public service hands each site a link to say aloud, and a name per site is what a person shares and a reverse proxy routes. → §VI.8
+- 📋 **SH1361** (deps: SH1354 ✅) **The console's Open published ignores a site's own host and still opens /sites/<furl>/ on the instance** — The backend emits the site host as canonical and live URL, and the console's hand mirror cannot know the domain. → §VI.9
+- 📋 **SH1362** (deps: SH1354 ✅) **A members-only page on a site host sends the visitor to /login there, which delivery answers with a 404** — The sign-in a site asked for has to work at the address the site is shared under, or a gated page is a dead end. → §VI.10
 
 ## Block BE — Media: what the bytes mean
 

@@ -304,6 +304,18 @@ folders and configuration, and is what **Import Site** reads back.
 | **Description** | Free text. |
 | **URL** | The base URL of the site's front end. The Universal Editor frames this, and "Preview" and "View published site" open it. Left empty, "Preview" opens Shio's draft preview at `/preview/<site>/` and "View published site" opens the published pages at `/sites/<furl>/`, exactly as a visitor receives them. |
 
+### A site at its own address
+
+An instance can also serve each site at a hostname of its own, such as `quilhara.sites.example.org`.
+Set `shio.sites.host-domain=sites.example.org` (or the `SHIO_SITES_HOST_DOMAIN` environment
+variable), then point a wildcard DNS record and certificate for `*.sites.example.org` at the
+instance. Shio takes care of the rest: the first label of the host is the site's friendly URL, the
+rest of the path is the page, and the page's canonical URL names the host. The friendly URL has to be
+a valid hostname label (lower-case letters, digits and hyphens); a site whose friendly URL is not one
+keeps its `/sites/<furl>/` address. A site with a **URL** of its own keeps that URL as its canonical
+address. A hostname no site claims answers 404, and the 404 says how to fix it. The setting is empty
+by default, and nothing changes until you set it.
+
 ---
 
 ## Search

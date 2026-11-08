@@ -607,23 +607,52 @@ and fails with the wrong verifier.
 
 ## VI. Market positioning
 
-### VI.8 A site with an address of its own (SH1354)
+### VI.9 The console opens a site at its own host (SH1361)
 
-Delivery is positional: /sites/<site>/<format>/<locale>/<path>, with site.url kept for
-the customer's own deployed front end. That is right for a headless instance behind
-somebody's Next.js and wrong for the case where Shio is the host: a hairdresser's site
-is reachable at a path on a shared hostname, which nobody prints on a card.
+SH1354 gave a site an address of its own, `<furl>.<shio.sites.host-domain>`, and the
+backend says it everywhere it emits a published URL: `post.canonical` and the agent's
+`live` field both come from `ShSiteHost.originOf`. The console does not.
+`publishedDestination` in `shio-react/src/lib/site-front-end.ts` mirrors
+`ShSiteFrontEnd.publishedUrl` by hand, and it has no way to know the service domain, so
+"Open published" on the site list, the site editor and the content browser still opens
+`/sites/<furl>/` on the instance host. The two were written to agree, and on an instance
+with site hosts configured they no longer do.
 
-The idea is host-based site resolution in front of the same delivery: a request whose
-Host is <name>.<service-domain> resolves the site the way the first path segment does
-today, and the path grammar that follows is unchanged, so every link the renderer
-already emits keeps working. The proxy, the wildcard certificate and the DNS are
-infrastructure and stay outside the product, which is the line SH540 drew; what the
-product owes is the resolution, the canonical URL it emits when a site has a host, and a
-teaching 404 for a host nothing claims. Custom domains are a later line and need a
-verification step this one does not. 'Shio does not host a model.' is untouched: a
-site's address is hosting, inference is not. An idea rather than a design because the
-service domain is a decision the mobile project has not made.
+The fix is to stop mirroring a rule the client cannot know. Either the site read carries
+the resolved published origin (one field on the site's console read, computed by
+`ShSiteHost.originOf` and `ShSiteFrontEnd.publishedUrl`), or the manifest names the host
+domain and the client composes it. The first is preferred: one place computes the
+address, which is the SH1304 promise ("the two cannot disagree") made true by
+construction rather than by a comment. With the domain unset, the field is the `/sites`
+URL it is today, so nothing changes on an instance that has not opted in.
+
+Done when the console's three "Open published" actions open the site host on an instance
+that sets `shio.sites.host-domain`, and a test pins the console and the backend to the
+same answer.
+
+### VI.10 Sign-in from a page on a site host (SH1362)
+
+SH1299 sends an anonymous visitor who reaches a members-only page to
+`/login?returnUrl=<page>`, a relative URL, so the browser asks the host it is on. On the
+instance host that is the console's login. On a site host (SH1354,
+`<furl>.<shio.sites.host-domain>`) it is not: `ShSiteHostFilter` passes only the
+instance routes (`/api`, `/mcp`, `/file_source`, `/preview`, `/sites`) through, so
+`/login` is re-addressed to `/sites/login`, which no page answers, and the visitor gets
+a 404 where the site asked for a sign-in. The `returnUrl` is also wrong there:
+`request.getRequestURI()` on the re-addressed request is `/sites/<path>`, not the path
+the visitor typed.
+
+What to build: when the request came through a site host, the redirect goes to the
+instance's own login, absolute (`shio.url` + `/login`), with the page's absolute
+site-host URL as `returnUrl`; and the login's `returnUrl` check has to admit an origin
+under the configured host domain, or the round trip stops at the console. The session
+question has to be answered too: a session cookie set on the instance host is not sent
+to a site host, so either the cookie is scoped to the parent domain when site hosts
+share it, or a members-only site on a host is documented as needing that. Measure that
+in a browser before choosing.
+
+Done when an anonymous visitor on a site host is sent to a working sign-in and comes
+back to the page signed in, and a test covers the redirect's target and its `returnUrl`.
 
 ## VII. Content portability
 

@@ -45,7 +45,8 @@ class ShRenderModelUrlsTest {
     // mock would assert that; a null says it, and fails loudly if the path ever starts deriving.
     private final ShRenderModel renderModel = new ShRenderModel(new ObjectMapper(),
             new ShAgentIncidentLog(),
-            new ShSiteLocaleService(null, null, new ShAgentIncidentLog(), new ObjectMapper()));
+            new ShSiteLocaleService(null, null, new ShAgentIncidentLog(), new ObjectMapper()),
+            new ShSiteHost("", "https"));
 
     @Test
     @DisplayName("a deployed site resolves to its own origin, and the trailing slash is gone")
@@ -100,6 +101,25 @@ class ShRenderModelUrlsTest {
         post.setFurl("/contato");
 
         assertThat(post(renderModel.of(post, null))).containsEntry("canonical", null);
+    }
+
+    @Test
+    @DisplayName("SH1354: a site served at a host of its own is canonical there, and baseUrl stays the preview")
+    void aSiteHostIsTheCanonical() {
+        ShRenderModel hosted = new ShRenderModel(new ObjectMapper(), new ShAgentIncidentLog(),
+                new ShSiteLocaleService(null, null, new ShAgentIncidentLog(), new ObjectMapper()),
+                new ShSiteHost("sites.test", "https"));
+        ShSite site = new ShSite();
+        site.setName("demo");
+        site.setFurl("demo");
+        ShPostUnified post = new ShPostUnified();
+        post.setFurl("/contato");
+        post.setShSite(site);
+
+        Map<String, Object> model = hosted.of(post, null);
+        assertThat(post(model)).containsEntry("canonical", "https://demo.sites.test/contato");
+        assertThat(site(model)).as("SH1173: the preview's home link must stay in the preview")
+                .containsEntry("baseUrl", "/preview/demo");
     }
 
     private Map<String, Object> modelOf(String siteName, String siteUrl, String furl) {

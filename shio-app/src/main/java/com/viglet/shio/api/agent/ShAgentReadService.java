@@ -126,6 +126,8 @@ public class ShAgentReadService {
      * reference to the ACL service as a read that asks it.
      */
     private final com.viglet.shio.persistence.repository.acl.ShContentVisibilityRepository shContentVisibilityRepository;
+    /** SH1354 — a site's own host, for the live URL. */
+    private final com.viglet.shio.render.ShSiteHost shSiteHost;
 
     /**
      * How far back an {@code include=index} read looks for a failure.
@@ -155,7 +157,9 @@ public class ShAgentReadService {
                               com.viglet.shio.turing.ShTuringIndexService shTuringIndexService,
                               com.viglet.shio.api.agent.diagnostics.ShAgentIncidentLog incidentLog,
                               com.viglet.shio.persistence.repository.history.ShHistoryRepository shHistoryRepository,
-                              com.viglet.shio.persistence.repository.acl.ShContentVisibilityRepository shContentVisibilityRepository) {
+                              com.viglet.shio.persistence.repository.acl.ShContentVisibilityRepository shContentVisibilityRepository,
+                              com.viglet.shio.render.ShSiteHost shSiteHost) {
+        this.shSiteHost = shSiteHost;
         this.shContentVisibilityRepository = shContentVisibilityRepository;
         this.shHistoryRepository = shHistoryRepository;
         this.shTuringIndexService = shTuringIndexService;
@@ -828,7 +832,8 @@ public class ShAgentReadService {
         if (site == null || post.getFurl() == null || post.getFurl().isBlank() || !isPublished(post)) {
             return null;
         }
-        return ShSiteFrontEnd.publishedUrl(site, post.getFurl());
+        // SH1354 — at the site's own host when the instance serves sites at one.
+        return ShSiteFrontEnd.publishedUrl(site, post.getFurl(), shSiteHost.originOf(site).orElse(null));
     }
 
     /**

@@ -168,9 +168,23 @@ public final class ShSiteFrontEnd {
      * @param furl the page's friendly URL, or {@code null} for the home
      */
     public static String publishedUrl(ShSite site, String furl) {
+        return publishedUrl(site, furl, null);
+    }
+
+    /**
+     * SH1354 — {@link #publishedUrl(ShSite, String)}, at the site's own host when it has one.
+     *
+     * @param hostOrigin {@code <scheme>://<site>.<service-domain>} from {@link ShSiteHost#originOf},
+     *                   or {@code null}; a deployed front end still wins, since that is the address a
+     *                   human chose
+     */
+    public static String publishedUrl(ShSite site, String furl, String hostOrigin) {
         Destination destination = of(site);
         if (destination.isExternal()) {
             return pageUrl(destination, furl);
+        }
+        if (hostOrigin != null && !hostOrigin.isBlank()) {
+            return pageUrl(new Destination(Kind.EXTERNAL, trimTrailingSlash(hostOrigin)), furl);
         }
         String base = ShSitesAPI.BASE + "/" + pathSegment(sitesKey(site));
         if (furl == null || furl.isBlank() || "/".equals(furl)) {
