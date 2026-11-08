@@ -24,7 +24,7 @@
 
 ## Block A — Headless foundation (Content Delivery API)
 
-- 📋 **SH1360** (deps: SH1351 ✅) **An OIDC user gets a device token only by pasting a secret from the console into the app** — Signing in from the app through the instance's own login, with PKCE and a one-time code, removes the paste and keeps secrets out of URLs. → §I.7
+- 🛠 **SH1360** (deps: SH1351 ✅) **An OIDC user gets a device token only by pasting a secret from the console into the app** — Signing in from the app through the instance's own login, with PKCE and a one-time code, removes the paste and keeps secrets out of URLs. → §I.7
 
 ## Block F — Market positioning / bold bets
 
@@ -35,6 +35,15 @@
 
 - 📋 **SH1363** (deps: SH1355 ✅) **The shio CLI still uploads an asset in one multipart POST, so pushing a video restarts from zero when the link drops** — The CLI is the agent's path to an asset, and P1 puts it before REST, which now has resumable sessions. → §LXX.11
 - 📋 **SH1364** (deps: —) **An upload answers with the whole File post entity, about 1,800 tokens a photo, most of the phone's run** — Four uploads are 7,276 of the run's 13,004 tokens, and that number sets the free tier's agent cap. → §LXX.12
+
+## Block S — The public site (shio.viglet.org)
+
+- 📋 **SH1369** (deps: —) **Public product names still alternate between full names and abbreviations** — Apply the hub naming decision to visible copy and machine-readable output so each product remains the same identifiable entity. → §XIX.17
+- 📋 **SH1370** (deps: SH1369) **Product pages retain decorative chips and hero styling absent from the revised hub** — Use the hub visual grammar across marketing and documentation while preserving the product accent and the function of each page. → §XIX.18
+- 📋 **SH1371** (deps: SH1369) **Getting started and resource links do not express the same journey as the hub** — Give evaluation, installation, documentation and release history explicit destinations and a reliable route back to the portfolio. → §XIX.19
+- 📋 **SH1372** (deps: SH1369) **The home page repeats technical detail before visitors can choose their next step** — Shorten the evaluation path and move depth into existing pages without removing evidence, stable URLs or useful technical documentation. → §XIX.20
+- 📋 **SH1373** (deps: —) **The public site scarcely explains the optional search integration described by the hub** — Show how published content reaches Viglet Turing while keeping Viglet Shio useful on its own and keeping agent support claims precise. → §XIX.21
+- 📋 **SH1374** (deps: SH1369, SH1370, SH1371, SH1372, SH1373) **No acceptance check compares the product site with the revised hub contract** — Validate the rendered brand and journeys across routes, themes and small screens so future site changes cannot silently undo the alignment. → §XIX.22
 
 ## Priority
 
@@ -64,6 +73,60 @@
 - **A contact form on a blueprint page submits with script off** An applied
   small-business site's contact page, with submissions enabled, stores a Contact post
   from a plain browser form post, and verify reports its three promised pages.
+
+## Done when — SH1369
+
+- **Evidence and boundary are verified** Re-read the cited source and rendered routes,
+  satisfy the acceptance checks in the design, and preserve technical identifiers and
+  existing URLs.
+- **The hub contract survives the change** Review full names, relevant light/dark and
+  mobile layouts, and links to installation, documentation and the portfolio; retain the
+  product-specific behavior.
+
+## Done when — SH1370
+
+- **Evidence and boundary are verified** Re-read the cited source and rendered routes,
+  satisfy the acceptance checks in the design, and preserve technical identifiers and
+  existing URLs.
+- **The hub contract survives the change** Review full names, relevant light/dark and
+  mobile layouts, and links to installation, documentation and the portfolio; retain the
+  product-specific behavior.
+
+## Done when — SH1371
+
+- **Evidence and boundary are verified** Re-read the cited source and rendered routes,
+  satisfy the acceptance checks in the design, and preserve technical identifiers and
+  existing URLs.
+- **The hub contract survives the change** Review full names, relevant light/dark and
+  mobile layouts, and links to installation, documentation and the portfolio; retain the
+  product-specific behavior.
+
+## Done when — SH1372
+
+- **Evidence and boundary are verified** Re-read the cited source and rendered routes,
+  satisfy the acceptance checks in the design, and preserve technical identifiers and
+  existing URLs.
+- **The hub contract survives the change** Review full names, relevant light/dark and
+  mobile layouts, and links to installation, documentation and the portfolio; retain the
+  product-specific behavior.
+
+## Done when — SH1373
+
+- **Evidence and boundary are verified** Re-read the cited source and rendered routes,
+  satisfy the acceptance checks in the design, and preserve technical identifiers and
+  existing URLs.
+- **The hub contract survives the change** Review full names, relevant light/dark and
+  mobile layouts, and links to installation, documentation and the portfolio; retain the
+  product-specific behavior.
+
+## Done when — SH1374
+
+- **Evidence and boundary are verified** Re-read the cited source and rendered routes,
+  satisfy the acceptance checks in the design, and preserve technical identifiers and
+  existing URLs.
+- **The hub contract survives the change** Review full names, relevant light/dark and
+  mobile layouts, and links to installation, documentation and the portfolio; retain the
+  product-specific behavior.
 
 ## Non-goals (do NOT add as tasks)
 

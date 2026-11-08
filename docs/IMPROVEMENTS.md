@@ -678,6 +678,141 @@ The site is also written for the reader it is about. An agent evaluating a CMS r
 page it was handed, and a Claude Code-first product that answers only in HTML is making
 its own argument badly.
 
+### XIX.17 Full product names across the public site (SH1369)
+
+Review of 2026-11-08: published pages and current source, compared with viglet.org. The
+published site includes Shio without an agent and bare Shio references in comparison and
+technical explanations; the mobile navigation hides the full wordmark. The desktop logo
+already uses Viglet Shio correctly.
+
+Apply the owner decision in hub docs/STRATEGY.md section I.7 to shio-site/src,
+shio-site/docs, accessible labels, titles, descriptions, OG assets, JSON-LD, llms.txt
+and generated Markdown twins. Always use Viglet Turing, Viglet Dumont and Viglet Shio,
+including repeated mentions. Share typed product identity data rather than maintaining
+shorter display aliases. Keep stable slugs, package names, commands, code identifiers,
+filenames and historical release records intact; classify these exceptions explicitly.
+Ensure the product identity remains visible on small screens by changing layout rather
+than abbreviating. Category labels remain separate from names.
+
+Acceptance: scan rendered visitor text and machine-readable outputs, not only source
+literals; report each intentional technical exception. Review desktop and 390-pixel
+navigation, long headings, buttons and docs search results. No backend renames or
+technical API changes.
+
+### XIX.18 A consistent visual contract with viglet.org (SH1370)
+
+Review of 2026-11-08: published pages and current source, compared with viglet.org.
+shio-site/src/components/sections/hero.tsx uses a rounded metadata chip, hardcoded dark
+surfaces, gradient text, grid and animated orbs; the hub uses neutral surfaces and plain
+typographic metadata. Header product highlights also use pills.
+
+Adopt the hub typography roles, title scale, content gutters, spacing, button hierarchy,
+borders and focus treatment. Use released @viglet/viglet-design-system tokens/components
+where applicable and a thin compatible Astro mapping for documentation; inspect actual
+exports before designing an adapter. Preserve violet as the product accent. Replace
+decorative chips with plain eyebrow text, separators or ordinary navigation links. Keep
+genuine filter selections and status controls functional. Consolidate a reusable product
+hero for marketing subpages; documentation keeps its reading sidebar and article layout
+while sharing brand tokens. Avoid permanent dark heroes in light mode and remove
+decorative motion that competes with the product evidence.
+
+Acceptance: compare home, one solution page, a feature page, docs overview and article
+at 390/768/1440 pixels, light/dark and reduced motion. Preserve real demos, code
+examples, contrast, keyboard focus and original URLs. No framework migration or forced
+orange product branding.
+
+### XIX.19 Navigation, installation and release destinations (SH1371)
+
+Review of 2026-11-08: published pages and current source, compared with viglet.org.
+LINKS in site-content.ts sends Get started to /docs/ and Changelog to the internal
+GitHub task ledger. The hero primary action only scrolls to four paths. The hub already
+has /shio/download/ and /shio/release-notes/, and the product publishes changelog.json.
+
+Define one typed destination map used by marketing navigation, footer, CTAs and Astro
+overrides. Separate Try/Explore, Install, Documentation, Release notes, Source and
+Portfolio by their actual job. Get started should reach an actionable supported setup
+path with prerequisites and a first-success check; Documentation may keep the overview.
+Keep GitHub Source on openviglet/shio; label the development roadmap separately from
+user release notes. Use existing hub download/release pages and product documentation
+instead of adding another release ledger or installation authority. Replace
+retired-domain references with verified current destinations, preserving inbound routes
+and anchors. The return to viglet.org and product identity must remain discoverable in
+mobile menus and docs.
+
+Acceptance: follow every primary CTA from home, a depth page and docs in a fresh
+browser, including narrow-screen menus and keyboard use; verify response status and
+destination content rather than URL spelling alone. Check release-feed availability and
+no circular hub/product redirects. Do not deploy or rewrite historical published slugs.
+
+### XIX.20 A focused home page with product-specific depth (SH1372)
+
+Review of 2026-11-08: published pages and current source, compared with viglet.org. At
+390 CSS pixels the published home measured 35,933 pixels tall. landing.tsx renders four
+paths, use cases, roles, ten design laws, token measurements, errors, verification and
+many other sections. The console-first positioning is useful, but the navigation gives
+the Claude Code plugin a special pill and the hero spends a second paragraph defending
+agent optionality.
+
+Lead with content authoring and publishing, a concise choice among console, agent, files
+and API, one visible result and an installation path. Move detailed design laws, token
+budgets and protocol inventories to existing depth/docs pages; retain the console-first
+choice and honest agent limitations. Preserve information by linking to its
+authoritative page instead of repeating the same inventory. Maintain existing anchor
+destinations with concise summaries when sections move. Align the short product
+descriptor with the hub but retain product-specific examples and technical depth. Give
+every retained section a decision it helps the visitor make.
+
+Acceptance: provide a before/after section map and walk a newcomer through what the
+product does, whom it serves, evidence and the next action without reading the whole
+page. Re-measure page length under the same viewport as supporting evidence, not as a
+conversion target. No invented testimonials, unsupported performance claims, deleted
+routes or promised conversion uplift; any outcome measurement needs later observation.
+
+### XIX.21 Portfolio relationship and optional integrations (SH1373)
+
+Review of 2026-11-08: published pages and current source, compared with viglet.org. The
+hub describes published-content indexing in Viglet Turing; site-content.ts mainly
+exposes a footer link to that product. docs/agents/turing.md documents indexing off by
+default, enabled configuration and explicit site routing. The primary agent example is
+Claude Code, not evidence that every agent host has an equivalent plugin.
+
+Add a compact ecosystem explanation at the relevant delivery/search point: authors and
+agents create drafts, a person publishes, configured indexing makes published content
+searchable in Viglet Turing. Link to the actual integration guide and the Viglet Turing
+product site. State that indexing is optional and off by default; do not imply that all
+installations send content to another service, need Viglet Dumont, or bundle an LLM.
+Explain Viglet Dumont only where importing external sources is relevant. Distinguish
+verified Claude Code plugin instructions from generic MCP access; never advertise an
+unimplemented Codex plugin. Reuse the existing SH1342 hosted-demo work and keep scripted
+sessions labelled until a real instance exists.
+
+Acceptance: compare the published wording, linked documentation and source capability;
+assert the corrected boundary in generated HTML and machine-readable text.
+
+### XIX.22 Rendered brand and journey regression coverage (SH1374)
+
+Review of 2026-11-08: published pages and current source, compared with viglet.org. The
+sampled home and docs routes returned 200 at 1440/390 pixels without document-wide
+overflow or page errors. That is a healthy baseline, not a whole-site accessibility
+certification. Existing shio-site build checks do not assert the new cross-site brand
+contract.
+
+Extend existing tests rather than adding a parallel framework. Enumerate generated
+marketing routes and representative documentation templates; verify full product names
+with technical exceptions, title/canonical/OG/JSON-LD/llms consistency, internal anchors
+and the destination map. Add Playwright coverage at 390/768/1440 pixels, both themes,
+reduced motion, keyboard navigation, menu opening/closing and focus return. Inspect
+actual screenshots for clipping, readability and decorative chips; do not substitute a
+CSS-class assertion for visual review. Test consent fresh, denied and withdrawn without
+loosening it to simplify the layout, and preserve demo failure states. Separate
+deterministic build checks from retry-bounded external-link checks so network resets are
+reported as inconclusive, not product regressions.
+
+Acceptance: run the existing site/docs build gates plus the new checks and retain
+representative screenshots and a route-result report. A later production smoke verifies
+deployed output; local success alone never claims deployment. No performance-score or
+conversion guarantees.
+
 ## XX End-user documentation, round two (Block T)
 
 Block R measured this and could not fix it. It took the coverage matrix from **33 wrong

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "shio",
+    "route": "",
+    "width": 1440,
+    "status": 200,
+    "url": "https://shio.viglet.org/",
+    "title": "Viglet Shio: the open-source, agent-ready CMS",
+    "h1": [
+      "A complete CMS. Your agent can drive it too."
+    ],
+    "overflow": false,
+    "height": 19483,
+    "font": "\"Plus Jakarta Sans\", system-ui, sans-serif",
+    "errors": []
+  },
+  {
+    "name": "shio",
+    "route": "",
+    "width": 390,
+    "status": 200,
+    "url": "https://shio.viglet.org/",
+    "title": "Viglet Shio: the open-source, agent-ready CMS",
+    "h1": [
+      "A complete CMS. Your agent can drive it too."
+    ],
+    "overflow": false,
+    "height": 35933,
+    "font": "\"Plus Jakarta Sans\", system-ui, sans-serif",
+    "errors": []
+  },
+  {
+    "name": "shio",
+    "route": "docs/",
+    "width": 1440,
+    "status": 200,
+    "url": "https://shio.viglet.org/docs/",
+    "title": "Viglet Shio: the Open-Source, Agent-Ready CMS | Viglet Shio",
+    "h1": [
+      "Viglet Shio: the Open-Source, Agent-Ready CMS"
+    ],
+    "overflow": false,
+    "height": 3717,
+    "font": "\"Plus Jakarta Sans\", system-ui, sans-serif, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Noto Sans\", Arial, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "errors": []
+  },
+  {
+    "name": "shio",
+    "route": "docs/getting-started/intro/",
+    "width": 390,
+    "status": 200,
+    "url": "https://shio.viglet.org/docs/getting-started/intro/",
+    "title": "What is Viglet Shio? | Viglet Shio",
+    "h1": [
+      "What is Viglet Shio?"
+    ],
+    "overflow": false,
+    "height": 8489,
+    "font": "\"Plus Jakarta Sans\", system-ui, sans-serif, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", \"Noto Sans\", Arial, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "errors": []
+  }
+]
