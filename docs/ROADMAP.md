@@ -33,7 +33,7 @@
 
 ## Block BE — Media: what the bytes mean
 
-- 📋 **SH1355** (deps: —) **An upload is one multipart POST, so a phone video on a mobile network starts over when the link drops** — Capture is the phone's job, a large upload that cannot resume never completes on 4G, and the per-asset digest is the completion check chunks need. → §LXX.10
+- 📋 **SH1363** (deps: SH1355 ✅) **The shio CLI still uploads an asset in one multipart POST, so pushing a video restarts from zero when the link drops** — The CLI is the agent's path to an asset, and P1 puts it before REST, which now has resumable sessions. → §LXX.11
 
 ## Block M — Token economy, measured (SH74)
 

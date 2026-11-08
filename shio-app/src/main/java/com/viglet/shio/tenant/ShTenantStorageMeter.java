@@ -57,9 +57,13 @@ public class ShTenantStorageMeter {
 
     private final ShTenantRepository shTenantRepository;
     private final ShFileStorageService shFileStorageService;
+    /** SH1355 — abandoned upload sessions go in the same act that makes the disk honest. */
+    private final org.springframework.beans.factory.ObjectProvider<com.viglet.shio.api.staticfile.ShUploadSessionService> uploadSessions;
 
     public ShTenantStorageMeter(ShTenantRepository shTenantRepository,
-                                ShFileStorageService shFileStorageService) {
+                                ShFileStorageService shFileStorageService,
+                                org.springframework.beans.factory.ObjectProvider<com.viglet.shio.api.staticfile.ShUploadSessionService> uploadSessions) {
+        this.uploadSessions = uploadSessions;
         this.shTenantRepository = shTenantRepository;
         this.shFileStorageService = shFileStorageService;
     }
@@ -98,6 +102,7 @@ public class ShTenantStorageMeter {
      */
     @Transactional
     public long reconcile(String tenant) {
+        uploadSessions.ifAvailable(sessions -> sessions.sweepExpired(tenant));
         long onDisk = shFileStorageService.bytesOnDiskFor(tenant);
         shTenantRepository.findByName(tenant).ifPresent(row -> {
             if (row.getStorageBytes() != onDisk) {

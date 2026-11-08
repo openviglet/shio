@@ -193,7 +193,7 @@ public class ShFileStorageService {
     }
 
     /** Reduce a tenant id to a safe single path segment for the disk sub-directory. */
-    private static String sanitizeTenant(String value) {
+    public static String sanitizeTenant(String value) {
         String cleaned = value.replaceAll("[^A-Za-z0-9._-]", "_");
         return cleaned.isEmpty() || cleaned.equals(".") || cleaned.equals("..")
                 ? "_" : cleaned.toLowerCase(Locale.ROOT);

@@ -136,6 +136,13 @@ class ShAgentP9ConformanceTest {
                 yes("ShStaticFileItem.java", "sha256"),
                 no("ShStaticFileItem.java", "finding", NOT_CONTENT_NO_FINDINGS),
                 no("ShStaticFileItem.java", "routes", NO_ROUTE_MOVED)));
+        // SH1355 — every answer says how many bytes have arrived, and finish turns the bytes into an
+        // asset only when they hash to the sha256 the caller declared: the digest is the gate.
+        byPath.put("/api/v2/staticfile/upload-session", new Proof(
+                no("ShUploadSessionAPI.java", "changed", ONE_OBJECT_NO_SET),
+                yes("ShUploadSessionService.java", "sha256"),
+                no("ShUploadSessionAPI.java", "finding", NOT_CONTENT_NO_FINDINGS),
+                no("ShUploadSessionAPI.java", "routes", NO_ROUTE_MOVED)));
         // SH1003 — the answer is the note, which is the whole of what was asked for.
         byPath.put("/api/v2/note", new Proof(
                 no("ShNoteAPI.java", "ChangeSet", ONE_OBJECT_NO_SET),

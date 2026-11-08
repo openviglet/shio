@@ -141,6 +141,14 @@ class ShAgentP7ConformanceTest {
                 no("ShStaticFileAPI.java", "confirm", DELETE_IS_THE_CONSOLE_GESTURE),
                 yes("ShStaticFileService.java", "shContentAuditService"),
                 yes("ShReviewService.java", "findAgentEntries")));
+        // SH1355 — a resumable upload. Its only content write is finish, which is `upload` itself,
+        // so the audit row and the review entry are the single-request path's own; abort drops the
+        // caller's own unpublished bytes, which no reader ever saw.
+        byPath.put("/api/v2/staticfile/upload-session", new Guards(
+                no("ShUploadSessionAPI.java", "dryRun", PLAN_IS_THE_CALL),
+                no("ShUploadSessionAPI.java", "confirm", NOT_DESTRUCTIVE),
+                yes("ShStaticFileService.java", "shContentAuditService"),
+                yes("ShReviewService.java", "findAgentEntries")));
         // SH1003 — a note is a remark about content, not content. It leaves no audit row and no
         // review entry because the note IS the record: the row a curator wrote is the durable
         // statement, and putting "somebody commented" in a queue of things to approve or revert

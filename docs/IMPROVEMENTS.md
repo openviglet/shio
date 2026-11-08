@@ -1213,24 +1213,28 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.10 An upload that can resume (SH1355)
+### LXX.11 The CLI resumes a large upload (SH1363)
 
-POST /api/v2/staticfile/upload takes the whole file in one request: the post row and the
-bytes land in one transaction, the quota is charged before either, and the sha256 and
-size are stamped on the way. On a desk that is the right shape. On a phone the
-connection is the thing that fails, and a request that dies at ninety percent leaves
-nothing to continue from.
+SH1355 shipped a resumable upload, `/api/v2/staticfile/upload-session` (begin with name,
+size, folderId and sha256; PUT chunks by offset; finish checks the digest and creates
+the File post through the same `upload` the single request uses). Only the REST surface
+has it. The agent's own path to an asset is the CLI: `ShioAdminClient.upload` in
+`cli/src/admin-client.mjs` still sends one multipart POST, so `shio push`, `shio
+convert` and every replication that carries a video fail the same way a phone did, and
+P1's order (MCP, then files and CLI, then REST) is inverted for this capability.
 
-The design is a session: begin with the name, the size, the folder and the digest the
-client already computed, which is where the quota check moves to; append chunks by
-offset, idempotently, so a retried chunk is a no-op; finish, where the server compares
-its digest with the declared one and only then creates the File post, so a half upload
-never becomes an asset. Chunks live outside /file_source until the finish, the way
-renditions do, because a partial file must not be publicly readable. An abandoned
-session expires and is swept by the same reconcile that keeps the byte meter honest. The
-single-request upload stays for every caller that has it. The assertion carrying this id
-kills a session midway, resumes from the reported offset, and reads one asset with the
-declared digest.
+What to build: the admin client takes the session path above a size threshold (say 8 MB,
+a named constant), computing the sha256 it already computes for SH210's push comparison,
+sending chunks of a fixed size and, on a dropped connection or a 409, asking `GET
+/upload-session/{id}` for the offset and continuing from there. Below the threshold the
+single request stays, so small assets cost one call as they do now. A retry budget
+bounds the loop, and the final error names the session id so a second run could resume
+it.
+
+Done when a CLI test drives an upload whose connection is cut mid-chunk against a fake
+server and reads one asset with the declared digest, and the conformance instance helper
+uploads a large asset the same way. A model is not involved: the CLI does the
+arithmetic.
 
 ## LXXI The visual editor becomes a composer (Block BF)
 

@@ -239,7 +239,11 @@ class ShSilentCatchInventoryTest {
             // SH1280 — 88: ShAssetLoadService counts a page that redirects or does not render as
             // loading nothing. A redirect has no page to read, and a page that will not compose is
             // verify's `page-unrendered`, reported by the check whose subject it is, as at 81.
-            Map.entry("api", 88),
+            // SH1355 — 92: four in ShUploadSessionService, all housekeeping of its own temp directory
+            // (a sweep that cannot list, a session file that cannot be read back, a delete that cannot
+            // remove a path). Each is logged; none changes content, and a session that cannot be read
+            // answers the caller with a teaching 404, so there is no degradation for an operator to see.
+            Map.entry("api", 92),
             // 9 since SH45's API-call meter, and all five are the same judgement: metering is an
             // accounting side-effect of a call that has already been served, so nothing it fails at
             // may become the caller's problem or the operator's incident.

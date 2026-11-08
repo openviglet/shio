@@ -617,6 +617,24 @@ because the message it had reads as carelessness to somebody who chose deliberat
 come from the cross-cutting URL index, never the loaded rows: a scoped run holds one of the two and
 cannot speak for the other (SH143, SH263).
 
+### A resumable upload (SH1355)
+
+`POST /api/v2/staticfile/upload` takes the whole file in one request, and a phone on a mobile
+network loses the request, not the file. `ShUploadSessionAPI` is the session beside it:
+`POST /upload-session` with `{name, size, folderId, sha256, contentType?}` (the policy and the quota
+decide here, before a byte travels), `PUT /upload-session/{id}?offset=N` with the raw chunk as the
+body, `GET` for the offset to resume from, `POST /{id}/finish`, `DELETE` to abort. A chunk that
+starts where the received bytes end is appended; one wholly inside them is a retry and a no-op;
+anything else is `upload-session-offset`, a 409 naming the offset. Finish compares the arrived
+bytes' SHA-256 with the declared one (`upload-session-digest`, 422, discards the session) and then
+hands them to `ShStaticFileService.upload` through `ShStagedUpload`, so the policy, quota, File post
+and digest stamp are the single-request path's own and nothing is written twice.
+
+Sessions live under `shio.upload-sessions.path`, per tenant, outside `/file_source`, so a half
+file is never public, and are not metered: the asset is charged when it is created. A session
+answers only the principal and tenant that began it. One past `shio.upload-sessions.ttl` (24h) is
+swept on the next begin and by `ShTenantStorageMeter.reconcile`. `ShUploadSessionTest` kills a
+session midway, resumes it and reads one asset with the declared digest.
 ### There is NO generic `DELETE /api/v2/object/{id}` endpoint
 Delete must be done by type: `/v2/post-unified/{id}` or `/v2/folder/{id}`.
 
