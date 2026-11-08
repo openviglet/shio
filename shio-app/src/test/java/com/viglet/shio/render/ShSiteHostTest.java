@@ -36,7 +36,12 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.viglet.shio.api.site.ShSiteListingService;
+import com.viglet.shio.api.site.ShSiteThumbnailStore;
 import com.viglet.shio.persistence.model.folder.ShFolder;
+import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
+import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
+import com.viglet.shio.persistence.repository.site.ShSiteRepository;
 import com.viglet.shio.persistence.model.post.type.ShPostType;
 import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
@@ -75,6 +80,14 @@ class ShSiteHostTest {
     private final ShSiteHost siteHost = new ShSiteHost(DOMAIN, "https");
     @Autowired
     private FilterRegistrationBean<ShSiteHostFilter> registration;
+    @Autowired
+    private ShSiteRepository siteRepository;
+    @Autowired
+    private ShPostUnifiedRepository postRepository;
+    @Autowired
+    private ShHistoryRepository historyRepository;
+    @Autowired
+    private ShSiteThumbnailStore thumbnailStore;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -205,6 +218,28 @@ class ShSiteHostTest {
                 .isEqualTo("https://acme." + DOMAIN + "/about");
         assertThat(ShSiteFrontEnd.publishedUrl(site("acme", null), "/about", null))
                 .isEqualTo("/sites/acme/default/en-us/about");
+    }
+
+    @Test
+    @DisplayName("SH1361: the console's site reads carry the published address the server computes")
+    void theConsoleReadsCarryThePublishedAddress() throws Exception {
+        // The context's host domain is unset, so the single read answers the /sites form...
+        mockMvc.perform(get("/api/v2/site/" + furl))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .as("SH1361: the read keeps the site's own fields unwrapped")
+                        .contains("\"furl\":\"" + furl + "\"")
+                        .contains("\"publishedUrl\":\"/sites/" + furl + "/\""));
+        // ...and the listing, given a domain, answers the site's own host: the address the agent's
+        // `live` field and the canonical link already say, so the console cannot disagree with them.
+        ShSiteListingService listing = new ShSiteListingService(siteRepository, postRepository,
+                historyRepository, thumbnailStore, siteHost);
+        String published = new TransactionTemplate(transactionManager).execute(status -> listing.list()
+                .stream().filter(row -> furl.equals(row.getSite().getFurl())).findFirst().orElseThrow()
+                .getPublishedUrl());
+        assertThat(published).isEqualTo("https://" + furl + "." + DOMAIN + "/");
+        assertThat(siteHost.publishedUrl(site("acme", null), "/about"))
+                .isEqualTo("https://acme." + DOMAIN + "/about");
     }
 
     @Test

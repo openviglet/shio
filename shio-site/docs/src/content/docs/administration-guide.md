@@ -337,7 +337,9 @@ rest of the path is the page, and the page's canonical URL names the host. The f
 a valid hostname label (lower-case letters, digits and hyphens); a site whose friendly URL is not one
 keeps its `/sites/<furl>/` address. A site with a **URL** of its own keeps that URL as its canonical
 address. A hostname no site claims answers 404, and the 404 says how to fix it. The setting is empty
-by default, and nothing changes until you set it.
+by default, and nothing changes until you set it. Once it is set, **View published site** in the
+console opens the site at its hostname, from the site list, the content browser and the site's own
+page, and the site's API read returns that address as `publishedUrl`.
 
 ---
 

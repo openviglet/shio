@@ -1401,6 +1401,7 @@ backlog builds on. Listed so the roadmap doesn't re-propose them.
 - **SH1352** — A FREE tenant's agent calls are capped per UTC day; past the ceiling /api/v2/agent/** and /mcp answer 402 with plan, limit, used and resetsAt, and console and CDA stay uncapped (design §VI.6 recorded in `docs/agents/database.md`).
 - **SH1353** — GET /api/v2/tenant/quota gives a member each limit beside what the tenant holds and what is left, and the agent's usage document carries the same limit lines (design §VI.7 recorded in `docs/agents/database.md`).
 - **SH1354** — A site is served at <furl>.<shio.sites.host-domain> when an operator sets it: the host resolves the site, links stay root-relative, canonical and live URLs say the host, an unclaimed host is a teaching 404 (design §VI.8 superseded: it was held as an idea pending the service domain; the domain became a setting, off by default, so no decision was needed to build it) (design §VI.8 recorded in `docs/agents/renderer.md`).
+- **SH1361** — The console's View published site opens a site at its own host: the site reads carry publishedUrl from ShSiteHost.publishedUrl, the one composition the agent's live field also uses, and the console uses it verbatim instead of mirroring a rule it cannot know (design §VI.9 recorded in `docs/agents/renderer.md`).
 
 ## Block E — Console migration (in flight)
 

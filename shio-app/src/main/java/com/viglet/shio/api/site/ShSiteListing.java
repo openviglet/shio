@@ -51,12 +51,23 @@ public final class ShSiteListing {
     private final Pages pages;
     private final LastChange lastChange;
     private final Thumbnail thumbnail;
+    private final String publishedUrl;
 
-    public ShSiteListing(ShSite site, Pages pages, LastChange lastChange, Thumbnail thumbnail) {
+    public ShSiteListing(ShSite site, Pages pages, LastChange lastChange, Thumbnail thumbnail,
+                         String publishedUrl) {
         this.site = site;
         this.pages = pages;
         this.lastChange = lastChange;
         this.thumbnail = thumbnail;
+        this.publishedUrl = publishedUrl;
+    }
+
+    /**
+     * SH1361 — where a visitor sees the site: its front end, its own host, or {@code /sites/<furl>/},
+     * computed here so the console's "Open published" does not have to know the service domain.
+     */
+    public String getPublishedUrl() {
+        return publishedUrl;
     }
 
     /** {@code null} until a picture of the published home is stored; the grid shows initials. */

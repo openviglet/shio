@@ -572,29 +572,6 @@ asserted at the level the agent surface is.
 
 ## VI. Market positioning
 
-### VI.9 The console opens a site at its own host (SH1361)
-
-SH1354 gave a site an address of its own, `<furl>.<shio.sites.host-domain>`, and the
-backend says it everywhere it emits a published URL: `post.canonical` and the agent's
-`live` field both come from `ShSiteHost.originOf`. The console does not.
-`publishedDestination` in `shio-react/src/lib/site-front-end.ts` mirrors
-`ShSiteFrontEnd.publishedUrl` by hand, and it has no way to know the service domain, so
-"Open published" on the site list, the site editor and the content browser still opens
-`/sites/<furl>/` on the instance host. The two were written to agree, and on an instance
-with site hosts configured they no longer do.
-
-The fix is to stop mirroring a rule the client cannot know. Either the site read carries
-the resolved published origin (one field on the site's console read, computed by
-`ShSiteHost.originOf` and `ShSiteFrontEnd.publishedUrl`), or the manifest names the host
-domain and the client composes it. The first is preferred: one place computes the
-address, which is the SH1304 promise ("the two cannot disagree") made true by
-construction rather than by a comment. With the domain unset, the field is the `/sites`
-URL it is today, so nothing changes on an instance that has not opted in.
-
-Done when the console's three "Open published" actions open the site host on an instance
-that sets `shio.sites.host-domain`, and a test pins the console and the backend to the
-same answer.
-
 ### VI.10 Sign-in from a page on a site host (SH1362)
 
 SH1299 sends an anonymous visitor who reaches a members-only page to
@@ -657,8 +634,11 @@ its own argument badly.
 
 Review of 2026-11-08: published pages and current source, compared with viglet.org. The
 published site includes Shio without an agent and bare Shio references in comparison and
-technical explanations; the mobile navigation hides the full wordmark. The desktop logo
-already uses Viglet Shio correctly.
+technical explanations; the mobile header renders the mark without the wordmark
+(shio-site/src/components/sections/site-nav.tsx:95), and both JSON-LD breadcrumbs name a
+bare Shio (shio-site/scripts/prerender.mjs:98,
+shio-site/docs/src/components/Head.astro:12). The desktop logo already uses Viglet Shio
+correctly.
 
 Apply the owner decision in hub docs/STRATEGY.md section I.7 to shio-site/src,
 shio-site/docs, accessible labels, titles, descriptions, OG assets, JSON-LD, llms.txt
@@ -682,12 +662,17 @@ surfaces, gradient text, grid and animated orbs; the hub uses neutral surfaces a
 typographic metadata. Header product highlights also use pills.
 
 Adopt the hub typography roles, title scale, content gutters, spacing, button hierarchy,
-borders and focus treatment. Use released @viglet/viglet-design-system tokens/components
-where applicable and a thin compatible Astro mapping for documentation; inspect actual
-exports before designing an adapter. Preserve violet as the product accent. Replace
-decorative chips with plain eyebrow text, separators or ordinary navigation links. Keep
-genuine filter selections and status controls functional. Consolidate a reusable product
-hero for marketing subpages; documentation keeps its reading sidebar and article layout
+borders and focus treatment. shio-site does not depend on @viglet/viglet-design-system
+(shio-site/package.json); the console pins ^2026.3.24 (shio-react/package.json:46),
+which exports a product-site layer: ./site (SiteNav, SiteHero, SiteFooter) over
+./site.css and ./tokens.css. Add it at that pin and use those entries, never ./styles,
+the Tailwind bundle known to override an app's arbitrary responsive utilities; the Astro
+docs link tokens.css. Preserve violet as the product accent. Replace decorative chips
+with plain eyebrow text (the Eyebrow in brand.tsx:68 is gradient), separators or
+ordinary navigation links. Keep genuine filter selections and status controls
+functional. Restyle the shared PageHero (page-hero.tsx:26, seven subpages) and the dark
+bands in laws.tsx, curator-half.tsx, cta.tsx, console.tsx, curator.tsx and replicate.tsx
+instead of adding a hero; documentation keeps its reading sidebar and article layout
 while sharing brand tokens. Avoid permanent dark heroes in light mode and remove
 decorative motion that competes with the product evidence.
 
@@ -698,21 +683,26 @@ orange product branding.
 
 ### XIX.19 Navigation, installation and release destinations (SH1371)
 
-Review of 2026-11-08: published pages and current source, compared with viglet.org.
-LINKS in site-content.ts sends Get started to /docs/ and Changelog to the internal
-GitHub task ledger. The hero primary action only scrolls to four paths. The hub already
-has /shio/download/ and /shio/release-notes/, and the product publishes changelog.json.
+Review of 2026-11-08: published pages and current source, compared with viglet.org. The
+header Get started uses LINKS.docs (shio-site/src/components/sections/site-nav.tsx:157)
+and the footer Changelog is the GitHub task ledger (site-footer.tsx:39,
+site-content.ts:1731), while the docs area already sends both elsewhere
+(shio-site/docs/src/components/SocialIcons.astro:15, Footer.astro:35). The hero primary
+action only scrolls to four paths. The hub already has /shio/download/ and
+/shio/release-notes/, and the product publishes changelog.json.
 
-Define one typed destination map used by marketing navigation, footer, CTAs and Astro
-overrides. Separate Try/Explore, Install, Documentation, Release notes, Source and
-Portfolio by their actual job. Get started should reach an actionable supported setup
-path with prerequisites and a first-success check; Documentation may keep the overview.
-Keep GitHub Source on openviglet/shio; label the development roadmap separately from
-user release notes. Use existing hub download/release pages and product documentation
-instead of adding another release ledger or installation authority. Replace
-retired-domain references with verified current destinations, preserving inbound routes
-and anchors. The return to viglet.org and product identity must remain discoverable in
-mobile menus and docs.
+Define one typed destination map used by marketing navigation, footer, CTAs, Astro
+overrides and the hand-written shio-site/public/llms.txt links (:130-137); Markdown
+twins follow from the rendered HTML. Separate Try/Explore, Install, Documentation,
+Release notes, Source and Portfolio by their actual job. Get started should reach an
+actionable supported setup path with prerequisites and a first-success check;
+Documentation may keep the overview. Keep GitHub Source on openviglet/shio; label the
+development roadmap separately from user release notes. Use existing hub
+download/release pages and product documentation instead of adding another release
+ledger or installation authority. docs.viglet.org/shio already answers 301 and
+cli/test/readme-hosts.test.mjs guards it; preserve inbound routes and anchors. The
+return to viglet.org and product identity must remain discoverable in mobile menus and
+docs.
 
 Acceptance: follow every primary CTA from home, a depth page and docs in a fresh
 browser, including narrow-screen menus and keyboard use; verify response status and
@@ -753,13 +743,18 @@ Claude Code, not evidence that every agent host has an equivalent plugin.
 
 Add a compact ecosystem explanation at the relevant delivery/search point: authors and
 agents create drafts, a person publishes, configured indexing makes published content
-searchable in Viglet Turing. Link to the actual integration guide and the Viglet Turing
-product site. State that indexing is optional and off by default; do not imply that all
-installations send content to another service, need Viglet Dumont, or bundle an LLM.
-Explain Viglet Dumont only where importing external sources is relevant. Distinguish
-verified Claude Code plugin instructions from generic MCP access; never advertise an
-unimplemented Codex plugin. Reuse the existing SH1342 hosted-demo work and keep scripted
-sessions labelled until a real instance exists.
+searchable in Viglet Turing. Link to the user guide,
+shio-site/docs/src/content/docs/search-caching.md (Viglet Turing indexing), and the
+Viglet Turing product site. State that indexing is optional and off by default; do not
+imply that all installations send content to another service, need Viglet Dumont, or
+bundle an LLM. Explain Viglet Dumont only where importing external sources is relevant.
+Distinguish verified Claude Code plugin instructions from generic MCP access: the docs
+name Cursor with no Cursor setup (mcp.md:3, agent-builds-it.mdx:10 and :27,
+getting-started/intro.md:13 under shio-site/docs/src/content/docs), and 'any MCP client'
+appears in shio-site/src/entry-server.tsx:38, components/sections/self-host.tsx:79 and
+pages/claude-code.tsx:105. The site names no Codex plugin today; keep it so. Reuse the
+existing SH1342 hosted-demo work and keep scripted sessions labelled until a real
+instance exists.
 
 Acceptance: compare the published wording, linked documentation and source capability;
 assert the corrected boundary in generated HTML and machine-readable text.
@@ -772,16 +767,21 @@ overflow or page errors. That is a healthy baseline, not a whole-site accessibil
 certification. Existing shio-site build checks do not assert the new cross-site brand
 contract.
 
-Extend existing tests rather than adding a parallel framework. Enumerate generated
-marketing routes and representative documentation templates; verify full product names
-with technical exceptions, title/canonical/OG/JSON-LD/llms consistency, internal anchors
-and the destination map. Add Playwright coverage at 390/768/1440 pixels, both themes,
-reduced motion, keyboard navigation, menu opening/closing and focus return. Inspect
-actual screenshots for clipping, readability and decorative chips; do not substitute a
-CSS-class assertion for visual review. Test consent fresh, denied and withdrawn without
-loosening it to simplify the layout, and preserve demo failure states. Separate
-deterministic build checks from retry-bounded external-link checks so network resets are
-reported as inconclusive, not product regressions.
+Extend existing tests rather than adding a parallel framework or workflow: deterministic
+checks join shio-site's node tests (scripts/site-claims.test.mjs), which suites.yml
+already runs on push and pull request; its js job builds no site
+(.github/workflows/suites.yml:58-70), so a check over dist adds build:site there.
+Enumerate generated marketing routes and representative documentation templates; verify
+full product names with technical exceptions, title/canonical/OG/JSON-LD/llms
+consistency, internal anchors and the destination map. Add browser coverage with the
+root playwright ^1.64.1 and pixelmatch (package.json:49-50), opt-in by SHIO_SITE_URL
+like scroll-drift.browser.test.mjs, at 390/768/1440 pixels, both themes, reduced motion,
+keyboard navigation, menu opening/closing and focus return. Inspect actual screenshots
+for clipping, readability and decorative chips; do not substitute a CSS-class assertion
+for visual review. Test consent fresh, denied and withdrawn without loosening it to
+simplify the layout, and preserve demo failure states. Separate deterministic build
+checks from retry-bounded external-link checks so network resets are reported as
+inconclusive, not product regressions.
 
 Acceptance: run the existing site/docs build gates plus the new checks and retain
 representative screenshots and a route-result report. A later production smoke verifies

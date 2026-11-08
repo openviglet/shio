@@ -20,6 +20,7 @@ import com.viglet.shio.persistence.model.post.unified.ShPostState;
 import com.viglet.shio.persistence.repository.history.ShHistoryRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.render.ShSiteHost;
 
 /**
  * SH1217 — the sites listing, with each site's pages by state and its last change.
@@ -36,11 +37,15 @@ public class ShSiteListingService {
     private final ShPostUnifiedRepository shPostUnifiedRepository;
     private final ShHistoryRepository shHistoryRepository;
     private final ShSiteThumbnailStore shSiteThumbnailStore;
+    /** SH1361 — the published address, computed from configuration alone: no statement per row. */
+    private final ShSiteHost shSiteHost;
 
     public ShSiteListingService(ShSiteRepository shSiteRepository,
                                 ShPostUnifiedRepository shPostUnifiedRepository,
                                 ShHistoryRepository shHistoryRepository,
-                                ShSiteThumbnailStore shSiteThumbnailStore) {
+                                ShSiteThumbnailStore shSiteThumbnailStore,
+                                ShSiteHost shSiteHost) {
+        this.shSiteHost = shSiteHost;
         this.shSiteThumbnailStore = shSiteThumbnailStore;
         this.shSiteRepository = shSiteRepository;
         this.shPostUnifiedRepository = shPostUnifiedRepository;
@@ -71,7 +76,8 @@ public class ShSiteListingService {
                     newest.get(site.getId()),
                     picture == null ? null : new ShSiteListing.Thumbnail(
                             "/api/v2/site/" + site.getId() + "/thumbnail", picture.digest(),
-                            picture.at()));
+                            picture.at()),
+                    shSiteHost.publishedUrl(site, null));
         }).toList();
     }
 

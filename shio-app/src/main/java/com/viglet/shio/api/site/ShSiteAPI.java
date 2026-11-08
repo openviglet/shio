@@ -32,6 +32,7 @@ import com.viglet.shio.exchange.ShExchangeException;
 import com.viglet.shio.exchange.site.ShSiteExportService;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.site.ShSiteRepository;
+import com.viglet.shio.render.ShSiteHost;
 import com.viglet.shio.tenant.ShTenantQuotaService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -58,13 +59,17 @@ public class ShSiteAPI {
     /** SH1060 — what it has in each of them, and what it has not. */
     private final ShSiteCoverageService shSiteCoverageService;
     private final ShSiteListingService shSiteListingService;
+    /** SH1361 — where a visitor sees a site, the server's answer rather than the console's mirror. */
+    private final ShSiteHost shSiteHost;
 
     public ShSiteAPI(ShSiteRepository shSiteRepository, ShSiteWriteService shSiteWriteService,
                      ShSiteExportService shSiteExportService,
                      ShTenantQuotaService shTenantQuotaService,
                      ShSiteLocaleService shSiteLocaleService,
                      ShSiteCoverageService shSiteCoverageService,
-                     ShSiteListingService shSiteListingService) {
+                     ShSiteListingService shSiteListingService,
+                     ShSiteHost shSiteHost) {
+        this.shSiteHost = shSiteHost;
         this.shSiteListingService = shSiteListingService;
         this.shSiteRepository = shSiteRepository;
         this.shSiteWriteService = shSiteWriteService;
@@ -98,10 +103,15 @@ public class ShSiteAPI {
      * curator the wrong site, while a write that did would change it.</p>
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ShSite> get(@PathVariable String id) {
+    public ResponseEntity<ShSiteRead> get(@PathVariable String id) {
         return resolve(id)
-                .map(ResponseEntity::ok)
+                .map(site -> ResponseEntity.ok(read(site)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /** SH1361 — the site with the address a visitor sees it at, on every read and write echo. */
+    private ShSiteRead read(ShSite site) {
+        return new ShSiteRead(site, shSiteHost.publishedUrl(site, null));
     }
 
     /** id → furl → name, in that order: the id is the declared key and must win a collision. */
@@ -115,7 +125,7 @@ public class ShSiteAPI {
     }
 
     @PostMapping
-    public ResponseEntity<ShSite> create(@RequestBody ShSiteRequest payload, Principal principal) {
+    public ResponseEntity<ShSiteRead> create(@RequestBody ShSiteRequest payload, Principal principal) {
         if (payload.name() == null || payload.name().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
@@ -132,14 +142,14 @@ public class ShSiteAPI {
         shTenantQuotaService.checkCanCreateSite();
         ShSite created = shSiteWriteService.create(toEntity(payload),
                 principal != null ? principal.getName() : null);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(read(created));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ShSite> update(@PathVariable String id, @RequestBody ShSiteRequest payload,
-                                         Principal principal) {
+    public ResponseEntity<ShSiteRead> update(@PathVariable String id, @RequestBody ShSiteRequest payload,
+                                             Principal principal) {
         return shSiteWriteService.update(id, toEntity(payload), principal != null ? principal.getName() : null)
-                .map(ResponseEntity::ok)
+                .map(site -> ResponseEntity.ok(read(site)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 

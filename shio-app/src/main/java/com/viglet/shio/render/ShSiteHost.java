@@ -117,6 +117,17 @@ public class ShSiteHost {
         return Optional.of(scheme + "://" + furl + "." + domain);
     }
 
+    /**
+     * SH1361 — where a visitor sees this page, at the site's own host when it has one: the one
+     * composition every surface that emits a published URL calls, so the console's read and the
+     * agent's {@code live} field cannot disagree.
+     *
+     * @param furl the page's friendly URL, or {@code null} for the home
+     */
+    public String publishedUrl(ShSite site, String furl) {
+        return ShSiteFrontEnd.publishedUrl(site, furl, originOf(site).orElse(null));
+    }
+
     private static String normalizeDomain(String domain) {
         if (domain == null) {
             return "";

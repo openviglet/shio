@@ -30,9 +30,16 @@ export type SiteDestination = {
  * SH1304 — where a *visitor* sees a site, which `siteDestination` does not answer: that one falls
  * back to the authenticated, bannered, draft-preferred preview. A deployed front end is where the
  * published site lives; without one it is `/sites/<furl>/`, the only route that serves PUBLISHED
- * alone and enforces the members-only gate. Mirrors `ShSiteFrontEnd.publishedUrl` on the server.
+ * alone and enforces the members-only gate.
+ *
+ * SH1361 — the server's `publishedUrl` wins whenever the read carried it. A site can have a host of
+ * its own (`<furl>.<shio.sites.host-domain>`, SH1354) whose service domain only the server knows, so
+ * a hand mirror of `ShSiteFrontEnd.publishedUrl` cannot be right there; the composition below is only
+ * the fallback for a site object no read produced (a write's echo).
  */
 export function publishedDestination(site: ShSite): SiteDestination {
+  const served = site.publishedUrl?.trim()
+  if (served) return { url: served, external: /^https?:\/\//i.test(served) }
   if (site.url?.trim()) return siteDestination(site)
   return { url: `/sites/${encodeURIComponent(site.furl || previewKey(site))}/`, external: false }
 }

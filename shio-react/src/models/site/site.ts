@@ -29,6 +29,12 @@ export type ShSite = {
    * one is stored, which the grid shows as the site's initials.
    */
   thumbnail?: { url: string; digest: string; at: string } | null;
+  /**
+   * SH1361 — where a visitor sees the site, the server's answer: its front end, its own host
+   * (`<furl>.<shio.sites.host-domain>`) or `/sites/<furl>/`. On the listing and a single-site read;
+   * absent on a write's echo, where `publishedDestination` composes the `/sites` fallback.
+   */
+  publishedUrl?: string | null;
 };
 
 /**

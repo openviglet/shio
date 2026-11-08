@@ -47,7 +47,6 @@ import com.viglet.shio.object.ShFolderSite;
 import com.viglet.shio.persistence.model.site.ShSite;
 import com.viglet.shio.persistence.repository.folder.ShFolderRepository;
 import com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository;
-import com.viglet.shio.render.ShSiteFrontEnd;
 import com.viglet.shio.render.ShTemplateGraph;
 import com.viglet.shio.persistence.repository.post.type.ShPostTypeRepository;
 import com.viglet.shio.post.type.ShSystemPostType;
@@ -833,7 +832,7 @@ public class ShAgentReadService {
             return null;
         }
         // SH1354 — at the site's own host when the instance serves sites at one.
-        return ShSiteFrontEnd.publishedUrl(site, post.getFurl(), shSiteHost.originOf(site).orElse(null));
+        return shSiteHost.publishedUrl(site, post.getFurl());
     }
 
     /**

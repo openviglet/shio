@@ -1733,8 +1733,14 @@ renderer over one body of content at a second address. See the section on it bel
   cannot confirm a publish or a members-only gate. `publishedUrl` returns the front end when one
   is deployed and otherwise `/sites/<furl>/`, with a page under `/default/en-us/<url>`, a spelling
   that reaches every page because `/sites/**` redirects one in another locale to its own (SH1279).
-  The console's `publishedDestination` mirrors it, and the site list, the object browser and the
-  site edit page each carry **View published site** beside **Preview**; `e2e/published-site.check.mjs`
+  **The console does not mirror it (SH1361).** A site host (`<furl>.<shio.sites.host-domain>`,
+  SH1354) needs a domain only the server knows, so `ShSiteHost.publishedUrl(site, furl)` is the one
+  composition, and the console's site reads (the `GET /api/v2/site` rows, `GET`/`PUT
+  /api/v2/site/{id}` and the create's echo, unwrapped in `ShSiteListing` and `ShSiteRead`) carry
+  it as `publishedUrl`.
+  `publishedDestination` uses that verbatim and composes `/sites/<furl>/` only for a site object no
+  read produced. The site list, the object browser and the site edit page each carry **View
+  published site** beside **Preview**; `e2e/published-site.check.mjs`
   clicks all three and reads the tab they open. The thumbnail capture keeps its own `homeUrl`: it
   needs a same-origin frame even when a front end is deployed.
 
