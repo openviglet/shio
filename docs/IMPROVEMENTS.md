@@ -1337,22 +1337,6 @@ showcase alone, with a recorded console tour, is the first step.
 
 ## XCVI End-user documentation for 2026.3 (docs-shio)
 
-### XCVI.1 The op table claims a closed vocabulary it no longer has (SH1365)
-
-`agent-surface.md` § A batch of ops says "The vocabulary is closed. Fifteen ops:" and
-tables fifteen. `node .claude/skills/shio-docs-sync/docs-sync-report.mjs` (2026-11-08)
-reads the server's op registry, the same population `docs-vocabulary` checks, and counts
-29, with nine named on no page: `asset.meta` (SH1032), `folder.acl` (SH1277),
-`post.rollback` (SH987), and `release.add`, `release.archive`, `release.remove`,
-`release.rollback`, `release.run`, `release.upsert` (SH993). Every one of them shipped
-before the page was last touched on 2026-11-05.
-
-A completeness claim is the case where a single gap misleads. An agent that reads the
-table learns there is no rollback verb and no release set, and then works around both.
-The fix is to add the nine rows, drop the hard-coded count (or state where the live
-count comes from: `GET /api/v2/agent/context?include=ops`), and update the COVERAGE rows
-for releases and revisions. Done when the report lists no batch op as unnamed.
-
 ### XCVI.2 Four MCP resources no page names (SH1366)
 
 `mcp.md` § Resources tables seven URIs. The report (2026-11-08) reads thirteen from the

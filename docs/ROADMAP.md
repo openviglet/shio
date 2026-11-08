@@ -38,7 +38,6 @@
 
 ## Block R — End-user documentation for 2026.3 (docs-shio)
 
-- 📋 **SH1365** (deps: —) **agent-surface.md calls the op vocabulary closed at fifteen; the server takes 29, release.* and rollback unnamed** — docs-sync-report lists 9 ops on no page, shipped SH987/993/1032/1277; an agent trusting the table never finds rollback or releases. → §XCVI.1
 - 📋 **SH1366** (deps: —) **mcp.md Resources table omits shio://usage, shio://notes, shio://diagnostics and shio://review/mine** — docs-sync-report: 9/13 resources named; the four shipped in SH754, SH1215, SH596 and SH1002 and no page says they exist. → §XCVI.2
 - 📋 **SH1367** (deps: —) **cli.md never mentions shio doctor, the first command to run in a new session** — docs-sync-report: 47/48 verbs named; doctor (SH397, cli/src/commands/doctor.mjs) is the one no page names, and it gates a longer job by exit code. → §XCVI.3
 - 📋 **SH1368** (deps: —) **configuration-reference.md claims every property; 29 shio.* keys are absent (events, meter, renditions, Turing)** — docs-sync-report names them, all bound in @ConfigurationProperties classes; an operator cannot tune SSE, metering, rendition disk or OCR limits from docs. → §XCVI.4

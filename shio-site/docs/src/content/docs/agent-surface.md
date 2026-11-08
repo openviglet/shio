@@ -230,7 +230,8 @@ N addressed ops, applied **atomically**: either all of them or none. `dryRun: tr
 reports exactly what would change and writes nothing; it is also how you obtain the
 `confirm` token a destructive op requires.
 
-The vocabulary is closed. Fifteen ops:
+The vocabulary is closed: an op not in this table is refused, and the refusal lists the ones
+that exist.
 
 | Op | What it does |
 |---|---|
@@ -242,12 +243,25 @@ The vocabulary is closed. Fifteen ops:
 | `folder.copy` | Duplicate a section and everything under it, **as drafts**. `to` is the copy's own name chain; an occupied one is refused rather than numbered. Unlike a move, it may cross sites |
 | `folder.delete` | Trash a folder and everything beneath it. Needs `confirm`; use `folder.move` to rename |
 | `folder.restore` | Undo a folder trash, with its posts. Addressed `id:` |
+| `folder.acl` | Who may **edit** the folder and everything below it, replaced whole: `data.acl` is a list of `{group\|user\|role, permission}`. It governs the console and this surface, never who may read a delivered page |
+| `folder.visibility` | Who may **read** the folder's delivered pages: `data.visibility` is `public` or `members`, and `data.groups` the groups a members-only section is for (none means any signed-in user) |
+| `post.visibility` | The same reader gate on a single post |
 | `post.upsert` | Declare a post's whole state at that address. Keys the post type does not declare are **refused**; use `post.move` to change the address. `expect` makes the write conditional on the digest you read |
 | `post.move` | Change a post's URL, its folder, or both, keeping its id and history. A published post's live URL changes immediately |
+| `post.redirect` | Keep an old URL working after a move: `address` is the **old** path, `to` is where readers go. Unlike every other write it lands **published**, because a draft redirect routes nobody. `302` unless `data.permanent: true` |
 | `post.publish` | Publish the draft, or schedule it with an ISO-8601 `when`; `cancel: true` calls off a pending one. Needs a credential with `mayPublish` |
 | `post.unpublish` | Withdraw the published row; the draft stays. Takes `when` and `cancel` the same way, so a takedown can be dated and a live page stays up until then |
 | `post.delete` | Trash a post. Needs `confirm` |
 | `post.restore` | Undo a trash. Addressed `id:`, from `find?trash=true` |
+| `post.rollback` | Put an earlier version back: `revision` is a number from a read with `include=revisions`. It restores into the **draft** and never publishes; nothing is deleted, so what it replaced can be rolled forward to again |
+| `asset.meta` | Describe an image or file: `data.alt`, `data.caption`, `data.tags`. It **merges** (a blank value clears that key), where a `post.upsert` on the asset would replace its whole state and lose the file |
+| `note.add` | Leave a note on a page for a curator: `data.body`, and optionally `field`, `revision`, `parent` (to reply) and `kind` (`comment`, `request`, `reply` or `reviewed`) |
+| `note.resolve` | Close the note `data.note` names; `cancel: true` re-opens it |
+| `release.upsert` | Plan a release, a named set of posts in one site that goes live as one unit, addressed `release:<site>/<name>`; or confirm one exists. `data.description` is optional |
+| `release.add` · `release.remove` | Put the posts `data.posts` names into a release that has not run, or take them out |
+| `release.run` | Publish every post in the release in **one transaction**, now or at an ISO-8601 `when`; `cancel: true` calls off a scheduled run. Needs `mayPublish`, and `confirm` when it runs now (scheduling or cancelling only moves a date) |
+| `release.rollback` | Undo a release that went live: each page reverts to what it was, and pages the release published for the first time come down. Needs `confirm` and `mayPublish` |
+| `release.archive` | Hide a release from the listing; `cancel: true` brings it back. Not a delete: the record of what went live together stays |
 | `render.provision` | Create the `PageLayout`/`Region`/`Theme` post types this instance renders with, idempotently. **Takes no address**: it acts on the instance's model. `data.reconcile: true` also adds fields an older instance is missing; `data.types` installs vocabulary types by name |
 
 Every delete goes to the **trash** and has a restore beside it. On any of the three,
@@ -267,6 +281,11 @@ A delete answers `428 Precondition Required` with a `confirm-required` problem c
 the token its own dry run produced. Pass it back as `confirm` on the batch. The token
 describes *that* deletion, so it cannot be reused to approve a different one: an agent
 cannot rubber-stamp itself.
+
+`release.run` (when it runs now) and `release.rollback` take the same two steps. They destroy
+nothing, but they change what visitors see across a whole set, so the caller has to have seen
+the set. The token counts the release's posts, so adding one between the dry run and the run
+makes the token stale instead of putting a page live that nobody reviewed.
 
 ### Desired state
 

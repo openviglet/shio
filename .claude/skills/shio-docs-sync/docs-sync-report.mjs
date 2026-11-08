@@ -27,6 +27,8 @@ const args = new Set(process.argv.slice(2));
 
 const { productVocabulary } = await import(
   pathToFileURL(join(ROOT, "cli", "conformance", "support", "product-vocabulary.mjs")).href);
+const { docsNamer } = await import(
+  pathToFileURL(join(ROOT, "cli", "conformance", "support", "docs-named.mjs")).href);
 const { DOCS_DIR } = await import(pathToFileURL(join(ROOT, "scripts", "docs-location.mjs")).href);
 const SIDEBAR = join(ROOT, "shio-site", "docs", "astro.config.mjs");
 
@@ -82,17 +84,8 @@ const POPULATIONS = [
   { key: "manifestFeatures", label: "manifest feature keys", advisory: true },
 ];
 const isTemplate = (s) => /[<>]/.test(s);
-const kebabToCamel = (s) => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-// Sibling shorthand, the configuration reference's house style for one row of related keys:
-// `` `shio.agent.read.default-limit` · `.max-limit` `` names `shio.agent.read.max-limit` too.
-// Each `.suffix` replaces the last segment of the full key that opens the run.
-const shorthand = new Set();
-for (const [, head, tail] of prose.matchAll(/`([a-z][\w.-]*\.)[\w-]+`((?:\s*·\s*`\.[\w-]+`)+)/g)) {
-  for (const [, suffix] of tail.matchAll(/`\.([\w-]+)`/g)) shorthand.add(head + suffix);
-}
-const named = (subject) => prose.includes(subject) || shorthand.has(subject)
-  // Spring relaxed binding: `shio.allowed-origins` may be documented as `shio.allowedOrigins`.
-  || (subject.startsWith("shio.") && prose.includes(kebabToCamel(subject)));
+// The same reader the conformance suite fails on (SH1365), so the two cannot disagree.
+const named = docsNamer(prose);
 
 const reverse = POPULATIONS.map(({ key, label, advisory }) => {
   const subjects = [...(vocabulary[key] ?? [])].map(String).filter((s) => !isTemplate(s));

@@ -47,6 +47,7 @@ import { AUDIT_RULES } from "../src/audit.mjs";
 
 import { CLAIMS, extract, toolRows } from "./docs-examples.mjs";
 import { productVocabulary, routeExists } from "./support/product-vocabulary.mjs";
+import { docsNamer } from "./support/docs-named.mjs";
 
 // @scans prose reason: it reads the published Markdown pages for the verbs, routes, tool names
 // and property keys they spell, so the prose IS the corpus being checked (SH740).
@@ -386,6 +387,28 @@ ${report(misses)}`);
         + "held to this since SH499 (`readme-surface.test.mjs`); the published documentation was "
         + `the surface with no instrument.\n  published: ${[...published].sort().join(" ")}`,
     );
+  });
+
+  /**
+   * SH1365 — the code-to-docs direction for the rest of the vocabulary, one population per task.
+   *
+   * <p>SH697 asked it of the tools and nothing asked it of the ops: `agent-surface.md` called the
+   * vocabulary "closed" at fifteen while the server dispatched twenty-nine, and the six release
+   * ops, `post.rollback`, `asset.meta` and `folder.acl` were on no page at all. A checker handed
+   * no subject passes, which is why the forward tests above could not see it. The reader is the
+   * one `docs-sync-report.mjs` prints from, so the gate and the report agree on what "named" is.</p>
+   */
+  const PROSE = pages().filter(([file]) => file !== "COVERAGE.md").map(([, text]) => text).join("\n");
+  const namedOnAPage = docsNamer(PROSE);
+  const unnamed = (population) => [...population].filter((s) => !/[<>]/.test(s) && !namedOnAPage(s)).sort();
+
+  test("SH1365: every batch op this build dispatches is named on a published page", () => {
+    assert.ok(vocabulary.batchOps.size > 20,
+      `SH1365: the op vocabulary read ${vocabulary.batchOps.size} op(s); an empty read passes below`);
+    assert.deepEqual(unnamed(vocabulary.batchOps), [],
+      "SH1365: the server dispatches an op no page names, so an agent reading the op table learns "
+        + "the capability does not exist and works around it. Add it to the table in "
+        + "agent-surface.md § A batch of ops.");
   });
 
   /**
