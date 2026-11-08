@@ -25,8 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.viglet.shio.persistence.model.post.unified.ShPostUnified;
-
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -37,7 +35,7 @@ import jakarta.servlet.http.HttpServletRequest;
  * POST   /api/v2/staticfile/upload-session              {name, size, folderId, sha256, contentType?} → 201 status
  * GET    /api/v2/staticfile/upload-session/{id}         → status (offset = where to resume)
  * PUT    /api/v2/staticfile/upload-session/{id}?offset=N  raw bytes → status
- * POST   /api/v2/staticfile/upload-session/{id}/finish  → the File post, as /upload returns it
+ * POST   /api/v2/staticfile/upload-session/{id}/finish  → the asset's media row, as /upload returns it
  * DELETE /api/v2/staticfile/upload-session/{id}         → 204
  * </pre>
  *
@@ -54,9 +52,12 @@ import jakarta.servlet.http.HttpServletRequest;
 public class ShUploadSessionAPI {
 
     private final ShUploadSessionService sessions;
+    /** SH1364 — finish answers with the media library's row, as {@code /upload} does. */
+    private final ShStaticFileService staticFiles;
 
-    public ShUploadSessionAPI(ShUploadSessionService sessions) {
+    public ShUploadSessionAPI(ShUploadSessionService sessions, ShStaticFileService staticFiles) {
         this.sessions = sessions;
+        this.staticFiles = staticFiles;
     }
 
     @PostMapping
@@ -81,8 +82,8 @@ public class ShUploadSessionAPI {
     }
 
     @PostMapping("/{id}/finish")
-    public ShPostUnified finish(@PathVariable String id, Principal principal) {
-        return sessions.finish(id, nameOf(principal));
+    public ShStaticFileItem finish(@PathVariable String id, Principal principal) {
+        return staticFiles.itemOf(sessions.finish(id, nameOf(principal)));
     }
 
     @DeleteMapping("/{id}")

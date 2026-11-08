@@ -1542,7 +1542,10 @@ signal it goes in IMPROVEMENTS, not that the line should grow.
 runs five canonical jobs over the agent surface *and* over the id-keyed console/CDA path and
 asserts both ratios (the fifth, `build-site-from-photos` since SH1357, is the mobile run whose figure
 sets the free tier's agent-call cap: build-marketing-site plus four uploads, their alt text, a
-gallery page and a publish, with the uploads' answers counted and their bytes not);
+gallery page and a publish, with the uploads' answers counted and their bytes not; SH1364 took it
+from 13004 to 6224 tokens by answering an upload, and an upload session's finish, with the
+`ShStaticFileItem` media row `/replace` already returned instead of the `ShPostUnified` entity,
+~125 tokens a photo where the entity was ~1820, after checking that every caller read only `id`);
 `ShAgentResponseBudgetTest` guards eleven canonical response sizes. Both
 read their ceilings from `shio-app/src/test/resources/token-budgets.properties`, the same
 file as the SH132 MCP budgets, because a second place to keep a number is a place that goes

@@ -228,7 +228,12 @@ const SWEEP = {
       + "dropped reference tables). docs-shio's COVERAGE.md names all ten: the Media Library row carries "
       + "SH1029-SH1035 and SH1098, the full-text search row SH1099, the internal row SH1100, and the "
       + "mirror is regenerated. README and shio-site are NOT moved and that is the finding: neither "
-      + "describes the media library, asset usage or the database, and no count they state changed",
+      + "describes the media library, asset usage or the database, and no count they state changed. "
+      + "Reopened and re-closed by SH1355, SH1363 and SH1364: a resumable upload session, the CLI "
+      + "resuming through it, and an upload that answers with the media row. docs-shio moved: rest-api's "
+      + "Uploads that resume section and token-economy's photo ceiling, with COVERAGE naming all three "
+      + "and the mirror regenerated. README and shio-site are NOT moved: neither lists upload routes or "
+      + "quotes a benchmark figure",
   },
   BB: {
     swept: false,

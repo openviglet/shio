@@ -26,10 +26,6 @@
 
 - 📋 **SH1375** (deps: SH1362 ✅, decision: how a session reaches a site host) **A visitor who signs in from a site host lands on the page's /sites address on the instance, not on the site host** — Returning there needs a session on that host, and a parent-domain cookie or a handoff code is a security choice. → §VI.11
 
-## Block BE — Media: what the bytes mean
-
-- 📋 **SH1364** (deps: —) **An upload answers with the whole File post entity, about 1,800 tokens a photo, most of the phone's run** — Four uploads are 7,276 of the run's 13,004 tokens, and that number sets the free tier's agent cap. → §LXX.12
-
 ## Block S — The public site (shio.viglet.org)
 
 - 📋 **SH1369** (deps: —) **Public product names still alternate between full names and abbreviations** — Apply the hub naming decision to visible copy and machine-readable output so each product remains the same identifiable entity. → §XIX.17

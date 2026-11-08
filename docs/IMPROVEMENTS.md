@@ -1312,28 +1312,6 @@ promoted to Block AV and is fixed first. This block follows the measure-first ru
 twice, because both of its scaling changes, the paged listing and the reverse index, are
 argued in the analysis and have not yet been measured on this instance.
 
-### LXX.12 An upload answers with the media item (SH1364)
-
-Measured by SH1357's build-site-from-photos benchmark: the phone's run costs 13004
-tokens over the agent surface, and the four photo uploads are 7276 of them, about 1820
-tokens each. `POST /api/v2/staticfile/upload` answers with the whole `ShPostUnified`
-entity, and that is what a model reads after every photo. The SH1355 finish answers the
-same way, so a resumed upload inherits it.
-
-What a caller needs back is small and already has a shape: `ShStaticFileItem` is the
-media library's row (id, file name, URL, size, sha256, content type, width and height),
-and `/replace` already answers with it. So the upload should answer with that item, or
-take `format=terse` and answer with it there, the way the agent reads do. The first is
-preferred if no caller reads a field only the entity carries; the console's upload flow,
-the CLI's admin client (`cli/src/admin-client.mjs`), the conformance instance helper and
-the replication chain all have to be checked before choosing, by reading what each takes
-out of the response rather than assuming.
-
-Done when build-site-from-photos is re-measured and its token ceiling in
-token-budgets.properties is lowered to the new figure, with the per-upload cost stated
-in the comment beside it. The CLI's own upload (SH1363) gets the same saving for free if
-the answer changes shape.
-
 ## LXXI The visual editor becomes a composer (Block BF)
 
 Shio's Universal Editor is a bridge of five postMessage messages, and every one concerns

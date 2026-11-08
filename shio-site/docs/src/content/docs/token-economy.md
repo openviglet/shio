@@ -142,7 +142,7 @@ count and their token cost are held. The figures are the ceilings CI enforces, f
 | Build a marketing site | 6 | 4000 |
 | Translate a site | 3 | 800 |
 | Add a post type and 10 posts | 3 | 2200 |
-| Build a site from the photos on a phone | 10 | 13500 |
+| Build a site from the photos on a phone | 10 | 6700 |
 
 Six calls to build a site is the number worth internalising: **a session, not a
 conversation.** That run ends at a published page a visitor can open: it applies a blueprint,
@@ -150,8 +150,8 @@ publishes the pages and their templates, checks the site and renders the home pa
 
 The photo run is the same job plus what a phone adds: four uploads, the alt text for each, a
 gallery on a new page, and a publish. Its figure is what a free tier's agent budget is set from.
-The uploads are over half of it today, because each upload answers with the whole file record;
-making that answer smaller is an open task.
+An upload answers with the asset's media library entry (its id, file name, content type, size,
+digest and dimensions), about 125 tokens a photo, so the four uploads are a small part of the run.
 
 ---
 

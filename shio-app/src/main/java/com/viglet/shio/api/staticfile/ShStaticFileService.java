@@ -971,6 +971,14 @@ public class ShStaticFileService {
         }
     }
 
+    /**
+     * SH1364 — the media library's row for a {@code File} post, which is what an upload answers
+     * with: the whole entity was ~1,820 tokens a photo to a model that needs the id and the URL.
+     */
+    public ShStaticFileItem itemOf(ShPostUnified post) {
+        return toItem(post);
+    }
+
     private ShStaticFileItem toItem(ShPostUnified post) {
         Data data = dataOnce(post);
         String fileName = data.text(ShSystemPostTypeAttr.FILE);

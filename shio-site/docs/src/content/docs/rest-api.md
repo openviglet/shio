@@ -125,7 +125,9 @@ Both accept transform parameters, `?w=`, `?h=`, `?format=`, `?crop=`.
 
 ### Uploads that resume
 
-`POST /api/v2/staticfile/upload` sends a file in one multipart request. On a mobile network a
+`POST /api/v2/staticfile/upload` sends a file in one multipart request (`file` and `folderId`),
+and answers with the new asset's Media Library entry: `id`, `fileName`, `contentType`, `size`,
+`sha256`, `width` and `height` for an image, and the folder and site it is in. On a mobile network a
 large file (a video, a batch of photos) often loses the connection before it finishes, and a
 single request has to start again from zero. For that case, send the file as an upload session
 instead:

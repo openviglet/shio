@@ -162,6 +162,10 @@ class ShUploadSessionTest {
                 .contains("\"complete\":true");
         JsonNode created = json.readTree(mockMvc.perform(post(BASE + "/" + id + "/finish").principal(ALICE))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        assertThat(created.has("fileName") && !created.has("shPostType") && !created.has("data"))
+                .as("SH1364: finish answers with the media library's row, as /upload does, not the entity")
+                .isTrue();
+        assertThat(created.get("size").asLong()).isEqualTo(file.length);
 
         ShStaticFileService.ShStaticFileDigest digest = shStaticFileService.digestOf(created.get("id").asString());
         assertThat(digest.sha256()).as("SH1355: the asset is the declared file").isEqualTo(sha256);

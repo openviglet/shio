@@ -50,7 +50,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.viglet.shio.persistence.model.folder.ShFolder;
 import com.viglet.shio.persistence.model.site.ShSite;
-import com.viglet.shio.post.type.ShSystemPostType;
 import com.viglet.shio.post.type.ShSystemPostTypeAttr;
 
 import jakarta.persistence.EntityManager;
@@ -96,6 +95,8 @@ class ShStaticFileAPITest {
             shPostTypeAttrRepository;
     @Autowired
     private com.viglet.shio.persistence.repository.widget.ShWidgetRepository shWidgetRepository;
+    @Autowired
+    private com.viglet.shio.persistence.repository.post.ShPostUnifiedRepository postRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -144,8 +145,12 @@ class ShStaticFileAPITest {
                         .principal(mockPrincipal))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.title").value("hello.txt"))
-                .andExpect(jsonPath("$.shPostType.name").value(ShSystemPostType.FILE))
+                // SH1364 — the media library's row, not the File post entity.
+                .andExpect(jsonPath("$.fileName").value("hello.txt"))
+                .andExpect(jsonPath("$.size").value(11))
+                .andExpect(jsonPath("$.folderId").value(folderId))
+                .andExpect(jsonPath("$.shPostType").doesNotExist())
+                .andExpect(jsonPath("$.data").doesNotExist())
                 .andReturn().getResponse().getContentAsString();
 
         uploadedPostId = com.jayway.jsonpath.JsonPath.read(response, "$.id");
@@ -318,7 +323,11 @@ class ShStaticFileAPITest {
                 .andReturn().getResponse().getContentAsString();
 
         String id = com.jayway.jsonpath.JsonPath.read(created, "$.id");
-        assertTrue(created.contains(ShSystemPostTypeAttr.SANITIZED),
+        // SH1364 — the upload answers with the media row now, so the marker is read where `shio pull`
+        // reads it: the stored post's data.
+        String stored = postRepository.findByIdAndState(id,
+                com.viglet.shio.persistence.model.post.unified.ShPostState.PUBLISHED).orElseThrow().getData();
+        assertTrue(stored.contains(ShSystemPostTypeAttr.SANITIZED),
                 "SH951: the post must record that its stored bytes are not the bytes that arrived — "
                         + "`shio pull` projects this, so a replica's difference reads as a policy "
                         + "rather than as a defect");
@@ -671,7 +680,8 @@ class ShStaticFileAPITest {
                         .param("folderId", folderId)
                         .principal(mockPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("en.css"))
+                .andExpect(jsonPath("$.fileName").value("en.css"))
+                .andExpect(jsonPath("$.size").value(0))
                 .andReturn().getResponse().getContentAsString();
 
         String id = com.jayway.jsonpath.JsonPath.read(response, "$.id");

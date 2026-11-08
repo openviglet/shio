@@ -193,7 +193,7 @@ public class ShStaticFileAPI {
 
     /**
      * Upload a file into {@code folderId}, creating a {@code File} post for it.
-     * Returns the created post (200) so the caller can store its id.
+     * Returns the created asset's media library row (200) so the caller can store its id.
      *
      * <h2>A zero-byte file is a file (SH514)</h2>
      *
@@ -218,10 +218,10 @@ public class ShStaticFileAPI {
      * mean truncation of something that exists.</p>
      */
     @PostMapping("/upload")
-    public ResponseEntity<ShPostUnified> upload(@RequestParam("file") MultipartFile file,
-                                                @RequestParam("folderId") String folderId,
-                                                @RequestParam(name = "createPost", defaultValue = "true") boolean createPost,
-                                                Principal principal) {
+    public ResponseEntity<ShStaticFileItem> upload(@RequestParam("file") MultipartFile file,
+                                                   @RequestParam("folderId") String folderId,
+                                                   @RequestParam(name = "createPost", defaultValue = "true") boolean createPost,
+                                                   Principal principal) {
         if (file == null) {
             throw new NoFilePartException();
         }
@@ -230,7 +230,9 @@ public class ShStaticFileAPI {
         }
         String owner = principal != null ? principal.getName() : null;
         ShPostUnified post = shStaticFileService.upload(file, folderId, owner);
-        return ResponseEntity.ok(post);
+        // SH1364 — the media library's row, the shape `/replace` already answers with: the whole
+        // entity cost a model ~1,820 tokens a photo and every caller read only the id.
+        return ResponseEntity.ok(shStaticFileService.itemOf(post));
     }
 
     /**
